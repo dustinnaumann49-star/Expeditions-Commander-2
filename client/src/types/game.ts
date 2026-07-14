@@ -168,6 +168,12 @@ export interface EventState {
   started: boolean;
 }
 
+export interface FleetPreset {
+  id: string;
+  name: string;
+  ships: Record<string, number>;
+}
+
 export interface PlayerState {
   userId: number;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
@@ -182,6 +188,7 @@ export interface PlayerState {
   missions: Mission[];
   messages: GameMessage[];
   inventory: InventoryEntry[];
+  presets: FleetPreset[];
   raid: RaidState | null;
   nextRaidCheck: number;
   event: EventState | null;
