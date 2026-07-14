@@ -74,4 +74,8 @@ export const api = {
     request<PlayerState>('/game/shop/booster', { method: 'POST', body: JSON.stringify({ boosterId }) }),
   buyVoucher: (voucherId: string) =>
     request<PlayerState>('/game/shop/voucher', { method: 'POST', body: JSON.stringify({ voucherId }) }),
+  savePreset: (name: string, ships: Record<string, number>) =>
+    request<PlayerState>('/game/preset/save', { method: 'POST', body: JSON.stringify({ name, ships }) }),
+  deletePreset: (presetId: string) =>
+    request<PlayerState>('/game/preset/delete', { method: 'POST', body: JSON.stringify({ presetId }) }),
 };
