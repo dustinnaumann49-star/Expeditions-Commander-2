@@ -1,4 +1,5 @@
 import { useGame } from '../context/GameContext';
+import { serverNow } from '../lib/serverTime';
 
 export function ShopPage() {
   const { gameData, state, buyBooster, buyVoucher, error } = useGame();
@@ -14,14 +15,14 @@ export function ShopPage() {
       <div className="ship-grid" style={{ marginBottom: 24 }}>
         {gameData.boosters.map((b) => {
           const expiry = state.activeBoosters[b.id];
-          const active = expiry && expiry > Date.now();
+          const active = expiry && expiry > serverNow();
           return (
             <div className="ship-card" key={b.id}>
               <img className="ship-img" src={`/${b.img}`} alt={b.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
                 <h3>{b.name}</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>{b.desc}</p>
-                {active && <p style={{ color: 'var(--accent-deut)' }}>Aktiv: noch {Math.round((expiry - Date.now()) / 3600000)}h</p>}
+                {active && <p style={{ color: 'var(--accent-deut)' }}>Aktiv: noch {Math.round((expiry - serverNow()) / 3600000)}h</p>}
                 <div className="build-row">
                   <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Kosten: {b.cost} DM</span>
                   <button className="build-btn" disabled={state.resources.dm < b.cost} onClick={() => buyBooster(b.id)}>

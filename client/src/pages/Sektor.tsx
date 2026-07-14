@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { serverNow } from '../lib/serverTime';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
 
@@ -10,7 +11,7 @@ function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, 
 }
 
 function fmtCountdown(target: number): string {
-  const ms = target - Date.now();
+  const ms = target - serverNow();
   if (ms <= 0) return '0s';
   const s = Math.floor(ms / 1000);
   if (s < 60) return `${s}s`;
@@ -136,9 +137,9 @@ export function SektorPage() {
                       {Math.floor(activeMission.farmed.metall).toLocaleString('de-DE')} Metall
                     </p>
                     <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                      {Date.now() < activeMission.arriveTime
+                      {serverNow() < activeMission.arriveTime
                         ? `Anflug, Ankunft in ${fmtCountdown(activeMission.arriveTime)}`
-                        : Date.now() < activeMission.endTime
+                        : serverNow() < activeMission.endTime
                         ? `Im Sektor, Rückflug in ${fmtCountdown(activeMission.endTime)}`
                         : `Rückflug, Ankunft in ${fmtCountdown(activeMission.returnTime)}`}
                     </p>

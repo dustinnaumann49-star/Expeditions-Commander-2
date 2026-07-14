@@ -1,4 +1,5 @@
 import { useGame } from '../context/GameContext';
+import { serverNow } from '../lib/serverTime';
 
 function researchCostForLevel(baseCost: { metall: number; kristall: number; deuterium: number }, costGrowth: number, level: number) {
   const f = Math.pow(costGrowth, level - 1);
@@ -50,7 +51,7 @@ export function ForschungPage() {
                 {maxed ? (
                   <p className="level-gruen">Maximalstufe erreicht</p>
                 ) : activeJob ? (
-                  <p style={{ color: 'var(--accent-kristall)' }}>Läuft... noch {Math.max(0, Math.round((activeJob.endTime - Date.now()) / 1000))}s</p>
+                  <p style={{ color: 'var(--accent-kristall)' }}>Läuft... noch {Math.max(0, Math.round((activeJob.endTime - serverNow()) / 1000))}s</p>
                 ) : (
                   <>
                     <div className="ship-cost">

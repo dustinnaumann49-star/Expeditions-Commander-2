@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { serverNow } from '../lib/serverTime';
 import type { PlayerState } from '../types/game';
 
 function countShipEverywhere(state: PlayerState, shipId: string): number {
@@ -33,7 +34,7 @@ export function WerftPage() {
               <span>
                 {gameData.ships.find((s) => s.id === job.shipId)?.name || job.shipId} x{job.count}
               </span>
-              <span>noch {Math.max(0, Math.round((job.endTime - Date.now()) / 1000))}s</span>
+              <span>noch {Math.max(0, Math.round((job.endTime - serverNow()) / 1000))}s</span>
             </div>
           ))
         )}
