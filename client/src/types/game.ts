@@ -103,6 +103,7 @@ export interface CombatUnitResult {
   shieldRegen: number;
   isDefense?: boolean;
   isCaptain?: boolean;
+  ownerUsername?: string;
 }
 
 export interface CombatDetail {
@@ -224,6 +225,8 @@ export interface SektorConfig {
   captainChance?: number;
   captainContainerTier?: 'silber' | 'gold';
   captainDm?: number;
+  multiplayerOnly?: boolean;
+  resourceCapOverTime?: { metall: number; kristall: number; deuterium: number };
 }
 
 export interface BoosterDefinition {
@@ -295,6 +298,9 @@ export interface GroupOperationParticipant {
   status: 'pending' | 'accepted' | 'declined';
   ships: Record<string, number>;
   contributedPower?: number;
+  farmed?: { metall: number; kristall: number; deuterium: number };
+  teile?: { waffen: number; schild: number; panzerung: number };
+  dmFound?: number;
 }
 
 export interface GroupOperation {
@@ -312,9 +318,6 @@ export interface GroupOperation {
   returnTime?: number;
   processedHours?: number;
   lastTick?: number | null;
-  farmed?: { metall: number; kristall: number; deuterium: number };
-  dmFound?: number;
-  teile?: { waffen: number; schild: number; panzerung: number };
   resultMessage?: string;
   resultDetail?: CombatDetail;
 }
