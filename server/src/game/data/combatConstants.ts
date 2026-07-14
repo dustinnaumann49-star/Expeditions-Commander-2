@@ -103,4 +103,8 @@ export const MAX_ROUNDS = 100;
 export const MAX_BUILD_SLOTS = 3;
 export const MAX_DEFENSE_SLOTS = 3;
 export const MAX_RESEARCH_SLOTS = 2;
-export const MAX_PLAYER_SHIPS = 15000;
+// Reines Sicherheitsnetz gegen unbegrenztes Wachstum (kein Performance-Limit mehr, da die
+// Kampfberechnung jetzt in einem separaten Worker-Thread laeuft, siehe combatRunner.ts).
+// Grosszuegig bemessen, damit auch gemeinsame Multiplayer-Flotten (mehrere Spieler kombiniert
+// im selben Piraten-Sektor) genug Platz haben.
+export const MAX_PLAYER_SHIPS = 100000;
