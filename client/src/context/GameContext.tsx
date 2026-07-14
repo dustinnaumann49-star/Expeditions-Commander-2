@@ -25,6 +25,7 @@ interface GameContextValue {
   buyVoucher: (voucherId: string) => Promise<void>;
   savePreset: (name: string, ships: Record<string, number>) => Promise<void>;
   deletePreset: (presetId: string) => Promise<void>;
+  clearMessages: (type?: 'kampf' | 'farm') => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -92,6 +93,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     buyVoucher: (voucherId) => run(() => api.buyVoucher(voucherId)),
     savePreset: (name, ships) => run(() => api.savePreset(name, ships)),
     deletePreset: (presetId) => run(() => api.deletePreset(presetId)),
+    clearMessages: (type) => run(() => api.clearMessages(type)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
