@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { LoreModal } from '../components/LoreModal';
+import { getForschungszeitMultiplier } from '../lib/multipliers';
 
 function researchCostForLevel(baseCost: { metall: number; kristall: number; deuterium: number }, costGrowth: number, level: number) {
   const f = Math.pow(costGrowth, level - 1);
@@ -13,8 +14,8 @@ function researchCostForLevel(baseCost: { metall: number; kristall: number; deut
   };
 }
 
-function researchTimeForLevel(baseTimeHours: number, timeGrowth: number, level: number): number {
-  return baseTimeHours * Math.pow(timeGrowth, level - 1) * 3600 * 1000;
+function researchTimeForLevel(baseTimeHours: number, timeGrowth: number, level: number, multiplier: number): number {
+  return baseTimeHours * Math.pow(timeGrowth, level - 1) * 3600 * 1000 * multiplier;
 }
 
 export function ForschungPage() {
@@ -30,6 +31,7 @@ export function ForschungPage() {
 
   const busy = state.researchQueue.length >= gameData.maxResearchSlots;
   const now = serverNow();
+  const forschungszeitMult = getForschungszeitMultiplier(state);
 
   return (
     <div>
@@ -45,7 +47,7 @@ export function ForschungPage() {
           const maxed = level >= gameData.maxResearchLevel;
           const nextLevel = level + 1;
           const cost = maxed ? null : researchCostForLevel(tech.baseCost, tech.costGrowth, nextLevel);
-          const timeMs = maxed ? null : researchTimeForLevel(tech.baseTimeHours, tech.timeGrowth, nextLevel);
+          const timeMs = maxed ? null : researchTimeForLevel(tech.baseTimeHours, tech.timeGrowth, nextLevel, forschungszeitMult);
           const activeJob = state.researchQueue.find((j) => j.techId === tech.id);
           const affordable =
             cost && state.resources.metall >= cost.metall && state.resources.kristall >= cost.kristall && state.resources.deuterium >= cost.deuterium;

@@ -3,7 +3,8 @@ import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getShieldDomeBonus, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
+import { getRapidFireDisplay, getShieldDomeBonus, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy } from '../lib/combatInfo';
+import { getBauzeitMultiplier } from '../lib/multipliers';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
@@ -15,6 +16,7 @@ export function VerteidigungPage() {
   const domeBonus = getShieldDomeBonus(gameData, state.defense, state.research);
   const precision = getPrecisionChance(gameData, state.research);
   const shieldRegen = getShieldRegenRate(gameData, state.research);
+  const bauzeitMult = getBauzeitMultiplier(gameData, state);
 
   return (
     <div>
@@ -40,8 +42,9 @@ export function VerteidigungPage() {
             state.resources.kristall >= totalCost.kristall &&
             state.resources.deuterium >= totalCost.deuterium &&
             capQty > 0;
-          const effBuildTimeMs = def.buildTime * capQty * 1000;
+          const effBuildTimeMs = def.buildTime * bauzeitMult * capQty * 1000;
           const rfDisplay = getRapidFireDisplay(gameData, def.id);
+          const defAccuracy = getZielerfassungAccuracy(gameData, state.research, def.id);
 
           return (
             <div className="ship-card" key={def.id}>
@@ -69,6 +72,11 @@ export function VerteidigungPage() {
                 ) : (
                   <div className="ship-matchup">
                     <span className="matchup-weak">Kein RapidFire</span>
+                  </div>
+                )}
+                {defAccuracy > 0 && (
+                  <div className="ship-matchup">
+                    <span className="matchup-rf">🎯 Zielerfassung: {(defAccuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren</span>
                   </div>
                 )}
 

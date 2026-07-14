@@ -49,7 +49,7 @@ function FleetPicker({
 export function MultiplayerPage() {
   const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, error } = useGame();
   const [tab, setTab] = useState<'expedition' | 'event'>('expedition');
-  const [sektorId, setSektorId] = useState('piraten_niedrig');
+  const [sektorId] = useState('piraten_elite');
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
@@ -57,7 +57,6 @@ export function MultiplayerPage() {
   if (!gameData || !state) return <p>Lade...</p>;
   const now = serverNow();
   const myUserId = state.userId;
-  const piratenSektoren = gameData.sektoren.filter((s) => s.id.startsWith('piraten_'));
 
   const pendingForMe = parties.filter((op) => op.status === 'inviting' && op.participants.some((p) => p.userId === myUserId && p.status === 'pending'));
   const myOwn = parties.filter((op) => op.creatorId === myUserId || op.participants.some((p) => p.userId === myUserId && p.status !== 'pending'));
@@ -146,16 +145,11 @@ export function MultiplayerPage() {
 
       {tab === 'expedition' && (
         <div className="queue-box">
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Gemeinsame Expedition in einen Piraten-Sektor</h3>
-          <div className="qty-row" style={{ marginBottom: 10 }}>
-            <select value={sektorId} onChange={(e) => setSektorId(e.target.value)}>
-              {piratenSektoren.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Gemeinsame Expedition ins Sektor P9 – Elite-Bollwerk</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
+            Gemeinsame Expeditionen sind ausschließlich im Elite-Bollwerk möglich (Piraten skalieren mit 150% eurer kombinierten Flottenstärke).
+            Die normalen Piraten-Sektoren bleiben Solo-Missionen vorbehalten.
+          </p>
           <p style={{ fontSize: 13, marginBottom: 6 }}>Deine Flotte:</p>
           <FleetPicker availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
 

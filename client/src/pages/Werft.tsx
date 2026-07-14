@@ -4,6 +4,7 @@ import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
+import { getBauzeitMultiplier } from '../lib/multipliers';
 import type { PlayerState } from '../types/game';
 
 const WERFT_KLASSEN = [
@@ -33,6 +34,7 @@ export function WerftPage() {
   const ships = gameData.ships.filter((s) => activeKlasse.ships.includes(s.id));
   const precision = getPrecisionChance(gameData, state.research);
   const shieldRegen = getShieldRegenRate(gameData, state.research);
+  const bauzeitMult = getBauzeitMultiplier(gameData, state);
 
   return (
     <div>
@@ -71,7 +73,7 @@ export function WerftPage() {
             state.resources.kristall >= totalCost.kristall &&
             state.resources.deuterium >= totalCost.deuterium &&
             capQty > 0;
-          const effBuildTimeMs = ship.buildTime * (ship.unique ? 1 : capQty) * 1000;
+          const effBuildTimeMs = ship.buildTime * bauzeitMult * (ship.unique ? 1 : capQty) * 1000;
 
           const rfDisplay = getRapidFireDisplay(gameData, ship.id);
           const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
