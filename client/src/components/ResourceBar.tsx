@@ -11,10 +11,27 @@ export function ResourceBar() {
   return (
     <div id="resourcebar">
       <div className="res-group">
-        <span className="res-item">⛏️ Metall: {fmt(state.resources.metall)}</span>
-        <span className="res-item">💎 Kristall: {fmt(state.resources.kristall)}</span>
-        <span className="res-item">🌀 Deuterium: {fmt(state.resources.deuterium)}</span>
-        <span className="res-item">🔮 Dunkle Materie: {fmt(state.resources.dm)}</span>
+        <span className="res-item">
+          <img className="res-icon" src="/resources/metall.png" alt="Metall" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+          Metall: {fmt(state.resources.metall)}
+        </span>
+        <span className="res-item">
+          <img className="res-icon" src="/resources/kristall.png" alt="Kristall" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+          Kristall: {fmt(state.resources.kristall)}
+        </span>
+        <span className="res-item">
+          <img className="res-icon" src="/resources/deuterium.png" alt="Deuterium" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+          Deuterium: {fmt(state.resources.deuterium)}
+        </span>
+        <span className="res-item">
+          <img
+            className="res-icon"
+            src="/resources/dunkle_materie.png"
+            alt="Dunkle Materie"
+            onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+          />
+          Dunkle Materie: {fmt(state.resources.dm)}
+        </span>
       </div>
       <div className="res-group">
         <span id="clock">{username}</span>
