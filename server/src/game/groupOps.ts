@@ -49,8 +49,8 @@ export function createGroupOperation(
   inviteUserIds: number[]
 ): ActionResult {
   if (kind === 'expedition') {
-    if (!sektorId || !sektorId.startsWith('piraten_')) {
-      return { ok: false, error: 'Gemeinsame Expeditionen sind nur in Piraten-Sektoren möglich.' };
+    if (sektorId !== 'piraten_elite') {
+      return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk möglich.' };
     }
   }
   const totalShips = Object.values(ships).reduce((a, b) => a + (b || 0), 0);
