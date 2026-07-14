@@ -49,7 +49,8 @@ alle `/api`-Aufrufe automatisch an das Backend auf Port 4000 weiter.
 - **Verteidigung** – Verteidigungsanlagen bauen, gleiches Prinzip
 - **Forschung** – 10 Technologien, 2 parallele Slots
 - **Sektor** – Asteroiden-Felder (Farmen mit Mining-Schiffen), Piraten-Sektoren (Kampf + Teile-Sammlung),
-  Notruf-Events (Verbündete + Belohnung), Raid-Warnung auf die Heimatbasis
+  Notruf-Events (Verbündete + Belohnung), Raid-Warnung auf die Heimatbasis, Flotten-Vorlagen (Presets)
+  zum Speichern/Wiederverwenden häufiger Zusammenstellungen
 - **Flotte (Bestand)** – Übersicht aller Schiffe inkl. unterwegs befindlicher Missionen
 - **Händler** – Ressourcentausch mit Handelsspanne
 - **Schrotthändler** – Schiffe/Verteidigung gegen Ressourcen verschrotten
@@ -59,17 +60,43 @@ alle `/api`-Aufrufe automatisch an das Backend auf Port 4000 weiter.
   Schild-Werte pro Einheit)
 - **Inventar** – Silber-/Gold-Container öffnen, Belohnungen einzeln einlösen
 
+**Design**
+- Komplettes Original-Farbschema aus dem HTML-Prototyp übernommen (`client/src/theme.css`)
+- Bilder für Schiffe, Verteidigung, Forschung, Sektoren, Booster, Ressourcen-Icons (Ressourcenleiste)
+  und Händler-/Schrotthändler-Banner eingebunden - liegen unter `client/public/` (siehe Ordnerliste
+  weiter unten)
+
 ## Was noch fehlt / bekannte Vereinfachungen
 
-- **Fleeten-Vorlagen (Presets)** aus dem HTML-Prototyp (Flotten-Zusammenstellung als Vorlage speichern)
-  wurden nicht übernommen - optionales Komfort-Feature, kein Kernmechanismus
-- **UI ist bewusst schlicht gehalten** (Inline-Styles, keine Bilder/Icons eingebunden) - der HTML-
-  Prototyp hatte deutlich mehr visuellen Schliff (Sci-Fi-Design, Bilder pro Schiff/Sektor). Das
-  Nachrüsten von Bildern/CSS ist rein kosmetisch und unabhängig von der Spiellogik nachholbar
 - **Kein Echtzeit-Update über WebSockets** - das Frontend pollt den Zustand alle 5 Sekunden. Für bis
-  zu 5 Spieler unkritisch
-- **Piratenkapitän-Container-Tier** wird beim Sieg korrekt vergeben, aber ohne die feine
-  Icon-Unterscheidung (Silber/Gold) im Nachrichtentext des HTML-Prototyps
+  zu 5 Spieler unkritisch, bewusste Design-Entscheidung (kein offener Punkt, kein Nachrüstbedarf)
+
+Erledigt seit der letzten Version (nicht mehr offen):
+- ~~Flotten-Vorlagen (Presets)~~ - umgesetzt (speichern, laden, löschen), Backend + Frontend getestet
+- ~~UI ohne Bilder/Styling~~ - komplettes Original-Farbschema (`client/src/theme.css`) sowie Bilder für
+  Schiffe, Verteidigung, Forschung, Sektoren, Booster, Ressourcen-Icons und Händler-Banner eingebunden
+- ~~Piratenkapitän-Container ohne Silber/Gold-Unterscheidung im Text~~ - Nachrichtentext nennt jetzt
+  den korrekten Container-Tier
+
+## Bilder (client/public/)
+
+Damit die Bilder aus dem HTML-Prototyp angezeigt werden, müssen folgende Ordner/Dateien unter
+`client/public/` liegen (Vite liefert alles darin automatisch unter der Root-URL aus):
+
+```
+client/public/ships/...
+client/public/defense/...
+client/public/research/...
+client/public/sektoren/...
+client/public/booster/...
+client/public/ui/...                    (haendler.png, schrotthaendler.png)
+client/public/resources/...             (metall.png, kristall.png, deuterium.png, dunkle_materie.png)
+client/public/background/hauptbild.png
+```
+
+Der Ordner `resources/` aus dem alten HTML-Repo (Rohstoff-Icons) wurde nicht übernommen, da er dort
+nie referenziert wurde - im React-Client hat `resources/` jetzt aber eine neue, tatsächlich genutzte
+Bedeutung (Icons für die Ressourcenleiste), siehe oben.
 
 ## Deployment auf Render.com
 
