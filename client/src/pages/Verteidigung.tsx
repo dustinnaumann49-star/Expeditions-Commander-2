@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { serverNow } from '../lib/serverTime';
+import { BuildQueue } from '../components/BuildQueue';
+import { formatTime } from '../lib/format';
+import { getRapidFireDisplay, getShieldDomeBonus, shipName } from '../lib/combatInfo';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
@@ -8,25 +10,18 @@ export function VerteidigungPage() {
 
   if (!gameData || !state) return <p>Lade...</p>;
 
+  const domeBonus = getShieldDomeBonus(gameData, state.defense, state.research);
+
   return (
     <div>
       <h2 style={{ marginBottom: 16 }}>Verteidigung</h2>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Bauwarteschlange</h3>
-        {state.defenseQueue.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine aktive Produktion.</p>
-        ) : (
-          state.defenseQueue.map((job, i) => (
-            <div className="queue-item" key={i}>
-              <span>
-                {gameData.defenses.find((d) => d.id === job.defId)?.name || job.defId} x{job.count}
-              </span>
-              <span>noch {Math.max(0, Math.round((job.endTime - serverNow()) / 1000))}s</span>
-            </div>
-          ))
-        )}
+        <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+          Bauwarteschlange ({state.defenseQueue.length} von {gameData.maxDefenseSlots} Slots belegt)
+        </h3>
+        <BuildQueue queue={state.defenseQueue} maxSlots={gameData.maxDefenseSlots} nameFor={(job) => shipName(gameData, job.defId!)} />
       </div>
 
       <div className="ship-grid">
@@ -35,34 +30,66 @@ export function VerteidigungPage() {
           const frei = def.maxCount - bestand;
           const qty = qtyById[def.id] ?? 10;
           const capQty = Math.max(0, Math.min(qty, frei));
-          const totalCost = {
-            metall: def.cost.metall * capQty,
-            kristall: def.cost.kristall * capQty,
-            deuterium: def.cost.deuterium * capQty,
-          };
+          const totalCost = { metall: def.cost.metall * capQty, kristall: def.cost.kristall * capQty, deuterium: def.cost.deuterium * capQty };
           const affordable =
             state.resources.metall >= totalCost.metall &&
             state.resources.kristall >= totalCost.kristall &&
             state.resources.deuterium >= totalCost.deuterium &&
             capQty > 0;
+          const effBuildTimeMs = def.buildTime * capQty * 1000;
+          const rfDisplay = getRapidFireDisplay(gameData, def.id);
 
           return (
             <div className="ship-card" key={def.id}>
               <img className="ship-img" src={`/${def.img}`} alt={def.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
                 <h3>
-                  {def.name} <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>(Bestand: {bestand}/{def.maxCount})</span>
+                  {def.name}{' '}
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
+                    (Bestand: {bestand}/{def.maxCount})
+                  </span>
                 </h3>
                 <div className="ship-stats">
                   {def.stats.waffen > 0 && <span>Waffen: {def.stats.waffen.toLocaleString('de-DE')}</span>}
                   <span>Schild: {def.stats.schild.toLocaleString('de-DE')}</span>
                   <span>Panzerung: {def.stats.panzerung.toLocaleString('de-DE')}</span>
                 </div>
-                {def.isDome && (
+
+                {rfDisplay ? (
                   <div className="ship-matchup">
-                    <span className="matchup-weak">Besitzt selbst keinen eigenen Schild – verteilt ihn als Bonus auf andere Anlagen</span>
+                    <span className="matchup-rf">⚡ RapidFire: {rfDisplay}</span>
+                  </div>
+                ) : (
+                  <div className="ship-matchup">
+                    <span className="matchup-weak">Kein RapidFire</span>
                   </div>
                 )}
+
+                {def.isDome ? (
+                  <>
+                    <div className="ship-matchup">
+                      <span className="matchup-rf">
+                        🛡️ Verteilt seinen Schild-Wert ({Math.round(def.stats.schild * (1 + (state.research.schild || 0) * 0.1)).toLocaleString('de-DE')}
+                        ) gleichmäßig als Bonus auf alle anderen Verteidigungsanlagen
+                      </span>
+                    </div>
+                    <div className="ship-matchup">
+                      <span className="matchup-weak">Besitzt selbst keinen eigenen Schild – wird im Kampf nur durch ihre Panzerung geschützt</span>
+                    </div>
+                  </>
+                ) : (
+                  domeBonus > 0 && (
+                    <div className="ship-matchup">
+                      <span className="matchup-rf">🛡️ Aktueller Kuppel-Bonus: +{Math.round(domeBonus).toLocaleString('de-DE')} Schild</span>
+                    </div>
+                  )
+                )}
+                <div className="ship-matchup">
+                  <span className="matchup-weak">
+                    Limitiert: {bestand}/{def.maxCount} gebaut/in Warteschlange{frei <= 0 ? ' – Limit erreicht' : ''}
+                  </span>
+                </div>
+
                 <div className="ship-cost">
                   Kosten je Stück: {def.cost.metall.toLocaleString('de-DE')} Metall, {def.cost.kristall.toLocaleString('de-DE')} Kristall,{' '}
                   {def.cost.deuterium.toLocaleString('de-DE')} Deuterium
@@ -83,7 +110,7 @@ export function VerteidigungPage() {
                   />
                 </div>
                 <div className="build-row">
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>🛡️ 70% Reparatur nach Kampf</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Bauzeit: {formatTime(effBuildTimeMs)}</span>
                   <button className="build-btn" disabled={!affordable} onClick={() => buildDefense(def.id, capQty)}>
                     Bauen ({capQty})
                   </button>

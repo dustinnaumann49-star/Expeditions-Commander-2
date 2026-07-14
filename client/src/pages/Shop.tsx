@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
+import { formatTime } from '../lib/format';
 
 export function ShopPage() {
   const { gameData, state, buyBooster, buyVoucher, error } = useGame();
@@ -22,7 +23,7 @@ export function ShopPage() {
               <div className="ship-info">
                 <h3>{b.name}</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>{b.desc}</p>
-                {active && <p style={{ color: 'var(--accent-deut)' }}>Aktiv: noch {Math.round((expiry - serverNow()) / 3600000)}h</p>}
+                {active && <p style={{ color: 'var(--accent-deut)' }}>Aktiv: noch {formatTime(expiry - serverNow())}</p>}
                 <div className="build-row">
                   <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Kosten: {b.cost} DM</span>
                   <button className="build-btn" disabled={state.resources.dm < b.cost} onClick={() => buyBooster(b.id)}>

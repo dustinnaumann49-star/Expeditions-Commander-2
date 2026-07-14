@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { serverNow } from '../lib/serverTime';
+import { BuildQueue } from '../components/BuildQueue';
+import { formatTime } from '../lib/format';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName } from '../lib/combatInfo';
 import type { PlayerState } from '../types/game';
+
+const WERFT_KLASSEN = [
+  { id: 'jaeger', name: 'Jäger-Klasse', ships: ['leicht', 'schwer'] },
+  { id: 'kreuzer', name: 'Kreuzer-Klasse', ships: ['kreuzer', 'schlachtschiff', 'bomber'] },
+  { id: 'elite', name: 'Elite-Klasse', ships: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
+  { id: 'versorgung', name: 'Versorgungsschiffe', ships: ['mining', 'begleitschiff'] },
+];
 
 function countShipEverywhere(state: PlayerState, shipId: string): number {
   let total = state.fleet[shipId] || 0;
@@ -14,10 +23,12 @@ function countShipEverywhere(state: PlayerState, shipId: string): number {
 export function WerftPage() {
   const { gameData, state, buildShip, error } = useGame();
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
+  const [tab, setTab] = useState('jaeger');
 
   if (!gameData || !state) return <p>Lade...</p>;
 
-  const ships = gameData.ships.filter((s) => !s.specialOnly);
+  const activeKlasse = WERFT_KLASSEN.find((k) => k.id === tab)!;
+  const ships = gameData.ships.filter((s) => activeKlasse.ships.includes(s.id));
 
   return (
     <div>
@@ -25,19 +36,18 @@ export function WerftPage() {
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Bauwarteschlange</h3>
-        {state.buildQueue.length === 0 ? (
-          <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine aktive Produktion.</p>
-        ) : (
-          state.buildQueue.map((job, i) => (
-            <div className="queue-item" key={i}>
-              <span>
-                {gameData.ships.find((s) => s.id === job.shipId)?.name || job.shipId} x{job.count}
-              </span>
-              <span>noch {Math.max(0, Math.round((job.endTime - serverNow()) / 1000))}s</span>
-            </div>
-          ))
-        )}
+        <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+          Bauwarteschlange ({state.buildQueue.length} von {gameData.maxBuildSlots} Slots belegt)
+        </h3>
+        <BuildQueue queue={state.buildQueue} maxSlots={gameData.maxBuildSlots} nameFor={(job) => shipName(gameData, job.shipId!)} />
+      </div>
+
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {WERFT_KLASSEN.map((k) => (
+          <button key={k.id} className={`nav-btn${tab === k.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(k.id)}>
+            {k.name}
+          </button>
+        ))}
       </div>
 
       <div className="ship-grid">
@@ -46,12 +56,10 @@ export function WerftPage() {
           const frei = ship.maxCount ? ship.maxCount - bestand : Infinity;
           const qty = qtyById[ship.id] ?? 10;
           const capQty = ship.unique ? 1 : ship.maxCount ? Math.max(0, Math.min(qty, frei)) : qty;
+          const limitReached = ship.maxCount ? frei <= 0 : false;
+          const alreadyExists = ship.unique && bestand >= 1;
           const totalCost = ship.cost
-            ? {
-                metall: ship.cost.metall * capQty,
-                kristall: ship.cost.kristall * capQty,
-                deuterium: ship.cost.deuterium * capQty,
-              }
+            ? { metall: ship.cost.metall * capQty, kristall: ship.cost.kristall * capQty, deuterium: ship.cost.deuterium * capQty }
             : null;
           const affordable =
             !!totalCost &&
@@ -59,7 +67,11 @@ export function WerftPage() {
             state.resources.kristall >= totalCost.kristall &&
             state.resources.deuterium >= totalCost.deuterium &&
             capQty > 0;
-          const alreadyExists = ship.unique && bestand >= 1;
+          const effBuildTimeMs = ship.buildTime * (ship.unique ? 1 : capQty) * 1000;
+
+          const rfDisplay = getRapidFireDisplay(gameData, ship.id);
+          const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
+          const targeted = isTargetedByRapidFire(gameData, ship.id);
 
           return (
             <div className="ship-card" key={ship.id}>
@@ -78,11 +90,39 @@ export function WerftPage() {
                   <span>Panzerung: {ship.stats.panzerung.toLocaleString('de-DE')}</span>
                   {ship.miningPerHour && <span className="stat-mining">Abbau: {ship.miningPerHour.toLocaleString('de-DE')}/h</span>}
                 </div>
+
+                {rfDisplay ? (
+                  <div className="ship-matchup">
+                    <span className="matchup-rf">⚡ RapidFire: {rfDisplay}</span>
+                  </div>
+                ) : (
+                  <div className="ship-matchup">
+                    <span className="matchup-weak">Kein RapidFire (Basis-Schiff)</span>
+                  </div>
+                )}
+                {accuracy > 0 && (
+                  <div className="ship-matchup">
+                    <span className="matchup-rf">🎯 Zielerfassung: {(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren</span>
+                  </div>
+                )}
+                {targeted && (
+                  <div className="ship-matchup">
+                    <span className="matchup-weak">⚠ Dieses Schiff ist ein Ziel für RapidFire anderer Einheiten</span>
+                  </div>
+                )}
                 {ship.unique && (
                   <div className="ship-matchup">
                     <span className="matchup-rf">★ Einzigartig: nur 1 Exemplar möglich{alreadyExists ? ' (bereits vorhanden)' : ''}</span>
                   </div>
                 )}
+                {ship.maxCount && !ship.unique && (
+                  <div className="ship-matchup">
+                    <span className="matchup-weak">
+                      Limitiert: {bestand}/{ship.maxCount} gebaut/in Warteschlange{limitReached ? ' – Limit erreicht' : ''}
+                    </span>
+                  </div>
+                )}
+
                 {ship.cost && (
                   <>
                     <div className="ship-cost">
@@ -109,7 +149,7 @@ export function WerftPage() {
                   </div>
                 )}
                 <div className="build-row">
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}></span>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Bauzeit: {formatTime(effBuildTimeMs)}</span>
                   <button className="build-btn" disabled={!affordable || alreadyExists} onClick={() => buildShip(ship.id, capQty)}>
                     Bauen {ship.unique ? '' : `(${capQty})`}
                   </button>
