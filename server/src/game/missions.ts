@@ -426,7 +426,8 @@ function runHourlyCheck(state: PlayerState, mission: Mission) {
     if (captainResult.destroyed) {
       addContainerToState(state, cfg.captainContainerTier!);
       mission.dmFound += cfg.captainDm || 0;
-      captainText = ` Der Piratenkapitän wurde vernichtet! Ein Container und ${cfg.captainDm} Dunkle Materie wurden erbeutet.`;
+      const tierLabel = cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
+      captainText = ` Der Piratenkapitän wurde vernichtet! Ein ${tierLabel} und ${cfg.captainDm} Dunkle Materie wurden erbeutet.`;
     } else {
       captainText = ' Der Piratenkapitän konnte fliehen.';
     }
