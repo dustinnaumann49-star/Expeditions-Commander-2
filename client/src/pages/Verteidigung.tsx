@@ -31,7 +31,7 @@ export function VerteidigungPage() {
       <div className="ship-grid">
         {gameData.defenses.map((def) => {
           const bestand = state.defense[def.id] || 0;
-          const frei = def.maxCount - bestand;
+          const frei = def.maxCount ? def.maxCount - bestand : Infinity;
           const qty = qtyById[def.id] ?? 10;
           const capQty = Math.max(0, Math.min(qty, frei));
           const totalCost = { metall: def.cost.metall * capQty, kristall: def.cost.kristall * capQty, deuterium: def.cost.deuterium * capQty };
@@ -52,7 +52,8 @@ export function VerteidigungPage() {
                     {def.name}
                   </span>{' '}
                   <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
-                    (Bestand: {bestand}/{def.maxCount})
+                    (Bestand: {bestand}
+                    {def.maxCount ? `/${def.maxCount}` : ''})
                   </span>
                 </h3>
                 <div className="ship-stats">
@@ -90,11 +91,13 @@ export function VerteidigungPage() {
                     </div>
                   )
                 )}
-                <div className="ship-matchup">
-                  <span className="matchup-weak">
-                    Limitiert: {bestand}/{def.maxCount} gebaut/in Warteschlange{frei <= 0 ? ' – Limit erreicht' : ''}
-                  </span>
-                </div>
+                {def.maxCount && (
+                  <div className="ship-matchup">
+                    <span className="matchup-weak">
+                      Limitiert: {bestand}/{def.maxCount} gebaut/in Warteschlange{frei <= 0 ? ' – Limit erreicht' : ''}
+                    </span>
+                  </div>
+                )}
                 <div className="ship-matchup">
                   <span className="matchup-rf">🎯 Präzision: {(precision * 100).toFixed(0)}% Trefferchance</span>
                 </div>
@@ -116,7 +119,7 @@ export function VerteidigungPage() {
                     className="qty-input"
                     type="number"
                     min={1}
-                    max={frei}
+                    max={def.maxCount ? frei : undefined}
                     value={qty}
                     onChange={(e) => setQtyById((prev) => ({ ...prev, [def.id]: Math.max(1, parseInt(e.target.value) || 1) }))}
                   />
