@@ -209,7 +209,7 @@ export function SektorPage() {
   if (!gameData || !state) return <p>Lade...</p>;
   const now = serverNow();
   const activeKlasse = SEKTOR_KLASSEN.find((k) => k.id === tab)!;
-  const sektorenInTab = gameData.sektoren.filter((s) => activeKlasse.match(s.id));
+  const sektorenInTab = gameData.sektoren.filter((s) => activeKlasse.match(s.id) && !gameData.sektorConfig[s.id]?.multiplayerOnly);
 
   return (
     <div>

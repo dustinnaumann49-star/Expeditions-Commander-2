@@ -26,6 +26,16 @@ function UnitRow({ u }: { u: CombatUnitResult }) {
   );
 }
 
+function groupByOwner(results: CombatUnitResult[]): [string, CombatUnitResult[]][] {
+  const groups = new Map<string, CombatUnitResult[]>();
+  results.forEach((u) => {
+    const owner = u.ownerUsername || 'Deine Flotte';
+    if (!groups.has(owner)) groups.set(owner, []);
+    groups.get(owner)!.push(u);
+  });
+  return Array.from(groups.entries());
+}
+
 export function NachrichtenPage() {
   const { state, clearMessages } = useGame();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -104,10 +114,15 @@ export function NachrichtenPage() {
                 ))}
               </div>
               <div style={{ flex: 1, minWidth: 260 }}>
-                <h4 style={{ color: 'var(--text-dim)', marginBottom: 6 }}>Deine Flotte</h4>
+                <h4 style={{ color: 'var(--text-dim)', marginBottom: 6 }}>Eigene Flotte(n)</h4>
                 {openMsg.detail.allyResult && <UnitRow u={openMsg.detail.allyResult} />}
-                {openMsg.detail.playerResults.map((u, i) => (
-                  <UnitRow key={i} u={u} />
+                {groupByOwner(openMsg.detail.playerResults).map(([owner, units]) => (
+                  <div key={owner} style={{ marginBottom: 12 }}>
+                    <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{owner}</p>
+                    {units.map((u, i) => (
+                      <UnitRow key={i} u={u} />
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
