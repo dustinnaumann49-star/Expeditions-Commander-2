@@ -260,10 +260,22 @@ export interface GameData {
   research: ResearchDefinition[];
   sektoren: SektorDefinition[];
   sektorConfig: Record<string, SektorConfig>;
+  piratenMultiplierRoll: Record<string, number[]>;
   boosters: BoosterDefinition[];
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
   tradeValue: Record<string, number>;
   tradeFee: number;
   scrapRefundRate: number;
+  rapidfire: Record<string, Record<string, number>>;
+  zielerfassungBase: Record<string, number>;
+  maxResearchLevel: number;
+  maxBuildSlots: number;
+  maxDefenseSlots: number;
+  maxResearchSlots: number;
+  shieldRegenBase: number;
+  shieldRegenMax: number;
+  precisionBase: number;
+  precisionMaxPlayer: number;
+  defenseRepairPercent: number;
 }
