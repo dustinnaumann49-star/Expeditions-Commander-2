@@ -81,17 +81,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshUsers() {
+    try {
+      const res = await api.listUsers();
+      setUsers(res.users);
+    } catch {
+      // siehe oben
+    }
+  }
+
   useEffect(() => {
     refresh()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-    api.listUsers()
-      .then((res) => setUsers(res.users))
-      .catch(() => {});
+    refreshUsers();
     refreshParties();
     refreshRaids();
     const interval = setInterval(() => {
       api.getState().then(applyState).catch(() => {});
+      refreshUsers();
       refreshParties();
       refreshRaids();
     }, 5000);
