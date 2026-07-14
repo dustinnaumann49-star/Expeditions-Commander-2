@@ -78,4 +78,6 @@ export const api = {
     request<PlayerState>('/game/preset/save', { method: 'POST', body: JSON.stringify({ name, ships }) }),
   deletePreset: (presetId: string) =>
     request<PlayerState>('/game/preset/delete', { method: 'POST', body: JSON.stringify({ presetId }) }),
+  clearMessages: (type?: 'kampf' | 'farm') =>
+    request<PlayerState>('/game/messages/clear', { method: 'POST', body: JSON.stringify({ type }) }),
 };
