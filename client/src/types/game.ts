@@ -34,7 +34,7 @@ export interface DefenseDefinition {
   buildTime: number;
   cost: ResourceCost;
   stats: CombatStats;
-  maxCount: number;
+  maxCount?: number;
   isDome?: boolean;
 }
 
