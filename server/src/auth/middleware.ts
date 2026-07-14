@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { touchUserLastSeen } from '../db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-bitte-in-produktion-aendern';
 
@@ -18,6 +19,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number; username: string };
     req.userId = payload.userId;
     req.username = payload.username;
+    touchUserLastSeen(payload.userId);
     next();
   } catch {
     return res.status(401).json({ error: 'Sitzung abgelaufen oder ungueltig, bitte erneut anmelden.' });
