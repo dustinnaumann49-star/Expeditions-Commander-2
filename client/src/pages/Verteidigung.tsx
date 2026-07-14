@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getShieldDomeBonus, shipName } from '../lib/combatInfo';
+import { getRapidFireDisplay, getShieldDomeBonus, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
@@ -13,6 +13,8 @@ export function VerteidigungPage() {
   if (!gameData || !state) return <p>Lade...</p>;
 
   const domeBonus = getShieldDomeBonus(gameData, state.defense, state.research);
+  const precision = getPrecisionChance(gameData, state.research);
+  const shieldRegen = getShieldRegenRate(gameData, state.research);
 
   return (
     <div>
@@ -92,6 +94,12 @@ export function VerteidigungPage() {
                   <span className="matchup-weak">
                     Limitiert: {bestand}/{def.maxCount} gebaut/in Warteschlange{frei <= 0 ? ' – Limit erreicht' : ''}
                   </span>
+                </div>
+                <div className="ship-matchup">
+                  <span className="matchup-rf">🎯 Präzision: {(precision * 100).toFixed(0)}% Trefferchance</span>
+                </div>
+                <div className="ship-matchup">
+                  <span className="matchup-rf">🛡️ Schild-Regeneration: {(shieldRegen * 100).toFixed(0)}% pro Runde</span>
                 </div>
 
                 <div className="ship-cost">

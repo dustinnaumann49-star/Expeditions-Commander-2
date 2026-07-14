@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName } from '../lib/combatInfo';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
 import type { PlayerState } from '../types/game';
 
 const WERFT_KLASSEN = [
@@ -31,6 +31,8 @@ export function WerftPage() {
 
   const activeKlasse = WERFT_KLASSEN.find((k) => k.id === tab)!;
   const ships = gameData.ships.filter((s) => activeKlasse.ships.includes(s.id));
+  const precision = getPrecisionChance(gameData, state.research);
+  const shieldRegen = getShieldRegenRate(gameData, state.research);
 
   return (
     <div>
@@ -126,6 +128,12 @@ export function WerftPage() {
                     </span>
                   </div>
                 )}
+                <div className="ship-matchup">
+                  <span className="matchup-rf">🎯 Präzision: {(precision * 100).toFixed(0)}% Trefferchance</span>
+                </div>
+                <div className="ship-matchup">
+                  <span className="matchup-rf">🛡️ Schild-Regeneration: {(shieldRegen * 100).toFixed(0)}% pro Runde</span>
+                </div>
 
                 {ship.cost && (
                   <>
