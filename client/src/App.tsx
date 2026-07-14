@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -30,21 +30,28 @@ const NAV_ITEMS = [
   { to: '/inventar', label: 'Inventar' },
 ];
 
+function Sidebar() {
+  const location = useLocation();
+  return (
+    <div id="sidebar">
+      {NAV_ITEMS.map((item) => (
+        <Link key={item.to} to={item.to} className={`nav-btn${location.pathname === item.to ? ' active' : ''}`}>
+          {item.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
+    <>
       <ResourceBar />
-      <div style={{ display: 'flex' }}>
-        <nav style={{ width: 200, padding: 10, borderRight: '1px solid #3a3a3a', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.to} to={item.to}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <main style={{ flex: 1 }}>{children}</main>
+      <div id="layout">
+        <Sidebar />
+        <div id="mainbar">{children}</div>
       </div>
-    </div>
+    </>
   );
 }
 
