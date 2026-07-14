@@ -7,6 +7,7 @@ import { tick, startBuild, startDefenseBuild, startResearch, buildImperator } fr
 import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
 import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
+import { savePreset, deletePreset } from './presets.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
@@ -171,4 +172,20 @@ gameRouter.post('/shop/voucher', (req: AuthedRequest, res) => {
   const { voucherId } = req.body ?? {};
   if (typeof voucherId !== 'string') return res.status(400).json({ error: 'voucherId erforderlich.' });
   handleAction(req, res, (state) => buyVoucher(state, voucherId));
+});
+
+// ---- Flotten-Vorlagen (Presets) ----
+
+gameRouter.post('/preset/save', (req: AuthedRequest, res) => {
+  const { name, ships } = req.body ?? {};
+  if (typeof name !== 'string' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'name und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => savePreset(state, name, ships));
+});
+
+gameRouter.post('/preset/delete', (req: AuthedRequest, res) => {
+  const { presetId } = req.body ?? {};
+  if (typeof presetId !== 'string') return res.status(400).json({ error: 'presetId erforderlich.' });
+  handleAction(req, res, (state) => deletePreset(state, presetId));
 });
