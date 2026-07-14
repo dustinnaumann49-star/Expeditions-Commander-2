@@ -35,9 +35,35 @@ db.exec(`
   );
 `);
 
-export function listAllUsers(excludeUserId?: number): { id: number; username: string }[] {
-  const rows = db.prepare('SELECT id, username FROM users ORDER BY username').all() as { id: number; username: string }[];
-  return excludeUserId ? rows.filter((r) => r.id !== excludeUserId) : rows;
+// Migration: last_seen-Spalte nachtraeglich ergaenzen (fuer Online/Offline-Anzeige), falls die
+// users-Tabelle bereits vor dieser Version angelegt wurde.
+try {
+  db.exec('ALTER TABLE users ADD COLUMN last_seen INTEGER');
+} catch {
+  // Spalte existiert schon - kein Problem, einfach ignorieren.
+}
+
+// Ein Nutzer gilt als "online", wenn seine letzte Anfrage nicht laenger als dieses Fenster
+// zurueckliegt. Das Frontend fragt den Zustand alle 5s ab, daher reicht ein kleiner Puffer.
+const ONLINE_THRESHOLD_MS = 15000;
+
+export function touchUserLastSeen(userId: number): void {
+  db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(Date.now(), userId);
+}
+
+export function listAllUsers(excludeUserId?: number): { id: number; username: string; online: boolean }[] {
+  const rows = db.prepare('SELECT id, username, last_seen FROM users ORDER BY username').all() as {
+    id: number;
+    username: string;
+    last_seen: number | null;
+  }[];
+  const now = Date.now();
+  const withStatus = rows.map((r) => ({
+    id: r.id,
+    username: r.username,
+    online: !!r.last_seen && now - r.last_seen < ONLINE_THRESHOLD_MS,
+  }));
+  return excludeUserId ? withStatus.filter((r) => r.id !== excludeUserId) : withStatus;
 }
 
 export function getGroupOperationJson(id: string): string | undefined {
