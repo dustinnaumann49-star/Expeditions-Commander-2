@@ -194,6 +194,7 @@ export interface PlayerState {
   event: EventState | null;
   nextEventCheck: number;
   lastUpdate: number;
+  serverTime?: number;
 }
 
 export interface SektorDefinition {
