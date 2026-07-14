@@ -12,15 +12,17 @@ import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster,
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
-import { SEKTOREN, SEKTOR_CONFIG } from './data/sectors.js';
+import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE } from './data/economy.js';
+import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
 import type { ActionResult } from './actions.js';
 import type { PlayerState } from './types.js';
 
 export const gameRouter = Router();
 gameRouter.use(requireAuth);
 
-// Statische Spieldaten - das Frontend braucht diese fuer alle Seiten (Kosten, Werte, Bilder, Lore-Texte).
+// Statische Spieldaten - das Frontend braucht diese fuer alle Seiten (Kosten, Werte, Bilder, Lore-Texte,
+// RapidFire-/Zielerfassungs-Anzeigen und diverse Spielkonstanten fuer Infotexte).
 gameRouter.get('/data', (_req, res) => {
   res.json({
     ships: SHIPS,
@@ -28,11 +30,23 @@ gameRouter.get('/data', (_req, res) => {
     research: RESEARCH,
     sektoren: SEKTOREN,
     sektorConfig: SEKTOR_CONFIG,
+    piratenMultiplierRoll: PIRATEN_MULTIPLIER_ROLL,
     boosters: BOOSTERS,
     vouchers: SHOP_VOUCHERS,
     containerTypes: CONTAINER_TYPES,
     tradeValue: TRADE_VALUE,
     tradeFee: TRADE_FEE,
+    rapidfire: RAPIDFIRE,
+    zielerfassungBase: ZIELERFASSUNG_BASE,
+    maxResearchLevel: MAX_RESEARCH_LEVEL,
+    maxBuildSlots: MAX_BUILD_SLOTS,
+    maxDefenseSlots: MAX_DEFENSE_SLOTS,
+    maxResearchSlots: MAX_RESEARCH_SLOTS,
+    shieldRegenBase: SHIELD_REGEN_BASE,
+    shieldRegenMax: SHIELD_REGEN_MAX,
+    precisionBase: PRECISION_BASE,
+    precisionMaxPlayer: PRECISION_MAX_PLAYER,
+    defenseRepairPercent: DEFENSE_REPAIR_PERCENT,
     scrapRefundRate: SCRAP_REFUND_RATE,
   });
 });
