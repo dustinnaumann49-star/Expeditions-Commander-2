@@ -278,4 +278,7 @@ export interface GameData {
   precisionBase: number;
   precisionMaxPlayer: number;
   defenseRepairPercent: number;
+  asteroidEscortPowerMin: number;
+  asteroidEscortPowerMax: number;
+  asteroidEscortKillReward: { metall: number; kristall: number; deuterium: number };
 }
