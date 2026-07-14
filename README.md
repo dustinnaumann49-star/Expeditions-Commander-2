@@ -74,6 +74,15 @@ nicht kümmern.
 - **Nachrichten** – Kampf-/Farmberichte mit aufklappbaren Detailansichten (Schüsse, Treffer,
   Schild-Werte pro Einheit)
 - **Inventar** – Silber-/Gold-Container öffnen, Belohnungen einzeln einlösen
+- **Multiplayer** – Gemeinsame Expeditionen in Piraten-Sektoren und gemeinsame Notruf-Events:
+  Ersteller lädt Spieler per Name ein, Eingeladene nehmen mit eigener Flotte an oder lehnen ab,
+  Ersteller startet manuell (auch allein, falls niemand beitritt). Beute/Teile werden anteilig nach
+  eingebrachter Flottenstärke aufgeteilt, Überlebende gehen anteilig an die jeweiligen Besitzer
+  zurück. Kampfberechnung läuft über denselben Worker-Thread wie Solo-Kämpfe
+- **Raid-Hilfe** – Eigener Tab: zeigt alle laufenden Piratenangriffe auf andere Spieler-Basen,
+  jeder kann mit 1 Minute Anflugzeit eigene Schiffe zur Verstärkung schicken. Verstärkung kämpft
+  mit, Überlebende kehren zum Absender zurück (nicht zum Verteidiger), unabhängig von dessen
+  eigenem Kampfbericht
 
 **Design**
 - Komplettes Original-Farbschema aus dem HTML-Prototyp übernommen (`client/src/theme.css`)
@@ -85,13 +94,6 @@ nicht kümmern.
 
 - **Kein Echtzeit-Update über WebSockets** - das Frontend pollt den Zustand alle 5 Sekunden. Für bis
   zu 5 Spieler unkritisch, bewusste Design-Entscheidung (kein offener Punkt, kein Nachrüstbedarf)
-- **Multiplayer/gemeinsame Flotten noch nicht implementiert** - jeder Nutzer hat aktuell einen
-  komplett isolierten Spielstand (eigene Ressourcen, eigene Flotte, eigene Missionen). Die
-  Voraussetzungen dafür sind aber jetzt gelegt: keine Flotten-Maxima mehr im Weg, Kampfberechnung
-  läuft bereits in einem Worker-Thread und blockiert daher nicht, wenn mehrere Spieler gleichzeitig
-  kämpfen. Für echte gemeinsame Flüge (z.B. mehrere Spieler kombiniert gegen einen Piraten-Sektor)
-  fehlt noch: eine Möglichkeit, eine Mission mehreren Nutzer-IDs zuzuordnen, und eine Abstimmung,
-  wessen Flotte in `mission.ships` einfließt
 
 Erledigt seit der letzten Version (nicht mehr offen):
 - ~~Flotten-Vorlagen (Presets)~~ - umgesetzt (speichern, laden, löschen), Backend + Frontend getestet
@@ -134,11 +136,26 @@ Bedeutung (Icons für die Ressourcenleiste), siehe oben.
 ## Getestet, nicht nur geschrieben
 
 Jeder Baustein wurde über echte HTTP-Requests gegen den laufenden Server verifiziert (nicht nur
-TypeScript-typgeprüft): Registrierung/Login, Schiffs-/Verteidigungsbau inkl. Maxima-Sperren,
-Forschung, Asteroiden-Mission mit mehrstündigem Zeitraffer-Test (Farmertrag exakt nach Formel),
-Missions-Rückruf mit Ressourcengutschrift, Raid-Simulation, Notruf-Event mit Verbündeten und
-Container-Belohnung, Händler-Tausch, Booster-Kauf. Client kompiliert typsicher und baut fehlerfrei
-(`npm run build` in beiden Ordnern).
+TypeScript-typgeprüft): Registrierung/Login, Schiffs-/Verteidigungsbau, Forschung, Asteroiden-Mission
+mit mehrstündigem Zeitraffer-Test (Farmertrag exakt nach Formel), Missions-Rückruf mit
+Ressourcengutschrift, Raid-Simulation, Notruf-Event mit Verbündeten und Container-Belohnung,
+Händler-Tausch, Booster-Kauf. Client kompiliert typsicher und baut fehlerfrei (`npm run build` in
+beiden Ordnern).
+
+**Multiplayer speziell getestet** (mit zwei echten Testnutzern, komplettem Ablauf über HTTP):
+gemeinsame Expedition erstellen → Einladung sichtbar beim eingeladenen Spieler → Beitritt mit eigener
+Flotte → Start durch Ersteller → nach Zeitraffer korrekte anteilige Aufteilung von Beute und
+Überlebenden bei beiden Teilnehmern (63%/38% bei 50/30 eingebrachten Schiffen, exakt proportional).
+Raid-Verstärkung: zweiter Spieler sieht aktiven Raid eines anderen Nutzers, schickt Verstärkung,
+nach Auflösung erhält jeder Beteiligte einen eigenen, korrekten Kampfbericht.
+
+Beim Testen wurden dabei zwei echte Bugs gefunden und behoben, die beim erstmaligen Bau nicht
+aufgefallen wären: (1) Kampf-Beitrag-Objekte enthielten Funktionen, die nicht an den Worker-Thread
+übergeben werden können (behoben: nur noch reine Forschungsdaten werden übergeben, die Berechnung
+passiert im Worker selbst) und (2) der Spielstand des Nutzers, dessen eigener Seitenaufruf die
+Auflösung einer gemeinsamen Mission auslöst, wurde doppelt geladen und die äußere Route
+überschrieb das Ergebnis mit veralteten Daten (behoben: das bereits geladene State-Objekt wird jetzt
+konsequent wiederverwendet statt erneut geladen).
 
 ## Wichtiger Hinweis zur Datenbank
 
