@@ -15,6 +15,7 @@ export function SchrotthaendlerPage() {
   return (
     <div>
       <h2 style={{ marginBottom: 8 }}>Schrotthändler</h2>
+      <img className="view-banner" src="/ui/schrotthaendler.png" alt="Schrotthändler" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>Du erhältst {(rate * 100).toFixed(0)}% der Baukosten zurück.</p>
 

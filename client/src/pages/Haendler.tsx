@@ -17,6 +17,7 @@ export function HaendlerPage() {
   return (
     <div>
       <h2 style={{ marginBottom: 8 }}>Händler</h2>
+      <img className="view-banner" src="/ui/haendler.png" alt="Ressourcenhändler" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
         Handelsspanne: {(gameData.tradeFee * 100).toFixed(0)}% · Umtauschkurs (Wertbasis): Metall 1 : Kristall 1,5 : Deuterium 3.
