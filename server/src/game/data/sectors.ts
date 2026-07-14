@@ -30,7 +30,7 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 15 Teile pro Kategorie.",
     aktivitaet:"Piraten-Chance 50%", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit 200% der kombinierten Flottenstärke aller Teilnehmer. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
+    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit 150% der kombinierten Flottenstärke aller Teilnehmer. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
     aktivitaet:"Piraten-Chance 50%", gefahr:"Extrem", level:"rot" }
 ];
 
@@ -68,7 +68,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   piraten_hoch:     { checkChance:0.50, npcMultiplier:2.0, type:"piraten", teileCap:15, npcFloor:1800000,
     lootBase:{metall:26000, kristall:16000, deuterium:7000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.12, captainContainerTier:"gold", captainDm:35 },
-  piraten_elite:    { checkChance:0.50, npcMultiplier:2.0, type:"piraten", teileCap:20, npcFloor:3000000,
+  piraten_elite:    { checkChance:0.50, npcMultiplier:1.5, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:40000, kristall:25000, deuterium:11000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"gold", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000} }
@@ -81,5 +81,5 @@ export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> =
   piraten_niedrig: [0.15, 0.175, 0.20],
   piraten_mittel:  [0.50, 0.55, 0.60],
   piraten_hoch:    [0.90, 0.95, 1.00],
-  piraten_elite:   [2.00, 2.00, 2.00]
+  piraten_elite:   [1.50, 1.50, 1.50]
 };
