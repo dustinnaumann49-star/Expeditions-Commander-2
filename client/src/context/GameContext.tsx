@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { updateServerTimeOffset } from '../lib/serverTime';
-import type { GameData, PlayerState } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo } from '../types/game';
 
 interface GameContextValue {
   gameData: GameData | null;
@@ -26,6 +26,18 @@ interface GameContextValue {
   savePreset: (name: string, ships: Record<string, number>) => Promise<void>;
   deletePreset: (presetId: string) => Promise<void>;
   clearMessages: (type?: 'kampf' | 'farm') => Promise<void>;
+
+  // Multiplayer
+  users: AppUser[];
+  parties: GroupOperation[];
+  activeRaids: ActiveRaidInfo[];
+  refreshParties: () => Promise<void>;
+  refreshRaids: () => Promise<void>;
+  createParty: (kind: 'expedition' | 'event', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) => Promise<void>;
+  respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) => Promise<void>;
+  cancelParty: (opId: string) => Promise<void>;
+  startParty: (opId: string) => Promise<void>;
+  reinforceRaid: (targetUserId: number, ships: Record<string, number>) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -35,6 +47,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PlayerState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [parties, setParties] = useState<GroupOperation[]>([]);
+  const [activeRaids, setActiveRaids] = useState<ActiveRaidInfo[]>([]);
 
   function applyState(newState: PlayerState) {
     if (newState.serverTime) updateServerTimeOffset(newState.serverTime);
@@ -48,12 +63,37 @@ export function GameProvider({ children }: { children: ReactNode }) {
     applyState(playerState);
   }
 
+  async function refreshParties() {
+    try {
+      const res = await api.listMyParties();
+      setParties(res.operations);
+    } catch {
+      // still, kein harter Fehler noetig - wird beim naechsten Poll erneut versucht
+    }
+  }
+
+  async function refreshRaids() {
+    try {
+      const res = await api.listActiveRaids();
+      setActiveRaids(res.raids);
+    } catch {
+      // siehe oben
+    }
+  }
+
   useEffect(() => {
     refresh()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    api.listUsers()
+      .then((res) => setUsers(res.users))
+      .catch(() => {});
+    refreshParties();
+    refreshRaids();
     const interval = setInterval(() => {
       api.getState().then(applyState).catch(() => {});
+      refreshParties();
+      refreshRaids();
     }, 5000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,6 +109,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     } catch (e: any) {
       setError(e.message);
     }
+  }
+
+  // Wie run(), aktualisiert danach zusaetzlich die Parteien-Liste (fuer Aktionen, die eine
+  // gemeinsame Operation veraendern).
+  async function runAndRefreshParties(fn: () => Promise<PlayerState>) {
+    await run(fn);
+    await refreshParties();
   }
 
   const value: GameContextValue = {
@@ -94,6 +141,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     savePreset: (name, ships) => run(() => api.savePreset(name, ships)),
     deletePreset: (presetId) => run(() => api.deletePreset(presetId)),
     clearMessages: (type) => run(() => api.clearMessages(type)),
+
+    users,
+    parties,
+    activeRaids,
+    refreshParties,
+    refreshRaids,
+    createParty: (kind, sektorId, ships, inviteUserIds) => runAndRefreshParties(() => api.createParty(kind, sektorId, ships, inviteUserIds)),
+    respondToParty: (opId, accept, ships) => runAndRefreshParties(() => api.respondToParty(opId, accept, ships)),
+    cancelParty: (opId) => runAndRefreshParties(() => api.cancelParty(opId)),
+    startParty: (opId) => runAndRefreshParties(() => api.startParty(opId)),
+    reinforceRaid: (targetUserId, ships) => run(() => api.reinforceRaid(targetUserId, ships)).then(refreshRaids),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
