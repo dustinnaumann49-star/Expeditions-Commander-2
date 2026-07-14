@@ -7,6 +7,7 @@ import { tick, startBuild, startDefenseBuild, startResearch, buildImperator } fr
 import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
 import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
+import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { SHIPS } from './data/ships.js';
@@ -216,4 +217,14 @@ gameRouter.post('/preset/delete', (req: AuthedRequest, res) => {
   const { presetId } = req.body ?? {};
   if (typeof presetId !== 'string') return res.status(400).json({ error: 'presetId erforderlich.' });
   handleAction(req, res, (state) => deletePreset(state, presetId));
+});
+
+// ---- Nachrichten ----
+
+gameRouter.post('/messages/clear', (req: AuthedRequest, res) => {
+  const { type } = req.body ?? {};
+  if (type !== undefined && type !== 'kampf' && type !== 'farm') {
+    return res.status(400).json({ error: 'type muss "kampf", "farm" oder leer sein.' });
+  }
+  handleAction(req, res, (state) => clearMessages(state, type));
 });
