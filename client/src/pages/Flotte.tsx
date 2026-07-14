@@ -8,45 +8,37 @@ export function FlottePage() {
   const totalOwned = Object.values(state.fleet).reduce((a, b) => a + (b || 0), 0);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Flotte (Bestand)</h2>
-      <p style={{ fontSize: 13, color: '#999' }}>Flotte: {totalOwned.toLocaleString('de-DE')} Schiffe</p>
+    <div>
+      <h2 style={{ marginBottom: 8 }}>Flotte (Bestand)</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>Flotte: {totalOwned.toLocaleString('de-DE')} Schiffe</p>
 
       {owned.length === 0 ? (
-        <p style={{ color: '#999' }}>Noch keine Schiffe gebaut.</p>
+        <p style={{ color: 'var(--text-dim)' }}>Noch keine Schiffe gebaut.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #3a3a3a' }}>
-              <th style={{ textAlign: 'left', padding: 6 }}>Schiff</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Bestand</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Waffen</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Schild</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Panzerung</th>
-            </tr>
-          </thead>
-          <tbody>
-            {owned.map((s) => (
-              <tr key={s.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                <td style={{ padding: 6 }}>{s.name}</td>
-                <td style={{ textAlign: 'right', padding: 6 }}>{(state.fleet[s.id] || 0).toLocaleString('de-DE')}</td>
-                <td style={{ textAlign: 'right', padding: 6 }}>{s.stats.waffen.toLocaleString('de-DE')}</td>
-                <td style={{ textAlign: 'right', padding: 6 }}>{s.stats.schild.toLocaleString('de-DE')}</td>
-                <td style={{ textAlign: 'right', padding: 6 }}>{s.stats.panzerung.toLocaleString('de-DE')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="queue-box">
+          {owned.map((s) => (
+            <div className="queue-item" key={s.id}>
+              <span>{s.name}</span>
+              <span>
+                {(state.fleet[s.id] || 0).toLocaleString('de-DE')} Stück · W {s.stats.waffen.toLocaleString('de-DE')} / S{' '}
+                {s.stats.schild.toLocaleString('de-DE')} / P {s.stats.panzerung.toLocaleString('de-DE')}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
 
       {state.missions.length > 0 && (
         <>
-          <h3 style={{ marginTop: 20 }}>Unterwegs</h3>
-          {state.missions.map((m) => (
-            <p key={m.id} style={{ fontSize: 13 }}>
-              {m.sektorId}: {Object.entries(m.ships).map(([id, c]) => `${id} x${c}`).join(', ')}
-            </p>
-          ))}
+          <h3 style={{ marginTop: 20, marginBottom: 8 }}>Unterwegs</h3>
+          <div className="queue-box">
+            {state.missions.map((m) => (
+              <div className="queue-item" key={m.id}>
+                <span>{m.sektorId}</span>
+                <span>{Object.entries(m.ships).map(([id, c]) => `${id} x${c}`).join(', ')}</span>
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>

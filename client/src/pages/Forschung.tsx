@@ -19,14 +19,14 @@ export function ForschungPage() {
   const busy = state.researchQueue.length >= MAX_RESEARCH_SLOTS;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Forschung</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <p style={{ fontSize: 13, color: '#999' }}>
+    <div>
+      <h2 style={{ marginBottom: 8 }}>Forschung</h2>
+      {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
         Forschungslabor: {state.researchQueue.length} / {MAX_RESEARCH_SLOTS} gleichzeitig laufende Forschungen.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="ship-grid">
         {gameData.research.map((tech) => {
           const level = state.research[tech.id] || 0;
           const maxed = level >= MAX_RESEARCH_LEVEL;
@@ -37,28 +37,35 @@ export function ForschungPage() {
             cost && state.resources.metall >= cost.metall && state.resources.kristall >= cost.kristall && state.resources.deuterium >= cost.deuterium;
 
           return (
-            <div key={tech.id} style={{ border: '1px solid #3a3a3a', borderRadius: 6, padding: 12 }}>
-              <h4>{tech.name}</h4>
-              <p style={{ fontSize: 12, color: '#999' }}>
-                Stufe {level} / {MAX_RESEARCH_LEVEL} · Effekt: +{(tech.effectPerLevel * 100).toFixed(0)}% pro Stufe
-              </p>
-              {maxed ? (
-                <p style={{ color: '#7fd97f' }}>Maximalstufe erreicht</p>
-              ) : activeJob ? (
-                <p style={{ color: '#7fd9e0' }}>
-                  Läuft... noch {Math.max(0, Math.round((activeJob.endTime - Date.now()) / 1000))}s
-                </p>
-              ) : (
-                <>
-                  <p style={{ fontSize: 12, color: '#999' }}>
-                    Kosten Stufe {nextLevel}: {cost!.metall.toLocaleString('de-DE')} Metall, {cost!.kristall.toLocaleString('de-DE')} Kristall,{' '}
-                    {cost!.deuterium.toLocaleString('de-DE')} Deuterium
-                  </p>
-                  <button disabled={!affordable || busy} onClick={() => startResearch(tech.id)}>
-                    Erforschen
-                  </button>
-                </>
-              )}
+            <div className="ship-card" key={tech.id}>
+              <img className="ship-img" src={`/${tech.img}`} alt={tech.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+              <div className="ship-info">
+                <h3>{tech.name}</h3>
+                <div className="ship-stats">
+                  <span>
+                    Stufe {level} / {MAX_RESEARCH_LEVEL}
+                  </span>
+                  <span>+{(tech.effectPerLevel * 100).toFixed(0)}% pro Stufe</span>
+                </div>
+                {maxed ? (
+                  <p className="level-gruen">Maximalstufe erreicht</p>
+                ) : activeJob ? (
+                  <p style={{ color: 'var(--accent-kristall)' }}>Läuft... noch {Math.max(0, Math.round((activeJob.endTime - Date.now()) / 1000))}s</p>
+                ) : (
+                  <>
+                    <div className="ship-cost">
+                      Kosten Stufe {nextLevel}: {cost!.metall.toLocaleString('de-DE')} Metall, {cost!.kristall.toLocaleString('de-DE')} Kristall,{' '}
+                      {cost!.deuterium.toLocaleString('de-DE')} Deuterium
+                    </div>
+                    <div className="build-row">
+                      <span></span>
+                      <button className="build-btn" disabled={!affordable || busy} onClick={() => startResearch(tech.id)}>
+                        Erforschen
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           );
         })}
