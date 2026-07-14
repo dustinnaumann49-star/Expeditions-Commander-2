@@ -1,4 +1,4 @@
-import type { GameData, PlayerState } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -80,4 +80,15 @@ export const api = {
     request<PlayerState>('/game/preset/delete', { method: 'POST', body: JSON.stringify({ presetId }) }),
   clearMessages: (type?: 'kampf' | 'farm') =>
     request<PlayerState>('/game/messages/clear', { method: 'POST', body: JSON.stringify({ type }) }),
+  listUsers: () => request<{ users: AppUser[] }>('/game/users'),
+  listMyParties: () => request<{ operations: GroupOperation[] }>('/game/party/list'),
+  createParty: (kind: 'expedition' | 'event', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) =>
+    request<PlayerState>('/game/party/create', { method: 'POST', body: JSON.stringify({ kind, sektorId, ships, inviteUserIds }) }),
+  respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) =>
+    request<PlayerState>('/game/party/respond', { method: 'POST', body: JSON.stringify({ opId, accept, ships }) }),
+  cancelParty: (opId: string) => request<PlayerState>('/game/party/cancel', { method: 'POST', body: JSON.stringify({ opId }) }),
+  startParty: (opId: string) => request<PlayerState>('/game/party/start', { method: 'POST', body: JSON.stringify({ opId }) }),
+  listActiveRaids: () => request<{ raids: ActiveRaidInfo[] }>('/game/raids/active'),
+  reinforceRaid: (targetUserId: number, ships: Record<string, number>) =>
+    request<PlayerState>('/game/raids/reinforce', { method: 'POST', body: JSON.stringify({ targetUserId, ships }) }),
 };
