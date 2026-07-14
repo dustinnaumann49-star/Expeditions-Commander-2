@@ -15,6 +15,8 @@ import { SpezialteilePage } from './pages/Spezialteile';
 import { ShopPage } from './pages/Shop';
 import { NachrichtenPage } from './pages/Nachrichten';
 import { InventarPage } from './pages/Inventar';
+import { MultiplayerPage } from './pages/Multiplayer';
+import { RaidHilfePage } from './pages/RaidHilfe';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Schiffswerft' },
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { to: '/schrotthaendler', label: 'Schrotthändler' },
   { to: '/spezialteile', label: 'Spezialteile' },
   { to: '/shop', label: 'Shop' },
+  { to: '/multiplayer', label: 'Multiplayer' },
+  { to: '/raid-hilfe', label: 'Raid-Hilfe' },
   { to: '/nachrichten', label: 'Nachrichten' },
   { to: '/inventar', label: 'Inventar' },
 ];
@@ -68,6 +72,8 @@ function GameHome() {
         <Route path="/schrotthaendler" element={<SchrotthaendlerPage />} />
         <Route path="/spezialteile" element={<SpezialteilePage />} />
         <Route path="/shop" element={<ShopPage />} />
+        <Route path="/multiplayer" element={<MultiplayerPage />} />
+        <Route path="/raid-hilfe" element={<RaidHilfePage />} />
         <Route path="/nachrichten" element={<NachrichtenPage />} />
         <Route path="/inventar" element={<InventarPage />} />
       </Routes>
