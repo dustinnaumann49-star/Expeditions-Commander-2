@@ -1,0 +1,117 @@
+import { CONTAINER_TYPES } from './data/economy.js';
+import { pushMessage } from './messages.js';
+import type { ActionResult } from './actions.js';
+import type { Container, ContainerReward, PlayerState, RewardItem } from './types.js';
+
+export function addContainer(state: PlayerState, tier: 'silber' | 'gold') {
+  const container: Container = {
+    id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    tier,
+    receivedAt: Date.now(),
+  };
+  state.inventory.push(container);
+}
+
+export function openContainer(state: PlayerState, containerId: string): ActionResult {
+  const idx = state.inventory.findIndex((c) => c.id === containerId && 'tier' in c);
+  if (idx === -1) return { ok: false, error: 'Container nicht gefunden.' };
+  const container = state.inventory[idx] as Container;
+  const config = CONTAINER_TYPES[container.tier];
+  if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
+
+  const shuffled = [...config.rewards].sort(() => Math.random() - 0.5);
+  const count = config.pickCount || 2;
+  const selected = shuffled.slice(0, count);
+
+  const labels: string[] = [];
+  selected.forEach((reward) => {
+    const stackKey = `${reward.type}|${reward.label}`;
+    const existing = state.inventory.find((i) => 'type' in i && i.type === 'rewardItem' && (i as RewardItem).stackKey === stackKey) as
+      | RewardItem
+      | undefined;
+    if (existing) {
+      existing.count = (existing.count || 1) + 1;
+      existing.receivedAt = Date.now();
+    } else {
+      const item: RewardItem = {
+        id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        type: 'rewardItem',
+        stackKey,
+        reward: reward as ContainerReward,
+        count: 1,
+        receivedAt: Date.now(),
+      };
+      state.inventory.push(item);
+    }
+    labels.push(reward.label);
+  });
+
+  state.inventory.splice(idx, 1);
+  pushMessage(state, 'farm', `📦 ${config.name} geöffnet! Ins Inventar gelegt: ${labels.join(', ')}. Du kannst sie jederzeit einzeln einlösen.`);
+  return { ok: true };
+}
+
+export function applyReward(state: PlayerState, reward: ContainerReward): boolean {
+  switch (reward.type) {
+    case 'resources':
+      state.resources.metall += reward.metall || 0;
+      state.resources.kristall += reward.kristall || 0;
+      state.resources.deuterium += reward.deuterium || 0;
+      return true;
+    case 'dm':
+      state.resources.dm += reward.amount || 0;
+      return true;
+    case 'teile':
+      state.teile.waffen += reward.waffen || 0;
+      state.teile.schild += reward.schild || 0;
+      state.teile.panzerung += reward.panzerung || 0;
+      return true;
+    case 'freischiff':
+      if (reward.ships) {
+        Object.entries(reward.ships).forEach(([shipId, count]) => {
+          state.fleet[shipId] = (state.fleet[shipId] || 0) + count;
+        });
+      }
+      return true;
+    case 'zeitgutschein_bau': {
+      if (state.buildQueue.length > 0) {
+        const job = state.buildQueue[0];
+        const remaining = job.endTime - Date.now();
+        job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
+        return true;
+      }
+      return false;
+    }
+    case 'zeitgutschein_forschung': {
+      if (state.researchQueue.length > 0) {
+        const job = state.researchQueue[0];
+        const remaining = job.endTime - Date.now();
+        job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
+        return true;
+      }
+      return false;
+    }
+    default:
+      return true;
+  }
+}
+
+export function redeemRewardItem(state: PlayerState, itemId: string): ActionResult {
+  const idx = state.inventory.findIndex((i) => 'type' in i && i.type === 'rewardItem' && i.id === itemId);
+  if (idx === -1) return { ok: false, error: 'Gegenstand nicht gefunden.' };
+  const item = state.inventory[idx] as RewardItem;
+  const reward = item.reward;
+
+  if (reward.type === 'zeitgutschein_bau' && state.buildQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade kein Schiffsbau - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
+  }
+  if (reward.type === 'zeitgutschein_forschung' && state.researchQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade keine Forschung - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
+  }
+
+  applyReward(state, reward);
+  item.count = (item.count || 1) - 1;
+  if (item.count <= 0) state.inventory.splice(idx, 1);
+  pushMessage(state, 'farm', `✅ Eingelöst: ${reward.label}.`);
+  return { ok: true };
+}

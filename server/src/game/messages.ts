@@ -1,0 +1,13 @@
+import type { PlayerState, CombatDetail } from './types.js';
+
+export function pushMessage(state: PlayerState, type: 'kampf' | 'farm', text: string, detail: CombatDetail | null = null) {
+  state.messages.unshift({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    type,
+    time: Date.now(),
+    text,
+    detail,
+  });
+  // Nachrichtenliste nicht unbegrenzt wachsen lassen
+  if (state.messages.length > 200) state.messages.length = 200;
+}

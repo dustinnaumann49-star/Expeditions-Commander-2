@@ -1,0 +1,174 @@
+import { Router } from 'express';
+import type { Response } from 'express';
+import type { AuthedRequest } from '../auth/middleware.js';
+import { requireAuth } from '../auth/middleware.js';
+import { loadPlayerState, savePlayerState } from './state.js';
+import { tick, startBuild, startDefenseBuild, startResearch, buildImperator } from './actions.js';
+import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
+import { startEventMission } from './events.js';
+import { openContainer, redeemRewardItem } from './inventory.js';
+import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
+import { SHIPS } from './data/ships.js';
+import { DEFENSES } from './data/defenses.js';
+import { RESEARCH } from './data/research.js';
+import { SEKTOREN, SEKTOR_CONFIG } from './data/sectors.js';
+import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE } from './data/economy.js';
+import type { ActionResult } from './actions.js';
+import type { PlayerState } from './types.js';
+
+export const gameRouter = Router();
+gameRouter.use(requireAuth);
+
+// Statische Spieldaten - das Frontend braucht diese fuer alle Seiten (Kosten, Werte, Bilder, Lore-Texte).
+gameRouter.get('/data', (_req, res) => {
+  res.json({
+    ships: SHIPS,
+    defenses: DEFENSES,
+    research: RESEARCH,
+    sektoren: SEKTOREN,
+    sektorConfig: SEKTOR_CONFIG,
+    boosters: BOOSTERS,
+    vouchers: SHOP_VOUCHERS,
+    containerTypes: CONTAINER_TYPES,
+    tradeValue: TRADE_VALUE,
+    tradeFee: TRADE_FEE,
+    scrapRefundRate: SCRAP_REFUND_RATE,
+  });
+});
+
+gameRouter.get('/state', (req: AuthedRequest, res) => {
+  const state = loadPlayerState(req.userId!);
+  tick(state);
+  savePlayerState(state);
+  res.json(state);
+});
+
+// Gemeinsamer Ablauf fuer alle zustandsveraendernden Aktionen: laden, nachholen (tick),
+// Aktion ausfuehren, bei Erfolg speichern und neuen Zustand zurueckgeben.
+function handleAction(req: AuthedRequest, res: Response, action: (state: PlayerState) => ActionResult) {
+  const state = loadPlayerState(req.userId!);
+  tick(state);
+  const result = action(state);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  savePlayerState(state);
+  res.json(state);
+}
+
+gameRouter.post('/build/ship', (req: AuthedRequest, res) => {
+  const { shipId, qty } = req.body ?? {};
+  if (typeof shipId !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'shipId und qty (Zahl) erforderlich.' });
+  }
+  handleAction(req, res, (state) => startBuild(state, shipId, qty));
+});
+
+gameRouter.post('/build/defense', (req: AuthedRequest, res) => {
+  const { defId, qty } = req.body ?? {};
+  if (typeof defId !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'defId und qty (Zahl) erforderlich.' });
+  }
+  handleAction(req, res, (state) => startDefenseBuild(state, defId, qty));
+});
+
+gameRouter.post('/research/start', (req: AuthedRequest, res) => {
+  const { techId } = req.body ?? {};
+  if (typeof techId !== 'string') return res.status(400).json({ error: 'techId erforderlich.' });
+  handleAction(req, res, (state) => startResearch(state, techId));
+});
+
+gameRouter.post('/imperator/build', (req: AuthedRequest, res) => {
+  handleAction(req, res, (state) => buildImperator(state));
+});
+
+// ---- Sektor / Missionen ----
+
+gameRouter.get('/sektor/available/:sektorId', (req: AuthedRequest, res) => {
+  res.json({ ids: availableFleetForSektor(req.params.sektorId) });
+});
+
+gameRouter.post('/mission/send', (req: AuthedRequest, res) => {
+  const { sektorId, selection } = req.body ?? {};
+  if (typeof sektorId !== 'string' || typeof selection !== 'object' || selection === null) {
+    return res.status(400).json({ error: 'sektorId und selection erforderlich.' });
+  }
+  handleAction(req, res, (state) => sendFleet(state, sektorId, selection));
+});
+
+gameRouter.post('/mission/recall', (req: AuthedRequest, res) => {
+  const { missionId } = req.body ?? {};
+  if (typeof missionId !== 'string') return res.status(400).json({ error: 'missionId erforderlich.' });
+  handleAction(req, res, (state) => recallMission(state, missionId));
+});
+
+// ---- Notruf-Event ----
+
+gameRouter.post('/event/join', (req: AuthedRequest, res) => {
+  const { selection } = req.body ?? {};
+  if (typeof selection !== 'object' || selection === null) {
+    return res.status(400).json({ error: 'selection erforderlich.' });
+  }
+  handleAction(req, res, (state) => startEventMission(state, selection));
+});
+
+// ---- Inventar / Container ----
+
+gameRouter.post('/inventory/open', (req: AuthedRequest, res) => {
+  const { containerId } = req.body ?? {};
+  if (typeof containerId !== 'string') return res.status(400).json({ error: 'containerId erforderlich.' });
+  handleAction(req, res, (state) => openContainer(state, containerId));
+});
+
+gameRouter.post('/inventory/redeem', (req: AuthedRequest, res) => {
+  const { itemId } = req.body ?? {};
+  if (typeof itemId !== 'string') return res.status(400).json({ error: 'itemId erforderlich.' });
+  handleAction(req, res, (state) => redeemRewardItem(state, itemId));
+});
+
+// ---- Haendler ----
+
+gameRouter.get('/trade/preview', (req: AuthedRequest, res) => {
+  const amount = Number(req.query.amount) || 0;
+  const from = String(req.query.from || '');
+  const to = String(req.query.to || '');
+  res.json({ received: computeTradeReceive(amount, from, to) });
+});
+
+gameRouter.post('/trade/execute', (req: AuthedRequest, res) => {
+  const { amount, from, to } = req.body ?? {};
+  if (typeof amount !== 'number' || typeof from !== 'string' || typeof to !== 'string') {
+    return res.status(400).json({ error: 'amount, from und to erforderlich.' });
+  }
+  handleAction(req, res, (state) => executeTrade(state, amount, from as any, to as any));
+});
+
+// ---- Schrotthaendler ----
+
+gameRouter.post('/scrap/ship', (req: AuthedRequest, res) => {
+  const { shipId, qty } = req.body ?? {};
+  if (typeof shipId !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'shipId und qty erforderlich.' });
+  }
+  handleAction(req, res, (state) => scrapShip(state, shipId, qty));
+});
+
+gameRouter.post('/scrap/defense', (req: AuthedRequest, res) => {
+  const { defId, qty } = req.body ?? {};
+  if (typeof defId !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'defId und qty erforderlich.' });
+  }
+  handleAction(req, res, (state) => scrapDefense(state, defId, qty));
+});
+
+// ---- Shop ----
+
+gameRouter.post('/shop/booster', (req: AuthedRequest, res) => {
+  const { boosterId } = req.body ?? {};
+  if (typeof boosterId !== 'string') return res.status(400).json({ error: 'boosterId erforderlich.' });
+  handleAction(req, res, (state) => buyBooster(state, boosterId));
+});
+
+gameRouter.post('/shop/voucher', (req: AuthedRequest, res) => {
+  const { voucherId } = req.body ?? {};
+  if (typeof voucherId !== 'string') return res.status(400).json({ error: 'voucherId erforderlich.' });
+  handleAction(req, res, (state) => buyVoucher(state, voucherId));
+});
