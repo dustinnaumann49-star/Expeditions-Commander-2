@@ -32,6 +32,12 @@ npm run dev                # startet auf http://localhost:5173
 Dann im Browser `http://localhost:5173` öffnen, registrieren, loslegen. Der Vite-Dev-Server leitet
 alle `/api`-Aufrufe automatisch an das Backend auf Port 4000 weiter.
 
+**Hinweis zu `npm run dev` im Server:** Startet automatisch zwei Prozesse gleichzeitig (`tsc --watch`
++ `tsx watch`). Der Grund: Die Kampfberechnung läuft in einem separaten Worker-Thread (siehe unten),
+und dieser Worker braucht aus technischen Gründen immer die fertig kompilierte Version aus `dist/` -
+auch während der Entwicklung. `tsc --watch` hält `dist/` automatisch aktuell, du musst dich darum
+nicht kümmern.
+
 ## Funktionsumfang (alles getestet, siehe unten)
 
 **Account & Grundgerüst**
@@ -41,11 +47,20 @@ alle `/api`-Aufrufe automatisch an das Backend auf Port 4000 weiter.
   (Bau-/Forschungs-Warteschlangen, Missionen, Events, Raids) - kein Dauer-Prozess auf dem Server nötig
 
 **Kampf-Engine** (`server/src/game/combat.ts`)
-- 1:1 aus dem HTML-Prototyp portiert: RapidFire, Zielerfassung, Präzision, Durchschlag,
-  Schild-Regeneration, Maxima+Überlauf-Verteilung für NPC-Flotten (`generateCappedFleet`)
+- 1:1 aus dem HTML-Prototyp portiert: RapidFire, Zielerfassung, Präzision, Durchschlag, Schild-Regeneration
+- **Läuft in einem separaten Worker-Thread** (`server/src/game/combatRunner.ts` + `combat.worker.ts`),
+  nicht im Haupt-Thread des Servers. Dadurch blockiert auch ein sehr großer Kampf (z.B. eine gemeinsame
+  Multiplayer-Flotte im Piraten-Sektor) niemals die Anfragen anderer Spieler - getestet mit einer
+  Flotte von 2.000+ Schiffen gegen eine entsprechend große NPC-Flotte, lief sauber im Hintergrund
+- **Keine harten Maxima mehr pro Schiffs-/Verteidigungstyp** (nur noch Sandronator [1] und Imperator [2]
+  bleiben absichtlich limitiert, sowie die beiden Schildkuppeln aus Balance-Gründen). Ein grobes
+  Sicherheitsnetz (`MAX_PLAYER_SHIPS`, aktuell 100.000) verhindert nur noch unbegrenztes Wachstum,
+  ist aber kein Performance-Limit mehr - das übernimmt jetzt der Worker-Thread
+- `generateCappedFleet` verteilt NPC-Flotten weiterhin gewichtet, respektiert aber nur noch die
+  wenigen verbliebenen echten Maxima (Domes, Imperator) statt eines Limits pro Schiffstyp
 
 **Alle Spielbereiche**
-- **Schiffswerft** – Schiffe bauen, Maxima pro Typ, Live-Kostenanzeige
+- **Schiffswerft** – Schiffe bauen, Live-Kostenanzeige
 - **Verteidigung** – Verteidigungsanlagen bauen, gleiches Prinzip
 - **Forschung** – 10 Technologien, 2 parallele Slots
 - **Sektor** – Asteroiden-Felder (Farmen mit Mining-Schiffen), Piraten-Sektoren (Kampf + Teile-Sammlung),
@@ -70,6 +85,13 @@ alle `/api`-Aufrufe automatisch an das Backend auf Port 4000 weiter.
 
 - **Kein Echtzeit-Update über WebSockets** - das Frontend pollt den Zustand alle 5 Sekunden. Für bis
   zu 5 Spieler unkritisch, bewusste Design-Entscheidung (kein offener Punkt, kein Nachrüstbedarf)
+- **Multiplayer/gemeinsame Flotten noch nicht implementiert** - jeder Nutzer hat aktuell einen
+  komplett isolierten Spielstand (eigene Ressourcen, eigene Flotte, eigene Missionen). Die
+  Voraussetzungen dafür sind aber jetzt gelegt: keine Flotten-Maxima mehr im Weg, Kampfberechnung
+  läuft bereits in einem Worker-Thread und blockiert daher nicht, wenn mehrere Spieler gleichzeitig
+  kämpfen. Für echte gemeinsame Flüge (z.B. mehrere Spieler kombiniert gegen einen Piraten-Sektor)
+  fehlt noch: eine Möglichkeit, eine Mission mehreren Nutzer-IDs zuzuordnen, und eine Abstimmung,
+  wessen Flotte in `mission.ships` einfließt
 
 Erledigt seit der letzten Version (nicht mehr offen):
 - ~~Flotten-Vorlagen (Presets)~~ - umgesetzt (speichern, laden, löschen), Backend + Frontend getestet
@@ -77,6 +99,8 @@ Erledigt seit der letzten Version (nicht mehr offen):
   Schiffe, Verteidigung, Forschung, Sektoren, Booster, Ressourcen-Icons und Händler-Banner eingebunden
 - ~~Piratenkapitän-Container ohne Silber/Gold-Unterscheidung im Text~~ - Nachrichtentext nennt jetzt
   den korrekten Container-Tier
+- ~~Flotten-Maxima als reines Performance-Notbehelf~~ - entfernt, Kampfberechnung laeuft jetzt in
+  einem Worker-Thread statt im Haupt-Thread
 
 ## Bilder (client/public/)
 
