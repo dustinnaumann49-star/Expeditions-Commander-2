@@ -25,7 +25,41 @@ db.exec(`
     state_json TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS group_operations (
+    id TEXT PRIMARY KEY,
+    creator_id INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
+
+export function listAllUsers(excludeUserId?: number): { id: number; username: string }[] {
+  const rows = db.prepare('SELECT id, username FROM users ORDER BY username').all() as { id: number; username: string }[];
+  return excludeUserId ? rows.filter((r) => r.id !== excludeUserId) : rows;
+}
+
+export function getGroupOperationJson(id: string): string | undefined {
+  const row = db.prepare('SELECT data_json FROM group_operations WHERE id = ?').get(id) as { data_json: string } | undefined;
+  return row?.data_json;
+}
+
+export function listGroupOperationsJson(): string[] {
+  const rows = db.prepare('SELECT data_json FROM group_operations').all() as { data_json: string }[];
+  return rows.map((r) => r.data_json);
+}
+
+export function saveGroupOperationJson(id: string, creatorId: number, status: string, dataJson: string): void {
+  db.prepare(
+    `INSERT INTO group_operations (id, creator_id, status, data_json, updated_at) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET status = excluded.status, data_json = excluded.data_json, updated_at = excluded.updated_at`
+  ).run(id, creatorId, status, dataJson, Date.now());
+}
+
+export function deleteGroupOperation(id: string): void {
+  db.prepare('DELETE FROM group_operations WHERE id = ?').run(id);
+}
 
 export interface UserRow {
   id: number;
