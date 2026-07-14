@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { SchrotthaendlerPage } from './Schrotthaendler';
 
 const RESOURCE_LABELS: Record<string, string> = { metall: 'Metall', kristall: 'Kristall', deuterium: 'Deuterium' };
 
-export function HaendlerPage() {
+function TradeView() {
   const { gameData, state, executeTrade, error } = useGame();
   const [from, setFrom] = useState('metall');
   const [to, setTo] = useState('deuterium');
@@ -16,7 +17,6 @@ export function HaendlerPage() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 8 }}>Händler</h2>
       <img className="view-banner" src="/ui/haendler.png" alt="Ressourcenhändler" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
@@ -69,6 +69,31 @@ export function HaendlerPage() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const HAENDLER_TABS = [
+  { id: 'tausch', name: 'Ressourcentausch' },
+  { id: 'schrott', name: 'Schrotthändler' },
+];
+
+export function HaendlerPage() {
+  const [tab, setTab] = useState<'tausch' | 'schrott'>('tausch');
+
+  return (
+    <div>
+      <h2 style={{ marginBottom: 16 }}>Händler</h2>
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {HAENDLER_TABS.map((t) => (
+          <button key={t.id} className={`nav-btn${tab === t.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(t.id as any)}>
+            {t.name}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'tausch' && <TradeView />}
+      {tab === 'schrott' && <SchrotthaendlerPage />}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { RaidHilfePage } from './RaidHilfe';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
 
@@ -46,7 +47,7 @@ function FleetPicker({
   );
 }
 
-export function MultiplayerPage() {
+function ExpeditionEventsView() {
   const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, error } = useGame();
   const [tab, setTab] = useState<'expedition' | 'event'>('expedition');
   const [sektorId] = useState('piraten_elite');
@@ -233,6 +234,71 @@ export function MultiplayerPage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function PlayerListView() {
+  const { users, state } = useGame();
+  if (!state) return <p>Lade...</p>;
+
+  return (
+    <div>
+      <h3 style={{ fontSize: 14, marginBottom: 10 }}>Registrierte Spieler</h3>
+      <div className="queue-box">
+        {users.length === 0 ? (
+          <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine weiteren Spieler registriert.</p>
+        ) : (
+          users.map((u) => (
+            <div className="queue-item" key={u.id}>
+              <span>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    marginRight: 8,
+                    background: u.online ? 'var(--accent-deut)' : 'var(--text-dim)',
+                  }}
+                />
+                {u.username}
+                {u.id === state.userId ? ' (du)' : ''}
+              </span>
+              <span style={{ fontSize: 12, color: u.online ? 'var(--accent-deut)' : 'var(--text-dim)' }}>
+                {u.online ? 'Online' : 'Offline'}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+const MULTIPLAYER_TABS = [
+  { id: 'expedition', name: 'Expeditionen & Events' },
+  { id: 'raid', name: 'Raid-Hilfe' },
+  { id: 'spieler', name: 'Spieler' },
+];
+
+export function MultiplayerPage() {
+  const [tab, setTab] = useState<'expedition' | 'raid' | 'spieler'>('expedition');
+
+  return (
+    <div>
+      <h2 style={{ marginBottom: 16 }}>Multiplayer</h2>
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {MULTIPLAYER_TABS.map((t) => (
+          <button key={t.id} className={`nav-btn${tab === t.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(t.id as any)}>
+            {t.name}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'expedition' && <ExpeditionEventsView />}
+      {tab === 'raid' && <RaidHilfePage />}
+      {tab === 'spieler' && <PlayerListView />}
     </div>
   );
 }
