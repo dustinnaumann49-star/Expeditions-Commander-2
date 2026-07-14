@@ -27,7 +27,7 @@ function UnitRow({ u }: { u: CombatUnitResult }) {
 }
 
 export function NachrichtenPage() {
-  const { state } = useGame();
+  const { state, clearMessages } = useGame();
   const [openId, setOpenId] = useState<string | null>(null);
   if (!state) return <p>Lade...</p>;
 
@@ -40,7 +40,14 @@ export function NachrichtenPage() {
       <h2 style={{ marginBottom: 16 }}>Nachrichten</h2>
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Kampfberichte</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ fontSize: 14 }}>Kampfberichte</h3>
+          {kampf.length > 0 && (
+            <button className="qty-btn" onClick={() => clearMessages('kampf')}>
+              Leeren
+            </button>
+          )}
+        </div>
         {kampf.length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine Einträge.</p>
         ) : (
@@ -57,7 +64,14 @@ export function NachrichtenPage() {
       </div>
 
       <div className="queue-box">
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Farm-/Beuteberichte</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ fontSize: 14 }}>Farm-/Beuteberichte</h3>
+          {farm.length > 0 && (
+            <button className="qty-btn" onClick={() => clearMessages('farm')}>
+              Leeren
+            </button>
+          )}
+        </div>
         {farm.length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine Einträge.</p>
         ) : (
