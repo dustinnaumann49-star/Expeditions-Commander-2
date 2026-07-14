@@ -41,7 +41,7 @@ gameRouter.get('/state', (req: AuthedRequest, res) => {
   const state = loadPlayerState(req.userId!);
   tick(state);
   savePlayerState(state);
-  res.json(state);
+  res.json({ ...state, serverTime: Date.now() });
 });
 
 // Gemeinsamer Ablauf fuer alle zustandsveraendernden Aktionen: laden, nachholen (tick),
@@ -52,7 +52,7 @@ function handleAction(req: AuthedRequest, res: Response, action: (state: PlayerS
   const result = action(state);
   if (!result.ok) return res.status(400).json({ error: result.error });
   savePlayerState(state);
-  res.json(state);
+  res.json({ ...state, serverTime: Date.now() });
 }
 
 gameRouter.post('/build/ship', (req: AuthedRequest, res) => {
