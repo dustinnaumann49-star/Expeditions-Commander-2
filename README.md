@@ -82,13 +82,19 @@ client/
   src/pages/Forschung.tsx             Forschung
   src/pages/Sektor.tsx                Solo-Missionen (Asteroiden-Feld/Piraten-Sektor-Tabs)
   src/pages/Flotte.tsx                Flotten-Bestandsübersicht
-  src/pages/Haendler.tsx              Ressourcentausch
-  src/pages/Schrotthaendler.tsx       Schiffe/Verteidigung verschrotten
-  src/pages/Spezialteile.tsx          Imperator bauen
-  src/pages/Shop.tsx                  Booster/Zeit-Gutscheine kaufen
-  src/pages/Multiplayer.tsx           Gemeinsame Expeditionen/Events: erstellen, einladen,
-                                      annehmen/ablehnen, starten
+  src/pages/Haendler.tsx              Ressourcentausch + Untertab "Schrotthändler"
+                                      (rendert Schrotthaendler.tsx als Untertab-Inhalt)
+  src/pages/Schrotthaendler.tsx       Schiffe/Verteidigung verschrotten (kein eigener Nav-Punkt
+                                      mehr, nur als Untertab von Händler eingebunden)
+  src/pages/Shop.tsx                  Booster/Zeit-Gutscheine + Untertab "Spezialteile"
+                                      (rendert Spezialteile.tsx als Untertab-Inhalt)
+  src/pages/Spezialteile.tsx          Imperator bauen (kein eigener Nav-Punkt mehr, nur als
+                                      Untertab von Shop eingebunden)
+  src/pages/Multiplayer.tsx           Gemeinsame Expeditionen/Events + Untertabs "Raid-Hilfe"
+                                      (rendert RaidHilfe.tsx) und "Spieler" (Online/Offline-Liste)
   src/pages/RaidHilfe.tsx             Alle aktiven Raids anderer Spieler, Verstärkung entsenden
+                                      (kein eigener Nav-Punkt mehr, nur als Untertab von
+                                      Multiplayer eingebunden)
   src/pages/Nachrichten.tsx           Kampf-/Farmberichte mit aufklappbarer Detailansicht
   src/pages/Inventar.tsx              Container öffnen, Belohnungen einlösen
 ```
@@ -141,3 +147,13 @@ client/
 10. **Neue Server-Routen gehören in `routes.ts`**, neue Client-API-Aufrufe in `api/client.ts` +
     `context/GameContext.tsx` (Pattern: `run(() => api.xyz(...))` für zustandsverändernde
     Aktionen). Neue Seiten müssen in `App.tsx` (Route + Navigationspunkt) eingetragen werden.
+
+11. **Sidebar bewusst schlank gehalten**: Schrotthändler, Spezialteile und Raid-Hilfe haben
+    KEINEN eigenen Navigationspunkt mehr, sondern sind Untertabs von Händler, Shop bzw.
+    Multiplayer. Beim Hinzufügen neuer Seiten erst prüfen, ob sie sich als Untertab in eine
+    bestehende Seite einordnen lassen, bevor ein neuer Sidebar-Eintrag angelegt wird.
+
+12. **Online/Offline-Status**: `requireAuth`-Middleware aktualisiert bei JEDER authentifizierten
+    Anfrage automatisch `last_seen` in der `users`-Tabelle (`touchUserLastSeen`). "Online" heißt:
+    letzte Anfrage vor weniger als 15 Sekunden (`ONLINE_THRESHOLD_MS` in `db.ts`). Registrierung
+    allein zählt nicht als "online" - erst die erste authentifizierte Anfrage danach.
