@@ -76,13 +76,21 @@ nicht kümmern.
 - **Inventar** – Silber-/Gold-Container öffnen, Belohnungen einzeln einlösen
 - **Multiplayer** – Gemeinsame Expeditionen in Piraten-Sektoren und gemeinsame Notruf-Events:
   Ersteller lädt Spieler per Name ein, Eingeladene nehmen mit eigener Flotte an oder lehnen ab,
-  Ersteller startet manuell (auch allein, falls niemand beitritt). Beute/Teile werden anteilig nach
-  eingebrachter Flottenstärke aufgeteilt, Überlebende gehen anteilig an die jeweiligen Besitzer
-  zurück. Kampfberechnung läuft über denselben Worker-Thread wie Solo-Kämpfe
+  Ersteller startet manuell (auch allein, falls niemand beitritt). **Belohnungen werden nie geteilt** -
+  jeder Teilnehmer bekommt exakt das, was er auch bei einem Solo-Flug mit diesem Kampfausgang bekommen
+  hätte (volle Beute, volle Teile, eigener Container). Überlebende Schiffe gehen an ihren jeweiligen
+  Besitzer zurück. Jeder Kampfbericht (auch die stündlichen Zwischenberichte) ist aufklappbar mit
+  vollständiger Detailansicht wie im Solo-Spiel, Flotten sind darin nach Spielername gruppiert
+  aufgelistet. Kampfberechnung läuft über denselben Worker-Thread wie Solo-Kämpfe
+- **Sektor P9 – Elite-Bollwerk**: eigener Sektor, nur über gemeinsame Expeditionen erreichbar
+  (Solo-Versand wird abgelehnt). Piraten skalieren mit 200% der kombinierten Flottenstärke aller
+  Teilnehmer, zusätzlich zur normalen Beute/Teile-Sammlung gibt es eine Zeit-basierte
+  Ressourcen-Belohnung (bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium pro
+  Teilnehmer über die volle 4h, analog zum Asteroiden-Feld) - entsprechend hohe Gefahrenstufe
 - **Raid-Hilfe** – Eigener Tab: zeigt alle laufenden Piratenangriffe auf andere Spieler-Basen,
-  jeder kann mit 1 Minute Anflugzeit eigene Schiffe zur Verstärkung schicken. Verstärkung kämpft
-  mit, Überlebende kehren zum Absender zurück (nicht zum Verteidiger), unabhängig von dessen
-  eigenem Kampfbericht
+  jeder kann mit 1 Minute Anflugzeit eigene Schiffe zur Verstärkung schicken. Verstärker bekommt
+  einen eigenen Container (wie ein Verteidiger auch), sieht dieselbe vollständige Detailansicht wie
+  der Verteidiger, Überlebende kehren zum Absender zurück
 
 **Design**
 - Komplettes Original-Farbschema aus dem HTML-Prototyp übernommen (`client/src/theme.css`)
