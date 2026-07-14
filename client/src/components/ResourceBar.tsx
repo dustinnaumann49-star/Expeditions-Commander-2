@@ -1,12 +1,22 @@
+import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
+import { serverNow } from '../lib/serverTime';
 
 export function ResourceBar() {
   const { state } = useGame();
   const { username, logout } = useAuth();
+  const [, forceTick] = useState(0);
+
+  useEffect(() => {
+    const i = setInterval(() => forceTick((n) => n + 1), 1000);
+    return () => clearInterval(i);
+  }, []);
+
   if (!state) return null;
 
   const fmt = (n: number) => Math.floor(n).toLocaleString('de-DE');
+  const clockText = new Date(serverNow()).toLocaleTimeString('de-DE');
 
   return (
     <div id="resourcebar">
@@ -34,7 +44,8 @@ export function ResourceBar() {
         </span>
       </div>
       <div className="res-group">
-        <span id="clock">{username}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>{username}</span>
+        <span id="clock">{clockText}</span>
         <button id="reset-btn" onClick={logout}>
           Abmelden
         </button>
