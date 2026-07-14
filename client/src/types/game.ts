@@ -289,6 +289,7 @@ export interface GameData {
 export interface AppUser {
   id: number;
   username: string;
+  online: boolean;
 }
 
 export interface GroupOperationParticipant {
