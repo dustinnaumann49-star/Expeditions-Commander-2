@@ -282,3 +282,47 @@ export interface GameData {
   asteroidEscortPowerMax: number;
   asteroidEscortKillReward: { metall: number; kristall: number; deuterium: number };
 }
+
+export interface AppUser {
+  id: number;
+  username: string;
+}
+
+export interface GroupOperationParticipant {
+  userId: number;
+  username: string;
+  isCreator: boolean;
+  status: 'pending' | 'accepted' | 'declined';
+  ships: Record<string, number>;
+  contributedPower?: number;
+}
+
+export interface GroupOperation {
+  id: string;
+  kind: 'expedition' | 'event';
+  sektorId?: string;
+  eventName?: string;
+  creatorId: number;
+  status: 'inviting' | 'departed' | 'resolved' | 'cancelled';
+  participants: GroupOperationParticipant[];
+  createdAt: number;
+  departedAt?: number;
+  arriveTime?: number;
+  endTime?: number;
+  returnTime?: number;
+  processedHours?: number;
+  lastTick?: number | null;
+  farmed?: { metall: number; kristall: number; deuterium: number };
+  dmFound?: number;
+  teile?: { waffen: number; schild: number; panzerung: number };
+  resultMessage?: string;
+  resultDetail?: CombatDetail;
+}
+
+export interface ActiveRaidInfo {
+  targetUserId: number;
+  targetUsername: string;
+  raidId: string;
+  arrivalTime: number;
+  reinforcementCount: number;
+}
