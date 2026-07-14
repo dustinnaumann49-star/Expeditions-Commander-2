@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
+import { updateServerTimeOffset } from '../lib/serverTime';
 import type { GameData, PlayerState } from '../types/game';
 
 interface GameContextValue {
@@ -34,11 +35,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  function applyState(newState: PlayerState) {
+    if (newState.serverTime) updateServerTimeOffset(newState.serverTime);
+    setState(newState);
+  }
+
   async function refresh() {
     setError(null);
     const [data, playerState] = await Promise.all([gameData ? Promise.resolve(gameData) : api.getGameData(), api.getState()]);
     setGameData(data);
-    setState(playerState);
+    applyState(playerState);
   }
 
   useEffect(() => {
@@ -46,7 +52,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
     const interval = setInterval(() => {
-      api.getState().then(setState).catch(() => {});
+      api.getState().then(applyState).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +63,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   async function run(fn: () => Promise<PlayerState>) {
     try {
       const newState = await fn();
-      setState(newState);
+      applyState(newState);
       setError(null);
     } catch (e: any) {
       setError(e.message);
