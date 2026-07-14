@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { LoreModal } from '../components/LoreModal';
 
 function researchCostForLevel(baseCost: { metall: number; kristall: number; deuterium: number }, costGrowth: number, level: number) {
   const f = Math.pow(costGrowth, level - 1);
@@ -19,6 +20,7 @@ function researchTimeForLevel(baseTimeHours: number, timeGrowth: number, level: 
 export function ForschungPage() {
   const { gameData, state, startResearch, error } = useGame();
   const [, forceTick] = useState(0);
+  const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 500);
     return () => clearInterval(i);
@@ -52,7 +54,11 @@ export function ForschungPage() {
             <div className="ship-card" key={tech.id}>
               <img className="ship-img" src={`/${tech.img}`} alt={tech.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
-                <h3>{tech.name}</h3>
+                <h3>
+                  <span className="lore-title" onClick={() => setLoreTarget({ kind: 'research', id: tech.id })}>
+                    {tech.name}
+                  </span>
+                </h3>
                 <div className="ship-stats">
                   <span>
                     Stufe {level} / {gameData.maxResearchLevel}
@@ -93,6 +99,7 @@ export function ForschungPage() {
           );
         })}
       </div>
+      <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
     </div>
   );
 }

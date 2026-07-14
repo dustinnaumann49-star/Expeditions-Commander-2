@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
+import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName } from '../lib/combatInfo';
 import type { PlayerState } from '../types/game';
@@ -24,6 +25,7 @@ export function WerftPage() {
   const { gameData, state, buildShip, error } = useGame();
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('jaeger');
+  const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
 
   if (!gameData || !state) return <p>Lade...</p>;
 
@@ -78,7 +80,9 @@ export function WerftPage() {
               <img className="ship-img" src={`/${ship.img}`} alt={ship.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
                 <h3>
-                  {ship.name}{' '}
+                  <span className="lore-title" onClick={() => setLoreTarget({ kind: 'ship', id: ship.id })}>
+                    {ship.name}
+                  </span>{' '}
                   <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
                     (Bestand: {bestand}
                     {ship.maxCount ? `/${ship.maxCount}` : ''})
@@ -159,6 +163,7 @@ export function WerftPage() {
           );
         })}
       </div>
+      <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
     </div>
   );
 }

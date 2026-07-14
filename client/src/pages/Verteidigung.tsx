@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
+import { LoreModal } from '../components/LoreModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, getShieldDomeBonus, shipName } from '../lib/combatInfo';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
+  const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
 
   if (!gameData || !state) return <p>Lade...</p>;
 
@@ -44,7 +46,9 @@ export function VerteidigungPage() {
               <img className="ship-img" src={`/${def.img}`} alt={def.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
                 <h3>
-                  {def.name}{' '}
+                  <span className="lore-title" onClick={() => setLoreTarget({ kind: 'defense', id: def.id })}>
+                    {def.name}
+                  </span>{' '}
                   <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
                     (Bestand: {bestand}/{def.maxCount})
                   </span>
@@ -120,6 +124,7 @@ export function VerteidigungPage() {
           );
         })}
       </div>
+      <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
     </div>
   );
 }

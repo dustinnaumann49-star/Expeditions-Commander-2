@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
-import type { GameData } from '../types/game';
+import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
+
+const SEKTOR_KLASSEN = [
+  { id: 'asteroid', name: 'Asteroiden-Feld', match: (id: string) => id.startsWith('asteroid_') },
+  { id: 'piraten', name: 'Piraten-Sektor', match: (id: string) => id.startsWith('piraten_') },
+];
 
 function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, { type: string }>): string[] {
   const cfg = sektorConfig[sektorId];
@@ -15,12 +20,8 @@ function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, 
 function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: GameData }) {
   const cfg = gameData.sektorConfig[sektorId];
 
-  if (cfg.type === 'piraten') {
-    const shipTags = gameData.ships
-      .filter((s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff')
-      .map((s) => s.name)
-      .join(', ');
-    const defenseTags = gameData.defenses.map((d) => d.name).join(', ');
+  if (sektorId.startsWith('piraten_')) {
+    const shipTags = gameData.ships.filter((s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff');
     const rollTable = gameData.piratenMultiplierRoll[sektorId] || [];
     const multiplierRollText = rollTable.map((v) => Math.round(v * 100) + '%').join(' / ');
     const defenseFactor = sektorId === 'piraten_niedrig' ? 5 : sektorId === 'piraten_mittel' ? 10 : 15;
@@ -30,11 +31,23 @@ function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: Gam
       <div className="sektor-info-box">
         <div className="info-row">
           <span className="info-label">👾 Mögliche Piraten-Schiffe</span>
-          <span className="info-value">{shipTags}</span>
+          <span className="info-value">
+            {shipTags.map((s) => (
+              <span className="piraten-pool-tag" key={s.id}>
+                {s.name}
+              </span>
+            ))}
+          </span>
         </div>
         <div className="info-row">
           <span className="info-label">🏰 Mögliche Verteidigungsanlagen</span>
-          <span className="info-value">{defenseTags}</span>
+          <span className="info-value">
+            {gameData.defenses.map((d) => (
+              <span className="piraten-pool-tag" key={d.id}>
+                {d.name}
+              </span>
+            ))}
+          </span>
         </div>
         <div className="info-row">
           <span className="info-label">🚢 Schiffsklassen im Pool</span>
@@ -74,49 +87,118 @@ function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: Gam
             vom Cap)
           </span>
         </div>
-        <div className="info-row" style={{ borderBottom: 'none' }}>
+        <div className="info-row">
           <span className="info-label">⭐ Sandronator</span>
           <span className="info-value">Verdoppelt Beute UND Teile-Vergabe für die gesamte Mission, solange er überlebt</span>
         </div>
-      </div>
-    );
-  }
-
-  if (cfg.type === 'asteroid') {
-    return (
-      <div className="sektor-info-box">
-        <div className="info-row">
-          <span className="info-label">⛏️ Farm-Rate</span>
+        <div className="info-row" style={{ borderBottom: 'none', fontSize: 11, color: 'var(--text-dim)' }}>
+          <span className="info-label">💡 Taktischer Hinweis</span>
           <span className="info-value">
-            {cfg.farmRate?.toLocaleString('de-DE')} Ressourcen/h je Mining-Schiff (50% Metall / 30% Kristall / 20% Deuterium)
+            RapidFire-Matchups gelten unabhängig vom Sektor: Schwere Jäger gegen Leichte Jäger, Kreuzer gegen Leichte Jäger, Schlachtschiffe gegen
+            Kreuzer, Schlachtkreuzer stark gegen Schwere Jäger/Kreuzer/Schlachtschiffe, Bomber stark gegen alle Verteidigungsanlagen.
           </span>
         </div>
-        <div className="info-row">
-          <span className="info-label">🚀 Max. Mining-Schiffe</span>
-          <span className="info-value">{cfg.miningCap} pro Einsatz</span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">🛡️ Max. Begleitschiffe</span>
-          <span className="info-value">{cfg.escortCap} pro Einsatz</span>
-        </div>
-        <div className="info-row" style={{ borderBottom: 'none' }}>
-          <span className="info-label">🔮 Dunkle Materie</span>
-          <span className="info-value">Bis zu {cfg.dmCap} DM pro vollem 4h-Einsatz (linear über die Zeit)</span>
-        </div>
       </div>
     );
   }
 
-  return null;
+  return (
+    <div className="sektor-info-box">
+      <div className="info-row">
+        <span className="info-label">⛏️ Abbaurate</span>
+        <span className="info-value">{cfg.farmRate?.toLocaleString('de-DE')} Ressourcen/h pro Mining-Schiff (50% Metall / 30% Kristall / 20% Deuterium)</span>
+      </div>
+      <div className="info-row">
+        <span className="info-label">🚀 Max. Mining-Schiffe pro Einsatz</span>
+        <span className="info-value">{cfg.miningCap}</span>
+      </div>
+      <div className="info-row">
+        <span className="info-label">🌑 Dunkle Materie</span>
+        <span className="info-value">Bis zu {cfg.dmCap} DM pro vollem 4h-Einsatz (linear über die Zeit)</span>
+      </div>
+      <div className="info-row">
+        <span className="info-label">✅ Sicherheit ohne Begleitschiff</span>
+        <span className="info-value">Kein Feindkontakt möglich - risikofreies Farmen</span>
+      </div>
+      <div className="info-row">
+        <span className="info-label">🛡️ Begleitschiff (optional)</span>
+        <span className="info-value">
+          Max. {cfg.escortCap} pro Einsatz · Bei jedem Stunden-Check garantiert ein kleiner Piraten-Überfall (nur Leichte/Schwere Jäger) mit{' '}
+          {(gameData.asteroidEscortPowerMin * 100).toFixed(0)}–{(gameData.asteroidEscortPowerMax * 100).toFixed(0)}% deiner Begleitschiff-Power
+        </span>
+      </div>
+      <div className="info-row">
+        <span className="info-label">💰 Bonus-Beute pro vernichtetem Piratenschiff</span>
+        <span className="info-value">
+          {gameData.asteroidEscortKillReward.metall.toLocaleString('de-DE')} Metall, {gameData.asteroidEscortKillReward.kristall.toLocaleString('de-DE')}{' '}
+          Kristall, {gameData.asteroidEscortKillReward.deuterium.toLocaleString('de-DE')} Deuterium - gutgeschrieben bei Rückkehr
+        </span>
+      </div>
+      <div className="info-row" style={{ borderBottom: 'none' }}>
+        <span className="info-label">⭐ Sandronator</span>
+        <span className="info-value">Verdoppelt die gesamte Ausbeute (Ressourcen + DM) für die Mission</span>
+      </div>
+    </div>
+  );
+}
+
+function MissionStatus({ mission, now }: { mission: Mission; now: number }) {
+  let status: string;
+  let remaining: number;
+  let phaseStart: number;
+  let phaseEnd: number;
+  if (now < mission.arriveTime) {
+    status = 'Im Anflug';
+    remaining = mission.arriveTime - now;
+    phaseStart = mission.startTime;
+    phaseEnd = mission.arriveTime;
+  } else if (now < mission.endTime) {
+    status = 'Im Sektor';
+    remaining = mission.endTime - now;
+    phaseStart = mission.arriveTime;
+    phaseEnd = mission.endTime;
+  } else {
+    status = 'Im Rückflug';
+    remaining = mission.returnTime - now;
+    phaseStart = mission.endTime;
+    phaseEnd = mission.returnTime;
+  }
+  const pct = Math.min(100, Math.max(0, ((now - phaseStart) / (phaseEnd - phaseStart)) * 100));
+  const teileSum = mission.teile.waffen + mission.teile.schild + mission.teile.panzerung;
+
+  return (
+    <div className="queue-box">
+      <div className="queue-item">
+        <span>{status}</span>
+        <span>{pct.toFixed(0)}%</span>
+      </div>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="queue-item">
+        <span>Verbleibend</span>
+        <span>{formatTime(remaining)}</span>
+      </div>
+      <div className="queue-item">
+        <span>Bisher erbeutet</span>
+        <span>
+          {Math.floor(mission.farmed.metall).toLocaleString('de-DE')} Metall / {Math.floor(mission.farmed.kristall).toLocaleString('de-DE')} Kristall /{' '}
+          {Math.floor(mission.farmed.deuterium).toLocaleString('de-DE')} Deuterium
+          {teileSum > 0 &&
+            ` · W-Teile ${Math.floor(mission.teile.waffen)} / S-Teile ${Math.floor(mission.teile.schild)} / P-Teile ${Math.floor(mission.teile.panzerung)}`}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function SektorPage() {
   const { gameData, state, sendMission, recallMission, joinEvent, savePreset, deletePreset, error } = useGame();
+  const [tab, setTab] = useState('asteroid');
   const [selectedSektor, setSelectedSektor] = useState<string | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [eventSelection, setEventSelection] = useState<Record<string, number>>({});
   const [presetName, setPresetName] = useState('');
-  const [infoOpenFor, setInfoOpenFor] = useState<string | null>(null);
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -126,6 +208,8 @@ export function SektorPage() {
 
   if (!gameData || !state) return <p>Lade...</p>;
   const now = serverNow();
+  const activeKlasse = SEKTOR_KLASSEN.find((k) => k.id === tab)!;
+  const sektorenInTab = gameData.sektoren.filter((s) => activeKlasse.match(s.id));
 
   return (
     <div>
@@ -205,54 +289,41 @@ export function SektorPage() {
         </div>
       )}
 
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {SEKTOR_KLASSEN.map((k) => (
+          <button key={k.id} className={`nav-btn${tab === k.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(k.id)}>
+            {k.name}
+          </button>
+        ))}
+      </div>
+
       <div className="ship-grid">
-        {gameData.sektoren.map((sektor) => {
+        {sektorenInTab.map((sektor) => {
           const cfg = gameData.sektorConfig[sektor.id];
           const activeMission = state.missions.find((m) => m.sektorId === sektor.id && !m.finalized);
           const availableIds = availableFleetForSektor(sektor.id, gameData.sektorConfig);
-          const infoOpen = infoOpenFor === sektor.id;
 
           return (
             <div className="ship-card" key={sektor.id}>
               <img className="ship-img" src={`/${sektor.img}`} alt={sektor.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
               <div className="ship-info">
                 <h3>{sektor.name}</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>{sektor.zweck}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                  Typ: {sektor.typ} · {sektor.zweck}
+                </p>
                 <div className="ship-stats">
-                  <span>Gefahr: {sektor.gefahr}</span>
-                  <span>{sektor.aktivitaet}</span>
+                  <span className="level-gruen">Aktivität: {sektor.aktivitaet}</span>
+                  <span>Gefahrenstufe: {sektor.gefahr}</span>
                 </div>
 
-                <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setInfoOpenFor(infoOpen ? null : sektor.id)}>
-                  {infoOpen ? 'Infos verbergen' : 'ℹ️ Alle Infos anzeigen'}
-                </button>
-                {infoOpen && <SektorInfoBox sektorId={sektor.id} gameData={gameData} />}
+                <SektorInfoBox sektorId={sektor.id} gameData={gameData} />
 
                 {activeMission ? (
                   <>
-                    <p style={{ fontSize: 13 }}>Flotte unterwegs</p>
-                    <div className="progress-row">
-                      <span>Fortschritt (Stunden im Sektor)</span>
-                      <span>{activeMission.processedHours}/4</span>
-                    </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${(activeMission.processedHours / 4) * 100}%` }} />
-                    </div>
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                      Ertrag bisher: {Math.floor(activeMission.farmed.metall).toLocaleString('de-DE')} Metall,{' '}
-                      {Math.floor(activeMission.farmed.kristall).toLocaleString('de-DE')} Kristall,{' '}
-                      {Math.floor(activeMission.farmed.deuterium).toLocaleString('de-DE')} Deuterium
-                    </p>
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                      {now < activeMission.arriveTime
-                        ? `Anflug, Ankunft in ${formatTime(activeMission.arriveTime - now)}`
-                        : now < activeMission.endTime
-                        ? `Im Sektor, Rückflug in ${formatTime(activeMission.endTime - now)}`
-                        : `Rückflug, Ankunft in ${formatTime(activeMission.returnTime - now)}`}
-                    </p>
+                    <MissionStatus mission={activeMission} now={now} />
                     <div className="build-row">
-                      <span></span>
-                      <button className="build-btn" onClick={() => recallMission(activeMission.id)}>
+                      <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Vorzeitiger Abbruch holt Flotte + bisherigen Ertrag sofort zurück.</span>
+                      <button className="qty-btn" style={{ color: 'var(--danger)' }} onClick={() => recallMission(activeMission.id)}>
                         Zurückrufen
                       </button>
                     </div>
@@ -321,12 +392,9 @@ export function SektorPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="build-row">
-                    <span></span>
-                    <button className="build-btn" onClick={() => setSelectedSektor(sektor.id)}>
-                      Entsenden
-                    </button>
-                  </div>
+                  <button className="build-btn" onClick={() => setSelectedSektor(sektor.id)}>
+                    Entsenden
+                  </button>
                 )}
               </div>
             </div>
