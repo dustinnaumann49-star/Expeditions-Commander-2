@@ -49,6 +49,9 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   }
   const cfg = SEKTOR_CONFIG[sektorId];
   if (!cfg) return { ok: false, error: 'Unbekannter Sektor.' };
+  if (cfg.multiplayerOnly) {
+    return { ok: false, error: 'Dieser Sektor ist nur über gemeinsame Expeditionen mit anderen Spielern erreichbar (siehe Multiplayer-Tab).' };
+  }
   if (cfg.miningCap && (selection.mining || 0) > cfg.miningCap) {
     return { ok: false, error: `Maximal ${cfg.miningCap} Mining-Schiffe pro Einsatz in diesem Sektor erlaubt.` };
   }

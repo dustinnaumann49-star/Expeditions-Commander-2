@@ -108,6 +108,7 @@ export interface CombatUnitResult {
   shieldRegen: number;
   isDefense?: boolean;
   isCaptain?: boolean;
+  ownerUsername?: string; // bei Multiplayer-Kaempfen: welchem Spieler dieser Flotten-Eintrag gehoert
 }
 
 export interface CombatDetail {
@@ -193,7 +194,12 @@ export interface GroupOperationParticipant {
   isCreator: boolean;
   status: 'pending' | 'accepted' | 'declined';
   ships: Record<string, number>;
-  contributedPower?: number; // zum Zeitpunkt des Starts berechnet, fuer die anteilige Beute-Aufteilung
+  contributedPower?: number; // nur noch informativ (Anzeige), fliesst NICHT mehr in eine Beute-Aufteilung ein
+  // Eigener Ertrag dieses Teilnehmers - wird NIE zwischen Teilnehmern aufgeteilt, jeder bekommt
+  // exakt das, was er auch bei einem Solo-Flug bekommen haette.
+  farmed?: { metall: number; kristall: number; deuterium: number };
+  teile?: { waffen: number; schild: number; panzerung: number };
+  dmFound?: number;
 }
 
 export interface GroupOperation {
@@ -210,10 +216,7 @@ export interface GroupOperation {
   endTime?: number;
   returnTime?: number;
   processedHours?: number;
-  lastTick?: number | null;
-  farmed?: { metall: number; kristall: number; deuterium: number };
-  dmFound?: number;
-  teile?: { waffen: number; schild: number; panzerung: number };
+  lastTick?: number | null; // steuert nur das Timing des Zeit-basierten Ressourcen-Zuwachses (Elite-Sektor)
   resultMessage?: string;
   resultDetail?: CombatDetail;
 }

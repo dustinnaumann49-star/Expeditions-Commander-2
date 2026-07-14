@@ -15,7 +15,7 @@ import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import type { ActionResult } from './actions.js';
-import type { CombatUnitResult, CombatStats, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
+import type { CombatUnitResult, CombatDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
@@ -33,6 +33,10 @@ function loadOp(id: string): GroupOperation | undefined {
 }
 function saveOp(op: GroupOperation) {
   saveGroupOperationJson(op.id, op.creatorId, op.status, JSON.stringify(op));
+}
+
+function addContainerToState(state: PlayerState, tier: 'silber' | 'gold') {
+  state.inventory.push({ id: newId('container'), tier, receivedAt: Date.now() });
 }
 
 // ========== ERSTELLEN / EINLADEN ==========
@@ -173,6 +177,9 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
     p.contributedPower = combatFleetPower(p.ships, pState.research) || 1;
+    p.farmed = { metall: 0, kristall: 0, deuterium: 0 };
+    p.teile = { waffen: 0, schild: 0, panzerung: 0 };
+    p.dmFound = 0;
   });
 
   if (op.kind === 'event') {
@@ -187,9 +194,6 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   op.returnTime = op.endTime + MISSION_TRAVEL_MS;
   op.processedHours = 0;
   op.lastTick = null;
-  op.farmed = { metall: 0, kristall: 0, deuterium: 0 };
-  op.dmFound = 0;
-  op.teile = { waffen: 0, schild: 0, panzerung: 0 };
   saveOp(op);
 
   accepted.forEach((p) => {
@@ -234,7 +238,8 @@ async function resolveGroupEvent(
       const eff = getEffectiveStats(id, pState.research);
       playerResults.push({
         id,
-        name: `${shipName(id)} (${p.username})`,
+        name: shipName(id),
+        ownerUsername: p.username,
         sent,
         survived,
         lost,
@@ -299,14 +304,17 @@ async function resolveGroupEvent(
   let containerReward: 'silber' | 'gold' | null = null;
   if (!playerWiped && npcFullyDestroyed) containerReward = 'gold';
   else if (!playerWiped && !npcFullyDestroyed) containerReward = 'silber';
-  const creatorState = participantStates.get(op.creatorId)!;
   if (containerReward) {
-    creatorState.inventory.push({ id: newId('container'), tier: containerReward, receivedAt: Date.now() });
+    accepted.forEach((p) => addContainerToState(participantStates.get(p.userId)!, containerReward!));
   }
-  const rewardText = containerReward ? (containerReward === 'gold' ? '🏆 Gold-Container an den Ersteller' : '📦 Silber-Container an den Ersteller') : '';
+  const rewardText = containerReward
+    ? containerReward === 'gold'
+      ? '🏆 Jeder Teilnehmer erhält einen Gold-Container'
+      : '📦 Jeder Teilnehmer erhält einen Silber-Container'
+    : '';
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
 
-  const detail = {
+  const detail: CombatDetail = {
     sektorName: `${op.eventName} (gemeinsam: ${teilnehmerListe})`,
     outcome,
     roundsFought: result.roundsFought,
@@ -351,25 +359,35 @@ async function tickGroupExpedition(op: GroupOperation, currentState: PlayerState
 
   const accepted = op.participants.filter((p) => p.status === 'accepted');
   const participantStates = new Map<number, PlayerState>();
-  // Fuer den Nutzer, dessen eigener tick() gerade laeuft, das bereits geladene State-Objekt
-  // wiederverwenden (nicht erneut aus der DB laden) - sonst wuerde die aeussere Route (routes.ts)
-  // am Ende ihre eigene, inzwischen veraltete Kopie speichern und die hier vorgenommenen
-  // Aenderungen (Ressourcen, Flotte, Nachrichten) wieder ueberschreiben.
   accepted.forEach((p) => participantStates.set(p.userId, p.userId === currentState.userId ? currentState : loadPlayerState(p.userId)));
 
+  const cfg = SEKTOR_CONFIG[op.sektorId!];
   const cappedNow = Math.min(now, op.endTime);
   if (!op.lastTick) op.lastTick = op.arriveTime;
-  if (cappedNow > op.lastTick && op.teile) {
+  if (cappedNow > op.lastTick && cfg) {
     const deltaSec = (cappedNow - op.lastTick) / 1000;
-    const cfg = SEKTOR_CONFIG[op.sektorId!];
-    if (cfg?.teileCap) {
-      (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-        if (op.teile![part] < cfg.teileCap!) {
-          const rate = cfg.teileCap! / (MISSION_DURATION_MS / 1000);
-          op.teile![part] = Math.min(cfg.teileCap!, op.teile![part] + rate * deltaSec);
+    accepted.forEach((p) => {
+      if (cfg.teileCap && p.teile) {
+        (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
+          if (p.teile![part] < cfg.teileCap!) {
+            const rate = cfg.teileCap! / (MISSION_DURATION_MS / 1000);
+            p.teile![part] = Math.min(cfg.teileCap!, p.teile![part] + rate * deltaSec);
+          }
+        });
+      }
+      if (cfg.resourceCapOverTime && p.farmed) {
+        const cap = cfg.resourceCapOverTime;
+        const totalRate = (cap.metall + cap.kristall + cap.deuterium) / (MISSION_DURATION_MS / 1000);
+        const totalSoFar = p.farmed.metall + p.farmed.kristall + p.farmed.deuterium;
+        const totalCap = cap.metall + cap.kristall + cap.deuterium;
+        if (totalSoFar < totalCap) {
+          const gain = Math.min(totalCap - totalSoFar, totalRate * deltaSec);
+          p.farmed.metall += gain * (cap.metall / totalCap);
+          p.farmed.kristall += gain * (cap.kristall / totalCap);
+          p.farmed.deuterium += gain * (cap.deuterium / totalCap);
         }
-      });
-    }
+      }
+    });
     op.lastTick = cappedNow;
   }
 
@@ -377,9 +395,6 @@ async function tickGroupExpedition(op: GroupOperation, currentState: PlayerState
   while ((op.processedHours || 0) < hoursElapsed) {
     op.processedHours = (op.processedHours || 0) + 1;
     await runGroupHourlyCheck(op, accepted, participantStates);
-    // Zwischenstand fuer alle ANDEREN Teilnehmer sofort sichern (Nachrichten, ggf. Verluste),
-    // damit nichts verloren geht, falls die Expedition noch nicht zurueckkehrt - der aktuelle
-    // Nutzer wird ohnehin am Ende von der aeusseren Route gespeichert.
     accepted.forEach((p) => {
       if (p.userId !== currentState.userId) savePlayerState(participantStates.get(p.userId)!);
     });
@@ -391,8 +406,6 @@ async function tickGroupExpedition(op: GroupOperation, currentState: PlayerState
       });
       op.status = 'resolved';
       saveOp(op);
-      // Nur die ANDEREN Teilnehmer hier speichern - der aktuelle Nutzer wird von der aeusseren
-      // Route (routes.ts) ohnehin am Ende gespeichert (siehe Kommentar oben).
       accepted.forEach((p) => {
         if (p.userId !== currentState.userId) savePlayerState(participantStates.get(p.userId)!);
       });
@@ -423,8 +436,15 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
 
   const spionageMax = Math.max(...accepted.map((p) => participantStates.get(p.userId)!.research.spionage || 0));
   const npcShips = generatePiratenFleet(targetPower, spionageMax);
-  const defenseFactor = op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : 0.15;
-  const npcDefenses = generateDefenseFleet(totalSentPower * defenseFactor, spionageMax);
+  const defenseFactor =
+    op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.2 : 0.15;
+  let npcDefenses = generateDefenseFleet(totalSentPower * defenseFactor, spionageMax);
+
+  const captainSpawned = cfg.captainChance && Math.random() < cfg.captainChance;
+  if (captainSpawned) {
+    npcDefenses = { ...npcDefenses, piratenkapitan: 1 };
+  }
+
   const npcCombined = { ...npcShips, ...npcDefenses };
   if (Object.keys(npcCombined).length === 0) return;
 
@@ -433,38 +453,113 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcCombined, research });
 
   let anyNpcDestroyed = false;
-  Object.keys(npcCombined).forEach((id) => {
-    if ((result.survivorsB[id] || 0) < npcCombined[id]) anyNpcDestroyed = true;
+  const npcResults: CombatUnitResult[] = Object.keys(npcCombined).map((id) => {
+    const base = baseStats(id);
+    const sent = npcCombined[id];
+    const survivedCount = result.survivorsB[id] || 0;
+    if (survivedCount < sent) anyNpcDestroyed = true;
+    return {
+      id,
+      name: shipName(id),
+      count: sent,
+      waffen: Math.round(base.waffen),
+      schild: Math.round(base.schild),
+      panzerung: Math.round(base.panzerung),
+      dmgTaken: Math.round(result.dmgTakenB[id] || 0),
+      destroyedCount: sent - survivedCount,
+      survivedCount,
+      destroyed: survivedCount <= 0,
+      isCaptain: id === 'piratenkapitan',
+      shotsFired: result.shotsB.shotsFired[id] || 0,
+      hits: result.shotsB.hits[id] || 0,
+      rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
+      shieldRegen: Math.round(result.shieldRegenB[id] || 0),
+    };
   });
 
+  const playerResults: CombatUnitResult[] = [];
   accepted.forEach((p) => {
-    Object.keys(p.ships).forEach((id) => {
-      p.ships[id] = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
+    const pState = participantStates.get(p.userId)!;
+    Object.entries(p.ships).forEach(([id, sent]) => {
+      if (sent <= 0) return;
+      const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
+      const eff = getEffectiveStats(id, pState.research);
+      playerResults.push({
+        id,
+        name: shipName(id),
+        ownerUsername: p.username,
+        sent,
+        survived,
+        lost: sent - survived,
+        waffen: Math.round(eff.waffen),
+        schild: Math.round(eff.schild),
+        panzerung: Math.round(eff.panzerung),
+        dmgTaken: Math.round(result.dmgTakenA[id] || 0),
+        shotsFired: result.shotsA.shotsFired[id] || 0,
+        hits: result.shotsA.hits[id] || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
+        shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+      });
+      p.ships[id] = survived;
     });
   });
 
-  if (anyNpcDestroyed && cfg.teileCap && op.teile) {
-    (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-      const amount = cfg.teileCap! * 0.1;
-      op.teile![part] = Math.min(cfg.teileCap!, op.teile![part] + amount);
+  let teileGainText = '';
+  if (anyNpcDestroyed && cfg.teileCap) {
+    const outcomeShare = 0.1;
+    accepted.forEach((p) => {
+      if (!p.teile) return;
+      (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
+        p.teile![part] = Math.min(cfg.teileCap!, p.teile![part] + cfg.teileCap! * outcomeShare);
+      });
     });
+    teileGainText = ' Jeder Teilnehmer erhält den vollen Teile-Bonus.';
   }
-  if (anyNpcDestroyed && cfg.lootBase && op.farmed) {
-    op.farmed.metall += cfg.lootBase.metall;
-    op.farmed.kristall += cfg.lootBase.kristall;
-    op.farmed.deuterium += cfg.lootBase.deuterium;
+  let lootText = '';
+  if (anyNpcDestroyed && cfg.lootBase) {
+    accepted.forEach((p) => {
+      if (!p.farmed) return;
+      p.farmed.metall += cfg.lootBase!.metall;
+      p.farmed.kristall += cfg.lootBase!.kristall;
+      p.farmed.deuterium += cfg.lootBase!.deuterium;
+    });
+    lootText = ` Jeder Teilnehmer erbeutet ${cfg.lootBase.metall.toLocaleString('de-DE')} Metall, ${cfg.lootBase.kristall.toLocaleString(
+      'de-DE'
+    )} Kristall, ${cfg.lootBase.deuterium.toLocaleString('de-DE')} Deuterium.`;
+  }
+
+  const captainResult = npcResults.find((r) => r.isCaptain);
+  let captainText = '';
+  if (captainResult) {
+    if (captainResult.destroyed) {
+      accepted.forEach((p) => addContainerToState(participantStates.get(p.userId)!, cfg.captainContainerTier!));
+      accepted.forEach((p) => {
+        if (p.dmFound !== undefined) p.dmFound += cfg.captainDm || 0;
+      });
+      captainText = ` Der Piratenkapitän wurde vernichtet! Jeder Teilnehmer erhält einen ${
+        cfg.captainContainerTier === 'gold' ? 'Gold' : 'Silber'
+      }-Container und ${cfg.captainDm} Dunkle Materie.`;
+    } else {
+      captainText = ' Der Piratenkapitän konnte fliehen.';
+    }
   }
 
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
+  const outcome = anyNpcDestroyed ? 'Feindkontakt - Piraten erlitten Verluste' : 'Feindkontakt - keine nennenswerte Wirkung';
+  const messageText = `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}`;
+  const detail: CombatDetail = {
+    sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
+    outcome,
+    roundsFought: result.roundsFought,
+    npcResults,
+    playerResults,
+  };
+
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
-    pushMessage(
-      pState,
-      'kampf',
-      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${
-        anyNpcDestroyed ? 'Feindkontakt, Piraten erlitten Verluste.' : 'Feindkontakt, aber keine nennenswerte Wirkung.'
-      }`
-    );
+    pushMessage(pState, 'kampf', messageText, detail);
   });
 }
 
@@ -474,45 +569,39 @@ function finalizeGroupExpedition(
   participantStates: Map<number, PlayerState>,
   currentUserId: number
 ): void {
-  const totalPower = accepted.reduce((sum, p) => sum + (p.contributedPower || 1), 0) || 1;
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
 
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
-    const share = (p.contributedPower || 1) / totalPower;
 
     Object.entries(p.ships).forEach(([id, count]) => {
       if (count > 0) pState.fleet[id] = (pState.fleet[id] || 0) + count;
     });
 
-    const farmed = op.farmed || { metall: 0, kristall: 0, deuterium: 0 };
-    const shareMetall = Math.floor(farmed.metall * share);
-    const shareKristall = Math.floor(farmed.kristall * share);
-    const shareDeut = Math.floor(farmed.deuterium * share);
-    pState.resources.metall += shareMetall;
-    pState.resources.kristall += shareKristall;
-    pState.resources.deuterium += shareDeut;
+    const farmed = p.farmed || { metall: 0, kristall: 0, deuterium: 0 };
+    const gainedMetall = Math.floor(farmed.metall);
+    const gainedKristall = Math.floor(farmed.kristall);
+    const gainedDeut = Math.floor(farmed.deuterium);
+    pState.resources.metall += gainedMetall;
+    pState.resources.kristall += gainedKristall;
+    pState.resources.deuterium += gainedDeut;
+    pState.resources.dm += Math.floor(p.dmFound || 0);
 
-    const teile = op.teile || { waffen: 0, schild: 0, panzerung: 0 };
-    const shareWaffen = Math.floor(teile.waffen * share);
-    const shareSchild = Math.floor(teile.schild * share);
-    const sharePanzerung = Math.floor(teile.panzerung * share);
-    pState.teile.waffen += shareWaffen;
-    pState.teile.schild += shareSchild;
-    pState.teile.panzerung += sharePanzerung;
+    const teile = p.teile || { waffen: 0, schild: 0, panzerung: 0 };
+    const gainedWaffen = Math.floor(teile.waffen);
+    const gainedSchild = Math.floor(teile.schild);
+    const gainedPanzerung = Math.floor(teile.panzerung);
+    pState.teile.waffen += gainedWaffen;
+    pState.teile.schild += gainedSchild;
+    pState.teile.panzerung += gainedPanzerung;
 
     pushMessage(
       pState,
       'farm',
-      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt. Dein Anteil (${Math.round(
-        share * 100
-      )}%): ${shareMetall.toLocaleString('de-DE')} Metall, ${shareKristall.toLocaleString('de-DE')} Kristall, ${shareDeut.toLocaleString(
+      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt. Dein Ertrag: ${gainedMetall.toLocaleString(
         'de-DE'
-      )} Deuterium, ${shareWaffen}/${shareSchild}/${sharePanzerung} Teile.`
+      )} Metall, ${gainedKristall.toLocaleString('de-DE')} Kristall, ${gainedDeut.toLocaleString('de-DE')} Deuterium, ${gainedWaffen}/${gainedSchild}/${gainedPanzerung} Teile.`
     );
-    // Der aktuelle Nutzer (dessen tick() das hier ausgeloest hat) wird von der aeusseren Route
-    // gespeichert - hier erneut speichern wuerde nichts falsch machen, aber ist unnoetig. Alle
-    // ANDEREN Teilnehmer muessen wir hier explizit speichern, sonst gehen ihre Aenderungen verloren.
     if (p.userId !== currentUserId) savePlayerState(pState);
   });
 

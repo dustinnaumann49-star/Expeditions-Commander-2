@@ -113,6 +113,7 @@ async function resolveRaid(state: PlayerState) {
   let anyDefLoss = false;
   const losses: Record<string, number> = {};
   const playerResults: CombatUnitResult[] = [];
+  const ownerUsername = getUserById(state.userId)?.username || 'Verteidiger';
 
   homeShipIds.forEach((id) => {
     const eff = getEffectiveStats(id, state.research);
@@ -125,6 +126,7 @@ async function resolveRaid(state: PlayerState) {
     playerResults.push({
       id,
       name: shipName(id),
+      ownerUsername,
       sent,
       survived,
       lost,
@@ -152,6 +154,7 @@ async function resolveRaid(state: PlayerState) {
     playerResults.push({
       id,
       name: shipName(id),
+      ownerUsername,
       sent,
       survived,
       lost: destroyed,
@@ -194,21 +197,22 @@ async function resolveRaid(state: PlayerState) {
   const piratesRepelled = npcIds.every((id) => (result.survivorsB[id] || 0) <= 0);
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
-  // Verstaerkungen: Ueberlebende Schiffe zurueck an die jeweiligen Spieler, eigener Nachrichten-Eintrag fuer sie
+  // Verstaerkungen: Schiffe je Beitrag getrennt in derselben Detailansicht auflisten (mit eigenem
+  // Spielernamen), Ueberlebende zurueck an den jeweiligen Absender. Jeder Verstaerker bekommt
+  // ausserdem eine EIGENE Container-Belohnung, exakt wie ein Verteidiger sie auch bekommen wuerde -
+  // keine Aufteilung, jeder erhaelt seine volle "Solo"-Belohnung fuer den gemeinsamen Kampfausgang.
   if (reinforcerStates.length > 0) {
-    const ownerUser = getUserById(state.userId);
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
       const ownerKey = String(r.userId);
       const ownerSurvivors = survivorsByOwner?.[ownerKey] || {};
-      const lostParts: string[] = [];
       Object.entries(r.ships).forEach(([id, sentCount]) => {
         const survived = ownerSurvivors[id] || 0;
         const lost = sentCount - survived;
         reinforcerState.fleet[id] = (reinforcerState.fleet[id] || 0) + survived;
-        if (lost > 0) lostParts.push(`${shipName(id)} x${lost}`);
         playerResults.push({
           id,
-          name: `${shipName(id)} (Verstärkung von ${r.username})`,
+          name: shipName(id),
+          ownerUsername: r.username,
           sent: sentCount,
           survived,
           lost,
@@ -223,14 +227,14 @@ async function resolveRaid(state: PlayerState) {
           shieldRegen: 0,
         });
       });
-      pushMessage(
-        reinforcerState,
-        'kampf',
-        `Deine Verstärkung für die Heimatbasis von ${ownerUser?.username || 'einem Spieler'}: ${
-          piratesRepelled ? 'Piratenüberfall erfolgreich abgewehrt!' : 'Angriff nur teilweise abgewehrt.'
-        } Eigene Verluste: ${lostParts.join(', ') || 'keine'}.`
-      );
-      savePlayerState(reinforcerState);
+      const reinforcerContainer: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';
+      reinforcerState.inventory.push({
+        id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        tier: reinforcerContainer,
+        receivedAt: Date.now(),
+      });
+      // Wird unten (nachdem alle playerResults/npcResults feststehen) mit der vollen Detailansicht
+      // versehen - siehe pushMessage-Aufrufe am Ende dieser Funktion.
     });
   }
 
@@ -248,20 +252,44 @@ async function resolveRaid(state: PlayerState) {
     state.resources.deuterium = Math.max(0, state.resources.deuterium - stolen.deuterium);
 
     const outcome = 'Piratenüberfall teilweise abgewehrt – Feinde überlebt';
+    const detail = { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults };
     pushMessage(
       state,
       'kampf',
       `${outcome} [${raidStrengthLabel}] (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
-      { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults }
+      detail
     );
+    reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
+      pushMessage(
+        reinforcerState,
+        'kampf',
+        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Angriff nur teilweise abgewehrt (${result.roundsFought} Runden). Auch du erhältst einen ${
+          piratesRepelled ? 'Gold' : 'Silber'
+        }-Container für deinen Einsatz.`,
+        detail
+      );
+      savePlayerState(reinforcerState);
+    });
   } else {
     const outcome = 'Piratenüberfall abgewehrt – alle Feinde vernichtet';
+    const detail = { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults };
     pushMessage(
       state,
       'kampf',
       `${outcome} [${raidStrengthLabel}] (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
-      { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults }
+      detail
     );
+    reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
+      pushMessage(
+        reinforcerState,
+        'kampf',
+        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Piratenüberfall erfolgreich abgewehrt (${result.roundsFought} Runden)! Auch du erhältst einen ${
+          piratesRepelled ? 'Gold' : 'Silber'
+        }-Container für deinen Einsatz.`,
+        detail
+      );
+      savePlayerState(reinforcerState);
+    });
   }
 
   state.raid = null;
