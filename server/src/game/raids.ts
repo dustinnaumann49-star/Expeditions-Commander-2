@@ -1,9 +1,12 @@
 import { DEFENSES } from './data/defenses.js';
 import { RAID_CHECK_INTERVAL_MS, RAID_WARNING_MS, RAID_MULTIPLIER, RAID_MULTIPLIER_ROLL, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS } from './data/economy.js';
 import { getEffectiveStats, baseStats, shipName, generateFallbackFleet } from './combat.js';
-import { runCombatInWorker } from './combatRunner.js';
+import type { OwnedFleetContribution } from './combat.js';
+import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
+import { loadPlayerState, savePlayerState } from './state.js';
+import { getUserById } from '../db.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
@@ -25,7 +28,7 @@ export async function processRaidTimer(state: PlayerState) {
   if (now < state.nextRaidCheck) return;
 
   state.nextRaidCheck = now + RAID_CHECK_INTERVAL_MS;
-  state.raid = { id: 'raid_' + now, spawnedAt: now, arrivalTime: now + RAID_WARNING_MS, resolved: false };
+  state.raid = { id: 'raid_' + now, spawnedAt: now, arrivalTime: now + RAID_WARNING_MS, resolved: false, reinforcements: [] };
   pushMessage(
     state,
     'kampf',
@@ -66,7 +69,21 @@ async function resolveRaid(state: PlayerState) {
   }
 
   const raidMultiplier = rollMultiplier(RAID_MULTIPLIER_ROLL);
-  const targetPower = homePower * RAID_MULTIPLIER * raidMultiplier;
+  // Verstaerkungen anderer Spieler, die rechtzeitig angekommen sind, zaehlen zur Verteidigungsstaerke
+  // dazu (bevor die Feindstaerke gewuerfelt wird) und werden gleich mitgeladen (fuer ihre eigene Forschung).
+  const now = Date.now();
+  const arrivedReinforcements = (state.raid?.reinforcements || []).filter((r) => r.arrivalTime <= now);
+  const reinforcerStates = arrivedReinforcements.map((r) => ({ r, playerState: loadPlayerState(r.userId) }));
+
+  let reinforcementPower = 0;
+  reinforcerStates.forEach(({ r, playerState }) => {
+    Object.entries(r.ships).forEach(([id, count]) => {
+      const eff = getEffectiveStats(id, playerState.research);
+      reinforcementPower += count * (eff.waffen + eff.schild + eff.panzerung);
+    });
+  });
+
+  const targetPower = (homePower + reinforcementPower) * RAID_MULTIPLIER * raidMultiplier;
   const npcShips = generateFallbackFleet(targetPower);
   const raidStrengthLabel = raidMultiplier <= 0.5 ? 'Schwacher Angriff' : raidMultiplier >= 1.5 ? 'Starker Angriff' : 'Normaler Angriff';
 
@@ -77,7 +94,21 @@ async function resolveRaid(state: PlayerState) {
     return;
   }
 
-  const result = await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense });
+  const contributions: OwnedFleetContribution[] = [
+    { ownerKey: 'owner', ships: defenderShips, research: state.research, defenseCounts: state.defense },
+    ...reinforcerStates.map(({ r, playerState }) => ({
+      ownerKey: String(r.userId),
+      ships: r.ships,
+      research: playerState.research,
+    })),
+  ];
+
+  const result =
+    reinforcerStates.length > 0
+      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense })
+      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense });
+  const survivorsByOwner: Record<string, Record<string, number>> | undefined =
+    'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 
   let anyDefLoss = false;
   const losses: Record<string, number> = {};
@@ -86,7 +117,7 @@ async function resolveRaid(state: PlayerState) {
   homeShipIds.forEach((id) => {
     const eff = getEffectiveStats(id, state.research);
     const sent = state.fleet[id] || 0;
-    const survived = result.survivorsA[id] || 0;
+    const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const lost = sent - survived;
     if (lost > 0) anyDefLoss = true;
     losses[id] = lost;
@@ -112,7 +143,7 @@ async function resolveRaid(state: PlayerState) {
   homeDefIds.forEach((id) => {
     const eff = getEffectiveStats(id, state.research, state.defense);
     const sent = state.defense[id] || 0;
-    const survived = result.survivorsA[id] || 0;
+    const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const destroyed = sent - survived;
     if (destroyed > 0) anyDefLoss = true;
     losses[id] = destroyed;
@@ -162,6 +193,46 @@ async function resolveRaid(state: PlayerState) {
 
   const piratesRepelled = npcIds.every((id) => (result.survivorsB[id] || 0) <= 0);
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
+
+  // Verstaerkungen: Ueberlebende Schiffe zurueck an die jeweiligen Spieler, eigener Nachrichten-Eintrag fuer sie
+  if (reinforcerStates.length > 0) {
+    const ownerUser = getUserById(state.userId);
+    reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
+      const ownerKey = String(r.userId);
+      const ownerSurvivors = survivorsByOwner?.[ownerKey] || {};
+      const lostParts: string[] = [];
+      Object.entries(r.ships).forEach(([id, sentCount]) => {
+        const survived = ownerSurvivors[id] || 0;
+        const lost = sentCount - survived;
+        reinforcerState.fleet[id] = (reinforcerState.fleet[id] || 0) + survived;
+        if (lost > 0) lostParts.push(`${shipName(id)} x${lost}`);
+        playerResults.push({
+          id,
+          name: `${shipName(id)} (Verstärkung von ${r.username})`,
+          sent: sentCount,
+          survived,
+          lost,
+          waffen: 0,
+          schild: 0,
+          panzerung: 0,
+          dmgTaken: 0,
+          shotsFired: 0,
+          hits: 0,
+          rapidFireTriggers: 0,
+          shieldDmgTaken: 0,
+          shieldRegen: 0,
+        });
+      });
+      pushMessage(
+        reinforcerState,
+        'kampf',
+        `Deine Verstärkung für die Heimatbasis von ${ownerUser?.username || 'einem Spieler'}: ${
+          piratesRepelled ? 'Piratenüberfall erfolgreich abgewehrt!' : 'Angriff nur teilweise abgewehrt.'
+        } Eigene Verluste: ${lostParts.join(', ') || 'keine'}.`
+      );
+      savePlayerState(reinforcerState);
+    });
+  }
 
   const containerReward: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';
   state.inventory.push({ id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), tier: containerReward, receivedAt: Date.now() });

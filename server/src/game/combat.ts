@@ -10,7 +10,7 @@ import {
   PRECISION_MAX_PLAYER,
   MAX_ROUNDS,
 } from './data/combatConstants.js';
-import { NPC_SPECIALS } from './data/economy.js';
+import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
 import type { CombatStats } from './types.js';
 
 // ========== GRUNDLAGEN ==========
@@ -261,6 +261,7 @@ export function generateAsteroidPirateFleet(targetPower: number): Record<string,
 
 interface CombatUnit {
   typeId: string;
+  ownerKey?: string; // nur bei Mehrspieler-Kaempfen gesetzt (siehe resolveCombatMultiOwner)
   waffen: number;
   shieldMax: number;
   shieldCur: number;
@@ -276,6 +277,35 @@ function buildUnits(shipsObj: Record<string, number>, statsFn: (id: string) => C
     for (let i = 0; i < count; i++) {
       units.push({ typeId: id, waffen: s.waffen, shieldMax: s.schild, shieldCur: s.schild, hpMax: s.panzerung, hpCur: s.panzerung });
     }
+  });
+  return units;
+}
+
+export interface OwnedFleetContribution {
+  ownerKey: string;
+  ships: Record<string, number>;
+  research?: Record<string, number>; // eigene Forschung des Beitragenden - faellt sonst auf die Forschung von Seite A zurueck
+  defenseCounts?: Record<string, number>; // fuer Schildkuppel-Bonus, falls relevant (z.B. Heimatverteidiger bei Raid)
+  useAllyStats?: boolean; // true = feste ALLY_STATS-Werte statt Forschungs-basierter Berechnung (Notruf-Verbuendete)
+}
+
+function buildUnitsMultiOwner(
+  contributions: OwnedFleetContribution[],
+  fallbackStatsFn: (id: string) => CombatStats
+): CombatUnit[] {
+  const units: CombatUnit[] = [];
+  contributions.forEach(({ ownerKey, ships, research, defenseCounts, useAllyStats }) => {
+    const fn = (id: string) => {
+      if (useAllyStats) return ALLY_STATS;
+      return research ? getEffectiveStats(id, research, defenseCounts || {}) : fallbackStatsFn(id);
+    };
+    Object.entries(ships).forEach(([id, count]) => {
+      if (!count || count <= 0) return;
+      const s = fn(id);
+      for (let i = 0; i < count; i++) {
+        units.push({ typeId: id, ownerKey, waffen: s.waffen, shieldMax: s.schild, shieldCur: s.schild, hpMax: s.panzerung, hpCur: s.panzerung });
+      }
+    });
   });
   return units;
 }
@@ -394,6 +424,60 @@ function fireShots(
   });
 }
 
+interface RoundsResult {
+  roundsFought: number;
+  unitsA: CombatUnit[];
+  unitsB: CombatUnit[];
+  dmgTakenA: Record<string, number>;
+  dmgTakenB: Record<string, number>;
+  shieldDmgTakenA: Record<string, number>;
+  shieldDmgTakenB: Record<string, number>;
+  shieldRegenA: Record<string, number>;
+  shieldRegenB: Record<string, number>;
+  shotsA: ShotStats;
+  shotsB: ShotStats;
+}
+
+// Kern der Kampf-Simulation, unabhaengig davon ob Seite A einem einzelnen Spieler gehoert
+// (resolveCombat) oder mehreren Spielern gemeinsam (resolveCombatMultiOwner).
+function runRounds(unitsAIn: CombatUnit[], unitsBIn: CombatUnit[], research: Record<string, number>): RoundsResult {
+  let unitsA = unitsAIn;
+  let unitsB = unitsBIn;
+  const dmgTakenA: Record<string, number> = {};
+  const dmgTakenB: Record<string, number> = {};
+  const shieldDmgTakenA: Record<string, number> = {};
+  const shieldDmgTakenB: Record<string, number> = {};
+  const shieldRegenA: Record<string, number> = {};
+  const shieldRegenB: Record<string, number> = {};
+  const shotsA = emptyShotStats();
+  const shotsB = emptyShotStats();
+
+  let roundsFought = 0;
+  const regenPlayer = getShieldRegenRate(research);
+  const regenNpc = SHIELD_REGEN_BASE;
+
+  for (let round = 1; round <= MAX_ROUNDS; round++) {
+    if (unitsA.length === 0 || unitsB.length === 0) break;
+    roundsFought = round;
+    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA);
+    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB);
+    unitsA = unitsA.filter((u) => u.hpCur > 0);
+    unitsB = unitsB.filter((u) => u.hpCur > 0);
+    unitsA.forEach((u) => {
+      const before = u.shieldCur;
+      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenPlayer);
+      shieldRegenA[u.typeId] = (shieldRegenA[u.typeId] || 0) + (u.shieldCur - before);
+    });
+    unitsB.forEach((u) => {
+      const before = u.shieldCur;
+      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenNpc);
+      shieldRegenB[u.typeId] = (shieldRegenB[u.typeId] || 0) + (u.shieldCur - before);
+    });
+  }
+
+  return { roundsFought, unitsA, unitsB, dmgTakenA, dmgTakenB, shieldDmgTakenA, shieldDmgTakenB, shieldRegenA, shieldRegenB, shotsA, shotsB };
+}
+
 export interface CombatResult {
   roundsFought: number;
   survivorsA: Record<string, number>;
@@ -422,54 +506,14 @@ export function resolveCombat(
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>
 ): CombatResult {
-  let unitsA = buildUnits(sideAShips, statsFnA);
-  let unitsB = buildUnits(sideBShips, statsFnB);
-  const dmgTakenA: Record<string, number> = {};
-  const dmgTakenB: Record<string, number> = {};
-  const shieldDmgTakenA: Record<string, number> = {};
-  const shieldDmgTakenB: Record<string, number> = {};
-  const shieldRegenA: Record<string, number> = {};
-  const shieldRegenB: Record<string, number> = {};
-  Object.keys(sideAShips).forEach((id) => {
-    dmgTakenA[id] = 0;
-    shieldDmgTakenA[id] = 0;
-    shieldRegenA[id] = 0;
-  });
-  Object.keys(sideBShips).forEach((id) => {
-    dmgTakenB[id] = 0;
-    shieldDmgTakenB[id] = 0;
-    shieldRegenB[id] = 0;
-  });
-  const shotsA = emptyShotStats();
-  const shotsB = emptyShotStats();
-
-  let roundsFought = 0;
-  const regenPlayer = getShieldRegenRate(research);
-  const regenNpc = SHIELD_REGEN_BASE;
-
-  for (let round = 1; round <= MAX_ROUNDS; round++) {
-    if (unitsA.length === 0 || unitsB.length === 0) break;
-    roundsFought = round;
-    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA);
-    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB);
-    unitsA = unitsA.filter((u) => u.hpCur > 0);
-    unitsB = unitsB.filter((u) => u.hpCur > 0);
-    unitsA.forEach((u) => {
-      const before = u.shieldCur;
-      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenPlayer);
-      shieldRegenA[u.typeId] = (shieldRegenA[u.typeId] || 0) + (u.shieldCur - before);
-    });
-    unitsB.forEach((u) => {
-      const before = u.shieldCur;
-      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenNpc);
-      shieldRegenB[u.typeId] = (shieldRegenB[u.typeId] || 0) + (u.shieldCur - before);
-    });
-  }
+  const unitsA0 = buildUnits(sideAShips, statsFnA);
+  const unitsB0 = buildUnits(sideBShips, statsFnB);
+  const r = runRounds(unitsA0, unitsB0, research);
 
   const survivorsA: Record<string, number> = {};
-  unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
+  r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
   const survivorsB: Record<string, number> = {};
-  unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
+  r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
   Object.keys(sideAShips).forEach((id) => {
     if (survivorsA[id] === undefined) survivorsA[id] = 0;
   });
@@ -478,16 +522,81 @@ export function resolveCombat(
   });
 
   return {
-    roundsFought,
+    roundsFought: r.roundsFought,
     survivorsA,
     survivorsB,
-    dmgTakenA,
-    dmgTakenB,
-    shieldDmgTakenA,
-    shieldDmgTakenB,
-    shieldRegenA,
-    shieldRegenB,
-    shotsA,
-    shotsB,
+    dmgTakenA: r.dmgTakenA,
+    dmgTakenB: r.dmgTakenB,
+    shieldDmgTakenA: r.shieldDmgTakenA,
+    shieldDmgTakenB: r.shieldDmgTakenB,
+    shieldRegenA: r.shieldRegenA,
+    shieldRegenB: r.shieldRegenB,
+    shotsA: r.shotsA,
+    shotsB: r.shotsB,
+  };
+}
+
+export interface MultiOwnerCombatResult extends CombatResult {
+  // ownerKey -> typeId -> Anzahl Ueberlebender (fuer die faire Rueckgabe der Schiffe an die
+  // jeweiligen Beitragenden bei Gruppen-Operationen/Raid-Verstaerkung)
+  survivorsByOwner: Record<string, Record<string, number>>;
+}
+
+/**
+ * Wie resolveCombat, aber Seite A besteht aus mehreren Beitraegen unterschiedlicher Spieler
+ * (Gruppen-Expeditionen, gemeinsame Notruf-Events, Raid-Verstaerkung). Jede Einheit wird intern mit
+ * ihrem Besitzer markiert, damit am Ende jeder Spieler exakt seine eigenen ueberlebenden Schiffe
+ * zurueckbekommt (basierend auf dem tatsaechlichen Simulationsergebnis, nicht auf einer Schaetzung).
+ */
+export function resolveCombatMultiOwner(
+  contributions: OwnedFleetContribution[],
+  statsFnA: (id: string) => CombatStats,
+  sideBShips: Record<string, number>,
+  statsFnB: (id: string) => CombatStats,
+  research: Record<string, number>
+): MultiOwnerCombatResult {
+  const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
+  const unitsB0 = buildUnits(sideBShips, statsFnB);
+  const r = runRounds(unitsA0, unitsB0, research);
+
+  const survivorsA: Record<string, number> = {};
+  const survivorsByOwner: Record<string, Record<string, number>> = {};
+  contributions.forEach((c) => (survivorsByOwner[c.ownerKey] = {}));
+  r.unitsA.forEach((u) => {
+    survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1;
+    if (u.ownerKey) {
+      survivorsByOwner[u.ownerKey][u.typeId] = (survivorsByOwner[u.ownerKey][u.typeId] || 0) + 1;
+    }
+  });
+  const survivorsB: Record<string, number> = {};
+  r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
+
+  const allAIds = new Set<string>();
+  contributions.forEach((c) => Object.keys(c.ships).forEach((id) => allAIds.add(id)));
+  allAIds.forEach((id) => {
+    if (survivorsA[id] === undefined) survivorsA[id] = 0;
+  });
+  contributions.forEach((c) => {
+    Object.keys(c.ships).forEach((id) => {
+      if (survivorsByOwner[c.ownerKey][id] === undefined) survivorsByOwner[c.ownerKey][id] = 0;
+    });
+  });
+  Object.keys(sideBShips).forEach((id) => {
+    if (survivorsB[id] === undefined) survivorsB[id] = 0;
+  });
+
+  return {
+    roundsFought: r.roundsFought,
+    survivorsA,
+    survivorsB,
+    survivorsByOwner,
+    dmgTakenA: r.dmgTakenA,
+    dmgTakenB: r.dmgTakenB,
+    shieldDmgTakenA: r.shieldDmgTakenA,
+    shieldDmgTakenB: r.shieldDmgTakenB,
+    shieldRegenA: r.shieldRegenA,
+    shieldRegenB: r.shieldRegenB,
+    shotsA: r.shotsA,
+    shotsB: r.shotsB,
   };
 }

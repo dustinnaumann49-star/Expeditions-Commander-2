@@ -1,14 +1,17 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import { resolveCombat, getEffectiveStats, baseStats } from './combat.js';
+import { resolveCombat, resolveCombatMultiOwner, getEffectiveStats, baseStats } from './combat.js';
 import { ALLY_STATS } from './data/economy.js';
 import type { CombatWorkerRequest } from './combatRunner.js';
 
-const { sideAShips, sideBShips, research, defenseCounts, kampfBoostActive, useAllyStats } = workerData as CombatWorkerRequest;
+const { sideAShips, contributions, sideBShips, research, defenseCounts, kampfBoostActive, useAllyStats } = workerData as CombatWorkerRequest;
 
 function statsFnA(id: string) {
   if (useAllyStats && id === 'verbuendete') return ALLY_STATS;
   return getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive);
 }
 
-const result = resolveCombat(sideAShips, statsFnA, sideBShips, baseStats, research);
+const result = contributions
+  ? resolveCombatMultiOwner(contributions, statsFnA, sideBShips, baseStats, research)
+  : resolveCombat(sideAShips || {}, statsFnA, sideBShips, baseStats, research);
+
 parentPort?.postMessage(result);

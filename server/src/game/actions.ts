@@ -6,6 +6,7 @@ import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processEventTimer } from './events.js';
 import { processRaidTimer } from './raids.js';
+import { processGroupOperationsForUser } from './groupOps.js';
 import type { PlayerState, ResourceCost } from './types.js';
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN (Bauzeit/Forschungszeit) ==========
@@ -104,6 +105,7 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   await processMissions(state);
   await processEventTimer(state);
   await processRaidTimer(state);
+  await processGroupOperationsForUser(state);
 
   state.lastUpdate = now;
   return state;

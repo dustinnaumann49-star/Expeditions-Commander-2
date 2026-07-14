@@ -158,11 +158,19 @@ export interface ContainerReward {
   ships?: Record<string, number>;
 }
 
+export interface RaidReinforcement {
+  userId: number;
+  username: string;
+  ships: Record<string, number>;
+  arrivalTime: number;
+}
+
 export interface RaidState {
   id: string;
   spawnedAt: number;
   arrivalTime: number;
   resolved: boolean;
+  reinforcements: RaidReinforcement[];
 }
 
 export interface EventState {
@@ -177,6 +185,37 @@ export interface FleetPreset {
   id: string;
   name: string;
   ships: Record<string, number>;
+}
+
+export interface GroupOperationParticipant {
+  userId: number;
+  username: string;
+  isCreator: boolean;
+  status: 'pending' | 'accepted' | 'declined';
+  ships: Record<string, number>;
+  contributedPower?: number; // zum Zeitpunkt des Starts berechnet, fuer die anteilige Beute-Aufteilung
+}
+
+export interface GroupOperation {
+  id: string;
+  kind: 'expedition' | 'event';
+  sektorId?: string;
+  eventName?: string;
+  creatorId: number;
+  status: 'inviting' | 'departed' | 'resolved' | 'cancelled';
+  participants: GroupOperationParticipant[];
+  createdAt: number;
+  departedAt?: number;
+  arriveTime?: number;
+  endTime?: number;
+  returnTime?: number;
+  processedHours?: number;
+  lastTick?: number | null;
+  farmed?: { metall: number; kristall: number; deuterium: number };
+  dmFound?: number;
+  teile?: { waffen: number; schild: number; panzerung: number };
+  resultMessage?: string;
+  resultDetail?: CombatDetail;
 }
 
 export interface PlayerState {

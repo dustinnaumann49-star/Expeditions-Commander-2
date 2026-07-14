@@ -9,6 +9,9 @@ import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
+import { listActiveRaids, reinforceRaid } from './raidReinforce.js';
+import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation } from './groupOps.js';
+import { listAllUsers } from '../db.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
@@ -227,4 +230,68 @@ gameRouter.post('/messages/clear', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'type muss "kampf", "farm" oder leer sein.' });
   }
   handleAction(req, res, (state) => clearMessages(state, type));
+});
+
+// ---- Andere Spieler ----
+
+gameRouter.get('/users', (req: AuthedRequest, res) => {
+  res.json({ users: listAllUsers(req.userId!) });
+});
+
+// ---- Raid-Verstärkung (jeder sieht alle aktiven Raids und kann helfen) ----
+
+gameRouter.get('/raids/active', (req: AuthedRequest, res) => {
+  try {
+    res.json({ raids: listActiveRaids(req.userId!) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden der aktiven Raids.' });
+  }
+});
+
+gameRouter.post('/raids/reinforce', (req: AuthedRequest, res) => {
+  const { targetUserId, ships } = req.body ?? {};
+  if (typeof targetUserId !== 'number' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'targetUserId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => reinforceRaid(state, targetUserId, ships));
+});
+
+// ---- Gemeinsame Expeditionen / Notruf-Events (Einladung per Name, Ersteller startet manuell) ----
+
+gameRouter.get('/party/list', (req: AuthedRequest, res) => {
+  try {
+    res.json({ operations: listMyGroupOperations(req.userId!) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden der gemeinsamen Operationen.' });
+  }
+});
+
+gameRouter.post('/party/create', (req: AuthedRequest, res) => {
+  const { kind, sektorId, ships, inviteUserIds } = req.body ?? {};
+  if ((kind !== 'expedition' && kind !== 'event') || typeof ships !== 'object' || ships === null || !Array.isArray(inviteUserIds)) {
+    return res.status(400).json({ error: 'kind, ships und inviteUserIds erforderlich.' });
+  }
+  handleAction(req, res, (state) => createGroupOperation(state, kind, sektorId, ships, inviteUserIds));
+});
+
+gameRouter.post('/party/respond', (req: AuthedRequest, res) => {
+  const { opId, accept, ships } = req.body ?? {};
+  if (typeof opId !== 'string' || typeof accept !== 'boolean' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'opId, accept und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => respondToGroupOperation(state, opId, accept, ships));
+});
+
+gameRouter.post('/party/cancel', (req: AuthedRequest, res) => {
+  const { opId } = req.body ?? {};
+  if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
+  handleAction(req, res, (state) => cancelGroupOperation(state, opId));
+});
+
+gameRouter.post('/party/start', (req: AuthedRequest, res) => {
+  const { opId } = req.body ?? {};
+  if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
+  handleAction(req, res, (state) => startGroupOperation(state, opId));
 });
