@@ -39,7 +39,7 @@ export interface DefenseDefinition {
   buildTime: number;
   cost: ResourceCost;
   stats: CombatStats;
-  maxCount: number;
+  maxCount?: number; // fehlt = unbegrenzt (nur noch Schildkuppeln haben ein Limit)
   isDome?: boolean;
 }
 

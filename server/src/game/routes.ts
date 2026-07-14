@@ -54,22 +54,33 @@ gameRouter.get('/data', (_req, res) => {
   });
 });
 
-gameRouter.get('/state', (req: AuthedRequest, res) => {
-  const state = loadPlayerState(req.userId!);
-  tick(state);
-  savePlayerState(state);
-  res.json({ ...state, serverTime: Date.now() });
+gameRouter.get('/state', async (req: AuthedRequest, res) => {
+  try {
+    const state = loadPlayerState(req.userId!);
+    await tick(state);
+    savePlayerState(state);
+    res.json({ ...state, serverTime: Date.now() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden des Spielzustands.' });
+  }
 });
 
 // Gemeinsamer Ablauf fuer alle zustandsveraendernden Aktionen: laden, nachholen (tick),
-// Aktion ausfuehren, bei Erfolg speichern und neuen Zustand zurueckgeben.
-function handleAction(req: AuthedRequest, res: Response, action: (state: PlayerState) => ActionResult) {
-  const state = loadPlayerState(req.userId!);
-  tick(state);
-  const result = action(state);
-  if (!result.ok) return res.status(400).json({ error: result.error });
-  savePlayerState(state);
-  res.json({ ...state, serverTime: Date.now() });
+// Aktion ausfuehren (kann selbst asynchron sein, z.B. wegen Kampf-Worker-Thread),
+// bei Erfolg speichern und neuen Zustand zurueckgeben.
+async function handleAction(req: AuthedRequest, res: Response, action: (state: PlayerState) => ActionResult | Promise<ActionResult>) {
+  try {
+    const state = loadPlayerState(req.userId!);
+    await tick(state);
+    const result = await action(state);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    savePlayerState(state);
+    res.json({ ...state, serverTime: Date.now() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler bei der Verarbeitung.' });
+  }
 }
 
 gameRouter.post('/build/ship', (req: AuthedRequest, res) => {

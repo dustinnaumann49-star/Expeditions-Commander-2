@@ -1,6 +1,7 @@
 import { DEFENSES } from './data/defenses.js';
 import { RAID_CHECK_INTERVAL_MS, RAID_WARNING_MS, RAID_MULTIPLIER, RAID_MULTIPLIER_ROLL, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, resolveCombat, generateFallbackFleet } from './combat.js';
+import { getEffectiveStats, baseStats, shipName, generateFallbackFleet } from './combat.js';
+import { runCombatInWorker } from './combatRunner.js';
 import { DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
@@ -9,11 +10,11 @@ function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
 }
 
-export function processRaidTimer(state: PlayerState) {
+export async function processRaidTimer(state: PlayerState) {
   const now = Date.now();
 
   if (state.raid && !state.raid.resolved && now >= state.raid.arrivalTime) {
-    resolveRaid(state);
+    await resolveRaid(state);
     return;
   }
   if (state.raid && state.raid.resolved) {
@@ -32,7 +33,7 @@ export function processRaidTimer(state: PlayerState) {
   );
 }
 
-function resolveRaid(state: PlayerState) {
+async function resolveRaid(state: PlayerState) {
   const homeShipIds = COMBAT_SHIP_IDS.filter((id) => (state.fleet[id] || 0) > 0);
   const homeDefIds = DEFENSES.map((d) => d.id).filter((id) => (state.defense[id] || 0) > 0);
 
@@ -76,7 +77,7 @@ function resolveRaid(state: PlayerState) {
     return;
   }
 
-  const result = resolveCombat(defenderShips, (id) => getEffectiveStats(id, state.research, state.defense), npcShips, baseStats, state.research);
+  const result = await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense });
 
   let anyDefLoss = false;
   const losses: Record<string, number> = {};

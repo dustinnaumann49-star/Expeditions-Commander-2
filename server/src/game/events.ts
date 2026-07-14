@@ -7,7 +7,8 @@ import {
   EVENT_MULTIPLIER_ROLL,
   ALLY_STATS,
 } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, combatFleetPower, resolveCombat, generateFallbackFleet } from './combat.js';
+import { getEffectiveStats, baseStats, shipName, combatFleetPower, generateFallbackFleet } from './combat.js';
+import { runCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import type { ActionResult } from './actions.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
@@ -33,12 +34,7 @@ export function processEventTimer(state: PlayerState) {
   }
 }
 
-function getCombatantStats(id: string, research: Record<string, number>): { waffen: number; schild: number; panzerung: number } {
-  if (id === 'verbuendete') return ALLY_STATS;
-  return getEffectiveStats(id, research);
-}
-
-export function startEventMission(state: PlayerState, selection: Record<string, number>): ActionResult {
+export async function startEventMission(state: PlayerState, selection: Record<string, number>): Promise<ActionResult> {
   if (!state.event || state.event.started) return { ok: false, error: 'Kein aktiver Notruf.' };
   const playerIds = Object.keys(selection).filter((id) => selection[id] > 0);
   if (playerIds.length === 0) return { ok: false, error: 'Keine Schiffe ausgewählt.' };
@@ -57,13 +53,7 @@ export function startEventMission(state: PlayerState, selection: Record<string, 
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
 
   const allySelection = { ...selection, verbuendete: allyCount };
-  const result = resolveCombat(
-    allySelection,
-    (id) => getCombatantStats(id, state.research),
-    npcShips,
-    baseStats,
-    state.research
-  );
+  const result = await runCombatInWorker({ sideAShips: allySelection, sideBShips: npcShips, research: state.research, useAllyStats: true });
 
   let anyPlayerLoss = false;
   const losses: Record<string, number> = {};

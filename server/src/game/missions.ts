@@ -14,13 +14,13 @@ import {
   baseStats,
   shipName,
   combatFleetPower,
-  resolveCombat,
   generatePiratenFleet,
   generateFallbackFleet,
   generateDefenseFleet,
   generateAsteroidPirateFleet,
 } from './combat.js';
 import { pushMessage } from './messages.js';
+import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
 import type { CombatUnitResult, Mission, PlayerState } from './types.js';
 
@@ -138,7 +138,7 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
 
 // ========== STUENDLICHER FEINDKONTAKT-CHECK ==========
 
-function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
+async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   const escortCount = mission.ships.begleitschiff || 0;
   if (escortCount <= 0) return;
 
@@ -154,13 +154,7 @@ function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   }
 
   const defenderShips = { begleitschiff: escortCount };
-  const result = resolveCombat(
-    defenderShips,
-    (id) => getEffectiveStats(id, state.research),
-    npcShips,
-    baseStats,
-    state.research
-  );
+  const result = await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research });
 
   const survivedEscorts = result.survivorsA.begleitschiff || 0;
   const lostEscorts = escortCount - survivedEscorts;
@@ -257,12 +251,12 @@ function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   );
 }
 
-function runHourlyCheck(state: PlayerState, mission: Mission) {
+async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const cfg = SEKTOR_CONFIG[mission.sektorId];
   if (!cfg) return;
 
   if (cfg.type === 'asteroid') {
-    runAsteroidEscortCheck(state, mission);
+    await runAsteroidEscortCheck(state, mission);
     return;
   }
 
@@ -313,7 +307,7 @@ function runHourlyCheck(state: PlayerState, mission: Mission) {
     return;
   }
 
-  const result = resolveCombat(mission.ships, (id) => getEffectiveStats(id, state.research), npcCombined, baseStats, state.research);
+  const result = await runCombatInWorker({ sideAShips: mission.ships, sideBShips: npcCombined, research: state.research });
 
   let anyNpcDestroyed = false;
   const npcLosses: Record<string, number> = {};
@@ -498,7 +492,7 @@ function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rue
   return 'rueckflug';
 }
 
-function tickMission(state: PlayerState, mission: Mission, now: number) {
+async function tickMission(state: PlayerState, mission: Mission, now: number) {
   if (mission.finalized) return;
   missionPhase(mission, now); // Phase aktuell nur fuers Frontend relevant, hier nur zur Vollstaendigkeit berechnet
   if (now < mission.arriveTime) return;
@@ -513,7 +507,7 @@ function tickMission(state: PlayerState, mission: Mission, now: number) {
     mission.processedHours++;
     const totalShips = Object.values(mission.ships).reduce((a, b) => a + b, 0);
     if (totalShips > 0) {
-      runHourlyCheck(state, mission);
+      await runHourlyCheck(state, mission);
       if (Object.values(mission.ships).reduce((a, b) => a + b, 0) === 0) {
         abortMissionDestroyed(state, mission);
         return;
@@ -525,8 +519,10 @@ function tickMission(state: PlayerState, mission: Mission, now: number) {
   }
 }
 
-export function processMissions(state: PlayerState) {
+export async function processMissions(state: PlayerState) {
   const now = Date.now();
-  state.missions.forEach((m) => tickMission(state, m, now));
+  for (const m of state.missions) {
+    await tickMission(state, m, now);
+  }
   state.missions = state.missions.filter((m) => !m.finalized);
 }

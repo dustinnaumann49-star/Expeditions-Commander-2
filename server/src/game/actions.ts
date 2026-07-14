@@ -62,7 +62,7 @@ function countDefenseEverywhere(state: PlayerState, defId: string): number {
 // Wird bei jedem Laden des Spielzustands aufgerufen und rechnet alles seit `lastUpdate` hoch -
 // ersetzt den setInterval-Loop aus dem HTML-Prototyp durch ein zustandsloses "catch up"-Prinzip,
 // das serverseitig ohne Dauer-Prozess auskommt.
-export function tick(state: PlayerState): PlayerState {
+export async function tick(state: PlayerState): Promise<PlayerState> {
   const now = Date.now();
 
   // Bau-Warteschlange abarbeiten
@@ -101,9 +101,9 @@ export function tick(state: PlayerState): PlayerState {
   });
 
   // Missionen (Farmen/Kampf), Notruf-Events und Basis-Raids nachholen
-  processMissions(state);
-  processEventTimer(state);
-  processRaidTimer(state);
+  await processMissions(state);
+  await processEventTimer(state);
+  await processRaidTimer(state);
 
   state.lastUpdate = now;
   return state;
