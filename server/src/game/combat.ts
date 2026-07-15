@@ -94,17 +94,19 @@ export function getPrecisionChance(research: Record<string, number>, applyPlayer
 
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gleichmaessig verteilt auf alle NICHT-Kuppel-
 // Verteidigungsanlagen. Kuppeln selbst erhalten (und geben sich) diesen Bonus nicht.
-export function getShieldDomeBonus(defenseCounts: Record<string, number>): number {
-  let domeShieldTotal = 0;
-  let otherDefenseCount = 0;
+// Gemeinsamer Kuppel-Schild-Pool: Summe aller Kuppel-Schildwerte (inkl. Forschungs-Multiplikator).
+// Wird NICHT mehr pro Einheit verteilt, sondern als ein einziger, gemeinsamer Puffer behandelt, der
+// Schaden fuer die GESAMTE Seite abfaengt, bevor eine einzelne Anlage getroffen wird (siehe
+// runRounds/fireShots). Kuppeln sind auf jeweils 1 Exemplar begrenzt (siehe defenses.ts).
+export function computeDomeSharedPool(defenseCounts: Record<string, number>, research: Record<string, number>): number {
+  let total = 0;
   DEFENSES.forEach((d) => {
+    if (!d.isDome) return;
     const count = defenseCounts[d.id] || 0;
     if (count <= 0) return;
-    if (d.isDome) domeShieldTotal += count * d.stats.schild;
-    else otherDefenseCount += count;
+    total += count * d.stats.schild;
   });
-  if (otherDefenseCount === 0 || domeShieldTotal === 0) return 0;
-  return domeShieldTotal / otherDefenseCount;
+  return total * schildMultiplier(research);
 }
 
 /**
@@ -128,11 +130,12 @@ export function getEffectiveStats(
   }
   const def = findDefense(id);
   if (def) {
-    const domeBonus = def.isDome ? 0 : getShieldDomeBonus(defenseCounts);
-    const ownSchild = def.isDome ? 0 : def.stats.schild; // Kuppeln schuetzen sich selbst nicht
+    // Kuppeln geben ihren kompletten Schildwert an den gemeinsamen Pool ab (siehe
+    // computeDomeSharedPool/runRounds) statt ihn selbst zu tragen oder pro Einheit zu verteilen.
+    const ownSchild = def.isDome ? 0 : def.stats.schild;
     return {
       waffen: def.stats.waffen * waffenMultiplier(research) * kampfBoost,
-      schild: (ownSchild + domeBonus) * schildMultiplier(research) * kampfBoost,
+      schild: ownSchild * schildMultiplier(research) * kampfBoost,
       panzerung: def.stats.panzerung * panzerungMultiplier(research) * kampfBoost,
     };
   }
@@ -331,7 +334,8 @@ function fireShots(
   shieldDmgTakenTarget: Record<string, number>,
   applyPlayerResearch: boolean,
   research: Record<string, number>,
-  shooterStats: ShotStats
+  shooterStats: ShotStats,
+  targetsSharedShieldPool?: { remaining: number }
 ) {
   if (targets.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
@@ -382,6 +386,16 @@ function fireShots(
       let currentTarget: CombatUnit | undefined = target;
       let remainingDmg = dmg;
       let cascadeSteps = 0;
+
+      // Gemeinsamer Kuppel-Schild-Pool (falls vorhanden, z.B. Heimatverteidigung): faengt Schaden
+      // zuerst ab, bevor irgendeine einzelne Anlage ihren eigenen Schild/Panzerung verliert -
+      // schuetzt die GESAMTE Seite, nicht nur eine einzelne, zufaellig getroffene Anlage.
+      if (targetsSharedShieldPool && targetsSharedShieldPool.remaining > 0) {
+        const absorbed = Math.min(remainingDmg, targetsSharedShieldPool.remaining);
+        targetsSharedShieldPool.remaining -= absorbed;
+        remainingDmg -= absorbed;
+        if (remainingDmg <= 0) continue;
+      }
 
       while (remainingDmg > 0 && currentTarget && cascadeSteps < MAX_CASCADE) {
         cascadeSteps++;
@@ -436,11 +450,17 @@ interface RoundsResult {
   shieldRegenB: Record<string, number>;
   shotsA: ShotStats;
   shotsB: ShotStats;
+  remainingSharedShieldPoolA: number;
 }
 
 // Kern der Kampf-Simulation, unabhaengig davon ob Seite A einem einzelnen Spieler gehoert
 // (resolveCombat) oder mehreren Spielern gemeinsam (resolveCombatMultiOwner).
-function runRounds(unitsAIn: CombatUnit[], unitsBIn: CombatUnit[], research: Record<string, number>): RoundsResult {
+function runRounds(
+  unitsAIn: CombatUnit[],
+  unitsBIn: CombatUnit[],
+  research: Record<string, number>,
+  sharedShieldPoolA = 0
+): RoundsResult {
   let unitsA = unitsAIn;
   let unitsB = unitsBIn;
   const dmgTakenA: Record<string, number> = {};
@@ -455,12 +475,16 @@ function runRounds(unitsAIn: CombatUnit[], unitsBIn: CombatUnit[], research: Rec
   let roundsFought = 0;
   const regenPlayer = getShieldRegenRate(research);
   const regenNpc = SHIELD_REGEN_BASE;
+  // Gemeinsamer Kuppel-Schild-Pool fuer Seite A (nur relevant bei Heimatverteidigung mit
+  // Schildkuppeln) - faengt Schaden fuer die GESAMTE Seite ab, bevor einzelne Anlagen getroffen
+  // werden. Regeneriert sich zwischen den Runden mit derselben Rate wie normale Schilde.
+  const poolA = { remaining: sharedShieldPoolA };
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     if (unitsA.length === 0 || unitsB.length === 0) break;
     roundsFought = round;
     fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA);
-    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB);
+    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB, poolA);
     unitsA = unitsA.filter((u) => u.hpCur > 0);
     unitsB = unitsB.filter((u) => u.hpCur > 0);
     unitsA.forEach((u) => {
@@ -473,9 +497,25 @@ function runRounds(unitsAIn: CombatUnit[], unitsBIn: CombatUnit[], research: Rec
       u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenNpc);
       shieldRegenB[u.typeId] = (shieldRegenB[u.typeId] || 0) + (u.shieldCur - before);
     });
+    if (sharedShieldPoolA > 0) {
+      poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
+    }
   }
 
-  return { roundsFought, unitsA, unitsB, dmgTakenA, dmgTakenB, shieldDmgTakenA, shieldDmgTakenB, shieldRegenA, shieldRegenB, shotsA, shotsB };
+  return {
+    roundsFought,
+    unitsA,
+    unitsB,
+    dmgTakenA,
+    dmgTakenB,
+    shieldDmgTakenA,
+    shieldDmgTakenB,
+    shieldRegenA,
+    shieldRegenB,
+    shotsA,
+    shotsB,
+    remainingSharedShieldPoolA: poolA.remaining,
+  };
 }
 
 export interface CombatResult {
@@ -490,6 +530,7 @@ export interface CombatResult {
   shieldRegenB: Record<string, number>;
   shotsA: ShotStats;
   shotsB: ShotStats;
+  remainingSharedShieldPoolA: number;
 }
 
 /**
@@ -504,11 +545,12 @@ export function resolveCombat(
   statsFnA: (id: string) => CombatStats,
   sideBShips: Record<string, number>,
   statsFnB: (id: string) => CombatStats,
-  research: Record<string, number>
+  research: Record<string, number>,
+  sharedShieldPoolA = 0
 ): CombatResult {
   const unitsA0 = buildUnits(sideAShips, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
@@ -533,6 +575,7 @@ export function resolveCombat(
     shieldRegenB: r.shieldRegenB,
     shotsA: r.shotsA,
     shotsB: r.shotsB,
+    remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
   };
 }
 
@@ -553,11 +596,12 @@ export function resolveCombatMultiOwner(
   statsFnA: (id: string) => CombatStats,
   sideBShips: Record<string, number>,
   statsFnB: (id: string) => CombatStats,
-  research: Record<string, number>
+  research: Record<string, number>,
+  sharedShieldPoolA = 0
 ): MultiOwnerCombatResult {
   const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};
@@ -598,5 +642,6 @@ export function resolveCombatMultiOwner(
     shieldRegenB: r.shieldRegenB,
     shotsA: r.shotsA,
     shotsB: r.shotsB,
+    remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
   };
 }
