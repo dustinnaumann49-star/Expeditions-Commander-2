@@ -107,10 +107,11 @@ export const NPC_SPECIALS: NpcSpecialDef[] =
 ];
 
 export const ALLY_STATS = { waffen: 4000, schild: 2000, panzerung: 30000 };
-export const EVENT_NPC_MULTIPLIER = 2.5;
-export const EVENT_MULTIPLIER_ROLL = [0.5, 1.0, 1.5];
-export const EVENT_CHECK_INTERVAL_MS = 2 * 3600 * 1000;
-export const EVENT_SPAWN_CHANCE = 0.2;
+// Beide Ereignisse pruefen an denselben vier festen Tageszeiten (Server-UTC-Zeit), nicht mehr
+// in zufaelligen Intervallen. Sinn: Alle Spieler wissen genau, wann ein Check stattfindet.
+export const FIXED_CHECK_HOURS_UTC = [0, 6, 12, 18];
+
+export const EVENT_SPAWN_CHANCE = 0.4; // 40% Chance bei jedem der vier Checks
 export const EVENT_WINDOW_MS = 60 * 60 * 1000;
 export const EVENT_NAMES = [
   'Notruf: Handelsgilde in Bedrängnis',
@@ -118,10 +119,8 @@ export const EVENT_NAMES = [
   'Notruf: Forschungsstation angegriffen',
 ];
 
-export const RAID_CHECK_INTERVAL_MS = 12 * 3600 * 1000;
 export const RAID_WARNING_MS = 30 * 60 * 1000;
-export const RAID_MULTIPLIER = 1.2;
-export const RAID_MULTIPLIER_ROLL = [0.5, 1.0, 1.5];
+export const RAID_SPAWN_CHANCE = 0.6; // 60% Chance bei jedem der vier Checks
 export const RAID_LOOT_PERCENT = 0.25;
 
 export const ASTEROID_ESCORT_POWER_MIN = 0.08;
@@ -139,3 +138,19 @@ export const COMBAT_SHIP_IDS = [
   'leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber',
   'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator',
 ];
+
+// Liefert den naechsten der vier festen Tages-Checkpunkte (00/06/12/18 Uhr UTC) NACH "now".
+// Wird sowohl fuer Raids als auch fuer Notruf-Events verwendet, damit beide Ereignisse an
+// denselben, fuer alle Spieler vorhersehbaren Zeitpunkten geprueft werden.
+export function nextFixedCheckpoint(now: number): number {
+  const d = new Date(now);
+  d.setUTCMinutes(0, 0, 0);
+  for (const hour of FIXED_CHECK_HOURS_UTC) {
+    d.setUTCHours(hour);
+    if (d.getTime() > now) return d.getTime();
+  }
+  // Kein Checkpoint mehr heute uebrig -> erster Checkpoint morgen
+  d.setUTCDate(d.getUTCDate() + 1);
+  d.setUTCHours(FIXED_CHECK_HOURS_UTC[0]);
+  return d.getTime();
+}
