@@ -18,7 +18,7 @@ function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, 
   return [...COMBAT_SHIP_IDS, 'imperator'];
 }
 
-function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: GameData }) {
+export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: GameData }) {
   const cfg = gameData.sektorConfig[sektorId];
 
   if (sektorId.startsWith('piraten_')) {
