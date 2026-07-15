@@ -184,3 +184,22 @@ client/
     er nicht erschöpft ist, verteilte insgesamt nie mehr Schild, als die Kuppeln tatsächlich besitzen
     (im Gegensatz zu einem zuvor erwogenen, aber verworfenen "gedeckelten Divisor"-Ansatz, der
     Schild-HP aus dem Nichts erzeugt hätte).
+
+16. **Kampf-Statistiken (Schaden/Schild absorbiert/Schild regeneriert/Schüsse/Treffer/RapidFire)
+    MÜSSEN besitzer-bewusst indiziert werden, nicht nur nach Schiffstyp.** `dmgTakenA`,
+    `shieldDmgTakenA`, `shieldRegenA`, `shotsA.*` werden bei Mehrspieler-Kämpfen intern mit dem
+    Schlüssel `` `${ownerKey}:${typeId}` `` statt nur `typeId` geführt (`statKey()`-Hilfsfunktion in
+    `combat.ts`). Grund: Zwei Teilnehmer mit demselben Schiffstyp (z.B. beide "kreuzer") hätten
+    sonst exakt dieselben aggregierten Werte angezeigt bekommen, unabhängig von ihrer tatsächlichen
+    Stückzahl - genau das ist einmal passiert und wurde erst durch einen echten Mehrspieler-Test
+    entdeckt (identische Zahlen bei 200 vs. 20 eingesetzten Schiffen). Jede neue Stelle, die
+    `result.dmgTakenA[id]` o.ä. ausliest, muss bei Mehrspieler-Kontext den zusammengesetzten
+    Schlüssel verwenden, nicht nur `id`.
+
+17. **Verteidigungsanlagen-Waffenwerte sind an die Kosteneffizienz der Schiffe gekoppelt**
+    (`defenses.ts`), Zielwert ca. 65 Kosten pro Waffenpunkt (Schiffe liegen bei ~57-90). Das war
+    zuvor NICHT der Fall (bis zu 2,50 Kosten/Waffenpunkt bei einzelnen Anlagen) - Verteidigung war
+    dadurch sowohl als eigene Bauoption als auch als Bestandteil generierter Piraten-/Raid-Flotten
+    (`generateDefenseFleet`) unverhältnismäßig stark, teils stärker als der Imperator. Bei künftigen
+    Balance-Änderungen an einzelnen Verteidigungswerten diese Kosten/Waffen-Relation zu den Schiffen
+    im Auge behalten, statt Werte isoliert zu ändern.
