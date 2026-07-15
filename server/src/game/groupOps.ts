@@ -99,6 +99,10 @@ export function listMyGroupOperations(userId: number): GroupOperation[] {
   return listGroupOperationsJson()
     .map((j) => JSON.parse(j) as GroupOperation)
     .filter((op) => op.creatorId === userId || op.participants.some((p) => p.userId === userId))
+    // Abgeschlossene ("resolved") und abgebrochene ("cancelled") Operationen bleiben hier nicht
+    // dauerhaft stehen - das Ergebnis wurde bereits als Nachricht zugestellt (Nachrichten-Tab).
+    // Sonst wuerde "Meine Operationen" nach jeder gemeinsamen Mission fuer immer vollgemuellt.
+    .filter((op) => op.status === 'inviting' || op.status === 'departed')
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
