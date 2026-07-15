@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { RaidHilfePage } from './RaidHilfe';
+import { SektorInfoBox } from './Sektor';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
 
@@ -145,44 +146,68 @@ function ExpeditionEventsView() {
       </div>
 
       {tab === 'expedition' && (
-        <div className="queue-box">
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Gemeinsame Expedition ins Sektor P9 – Elite-Bollwerk</h3>
-          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
-            Gemeinsame Expeditionen sind ausschließlich im Elite-Bollwerk möglich (Piraten skalieren mit 150% eurer kombinierten Flottenstärke).
-            Die normalen Piraten-Sektoren bleiben Solo-Missionen vorbehalten.
-          </p>
-          <p style={{ fontSize: 13, marginBottom: 6 }}>Deine Flotte:</p>
-          <FleetPicker availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+        <div>
+          <div className="ship-grid" style={{ marginBottom: 16 }}>
+            {(() => {
+              const eliteSektor = gameData.sektoren.find((s) => s.id === 'piraten_elite')!;
+              return (
+                <div className="ship-card">
+                  <img
+                    className="ship-img"
+                    src={`/${eliteSektor.img}`}
+                    alt={eliteSektor.name}
+                    onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                  />
+                  <div className="ship-info">
+                    <h3>{eliteSektor.name}</h3>
+                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                      Typ: {eliteSektor.typ} · {eliteSektor.zweck}
+                    </p>
+                    <div className="ship-stats">
+                      <span className="level-gruen">Aktivität: {eliteSektor.aktivitaet}</span>
+                      <span>Gefahrenstufe: {eliteSektor.gefahr}</span>
+                    </div>
+                    <SektorInfoBox sektorId="piraten_elite" gameData={gameData} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
-          <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
-          {users
-            .filter((u) => u.id !== myUserId)
-            .map((u) => (
-              <label key={u.id} style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
-                <input
-                  type="checkbox"
-                  checked={invitees.includes(u.id)}
-                  onChange={(e) => setInvitees((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
-                />{' '}
-                {u.username}
-              </label>
-            ))}
-          {users.filter((u) => u.id !== myUserId).length === 0 && (
-            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Keine weiteren Spieler registriert.</p>
-          )}
+          <div className="queue-box">
+            <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
+            <FleetPicker availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
 
-          <div className="build-row">
-            <span></span>
-            <button
-              className="build-btn"
-              onClick={() => {
-                createParty('expedition', sektorId, selection, invitees);
-                setSelection({});
-                setInvitees([]);
-              }}
-            >
-              Erstellen &amp; einladen
-            </button>
+            <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
+            {users
+              .filter((u) => u.id !== myUserId)
+              .map((u) => (
+                <label key={u.id} style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
+                  <input
+                    type="checkbox"
+                    checked={invitees.includes(u.id)}
+                    onChange={(e) => setInvitees((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
+                  />{' '}
+                  {u.username}
+                </label>
+              ))}
+            {users.filter((u) => u.id !== myUserId).length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Keine weiteren Spieler registriert.</p>
+            )}
+
+            <div className="build-row">
+              <span></span>
+              <button
+                className="build-btn"
+                onClick={() => {
+                  createParty('expedition', sektorId, selection, invitees);
+                  setSelection({});
+                  setInvitees([]);
+                }}
+              >
+                Erstellen &amp; einladen
+              </button>
+            </div>
           </div>
         </div>
       )}
