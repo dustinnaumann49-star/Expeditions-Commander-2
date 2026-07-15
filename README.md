@@ -157,3 +157,18 @@ client/
     Anfrage automatisch `last_seen` in der `users`-Tabelle (`touchUserLastSeen`). "Online" heißt:
     letzte Anfrage vor weniger als 15 Sekunden (`ONLINE_THRESHOLD_MS` in `db.ts`). Registrierung
     allein zählt nicht als "online" - erst die erste authentifizierte Anfrage danach.
+
+13. **Raid und Notruf-Event laufen an vier festen Server-Zeitpunkten** (00/06/12/18 Uhr UTC,
+    `FIXED_CHECK_HOURS_UTC` in `economy.ts`), nicht mehr in zufälligen Intervallen. Raid: 60%
+    Chance, skaliert exakt mit 100% der eigenen Flotten+Verteidigungs-Power (keine Zufalls-
+    Schwankung mehr). Notruf-Event: 40% Chance, skaliert exakt mit 100% der eingesetzten
+    Flotten-Power. Gemeinsame Nutzung von `nextFixedCheckpoint()` in `economy.ts` - beim Ändern
+    der Zeitpunkte nur dort anpassen, betrifft automatisch beide Systeme.
+
+14. **Info-Popups statt vollgepackter Karten**: Werft/Verteidigung zeigen auf der Karte nur
+    Kernwerte (Bestand, Stats, Kosten, Bauzeit) - alles Kampf-Detailwissen (RapidFire,
+    Zielerfassung, Präzision, Schild-Regeneration, Limits) steckt hinter einem "ℹ️ Info"-Button
+    in einem `InfoModal` (`components/InfoModal.tsx`). Sektor-Karten funktionieren genauso mit der
+    (exportierten) `SektorInfoBox` aus `Sektor.tsx`, die auch in `Multiplayer.tsx` für die
+    Elite-Bollwerk-Karte wiederverwendet wird. Neue Karten-Seiten sollten diesem Muster folgen
+    statt alle Details direkt auf der Karte auszubreiten.
