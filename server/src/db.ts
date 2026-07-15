@@ -44,8 +44,10 @@ try {
 }
 
 // Ein Nutzer gilt als "online", wenn seine letzte Anfrage nicht laenger als dieses Fenster
-// zurueckliegt. Das Frontend fragt den Zustand alle 5s ab, daher reicht ein kleiner Puffer.
-const ONLINE_THRESHOLD_MS = 15000;
+// zurueckliegt. Das Frontend fragt den Zustand alle 5s ab, aber Browser drosseln Timer in
+// Hintergrund-Tabs teils stark (z.B. auf 1x/Minute) - daher grosszuegiger Puffer, damit ein
+// kurz im Hintergrund liegender Tab nicht faelschlich als offline gilt.
+const ONLINE_THRESHOLD_MS = 25000;
 
 export function touchUserLastSeen(userId: number): void {
   db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(Date.now(), userId);
