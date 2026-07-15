@@ -103,7 +103,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
       refreshParties();
       refreshRaids();
     }, 5000);
-    return () => clearInterval(interval);
+    // Wenn der Tab aus dem Hintergrund zurueckkommt (Browser drosseln Timer dort teils stark),
+    // sofort nachziehen statt bis zu 5s auf den naechsten Poll zu warten - wichtig fuer den
+    // Online/Offline-Status anderer Spieler.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        api.getState().then(applyState).catch(() => {});
+        refreshUsers();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
