@@ -53,19 +53,17 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         <div className="info-row">
           <span className="info-label">🚢 Schiffsklassen im Pool</span>
           <span className="info-value">
-            Alle Kampfschiff-Typen möglich, in jedem Sektor – kleine/günstige Schiffe deutlich häufiger als seltene Elite-Schiffe. Piraten
-            unterliegen denselben Baugrenzen (Maxima pro Typ) wie du selbst.
+            Alle Kampfschiff-Typen möglich, in jedem Sektor – kleine/günstige Schiffe deutlich häufiger als seltene Elite-Schiffe. Piraten sind
+            (bis auf den einzigartigen Sandronator und den Imperator) nicht mehr an Baugrenzen gebunden, genau wie du selbst.
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">🎲 Feindstärke (wird pro Stunden-Check gewürfelt)</span>
-          <span className="info-value">
-            {multiplierRollText} deiner Kampf-Power (kann nie über 100% steigen, da Piraten an dieselben Maxima gebunden sind wie du)
-          </span>
+          <span className="info-value">{multiplierRollText} deiner Kampf-Power</span>
         </div>
         <div className="info-row">
           <span className="info-label">🛡️ Verteidigung</span>
-          <span className="info-value">{defenseFactor}% deiner Power (Mix aus Verteidigungsanlagen, ebenfalls an dieselben Maxima gebunden)</span>
+          <span className="info-value">{defenseFactor}% deiner Power (zusätzlicher Mix aus Verteidigungsanlagen)</span>
         </div>
         <div className="info-row">
           <span className="info-label">☠ Piratenkapitän-Event</span>
