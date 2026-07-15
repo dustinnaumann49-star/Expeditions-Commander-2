@@ -4,7 +4,7 @@ import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getShieldDomeBonus, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy } from '../lib/combatInfo';
+import { getRapidFireDisplay, computeDomeSharedPool, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
 
 export function VerteidigungPage() {
@@ -15,7 +15,7 @@ export function VerteidigungPage() {
 
   if (!gameData || !state) return <p>Lade...</p>;
 
-  const domeBonus = getShieldDomeBonus(gameData, state.defense, state.research);
+  const domePool = computeDomeSharedPool(gameData, state.defense, state.research);
   const precision = getPrecisionChance(gameData, state.research);
   const shieldRegen = getShieldRegenRate(gameData, state.research);
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
@@ -110,13 +110,14 @@ export function VerteidigungPage() {
           if (infoDef.isDome) {
             rows.push([
               'Kuppel-Funktion',
-              `Verteilt ${Math.round(infoDef.stats.schild * (1 + (state.research.schild || 0) * 0.1)).toLocaleString(
+              `Gibt ${Math.round(infoDef.stats.schild * (1 + (state.research.schild || 0) * 0.1)).toLocaleString(
                 'de-DE'
-              )} Schild gleichmäßig als Bonus auf alle anderen Verteidigungsanlagen`,
+              )} Schild an einen GEMEINSAMEN Schild-Pool ab, der Schaden für die gesamte Verteidigung abfängt, bevor eine einzelne Anlage getroffen wird`,
             ]);
-            rows.push(['Eigener Schild', 'Keiner – wird im Kampf nur durch Panzerung geschützt']);
-          } else if (domeBonus > 0) {
-            rows.push(['Aktueller Kuppel-Bonus', `+${Math.round(domeBonus).toLocaleString('de-DE')} Schild`]);
+            rows.push(['Eigener Schild', 'Keiner – trägt vollständig zum gemeinsamen Pool bei']);
+            rows.push(['Baulimit', 'Nur 1 Exemplar pro Typ möglich']);
+          } else if (domePool > 0) {
+            rows.push(['Gemeinsamer Kuppel-Schild-Pool (aktuell)', `${Math.round(domePool).toLocaleString('de-DE')} Schild insgesamt für deine gesamte Verteidigung`]);
           }
           if (infoDef.maxCount) {
             rows.push(['Limit', `${bestand}/${infoDef.maxCount} gebaut${infoDef.maxCount - bestand <= 0 ? ' – Limit erreicht' : ''}`]);
