@@ -172,3 +172,15 @@ client/
     (exportierten) `SektorInfoBox` aus `Sektor.tsx`, die auch in `Multiplayer.tsx` für die
     Elite-Bollwerk-Karte wiederverwendet wird. Neue Karten-Seiten sollten diesem Muster folgen
     statt alle Details direkt auf der Karte auszubreiten.
+
+15. **Schildkuppeln: gemeinsamer Pool statt Pro-Einheit-Verteilung.** Kleine/Große Schildkuppel
+    sind jetzt auf jeweils 1 Exemplar begrenzt (`maxCount:1` in `defenses.ts`). Ihr Schildwert wird
+    NICHT mehr auf einzelne Verteidigungsanlagen verteilt (das verwässerte sich bei vielen Anlagen
+    bis zur Bedeutungslosigkeit), sondern bildet einen gemeinsamen Puffer
+    (`computeDomeSharedPool()` in `combat.ts`), der Schaden für die GESAMTE Verteidigungsseite
+    abfängt, bevor eine einzelne Anlage getroffen wird (`runRounds()`/`fireShots()` mit
+    `sharedShieldPoolA`-Parameter, wird durch den Worker durchgereicht). Der Pool regeneriert sich
+    wie normaler Schild zwischen den Runden. Getestet: Pool absorbiert Schaden vollständig, solange
+    er nicht erschöpft ist, verteilte insgesamt nie mehr Schild, als die Kuppeln tatsächlich besitzen
+    (im Gegensatz zu einem zuvor erwogenen, aber verworfenen "gedeckelten Divisor"-Ansatz, der
+    Schild-HP aus dem Nichts erzeugt hätte).
