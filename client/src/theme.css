@@ -14,7 +14,7 @@
     --rf-gold: #ffd700;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  #root{ display:flex; flex-direction:column; min-height:100vh; }
+  #root{ display:flex; flex-direction:column; }
   body{
     font-family: 'Segoe UI', Arial, sans-serif;
     background:
@@ -25,8 +25,6 @@
     background-attachment: fixed;
     color: var(--text);
     min-height: 100vh;
-    display:flex;
-    flex-direction:column;
   }
 
   #resourcebar{
@@ -40,6 +38,9 @@
     padding: 10px 20px;
     flex-wrap: wrap;
     gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
   .res-group{ display:flex; gap:20px; flex-wrap:wrap; }
   .res-item{ display:flex; align-items:center; gap:6px; font-size:14px; }
@@ -58,8 +59,6 @@
 
   #layout{
     display:flex;
-    flex: 1;
-    min-height: 0;
   }
   #sidebar{
     background: rgba(28,28,28,0.72);
@@ -98,8 +97,6 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 24px;
-    overflow-y:auto;
-    max-height: calc(100vh - 80px);
   }
   #mainbar h2{ margin-bottom: 12px; font-weight:500; }
   #mainbar p{ color: var(--text-dim); font-size: 14px; }
