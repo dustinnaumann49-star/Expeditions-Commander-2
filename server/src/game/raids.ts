@@ -1,5 +1,5 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_CHECK_INTERVAL_MS, RAID_WARNING_MS, RAID_MULTIPLIER, RAID_MULTIPLIER_ROLL, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS } from './data/economy.js';
+import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, nextFixedCheckpoint } from './data/economy.js';
 import { getEffectiveStats, baseStats, shipName, generateFallbackFleet } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
@@ -8,10 +8,6 @@ import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getUserById } from '../db.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
-
-function rollMultiplier(options: number[]): number {
-  return options[Math.floor(Math.random() * options.length)];
-}
 
 export async function processRaidTimer(state: PlayerState) {
   const now = Date.now();
@@ -27,7 +23,11 @@ export async function processRaidTimer(state: PlayerState) {
   if (state.raid) return;
   if (now < state.nextRaidCheck) return;
 
-  state.nextRaidCheck = now + RAID_CHECK_INTERVAL_MS;
+  // Fester Checkpoint erreicht (00/06/12/18 Uhr Server-Zeit) - naechsten Checkpoint sofort setzen,
+  // unabhaengig davon, ob diesmal tatsaechlich ein Raid ausgeloest wird.
+  state.nextRaidCheck = nextFixedCheckpoint(now);
+  if (Math.random() >= RAID_SPAWN_CHANCE) return;
+
   state.raid = { id: 'raid_' + now, spawnedAt: now, arrivalTime: now + RAID_WARNING_MS, resolved: false, reinforcements: [] };
   pushMessage(
     state,
@@ -76,9 +76,8 @@ async function resolveRaid(state: PlayerState) {
     return;
   }
 
-  const raidMultiplier = rollMultiplier(RAID_MULTIPLIER_ROLL);
   // Verstaerkungen anderer Spieler, die rechtzeitig angekommen sind, zaehlen zur Verteidigungsstaerke
-  // dazu (bevor die Feindstaerke gewuerfelt wird) und werden gleich mitgeladen (fuer ihre eigene Forschung).
+  // dazu (bevor die Feindstaerke berechnet wird) und werden gleich mitgeladen (fuer ihre eigene Forschung).
   const now = Date.now();
   const arrivedReinforcements = (state.raid?.reinforcements || []).filter((r) => r.arrivalTime <= now);
   const reinforcerStates = arrivedReinforcements.map((r) => ({ r, playerState: loadPlayerState(r.userId) }));
@@ -91,9 +90,10 @@ async function resolveRaid(state: PlayerState) {
     });
   });
 
-  const targetPower = (homePower + reinforcementPower) * RAID_MULTIPLIER * raidMultiplier;
+  // Feindstaerke = exakt 100% der gesamten eigenen Kampf-Power (Flotte + Verteidigung + evtl.
+  // Verstaerkungen), keine Zufalls-Schwankung mehr.
+  const targetPower = homePower + reinforcementPower;
   const npcShips = generateFallbackFleet(targetPower);
-  const raidStrengthLabel = raidMultiplier <= 0.5 ? 'Schwacher Angriff' : raidMultiplier >= 1.5 ? 'Starker Angriff' : 'Normaler Angriff';
 
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
   if (npcIds.length === 0) {
@@ -271,7 +271,7 @@ async function resolveRaid(state: PlayerState) {
     pushMessage(
       state,
       'kampf',
-      `${outcome} [${raidStrengthLabel}] (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
+      `${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
@@ -298,7 +298,7 @@ async function resolveRaid(state: PlayerState) {
     pushMessage(
       state,
       'kampf',
-      `${outcome} [${raidStrengthLabel}] (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
+      `${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
