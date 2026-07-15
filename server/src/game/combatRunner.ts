@@ -24,6 +24,7 @@ export interface CombatWorkerRequest {
   defenseCounts?: Record<string, number>;
   kampfBoostActive?: boolean;
   useAllyStats?: boolean;
+  sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
 }
 
 function runWorker<T>(request: CombatWorkerRequest): Promise<T> {
