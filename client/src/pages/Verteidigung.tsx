@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
+import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, getShieldDomeBonus, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
@@ -10,6 +11,7 @@ export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
+  const [infoDefId, setInfoDefId] = useState<string | null>(null);
 
   if (!gameData || !state) return <p>Lade...</p>;
 
@@ -17,6 +19,7 @@ export function VerteidigungPage() {
   const precision = getPrecisionChance(gameData, state.research);
   const shieldRegen = getShieldRegenRate(gameData, state.research);
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
+  const infoDef = infoDefId ? gameData.defenses.find((d) => d.id === infoDefId) : null;
 
   return (
     <div>
@@ -43,8 +46,6 @@ export function VerteidigungPage() {
             state.resources.deuterium >= totalCost.deuterium &&
             capQty > 0;
           const effBuildTimeMs = def.buildTime * bauzeitMult * capQty * 1000;
-          const rfDisplay = getRapidFireDisplay(gameData, def.id);
-          const defAccuracy = getZielerfassungAccuracy(gameData, state.research, def.id);
 
           return (
             <div className="ship-card" key={def.id}>
@@ -54,63 +55,18 @@ export function VerteidigungPage() {
                   <span className="lore-title" onClick={() => setLoreTarget({ kind: 'defense', id: def.id })}>
                     {def.name}
                   </span>{' '}
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
-                    (Bestand: {bestand}
-                    {def.maxCount ? `/${def.maxCount}` : ''})
-                  </span>
+                  <button className="qty-btn" style={{ padding: '1px 7px', fontSize: 11 }} onClick={() => setInfoDefId(def.id)}>
+                    ℹ️ Info
+                  </button>
                 </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+                  Bestand: {bestand}
+                  {def.maxCount ? `/${def.maxCount}` : ''}
+                </p>
                 <div className="ship-stats">
                   {def.stats.waffen > 0 && <span>Waffen: {def.stats.waffen.toLocaleString('de-DE')}</span>}
                   <span>Schild: {def.stats.schild.toLocaleString('de-DE')}</span>
                   <span>Panzerung: {def.stats.panzerung.toLocaleString('de-DE')}</span>
-                </div>
-
-                {rfDisplay ? (
-                  <div className="ship-matchup">
-                    <span className="matchup-rf">⚡ RapidFire: {rfDisplay}</span>
-                  </div>
-                ) : (
-                  <div className="ship-matchup">
-                    <span className="matchup-weak">Kein RapidFire</span>
-                  </div>
-                )}
-                {defAccuracy > 0 && (
-                  <div className="ship-matchup">
-                    <span className="matchup-rf">🎯 Zielerfassung: {(defAccuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren</span>
-                  </div>
-                )}
-
-                {def.isDome ? (
-                  <>
-                    <div className="ship-matchup">
-                      <span className="matchup-rf">
-                        🛡️ Verteilt seinen Schild-Wert ({Math.round(def.stats.schild * (1 + (state.research.schild || 0) * 0.1)).toLocaleString('de-DE')}
-                        ) gleichmäßig als Bonus auf alle anderen Verteidigungsanlagen
-                      </span>
-                    </div>
-                    <div className="ship-matchup">
-                      <span className="matchup-weak">Besitzt selbst keinen eigenen Schild – wird im Kampf nur durch ihre Panzerung geschützt</span>
-                    </div>
-                  </>
-                ) : (
-                  domeBonus > 0 && (
-                    <div className="ship-matchup">
-                      <span className="matchup-rf">🛡️ Aktueller Kuppel-Bonus: +{Math.round(domeBonus).toLocaleString('de-DE')} Schild</span>
-                    </div>
-                  )
-                )}
-                {def.maxCount && (
-                  <div className="ship-matchup">
-                    <span className="matchup-weak">
-                      Limitiert: {bestand}/{def.maxCount} gebaut/in Warteschlange{frei <= 0 ? ' – Limit erreicht' : ''}
-                    </span>
-                  </div>
-                )}
-                <div className="ship-matchup">
-                  <span className="matchup-rf">🎯 Präzision: {(precision * 100).toFixed(0)}% Trefferchance</span>
-                </div>
-                <div className="ship-matchup">
-                  <span className="matchup-rf">🛡️ Schild-Regeneration: {(shieldRegen * 100).toFixed(0)}% pro Runde</span>
                 </div>
 
                 <div className="ship-cost">
@@ -143,6 +99,37 @@ export function VerteidigungPage() {
           );
         })}
       </div>
+
+      {infoDef &&
+        (() => {
+          const bestand = state.defense[infoDef.id] || 0;
+          const rfDisplay = getRapidFireDisplay(gameData, infoDef.id);
+          const defAccuracy = getZielerfassungAccuracy(gameData, state.research, infoDef.id);
+          const rows: [string, React.ReactNode][] = [['RapidFire', rfDisplay || 'Kein RapidFire']];
+          if (defAccuracy > 0) rows.push(['Zielerfassung', `${(defAccuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]);
+          if (infoDef.isDome) {
+            rows.push([
+              'Kuppel-Funktion',
+              `Verteilt ${Math.round(infoDef.stats.schild * (1 + (state.research.schild || 0) * 0.1)).toLocaleString(
+                'de-DE'
+              )} Schild gleichmäßig als Bonus auf alle anderen Verteidigungsanlagen`,
+            ]);
+            rows.push(['Eigener Schild', 'Keiner – wird im Kampf nur durch Panzerung geschützt']);
+          } else if (domeBonus > 0) {
+            rows.push(['Aktueller Kuppel-Bonus', `+${Math.round(domeBonus).toLocaleString('de-DE')} Schild`]);
+          }
+          if (infoDef.maxCount) {
+            rows.push(['Limit', `${bestand}/${infoDef.maxCount} gebaut${infoDef.maxCount - bestand <= 0 ? ' – Limit erreicht' : ''}`]);
+          }
+          rows.push(['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`]);
+          rows.push(['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`]);
+          return (
+            <InfoModal title={infoDef.name} onClose={() => setInfoDefId(null)}>
+              <InfoTable rows={rows} />
+            </InfoModal>
+          );
+        })()}
+
       <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
     </div>
   );

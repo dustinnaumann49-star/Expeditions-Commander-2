@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { InfoModal } from '../components/InfoModal';
 import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
@@ -199,6 +200,7 @@ export function SektorPage() {
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [eventSelection, setEventSelection] = useState<Record<string, number>>({});
   const [presetName, setPresetName] = useState('');
+  const [infoSektorId, setInfoSektorId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -316,7 +318,9 @@ export function SektorPage() {
                   <span>Gefahrenstufe: {sektor.gefahr}</span>
                 </div>
 
-                <SektorInfoBox sektorId={sektor.id} gameData={gameData} />
+                <button className="qty-btn" style={{ alignSelf: 'flex-start', marginBottom: 4 }} onClick={() => setInfoSektorId(sektor.id)}>
+                  ℹ️ Info
+                </button>
 
                 {activeMission ? (
                   <>
@@ -401,6 +405,16 @@ export function SektorPage() {
           );
         })}
       </div>
+
+      {infoSektorId &&
+        (() => {
+          const sektor = gameData.sektoren.find((s) => s.id === infoSektorId)!;
+          return (
+            <InfoModal title={sektor.name} onClose={() => setInfoSektorId(null)}>
+              <SektorInfoBox sektorId={infoSektorId} gameData={gameData} />
+            </InfoModal>
+          );
+        })()}
     </div>
   );
 }

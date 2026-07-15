@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
+import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
@@ -27,6 +28,7 @@ export function WerftPage() {
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('jaeger');
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
+  const [infoShipId, setInfoShipId] = useState<string | null>(null);
 
   if (!gameData || !state) return <p>Lade...</p>;
 
@@ -35,6 +37,7 @@ export function WerftPage() {
   const precision = getPrecisionChance(gameData, state.research);
   const shieldRegen = getShieldRegenRate(gameData, state.research);
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
+  const infoShip = infoShipId ? gameData.ships.find((s) => s.id === infoShipId) : null;
 
   return (
     <div>
@@ -62,7 +65,6 @@ export function WerftPage() {
           const frei = ship.maxCount ? ship.maxCount - bestand : Infinity;
           const qty = qtyById[ship.id] ?? 10;
           const capQty = ship.unique ? 1 : ship.maxCount ? Math.max(0, Math.min(qty, frei)) : qty;
-          const limitReached = ship.maxCount ? frei <= 0 : false;
           const alreadyExists = ship.unique && bestand >= 1;
           const totalCost = ship.cost
             ? { metall: ship.cost.metall * capQty, kristall: ship.cost.kristall * capQty, deuterium: ship.cost.deuterium * capQty }
@@ -75,10 +77,6 @@ export function WerftPage() {
             capQty > 0;
           const effBuildTimeMs = ship.buildTime * bauzeitMult * (ship.unique ? 1 : capQty) * 1000;
 
-          const rfDisplay = getRapidFireDisplay(gameData, ship.id);
-          const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
-          const targeted = isTargetedByRapidFire(gameData, ship.id);
-
           return (
             <div className="ship-card" key={ship.id}>
               <img className="ship-img" src={`/${ship.img}`} alt={ship.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
@@ -87,54 +85,19 @@ export function WerftPage() {
                   <span className="lore-title" onClick={() => setLoreTarget({ kind: 'ship', id: ship.id })}>
                     {ship.name}
                   </span>{' '}
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>
-                    (Bestand: {bestand}
-                    {ship.maxCount ? `/${ship.maxCount}` : ''})
-                  </span>
+                  <button className="qty-btn" style={{ padding: '1px 7px', fontSize: 11 }} onClick={() => setInfoShipId(ship.id)}>
+                    ℹ️ Info
+                  </button>
                 </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+                  Bestand: {bestand}
+                  {ship.maxCount ? `/${ship.maxCount}` : ''}
+                </p>
                 <div className="ship-stats">
                   {ship.stats.waffen > 0 && <span>Waffen: {ship.stats.waffen.toLocaleString('de-DE')}</span>}
                   <span>Schild: {ship.stats.schild.toLocaleString('de-DE')}</span>
                   <span>Panzerung: {ship.stats.panzerung.toLocaleString('de-DE')}</span>
                   {ship.miningPerHour && <span className="stat-mining">Abbau: {ship.miningPerHour.toLocaleString('de-DE')}/h</span>}
-                </div>
-
-                {rfDisplay ? (
-                  <div className="ship-matchup">
-                    <span className="matchup-rf">⚡ RapidFire: {rfDisplay}</span>
-                  </div>
-                ) : (
-                  <div className="ship-matchup">
-                    <span className="matchup-weak">Kein RapidFire (Basis-Schiff)</span>
-                  </div>
-                )}
-                {accuracy > 0 && (
-                  <div className="ship-matchup">
-                    <span className="matchup-rf">🎯 Zielerfassung: {(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren</span>
-                  </div>
-                )}
-                {targeted && (
-                  <div className="ship-matchup">
-                    <span className="matchup-weak">⚠ Dieses Schiff ist ein Ziel für RapidFire anderer Einheiten</span>
-                  </div>
-                )}
-                {ship.unique && (
-                  <div className="ship-matchup">
-                    <span className="matchup-rf">★ Einzigartig: nur 1 Exemplar möglich{alreadyExists ? ' (bereits vorhanden)' : ''}</span>
-                  </div>
-                )}
-                {ship.maxCount && !ship.unique && (
-                  <div className="ship-matchup">
-                    <span className="matchup-weak">
-                      Limitiert: {bestand}/{ship.maxCount} gebaut/in Warteschlange{limitReached ? ' – Limit erreicht' : ''}
-                    </span>
-                  </div>
-                )}
-                <div className="ship-matchup">
-                  <span className="matchup-rf">🎯 Präzision: {(precision * 100).toFixed(0)}% Trefferchance</span>
-                </div>
-                <div className="ship-matchup">
-                  <span className="matchup-rf">🛡️ Schild-Regeneration: {(shieldRegen * 100).toFixed(0)}% pro Runde</span>
                 </div>
 
                 {ship.cost && (
@@ -173,6 +136,37 @@ export function WerftPage() {
           );
         })}
       </div>
+
+      {infoShip &&
+        (() => {
+          const bestand = countShipEverywhere(state, infoShip.id);
+          const rfDisplay = getRapidFireDisplay(gameData, infoShip.id);
+          const accuracy = getZielerfassungAccuracy(gameData, state.research, infoShip.id);
+          const targeted = isTargetedByRapidFire(gameData, infoShip.id);
+          const rows: [string, React.ReactNode][] = [
+            ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
+            ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),
+            ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
+            ['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`],
+            ['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
+            ...(infoShip.unique
+              ? ([['Status', `★ Einzigartig - nur 1 Exemplar möglich${bestand >= 1 ? ' (bereits vorhanden)' : ''}`]] as [string, React.ReactNode][])
+              : infoShip.maxCount
+              ? ([
+                  [
+                    'Limit',
+                    `${bestand}/${infoShip.maxCount} gebaut/in Warteschlange${infoShip.maxCount - bestand <= 0 ? ' – Limit erreicht' : ''}`,
+                  ],
+                ] as [string, React.ReactNode][])
+              : []),
+          ];
+          return (
+            <InfoModal title={infoShip.name} onClose={() => setInfoShipId(null)}>
+              <InfoTable rows={rows} />
+            </InfoModal>
+          );
+        })()}
+
       <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
     </div>
   );
