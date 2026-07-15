@@ -273,15 +273,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (playerIds.length === 0) return;
 
   const sentPower = combatFleetPower(mission.ships, state.research);
-  let rolledMultiplier = cfg.npcMultiplier;
-  let waveLabel = '';
-  if (cfg.type === 'piraten') {
-    const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];
-    rolledMultiplier = rollMultiplier(table);
-    const pct = Math.round(rolledMultiplier * 100);
-    waveLabel =
-      pct === Math.round(table[0] * 100) ? 'Schwache Welle' : pct === Math.round(table[2] * 100) ? 'Starke Welle' : 'Normale Welle';
-  }
+  // runHourlyCheck laeuft nur fuer Piraten-Sektoren (Asteroiden-Sektoren kehren weiter oben schon
+  // frueher zurueck), daher wird hier IMMER die Wuerfel-Tabelle verwendet, kein Fallback noetig.
+  const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];
+  const rolledMultiplier = rollMultiplier(table);
+  const pct = Math.round(rolledMultiplier * 100);
+  const waveLabel =
+    pct === Math.round(table[0] * 100) ? 'Schwache Welle' : pct === Math.round(table[2] * 100) ? 'Starke Welle' : 'Normale Welle';
   const targetPower = Math.max(sentPower * rolledMultiplier, cfg.npcFloor || 0);
 
   let npcShips: Record<string, number> = {};
