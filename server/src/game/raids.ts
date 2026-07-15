@@ -1,6 +1,6 @@
 import { DEFENSES } from './data/defenses.js';
 import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, nextFixedCheckpoint } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, generateFallbackFleet } from './combat.js';
+import { getEffectiveStats, baseStats, shipName, generateFallbackFleet, computeDomeSharedPool } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
@@ -49,6 +49,8 @@ async function resolveRaid(state: PlayerState) {
     const eff = getEffectiveStats(id, state.research, state.defense);
     homePower += count * (eff.waffen + eff.schild + eff.panzerung);
   });
+  const domePool = computeDomeSharedPool(state.defense, state.research);
+  homePower += domePool;
 
   if (Object.keys(defenderShips).length === 0 || homePower === 0) {
     const stolen = {
@@ -113,8 +115,8 @@ async function resolveRaid(state: PlayerState) {
 
   const result =
     reinforcerStates.length > 0
-      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense })
-      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense });
+      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool })
+      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 
