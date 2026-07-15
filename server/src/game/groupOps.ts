@@ -15,7 +15,7 @@ import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import type { ActionResult } from './actions.js';
-import type { CombatUnitResult, CombatDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
+import type { CombatUnitResult, CombatDetail, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
@@ -321,6 +321,7 @@ async function resolveGroupEvent(
     npcResults,
     playerResults,
     allyResult,
+    rewards: containerReward ? { containerTier: containerReward } : undefined,
   };
   const messageText = `${op.eventName} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}`;
 
@@ -549,12 +550,25 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
   const outcome = anyNpcDestroyed ? 'Feindkontakt - Piraten erlitten Verluste' : 'Feindkontakt - keine nennenswerte Wirkung';
   const messageText = `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}`;
+  const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
     outcome,
     roundsFought: result.roundsFought,
     npcResults,
     playerResults,
+    rewards: hasRewards
+      ? {
+          metall: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.metall : undefined,
+          kristall: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.kristall : undefined,
+          deuterium: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.deuterium : undefined,
+          teileWaffen: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
+          teileSchild: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
+          teilePanzerung: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
+          containerTier: captainResult?.destroyed ? cfg.captainContainerTier : undefined,
+          dm: captainResult?.destroyed ? cfg.captainDm : undefined,
+        }
+      : undefined,
   };
 
   accepted.forEach((p) => {
@@ -598,9 +612,14 @@ function finalizeGroupExpedition(
     pushMessage(
       pState,
       'farm',
-      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt. Dein Ertrag: ${gainedMetall.toLocaleString(
-        'de-DE'
-      )} Metall, ${gainedKristall.toLocaleString('de-DE')} Kristall, ${gainedDeut.toLocaleString('de-DE')} Deuterium, ${gainedWaffen}/${gainedSchild}/${gainedPanzerung} Teile.`
+      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt.`,
+      {
+        sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
+        resources: { metall: gainedMetall, kristall: gainedKristall, deuterium: gainedDeut },
+        dm: Math.floor(p.dmFound || 0),
+        teile: { waffen: gainedWaffen, schild: gainedSchild, panzerung: gainedPanzerung },
+        fleetReturned: { ...p.ships },
+      }
     );
     if (p.userId !== currentUserId) savePlayerState(pState);
   });

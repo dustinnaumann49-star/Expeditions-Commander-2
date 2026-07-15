@@ -22,7 +22,7 @@ import {
 import { pushMessage } from './messages.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
-import type { CombatUnitResult, Mission, PlayerState } from './types.js';
+import type { CombatUnitResult, FarmDetail, Mission, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
@@ -231,6 +231,7 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
       outcome,
       roundsFought: result.roundsFought,
       npcResults,
+      rewards: destroyedTotal > 0 ? { metall: reward.metall, kristall: reward.kristall, deuterium: reward.deuterium } : undefined,
       playerResults: [
         {
           id: 'begleitschiff',
@@ -383,6 +384,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   }
 
   let teileText = '';
+  let gainedTeile: { waffen: number; schild: number; panzerung: number } | undefined;
   if (cfg.type === 'piraten' && cfg.teileCap) {
     const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
     const outcomeShare = anyNpcDestroyed && !anyPlayerLoss ? 0.15 : anyNpcDestroyed ? 0.08 : 0.02;
@@ -396,10 +398,12 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     const gainedSum = gained.waffen + gained.schild + gained.panzerung;
     if (gainedSum > 0) {
       teileText = ` Zusätzliche Kampf-Teile geborgen: ${gained.waffen} Waffen, ${gained.schild} Schild, ${gained.panzerung} Panzerung.`;
+      gainedTeile = { waffen: gained.waffen, schild: gained.schild, panzerung: gained.panzerung };
     }
   }
 
   let lootText = '';
+  let lootGained: { metall: number; kristall: number; deuterium: number } | undefined;
   if (anyNpcDestroyed && cfg.lootBase) {
     const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
     const bonusHit = cfg.bonusLootChance ? Math.random() < cfg.bonusLootChance : false;
@@ -415,16 +419,21 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
+    lootGained = loot;
   }
 
   const captainResult = npcResults.find((r) => r.isCaptain);
   let captainText = '';
+  let captainContainerTier: 'silber' | 'gold' | undefined;
+  let captainDmGained = 0;
   if (captainResult) {
     if (captainResult.destroyed) {
       addContainerToState(state, cfg.captainContainerTier!);
       mission.dmFound += cfg.captainDm || 0;
       const tierLabel = cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
       captainText = ` Der Piratenkapitän wurde vernichtet! Ein ${tierLabel} und ${cfg.captainDm} Dunkle Materie wurden erbeutet.`;
+      captainContainerTier = cfg.captainContainerTier;
+      captainDmGained = cfg.captainDm || 0;
     } else {
       captainText = ' Der Piratenkapitän konnte fliehen.';
     }
@@ -434,11 +443,30 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const defenseText = defenseCount > 0 ? ` (${defenseCount} Verteidigungsanlagen)` : '';
   const waveText = waveLabel ? ` [${waveLabel}]` : '';
 
+  const hasRewards = lootGained || gainedTeile || captainContainerTier || captainDmGained > 0;
   pushMessage(
     state,
     'kampf',
     `Feindkontakt${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Ergebnis: ${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}`,
-    { sektorName: mission.sektorId, outcome, roundsFought: result.roundsFought, npcResults, playerResults }
+    {
+      sektorName: mission.sektorId,
+      outcome,
+      roundsFought: result.roundsFought,
+      npcResults,
+      playerResults,
+      rewards: hasRewards
+        ? {
+            metall: lootGained?.metall,
+            kristall: lootGained?.kristall,
+            deuterium: lootGained?.deuterium,
+            teileWaffen: gainedTeile?.waffen,
+            teileSchild: gainedTeile?.schild,
+            teilePanzerung: gainedTeile?.panzerung,
+            containerTier: captainContainerTier,
+            dm: captainDmGained > 0 ? captainDmGained : undefined,
+          }
+        : undefined,
+    }
   );
 }
 
@@ -469,24 +497,22 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
   Object.entries(mission.ships).forEach(([id, c]) => {
     if (c > 0) state.fleet[id] = (state.fleet[id] || 0) + c;
   });
-  const parts: string[] = [];
-  if (mission.farmed.metall + mission.farmed.kristall + mission.farmed.deuterium > 0) {
-    parts.push(
-      `${Math.floor(mission.farmed.metall)} Metall, ${Math.floor(mission.farmed.kristall)} Kristall, ${Math.floor(
-        mission.farmed.deuterium
-      )} Deuterium`
-    );
-  }
-  if (mission.dmFound > 0) parts.push(`${Math.floor(mission.dmFound)} Dunkle Materie`);
-  const teileSum = mission.teile.waffen + mission.teile.schild + mission.teile.panzerung;
-  if (teileSum > 0) {
-    parts.push(
-      `${Math.floor(mission.teile.waffen)} Waffen-Teile, ${Math.floor(mission.teile.schild)} Schild-Teile, ${Math.floor(
-        mission.teile.panzerung
-      )} Panzerungs-Teile`
-    );
-  }
-  pushMessage(state, 'farm', `Flotte zurückgekehrt. Ertrag: ${parts.join(' · ') || 'nichts'}.`);
+  const detail: FarmDetail = {
+    sektorName: mission.sektorId,
+    resources: {
+      metall: Math.floor(mission.farmed.metall),
+      kristall: Math.floor(mission.farmed.kristall),
+      deuterium: Math.floor(mission.farmed.deuterium),
+    },
+    dm: Math.floor(mission.dmFound),
+    teile: {
+      waffen: Math.floor(mission.teile.waffen),
+      schild: Math.floor(mission.teile.schild),
+      panzerung: Math.floor(mission.teile.panzerung),
+    },
+    fleetReturned: { ...mission.ships },
+  };
+  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.`, detail);
 }
 
 function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rueckflug' {

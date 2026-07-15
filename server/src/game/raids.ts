@@ -62,7 +62,15 @@ async function resolveRaid(state: PlayerState) {
     pushMessage(
       state,
       'kampf',
-      `Piratenüberfall erfolgreich – keine Verteidigung vorhanden! Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`
+      `Piratenüberfall erfolgreich – keine Verteidigung vorhanden! Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`,
+      {
+        sektorName: 'Heimatbasis',
+        outcome: 'Keine Verteidigung vorhanden',
+        roundsFought: 0,
+        npcResults: [],
+        playerResults: [],
+        rewards: { stolenMetall: stolen.metall, stolenKristall: stolen.kristall, stolenDeuterium: stolen.deuterium },
+      }
     );
     state.raid = null;
     return;
@@ -252,7 +260,14 @@ async function resolveRaid(state: PlayerState) {
     state.resources.deuterium = Math.max(0, state.resources.deuterium - stolen.deuterium);
 
     const outcome = 'Piratenüberfall teilweise abgewehrt – Feinde überlebt';
-    const detail = { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults };
+    const detail = {
+      sektorName: 'Heimatbasis',
+      outcome,
+      roundsFought: result.roundsFought,
+      npcResults,
+      playerResults,
+      rewards: { stolenMetall: stolen.metall, stolenKristall: stolen.kristall, stolenDeuterium: stolen.deuterium, containerTier: containerReward },
+    };
     pushMessage(
       state,
       'kampf',
@@ -272,7 +287,14 @@ async function resolveRaid(state: PlayerState) {
     });
   } else {
     const outcome = 'Piratenüberfall abgewehrt – alle Feinde vernichtet';
-    const detail = { sektorName: 'Heimatbasis', outcome, roundsFought: result.roundsFought, npcResults, playerResults };
+    const detail = {
+      sektorName: 'Heimatbasis',
+      outcome,
+      roundsFought: result.roundsFought,
+      npcResults,
+      playerResults,
+      rewards: { containerTier: containerReward },
+    };
     pushMessage(
       state,
       'kampf',

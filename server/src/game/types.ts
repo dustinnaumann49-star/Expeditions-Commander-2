@@ -111,6 +111,20 @@ export interface CombatUnitResult {
   ownerUsername?: string; // bei Multiplayer-Kaempfen: welchem Spieler dieser Flotten-Eintrag gehoert
 }
 
+export interface RewardSummary {
+  metall?: number;
+  kristall?: number;
+  deuterium?: number;
+  dm?: number;
+  teileWaffen?: number;
+  teileSchild?: number;
+  teilePanzerung?: number;
+  containerTier?: 'silber' | 'gold';
+  stolenMetall?: number;
+  stolenKristall?: number;
+  stolenDeuterium?: number;
+}
+
 export interface CombatDetail {
   sektorName: string;
   outcome: string;
@@ -118,6 +132,15 @@ export interface CombatDetail {
   npcResults: CombatUnitResult[];
   playerResults: CombatUnitResult[];
   allyResult?: CombatUnitResult;
+  rewards?: RewardSummary;
+}
+
+export interface FarmDetail {
+  sektorName: string;
+  resources: { metall: number; kristall: number; deuterium: number };
+  dm: number;
+  teile: { waffen: number; schild: number; panzerung: number };
+  fleetReturned?: Record<string, number>;
 }
 
 export interface GameMessage {
@@ -125,7 +148,7 @@ export interface GameMessage {
   type: 'kampf' | 'farm';
   time: number;
   text: string;
-  detail: CombatDetail | null;
+  detail: CombatDetail | FarmDetail | null;
 }
 
 export interface Container {
