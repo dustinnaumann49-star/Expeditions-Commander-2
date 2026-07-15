@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
@@ -57,6 +57,12 @@ function ExpeditionEventsView() {
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
+  const [, forceTick] = useState(0);
+
+  useEffect(() => {
+    const i = setInterval(() => forceTick((n) => n + 1), 1000);
+    return () => clearInterval(i);
+  }, []);
 
   if (!gameData || !state) return <p>Lade...</p>;
   const now = serverNow();
