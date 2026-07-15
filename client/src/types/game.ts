@@ -234,7 +234,6 @@ export interface SektorDefinition {
 
 export interface SektorConfig {
   checkChance: number;
-  npcMultiplier: number;
   type: 'asteroid' | 'piraten';
   farmRate?: number;
   dmCap?: number;
