@@ -36,7 +36,6 @@ export const SEKTOREN: SektorDefinition[] =
 
 export interface SektorConfig {
   checkChance: number;
-  npcMultiplier: number;
   type: 'asteroid' | 'piraten';
   farmRate?: number;
   dmCap?: number;
@@ -56,26 +55,27 @@ export interface SektorConfig {
 
 export const SEKTOR_CONFIG: Record<string, SektorConfig> = 
 {
-  asteroid_niedrig: { checkChance:0.00, npcMultiplier:1.0, type:"asteroid", farmRate:2500, dmCap:5, miningCap:300, escortCap:500, npcFloor:300000 },
-  asteroid_mittel:  { checkChance:0.00, npcMultiplier:1.5, type:"asteroid", farmRate:5000, dmCap:10, miningCap:220, escortCap:500, npcFloor:800000 },
-  asteroid_hoch:    { checkChance:0.00, npcMultiplier:2.0, type:"asteroid", farmRate:7500, dmCap:15, miningCap:180, escortCap:500, npcFloor:1800000 },
-  piraten_niedrig:  { checkChance:0.50, npcMultiplier:1.0, type:"piraten", teileCap:5, npcFloor:300000,
+  asteroid_niedrig: { checkChance:0.00, type:"asteroid", farmRate:2500, dmCap:5, miningCap:300, escortCap:500, npcFloor:300000 },
+  asteroid_mittel:  { checkChance:0.00, type:"asteroid", farmRate:5000, dmCap:10, miningCap:220, escortCap:500, npcFloor:800000 },
+  asteroid_hoch:    { checkChance:0.00, type:"asteroid", farmRate:7500, dmCap:15, miningCap:180, escortCap:500, npcFloor:1800000 },
+  piraten_niedrig:  { checkChance:0.50, type:"piraten", teileCap:5, npcFloor:300000,
     lootBase:{metall:8000, kristall:5000, deuterium:2000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.05, captainContainerTier:"silber", captainDm:10 },
-  piraten_mittel:   { checkChance:0.50, npcMultiplier:1.5, type:"piraten", teileCap:10, npcFloor:800000,
+  piraten_mittel:   { checkChance:0.50, type:"piraten", teileCap:10, npcFloor:800000,
     lootBase:{metall:16000, kristall:10000, deuterium:4000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.08, captainContainerTier:"silber", captainDm:20 },
-  piraten_hoch:     { checkChance:0.50, npcMultiplier:2.0, type:"piraten", teileCap:15, npcFloor:1800000,
+  piraten_hoch:     { checkChance:0.50, type:"piraten", teileCap:15, npcFloor:1800000,
     lootBase:{metall:26000, kristall:16000, deuterium:7000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.12, captainContainerTier:"gold", captainDm:35 },
-  piraten_elite:    { checkChance:0.50, npcMultiplier:1.5, type:"piraten", teileCap:20, npcFloor:3000000,
+  piraten_elite:    { checkChance:0.50, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:40000, kristall:25000, deuterium:11000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"gold", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000} }
 };
 
-// Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power (kann durch die
-// Maxima+Ueberlauf-Logik in generateCappedFleet nie ueber 100% steigen, siehe combat.ts).
+// Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig/Mittel/Hoch bleiben
+// bewusst bei maximal 100% (Solo spielbar); nur das Multiplayer-exklusive Elite-Bollwerk geht
+// bewusst darueber (150% der KOMBINIERTEN Flottenstaerke aller Teilnehmer).
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> = 
 {
   piraten_niedrig: [0.15, 0.175, 0.20],
