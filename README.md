@@ -203,3 +203,27 @@ client/
     (`generateDefenseFleet`) unverhältnismäßig stark, teils stärker als der Imperator. Bei künftigen
     Balance-Änderungen an einzelnen Verteidigungswerten diese Kosten/Waffen-Relation zu den Schiffen
     im Auge behalten, statt Werte isoliert zu ändern.
+
+18. **Rückzugs-Mechanismus (`RETREAT_THRESHOLD = 0.5` in `runRounds()`, `combat.ts`):** Seite A
+    (Spieler-Flotte, inkl. Verteidigungsanlagen) zieht sich automatisch zurück, sobald ihre
+    verbliebene Einheitenzahl auf 50% der Startzahl faellt - statt bis zur vollstaendigen
+    Vernichtung weiterzukaempfen. Grund: Attritions-Kampfsysteme wie dieses neigen zu
+    selbstverstaerkenden Alles-oder-Nichts-Ausgaengen (kleiner Vorteil/Nachteil kippt ueber viele
+    Runden zu Totalsieg/Totalverlust) - getestet an einem 150%-Feindstaerke-Szenario: ohne
+    Rueckzug 0/100 Ueberlebende, mit Rueckzug 47/100. Das `retreated: boolean`-Feld im
+    `CombatResult` muss bei neuen Ausgangs-Texten beruecksichtigt werden (siehe die
+    `result.retreated ? ... : ...`-Verzweigungen in `missions.ts`/`raids.ts`/`events.ts`/
+    `groupOps.ts`), sonst zeigt die Nachricht einen falschen/irrefuehrenden Ausgang an.
+
+19. **Die vier "ungeskalierten" Kampf-Forschungen sind der wichtigste Hebel gegen Piraten-Sektoren
+    ueber 100% Skalierung** (Praezision, Zielerfassung, Durchschlag, Schild-Regeneration) - sie
+    fliessen NICHT in die Berechnung der Feindstaerke ein (die orientiert sich nur an Waffen/
+    Schild/Panzerung), wirken aber im Kampf voll. Getestet: bei 150% Feindstaerke kippt das
+    Ergebnis erst bei komplett ausgebauter Stufe 10 von Verlust zu Sieg (Stufe 5 bringt noch fast
+    nichts) - Spieler, die schwere Piraten-Sektoren angehen wollen, sollten gezielt in diese vier
+    Techs investieren, nicht in Waffen/Schild/Panzerung.
+
+20. **Mining-Raten der Asteroiden-Felder** (`farmRate` in `sectors.ts`): Niedrig=5000,
+    Mittel=15000, Hoch=25000 pro Schiff und Stunde (bewusst grosszuegig fuer Spieler mit wenig
+    Spielzeit - kein PvP, daher unproblematisch). Plünderungs-Beute der Piraten-Sektoren
+    (`lootBase`) blieb bewusst unveraendert, nur das Mining wurde angehoben.
