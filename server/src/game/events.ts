@@ -1,11 +1,9 @@
 import {
-  EVENT_CHECK_INTERVAL_MS,
   EVENT_SPAWN_CHANCE,
   EVENT_WINDOW_MS,
   EVENT_NAMES,
-  EVENT_NPC_MULTIPLIER,
-  EVENT_MULTIPLIER_ROLL,
   ALLY_STATS,
+  nextFixedCheckpoint,
 } from './data/economy.js';
 import { getEffectiveStats, baseStats, shipName, combatFleetPower, generateFallbackFleet } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
@@ -16,9 +14,6 @@ import type { CombatUnitResult, PlayerState } from './types.js';
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
-function rollMultiplier(options: number[]): number {
-  return options[Math.floor(Math.random() * options.length)];
-}
 
 export function processEventTimer(state: PlayerState) {
   const now = Date.now();
@@ -26,7 +21,9 @@ export function processEventTimer(state: PlayerState) {
     state.event = null;
   }
   if (now < state.nextEventCheck) return;
-  state.nextEventCheck = now + EVENT_CHECK_INTERVAL_MS;
+  // Fester Checkpoint erreicht (00/06/12/18 Uhr Server-Zeit) - naechsten Checkpoint sofort setzen,
+  // unabhaengig davon, ob diesmal tatsaechlich ein Notruf ausgeloest wird.
+  state.nextEventCheck = nextFixedCheckpoint(now);
   if (state.event) return;
   if (Math.random() < EVENT_SPAWN_CHANCE) {
     state.event = { id: 'event_' + now, name: pickRandom(EVENT_NAMES), spawnedAt: now, deadline: now + EVENT_WINDOW_MS, started: false };
@@ -47,8 +44,8 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const sentPower = combatFleetPower(selection, state.research);
   const allyCount = Math.max(8, Math.round(sentPower / 18000));
 
-  const eventMultiplier = rollMultiplier(EVENT_MULTIPLIER_ROLL);
-  const targetPower = sentPower * EVENT_NPC_MULTIPLIER * eventMultiplier;
+  // Feindstaerke = exakt 100% der eingesetzten Flotten-Power, keine Zufalls-Schwankung mehr.
+  const targetPower = sentPower;
   const npcShips = generateFallbackFleet(targetPower);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
 
@@ -129,7 +126,6 @@ export async function startEventMission(state: PlayerState, selection: Record<st
 
   const npcFullyDestroyed = npcIds.every((id) => result.survivorsB[id] <= 0);
   const playerWiped = playerIds.every((id) => result.survivorsA[id] <= 0) && result.survivorsA['verbuendete'] <= 0;
-  const eventStrengthLabel = eventMultiplier <= 0.5 ? 'Schwache Übermacht' : eventMultiplier >= 1.5 ? 'Starke Übermacht' : 'Normale Übermacht';
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
   let containerReward: 'silber' | 'gold' | null = null;
@@ -145,7 +141,7 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   pushMessage(
     state,
     'kampf',
-    `${eventName}: ${outcome} [${eventStrengthLabel}] (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verbündete Verluste: ${allyLost}. ${rewardText}`,
+    `${eventName}: ${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verbündete Verluste: ${allyLost}. ${rewardText}`,
     { sektorName: eventName, outcome, roundsFought: result.roundsFought, npcResults, playerResults, allyResult }
   );
 
