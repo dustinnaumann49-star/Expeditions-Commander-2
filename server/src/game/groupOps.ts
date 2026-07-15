@@ -304,7 +304,11 @@ async function resolveGroupEvent(
 
   const npcFullyDestroyed = npcIds.every((id) => result.survivorsB[id] <= 0);
   const playerWiped = accepted.every((p) => Object.keys(p.ships).every((id) => (result.survivorsByOwner[String(p.userId)]?.[id] || 0) <= 0));
-  const outcome = playerWiped || !npcFullyDestroyed ? 'Rückzug – Notruf gescheitert' : 'Notruf erfolgreich – Gemeinsam geholfen';
+  const outcome = result.retreated
+    ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
+    : playerWiped || !npcFullyDestroyed
+    ? 'Rückzug – Notruf gescheitert'
+    : 'Notruf erfolgreich – Gemeinsam geholfen';
 
   let containerReward: 'silber' | 'gold' | null = null;
   if (!playerWiped && npcFullyDestroyed) containerReward = 'gold';
@@ -554,7 +558,11 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   }
 
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
-  const outcome = anyNpcDestroyed ? 'Feindkontakt - Piraten erlitten Verluste' : 'Feindkontakt - keine nennenswerte Wirkung';
+  const outcome = result.retreated
+    ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
+    : anyNpcDestroyed
+    ? 'Feindkontakt - Piraten erlitten Verluste'
+    : 'Feindkontakt - keine nennenswerte Wirkung';
   const messageText = `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {

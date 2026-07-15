@@ -374,7 +374,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
   const npcLossText =
     Object.entries(npcLosses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
-  const outcome = anyNpcDestroyed && !anyPlayerLoss ? 'Klarer Sieg' : anyNpcDestroyed ? 'Sieg mit Verlusten' : 'Verluste, Gegner überlebt';
+  const outcome = result.retreated
+    ? 'Rückzug nach hohen Verlusten – Flotte hat sich rechtzeitig abgesetzt'
+    : anyNpcDestroyed && !anyPlayerLoss
+    ? 'Klarer Sieg'
+    : anyNpcDestroyed
+    ? 'Sieg mit Verlusten'
+    : 'Verluste, Gegner überlebt';
 
   if (mission.sandronatorAlive && (mission.ships.sandronator || 0) <= 0) {
     mission.sandronatorAlive = false;

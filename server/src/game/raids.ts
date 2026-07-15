@@ -265,7 +265,9 @@ async function resolveRaid(state: PlayerState) {
     state.resources.kristall = Math.max(0, state.resources.kristall - stolen.kristall);
     state.resources.deuterium = Math.max(0, state.resources.deuterium - stolen.deuterium);
 
-    const outcome = 'Piratenüberfall teilweise abgewehrt – Feinde überlebt';
+    const outcome = result.retreated
+      ? 'Rückzug nach hohen Verlusten – Feinde überlebt'
+      : 'Piratenüberfall teilweise abgewehrt – Feinde überlebt';
     const detail = {
       sektorName: 'Heimatbasis',
       outcome,

@@ -458,6 +458,7 @@ interface RoundsResult {
   shieldRegenB: Record<string, number>;
   shotsA: ShotStats;
   shotsB: ShotStats;
+  retreated: boolean;
   remainingSharedShieldPoolA: number;
 }
 
@@ -481,6 +482,13 @@ function runRounds(
   const shotsB = emptyShotStats();
 
   let roundsFought = 0;
+  let retreated = false;
+  const initialCountA = unitsA.length;
+  // Ab welchem Anteil verbliebener Einheiten (bezogen auf den Start) zieht sich Seite A
+  // (Spieler-Flotte) zurueck, statt bis zur voelligen Vernichtung weiterzukaempfen. Gilt nicht
+  // fuer Seite B (NPCs) und nicht fuer reine Verteidigungsanlagen (koennen nicht "fliehen"),
+  // sondern nur fuer die kombinierte Ueberlebensrate der gesamten Seite A.
+  const RETREAT_THRESHOLD = 0.5;
   const regenPlayer = getShieldRegenRate(research);
   const regenNpc = SHIELD_REGEN_BASE;
   // Gemeinsamer Kuppel-Schild-Pool fuer Seite A (nur relevant bei Heimatverteidigung mit
@@ -508,6 +516,10 @@ function runRounds(
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
     }
+    if (initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
+      retreated = true;
+      break;
+    }
   }
 
   return {
@@ -522,6 +534,7 @@ function runRounds(
     shieldRegenB,
     shotsA,
     shotsB,
+    retreated,
     remainingSharedShieldPoolA: poolA.remaining,
   };
 }
@@ -538,6 +551,7 @@ export interface CombatResult {
   shieldRegenB: Record<string, number>;
   shotsA: ShotStats;
   shotsB: ShotStats;
+  retreated: boolean;
   remainingSharedShieldPoolA: number;
 }
 
@@ -583,6 +597,7 @@ export function resolveCombat(
     shieldRegenB: r.shieldRegenB,
     shotsA: r.shotsA,
     shotsB: r.shotsB,
+    retreated: r.retreated,
     remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
   };
 }
@@ -650,6 +665,7 @@ export function resolveCombatMultiOwner(
     shieldRegenB: r.shieldRegenB,
     shotsA: r.shotsA,
     shotsB: r.shotsB,
+    retreated: r.retreated,
     remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
   };
 }

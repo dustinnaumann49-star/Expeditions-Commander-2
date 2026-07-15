@@ -137,7 +137,11 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const rewardText = containerReward ? (containerReward === 'gold' ? '🏆 Gold-Container erhalten' : '📦 Silber-Container erhalten') : '';
 
   const eventName = state.event.name;
-  const outcome = playerWiped || !npcFullyDestroyed ? 'Rückzug – Notruf gescheitert' : 'Notruf erfolgreich – Geholfen';
+  const outcome = result.retreated
+    ? 'Rückzug nach hohen Verlusten – Flotte rechtzeitig abgesetzt'
+    : playerWiped || !npcFullyDestroyed
+    ? 'Rückzug – Notruf gescheitert'
+    : 'Notruf erfolgreich – Geholfen';
   pushMessage(
     state,
     'kampf',
