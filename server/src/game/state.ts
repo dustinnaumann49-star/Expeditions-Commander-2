@@ -1,6 +1,6 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
-import { RAID_CHECK_INTERVAL_MS, EVENT_CHECK_INTERVAL_MS } from './data/economy.js';
+import { nextFixedCheckpoint } from './data/economy.js';
 import type { PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson } from '../db.js';
 
@@ -31,9 +31,9 @@ export function defaultPlayerState(userId: number): PlayerState {
     inventory: [],
     presets: [],
     raid: null,
-    nextRaidCheck: Date.now() + RAID_CHECK_INTERVAL_MS,
+    nextRaidCheck: nextFixedCheckpoint(Date.now()),
     event: null,
-    nextEventCheck: Date.now() + EVENT_CHECK_INTERVAL_MS,
+    nextEventCheck: nextFixedCheckpoint(Date.now()),
     lastUpdate: Date.now(),
   };
 }
