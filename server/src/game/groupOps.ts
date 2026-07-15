@@ -236,6 +236,7 @@ async function resolveGroupEvent(
       const lost = sent - survived;
       pState.fleet[id] = (pState.fleet[id] || 0) + survived;
       const eff = getEffectiveStats(id, pState.research);
+      const statKey = `${p.userId}:${id}`;
       playerResults.push({
         id,
         name: shipName(id),
@@ -246,12 +247,12 @@ async function resolveGroupEvent(
         waffen: Math.round(eff.waffen),
         schild: Math.round(eff.schild),
         panzerung: Math.round(eff.panzerung),
-        dmgTaken: Math.round(result.dmgTakenA[id] || 0),
-        shotsFired: result.shotsA.shotsFired[id] || 0,
-        hits: result.shotsA.hits[id] || 0,
-        rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
-        shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
-        shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+        dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+        shotsFired: result.shotsA.shotsFired[statKey] || 0,
+        hits: result.shotsA.hits[statKey] || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+        shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
     });
   });
@@ -486,6 +487,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       if (sent <= 0) return;
       const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
       const eff = getEffectiveStats(id, pState.research);
+      const statKey = `${p.userId}:${id}`;
       playerResults.push({
         id,
         name: shipName(id),
@@ -496,12 +498,12 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
         waffen: Math.round(eff.waffen),
         schild: Math.round(eff.schild),
         panzerung: Math.round(eff.panzerung),
-        dmgTaken: Math.round(result.dmgTakenA[id] || 0),
-        shotsFired: result.shotsA.shotsFired[id] || 0,
-        hits: result.shotsA.hits[id] || 0,
-        rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
-        shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
-        shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+        dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+        shotsFired: result.shotsA.shotsFired[statKey] || 0,
+        hits: result.shotsA.hits[statKey] || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+        shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
       p.ships[id] = survived;
     });

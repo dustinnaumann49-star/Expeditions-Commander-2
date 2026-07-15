@@ -133,6 +133,7 @@ async function resolveRaid(state: PlayerState) {
     if (lost > 0) anyDefLoss = true;
     losses[id] = lost;
     state.fleet[id] = survived;
+    const statKey = survivorsByOwner ? `owner:${id}` : id;
     playerResults.push({
       id,
       name: shipName(id),
@@ -143,12 +144,12 @@ async function resolveRaid(state: PlayerState) {
       waffen: Math.round(eff.waffen),
       schild: Math.round(eff.schild),
       panzerung: Math.round(eff.panzerung),
-      dmgTaken: Math.round(result.dmgTakenA[id] || 0),
-      shotsFired: result.shotsA.shotsFired[id] || 0,
-      hits: result.shotsA.hits[id] || 0,
-      rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
-      shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
-      shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+      dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+      shotsFired: result.shotsA.shotsFired[statKey] || 0,
+      hits: result.shotsA.hits[statKey] || 0,
+      rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+      shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
     });
   });
 
@@ -161,6 +162,7 @@ async function resolveRaid(state: PlayerState) {
     losses[id] = destroyed;
     const repaired = Math.floor(destroyed * DEFENSE_REPAIR_PERCENT);
     state.defense[id] = survived + repaired;
+    const statKey = survivorsByOwner ? `owner:${id}` : id;
     playerResults.push({
       id,
       name: shipName(id),
@@ -171,12 +173,12 @@ async function resolveRaid(state: PlayerState) {
       waffen: Math.round(eff.waffen),
       schild: Math.round(eff.schild),
       panzerung: Math.round(eff.panzerung),
-      dmgTaken: Math.round(result.dmgTakenA[id] || 0),
-      shotsFired: result.shotsA.shotsFired[id] || 0,
-      hits: result.shotsA.hits[id] || 0,
-      rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
-      shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
-      shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+      dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+      shotsFired: result.shotsA.shotsFired[statKey] || 0,
+      hits: result.shotsA.hits[statKey] || 0,
+      rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+      shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       isDefense: true,
     });
   });
@@ -219,6 +221,8 @@ async function resolveRaid(state: PlayerState) {
         const survived = ownerSurvivors[id] || 0;
         const lost = sentCount - survived;
         reinforcerState.fleet[id] = (reinforcerState.fleet[id] || 0) + survived;
+        const eff = getEffectiveStats(id, reinforcerState.research);
+        const statKey = `${ownerKey}:${id}`;
         playerResults.push({
           id,
           name: shipName(id),
@@ -226,15 +230,15 @@ async function resolveRaid(state: PlayerState) {
           sent: sentCount,
           survived,
           lost,
-          waffen: 0,
-          schild: 0,
-          panzerung: 0,
-          dmgTaken: 0,
-          shotsFired: 0,
-          hits: 0,
-          rapidFireTriggers: 0,
-          shieldDmgTaken: 0,
-          shieldRegen: 0,
+          waffen: Math.round(eff.waffen),
+          schild: Math.round(eff.schild),
+          panzerung: Math.round(eff.panzerung),
+          dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+          shotsFired: result.shotsA.shotsFired[statKey] || 0,
+          hits: result.shotsA.hits[statKey] || 0,
+          rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+          shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+          shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
         });
       });
       const reinforcerContainer: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';

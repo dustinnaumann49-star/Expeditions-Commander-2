@@ -327,6 +327,14 @@ function emptyShotStats(): ShotStats {
   return { shotsFired: {}, hits: {}, rapidFireTriggers: {} };
 }
 
+// Bei Mehrspieler-Kaempfen (ownerKey gesetzt) muessen Statistiken pro BESITZER getrennt werden,
+// nicht nur pro Schiffstyp - sonst wuerden zwei Spieler mit demselben Schiffstyp (z.B. beide
+// "kreuzer") exakt dieselben aggregierten Werte fuer Schaden/Schuesse/etc. angezeigt bekommen,
+// obwohl sie unterschiedlich viele Schiffe eingesetzt haben.
+function statKey(u: CombatUnit): string {
+  return u.ownerKey ? `${u.ownerKey}:${u.typeId}` : u.typeId;
+}
+
 function fireShots(
   shooters: CombatUnit[],
   targets: CombatUnit[],
@@ -357,7 +365,7 @@ function fireShots(
     while (shots > 0 && fired < MAX_SHOTS_PER_UNIT) {
       shots--;
       fired++;
-      shooterStats.shotsFired[shooter.typeId] = (shooterStats.shotsFired[shooter.typeId] || 0) + 1;
+      shooterStats.shotsFired[statKey(shooter)] = (shooterStats.shotsFired[statKey(shooter)] || 0) + 1;
 
       const aliveTargets = targets.filter((t) => t.hpCur > 0);
       if (aliveTargets.length === 0) break;
@@ -374,12 +382,12 @@ function fireShots(
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;
-          shooterStats.rapidFireTriggers[shooter.typeId] = (shooterStats.rapidFireTriggers[shooter.typeId] || 0) + 1;
+          shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
         }
         continue;
       }
 
-      shooterStats.hits[shooter.typeId] = (shooterStats.hits[shooter.typeId] || 0) + 1;
+      shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
 
       const dmg = shooter.waffen;
       const primaryTypeId = target.typeId;
@@ -403,16 +411,16 @@ function fireShots(
         currentTarget.shieldCur -= shieldDmg;
         remainingDmg -= shieldDmg;
         if (shieldDmg > 0) {
-          shieldDmgTakenTarget[currentTarget.typeId] = (shieldDmgTakenTarget[currentTarget.typeId] || 0) + shieldDmg;
+          shieldDmgTakenTarget[statKey(currentTarget)] = (shieldDmgTakenTarget[statKey(currentTarget)] || 0) + shieldDmg;
         }
         if (remainingDmg <= 0) break;
 
         if (remainingDmg < currentTarget.hpCur) {
           currentTarget.hpCur -= remainingDmg;
-          dmgTakenTarget[currentTarget.typeId] = (dmgTakenTarget[currentTarget.typeId] || 0) + remainingDmg;
+          dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + remainingDmg;
           remainingDmg = 0;
         } else {
-          dmgTakenTarget[currentTarget.typeId] = (dmgTakenTarget[currentTarget.typeId] || 0) + currentTarget.hpCur;
+          dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + currentTarget.hpCur;
           const overflow = (remainingDmg - currentTarget.hpCur) * overkillFraction;
           currentTarget.hpCur = 0;
           if (overflow <= 0) break;
@@ -490,12 +498,12 @@ function runRounds(
     unitsA.forEach((u) => {
       const before = u.shieldCur;
       u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenPlayer);
-      shieldRegenA[u.typeId] = (shieldRegenA[u.typeId] || 0) + (u.shieldCur - before);
+      shieldRegenA[statKey(u)] = (shieldRegenA[statKey(u)] || 0) + (u.shieldCur - before);
     });
     unitsB.forEach((u) => {
       const before = u.shieldCur;
       u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenNpc);
-      shieldRegenB[u.typeId] = (shieldRegenB[u.typeId] || 0) + (u.shieldCur - before);
+      shieldRegenB[statKey(u)] = (shieldRegenB[statKey(u)] || 0) + (u.shieldCur - before);
     });
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
