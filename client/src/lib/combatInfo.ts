@@ -46,15 +46,16 @@ export function schildMultiplier(gameData: GameData, research: Record<string, nu
 }
 
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gleichmaessig verteilt auf alle Nicht-Kuppel-Anlagen.
-export function getShieldDomeBonus(gameData: GameData, defense: Record<string, number>, research: Record<string, number>): number {
-  let domeShieldTotal = 0;
-  let otherCount = 0;
+// Spiegelt server/src/game/combat.ts's computeDomeSharedPool() 1:1 - Kuppeln geben ihren
+// kompletten Schildwert an einen GEMEINSAMEN Pool ab, der die gesamte Verteidigung schuetzt
+// (faengt Schaden ab, bevor eine einzelne Anlage getroffen wird), statt ihn pro Anlage zu verteilen.
+export function computeDomeSharedPool(gameData: GameData, defense: Record<string, number>, research: Record<string, number>): number {
+  let total = 0;
   gameData.defenses.forEach((d) => {
+    if (!d.isDome) return;
     const count = defense[d.id] || 0;
     if (count <= 0) return;
-    if (d.isDome) domeShieldTotal += count * d.stats.schild;
-    else otherCount += count;
+    total += count * d.stats.schild;
   });
-  if (otherCount === 0 || domeShieldTotal === 0) return 0;
-  return (domeShieldTotal / otherCount) * schildMultiplier(gameData, research);
+  return total * schildMultiplier(gameData, research);
 }
