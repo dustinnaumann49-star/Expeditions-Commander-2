@@ -4,6 +4,7 @@ import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
+import { InfoModal } from '../components/InfoModal';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
 
@@ -52,6 +53,7 @@ function ExpeditionEventsView() {
   const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, error } = useGame();
   const [tab, setTab] = useState<'expedition' | 'event'>('expedition');
   const [sektorId] = useState('piraten_elite');
+  const [showEliteInfo, setShowEliteInfo] = useState(false);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
@@ -167,7 +169,9 @@ function ExpeditionEventsView() {
                       <span className="level-gruen">Aktivität: {eliteSektor.aktivitaet}</span>
                       <span>Gefahrenstufe: {eliteSektor.gefahr}</span>
                     </div>
-                    <SektorInfoBox sektorId="piraten_elite" gameData={gameData} />
+                    <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowEliteInfo(true)}>
+                      ℹ️ Info
+                    </button>
                   </div>
                 </div>
               );
@@ -258,6 +262,12 @@ function ExpeditionEventsView() {
             </>
           )}
         </div>
+      )}
+
+      {showEliteInfo && (
+        <InfoModal title="Sektor P9 – Elite-Bollwerk" onClose={() => setShowEliteInfo(false)}>
+          <SektorInfoBox sektorId="piraten_elite" gameData={gameData} />
+        </InfoModal>
       )}
     </div>
   );
