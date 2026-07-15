@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { EVENT_NAMES, EVENT_NPC_MULTIPLIER, EVENT_MULTIPLIER_ROLL, ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS } from './data/economy.js';
+import { EVENT_NAMES, ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -217,8 +217,8 @@ async function resolveGroupEvent(
   const totalSentPower = accepted.reduce((sum, p) => sum + (p.contributedPower || 0), 0);
   const allyCount = Math.max(8, Math.round(totalSentPower / 18000));
 
-  const eventMultiplier = rollMultiplier(EVENT_MULTIPLIER_ROLL);
-  const targetPower = totalSentPower * EVENT_NPC_MULTIPLIER * eventMultiplier;
+  // Feindstaerke = exakt 100% der gesamten eingesetzten Flotten-Power, keine Zufalls-Schwankung mehr.
+  const targetPower = totalSentPower;
   const npcShips = generateFallbackFleet(targetPower);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
 
