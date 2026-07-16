@@ -26,18 +26,42 @@ export function getZielerfassungAccuracy(gameData: GameData, research: Record<st
   return Math.min(1, base + bonus);
 }
 
-export function getShieldRegenRate(gameData: GameData, research: Record<string, number>): number {
+// Spiegelt server/src/game/combat.ts's getShieldRegenRate() - beruecksichtigt jetzt die
+// Groessen-Modifikatoren (grosse Einheiten laden staerker auf, kleine schwaecher).
+export function getShieldRegenRate(gameData: GameData, research: Record<string, number>, typeId?: string): number {
   const level = research.schildregeneration || 0;
   const tech = gameData.research.find((r) => r.id === 'schildregeneration');
   const bonus = level * (tech ? tech.effectPerLevel : 0.06);
-  return Math.min(gameData.shieldRegenMax, gameData.shieldRegenBase + bonus);
+  const sizeMod = typeId ? gameData.shieldRegenModifier[typeId] || 0 : 0;
+  return Math.max(0, Math.min(gameData.shieldRegenMax, gameData.shieldRegenBase + bonus + sizeMod));
 }
 
-export function getPrecisionChance(gameData: GameData, research: Record<string, number>): number {
+// Spiegelt server/src/game/combat.ts's getPrecisionChance() - kleine Schiffe treffen besser.
+export function getPrecisionChance(gameData: GameData, research: Record<string, number>, typeId?: string): number {
   const level = research.praezision || 0;
   const tech = gameData.research.find((r) => r.id === 'praezision');
   const bonus = level * (tech ? tech.effectPerLevel : 0.02);
-  return Math.min(gameData.precisionMaxPlayer, gameData.precisionBase + bonus);
+  const sizeMod = typeId ? gameData.precisionModifier[typeId] || 0 : 0;
+  return Math.max(0.05, Math.min(gameData.precisionMaxPlayer + sizeMod, gameData.precisionBase + bonus + sizeMod));
+}
+
+// Spiegelt server/src/game/combat.ts's getEvasionChance()
+export function getEvasionChance(gameData: GameData, research: Record<string, number>, typeId: string): number {
+  const base = gameData.evasionBase[typeId] || 0;
+  if (base <= 0) return 0;
+  const level = research.ausweichen || 0;
+  const tech = gameData.research.find((r) => r.id === 'ausweichen');
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  return Math.min(gameData.evasionMax, base + bonus);
+}
+
+// Spiegelt server/src/game/combat.ts's getCritChance()
+export function getCritChance(gameData: GameData, research: Record<string, number>, typeId: string): number {
+  const base = gameData.critChanceBase[typeId] || 0;
+  const level = research.kritischetreffer || 0;
+  const tech = gameData.research.find((r) => r.id === 'kritischetreffer');
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  return Math.min(gameData.critChanceMax, base + bonus);
 }
 
 export function schildMultiplier(gameData: GameData, research: Record<string, number>): number {
