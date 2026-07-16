@@ -129,6 +129,9 @@ export const ASTEROID_ESCORT_KILL_REWARD = { metall: 750000, kristall: 600000, d
 
 export const MISSION_TRAVEL_MS = 60 * 1000;
 export const MISSION_DURATION_MS = 4 * 3600 * 1000;
+// Asteroiden-Felder laufen bewusst laenger als Piraten-Sektoren: weniger haeufiges Nachschauen
+// noetig (guenstig fuer Spieler mit wenig Zeit), dafuer entsprechend mehr Ertrag pro Durchgang.
+export const ASTEROID_MISSION_DURATION_MS = 12 * 3600 * 1000;
 
 export const SCRAP_REFUND_RATE = 0.3;
 export const TRADE_VALUE: Record<string, number> = { metall: 1, kristall: 1.5, deuterium: 3 };
