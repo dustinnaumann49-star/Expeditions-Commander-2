@@ -151,6 +151,21 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                 </table>
               </div>
             )}
+            {msg.detail.skirmishes && msg.detail.skirmishes.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Piraten-Kontakte während der Mission</p>
+                {msg.detail.skirmishes.map((sk, i) => (
+                  <div key={i} style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                    <p style={{ fontSize: 13, marginBottom: 6 }}>
+                      <strong>Stunde {sk.hour}/4</strong> – {sk.outcome}
+                    </p>
+                    <RewardTable rows={combatRewardRows(sk.rewards)} />
+                    <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
+                    <UnitTable title="Eigene Eskorte" units={sk.playerResults} />
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <>
