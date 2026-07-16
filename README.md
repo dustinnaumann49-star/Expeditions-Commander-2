@@ -76,6 +76,8 @@ client/
   src/components/ResourceBar.tsx     Kopfleiste: Ressourcen, Uhr, Abmelden
   src/components/BuildQueue.tsx      Fortschrittsbalken für Bau-Warteschlangen (Lane-basiert)
   src/components/LoreModal.tsx       Popup bei Klick auf Schiffs-/Verteidigungs-/Forschungsnamen
+  src/components/CombatReplayView.tsx  Animierte Canvas-Visualisierung des echten Kampfverlaufs
+                                      (Laser, Explosionen, Runde für Runde abspielbar)
   src/components/ProtectedRoute.tsx  Leitet zu /login um, falls nicht angemeldet
 
   src/pages/Login.tsx                 Login/Registrierung
@@ -344,3 +346,20 @@ client/
     weil dessen Statistik "Siegchance 25% + Rueckzugsrate 83% = 108%" auswies - ein gutes Beispiel
     dafuer, dass aggregierte Statistiken Logikfehler sichtbar machen, die in Einzelberichten
     untergehen.
+
+30. **Kampf-Visualisierung basiert auf ECHTEN Rundendaten, nicht auf Interpolation.** `runRounds()`
+    zeichnet pro Runde die Ueberlebenden je Schiffstyp auf (`CombatReplay` in `types.ts`) und legt
+    sie im `CombatDetail` der Nachricht ab; `components/CombatReplayView.tsx` spielt das per Canvas
+    ab (Laser-Salven, gestaffelte Explosionen, Play/Pause/Schritt/Geschwindigkeit). Bewusste
+    Speicher-Entscheidungen, die bei Aenderungen erhalten bleiben sollten:
+    - Format sind ZAHLEN-ARRAYS (`typesA`/`typesB` geben die Reihenfolge vor), nicht Objekte mit
+      Schluesseln - gemessen 1,4 KB statt 6,1 KB pro Kampf (~4x kleiner).
+    - Bei langen Kaempfen wird auf `MAX_SNAPSHOTS` (30) abgetastet, Start/Ende bleiben erhalten -
+      so bleibt ein 100-Runden-Kampf genauso kompakt wie ein kurzer.
+    - Real gemessen: ~1,3 KB pro grossem Kampf, ~260 KB pro Spieler bei vollen 200 Nachrichten.
+    - `replay` ist OPTIONAL: alte Nachrichten ohne Replay funktionieren unveraendert weiter
+      (`{msg.detail.replay && <CombatReplayView .../>}`), es gibt keine Migration.
+    - Bei sehr grossen Flotten steht ein gezeichneter Punkt fuer mehrere Schiffe
+      (`MAX_DOTS_PER_SIDE`), sonst waeren es unleserliche Pixelwolken.
+    Eingebaut in ALLE vier Kampfarten (Solo-Missionen, Raids, Notruf-Events, Gruppen-Operationen)
+    sowie in die gesammelten Asteroiden-Skirmishes.
