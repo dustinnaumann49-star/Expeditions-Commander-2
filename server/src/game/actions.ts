@@ -5,7 +5,7 @@ import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_PLAYER_SHIP
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processEventTimer } from './events.js';
-import { processRaidTimer } from './raids.js';
+import { processRaidTimer, processOverdueRaidsForOtherUsers } from './raids.js';
 import { processGroupOperationsForUser } from './groupOps.js';
 import type { PlayerState, ResourceCost } from './types.js';
 
@@ -105,6 +105,7 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   await processMissions(state);
   await processEventTimer(state);
   await processRaidTimer(state);
+  await processOverdueRaidsForOtherUsers(state);
   await processGroupOperationsForUser(state);
 
   state.lastUpdate = now;
