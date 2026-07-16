@@ -4,6 +4,7 @@ import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import {
   MISSION_TRAVEL_MS,
   MISSION_DURATION_MS,
+  ASTEROID_MISSION_DURATION_MS,
   ASTEROID_ESCORT_POWER_MIN,
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
@@ -71,14 +72,15 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   });
 
   const now = Date.now();
+  const durationMs = cfg.type === 'asteroid' ? ASTEROID_MISSION_DURATION_MS : MISSION_DURATION_MS;
   const mission: Mission = {
     id: 'mission_' + now + '_' + sektorId,
     sektorId,
     ships,
     startTime: now,
     arriveTime: now + MISSION_TRAVEL_MS,
-    endTime: now + MISSION_TRAVEL_MS + MISSION_DURATION_MS,
-    returnTime: now + MISSION_TRAVEL_MS + MISSION_DURATION_MS + MISSION_TRAVEL_MS,
+    endTime: now + MISSION_TRAVEL_MS + durationMs,
+    returnTime: now + MISSION_TRAVEL_MS + durationMs + MISSION_TRAVEL_MS,
     processedHours: 0,
     lastTick: null,
     farmed: { metall: 0, kristall: 0, deuterium: 0 },
@@ -123,7 +125,8 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
       mission.farmed.kristall += total * 0.3;
       mission.farmed.deuterium += total * 0.2;
       if (cfg.dmCap && mission.dmFound < cfg.dmCap) {
-        const rate = cfg.dmCap / (MISSION_DURATION_MS / 1000);
+        const durationMs = mission.endTime - mission.arriveTime;
+        const rate = cfg.dmCap / (durationMs / 1000);
         mission.dmFound = Math.min(cfg.dmCap, mission.dmFound + rate * deltaSec);
       }
     }
@@ -534,8 +537,8 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       (sum, s) => sum + s.playerResults.reduce((a, p) => a + (p.lost || 0), 0),
       0
     );
-    const ruhigeStunden = 4 - mission.skirmishLog.length;
-    skirmishText = ` Piraten-Kontakt in ${mission.skirmishLog.length} von 4 Stunden (${ruhigeStunden > 0 ? `${ruhigeStunden} ruhig, ` : ''}insgesamt ${totalLost} Begleitschiff(e) verloren) - Details siehe unten.`;
+    const ruhigeStunden = mission.processedHours - mission.skirmishLog.length;
+    skirmishText = ` Piraten-Kontakt in ${mission.skirmishLog.length} von ${mission.processedHours} Stunden (${ruhigeStunden > 0 ? `${ruhigeStunden} ruhig, ` : ''}insgesamt ${totalLost} Begleitschiff(e) verloren) - Details siehe unten.`;
   }
   pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${skirmishText}`, detail);
 }
@@ -556,7 +559,8 @@ async function tickMission(state: PlayerState, mission: Mission, now: number) {
     accrueFarming(state, mission, (cappedNow - mission.lastTick) / 1000);
     mission.lastTick = cappedNow;
   }
-  const hoursElapsed = Math.min(4, Math.floor((cappedNow - mission.arriveTime) / 3600000));
+  const maxHours = Math.round((mission.endTime - mission.arriveTime) / 3600000);
+  const hoursElapsed = Math.min(maxHours, Math.floor((cappedNow - mission.arriveTime) / 3600000));
   while (mission.processedHours < hoursElapsed) {
     mission.processedHours++;
     const totalShips = Object.values(mission.ships).reduce((a, b) => a + b, 0);
