@@ -227,3 +227,10 @@ client/
     Mittel=15000, Hoch=25000 pro Schiff und Stunde (bewusst grosszuegig fuer Spieler mit wenig
     Spielzeit - kein PvP, daher unproblematisch). Plünderungs-Beute der Piraten-Sektoren
     (`lootBase`) blieb bewusst unveraendert, nur das Mining wurde angehoben.
+
+21. **Imperator-Werte auf 3x Reaper angehoben** (`ships.ts`): Waffen 50.400, Schild 12.600,
+    Panzerung 2.520.000 (vorher 40.000/10.000/400.000 - die Panzerung lag davor sogar UNTER dem
+    Reaper trotz ~11 Tage Grind-Aufwand fuer 1.000 Teile einer Kategorie). Bau-Limit bleibt
+    bewusst bei 2 - macht bei dem Zeitaufwand pro Exemplar auch weiterhin Sinn. Spezialteile.tsx
+    hatte als einzige Bau-Seite noch KEIN Info-Popup (RapidFire/Zielerfassung/Praezision/
+    Schild-Regeneration) - jetzt nachgezogen, damit alle Bau-Seiten demselben Muster folgen.
