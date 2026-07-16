@@ -29,5 +29,5 @@ export const SHIPS: ShipDefinition[] =
     cost:{metall:15000, kristall:6000, deuterium:2000}, stats:{waffen:350, schild:60, panzerung:8500} },
   { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:2,
     specialOnly:true, teileCost:{waffen:1000, schild:1000, panzerung:1000},
-    stats:{waffen:40000, schild:10000, panzerung:400000} }
+    stats:{waffen:50400, schild:12600, panzerung:2520000} }
 ];
