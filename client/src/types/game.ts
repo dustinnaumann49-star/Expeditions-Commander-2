@@ -130,12 +130,22 @@ export interface CombatDetail {
   rewards?: RewardSummary;
 }
 
+export interface SkirmishSummary {
+  hour: number;
+  outcome: string;
+  roundsFought: number;
+  npcResults: CombatUnitResult[];
+  playerResults: CombatUnitResult[];
+  rewards?: RewardSummary;
+}
+
 export interface FarmDetail {
   sektorName: string;
   resources: { metall: number; kristall: number; deuterium: number };
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
   fleetReturned?: Record<string, number>;
+  skirmishes?: SkirmishSummary[];
 }
 
 export interface GameMessage {
