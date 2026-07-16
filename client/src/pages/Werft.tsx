@@ -9,9 +9,9 @@ import { getBauzeitMultiplier } from '../lib/multipliers';
 import type { PlayerState } from '../types/game';
 
 const WERFT_KLASSEN = [
-  { id: 'jaeger', name: 'Jäger-Klasse', ships: ['leicht', 'schwer'] },
-  { id: 'kreuzer', name: 'Kreuzer-Klasse', ships: ['kreuzer', 'schlachtschiff', 'bomber'] },
-  { id: 'elite', name: 'Elite-Klasse', ships: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
+  { id: 'jaeger', name: 'Jäger-Klasse', ships: ['leicht', 'schwer', 'salvenjaeger'] },
+  { id: 'kreuzer', name: 'Kreuzer-Klasse', ships: ['kreuzer', 'schlachtschiff', 'bomber', 'salvenkreuzer'] },
+  { id: 'elite', name: 'Elite-Klasse', ships: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvendreadnought'] },
   { id: 'versorgung', name: 'Versorgungsschiffe', ships: ['mining', 'begleitschiff'] },
 ];
 
@@ -143,9 +143,21 @@ export function WerftPage() {
           const rfDisplay = getRapidFireDisplay(gameData, infoShip.id);
           const accuracy = getZielerfassungAccuracy(gameData, state.research, infoShip.id);
           const targeted = isTargetedByRapidFire(gameData, infoShip.id);
+          const isVolleyShip = gameData.multiTargetVolleyShips.includes(infoShip.id);
+          const volleyTargetTypes = Object.keys(gameData.rapidfire[infoShip.id] || {});
           const rows: [string, React.ReactNode][] = [
             ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
             ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),
+            ...(isVolleyShip
+              ? ([
+                  [
+                    '⚡ Mehrfachziel-Salve',
+                    `Bei erfolgreicher Zielerfassung wird JEDER anfällige Schiffstyp einmal getroffen (nicht nur eine zufällige Einheit): ${volleyTargetTypes
+                      .map((id) => shipName(gameData, id))
+                      .join(', ')}`,
+                  ],
+                ] as [string, React.ReactNode][])
+              : []),
             ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
             ['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`],
             ['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
