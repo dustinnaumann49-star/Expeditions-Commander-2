@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { InfoModal, InfoTable } from '../components/InfoModal';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
 
 export function SpezialteilePage() {
   const { gameData, state, buildImperator, error } = useGame();
+  const [showInfo, setShowInfo] = useState(false);
   if (!gameData || !state) return <p>Lade...</p>;
 
   const ship = gameData.ships.find((s) => s.id === 'imperator');
@@ -12,6 +16,12 @@ export function SpezialteilePage() {
   const canBuild = state.teile.waffen >= cost.waffen && state.teile.schild >= cost.schild && state.teile.panzerung >= cost.panzerung;
   const limitReached = bestand >= ship.maxCount;
   const pct = (val: number, max: number) => Math.min(100, Math.round((val / max) * 100));
+
+  const precision = getPrecisionChance(gameData, state.research);
+  const shieldRegen = getShieldRegenRate(gameData, state.research);
+  const rfDisplay = getRapidFireDisplay(gameData, ship.id);
+  const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
+  const targeted = isTargetedByRapidFire(gameData, ship.id);
 
   return (
     <div>
@@ -45,8 +55,14 @@ export function SpezialteilePage() {
           <img className="ship-img" src={`/${ship.img}`} alt={ship.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
           <div className="ship-info">
             <h3>
-              {ship.name} <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 400 }}>(Bestand: {bestand}/{ship.maxCount})</span>
+              {ship.name}{' '}
+              <button className="qty-btn" style={{ padding: '1px 7px', fontSize: 11 }} onClick={() => setShowInfo(true)}>
+                ℹ️ Info
+              </button>
             </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+              Bestand: {bestand}/{ship.maxCount}
+            </p>
             <div className="ship-stats">
               <span>Waffen: {ship.stats.waffen.toLocaleString('de-DE')}</span>
               <span>Schild: {ship.stats.schild.toLocaleString('de-DE')}</span>
@@ -64,6 +80,23 @@ export function SpezialteilePage() {
           </div>
         </div>
       </div>
+
+      {showInfo && (
+        <InfoModal title={ship.name} onClose={() => setShowInfo(false)}>
+          <InfoTable
+            rows={[
+              ['RapidFire', rfDisplay || 'Kein RapidFire'],
+              ...(accuracy > 0
+                ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][])
+                : []),
+              ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
+              ['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`],
+              ['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
+              ['Limit', `${bestand}/${ship.maxCount} gebaut${bestand >= ship.maxCount ? ' – Limit erreicht' : ''}`],
+            ]}
+          />
+        </InfoModal>
+      )}
     </div>
   );
 }
