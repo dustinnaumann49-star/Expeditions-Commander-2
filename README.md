@@ -363,3 +363,36 @@ client/
       (`MAX_DOTS_PER_SIDE`), sonst waeren es unleserliche Pixelwolken.
     Eingebaut in ALLE vier Kampfarten (Solo-Missionen, Raids, Notruf-Events, Gruppen-Operationen)
     sowie in die gesammelten Asteroiden-Skirmishes.
+
+31. **Praezision und Schild-Regeneration sind GROESSENABHAENGIG, nicht global**
+    (`PRECISION_MODIFIER`, `SHIELD_REGEN_MODIFIER` in `combatConstants.ts`). Logik: kleine, wendige
+    Schiffe kaempfen nah am Feind -> treffen besser (+15% beim Leichten Jaeger), haben aber zu wenig
+    Energie fuer Schildaufladung (-12%). Grosse Schiffe feuern aus Distanz -> ungenauer (-15% beim
+    Imperator), dafuer massive Energiereserven (+25% Schild-Regen). Verteidigungsanlagen haengen an
+    der Basis-Energie -> EINHEITLICH +25% Schild-Regen, unabhaengig von ihrer Groesse; ihre
+    Praezision variiert dagegen nach Geschuetzgroesse. `getPrecisionChance()`/`getShieldRegenRate()`
+    nehmen jetzt eine optionale `typeId` entgegen - wird sie weggelassen, gibt es weiterhin den
+    reinen Basiswert (z.B. fuer den Kuppel-Pool). Client spiegelt das in `combatInfo.ts`.
+
+32. **Zwei neue Kampfwerte: Ausweichen und Kritische Treffer.** Ausweichen (`EVASION_BASE`,
+    Forschung `ausweichen`) ist das Spiegelbild zur Praezision: kleine Schiffe entziehen sich
+    Treffern (12% Basis beim Leichten Jaeger), Kapitalschiffe und unbewegliche
+    Verteidigungsanlagen koennen es gar nicht (0). Kritische Treffer (`CRIT_CHANCE_BASE`,
+    Forschung `kritischetreffer`) geben doppelten Schaden - grosse Schiffe treffen seltener,
+    richten dafuer oefter verheerenden Schaden an (20% beim Imperator vs. 3% beim Leichten Jaeger).
+    Trefferermittlung laeuft jetzt ueber `rollHit()`: erst Praezision des SCHUETZEN, dann Ausweichen
+    des ZIELS. WICHTIG zur Forschungs-Zuordnung: `applyPlayerResearch` bezieht sich auf den
+    SCHUETZEN - ist der Schuetze ein NPC (`false`), dann ist das Ziel zwangslaeufig eine
+    Spieler-Einheit, deren Ausweich-Forschung dann angewendet werden muss (siehe `rollHit()`).
+    Balance geprueft mit Duellen bei EXAKT gleicher Kampfkraft: es entsteht ein Schere-Stein-Papier
+    (Jaeger schlagen Zerstoerer/Reaper, weil die kein RapidFire gegen Jaeger haben; Schlachtkreuzer
+    und Imperator zerlegen Jaeger dank RapidFire wieder) - RapidFire ist damit das entscheidende
+    Gegenmittel gegen Jaegerschwaerme.
+
+33. **`loadPlayerState()` migriert fehlende Forschungsfelder automatisch** (`state.ts`). Der
+    Abgleich laeuft ueber das `RESEARCH`-Array, deckt also ALLE aktuellen und kuenftigen
+    Forschungen ab, ohne dass hier bei jeder neuen Forschung nachgezogen werden muss. Ohne das
+    haetten bestehende Spielstaende `research.ausweichen === undefined` statt `0` - mit falschen
+    Anzeigen und Rechenfehlern als Folge. Getestet: alter Stand ohne die neuen Felder wird korrekt
+    ergaenzt, vorhandener Forschungsfortschritt bleibt dabei erhalten. Bei kuenftigen NEUEN
+    Feldern (nicht Forschungen) im `PlayerState` hier ebenfalls eine Migrationszeile ergaenzen.
