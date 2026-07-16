@@ -266,8 +266,14 @@ client/
     auch fuer die Mehrfachziel-Salve (ein unabhaengiger Treffer/Verfehlen-Wurf PRO betroffenem Typ)
     genutzt wird. Getestet: 1 Salvenkreuzer traf in einer einzigen Runde kreuzer (268.200 Schaden),
     schlachtschiff (237.200) UND bomber (234.000) etwa gleich stark, waehrend nicht gelistete
-    Typen (leicht: nur 14.700) kaum betroffen waren. Sehr teuer (800k-4,5M+ Ressourcen) und stark
-    limitiert (maxCount 2-5), damit die Faehigkeit nicht die Balance kippt. Neue Route/Feld
+    Typen (leicht: nur 14.700) kaum betroffen waren. Bewusst als "Glaskanone" ausgelegt: extrem
+    hohe Waffen (Salvenjäger 9.000, Salvenkreuzer 32.000, Salvendreadnought 52.000 - übertrifft
+    sogar den Imperator), dafür deutlich weniger Schild/Panzerung als vergleichbare Schiffe ihrer
+    Klasse (z.B. Salvendreadnought nur 1/5 der Imperator-Panzerung). Sehr teuer (800k-4,5M+
+    Ressourcen pro Stück) und mit maxCount 8-30 bewusst so bemessen, dass eine kleine Staffel bei
+    grossen Flotten noch spuerbar mitwirkt, statt in tausenden Schiffen unterzugehen - der
+    Ressourcenpreis selbst begrenzt den Vollausbau schon ausreichend (45-82 Mio. Ressourcen fuer
+    das jeweilige Maximum). Neue Route/Feld
     `multiTargetVolleyShips` in `/game/data` noetig, damit das Frontend die Faehigkeit im
     Info-Popup (`Werft.tsx`) korrekt anzeigen kann - bei weiteren Spezialfaehigkeiten dieses Muster
     (Server-Konstante + expliziter Export ueber `/game/data` + Client-Info-Anzeige) wiederholen.
