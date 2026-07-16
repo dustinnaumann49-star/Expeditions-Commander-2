@@ -234,3 +234,14 @@ client/
     bewusst bei 2 - macht bei dem Zeitaufwand pro Exemplar auch weiterhin Sinn. Spezialteile.tsx
     hatte als einzige Bau-Seite noch KEIN Info-Popup (RapidFire/Zielerfassung/Praezision/
     Schild-Regeneration) - jetzt nachgezogen, damit alle Bau-Seiten demselben Muster folgen.
+
+22. **Asteroiden-Eskorte sammelt Skirmishes statt sofort zu melden** (`mission.skirmishLog` in
+    `types.ts`, gefuellt in `runAsteroidEscortCheck`, `missions.ts`): Frueher kam pro Stunden-Check
+    sofort eine eigene Kampf-Nachricht rein (bis zu 4 pro Mission, zusaetzlich zum
+    Rueckkehr-Bericht) - bei mehreren gleichzeitig laufenden Asteroiden-Missionen ueberfuellte das
+    den Nachrichten-Tab schnell. Jetzt wird jeder Stunden-Kontakt nur intern in
+    `mission.skirmishLog` gesammelt (keine Nachricht), und `finalizeMission`/
+    `abortMissionDestroyed` bauen daraus EINEN gemeinsamen Farm-Bericht mit allen Kaempfen als
+    aufklappbare Unterabschnitte (`FarmDetail.skirmishes`, gerendert in `Nachrichten.tsx`).
+    Getestet: 4h-Mission mit mehreren Piratenkontakten erzeugt jetzt genau 1 Nachricht statt bis zu
+    5, alle Kampfdetails bleiben trotzdem vollstaendig einsehbar.
