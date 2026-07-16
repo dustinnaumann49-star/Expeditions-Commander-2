@@ -28,7 +28,6 @@ export interface ShipDefinition {
   unique?: boolean; // z.B. Sandronator: max. 1 Exemplar
   specialOnly?: boolean; // z.B. Imperator: nicht über normale Ressourcen baubar
   teileCost?: { waffen: number; schild: number; panzerung: number };
-  miningPerHour?: number;
 }
 
 export interface DefenseDefinition {
