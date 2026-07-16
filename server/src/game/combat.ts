@@ -9,6 +9,7 @@ import {
   PRECISION_BASE,
   PRECISION_MAX_PLAYER,
   MAX_ROUNDS,
+  MULTI_TARGET_VOLLEY_SHIPS,
 } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
 import type { CombatStats } from './types.js';
@@ -335,6 +336,65 @@ function statKey(u: CombatUnit): string {
   return u.ownerKey ? `${u.ownerKey}:${u.typeId}` : u.typeId;
 }
 
+// Wendet einen einzelnen Treffer (inkl. Schild-Pool-Absorption und Durchschlag-Kaskade) auf EIN
+// Ziel an. Ausgelagert aus fireShots(), damit sowohl der normale Einzelziel-Fall als auch die
+// Mehrfachziel-Salve (siehe MULTI_TARGET_VOLLEY_SHIPS) dieselbe Logik nutzen koennen.
+function applyHitToTarget(
+  target: CombatUnit,
+  dmg: number,
+  dmgTakenTarget: Record<string, number>,
+  shieldDmgTakenTarget: Record<string, number>,
+  targets: CombatUnit[],
+  overkillFraction: number,
+  targetsSharedShieldPool?: { remaining: number }
+) {
+  const MAX_CASCADE = 5;
+  let currentTarget: CombatUnit | undefined = target;
+  let remainingDmg = dmg;
+  let cascadeSteps = 0;
+
+  if (targetsSharedShieldPool && targetsSharedShieldPool.remaining > 0) {
+    const absorbed = Math.min(remainingDmg, targetsSharedShieldPool.remaining);
+    targetsSharedShieldPool.remaining -= absorbed;
+    remainingDmg -= absorbed;
+    if (remainingDmg <= 0) return;
+  }
+
+  while (remainingDmg > 0 && currentTarget && cascadeSteps < MAX_CASCADE) {
+    cascadeSteps++;
+    const shieldDmg = Math.min(remainingDmg, currentTarget.shieldCur);
+    currentTarget.shieldCur -= shieldDmg;
+    remainingDmg -= shieldDmg;
+    if (shieldDmg > 0) {
+      shieldDmgTakenTarget[statKey(currentTarget)] = (shieldDmgTakenTarget[statKey(currentTarget)] || 0) + shieldDmg;
+    }
+    if (remainingDmg <= 0) break;
+
+    if (remainingDmg < currentTarget.hpCur) {
+      currentTarget.hpCur -= remainingDmg;
+      dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + remainingDmg;
+      remainingDmg = 0;
+    } else {
+      dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + currentTarget.hpCur;
+      const overflow = (remainingDmg - currentTarget.hpCur) * overkillFraction;
+      currentTarget.hpCur = 0;
+      if (overflow <= 0) break;
+      const sameTypeAlive = targets.filter((t) => t.typeId === currentTarget!.typeId && t.hpCur > 0);
+      if (sameTypeAlive.length === 0) break;
+      currentTarget = sameTypeAlive[Math.floor(Math.random() * sameTypeAlive.length)];
+      remainingDmg = overflow;
+      continue;
+    }
+  }
+
+  // Kritischer Treffer: eine schwer beschaedigte Einheit (unter 70% HP) hat eine mit dem
+  // Schadensgrad steigende Chance, sofort komplett auszufallen ("explodiert").
+  if (currentTarget && currentTarget.hpCur > 0 && currentTarget.hpCur < 0.7 * currentTarget.hpMax) {
+    const pExplode = 1 - currentTarget.hpCur / currentTarget.hpMax;
+    if (Math.random() < pExplode) currentTarget.hpCur = 0;
+  }
+}
+
 function fireShots(
   shooters: CombatUnit[],
   targets: CombatUnit[],
@@ -371,11 +431,52 @@ function fireShots(
       if (aliveTargets.length === 0) break;
 
       let target: CombatUnit;
+      let volleyTargets: CombatUnit[] | null = null;
       if (hasRFPotential && Math.random() < accuracy) {
         const rfPool = aliveTargets.filter((t) => rfMap[t.typeId] !== undefined);
-        target = rfPool.length > 0 ? pickRandom(rfPool) : pickRandom(aliveTargets);
+        if (rfPool.length > 0) {
+          if (MULTI_TARGET_VOLLEY_SHIPS.has(shooter.typeId)) {
+            // Mehrfachziel-Salve: ein Treffer PRO anfaelligem Schiffstyp, der gerade praesent ist
+            // (nicht pro Einzeleinheit) - je ein Vertreter pro Typ wird ausgewaehlt.
+            const seenTypes = new Set<string>();
+            volleyTargets = [];
+            for (const t of rfPool) {
+              if (!seenTypes.has(t.typeId)) {
+                seenTypes.add(t.typeId);
+                volleyTargets.push(t);
+              }
+            }
+          }
+          target = pickRandom(rfPool);
+        } else {
+          target = pickRandom(aliveTargets);
+        }
       } else {
         target = pickRandom(aliveTargets);
+      }
+
+      if (volleyTargets && volleyTargets.length > 0) {
+        // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
+        let anyHit = false;
+        volleyTargets.forEach((vt) => {
+          if (Math.random() >= precision) {
+            const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
+            if (missRfChance > 0 && Math.random() < missRfChance) {
+              shots++;
+              shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+            }
+            return;
+          }
+          anyHit = true;
+          applyHitToTarget(vt, shooter.waffen, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+          const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
+          if (hitRfChance > 0 && Math.random() < hitRfChance) {
+            shots++;
+            shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+          }
+        });
+        if (anyHit) shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
+        continue;
       }
 
       if (Math.random() >= precision) {
@@ -388,59 +489,11 @@ function fireShots(
       }
 
       shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
-
-      const dmg = shooter.waffen;
-      const primaryTypeId = target.typeId;
-      let currentTarget: CombatUnit | undefined = target;
-      let remainingDmg = dmg;
-      let cascadeSteps = 0;
-
-      // Gemeinsamer Kuppel-Schild-Pool (falls vorhanden, z.B. Heimatverteidigung): faengt Schaden
-      // zuerst ab, bevor irgendeine einzelne Anlage ihren eigenen Schild/Panzerung verliert -
-      // schuetzt die GESAMTE Seite, nicht nur eine einzelne, zufaellig getroffene Anlage.
-      if (targetsSharedShieldPool && targetsSharedShieldPool.remaining > 0) {
-        const absorbed = Math.min(remainingDmg, targetsSharedShieldPool.remaining);
-        targetsSharedShieldPool.remaining -= absorbed;
-        remainingDmg -= absorbed;
-        if (remainingDmg <= 0) continue;
-      }
-
-      while (remainingDmg > 0 && currentTarget && cascadeSteps < MAX_CASCADE) {
-        cascadeSteps++;
-        const shieldDmg = Math.min(remainingDmg, currentTarget.shieldCur);
-        currentTarget.shieldCur -= shieldDmg;
-        remainingDmg -= shieldDmg;
-        if (shieldDmg > 0) {
-          shieldDmgTakenTarget[statKey(currentTarget)] = (shieldDmgTakenTarget[statKey(currentTarget)] || 0) + shieldDmg;
-        }
-        if (remainingDmg <= 0) break;
-
-        if (remainingDmg < currentTarget.hpCur) {
-          currentTarget.hpCur -= remainingDmg;
-          dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + remainingDmg;
-          remainingDmg = 0;
-        } else {
-          dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + currentTarget.hpCur;
-          const overflow = (remainingDmg - currentTarget.hpCur) * overkillFraction;
-          currentTarget.hpCur = 0;
-          if (overflow <= 0) break;
-          const sameTypeAlive = targets.filter((t) => t.typeId === currentTarget!.typeId && t.hpCur > 0);
-          if (sameTypeAlive.length === 0) break;
-          currentTarget = sameTypeAlive[Math.floor(Math.random() * sameTypeAlive.length)];
-          remainingDmg = overflow;
-          continue;
-        }
-
-        if (currentTarget.hpCur > 0 && currentTarget.hpCur < 0.7 * currentTarget.hpMax) {
-          const pExplode = 1 - currentTarget.hpCur / currentTarget.hpMax;
-          if (Math.random() < pExplode) currentTarget.hpCur = 0;
-        }
-      }
-
-      const rfChance = getRapidFireChance(shooter.typeId, primaryTypeId);
-      if (rfChance > 0 && Math.random() < rfChance) {
+      applyHitToTarget(target, shooter.waffen, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+      const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
+      if (hitRfChance > 0 && Math.random() < hitRfChance) {
         shots++;
-        shooterStats.rapidFireTriggers[shooter.typeId] = (shooterStats.rapidFireTriggers[shooter.typeId] || 0) + 1;
+        shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
       }
     }
   });
