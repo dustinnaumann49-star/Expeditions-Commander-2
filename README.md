@@ -277,5 +277,25 @@ client/
     `multiTargetVolleyShips` in `/game/data` noetig, damit das Frontend die Faehigkeit im
     Info-Popup (`Werft.tsx`) korrekt anzeigen kann - bei weiteren Spezialfaehigkeiten dieses Muster
     (Server-Konstante + expliziter Export ueber `/game/data` + Client-Info-Anzeige) wiederholen.
-    Bilder (`ships/salvenjaeger.png`, `ships/salvenkreuzer.png`, `ships/salvendreadnought.png`)
-    fehlen noch, reicht der Nutzer nach.
+    Bilder liegen unter `ships/salvenjaeger.jpg`, `ships/salvenkreuzer.jpg`,
+    `ships/salvendreadnought.jpg` (klein/komprimiert gehalten, ~60-70 KB statt der urspruenglich
+    hochgeladenen 1,6-1,8 MB PNGs - wichtig fuer Mobil-Ladezeiten).
+
+25. **Raids muessen bei JEDEM Nutzer-Tick auch fuer ANDERE Spieler geprueft werden, nicht nur fuer
+    den eigenen.** Frueher loeste sich ein Raid nur auf, wenn der betroffene VERTEIDIGER selbst
+    gerade online war (`processRaidTimer` lief nur fuer `state.userId` selbst). War der
+    Verteidiger inaktiv, blieb ein laengst faelliger Raid fuer immer unaufgeloest stehen - auch
+    wenn ein VERSTAERKER die ganze Zeit aktiv war, dessen Flotte blieb dadurch dauerhaft
+    "unterwegs" haengen. Behoben durch `processOverdueRaidsForOtherUsers()` in `raids.ts`, das bei
+    jedem `tick()` zusaetzlich ALLE anderen Spieler auf faellige, unaufgeloeste Raids prueft (bei
+    2-5 Spielern performance-technisch unproblematisch). Dabei trat SOFORT dieselbe
+    Doppel-Lade-Falle wie schon einmal bei den Gruppen-Operationen auf: `resolveRaid()` lud
+    Verstaerker-Zustaende bedingungslos per `loadPlayerState(r.userId)` neu, auch wenn der
+    Verstaerker zufaellig genau der Nutzer war, dessen eigener `tick()` gerade lief - dessen
+    Ergebnis wurde dann von der aeusseren Route mit einer veralteten Kopie ueberschrieben. Fix:
+    `resolveRaid(state, currentUserId?, currentUserState?)` nimmt jetzt optional den
+    aufrufenden Nutzer entgegen und nutzt bei Uebereinstimmung dessen live-State-Objekt statt neu
+    zu laden/speichern - exakt das Muster aus Punkt 4 in `groupOps.ts`. Bei JEDER neuen Funktion,
+    die den State eines ANDEREN Nutzers laedt und veraendert, waehrend der eigene tick() eines
+    Nutzers laeuft, IMMER pruefen: koennte der aktuell tickende Nutzer zufaellig einer der
+    betroffenen "anderen" Nutzer sein? Wenn ja, live-Objekt durchreichen statt neu laden.
