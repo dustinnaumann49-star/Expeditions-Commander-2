@@ -299,3 +299,12 @@ client/
     die den State eines ANDEREN Nutzers laedt und veraendert, waehrend der eigene tick() eines
     Nutzers laeuft, IMMER pruefen: koennte der aktuell tickende Nutzer zufaellig einer der
     betroffenen "anderen" Nutzer sein? Wenn ja, live-Objekt durchreichen statt neu laden.
+
+26. **Neue Spezialschiffe MÜSSEN explizit aus der Piraten-/NPC-Flottengenerierung ausgeschlossen
+    werden**, sonst tauchen sie in generierten Feindflotten auf. `generatePiratenFleet()` und
+    `generateFallbackFleet()` (`combat.ts`) filtern nur `specialOnly` (Imperator) und `unique`
+    (Sandronator) heraus - die drei Salven-Schiffe hatten urspruenglich keines von beidem gesetzt
+    und rutschten dadurch als ganz normale Piraten-/Notruf-Gegner mit in den Pool. Fix: beide
+    Funktionen filtern jetzt zusaetzlich `MULTI_TARGET_VOLLEY_SHIPS` heraus. Bei jedem neuen
+    Spezialschiff mit Baulimit IMMER pruefen, ob es (wie Imperator/Sandronator/jetzt auch die
+    Salven-Schiffe) explizit aus `SHIPS.filter(...)` in `combat.ts` ausgeschlossen werden muss.
