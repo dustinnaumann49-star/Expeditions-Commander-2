@@ -304,6 +304,7 @@ export interface GameData {
   scrapRefundRate: number;
   rapidfire: Record<string, Record<string, number>>;
   zielerfassungBase: Record<string, number>;
+  multiTargetVolleyShips: string[];
   maxResearchLevel: number;
   maxBuildSlots: number;
   maxDefenseSlots: number;
