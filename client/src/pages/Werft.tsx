@@ -97,7 +97,6 @@ export function WerftPage() {
                   {ship.stats.waffen > 0 && <span>Waffen: {ship.stats.waffen.toLocaleString('de-DE')}</span>}
                   <span>Schild: {ship.stats.schild.toLocaleString('de-DE')}</span>
                   <span>Panzerung: {ship.stats.panzerung.toLocaleString('de-DE')}</span>
-                  {ship.miningPerHour && <span className="stat-mining">Abbau: {ship.miningPerHour.toLocaleString('de-DE')}/h</span>}
                 </div>
 
                 {ship.cost && (
