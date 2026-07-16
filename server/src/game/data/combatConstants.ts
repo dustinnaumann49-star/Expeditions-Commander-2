@@ -69,6 +69,23 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     zerstoerer: 4,
     reaper: 3,
     imperator: 2
+  },
+  // Spezialschiffe mit Mehrfachziel-Salve (siehe MULTI_TARGET_VOLLEY_SHIPS): jedes deckt gezielt
+  // eine ganze Schiffsklasse ab - bei erfolgreicher Zielerfassung wird JEDER hier gelistete Typ
+  // einmal getroffen (nicht nur eine zufaellige Einheit davon).
+  salvenjaeger: {
+    leicht: 6,
+    schwer: 5
+  },
+  salvenkreuzer: {
+    kreuzer: 6,
+    schlachtschiff: 5,
+    bomber: 5
+  },
+  salvendreadnought: {
+    schlachtkreuzer: 5,
+    zerstoerer: 5,
+    reaper: 4
   }
 };
 
@@ -90,7 +107,10 @@ export const ZIELERFASSUNG_BASE: Record<string, number> =
   schwereslaser: 0.35,
   gausskanone: 0.35,
   ionengeschuetz: 0.35,
-  plasmawerfer: 0.35
+  plasmawerfer: 0.35,
+  salvenjaeger: 0.35,
+  salvenkreuzer: 0.35,
+  salvendreadnought: 0.35
 };
 
 export const MAX_RESEARCH_LEVEL = 10;
@@ -108,3 +128,8 @@ export const MAX_RESEARCH_SLOTS = 2;
 // Grosszuegig bemessen, damit auch gemeinsame Multiplayer-Flotten (mehrere Spieler kombiniert
 // im selben Piraten-Sektor) genug Platz haben.
 export const MAX_PLAYER_SHIPS = 100000;
+
+// Spezialschiffe mit "Mehrfachziel-Salve": statt bei erfolgreicher Zielerfassung nur EIN
+// RF-anfaelliges Ziel zu treffen, feuern sie auf JEDEN anfaelligen SCHIFFSTYP einmal (nicht auf
+// jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).
+export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer', 'salvendreadnought']);
