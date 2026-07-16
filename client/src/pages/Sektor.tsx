@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal } from '../components/InfoModal';
+import { SimulatorView } from './Simulator';
 import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
@@ -10,6 +11,7 @@ const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bombe
 const SEKTOR_KLASSEN = [
   { id: 'asteroid', name: 'Asteroiden-Feld', match: (id: string) => id.startsWith('asteroid_') },
   { id: 'piraten', name: 'Piraten-Sektor', match: (id: string) => id.startsWith('piraten_') },
+  { id: 'simulator', name: '🎯 Kampfsimulator', match: () => false },
 ];
 
 function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, { type: string }>): string[] {
@@ -297,6 +299,9 @@ export function SektorPage() {
         ))}
       </div>
 
+      {tab === 'simulator' ? (
+        <SimulatorView />
+      ) : (
       <div className="ship-grid">
         {sektorenInTab.map((sektor) => {
           const cfg = gameData.sektorConfig[sektor.id];
@@ -403,6 +408,7 @@ export function SektorPage() {
           );
         })}
       </div>
+      )}
 
       {infoSektorId &&
         (() => {
