@@ -570,7 +570,10 @@ function runRounds(
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
     }
-    if (allowRetreat && initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
+    // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Fallen in derselben Runde der letzte
+    // Gegner UND die eigene Truppe unter die Schwelle, ist der Kampf GEWONNEN - dann waere ein
+    // "Rueckzug" sowohl unlogisch als auch im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
+    if (allowRetreat && unitsB.length > 0 && initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
       retreated = true;
       break;
     }

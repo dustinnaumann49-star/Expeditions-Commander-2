@@ -11,6 +11,7 @@ import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids, reinforceRaid } from './raidReinforce.js';
 import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation } from './groupOps.js';
+import { simulateCombat } from './simulator.js';
 import { listAllUsers } from '../db.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { SHIPS } from './data/ships.js';
@@ -295,4 +296,25 @@ gameRouter.post('/party/start', (req: AuthedRequest, res) => {
   const { opId } = req.body ?? {};
   if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
   handleAction(req, res, (state) => startGroupOperation(state, opId));
+});
+
+// ---- Kampfsimulator ----
+
+// Bewusst NICHT ueber handleAction: der Simulator darf den Spielstand unter KEINEN Umstaenden
+// veraendern oder speichern (kein savePlayerState, kein tick). Er laedt den Zustand nur lesend,
+// um die aktuelle Forschung fuer die Berechnung zu kennen.
+gameRouter.post('/simulate', async (req: AuthedRequest, res) => {
+  const { sektorId, selection } = req.body ?? {};
+  if (typeof sektorId !== 'string' || typeof selection !== 'object' || selection === null) {
+    return res.status(400).json({ error: 'sektorId und selection erforderlich.' });
+  }
+  try {
+    const state = loadPlayerState(req.userId!);
+    const result = await simulateCombat(state, sektorId, selection);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    res.json({ simulation: result.simulation, serverTime: Date.now() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler bei der Simulation.' });
+  }
 });
