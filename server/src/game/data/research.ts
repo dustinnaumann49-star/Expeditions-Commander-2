@@ -32,5 +32,11 @@ export const RESEARCH: ResearchDefinition[] =
     baseTimeHours:15, timeGrowth:1.6 },
   { id:"praezision", name:"Präzision", img:"research/praezision.png", lore:"Präzision verfeinert die Feuerleitrechner, damit Schüsse ihr Ziel häufiger tatsächlich treffen statt ins Leere zu gehen. Ein kleiner Vorteil pro Stufe, der sich über eine ganze Schlacht gerechnet stark aufsummiert.", effectPerLevel:0.02,
     baseCost:{metall:65000, kristall:55000, deuterium:20000}, costGrowth:1.8,
-    baseTimeHours:13, timeGrowth:1.6 }
+    baseTimeHours:13, timeGrowth:1.6 },
+  { id:"ausweichen", name:"Ausweichmanöver", img:"research/ausweichen.png", lore:"Ausweichmanöver drillt Piloten darauf, im letzten Moment aus der Schusslinie zu ziehen. Kleine, wendige Schiffe profitieren am meisten – ein Schlachtschiff kann seiner Masse nun einmal nicht davonfliegen.", effectPerLevel:0.015,
+    baseCost:{metall:70000, kristall:60000, deuterium:25000}, costGrowth:1.8,
+    baseTimeHours:14, timeGrowth:1.6 },
+  { id:"kritischetreffer", name:"Kritische Treffer", img:"research/kritischetreffer.png", lore:"Kritische Treffer lehrt die Zielsysteme, Schwachstellen im gegnerischen Rumpf zu erkennen – Reaktorkopplungen, Munitionslager, Schildgeneratoren. Wer dort trifft, richtet doppelten Schaden an.", effectPerLevel:0.015,
+    baseCost:{metall:80000, kristall:70000, deuterium:30000}, costGrowth:1.8,
+    baseTimeHours:15, timeGrowth:1.6 }
 ];

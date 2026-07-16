@@ -113,6 +113,111 @@ export const ZIELERFASSUNG_BASE: Record<string, number> =
   salvendreadnought: 0.35
 };
 
+// ===== Groessenabhaengige Kampf-Modifikatoren =====
+// Grundgedanke: Kleine, wendige Schiffe kaempfen nah am Feind und treffen dadurch zuverlaessiger,
+// haben aber zu wenig Energie fuer starke Schildaufladung. Grosse Schiffe feuern aus Distanz
+// (ungenauer), haben dafuer massive Energiereserven fuer Schild-Regeneration. Verteidigungsanlagen
+// haengen an der Basis-Energieversorgung und laden daher IMMER stark auf, unabhaengig von ihrer
+// Groesse.
+
+// Aufschlag auf die Basis-Praezision (PRECISION_BASE). Positiv = trifft besser.
+export const PRECISION_MODIFIER: Record<string, number> = {
+  leicht: 0.15,
+  schwer: 0.12,
+  salvenjaeger: 0.12,
+  sandronator: 0.10,
+  begleitschiff: 0.10,
+  kreuzer: 0.05,
+  salvenkreuzer: 0.0,
+  schlachtschiff: -0.05,
+  bomber: -0.08,
+  schlachtkreuzer: -0.08,
+  salvendreadnought: -0.10,
+  zerstoerer: -0.10,
+  reaper: -0.12,
+  imperator: -0.15,
+  // Verteidigungsanlagen: je groesser das Geschuetz, desto traeger zielt es
+  raketenwerfer: 0.10,
+  leichteslaser: 0.10,
+  schwereslaser: 0.02,
+  ionengeschuetz: 0.0,
+  gausskanone: -0.05,
+  plasmawerfer: -0.08,
+};
+
+// Aufschlag auf die Basis-Schild-Regeneration (SHIELD_REGEN_BASE). Positiv = laedt schneller auf.
+export const SHIELD_REGEN_MODIFIER: Record<string, number> = {
+  leicht: -0.12,
+  schwer: -0.08,
+  salvenjaeger: -0.08,
+  sandronator: -0.05,
+  begleitschiff: -0.05,
+  kreuzer: -0.02,
+  salvenkreuzer: 0.04,
+  schlachtschiff: 0.10,
+  bomber: 0.12,
+  schlachtkreuzer: 0.14,
+  salvendreadnought: 0.16,
+  zerstoerer: 0.18,
+  reaper: 0.20,
+  imperator: 0.25,
+  // Alle Verteidigungsanlagen haengen an der Basis-Energie -> einheitlich starke Aufladung
+  raketenwerfer: 0.25,
+  leichteslaser: 0.25,
+  schwereslaser: 0.25,
+  ionengeschuetz: 0.25,
+  gausskanone: 0.25,
+  plasmawerfer: 0.25,
+};
+
+// Basis-Ausweichchance: Wahrscheinlichkeit, einem Treffer komplett zu entgehen. Spiegelbild zur
+// Praezision - kleine, wendige Schiffe sind schwerer zu treffen. Unbewegliche Verteidigungsanlagen
+// koennen grundsaetzlich nicht ausweichen (0).
+export const EVASION_BASE: Record<string, number> = {
+  leicht: 0.12,
+  schwer: 0.09,
+  salvenjaeger: 0.09,
+  sandronator: 0.10,
+  begleitschiff: 0.08,
+  kreuzer: 0.05,
+  salvenkreuzer: 0.03,
+  schlachtschiff: 0.02,
+  bomber: 0.01,
+  schlachtkreuzer: 0.01,
+  salvendreadnought: 0.0,
+  zerstoerer: 0.0,
+  reaper: 0.0,
+  imperator: 0.0,
+};
+export const EVASION_MAX = 0.30; // harte Obergrenze, damit Jaegerschwaerme nicht unbesiegbar werden
+
+// Basis-Chance auf einen kritischen Treffer (doppelter Schaden). Grosse Schiffe treffen seltener,
+// richten dafuer aber oefter verheerenden Schaden an, wenn sie treffen.
+export const CRIT_CHANCE_BASE: Record<string, number> = {
+  leicht: 0.03,
+  schwer: 0.04,
+  salvenjaeger: 0.04,
+  sandronator: 0.05,
+  begleitschiff: 0.03,
+  kreuzer: 0.06,
+  salvenkreuzer: 0.08,
+  schlachtschiff: 0.10,
+  bomber: 0.12,
+  schlachtkreuzer: 0.12,
+  salvendreadnought: 0.15,
+  zerstoerer: 0.15,
+  reaper: 0.18,
+  imperator: 0.20,
+  raketenwerfer: 0.05,
+  leichteslaser: 0.05,
+  schwereslaser: 0.08,
+  ionengeschuetz: 0.10,
+  gausskanone: 0.12,
+  plasmawerfer: 0.15,
+};
+export const CRIT_CHANCE_MAX = 0.35;
+export const CRIT_DAMAGE_MULTIPLIER = 2;
+
 export const MAX_RESEARCH_LEVEL = 10;
 export const SHIELD_REGEN_BASE = 0.20;
 export const SHIELD_REGEN_MAX = 0.80;
