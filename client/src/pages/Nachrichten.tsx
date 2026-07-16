@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { CombatReplayView } from '../components/CombatReplayView';
 import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage } from '../types/game';
 
 function isFarmDetail(detail: CombatDetail | FarmDetail): detail is FarmDetail {
@@ -159,6 +160,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                     <p style={{ fontSize: 13, marginBottom: 6 }}>
                       <strong>Stunde {sk.hour}</strong> – {sk.outcome}
                     </p>
+                    {sk.replay && <CombatReplayView key={`${msg.id}_sk${i}`} replay={sk.replay} />}
                     <RewardTable rows={combatRewardRows(sk.rewards)} />
                     <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
                     <UnitTable title="Eigene Eskorte" units={sk.playerResults} />
@@ -175,6 +177,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
             <p className="detail-sub" style={{ marginBottom: 12 }}>
               {new Date(msg.time).toLocaleString('de-DE')} · {msg.detail.roundsFought} Runde(n)
             </p>
+            {msg.detail.replay && <CombatReplayView key={msg.id} replay={msg.detail.replay} />}
             <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
             <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
             {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
