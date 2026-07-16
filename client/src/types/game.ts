@@ -355,6 +355,20 @@ export interface GroupOperation {
   resultDetail?: CombatDetail;
 }
 
+export interface SimulationResult {
+  runs: number;
+  sektorId: string;
+  winRate: number;
+  retreatRate: number;
+  wipeRate: number;
+  avgLossPercent: number;
+  bestLossPercent: number;
+  worstLossPercent: number;
+  avgRounds: number;
+  avgLossesByShip: { id: string; name: string; sent: number; avgLost: number }[];
+  exampleNpcFleet: { id: string; name: string; count: number }[];
+}
+
 export interface ActiveRaidInfo {
   targetUserId: number;
   targetUsername: string;
