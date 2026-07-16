@@ -6,14 +6,14 @@ import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.j
 import { DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
-import { getUserById } from '../db.js';
+import { getUserById, listAllUsers } from '../db.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
 
 export async function processRaidTimer(state: PlayerState) {
   const now = Date.now();
 
   if (state.raid && !state.raid.resolved && now >= state.raid.arrivalTime) {
-    await resolveRaid(state);
+    await resolveRaid(state, state.userId, state);
     return;
   }
   if (state.raid && state.raid.resolved) {
@@ -36,7 +36,28 @@ export async function processRaidTimer(state: PlayerState) {
   );
 }
 
-async function resolveRaid(state: PlayerState) {
+/**
+ * Loest ueberfaellige Raids bei ALLEN anderen Spielern auf, nicht nur beim aktuell aktiven Nutzer.
+ * Grund: Ein Raid wurde bisher NUR aufgeloest, wenn der jeweilige Verteidiger selbst gerade online
+ * war und sein eigener Zustand abgerufen wurde (processRaidTimer laeuft nur fuer state.userId
+ * selbst). Ist der Verteidiger gerade nicht aktiv, blieb der Raid unaufgeloest stehen - selbst wenn
+ * ein VERSTAERKER die ganze Zeit aktiv war und dessen Flotte dadurch dauerhaft "unterwegs" haengen
+ * blieb. Wird bei JEDEM tick() zusaetzlich zum eigenen processRaidTimer aufgerufen, damit die
+ * Aktivitaet irgendeines Spielers genuegt, um faellige Raids bei ALLEN aufzuloesen.
+ */
+export async function processOverdueRaidsForOtherUsers(currentState: PlayerState): Promise<void> {
+  const now = Date.now();
+  const others = listAllUsers(currentState.userId);
+  for (const u of others) {
+    const otherState = loadPlayerState(u.id);
+    if (otherState.raid && !otherState.raid.resolved && now >= otherState.raid.arrivalTime) {
+      await resolveRaid(otherState, currentState.userId, currentState);
+      savePlayerState(otherState);
+    }
+  }
+}
+
+async function resolveRaid(state: PlayerState, currentUserId?: number, currentUserState?: PlayerState) {
   const homeShipIds = COMBAT_SHIP_IDS.filter((id) => (state.fleet[id] || 0) > 0);
   const homeDefIds = DEFENSES.map((d) => d.id).filter((id) => (state.defense[id] || 0) > 0);
 
@@ -82,7 +103,10 @@ async function resolveRaid(state: PlayerState) {
   // dazu (bevor die Feindstaerke berechnet wird) und werden gleich mitgeladen (fuer ihre eigene Forschung).
   const now = Date.now();
   const arrivedReinforcements = (state.raid?.reinforcements || []).filter((r) => r.arrivalTime <= now);
-  const reinforcerStates = arrivedReinforcements.map((r) => ({ r, playerState: loadPlayerState(r.userId) }));
+  const reinforcerStates = arrivedReinforcements.map((r) => ({
+    r,
+    playerState: r.userId === currentUserId && currentUserState ? currentUserState : loadPlayerState(r.userId),
+  }));
 
   let reinforcementPower = 0;
   reinforcerStates.forEach(({ r, playerState }) => {
@@ -291,7 +315,7 @@ async function resolveRaid(state: PlayerState) {
         }-Container für deinen Einsatz.`,
         detail
       );
-      savePlayerState(reinforcerState);
+      if (r.userId !== currentUserId) savePlayerState(reinforcerState);
     });
   } else {
     const outcome = 'Piratenüberfall abgewehrt – alle Feinde vernichtet';
@@ -318,7 +342,7 @@ async function resolveRaid(state: PlayerState) {
         }-Container für deinen Einsatz.`,
         detail
       );
-      savePlayerState(reinforcerState);
+      if (r.userId !== currentUserId) savePlayerState(reinforcerState);
     });
   }
 
