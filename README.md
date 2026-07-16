@@ -254,3 +254,22 @@ client/
     (`accrueFarming`), und der Skirmish-Zusammenfassungstext. Bei zukuenftigen Aenderungen an
     Sektor-Laufzeiten IMMER nach hartcodierten "4"/"MISSION_DURATION_MS"-Stellen suchen, die
     eigentlich sektor-typ-abhaengig sein muessten - genau das war hier mehrfach der Fall.
+
+24. **Drei neue Spezialschiffe mit Mehrfachziel-Salve** (`ships.ts`): Salvenjäger (Jäger-Klasse,
+    deckt leicht/schwer ab), Salvenkreuzer (Kreuzer-Klasse, deckt kreuzer/schlachtschiff/bomber
+    ab), Salvendreadnought (Elite-Klasse, deckt schlachtkreuzer/zerstoerer/reaper ab). Bei
+    erfolgreicher Zielerfassung treffen sie NICHT nur eine zufaellige RF-anfaellige Einheit,
+    sondern EINMAL JEDEN anfaelligen Schiffstyp, der gerade praesent ist (nicht jede Einzeleinheit
+    - siehe `MULTI_TARGET_VOLLEY_SHIPS` in `combatConstants.ts`). Mechanisch umgesetzt in
+    `combat.ts`s `fireShots()`: die Schadens-Kaskade wurde in eine wiederverwendbare
+    `applyHitToTarget()`-Funktion ausgelagert, die sowohl fuer den normalen Einzelziel-Fall als
+    auch fuer die Mehrfachziel-Salve (ein unabhaengiger Treffer/Verfehlen-Wurf PRO betroffenem Typ)
+    genutzt wird. Getestet: 1 Salvenkreuzer traf in einer einzigen Runde kreuzer (268.200 Schaden),
+    schlachtschiff (237.200) UND bomber (234.000) etwa gleich stark, waehrend nicht gelistete
+    Typen (leicht: nur 14.700) kaum betroffen waren. Sehr teuer (800k-4,5M+ Ressourcen) und stark
+    limitiert (maxCount 2-5), damit die Faehigkeit nicht die Balance kippt. Neue Route/Feld
+    `multiTargetVolleyShips` in `/game/data` noetig, damit das Frontend die Faehigkeit im
+    Info-Popup (`Werft.tsx`) korrekt anzeigen kann - bei weiteren Spezialfaehigkeiten dieses Muster
+    (Server-Konstante + expliziter Export ueber `/game/data` + Client-Info-Anzeige) wiederholen.
+    Bilder (`ships/salvenjaeger.png`, `ships/salvenkreuzer.png`, `ships/salvendreadnought.png`)
+    fehlen noch, reicht der Nutzer nach.
