@@ -25,6 +25,12 @@ export interface CombatWorkerRequest {
   kampfBoostActive?: boolean;
   useAllyStats?: boolean;
   sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
+  // Ob Seite A sich bei 50% Verlusten zurueckziehen kann (Standard: ja). Bei der Heimatverteidigung
+  // (Raids) MUSS das auf false stehen - man kann sich nicht aus der Verteidigung der eigenen Basis
+  // "zurueckziehen", und da Verteidigungsanlagen oft viel schneller sterben als eine grosse Flotte,
+  // wuerde ein Rueckzug sonst die ganze Streitmacht zu frueh abziehen, obwohl die Flotte selbst noch
+  // laengst kampffaehig waere.
+  allowRetreat?: boolean;
 }
 
 function runWorker<T>(request: CombatWorkerRequest): Promise<T> {

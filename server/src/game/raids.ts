@@ -139,8 +139,8 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
 
   const result =
     reinforcerStates.length > 0
-      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool })
-      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool });
+      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool, allowRetreat: false })
+      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool, allowRetreat: false });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 

@@ -521,7 +521,8 @@ function runRounds(
   unitsAIn: CombatUnit[],
   unitsBIn: CombatUnit[],
   research: Record<string, number>,
-  sharedShieldPoolA = 0
+  sharedShieldPoolA = 0,
+  allowRetreat = true
 ): RoundsResult {
   let unitsA = unitsAIn;
   let unitsB = unitsBIn;
@@ -569,7 +570,7 @@ function runRounds(
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
     }
-    if (initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
+    if (allowRetreat && initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
       retreated = true;
       break;
     }
@@ -621,11 +622,12 @@ export function resolveCombat(
   sideBShips: Record<string, number>,
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
-  sharedShieldPoolA = 0
+  sharedShieldPoolA = 0,
+  allowRetreat = true
 ): CombatResult {
   const unitsA0 = buildUnits(sideAShips, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
@@ -673,11 +675,12 @@ export function resolveCombatMultiOwner(
   sideBShips: Record<string, number>,
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
-  sharedShieldPoolA = 0
+  sharedShieldPoolA = 0,
+  allowRetreat = true
 ): MultiOwnerCombatResult {
   const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};

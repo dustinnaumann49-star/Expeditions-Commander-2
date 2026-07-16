@@ -3,7 +3,7 @@ import { resolveCombat, resolveCombatMultiOwner, getEffectiveStats, baseStats } 
 import { ALLY_STATS } from './data/economy.js';
 import type { CombatWorkerRequest } from './combatRunner.js';
 
-const { sideAShips, contributions, sideBShips, research, defenseCounts, kampfBoostActive, useAllyStats, sharedShieldPoolA } =
+const { sideAShips, contributions, sideBShips, research, defenseCounts, kampfBoostActive, useAllyStats, sharedShieldPoolA, allowRetreat } =
   workerData as CombatWorkerRequest;
 
 function statsFnA(id: string) {
@@ -12,7 +12,7 @@ function statsFnA(id: string) {
 }
 
 const result = contributions
-  ? resolveCombatMultiOwner(contributions, statsFnA, sideBShips, baseStats, research, sharedShieldPoolA || 0)
-  : resolveCombat(sideAShips || {}, statsFnA, sideBShips, baseStats, research, sharedShieldPoolA || 0);
+  ? resolveCombatMultiOwner(contributions, statsFnA, sideBShips, baseStats, research, sharedShieldPoolA || 0, allowRetreat !== false)
+  : resolveCombat(sideAShips || {}, statsFnA, sideBShips, baseStats, research, sharedShieldPoolA || 0, allowRetreat !== false);
 
 parentPort?.postMessage(result);
