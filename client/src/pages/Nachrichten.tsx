@@ -157,7 +157,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                 {msg.detail.skirmishes.map((sk, i) => (
                   <div key={i} style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                     <p style={{ fontSize: 13, marginBottom: 6 }}>
-                      <strong>Stunde {sk.hour}/4</strong> – {sk.outcome}
+                      <strong>Stunde {sk.hour}</strong> – {sk.outcome}
                     </p>
                     <RewardTable rows={combatRewardRows(sk.rewards)} />
                     <UnitTable title="Piraten (NPC)" units={sk.npcResults} />

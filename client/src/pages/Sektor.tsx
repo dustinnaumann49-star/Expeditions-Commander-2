@@ -113,7 +113,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
       </div>
       <div className="info-row">
         <span className="info-label">🌑 Dunkle Materie</span>
-        <span className="info-value">Bis zu {cfg.dmCap} DM pro vollem 4h-Einsatz (linear über die Zeit)</span>
+        <span className="info-value">Bis zu {cfg.dmCap} DM pro vollem 12h-Einsatz (linear über die Zeit)</span>
       </div>
       <div className="info-row">
         <span className="info-label">✅ Sicherheit ohne Begleitschiff</span>
