@@ -314,6 +314,13 @@ export interface GameData {
   rapidfire: Record<string, Record<string, number>>;
   zielerfassungBase: Record<string, number>;
   multiTargetVolleyShips: string[];
+  precisionModifier: Record<string, number>;
+  shieldRegenModifier: Record<string, number>;
+  evasionBase: Record<string, number>;
+  evasionMax: number;
+  critChanceBase: Record<string, number>;
+  critChanceMax: number;
+  critDamageMultiplier: number;
   maxResearchLevel: number;
   maxBuildSlots: number;
   maxDefenseSlots: number;
