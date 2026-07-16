@@ -245,3 +245,12 @@ client/
     aufklappbare Unterabschnitte (`FarmDetail.skirmishes`, gerendert in `Nachrichten.tsx`).
     Getestet: 4h-Mission mit mehreren Piratenkontakten erzeugt jetzt genau 1 Nachricht statt bis zu
     5, alle Kampfdetails bleiben trotzdem vollstaendig einsehbar.
+
+23. **Asteroiden-Felder laufen 12h statt 4h** (`ASTEROID_MISSION_DURATION_MS` in `economy.ts`),
+    Piraten-Sektoren (Solo UND Elite-Bollwerk-Expeditionen) bleiben bei 4h - bewusst
+    unterschiedliche Dauer je Sektor-Typ. Betrifft mehrere Stellen, die vorher eine hartcodierte
+    "4 Stunden"-Annahme hatten und jetzt dynamisch anhand der tatsaechlichen Missionsdauer
+    rechnen: `tickMission()`s Stunden-Obergrenze (`maxHours`), die DM-Akkumulationsrate
+    (`accrueFarming`), und der Skirmish-Zusammenfassungstext. Bei zukuenftigen Aenderungen an
+    Sektor-Laufzeiten IMMER nach hartcodierten "4"/"MISSION_DURATION_MS"-Stellen suchen, die
+    eigentlich sektor-typ-abhaengig sein muessten - genau das war hier mehrfach der Fall.
