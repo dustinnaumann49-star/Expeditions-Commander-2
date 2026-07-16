@@ -70,6 +70,15 @@ export interface ResearchJob {
   endTime: number;
 }
 
+export interface SkirmishSummary {
+  hour: number;
+  outcome: string;
+  roundsFought: number;
+  npcResults: CombatUnitResult[];
+  playerResults: CombatUnitResult[];
+  rewards?: RewardSummary;
+}
+
 export interface Mission {
   id: string;
   sektorId: string;
@@ -85,6 +94,12 @@ export interface Mission {
   teile: { waffen: number; schild: number; panzerung: number };
   sandronatorAlive: boolean;
   finalized: boolean;
+  // Nur fuer Asteroiden-Eskorte: gesammelte Stunden-Kaempfe. Werden NICHT sofort als eigene
+  // Nachricht verschickt, sondern erst gesammelt am Ende der Mission (Rueckkehr oder Abbruch) als
+  // EIN gemeinsamer Bericht zugestellt - sonst wuerden bei mehreren gleichzeitig laufenden
+  // Asteroiden-Missionen die Nachrichten schnell ueberfuellen (bis zu 4 Zwischenberichte pro
+  // Mission, ohne dass der Spieler zwischendurch etwas tun kann).
+  skirmishLog?: SkirmishSummary[];
 }
 
 export interface CombatUnitResult {
@@ -141,6 +156,7 @@ export interface FarmDetail {
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
   fleetReturned?: Record<string, number>;
+  skirmishes?: SkirmishSummary[];
 }
 
 export interface GameMessage {

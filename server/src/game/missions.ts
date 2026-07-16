@@ -152,7 +152,9 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   const npcShips = generateAsteroidPirateFleet(targetPower);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
   if (npcIds.length === 0) {
-    pushMessage(state, 'kampf', `Stunden-Check (Stufe ${mission.processedHours}/4) - Begleitschiffe melden keinen Feindkontakt.`);
+    // Kein Feindkontakt in dieser Stunde - keine Zwischen-Nachricht mehr, wird im
+    // Abschlussbericht implizit durch die Anzahl der Skirmish-Eintraege sichtbar (weniger
+    // Eintraege als moegliche Stunden = ruhige Stunden dabei).
     return;
   }
 
@@ -222,37 +224,33 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
     };
   });
 
-  pushMessage(
-    state,
-    'kampf',
-    `Piraten-Skirmish – ${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${rewardText}`,
-    {
-      sektorName: 'Asteroiden-Eskorte',
-      outcome,
-      roundsFought: result.roundsFought,
-      npcResults,
-      rewards: destroyedTotal > 0 ? { metall: reward.metall, kristall: reward.kristall, deuterium: reward.deuterium } : undefined,
-      playerResults: [
-        {
-          id: 'begleitschiff',
-          name: 'Begleitschiff',
-          sent: escortCount,
-          waffen: Math.round(escortStats.waffen),
-          schild: Math.round(escortStats.schild),
-          panzerung: Math.round(escortStats.panzerung),
-          dmgTaken: Math.round(result.dmgTakenA.begleitschiff || 0),
-          lost: lostEscorts,
-          survived: survivedEscorts,
-          destroyed: survivedEscorts <= 0,
-          shotsFired: result.shotsA.shotsFired.begleitschiff || 0,
-          hits: result.shotsA.hits.begleitschiff || 0,
-          rapidFireTriggers: result.shotsA.rapidFireTriggers.begleitschiff || 0,
-          shieldDmgTaken: Math.round(result.shieldDmgTakenA.begleitschiff || 0),
-          shieldRegen: Math.round(result.shieldRegenA.begleitschiff || 0),
-        },
-      ],
-    }
-  );
+  if (!mission.skirmishLog) mission.skirmishLog = [];
+  mission.skirmishLog.push({
+    hour: mission.processedHours,
+    outcome: `${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${rewardText}`,
+    roundsFought: result.roundsFought,
+    npcResults,
+    rewards: destroyedTotal > 0 ? { metall: reward.metall, kristall: reward.kristall, deuterium: reward.deuterium } : undefined,
+    playerResults: [
+      {
+        id: 'begleitschiff',
+        name: 'Begleitschiff',
+        sent: escortCount,
+        waffen: Math.round(escortStats.waffen),
+        schild: Math.round(escortStats.schild),
+        panzerung: Math.round(escortStats.panzerung),
+        dmgTaken: Math.round(result.dmgTakenA.begleitschiff || 0),
+        lost: lostEscorts,
+        survived: survivedEscorts,
+        destroyed: survivedEscorts <= 0,
+        shotsFired: result.shotsA.shotsFired.begleitschiff || 0,
+        hits: result.shotsA.hits.begleitschiff || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers.begleitschiff || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA.begleitschiff || 0),
+        shieldRegen: Math.round(result.shieldRegenA.begleitschiff || 0),
+      },
+    ],
+  });
 }
 
 async function runHourlyCheck(state: PlayerState, mission: Mission) {
@@ -486,7 +484,20 @@ function addContainerToState(state: PlayerState, tier: 'silber' | 'gold') {
 
 function abortMissionDestroyed(state: PlayerState, mission: Mission) {
   mission.finalized = true;
-  pushMessage(state, 'kampf', 'Flotte vollständig vernichtet. Mission abgebrochen, keine Ressourcen geborgen.');
+  pushMessage(
+    state,
+    'kampf',
+    'Flotte vollständig vernichtet. Mission abgebrochen, keine Ressourcen geborgen.',
+    mission.skirmishLog && mission.skirmishLog.length > 0
+      ? {
+          sektorName: mission.sektorId,
+          outcome: 'Flotte vollständig vernichtet',
+          roundsFought: 0,
+          npcResults: [],
+          playerResults: mission.skirmishLog.flatMap((s) => s.playerResults),
+        }
+      : undefined
+  );
 }
 
 export function finalizeMission(state: PlayerState, mission: Mission) {
@@ -515,8 +526,18 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       panzerung: Math.floor(mission.teile.panzerung),
     },
     fleetReturned: { ...mission.ships },
+    skirmishes: mission.skirmishLog,
   };
-  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.`, detail);
+  let skirmishText = '';
+  if (mission.skirmishLog && mission.skirmishLog.length > 0) {
+    const totalLost = mission.skirmishLog.reduce(
+      (sum, s) => sum + s.playerResults.reduce((a, p) => a + (p.lost || 0), 0),
+      0
+    );
+    const ruhigeStunden = 4 - mission.skirmishLog.length;
+    skirmishText = ` Piraten-Kontakt in ${mission.skirmishLog.length} von 4 Stunden (${ruhigeStunden > 0 ? `${ruhigeStunden} ruhig, ` : ''}insgesamt ${totalLost} Begleitschiff(e) verloren) - Details siehe unten.`;
+  }
+  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${skirmishText}`, detail);
 }
 
 function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rueckflug' {
