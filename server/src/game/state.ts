@@ -1,5 +1,6 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
+import { RESEARCH } from './data/research.js';
 import { nextFixedCheckpoint } from './data/economy.js';
 import type { PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson } from '../db.js';
@@ -20,6 +21,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     research: {
       waffen: 0, schild: 0, panzerung: 0, bauzeit: 0, mining: 0, spionage: 0,
       zielerfassung: 0, durchschlag: 0, schildregeneration: 0, praezision: 0,
+      ausweichen: 0, kritischetreffer: 0,
     },
     buildQueue: [],
     defenseQueue: [],
@@ -46,8 +48,15 @@ export function loadPlayerState(userId: number): PlayerState {
     return fresh;
   }
   const parsed = JSON.parse(json) as PlayerState;
-  // Migrationsstelle fuer neue Felder in kuenftigen Versionen (analog zu loadState() im HTML-Prototyp):
-  // z.B. if (parsed.research.praezision === undefined) parsed.research.praezision = 0;
+  // ---- Migration bestehender Spielstaende ----
+  // Neue Forschungen/Felder muessen hier ergaenzt werden, sonst fehlen sie in bereits
+  // gespeicherten Staenden (z.B. `research.ausweichen === undefined` statt 0), was zu falschen
+  // Anzeigen und Rechenfehlern fuehrt. Der Abgleich gegen RESEARCH deckt automatisch ALLE
+  // aktuellen und kuenftigen Forschungen ab, ohne dass man hier jedes Mal nachziehen muss.
+  if (!parsed.research) parsed.research = {} as Record<string, number>;
+  RESEARCH.forEach((r) => {
+    if (parsed.research[r.id] === undefined) parsed.research[r.id] = 0;
+  });
   return parsed;
 }
 

@@ -10,6 +10,13 @@ import {
   PRECISION_MAX_PLAYER,
   MAX_ROUNDS,
   MULTI_TARGET_VOLLEY_SHIPS,
+  PRECISION_MODIFIER,
+  SHIELD_REGEN_MODIFIER,
+  EVASION_BASE,
+  EVASION_MAX,
+  CRIT_CHANCE_BASE,
+  CRIT_CHANCE_MAX,
+  CRIT_DAMAGE_MULTIPLIER,
 } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
 import type { CombatStats, CombatReplay } from './types.js';
@@ -78,19 +85,48 @@ export function getDurchschlagFraction(research: Record<string, number>): number
   return Math.min(1, fraction);
 }
 
-export function getShieldRegenRate(research: Record<string, number>): number {
+// Schild-Regeneration ist jetzt einheitsabhaengig: grosse Schiffe/Verteidigungsanlagen haben mehr
+// Energiereserven und laden deutlich staerker auf als kleine, wendige Jaeger (SHIELD_REGEN_MODIFIER).
+export function getShieldRegenRate(research: Record<string, number>, typeId?: string): number {
   const level = research.schildregeneration || 0;
   const tech = RESEARCH.find((r) => r.id === 'schildregeneration');
   const bonus = level * (tech ? tech.effectPerLevel : 0.06);
-  return Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + bonus);
+  const sizeMod = typeId ? SHIELD_REGEN_MODIFIER[typeId] || 0 : 0;
+  return Math.max(0, Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + bonus + sizeMod));
 }
 
-export function getPrecisionChance(research: Record<string, number>, applyPlayerResearch: boolean): number {
-  if (!applyPlayerResearch) return PRECISION_BASE;
+// Praezision ist jetzt einheitsabhaengig: kleine, wendige Schiffe kaempfen nah am Feind und treffen
+// zuverlaessiger als schwerfaellige Kapitalschiffe, die aus Distanz feuern (PRECISION_MODIFIER).
+export function getPrecisionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId?: string): number {
+  const sizeMod = typeId ? PRECISION_MODIFIER[typeId] || 0 : 0;
+  if (!applyPlayerResearch) return Math.max(0.05, PRECISION_BASE + sizeMod);
   const level = research.praezision || 0;
   const tech = RESEARCH.find((r) => r.id === 'praezision');
   const bonus = level * (tech ? tech.effectPerLevel : 0.02);
-  return Math.min(PRECISION_MAX_PLAYER, PRECISION_BASE + bonus);
+  return Math.max(0.05, Math.min(PRECISION_MAX_PLAYER + sizeMod, PRECISION_BASE + bonus + sizeMod));
+}
+
+// Ausweichchance des ZIELS: Gegenstueck zur Praezision des Schuetzen. Kleine Schiffe entziehen sich
+// haeufiger einem Treffer; unbewegliche Verteidigungsanlagen koennen das grundsaetzlich nicht.
+export function getEvasionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string): number {
+  const base = EVASION_BASE[typeId] || 0;
+  if (base <= 0) return 0; // Verteidigungsanlagen & Kapitalschiffe ohne Basis-Ausweichen
+  if (!applyPlayerResearch) return Math.min(EVASION_MAX, base);
+  const level = research.ausweichen || 0;
+  const tech = RESEARCH.find((r) => r.id === 'ausweichen');
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  return Math.min(EVASION_MAX, base + bonus);
+}
+
+// Chance des SCHUETZEN auf einen kritischen Treffer (doppelter Schaden). Grosse Schiffe treffen
+// seltener, richten dafuer aber oefter verheerenden Schaden an.
+export function getCritChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string): number {
+  const base = CRIT_CHANCE_BASE[typeId] || 0;
+  if (!applyPlayerResearch) return Math.min(CRIT_CHANCE_MAX, base);
+  const level = research.kritischetreffer || 0;
+  const tech = RESEARCH.find((r) => r.id === 'kritischetreffer');
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  return Math.min(CRIT_CHANCE_MAX, base + bonus);
 }
 
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gleichmaessig verteilt auf alle NICHT-Kuppel-
@@ -322,10 +358,11 @@ export interface ShotStats {
   shotsFired: Record<string, number>;
   hits: Record<string, number>;
   rapidFireTriggers: Record<string, number>;
+  crits: Record<string, number>;
 }
 
 function emptyShotStats(): ShotStats {
-  return { shotsFired: {}, hits: {}, rapidFireTriggers: {} };
+  return { shotsFired: {}, hits: {}, rapidFireTriggers: {}, crits: {} };
 }
 
 // Bei Mehrspieler-Kaempfen (ownerKey gesetzt) muessen Statistiken pro BESITZER getrennt werden,
@@ -395,6 +432,25 @@ function applyHitToTarget(
   }
 }
 
+// Ermittelt, ob ein Schuss tatsaechlich trifft. Zwei Huerden nacheinander:
+// 1. Praezision des SCHUETZEN (trifft er ueberhaupt?)
+// 2. Ausweichen des ZIELS (kann es sich noch entziehen?)
+// Wichtig zur Forschungs-Zuordnung: `applyPlayerResearch` bezieht sich auf den SCHUETZEN. Ist der
+// Schuetze ein NPC (false), dann ist das Ziel zwangslaeufig eine Spieler-Einheit - deren
+// Ausweich-Forschung muss also genau dann angewendet werden.
+function rollHit(
+  target: CombatUnit,
+  precision: number,
+  research: Record<string, number>,
+  applyPlayerResearch: boolean
+): boolean {
+  if (Math.random() >= precision) return false;
+  const targetIsPlayerUnit = !applyPlayerResearch;
+  const evasion = getEvasionChance(research, targetIsPlayerUnit, target.typeId);
+  if (evasion > 0 && Math.random() < evasion) return false;
+  return true;
+}
+
 function fireShots(
   shooters: CombatUnit[],
   targets: CombatUnit[],
@@ -409,11 +465,14 @@ function fireShots(
   const MAX_SHOTS_PER_UNIT = 50;
   const MAX_CASCADE = 5;
   const overkillFraction = applyPlayerResearch ? getDurchschlagFraction(research) : 0;
-  const precision = getPrecisionChance(research, applyPlayerResearch);
 
   shooters.forEach((shooter) => {
     let shots = 1;
     let fired = 0;
+    // Praezision und Krit-Chance haengen vom SCHIFFSTYP des Schuetzen ab (kleine Schiffe treffen
+    // besser, grosse richten oefter kritischen Schaden an) - daher pro Schuetze berechnet.
+    const precision = getPrecisionChance(research, applyPlayerResearch, shooter.typeId);
+    const critChance = getCritChance(research, applyPlayerResearch, shooter.typeId);
     const rfMap = RAPIDFIRE[shooter.typeId] || {};
     const hasRFPotential = Object.keys(rfMap).length > 0;
     const accuracy = hasRFPotential
@@ -459,7 +518,7 @@ function fireShots(
         // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
         let anyHit = false;
         volleyTargets.forEach((vt) => {
-          if (Math.random() >= precision) {
+          if (!rollHit(vt, precision, research, applyPlayerResearch)) {
             const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
             if (missRfChance > 0 && Math.random() < missRfChance) {
               shots++;
@@ -468,7 +527,10 @@ function fireShots(
             return;
           }
           anyHit = true;
-          applyHitToTarget(vt, shooter.waffen, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+          const isCrit = critChance > 0 && Math.random() < critChance;
+          if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
+          const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
             shots++;
@@ -479,7 +541,7 @@ function fireShots(
         continue;
       }
 
-      if (Math.random() >= precision) {
+      if (!rollHit(target, precision, research, applyPlayerResearch)) {
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;
@@ -489,7 +551,10 @@ function fireShots(
       }
 
       shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
-      applyHitToTarget(target, shooter.waffen, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+      const isCrit = critChance > 0 && Math.random() < critChance;
+      if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
+      const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
       const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
       if (hitRfChance > 0 && Math.random() < hitRfChance) {
         shots++;
@@ -561,8 +626,26 @@ function runRounds(
   roundsA.push(countByType(unitsA, typesA));
   roundsB.push(countByType(unitsB, typesB));
 
-  const regenPlayer = getShieldRegenRate(research);
-  const regenNpc = SHIELD_REGEN_BASE;
+  // Schild-Regeneration wird pro Einheitstyp berechnet (grosse Schiffe/Verteidigungsanlagen laden
+  // deutlich staerker auf) - daher hier vorab je vorkommendem Typ zwischenspeichern, statt bei
+  // jeder Einheit in jeder Runde neu zu rechnen.
+  const regenCacheA = new Map<string, number>();
+  const regenCacheB = new Map<string, number>();
+  function regenFor(typeId: string, isPlayerSide: boolean): number {
+    const cache = isPlayerSide ? regenCacheA : regenCacheB;
+    let v = cache.get(typeId);
+    if (v === undefined) {
+      // NPCs profitieren nicht von der Spieler-Forschung, aber sehr wohl von der Groessen-Logik
+      v = isPlayerSide
+        ? getShieldRegenRate(research, typeId)
+        : Math.max(0, Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + (SHIELD_REGEN_MODIFIER[typeId] || 0)));
+      cache.set(typeId, v);
+    }
+    return v;
+  }
+  // Der Kuppel-Pool nutzt weiterhin die reine Spieler-Rate (Kuppeln sind Verteidigungsanlagen,
+  // deren eigener Modifikator steckt bereits in ihrem Beitrag zum Pool).
+  const poolRegen = getShieldRegenRate(research);
   // Gemeinsamer Kuppel-Schild-Pool fuer Seite A (nur relevant bei Heimatverteidigung mit
   // Schildkuppeln) - faengt Schaden fuer die GESAMTE Seite ab, bevor einzelne Anlagen getroffen
   // werden. Regeneriert sich zwischen den Runden mit derselben Rate wie normale Schilde.
@@ -577,16 +660,16 @@ function runRounds(
     unitsB = unitsB.filter((u) => u.hpCur > 0);
     unitsA.forEach((u) => {
       const before = u.shieldCur;
-      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenPlayer);
+      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenFor(u.typeId, true));
       shieldRegenA[statKey(u)] = (shieldRegenA[statKey(u)] || 0) + (u.shieldCur - before);
     });
     unitsB.forEach((u) => {
       const before = u.shieldCur;
-      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenNpc);
+      u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenFor(u.typeId, false));
       shieldRegenB[statKey(u)] = (shieldRegenB[statKey(u)] || 0) + (u.shieldCur - before);
     });
     if (sharedShieldPoolA > 0) {
-      poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
+      poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * poolRegen);
     }
     // Zustand nach dieser Runde festhalten (fuer die Visualisierung im Kampfbericht)
     roundsA.push(countByType(unitsA, typesA));
