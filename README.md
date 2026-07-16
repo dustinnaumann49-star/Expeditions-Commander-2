@@ -42,6 +42,8 @@ server/
   src/game/inventory.ts              Container öffnen, Belohnungen einlösen
   src/game/economyActions.ts         Händler-Tausch, Schrotthändler, Shop (Booster/Gutscheine)
   src/game/presets.ts                Flotten-Vorlagen speichern/löschen
+  src/game/simulator.ts              Kampfsimulator: rechnet mehrere Durchläufe gegen einen
+                                      Sektor durch, OHNE den Spielstand zu verändern
   src/game/messages.ts               pushMessage()/clearMessages() - Nachrichten-Verlauf
 
   src/game/data/ships.ts             Alle Schiffsdaten (Werte, Kosten, Bauzeit, Lore)
@@ -80,7 +82,10 @@ client/
   src/pages/Werft.tsx                 Schiffe bauen
   src/pages/Verteidigung.tsx          Verteidigungsanlagen bauen
   src/pages/Forschung.tsx             Forschung
-  src/pages/Sektor.tsx                Solo-Missionen (Asteroiden-Feld/Piraten-Sektor-Tabs)
+  src/pages/Sektor.tsx                Solo-Missionen + Untertab "Kampfsimulator"
+                                      (Asteroiden-Feld / Piraten-Sektor / Simulator)
+  src/pages/Simulator.tsx             Kampfsimulator-Ansicht (kein eigener Nav-Punkt, nur als
+                                      Untertab von Sektor eingebunden)
   src/pages/Flotte.tsx                Flotten-Bestandsübersicht
   src/pages/Haendler.tsx              Ressourcentausch + Untertab "Schrotthändler"
                                       (rendert Schrotthaendler.tsx als Untertab-Inhalt)
@@ -319,3 +324,23 @@ client/
     obwohl die eigentliche Flotte daneben noch laengst kampffaehig waere. Fuer Missionen/Events/
     Gruppen-Expeditionen (wo ein Rueckzug nach Hause thematisch sinnvoll ist) bleibt der
     Standardwert `true` unveraendert bestehen - kein Aenderungsbedarf an deren Aufrufen.
+
+28. **Kampfsimulator (`simulator.ts`, Route `/game/simulate`) darf NIEMALS den Spielstand
+    veraendern.** Bewusst NICHT ueber `handleAction()` gebaut (das ruft `tick()` und
+    `savePlayerState()` auf) - stattdessen eine eigene Route, die den Zustand nur LESEND laedt
+    (fuer die aktuelle Forschung). Nutzt exakt dieselbe Engine und NPC-Generierung wie der echte
+    `runHourlyCheck()` (gewuerfelte Wellenstaerke, `npcFloor`, NPC-Verteidigungsanlagen,
+    Piratenkapitaen-Chance), damit die Vorhersage aussagekraeftig ist. Rechnet MEHRERE Durchlaeufe
+    (`MAX_RUNS`, Zeitbudget `TIME_BUDGET_MS`, mindestens `MIN_RUNS`) - ein einzelner Lauf waere
+    wegen der Zufallsanteile irrefuehrend. Erlaubt bewusst auch Schiffe, die der Spieler noch gar
+    nicht besitzt (Was-waere-wenn-Planung), daher KEINE Bestandspruefung. Gemessen: ~40ms (kleine
+    Flotte) bis ~700ms (2600 Einheiten) pro Lauf.
+
+29. **Rueckzug darf nicht ausgeloest werden, wenn der Kampf bereits gewonnen ist.** Faellt in
+    DERSELBEN Runde der letzte Gegner UND die eigene Truppe unter die 50%-Schwelle, wurde frueher
+    trotzdem `retreated = true` gesetzt - der Bericht meldete dann "Rueckzug nach hohen Verlusten",
+    obwohl alle Feinde vernichtet waren. Fix: die Rueckzugsbedingung in `runRounds()` prueft jetzt
+    zusaetzlich `unitsB.length > 0`. Aufgedeckt wurde das erst durch den Kampfsimulator (Punkt 28),
+    weil dessen Statistik "Siegchance 25% + Rueckzugsrate 83% = 108%" auswies - ein gutes Beispiel
+    dafuer, dass aggregierte Statistiken Logikfehler sichtbar machen, die in Einzelberichten
+    untergehen.
