@@ -119,6 +119,14 @@ export interface RewardSummary {
   stolenDeuterium?: number;
 }
 
+export interface CombatReplay {
+  typesA: string[];
+  typesB: string[];
+  roundsA: number[][];
+  roundsB: number[][];
+  totalRounds: number;
+}
+
 export interface CombatDetail {
   sektorName: string;
   outcome: string;
@@ -127,6 +135,7 @@ export interface CombatDetail {
   playerResults: CombatUnitResult[];
   allyResult?: CombatUnitResult;
   rewards?: RewardSummary;
+  replay?: CombatReplay;
 }
 
 export interface SkirmishSummary {
@@ -136,6 +145,7 @@ export interface SkirmishSummary {
   npcResults: CombatUnitResult[];
   playerResults: CombatUnitResult[];
   rewards?: RewardSummary;
+  replay?: CombatReplay;
 }
 
 export interface FarmDetail {
