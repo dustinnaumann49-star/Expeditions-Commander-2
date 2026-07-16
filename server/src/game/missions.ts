@@ -233,6 +233,7 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
     outcome: `${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${rewardText}`,
     roundsFought: result.roundsFought,
     npcResults,
+    replay: result.replay,
     rewards: destroyedTotal > 0 ? { metall: reward.metall, kristall: reward.kristall, deuterium: reward.deuterium } : undefined,
     playerResults: [
       {
@@ -459,6 +460,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
       roundsFought: result.roundsFought,
       npcResults,
       playerResults,
+      replay: result.replay,
       rewards: hasRewards
         ? {
             metall: lootGained?.metall,

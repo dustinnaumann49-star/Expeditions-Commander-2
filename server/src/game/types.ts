@@ -76,6 +76,7 @@ export interface SkirmishSummary {
   npcResults: CombatUnitResult[];
   playerResults: CombatUnitResult[];
   rewards?: RewardSummary;
+  replay?: CombatReplay;
 }
 
 export interface Mission {
@@ -139,6 +140,19 @@ export interface RewardSummary {
   stolenDeuterium?: number;
 }
 
+// Kompakter Rundenverlauf fuer die Kampf-Visualisierung: bewusst als Zahlen-Arrays statt Objekte
+// mit Schluesseln, weil das ~4x weniger Speicher braucht (gemessen: 1,4 KB statt 6,1 KB pro Kampf).
+// `typesA`/`typesB` geben die Reihenfolge vor, `roundsA[i]`/`roundsB[i]` sind die Ueberlebenden je
+// Typ nach Runde i. Bei langen Kaempfen wird abgetastet (max. MAX_SNAPSHOTS Eintraege), damit die
+// Datenmenge auch bei 100 Runden begrenzt bleibt.
+export interface CombatReplay {
+  typesA: string[];
+  typesB: string[];
+  roundsA: number[][];
+  roundsB: number[][];
+  totalRounds: number;
+}
+
 export interface CombatDetail {
   sektorName: string;
   outcome: string;
@@ -147,6 +161,7 @@ export interface CombatDetail {
   playerResults: CombatUnitResult[];
   allyResult?: CombatUnitResult;
   rewards?: RewardSummary;
+  replay?: CombatReplay;
 }
 
 export interface FarmDetail {

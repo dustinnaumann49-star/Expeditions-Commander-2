@@ -12,7 +12,7 @@ import {
   MULTI_TARGET_VOLLEY_SHIPS,
 } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
-import type { CombatStats } from './types.js';
+import type { CombatStats, CombatReplay } from './types.js';
 
 // ========== GRUNDLAGEN ==========
 
@@ -513,6 +513,7 @@ interface RoundsResult {
   shotsB: ShotStats;
   retreated: boolean;
   remainingSharedShieldPoolA: number;
+  replay: CombatReplay;
 }
 
 // Kern der Kampf-Simulation, unabhaengig davon ob Seite A einem einzelnen Spieler gehoert
@@ -543,6 +544,23 @@ function runRounds(
   // fuer Seite B (NPCs) und nicht fuer reine Verteidigungsanlagen (koennen nicht "fliehen"),
   // sondern nur fuer die kombinierte Ueberlebensrate der gesamten Seite A.
   const RETREAT_THRESHOLD = 0.5;
+
+  // ---- Rundenverlauf fuer die spaetere Visualisierung aufzeichnen ----
+  // Typ-Reihenfolge einmalig festlegen (Zaehlungen beziehen sich immer auf diese Reihenfolge).
+  const typesA = Array.from(new Set(unitsA.map((u) => u.typeId)));
+  const typesB = Array.from(new Set(unitsB.map((u) => u.typeId)));
+  const roundsA: number[][] = [];
+  const roundsB: number[][] = [];
+  const MAX_SNAPSHOTS = 30;
+  function countByType(units: CombatUnit[], types: string[]): number[] {
+    const counts = new Map<string, number>();
+    units.forEach((u) => counts.set(u.typeId, (counts.get(u.typeId) || 0) + 1));
+    return types.map((t) => counts.get(t) || 0);
+  }
+  // Startzustand als erster Eintrag
+  roundsA.push(countByType(unitsA, typesA));
+  roundsB.push(countByType(unitsB, typesB));
+
   const regenPlayer = getShieldRegenRate(research);
   const regenNpc = SHIELD_REGEN_BASE;
   // Gemeinsamer Kuppel-Schild-Pool fuer Seite A (nur relevant bei Heimatverteidigung mit
@@ -570,6 +588,9 @@ function runRounds(
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * regenPlayer);
     }
+    // Zustand nach dieser Runde festhalten (fuer die Visualisierung im Kampfbericht)
+    roundsA.push(countByType(unitsA, typesA));
+    roundsB.push(countByType(unitsB, typesB));
     // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Fallen in derselben Runde der letzte
     // Gegner UND die eigene Truppe unter die Schwelle, ist der Kampf GEWONNEN - dann waere ein
     // "Rueckzug" sowohl unlogisch als auch im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
@@ -578,6 +599,23 @@ function runRounds(
       break;
     }
   }
+
+  // Bei langen Kaempfen abtasten, damit der gespeicherte Verlauf kompakt bleibt: Start und Ende
+  // bleiben immer erhalten, dazwischen wird gleichmaessig ausgeduennt.
+  function sample<T>(arr: T[]): T[] {
+    if (arr.length <= MAX_SNAPSHOTS) return arr;
+    const step = (arr.length - 1) / (MAX_SNAPSHOTS - 1);
+    const out: T[] = [];
+    for (let i = 0; i < MAX_SNAPSHOTS; i++) out.push(arr[Math.round(i * step)]);
+    return out;
+  }
+  const replay = {
+    typesA,
+    typesB,
+    roundsA: sample(roundsA),
+    roundsB: sample(roundsB),
+    totalRounds: roundsFought,
+  };
 
   return {
     roundsFought,
@@ -593,6 +631,7 @@ function runRounds(
     shotsB,
     retreated,
     remainingSharedShieldPoolA: poolA.remaining,
+    replay,
   };
 }
 
@@ -610,6 +649,7 @@ export interface CombatResult {
   shotsB: ShotStats;
   retreated: boolean;
   remainingSharedShieldPoolA: number;
+  replay: CombatReplay;
 }
 
 /**
@@ -657,6 +697,7 @@ export function resolveCombat(
     shotsB: r.shotsB,
     retreated: r.retreated,
     remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
+    replay: r.replay,
   };
 }
 
@@ -726,5 +767,6 @@ export function resolveCombatMultiOwner(
     shotsB: r.shotsB,
     retreated: r.retreated,
     remainingSharedShieldPoolA: r.remainingSharedShieldPoolA,
+    replay: r.replay,
   };
 }

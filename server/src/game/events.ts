@@ -146,7 +146,7 @@ export async function startEventMission(state: PlayerState, selection: Record<st
     state,
     'kampf',
     `${eventName}: ${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verbündete Verluste: ${allyLost}. ${rewardText}`,
-    { sektorName: eventName, outcome, roundsFought: result.roundsFought, npcResults, playerResults, allyResult }
+    { sektorName: eventName, outcome, roundsFought: result.roundsFought, npcResults, playerResults, allyResult, replay: result.replay }
   );
 
   state.event = null;

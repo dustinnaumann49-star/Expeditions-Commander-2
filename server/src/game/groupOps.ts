@@ -330,6 +330,7 @@ async function resolveGroupEvent(
     npcResults,
     playerResults,
     allyResult,
+    replay: result.replay,
     rewards: containerReward ? { containerTier: containerReward } : undefined,
   };
   const messageText = `${op.eventName} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}`;
@@ -571,6 +572,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     roundsFought: result.roundsFought,
     npcResults,
     playerResults,
+    replay: result.replay,
     rewards: hasRewards
       ? {
           metall: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.metall : undefined,

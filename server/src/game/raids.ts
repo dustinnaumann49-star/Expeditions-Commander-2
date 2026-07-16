@@ -298,6 +298,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       roundsFought: result.roundsFought,
       npcResults,
       playerResults,
+      replay: result.replay,
       rewards: { stolenMetall: stolen.metall, stolenKristall: stolen.kristall, stolenDeuterium: stolen.deuterium, containerTier: containerReward },
     };
     pushMessage(
@@ -325,6 +326,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       roundsFought: result.roundsFought,
       npcResults,
       playerResults,
+      replay: result.replay,
       rewards: { containerTier: containerReward },
     };
     pushMessage(
