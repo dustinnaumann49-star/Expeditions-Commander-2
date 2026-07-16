@@ -308,3 +308,14 @@ client/
     Funktionen filtern jetzt zusaetzlich `MULTI_TARGET_VOLLEY_SHIPS` heraus. Bei jedem neuen
     Spezialschiff mit Baulimit IMMER pruefen, ob es (wie Imperator/Sandronator/jetzt auch die
     Salven-Schiffe) explizit aus `SHIPS.filter(...)` in `combat.ts` ausgeschlossen werden muss.
+
+27. **Der Rückzugs-Mechanismus (Punkt 18) gilt NICHT für die Heimatverteidigung (Raids).** Neuer
+    Parameter `allowRetreat` (Standard `true`) durchgereicht von `resolveCombat`/
+    `resolveCombatMultiOwner` bis `runRounds()`; `raids.ts` setzt ihn explizit auf `false` bei
+    beiden Kampf-Aufrufen. Grund: Man kann sich nicht aus der Verteidigung der eigenen Basis
+    "zurueckziehen" - und da Verteidigungsanlagen oft viel schneller sterben als eine grosse
+    Flotte, wuerde ein Rueckzug sonst die GESAMTE Streitmacht (Flotte + Verteidigung zusammen)
+    vorzeitig abziehen, sobald die zahlenmaessig kleine, fragile Verteidigung unter 50% faellt -
+    obwohl die eigentliche Flotte daneben noch laengst kampffaehig waere. Fuer Missionen/Events/
+    Gruppen-Expeditionen (wo ein Rueckzug nach Hause thematisch sinnvoll ist) bleibt der
+    Standardwert `true` unveraendert bestehen - kein Aenderungsbedarf an deren Aufrufen.
