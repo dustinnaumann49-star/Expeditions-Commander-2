@@ -23,7 +23,6 @@ export interface ShipDefinition {
   unique?: boolean;
   specialOnly?: boolean;
   teileCost?: { waffen: number; schild: number; panzerung: number };
-  miningPerHour?: number;
 }
 
 export interface DefenseDefinition {
