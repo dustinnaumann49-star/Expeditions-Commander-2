@@ -4,7 +4,7 @@ import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, computeDomeSharedPool, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy } from '../lib/combatInfo';
+import { getRapidFireDisplay, computeDomeSharedPool, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy, getCritChance } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
 
 export function VerteidigungPage() {
@@ -16,8 +16,6 @@ export function VerteidigungPage() {
   if (!gameData || !state) return <p>Lade...</p>;
 
   const domePool = computeDomeSharedPool(gameData, state.defense, state.research);
-  const precision = getPrecisionChance(gameData, state.research);
-  const shieldRegen = getShieldRegenRate(gameData, state.research);
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
   const infoDef = infoDefId ? gameData.defenses.find((d) => d.id === infoDefId) : null;
 
@@ -122,8 +120,15 @@ export function VerteidigungPage() {
           if (infoDef.maxCount) {
             rows.push(['Limit', `${bestand}/${infoDef.maxCount} gebaut${infoDef.maxCount - bestand <= 0 ? ' – Limit erreicht' : ''}`]);
           }
-          rows.push(['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`]);
-          rows.push(['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`]);
+          const precision = getPrecisionChance(gameData, state.research, infoDef.id);
+          const shieldRegen = getShieldRegenRate(gameData, state.research, infoDef.id);
+          const critChance = getCritChance(gameData, state.research, infoDef.id);
+          rows.push(['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`]);
+          rows.push(['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`]);
+          rows.push(['💨 Ausweichen', 'Unbeweglich – kann nicht ausweichen']);
+          if (!infoDef.isDome) {
+            rows.push(['🛡️ Schild-Regeneration', `${(shieldRegen * 100).toFixed(0)}% pro Runde (Basis-Energieversorgung)`]);
+          }
           return (
             <InfoModal title={infoDef.name} onClose={() => setInfoDefId(null)}>
               <InfoTable rows={rows} />

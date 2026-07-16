@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance } from '../lib/combatInfo';
 
 export function SpezialteilePage() {
   const { gameData, state, buildImperator, error } = useGame();
@@ -17,8 +17,10 @@ export function SpezialteilePage() {
   const limitReached = bestand >= ship.maxCount;
   const pct = (val: number, max: number) => Math.min(100, Math.round((val / max) * 100));
 
-  const precision = getPrecisionChance(gameData, state.research);
-  const shieldRegen = getShieldRegenRate(gameData, state.research);
+  const precision = getPrecisionChance(gameData, state.research, ship.id);
+  const shieldRegen = getShieldRegenRate(gameData, state.research, ship.id);
+  const evasion = getEvasionChance(gameData, state.research, ship.id);
+  const critChance = getCritChance(gameData, state.research, ship.id);
   const rfDisplay = getRapidFireDisplay(gameData, ship.id);
   const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
   const targeted = isTargetedByRapidFire(gameData, ship.id);
@@ -90,8 +92,10 @@ export function SpezialteilePage() {
                 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][])
                 : []),
               ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
-              ['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`],
-              ['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
+              ['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`],
+              ['💨 Ausweichen', evasion > 0 ? `${(evasion * 100).toFixed(0)}% Chance, einem Treffer zu entgehen` : 'Zu schwerfällig zum Ausweichen'],
+              ['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`],
+              ['🛡️ Schild-Regeneration', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
               ['Limit', `${bestand}/${ship.maxCount} gebaut${bestand >= ship.maxCount ? ' – Limit erreicht' : ''}`],
             ]}
           />

@@ -4,7 +4,7 @@ import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate } from '../lib/combatInfo';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
 import type { PlayerState } from '../types/game';
 
@@ -34,8 +34,6 @@ export function WerftPage() {
 
   const activeKlasse = WERFT_KLASSEN.find((k) => k.id === tab)!;
   const ships = gameData.ships.filter((s) => activeKlasse.ships.includes(s.id));
-  const precision = getPrecisionChance(gameData, state.research);
-  const shieldRegen = getShieldRegenRate(gameData, state.research);
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
   const infoShip = infoShipId ? gameData.ships.find((s) => s.id === infoShipId) : null;
 
@@ -144,6 +142,12 @@ export function WerftPage() {
           const targeted = isTargetedByRapidFire(gameData, infoShip.id);
           const isVolleyShip = gameData.multiTargetVolleyShips.includes(infoShip.id);
           const volleyTargetTypes = Object.keys(gameData.rapidfire[infoShip.id] || {});
+          // Diese vier Werte sind SCHIFFSABHAENGIG: kleine Schiffe treffen/weichen besser aus,
+          // grosse regenerieren mehr Schild und kritzen oefter.
+          const precision = getPrecisionChance(gameData, state.research, infoShip.id);
+          const shieldRegen = getShieldRegenRate(gameData, state.research, infoShip.id);
+          const evasion = getEvasionChance(gameData, state.research, infoShip.id);
+          const critChance = getCritChance(gameData, state.research, infoShip.id);
           const rows: [string, React.ReactNode][] = [
             ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
             ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),
@@ -158,8 +162,10 @@ export function WerftPage() {
                 ] as [string, React.ReactNode][])
               : []),
             ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
-            ['Präzision (aktuell)', `${(precision * 100).toFixed(0)}% Trefferchance`],
-            ['Schild-Regeneration (aktuell)', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
+            ['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`],
+            ['💨 Ausweichen', evasion > 0 ? `${(evasion * 100).toFixed(0)}% Chance, einem Treffer zu entgehen` : 'Zu schwerfällig zum Ausweichen'],
+            ['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`],
+            ['🛡️ Schild-Regeneration', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
             ...(infoShip.unique
               ? ([['Status', `★ Einzigartig - nur 1 Exemplar möglich${bestand >= 1 ? ' (bereits vorhanden)' : ''}`]] as [string, React.ReactNode][])
               : infoShip.maxCount
