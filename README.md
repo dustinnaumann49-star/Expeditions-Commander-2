@@ -698,3 +698,39 @@ client/
     bewusst ueberproportional. Das erhoeht die Obergrenze fuer Spieler, die den vollen Weg gehen
     wollen, ohne sie guenstiger oder schneller erreichbar zu machen. `buildTime` bewusst
     unveraendert gelassen (war nicht Teil der Anfrage).
+
+47. **Grundlegende Aenderung: Feindstaerke (Piraten-Sektoren, Notruf-Events, Raids, Elite-Bollwerk,
+    Asteroiden-Eskorte) skaliert jetzt AUSSCHLIESSLICH auf Basiswerten der Schiffe/Verteidigung,
+    nicht mehr auf der Forschung des Spielers.** Vorher berechnete `combatFleetPower()` die
+    Feindstaerke aus den FORSCHUNGS-ANGEREICHERTEN Werten (`getEffectiveStats()`) - jede Stufe
+    Waffen-/Schild-/Panzerungtechnik machte die Piraten dadurch automatisch genauso staerker wie
+    einen selbst, wodurch sich diese drei Forschungen im Endeffekt NICHT lohnten (nur die 6
+    "ungeskalierten" Forschungen aus Punkt 19 brachten einen echten Vorteil). Fix: neue Funktion
+    `combatFleetPowerBase()` (`combat.ts`) nutzt ausschliesslich `baseStats()`, ohne jegliche
+    Forschung. Ersetzt an ALLEN Stellen, die Feindstaerke/Zielstaerke berechnen:
+    - `missions.ts`: Solo-Piraten-Sektoren (`sentPower`) UND Asteroiden-Eskorte (`escortStats` -
+      nutzt jetzt `baseStats('begleitschiff')` statt `getEffectiveStats(...)`).
+    - `events.ts`: Solo-Notruf-Event (`sentPower`).
+    - `groupOps.ts`: gemeinsames Notruf-Event (`contributedPower`, `resolveGroupEvent`) UND
+      Elite-Bollwerk-Stundencheck (`totalSentPower`, `runGroupHourlyCheck`) - beide vorher
+      `combatFleetPower(p.ships, pState.research)`, jetzt `combatFleetPowerBase(p.ships)`, kein
+      Zugriff auf den Forschungsstand mehr fuer diese Berechnung noetig.
+    - `raids.ts`: **zusaetzlich gefunden, nicht explizit erwaehnt, aber derselbe Fehler** - die
+      Angreiferstaerke bei Heimverteidigung (`homePower`/`reinforcementPower` in `resolveRaid()`)
+      wurde ebenfalls aus forschungs-verstaerkten Werten berechnet. Sonderfall Schildkuppel-Pool:
+      der Pool tritt an ZWEI Stellen auf - einmal fuer die Feindstaerke-Berechnung (jetzt
+      `domePoolBase`, mit leerem Forschungs-Objekt `{}` berechnet, also `schildMultiplier=1x`) und
+      einmal fuer die ECHTE Kampfberechnung (`domePoolReal`, weiterhin mit voller Spieler-Forschung
+      - die Kuppel soll im tatsaechlichen Gefecht weiterhin von Schildtechnik profitieren, nur die
+      Gegnerstaerke soll das nicht mehr tun).
+    - `simulator.ts`: ebenfalls umgestellt, damit die Vorhersage exakt der echten Formel
+      entspricht (Punkt 28 verlangt "dieselbe Engine" wie der echte Ablauf).
+    Bewusst UNVERAENDERT gelassen: alle Stellen, die `getEffectiveStats()`/`combatFleetPower()`
+    fuer die tatsaechliche KAMPFBERECHNUNG oder fuer die Anzeige der EIGENEN Kampfwerte nutzen
+    (z.B. `CombatUnitResult`-Eintraege im Kampfbericht) - Forschung wirkt weiterhin voll auf die
+    eigene Kampfleistung, nur nicht mehr auf die Staerke des Gegners. Spionage-basierte
+    NPC-Zusammensetzungs-Glaettung (`smoothing` in `generatePiratenFleet()`) bewusst unangetastet -
+    das ist keine Staerke-Skalierung, sondern nur eine Gewichtung, WELCHE Schiffstypen die Piraten
+    bekommen, kein Teil des urspruenglichen Problems. Bewusst KEIN Teil-Bonus fuer Piraten aus
+    Spieler-Forschung eingebaut (war eine urspruenglich erwogene Option) - auf Wunsch verworfen,
+    Piraten profitieren jetzt in KEINER Form von Spieler-Forschung, auch nicht anteilig.
