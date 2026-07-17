@@ -290,12 +290,15 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   let npcDefenses: Record<string, number> = {};
 
   if (cfg.type === 'piraten') {
-    npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0, profile);
+    // Spionage aktuell als Platzhalter gesperrt (siehe startResearch() in actions.ts) - fest 0
+    // statt state.research.spionage, damit der Effekt neutralisiert ist, der Mechanismus in
+    // combat.ts aber unveraendert bereitsteht, falls Spionage spaeter reaktiviert wird.
+    npcShips = generatePiratenFleet(targetPower, 0, profile);
     let defenseFactor = 0;
     if (mission.sektorId === 'piraten_niedrig') defenseFactor = 0.05;
     else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.1;
     else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.15;
-    npcDefenses = generateDefenseFleet(sentPower * defenseFactor, state.research.spionage || 0);
+    npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
   } else {
     npcShips = generatePiratenFleet(targetPower, 0, profile) || generateFallbackFleet(targetPower, profile);
   }

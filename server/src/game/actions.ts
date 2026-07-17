@@ -214,6 +214,16 @@ function researchTimeForLevel(state: PlayerState, tech: (typeof RESEARCH)[number
 export function startResearch(state: PlayerState, techId: string): ActionResult {
   const tech = RESEARCH.find((r) => r.id === techId);
   if (!tech) return { ok: false, error: 'Unbekannte Forschung.' };
+  // Spionage ist vorerst als Platzhalter gesperrt - ihr bisheriger Effekt (Glaettung der
+  // Gegner-Zusammensetzung) wurde durch die Wellen-Profile (siehe combat.ts) weitgehend
+  // ueberschattet und kaum noch spuerbar. Bleibt sichtbar im Forschungsbaum und im Code
+  // (generatePiratenFleet()/generateDefenseFleet() nehmen weiterhin einen spionageLevel-Parameter
+  // entgegen, bekommen aktuell aber ueberall fest 0 uebergeben - siehe missions.ts/groupOps.ts/
+  // simulator.ts), damit sie spaeter bei weiterem Spielausbau wieder aktiviert werden kann, ohne
+  // den Mechanismus neu bauen zu muessen.
+  if (techId === 'spionage') {
+    return { ok: false, error: 'Spionage ist aktuell gesperrt (Platzhalter für zukünftige Erweiterungen).' };
+  }
   if (state.researchQueue.length >= MAX_RESEARCH_SLOTS) {
     return { ok: false, error: `Es laufen bereits ${MAX_RESEARCH_SLOTS} Forschungen gleichzeitig (Maximum).` };
   }

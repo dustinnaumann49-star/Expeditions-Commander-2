@@ -86,8 +86,10 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
     const targetPower = Math.max(sentPower * rolledMultiplier, cfg.npcFloor || 0);
     const profile = pickWaveProfile(sektorId);
     const battleModifier = rollBattleModifier(sektorId);
-    const npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0, profile);
-    let npcDefenses = generateDefenseFleet(sentPower * defenseFactor, state.research.spionage || 0);
+    // Spionage aktuell als Platzhalter gesperrt (siehe startResearch() in actions.ts) - fest 0,
+    // damit die Vorhersage der echten Formel entspricht.
+    const npcShips = generatePiratenFleet(targetPower, 0, profile);
+    let npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
     if (cfg.captainChance && Math.random() < cfg.captainChance) {
       npcDefenses = { ...npcDefenses, piratenkapitan: 1 };
     }

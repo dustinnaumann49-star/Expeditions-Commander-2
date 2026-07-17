@@ -477,7 +477,9 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const battleModifier = surpriseAllowed ? rollBattleModifier(op.sektorId!) : null;
   if (outlier || battleModifier) op.eliteSurpriseUsed = true;
 
-  const spionageMax = Math.max(...accepted.map((p) => participantStates.get(p.userId)!.research.spionage || 0));
+  // Spionage aktuell als Platzhalter gesperrt (siehe startResearch() in actions.ts) - fest 0
+  // statt tatsaechlichem Forschungsstand, Mechanismus bleibt fuer spaeter unveraendert bestehen.
+  const spionageMax = 0;
   const npcShips = generatePiratenFleet(targetPower, spionageMax, profile);
   const defenseFactor =
     op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.2 : 0.15;
