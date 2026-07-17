@@ -95,8 +95,9 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         <div className="info-row" style={{ borderBottom: 'none', fontSize: 11, color: 'var(--text-dim)' }}>
           <span className="info-label">💡 Taktischer Hinweis</span>
           <span className="info-value">
-            RapidFire-Matchups gelten unabhängig vom Sektor: Schwere Jäger gegen Leichte Jäger, Kreuzer gegen Leichte Jäger, Schlachtschiffe gegen
-            Kreuzer, Schlachtkreuzer stark gegen Schwere Jäger/Kreuzer/Schlachtschiffe, Bomber stark gegen alle Verteidigungsanlagen.
+            RapidFire-Matchups gelten unabhängig vom Sektor: Schwere Jäger gegen Leichte Jäger, Kreuzer gegen Schwere Jäger, Schlachtschiffe gegen
+            Kreuzer, Schlachtkreuzer stark gegen Leichte/Schwere Jäger/Kreuzer/Schlachtschiffe, Zerstörer gegen Schlachtkreuzer/Bomber, Reaper gegen
+            Zerstörer/Schlachtkreuzer/Bomber, Bomber stark gegen alle Verteidigungsanlagen.
           </span>
         </div>
       </div>
