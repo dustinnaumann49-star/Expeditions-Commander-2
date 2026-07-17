@@ -508,3 +508,19 @@ client/
     `userId`-Abgleich heraus, kein separater "eigene Stats"-Endpunkt noetig). Client pollt die
     Bestenliste alle 15s (eigener Fetch-Zyklus in `Statistik.tsx`, unabhaengig vom 3s-Haupt-Polling
     in `GameContext.tsx` - Statistik-Aenderungen sind nicht zeitkritisch).
+
+40. **Dunkle-Materie-Cap bei Asteroiden-Feldern war noch auf die alte 4h-Missionsdauer kalibriert,
+    obwohl Punkt 23 die Missionsdauer laengst auf 12h angehoben hatte.** Die Rate-Formel selbst
+    (`accrueFarming()` in `missions.ts`) berechnet zwar dynamisch korrekt ueber die TATSAECHLICHE
+    Missionsdauer (`mission.endTime - mission.arriveTime`, nicht hartcodiert), aber `dmCap` (der
+    Zielwert, den diese Rate ueber die volle Dauer erreicht) wurde beim Duration-Wechsel nie
+    angepasst - dadurch sank die DM-Ausbeute PRO STUNDE auf ein Drittel (z.B. Niedrig: vorher
+    5 DM/4h = 1,25 DM/h, nachher 5 DM/12h = nur noch 0,42 DM/h), obwohl das nie beabsichtigt war.
+    Fix: `dmCap` in `sectors.ts` verdreifacht (Niedrig 5→15, Mittel 10→30, Hoch 15→45) - stellt die
+    urspruengliche DM/h-Rate wieder her, jetzt korrekt ueber die tatsaechlichen 12h verteilt statt
+    ueber die alten 4h. Sektor-Beschreibungstexte (`zweck`-Feld) ebenfalls auf die neuen Werte
+    aktualisiert. Kommentar bei `resourceCapOverTime` (nur fuer `piraten_elite`/Elite-Bollwerk
+    genutzt, bleibt bei 4h) praezisiert, um Verwechslung mit `dmCap` (jetzt 12h bei Asteroiden-
+    Feldern) zu vermeiden - beide Felder hatten denselben irrefuehrenden "laeuft ueber die 4h"-
+    Kommentar, obwohl nur eines davon noch bei 4h liegt. Client zeigt `cfg.dmCap` bereits dynamisch
+    an (`SektorInfoBox` in `Sektor.tsx`), keine Client-Aenderung noetig.
