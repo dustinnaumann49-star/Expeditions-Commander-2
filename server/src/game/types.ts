@@ -274,6 +274,11 @@ export interface GroupOperation {
   returnTime?: number;
   processedHours?: number;
   lastTick?: number | null; // steuert nur das Timing des Zeit-basierten Ressourcen-Zuwachses (Elite-Sektor)
+  // Wellen-Ausreisser und Kampf-Modifikatoren (siehe combat.ts/combatConstants.ts) sind beim
+  // Elite-Bollwerk auf maximal 1x pro GESAMTER Expedition gedeckelt, nicht pro Einzel-Check -
+  // sonst wuerde sich das Risiko ueber die 4 Stunden-Checks unfair aufsummieren. Wird beim ersten
+  // Zutreffen (egal ob Ausreisser oder Modifikator) auf true gesetzt.
+  eliteSurpriseUsed?: boolean;
   resultMessage?: string;
   resultDetail?: CombatDetail;
 }
