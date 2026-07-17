@@ -5,12 +5,22 @@ import {
   ALLY_STATS,
   rollFixedCheckpoints,
 } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, combatFleetPowerBase, generateFallbackFleet } from './combat.js';
+import {
+  getEffectiveStats,
+  baseStats,
+  shipName,
+  combatFleetPowerBase,
+  generateFallbackFleet,
+  pickWaveProfile,
+  rollMultiplierWithOutlier,
+  rollBattleModifier,
+} from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { listAllUsers } from '../db.js';
 import type { ActionResult } from './actions.js';
+import { NOTRUF_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
 
 function pickRandom<T>(arr: T[]): T {
@@ -75,13 +85,18 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const sentPower = combatFleetPowerBase(selection);
   const allyCount = Math.max(8, Math.round(sentPower / 18000));
 
-  // Feindstaerke = exakt 100% der eingesetzten Flotten-Power, keine Zufalls-Schwankung mehr.
-  const targetPower = sentPower;
-  const npcShips = generateFallbackFleet(targetPower);
+  // Feindstaerke war frueher exakt 100% der eingesetzten Flotten-Power ohne jede Schwankung -
+  // jetzt mit leichter Grund-Varianz (NOTRUF_MULTIPLIER_ROLL) plus seltenem Ausreisser, damit auch
+  // Notruf-Events nicht immer exakt gleich stark ausfallen (siehe combatConstants.ts).
+  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(NOTRUF_MULTIPLIER_ROLL, 'notruf');
+  const targetPower = sentPower * rolledMultiplier;
+  const profile = pickWaveProfile('notruf');
+  const battleModifier = rollBattleModifier('notruf');
+  const npcShips = generateFallbackFleet(targetPower, profile);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
 
   const allySelection = { ...selection, verbuendete: allyCount };
-  const result = await runCombatInWorker({ sideAShips: allySelection, sideBShips: npcShips, research: state.research, useAllyStats: true });
+  const result = await runCombatInWorker({ sideAShips: allySelection, sideBShips: npcShips, research: state.research, useAllyStats: true, battleModifier });
 
   let anyPlayerLoss = false;
   const losses: Record<string, number> = {};
@@ -173,10 +188,12 @@ export async function startEventMission(state: PlayerState, selection: Record<st
     : playerWiped || !npcFullyDestroyed
     ? 'Rückzug – Notruf gescheitert'
     : 'Notruf erfolgreich – Geholfen';
+  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Gegenwehr]' : outlier === 'schwach' ? ' [Auffällig schwache Gegenwehr]' : '';
+  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   pushMessage(
     state,
     'kampf',
-    `${eventName}: ${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verbündete Verluste: ${allyLost}. ${rewardText}`,
+    `${eventName}${waveText}: ${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verbündete Verluste: ${allyLost}. ${rewardText}${modifierText}`,
     { sektorName: eventName, outcome, roundsFought: result.roundsFought, npcResults, playerResults, allyResult, replay: result.replay }
   );
 

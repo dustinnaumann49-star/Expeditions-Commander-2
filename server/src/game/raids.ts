@@ -1,9 +1,18 @@
 import { DEFENSES } from './data/defenses.js';
 import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, generateFallbackFleet, computeDomeSharedPool } from './combat.js';
+import {
+  getEffectiveStats,
+  baseStats,
+  shipName,
+  generateFallbackFleet,
+  computeDomeSharedPool,
+  pickWaveProfile,
+  rollMultiplierWithOutlier,
+  rollBattleModifier,
+} from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
-import { DEFENSE_REPAIR_PERCENT } from './data/combatConstants.js';
+import { DEFENSE_REPAIR_PERCENT, RAID_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getUserById, listAllUsers } from '../db.js';
@@ -145,10 +154,15 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     });
   });
 
-  // Feindstaerke = exakt 100% der gesamten eigenen Kampf-Power (Flotte + Verteidigung + evtl.
-  // Verstaerkungen), keine Zufalls-Schwankung mehr.
-  const targetPower = homePower + reinforcementPower;
-  const npcShips = generateFallbackFleet(targetPower);
+  // Feindstaerke war frueher exakt 100% der eigenen Kampf-Power ohne jede Schwankung - jetzt mit
+  // leichter Grund-Varianz (RAID_MULTIPLIER_ROLL) plus seltenem, gedaempftem Ausreisser (siehe
+  // combatConstants.ts) und einem gewuerfelten Zusammensetzungs-Profil, damit sich nicht jeder
+  // Raid identisch anfuehlt.
+  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(RAID_MULTIPLIER_ROLL, 'raid');
+  const targetPower = (homePower + reinforcementPower) * rolledMultiplier;
+  const profile = pickWaveProfile('raid');
+  const battleModifier = rollBattleModifier('raid');
+  const npcShips = generateFallbackFleet(targetPower, profile);
 
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
   if (npcIds.length === 0) {
@@ -168,8 +182,8 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
 
   const result =
     reinforcerStates.length > 0
-      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false })
-      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false });
+      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier })
+      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 
@@ -308,6 +322,9 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   const containerReward: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';
   state.inventory.push({ id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), tier: containerReward, receivedAt: Date.now() });
 
+  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starker Angriff]' : outlier === 'schwach' ? ' [Auffällig schwacher Angriff]' : '';
+  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
+
   if (!piratesRepelled) {
     const stolen = {
       metall: Math.round(state.resources.metall * RAID_LOOT_PERCENT),
@@ -333,7 +350,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       state,
       'kampf',
-      `${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
+      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})${modifierText}`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
@@ -361,7 +378,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       state,
       'kampf',
-      `${outcome} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})`,
+      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})${modifierText}`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {

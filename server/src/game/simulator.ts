@@ -4,6 +4,9 @@ import {
   generatePiratenFleet,
   generateDefenseFleet,
   shipName,
+  pickWaveProfile,
+  rollMultiplierWithOutlier,
+  rollBattleModifier,
 } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { PlayerState } from './types.js';
@@ -32,15 +35,14 @@ export interface SimulationResult {
   exampleNpcFleet: { id: string; name: string; count: number }[];
 }
 
-function rollMultiplier(options: number[]): number {
-  return options[Math.floor(Math.random() * options.length)];
-}
-
 /**
  * Simuliert Kaempfe gegen einen Sektor, OHNE irgendetwas am Spielstand zu veraendern.
  * Nutzt exakt dieselbe Kampf-Engine und dieselbe NPC-Generierung wie der echte Stunden-Check
- * (siehe runHourlyCheck in missions.ts) - inklusive gewuerfelter Wellenstaerke, Sektor-Mindest-
- * staerke (npcFloor), NPC-Verteidigungsanlagen und Piratenkapitaen-Chance.
+ * (siehe runHourlyCheck in missions.ts) - inklusive gewuerfelter Wellenstaerke (mit Ausreissern),
+ * gewuerfeltem Zusammensetzungs-Profil, Kampf-Modifikatoren, Sektor-Mindeststaerke (npcFloor),
+ * NPC-Verteidigungsanlagen und Piratenkapitaen-Chance. Da jeder Durchlauf UNABHAENGIG sein eigenes
+ * Profil/Ausreisser/Modifikator wuerfelt, zeigt die Statistik ueber mehrere Laeufe automatisch die
+ * echte Bandbreite moeglicher Begegnungen, nicht nur einen Einzelfall.
  */
 export async function simulateCombat(state: PlayerState, sektorId: string, selection: Record<string, number>): Promise<ActionResult & { simulation?: SimulationResult }> {
   const cfg = SEKTOR_CONFIG[sektorId];
@@ -80,9 +82,11 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
     // nicht auf einem einzigen Zufallsergebnis basiert.
     if (runs >= MIN_RUNS && Date.now() - startedAt > TIME_BUDGET_MS) break;
 
-    const rolledMultiplier = rollMultiplier(table);
+    const { multiplier: rolledMultiplier } = rollMultiplierWithOutlier(table, sektorId);
     const targetPower = Math.max(sentPower * rolledMultiplier, cfg.npcFloor || 0);
-    const npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0);
+    const profile = pickWaveProfile(sektorId);
+    const battleModifier = rollBattleModifier(sektorId);
+    const npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0, profile);
     let npcDefenses = generateDefenseFleet(sentPower * defenseFactor, state.research.spionage || 0);
     if (cfg.captainChance && Math.random() < cfg.captainChance) {
       npcDefenses = { ...npcDefenses, piratenkapitan: 1 };
@@ -95,6 +99,7 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
       sideAShips: ships,
       sideBShips: npcCombined,
       research: state.research,
+      battleModifier,
     });
 
     runs++;

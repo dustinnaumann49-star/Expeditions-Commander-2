@@ -9,17 +9,17 @@ import {
   generatePiratenFleet,
   generateFallbackFleet,
   generateDefenseFleet,
+  pickWaveProfile,
+  rollMultiplierWithOutlier,
+  rollBattleModifier,
 } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import type { ActionResult } from './actions.js';
+import { NOTRUF_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, CombatDetail, ContainerTier, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
-
-function rollMultiplier(options: number[]): number {
-  return options[Math.floor(Math.random() * options.length)];
-}
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -220,16 +220,21 @@ async function resolveGroupEvent(
   const totalSentPower = accepted.reduce((sum, p) => sum + (p.contributedPower || 0), 0);
   const allyCount = Math.max(8, Math.round(totalSentPower / 18000));
 
-  // Feindstaerke = exakt 100% der gesamten eingesetzten Flotten-Power, keine Zufalls-Schwankung mehr.
-  const targetPower = totalSentPower;
-  const npcShips = generateFallbackFleet(targetPower);
+  // Feindstaerke war frueher exakt 100% der eingesetzten Flotten-Power ohne jede Schwankung - jetzt
+  // mit leichter Grund-Varianz (NOTRUF_MULTIPLIER_ROLL) plus seltenem Ausreisser und gewuerfeltem
+  // Zusammensetzungs-Profil, siehe combatConstants.ts.
+  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(NOTRUF_MULTIPLIER_ROLL, 'notruf');
+  const targetPower = totalSentPower * rolledMultiplier;
+  const profile = pickWaveProfile('notruf');
+  const battleModifier = rollBattleModifier('notruf');
+  const npcShips = generateFallbackFleet(targetPower, profile);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
 
   const contributions: OwnedFleetContribution[] = contributionsFromParticipants(op, participantStates);
   contributions.push({ ownerKey: 'verbuendete', ships: { verbuendete: allyCount }, useAllyStats: true });
 
   const research = participantStates.get(op.creatorId)!.research;
-  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research });
+  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research, battleModifier });
 
   const playerResults: CombatUnitResult[] = [];
   accepted.forEach((p) => {
@@ -321,6 +326,8 @@ async function resolveGroupEvent(
       : '📦 Jeder Teilnehmer erhält einen Silber-Container'
     : '';
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
+  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Gegenwehr]' : outlier === 'schwach' ? ' [Auffällig schwache Gegenwehr]' : '';
+  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
 
   const detail: CombatDetail = {
     sektorName: `${op.eventName} (gemeinsam: ${teilnehmerListe})`,
@@ -332,7 +339,7 @@ async function resolveGroupEvent(
     replay: result.replay,
     rewards: containerReward ? { containerTier: containerReward } : undefined,
   };
-  const messageText = `${op.eventName} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}`;
+  const messageText = `${op.eventName}${waveText} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}${modifierText}`;
 
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
@@ -443,11 +450,20 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const totalSentPower = accepted.reduce((sum, p) => sum + combatFleetPowerBase(p.ships), 0);
 
   const table = PIRATEN_MULTIPLIER_ROLL[op.sektorId!];
-  const rolledMultiplier = rollMultiplier(table);
+  // Wellen-Ausreisser und Kampf-Modifikatoren sind hier auf 1x PRO GESAMTER EXPEDITION gedeckelt
+  // (op.eliteSurpriseUsed), nicht pro Einzel-Check - bei 4 Stunden-Checks wuerde sich das Risiko
+  // sonst unfair aufsummieren (siehe combatConstants.ts).
+  const surpriseAllowed = !op.eliteSurpriseUsed;
+  const { multiplier: rolledMultiplier, outlier } = surpriseAllowed
+    ? rollMultiplierWithOutlier(table, op.sektorId!)
+    : { multiplier: table[Math.floor(Math.random() * table.length)], outlier: null as 'schwach' | 'stark' | null };
   const targetPower = Math.max(totalSentPower * rolledMultiplier, cfg.npcFloor || 0);
+  const profile = pickWaveProfile(op.sektorId!);
+  const battleModifier = surpriseAllowed ? rollBattleModifier(op.sektorId!) : null;
+  if (outlier || battleModifier) op.eliteSurpriseUsed = true;
 
   const spionageMax = Math.max(...accepted.map((p) => participantStates.get(p.userId)!.research.spionage || 0));
-  const npcShips = generatePiratenFleet(targetPower, spionageMax);
+  const npcShips = generatePiratenFleet(targetPower, spionageMax, profile);
   const defenseFactor =
     op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.2 : 0.15;
   let npcDefenses = generateDefenseFleet(totalSentPower * defenseFactor, spionageMax);
@@ -462,7 +478,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
 
   const contributions = contributionsFromParticipants(op, participantStates);
   const research = participantStates.get(op.creatorId)!.research;
-  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcCombined, research });
+  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcCombined, research, battleModifier });
 
   let anyNpcDestroyed = false;
   const npcResults: CombatUnitResult[] = Object.keys(npcCombined).map((id) => {
@@ -565,7 +581,9 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     : anyNpcDestroyed
     ? 'Feindkontakt - Piraten erlitten Verluste'
     : 'Feindkontakt - keine nennenswerte Wirkung';
-  const messageText = `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}`;
+  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
+  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
+  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}${modifierText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
