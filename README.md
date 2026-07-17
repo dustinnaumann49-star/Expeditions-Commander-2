@@ -623,3 +623,19 @@ client/
       `infoDef.id` als `typeId` ist unbedenklich, da `SHIELD_REGEN_MODIFIER` keine Eintraege fuer
       Kuppel-IDs hat (Lookup faellt auf 0 zurueck) - zeigt exakt denselben Wert wie der Server
       tatsaechlich fuer den Pool verwendet.
+
+46. **Kampfbericht hatte keine Spalte fuer AUSGETEILTEN Schaden - nur `dmgTaken` (ERLITTENER
+    Schaden), was leicht als "Kampfbeitrag" missverstanden werden konnte (tatsaechlich das
+    Gegenteil).** Wurde entdeckt, als eine niedrige "Schaden"-Zahl bei Salvenschiffen faelschlich
+    als schwache Feuerkraft gedeutet wurde - die Zahl beschrieb aber nur, wie viel sie EINGESTECKT
+    hatten. Fix: neues `dmgDealt`-Feld durchgezogen von `combat.ts` (`ShotStats.dmgDealt`, erhoeht
+    an BEIDEN Stellen in `fireShots()`, wo Schaden berechnet wird - Einzelziel UND Mehrfachziel-
+    Salve, VOR Schild-/Ueberkill-Reduktion) bis zu `CombatUnitResult.dmgDealt` (`types.ts`) und an
+    ALLEN 16 Konstruktionsstellen in `missions.ts`/`events.ts`/`groupOps.ts`/`raids.ts` ergaenzt
+    (Muster: `dmgDealt: Math.round(result.shotsA.dmgDealt[key] || 0)` fuer Spieler-Einheiten,
+    `shotsB` fuer NPCs - spiegelbildlich zum bestehenden `dmgTakenA`/`dmgTakenB`-Muster). Neue
+    Spalte "Schaden ausgeteilt" in `Nachrichten.tsx`s `UnitTable`, bestehende Spalte von "Schaden"
+    zu "Schaden erlitten" umbenannt, um kuenftige Verwechslung auszuschliessen. Client liest
+    `u.dmgDealt || 0` ab (aeltere, bereits gespeicherte Nachrichten haben das Feld noch nicht).
+    Balance-Entscheidungen zu Schiffs-Feuerkraft (z.B. Salvenschiffe) sollten ab jetzt anhand
+    dieser neuen Spalte getroffen werden, nicht anhand von "Schaden erlitten".
