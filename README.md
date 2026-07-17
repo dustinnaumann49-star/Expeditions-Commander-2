@@ -606,3 +606,20 @@ client/
     da der Schildwert hier explizit die Kernfunktion ist. Kleine Schildkuppel: Schild 2.000→24.000,
     Panzerung 4.000→4.000 (unveraendert, lag schon nahe am Zielwert). Grosse Schildkuppel: Schild
     10.000→119.000, Panzerung 12.000→21.000. `maxCount:1` fuer beide bleibt unveraendert.
+
+45. **Zwei Anzeigefehler im Verteidigungsanlagen-Info-Popup (`Verteidigung.tsx`) fuer Schildkuppeln
+    behoben:**
+    - **Praezision/Kritische Treffer wurden auch fuer Kuppeln angezeigt**, obwohl Kuppeln
+      `waffen:0` haben und nie selbst schiessen - diese Werte sind fuer sie bedeutungslos. Jetzt an
+      `infoDef.stats.waffen > 0` gekoppelt, gilt generisch fuer JEDE zukuenftige waffenlose Anlage,
+      nicht nur Kuppeln.
+    - **Schild-Regeneration wurde fuer Kuppeln komplett unterdrueckt** (`!infoDef.isDome`-Bedingung),
+      obwohl der gemeinsame Pool sich nachweislich JEDE Runde regeneriert
+      (`poolA.remaining = ... + sharedShieldPoolA * poolRegen` in `runRounds()`, `combat.ts`,
+      `poolRegen` nutzt dieselbe `getShieldRegenRate(research)` OHNE `typeId` - reiner Basiswert,
+      keine Groessen-Modifikation, siehe Punkt 21). Jetzt korrekt angezeigt, mit eigenem Label
+      "🛡️ Schild-Regeneration (Pool)" zur Klarstellung, dass sich der Wert auf den GEMEINSAMEN Pool
+      bezieht, nicht auf eine einzelne Anlage. Client-seitiger `getShieldRegenRate()`-Aufruf mit
+      `infoDef.id` als `typeId` ist unbedenklich, da `SHIELD_REGEN_MODIFIER` keine Eintraege fuer
+      Kuppel-IDs hat (Lookup faellt auf 0 zurueck) - zeigt exakt denselben Wert wie der Server
+      tatsaechlich fuer den Pool verwendet.
