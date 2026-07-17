@@ -246,3 +246,9 @@ export function getEscalationMultiplier(sektorId: string, streak: number): numbe
 // riesigen Angreiferwellen.
 export const RAID_SALVAGE_DM_PER_KILL = 0.3;
 export const RAID_SALVAGE_DM_MAX = 20;
+// Mindest-Angriffsstaerke fuer Raids, falls die reine Flotten-Power (homePower, OHNE
+// Verteidigungsanlagen, siehe raids.ts) bei 0 liegt - z.B. bei einem reinen
+// Verteidigungsanlagen-Aufbau ohne eigene Flotte zu Hause. Verhindert, dass der Angriff auf eine
+// triviale/leere Gegnerwelle zusammenschrumpft, nur weil Verteidigung nicht mehr in die
+// Feindstaerke einfliesst (siehe README "Wichtige Punkte" zur Entkopplung).
+export const RAID_MIN_TARGET_POWER = 200000;
