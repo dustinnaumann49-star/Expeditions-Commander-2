@@ -442,10 +442,15 @@ export interface ShotStats {
   hits: Record<string, number>;
   rapidFireTriggers: Record<string, number>;
   crits: Record<string, number>;
+  // Ausgeteilter Schaden PRO SCHUETZE (statKey) - fehlte bisher komplett, es gab nur dmgTaken
+  // (erlittener Schaden), was faelschlich als "Beitrag zum Kampf" gelesen werden konnte, obwohl es
+  // das Gegenteil misst. Wird bei jedem tatsaechlichen Treffer erhoeht, VOR Schild-/Ueberkill-
+  // Reduktion (repraesentiert die rohe Feuerkraft, die der Schuetze eingesetzt hat).
+  dmgDealt: Record<string, number>;
 }
 
 function emptyShotStats(): ShotStats {
-  return { shotsFired: {}, hits: {}, rapidFireTriggers: {}, crits: {} };
+  return { shotsFired: {}, hits: {}, rapidFireTriggers: {}, crits: {}, dmgDealt: {} };
 }
 
 // Bei Mehrspieler-Kaempfen (ownerKey gesetzt) muessen Statistiken pro BESITZER getrennt werden,
@@ -624,6 +629,7 @@ function fireShots(
           const isCrit = critChance > 0 && Math.random() < critChance;
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
           const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
           applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
@@ -648,6 +654,7 @@ function fireShots(
       const isCrit = critChance > 0 && Math.random() < critChance;
       if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
       const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+      shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
       applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
       const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
       if (hitRfChance > 0 && Math.random() < hitRfChance) {
