@@ -509,6 +509,12 @@
   .piraten-pool-tag.jaeger { border-color: #7fd9e0; color: #7fd9e0; }
   .piraten-pool-tag.kreuzer { border-color: #ffd700; color: #ffd700; }
   .piraten-pool-tag.elite { border-color: #c99bff; color: #c99bff; }
+  /* Schiffe vs. Verteidigungsanlagen im Sektor-Info-Popup - vorher identisch grau, dadurch auf
+     den ersten Blick nicht zu unterscheiden. Schiffe in Kristall-Cyan (dieselbe Akzentfarbe wie
+     ueberall sonst fuer Kampfeinheiten, z.B. combat-table-Kopfzeilen), Verteidigung in Gold
+     (--rf-gold, bereits fuer RapidFire-Werte reserviert, passt thematisch zu "Geschuetzen"). */
+  .piraten-pool-tag.ship { border-color: var(--accent-kristall); color: var(--accent-kristall); }
+  .piraten-pool-tag.defense { border-color: var(--rf-gold); color: var(--rf-gold); }
 
   @media (max-width: 768px){
     #resourcebar{ padding: 8px 10px; font-size: 13px; }
