@@ -378,6 +378,16 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
   const npcLossText =
     Object.entries(npcLosses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
+
+  // Statistik (siehe stats.ts) - pro gewonnenem Stunden-Check in einem Piraten-Sektor.
+  if (anyNpcDestroyed) {
+    if (mission.sektorId === 'piraten_niedrig') state.stats.missionsNiedrig++;
+    else if (mission.sektorId === 'piraten_mittel') state.stats.missionsMittel++;
+    else if (mission.sektorId === 'piraten_hoch') state.stats.missionsHoch++;
+  }
+  state.stats.enemiesDestroyed += Object.values(npcLosses).reduce((a, b) => a + b, 0);
+  state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
+
   const outcome = result.retreated
     ? 'Rückzug nach hohen Verlusten – Flotte hat sich rechtzeitig abgesetzt'
     : anyNpcDestroyed && !anyPlayerLoss
@@ -432,6 +442,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     mission.farmed.metall += loot.metall;
     mission.farmed.kristall += loot.kristall;
     mission.farmed.deuterium += loot.deuterium;
+    state.stats.resourcesLooted += loot.metall + loot.kristall + loot.deuterium;
     lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}${escalationText}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
@@ -446,6 +457,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     if (captainResult.destroyed) {
       addContainerToState(state, cfg.captainContainerTier!);
       mission.dmFound += cfg.captainDm || 0;
+      state.stats.captainsDefeated++;
       const tierLabel = cfg.captainContainerTier === 'elite' ? 'Elite-Container' : cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
       captainText = ` Der Piratenkapitän wurde vernichtet! Ein ${tierLabel} und ${cfg.captainDm} Dunkle Materie wurden erbeutet.`;
       captainContainerTier = cfg.captainContainerTier;
@@ -518,6 +530,8 @@ function abortMissionDestroyed(state: PlayerState, mission: Mission) {
 
 export function finalizeMission(state: PlayerState, mission: Mission) {
   mission.finalized = true;
+  const cfgForStats = SEKTOR_CONFIG[mission.sektorId];
+  if (cfgForStats?.type === 'asteroid') state.stats.asteroidMissions++;
   state.resources.metall += mission.farmed.metall;
   state.resources.kristall += mission.farmed.kristall;
   state.resources.deuterium += mission.farmed.deuterium;

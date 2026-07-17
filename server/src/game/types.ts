@@ -291,6 +291,29 @@ export interface GroupOperation {
   resultDetail?: CombatDetail;
 }
 
+// Kumulative Statistik ueber die gesamte Spieler-Historie - Grundlage fuer die Statistik-Seite
+// und die Bestenliste (siehe stats.ts). Wird an mehreren Stellen inkrementiert (missions.ts,
+// raids.ts, events.ts, groupOps.ts, actions.ts) - NIE direkt Punkte speichern, nur Rohwerte,
+// damit sich die Punkte-Gewichtung (POINT_WEIGHTS in stats.ts) spaeter aendern laesst, ohne
+// bestehende Spielstaende migrieren zu muessen.
+export interface PlayerStats {
+  missionsNiedrig: number;
+  missionsMittel: number;
+  missionsHoch: number;
+  asteroidMissions: number;
+  eliteBollwerkChecks: number; // erfolgreiche Stunden-Checks (nicht ganze Expeditionen)
+  raidsRepelledFull: number;
+  raidsRepelledPartial: number;
+  notrufCompleted: number;
+  captainsDefeated: number;
+  enemiesDestroyed: number;
+  ownShipsLost: number;
+  resourcesLooted: number; // Summe aus Metall+Kristall+Deuterium ueber alle Quellen
+  containersOpened: { silber: number; gold: number; elite: number };
+  researchCompleted: number;
+  shipsBuilt: number;
+}
+
 export interface PlayerState {
   userId: number;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
@@ -311,4 +334,5 @@ export interface PlayerState {
   event: EventState | null;
   nextEventCheck: number;
   lastUpdate: number;
+  stats: PlayerStats;
 }

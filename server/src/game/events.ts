@@ -174,6 +174,12 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const playerWiped = playerIds.every((id) => result.survivorsA[id] <= 0) && result.survivorsA['verbuendete'] <= 0;
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
+  // Statistik (siehe stats.ts)
+  const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  state.stats.enemiesDestroyed += destroyedEnemyCount;
+  state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
+  if (!playerWiped && npcFullyDestroyed) state.stats.notrufCompleted++;
+
   // Belohnung gibt es NUR noch bei echtem Sieg (Gegner vollstaendig vernichtet, eigene Flotte
   // nicht ausgeloescht) - ein Kampf, bei dem der Gegner ueberlebt, gibt keinen Trost-Container
   // mehr. Bei Sieg werden 1-3 Container zufaellig vergeben (Tier: Gold ohne eigene Verluste,

@@ -315,6 +315,14 @@ async function resolveGroupEvent(
     ? 'Rückzug – Notruf gescheitert'
     : 'Notruf erfolgreich – Gemeinsam geholfen';
 
+  // Statistik (siehe stats.ts) - jeder Teilnehmer bekommt denselben Ausgang gutgeschrieben.
+  const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  accepted.forEach((p) => {
+    const pState = participantStates.get(p.userId)!;
+    pState.stats.enemiesDestroyed += destroyedEnemyCount;
+    if (!playerWiped && npcFullyDestroyed) pState.stats.notrufCompleted++;
+  });
+
   // Belohnung gibt es NUR noch bei echtem Sieg, wie beim Solo-Pendant in events.ts (Punkt 35) -
   // 1-3 Container zufaellig, jeder Teilnehmer bekommt dieselbe Anzahl (Mehrspieler-Belohnungen
   // werden nie geteilt/unterschiedlich verteilt, siehe README "Wichtige Punkte" Punkt 5).
@@ -542,6 +550,16 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     });
   });
 
+  // Statistik (siehe stats.ts) - jeder Teilnehmer bekommt denselben Ausgang gutgeschrieben.
+  const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  accepted.forEach((p) => {
+    const pState = participantStates.get(p.userId)!;
+    pState.stats.enemiesDestroyed += destroyedEnemyCount;
+    if (anyNpcDestroyed) pState.stats.eliteBollwerkChecks++;
+    const ownLost = playerResults.filter((r) => r.ownerUsername === p.username).reduce((sum, r) => sum + (r.lost || 0), 0);
+    pState.stats.ownShipsLost += ownLost;
+  });
+
   // Belohnungs-Eskalation: verdoppelt sich mit jedem aufeinanderfolgenden Sieg innerhalb DERSELBEN
   // Expedition, bricht bei einem Check ohne vernichteten Gegner auf 0 zurueck (siehe
   // REWARD_ESCALATION in economy.ts - piraten_elite nutzt den "double"-Modus). Nutzt den
@@ -574,6 +592,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       p.farmed.metall += loot.metall;
       p.farmed.kristall += loot.kristall;
       p.farmed.deuterium += loot.deuterium;
+      participantStates.get(p.userId)!.stats.resourcesLooted += loot.metall + loot.kristall + loot.deuterium;
     });
     lootText = ` Jeder Teilnehmer erbeutet${escalationText} ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
@@ -587,6 +606,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       accepted.forEach((p) => addContainerToState(participantStates.get(p.userId)!, cfg.captainContainerTier!));
       accepted.forEach((p) => {
         if (p.dmFound !== undefined) p.dmFound += cfg.captainDm || 0;
+        participantStates.get(p.userId)!.stats.captainsDefeated++;
       });
       captainText = ` Der Piratenkapitän wurde vernichtet! Jeder Teilnehmer erhält einen ${
         cfg.captainContainerTier === 'gold' ? 'Gold' : 'Silber'

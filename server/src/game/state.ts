@@ -37,6 +37,27 @@ export function defaultPlayerState(userId: number): PlayerState {
     event: null,
     nextEventCheck: nextFixedCheckpoint(Date.now()),
     lastUpdate: Date.now(),
+    stats: defaultPlayerStats(),
+  };
+}
+
+export function defaultPlayerStats() {
+  return {
+    missionsNiedrig: 0,
+    missionsMittel: 0,
+    missionsHoch: 0,
+    asteroidMissions: 0,
+    eliteBollwerkChecks: 0,
+    raidsRepelledFull: 0,
+    raidsRepelledPartial: 0,
+    notrufCompleted: 0,
+    captainsDefeated: 0,
+    enemiesDestroyed: 0,
+    ownShipsLost: 0,
+    resourcesLooted: 0,
+    containersOpened: { silber: 0, gold: 0, elite: 0 },
+    researchCompleted: 0,
+    shipsBuilt: 0,
   };
 }
 
@@ -57,6 +78,14 @@ export function loadPlayerState(userId: number): PlayerState {
   RESEARCH.forEach((r) => {
     if (parsed.research[r.id] === undefined) parsed.research[r.id] = 0;
   });
+  // Statistik-Objekt nachruesten (existierte vor Einfuehrung der Statistik-Seite nicht) - siehe
+  // "Wichtige Punkte" zu kuenftigen neuen PlayerState-Feldern.
+  if (!parsed.stats) parsed.stats = defaultPlayerStats();
+  const statsDefaults = defaultPlayerStats();
+  (Object.keys(statsDefaults) as (keyof typeof statsDefaults)[]).forEach((key) => {
+    if (parsed.stats[key] === undefined) (parsed.stats as any)[key] = statsDefaults[key];
+  });
+  if (!parsed.stats.containersOpened) parsed.stats.containersOpened = { silber: 0, gold: 0, elite: 0 };
   return parsed;
 }
 

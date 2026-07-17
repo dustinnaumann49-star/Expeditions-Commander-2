@@ -70,6 +70,7 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   const stillBuilding = state.buildQueue.filter((job) => {
     if (job.endTime <= now && job.shipId) {
       state.fleet[job.shipId] = (state.fleet[job.shipId] || 0) + job.count;
+      state.stats.shipsBuilt += job.count;
       return false;
     }
     return true;
@@ -90,6 +91,7 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   const stillResearching = state.researchQueue.filter((job) => {
     if (job.endTime <= now) {
       state.research[job.techId] = job.targetLevel;
+      state.stats.researchCompleted++;
       return false;
     }
     return true;

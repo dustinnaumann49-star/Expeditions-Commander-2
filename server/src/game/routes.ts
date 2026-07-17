@@ -21,6 +21,7 @@ import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
+import { getLeaderboard } from './stats.js';
 import type { ActionResult } from './actions.js';
 import type { PlayerState } from './types.js';
 
@@ -257,6 +258,17 @@ gameRouter.get('/raids/active', (req: AuthedRequest, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Interner Fehler beim Laden der aktiven Raids.' });
+  }
+});
+
+// ---- Statistik/Bestenliste ----
+
+gameRouter.get('/leaderboard', (_req: AuthedRequest, res) => {
+  try {
+    res.json({ leaderboard: getLeaderboard() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden der Bestenliste.' });
   }
 });
 

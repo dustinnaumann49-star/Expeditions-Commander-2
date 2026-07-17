@@ -323,6 +323,19 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     reinforcerStates.forEach(({ playerState: reinforcerState }) => (reinforcerState.resources.dm += salvageDm));
   }
 
+  // Statistik (siehe stats.ts) - Verteidiger UND alle Verstaerker bekommen denselben Ausgang
+  // gutgeschrieben, keine Aufteilung (Punkt 5).
+  const ownLossCount = Object.values(losses).reduce((a, b) => a + b, 0);
+  if (piratesRepelled) state.stats.raidsRepelledFull++;
+  else state.stats.raidsRepelledPartial++;
+  state.stats.enemiesDestroyed += destroyedCount;
+  state.stats.ownShipsLost += ownLossCount;
+  reinforcerStates.forEach(({ playerState: reinforcerState }) => {
+    if (piratesRepelled) reinforcerState.stats.raidsRepelledFull++;
+    else reinforcerState.stats.raidsRepelledPartial++;
+    reinforcerState.stats.enemiesDestroyed += destroyedCount;
+  });
+
   // Bei vollstaendig abgewehrtem Angriff (echter "Sieg") 1-3 Container zufaellig, sonst weiterhin
   // genau 1 (analog zu Notruf-Events, siehe events.ts) - Verteidiger UND alle Verstaerker
   // bekommen dieselbe Anzahl/Stufe (gemeinsamer Ausgang, keine Aufteilung, siehe Punkt 5).

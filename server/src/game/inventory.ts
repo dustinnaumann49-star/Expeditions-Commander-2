@@ -18,6 +18,9 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
   const container = state.inventory[idx] as Container;
   const config = CONTAINER_TYPES[container.tier];
   if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
+  if (container.tier === 'silber' || container.tier === 'gold' || container.tier === 'elite') {
+    state.stats.containersOpened[container.tier]++;
+  }
 
   const shuffled = [...config.rewards].sort(() => Math.random() - 0.5);
   const count = config.pickCount || 2;
