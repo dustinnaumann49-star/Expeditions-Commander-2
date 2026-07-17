@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
-import { InfoModal } from '../components/InfoModal';
+import { InfoModal, InfoTable } from '../components/InfoModal';
+import { shipName } from '../lib/combatInfo';
 import { SimulatorView } from './Simulator';
 import type { GameData, Mission } from '../types/game';
 
@@ -144,7 +145,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
   );
 }
 
-function MissionStatus({ mission, now }: { mission: Mission; now: number }) {
+function MissionStatus({ mission, now, onShowFleet }: { mission: Mission; now: number; onShowFleet: () => void }) {
   let status: string;
   let remaining: number;
   let phaseStart: number;
@@ -167,6 +168,7 @@ function MissionStatus({ mission, now }: { mission: Mission; now: number }) {
   }
   const pct = Math.min(100, Math.max(0, ((now - phaseStart) / (phaseEnd - phaseStart)) * 100));
   const teileSum = mission.teile.waffen + mission.teile.schild + mission.teile.panzerung;
+  const shipCount = Object.values(mission.ships).reduce((a, b) => a + (b || 0), 0);
 
   return (
     <div className="queue-box">
@@ -180,6 +182,15 @@ function MissionStatus({ mission, now }: { mission: Mission; now: number }) {
       <div className="queue-item">
         <span>Verbleibend</span>
         <span>{formatTime(remaining)}</span>
+      </div>
+      <div className="queue-item">
+        <span>🚀 Flotte vor Ort</span>
+        <span>
+          {shipCount.toLocaleString('de-DE')} Schiffe ·{' '}
+          <button className="qty-btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={onShowFleet}>
+            Details
+          </button>
+        </span>
       </div>
       <div className="queue-item">
         <span>Bisher erbeutet</span>
@@ -202,6 +213,7 @@ export function SektorPage() {
   const [eventSelection, setEventSelection] = useState<Record<string, number>>({});
   const [presetName, setPresetName] = useState('');
   const [infoSektorId, setInfoSektorId] = useState<string | null>(null);
+  const [fleetMissionId, setFleetMissionId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -328,7 +340,7 @@ export function SektorPage() {
 
                 {activeMission ? (
                   <>
-                    <MissionStatus mission={activeMission} now={now} />
+                    <MissionStatus mission={activeMission} now={now} onShowFleet={() => setFleetMissionId(activeMission.id)} />
                     <div className="build-row">
                       <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Vorzeitiger Abbruch holt Flotte + bisherigen Ertrag sofort zurück.</span>
                       <button className="qty-btn" style={{ color: 'var(--danger)' }} onClick={() => recallMission(activeMission.id)}>
@@ -417,6 +429,21 @@ export function SektorPage() {
           return (
             <InfoModal title={sektor.name} onClose={() => setInfoSektorId(null)}>
               <SektorInfoBox sektorId={infoSektorId} gameData={gameData} />
+            </InfoModal>
+          );
+        })()}
+
+      {fleetMissionId &&
+        (() => {
+          const mission = state.missions.find((m) => m.id === fleetMissionId && !m.finalized);
+          if (!mission) return null;
+          const sektor = gameData.sektoren.find((s) => s.id === mission.sektorId);
+          const rows: [string, string][] = Object.entries(mission.ships)
+            .filter(([, c]) => c > 0)
+            .map(([id, c]) => [shipName(gameData, id), `${c.toLocaleString('de-DE')} Stück`]);
+          return (
+            <InfoModal title={`🚀 Flotte vor Ort${sektor ? ` – ${sektor.name}` : ''}`} onClose={() => setFleetMissionId(null)}>
+              <InfoTable rows={rows} />
             </InfoModal>
           );
         })()}
