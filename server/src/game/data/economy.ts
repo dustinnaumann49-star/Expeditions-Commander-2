@@ -158,3 +158,34 @@ export function nextFixedCheckpoint(now: number): number {
   d.setUTCHours(FIXED_CHECK_HOURS_UTC[0]);
   return d.getTime();
 }
+
+// Sicherheitsnetz gegen (praktisch unmoegliche) Endlosschleifen bei extrem alten/verwaisten
+// Spielstaenden - bei 4 Checkpoints/Tag deckt das ueber 100 Jahre ab, weit mehr als je gebraucht.
+const MAX_BACKFILL_CHECKPOINTS = 400;
+
+/**
+ * Rollt JEDEN verpassten Checkpoint zwischen "lastCheck" (exklusiv) und "now" (inklusiv) einzeln
+ * nach, statt (wie zuvor) einfach zum naechsten Checkpoint NACH "now" zu springen und alle
+ * dazwischenliegenden Zeitpunkte ersatzlos zu ueberspringen. Wichtig fuer Spieler, die laenger
+ * offline waren: sie sollen dieselbe statistische Chance je verstrichenem Checkpoint bekommen wie
+ * ein durchgehend aktiver Spieler, nicht nur einen einzigen verspaeteten Wurf im Moment ihrer
+ * Rueckkehr. Stoppt beim ERSTEN erfolgreichen Wurf (nur ein Raid/Event kann gleichzeitig aktiv
+ * sein) und ruft dann `onSuccess` mit dem TATSAECHLICHEN Checkpoint-Zeitpunkt auf (nicht "now") -
+ * dadurch basieren spawnedAt/arrivalTime auf der eigentlich vorgesehenen Uhrzeit, nicht auf dem
+ * zufaelligen Moment, in dem der Spieler zufaellig wieder online kam.
+ * Gibt den naechsten zu speichernden Checkpoint zurueck (das naechste Mal, ab dem wieder geprueft
+ * werden soll).
+ */
+export function rollFixedCheckpoints(lastCheck: number, now: number, spawnChance: number, onSuccess: (checkpointTime: number) => void): number {
+  let checkpoint = lastCheck;
+  for (let i = 0; i < MAX_BACKFILL_CHECKPOINTS; i++) {
+    checkpoint = nextFixedCheckpoint(checkpoint);
+    if (checkpoint > now) return checkpoint;
+    if (Math.random() < spawnChance) {
+      onSuccess(checkpoint);
+      return nextFixedCheckpoint(checkpoint);
+    }
+  }
+  // Sicherheitsnetz gegriffen (extrem lange Abwesenheit) - Rest ueberspringen statt zu haengen.
+  return nextFixedCheckpoint(now);
+}
