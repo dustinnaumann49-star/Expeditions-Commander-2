@@ -61,10 +61,19 @@ export async function processOverdueRaidsForOtherUsers(currentState: PlayerState
   const now = Date.now();
   const others = listAllUsers(currentState.userId);
   for (const u of others) {
-    const otherState = loadPlayerState(u.id);
-    if (otherState.raid && !otherState.raid.resolved && now >= otherState.raid.arrivalTime) {
-      await resolveRaid(otherState, currentState.userId, currentState);
-      savePlayerState(otherState);
+    // Fehler-Isolation PRO NUTZER: ohne try/catch wuerde eine Ausnahme bei EINEM Nutzer den
+    // gesamten Sweep abbrechen - alle danach gelisteten Nutzer wuerden dann bei JEDEM Aufruf
+    // (auch kuenftigen) niemals verarbeitet, komplett unsichtbar. Wurde entdeckt, nachdem trotz
+    // aktivem Heartbeat ueber mehrere Checkpoints hinweg bei niemandem ein Ereignis ausgeloest
+    // wurde - Verdacht: ein einzelner fehlerhafter Zustand blockierte alle nachfolgenden Nutzer.
+    try {
+      const otherState = loadPlayerState(u.id);
+      if (otherState.raid && !otherState.raid.resolved && now >= otherState.raid.arrivalTime) {
+        await resolveRaid(otherState, currentState.userId, currentState);
+        savePlayerState(otherState);
+      }
+    } catch (err) {
+      console.error(`processOverdueRaidsForOtherUsers: Fehler bei Nutzer ${u.id}:`, err);
     }
   }
 }
@@ -81,13 +90,17 @@ export async function processOverdueRaidSpawnsForOtherUsers(currentState: Player
   const now = Date.now();
   const others = listAllUsers(currentState.userId);
   for (const u of others) {
-    const otherState = loadPlayerState(u.id);
-    if (otherState.raid) continue; // bereits ein Raid aktiv - nichts zu tun
-    if (now < otherState.nextRaidCheck) continue;
-    otherState.nextRaidCheck = rollFixedCheckpoints(otherState.nextRaidCheck, now, RAID_SPAWN_CHANCE, (checkpointTime) =>
-      spawnRaidAt(otherState, checkpointTime)
-    );
-    savePlayerState(otherState);
+    try {
+      const otherState = loadPlayerState(u.id);
+      if (otherState.raid) continue; // bereits ein Raid aktiv - nichts zu tun
+      if (now < otherState.nextRaidCheck) continue;
+      otherState.nextRaidCheck = rollFixedCheckpoints(otherState.nextRaidCheck, now, RAID_SPAWN_CHANCE, (checkpointTime) =>
+        spawnRaidAt(otherState, checkpointTime)
+      );
+      savePlayerState(otherState);
+    } catch (err) {
+      console.error(`processOverdueRaidSpawnsForOtherUsers: Fehler bei Nutzer ${u.id}:`, err);
+    }
   }
 }
 

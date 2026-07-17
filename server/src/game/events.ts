@@ -56,19 +56,23 @@ export async function processOverdueEventsForOtherUsers(currentState: PlayerStat
   const now = Date.now();
   const others = listAllUsers(currentState.userId);
   for (const u of others) {
-    const otherState = loadPlayerState(u.id);
-    let changed = false;
-    if (otherState.event && now > otherState.event.deadline && !otherState.event.started) {
-      otherState.event = null;
-      changed = true;
+    try {
+      const otherState = loadPlayerState(u.id);
+      let changed = false;
+      if (otherState.event && now > otherState.event.deadline && !otherState.event.started) {
+        otherState.event = null;
+        changed = true;
+      }
+      if (!otherState.event && now >= otherState.nextEventCheck) {
+        otherState.nextEventCheck = rollFixedCheckpoints(otherState.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) =>
+          spawnEventAt(otherState, checkpointTime)
+        );
+        changed = true;
+      }
+      if (changed) savePlayerState(otherState);
+    } catch (err) {
+      console.error(`processOverdueEventsForOtherUsers: Fehler bei Nutzer ${u.id}:`, err);
     }
-    if (!otherState.event && now >= otherState.nextEventCheck) {
-      otherState.nextEventCheck = rollFixedCheckpoints(otherState.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) =>
-        spawnEventAt(otherState, checkpointTime)
-      );
-      changed = true;
-    }
-    if (changed) savePlayerState(otherState);
   }
 }
 

@@ -19,25 +19,44 @@ import { processAllDepartedGroupOperations } from './groupOps.js';
  * Endpunkt alle paar Minuten aufruft - siehe /api/heartbeat in index.ts. Rein additiv: laeuft
  * neben der normalen tick()-Verarbeitung her, ersetzt sie nicht.
  */
-export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number }> {
+export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; errors: number }> {
   const users = listAllUsers();
+  let errors = 0;
   for (const u of users) {
-    const state = loadPlayerState(u.id);
-    await processMissions(state);
-    processEventTimer(state);
-    await processRaidTimer(state);
-    state.lastUpdate = Date.now();
-    savePlayerState(state);
+    // Fehler-Isolation PRO NUTZER: ohne try/catch wuerde eine Ausnahme bei EINEM Nutzer den
+    // gesamten Durchlauf abbrechen - alle danach gelisteten Nutzer wuerden dann bei JEDEM
+    // Heartbeat-Aufruf (alle 2 Minuten, dauerhaft) niemals verarbeitet, komplett unsichtbar (der
+    // Heartbeat laeuft unabhaengig von jedem Spieler-Request, ein Fehler hier zeigt sich nirgends
+    // in der UI). Genau dieses Muster wurde als Verdacht bestaetigt, nachdem trotz aktivem
+    // Heartbeat ueber mehrere Checkpoints hinweg bei KEINEM von zwei Spielern ein Raid/Notruf
+    // ausgeloest wurde - bei nur 2 Nutzern haette ein Fehler beim ersten in der Liste ausgereicht,
+    // um den zweiten (und alle Checkpoints danach) fuer immer stillzulegen.
+    try {
+      const state = loadPlayerState(u.id);
+      await processMissions(state);
+      processEventTimer(state);
+      await processRaidTimer(state);
+      state.lastUpdate = Date.now();
+      savePlayerState(state);
+    } catch (err) {
+      errors++;
+      console.error(`runGlobalHeartbeat: Fehler bei Nutzer ${u.id}:`, err);
+    }
   }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein
   // einziger Durchlauf mit einem beliebigen Nutzer als Anker-Zustand deckt ALLE laufenden
   // Expeditionen ab, ein Durchlauf pro Nutzer waere unnoetig (siehe processAllDepartedGroupOperations).
   if (users.length > 0) {
-    const anchorState = loadPlayerState(users[0].id);
-    await processAllDepartedGroupOperations(anchorState);
-    savePlayerState(anchorState);
+    try {
+      const anchorState = loadPlayerState(users[0].id);
+      await processAllDepartedGroupOperations(anchorState);
+      savePlayerState(anchorState);
+    } catch (err) {
+      errors++;
+      console.error('runGlobalHeartbeat: Fehler bei processAllDepartedGroupOperations:', err);
+    }
   }
 
-  return { usersProcessed: users.length };
+  return { usersProcessed: users.length, errors };
 }

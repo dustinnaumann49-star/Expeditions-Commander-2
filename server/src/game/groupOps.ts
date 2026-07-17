@@ -385,7 +385,14 @@ export async function processAllDepartedGroupOperations(currentState: PlayerStat
     .filter((op) => op.kind === 'expedition' && op.status === 'departed');
 
   for (const op of ops) {
-    await tickGroupExpedition(op, currentState);
+    // Fehler-Isolation PRO OPERATION - dasselbe Prinzip wie bei den anderen Cross-User-Sweeps
+    // (raids.ts/events.ts/heartbeat.ts): ein Fehler bei einer Expedition soll nicht verhindern,
+    // dass alle anderen laufenden Expeditionen weiter bearbeitet werden.
+    try {
+      await tickGroupExpedition(op, currentState);
+    } catch (err) {
+      console.error(`processAllDepartedGroupOperations: Fehler bei Operation ${op.id}:`, err);
+    }
   }
 }
 
