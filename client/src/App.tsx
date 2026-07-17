@@ -14,6 +14,7 @@ import { ShopPage } from './pages/Shop';
 import { NachrichtenPage } from './pages/Nachrichten';
 import { InventarPage } from './pages/Inventar';
 import { MultiplayerPage } from './pages/Multiplayer';
+import { UpdatesPage } from './pages/Updates';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Schiffswerft' },
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/multiplayer', label: 'Multiplayer' },
   { to: '/nachrichten', label: 'Nachrichten' },
   { to: '/inventar', label: 'Inventar' },
+  { to: '/updates', label: 'Updates' },
 ];
 
 function Sidebar() {
@@ -67,6 +69,7 @@ function GameHome() {
         <Route path="/multiplayer" element={<MultiplayerPage />} />
         <Route path="/nachrichten" element={<NachrichtenPage />} />
         <Route path="/inventar" element={<InventarPage />} />
+        <Route path="/updates" element={<UpdatesPage />} />
       </Routes>
     </Layout>
   );
