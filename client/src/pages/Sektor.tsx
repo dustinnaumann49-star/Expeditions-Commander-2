@@ -37,7 +37,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           <span className="info-label">👾 Mögliche Piraten-Schiffe</span>
           <span className="info-value">
             {shipTags.map((s) => (
-              <span className="piraten-pool-tag" key={s.id}>
+              <span className="piraten-pool-tag ship" key={s.id}>
                 {s.name}
               </span>
             ))}
@@ -47,7 +47,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           <span className="info-label">🏰 Mögliche Verteidigungsanlagen</span>
           <span className="info-value">
             {gameData.defenses.map((d) => (
-              <span className="piraten-pool-tag" key={d.id}>
+              <span className="piraten-pool-tag defense" key={d.id}>
                 {d.name}
               </span>
             ))}
@@ -62,36 +62,47 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         </div>
         <div className="info-row">
           <span className="info-label">🎲 Feindstärke (wird pro Stunden-Check gewürfelt)</span>
-          <span className="info-value">{multiplierRollText} deiner Kampf-Power</span>
+          <span className="info-value">
+            <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power
+          </span>
         </div>
         <div className="info-row">
           <span className="info-label">🛡️ Verteidigung</span>
-          <span className="info-value">{defenseFactor}% deiner Power (zusätzlicher Mix aus Verteidigungsanlagen)</span>
+          <span className="info-value">
+            <strong style={{ color: 'var(--accent-kristall)' }}>{defenseFactor}%</strong> deiner Power (zusätzlicher Mix aus Verteidigungsanlagen)
+          </span>
         </div>
         <div className="info-row">
           <span className="info-label">☠ Piratenkapitän-Event</span>
           <span className="info-value">
-            {((cfg.captainChance || 0) * 100).toFixed(0)}% Chance pro Kampf · Belohnung bei Sieg: {containerCfg?.name} + {cfg.captainDm} DM
+            <strong style={{ color: 'var(--rf-gold)' }}>{((cfg.captainChance || 0) * 100).toFixed(0)}%</strong> Chance pro Kampf · Belohnung bei
+            Sieg: <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
+            <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong>
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">💰 Beute pro Sieg</span>
           <span className="info-value">
-            {cfg.lootBase?.metall.toLocaleString('de-DE')} Metall, {cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall,{' '}
-            {cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium · {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% Chance auf{' '}
-            {cfg.bonusLootMultiplier}x Volltreffer
+            <strong style={{ color: 'var(--accent-metall)' }}>{cfg.lootBase?.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
+            <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
+            <strong style={{ color: 'var(--accent-deut)' }}>{cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium</strong> ·{' '}
+            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% Chance auf {cfg.bonusLootMultiplier}x Volltreffer
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">🔧 Teile-Sammlung</span>
           <span className="info-value">
-            Läuft passiv über die Zeit bis Cap ({cfg.teileCap}), zusätzlicher Sofort-Bonus bei jedem Sieg (klar 15% / mit Verlusten 8% / Niederlage 2%
-            vom Cap)
+            Läuft passiv über die Zeit bis Cap (<strong style={{ color: 'var(--accent-kristall)' }}>{cfg.teileCap}</strong>), zusätzlicher
+            Sofort-Bonus bei jedem Sieg (klar <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> / mit Verlusten{' '}
+            <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> / Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
+            Cap)
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">⭐ Sandronator</span>
-          <span className="info-value">Verdoppelt Beute UND Teile-Vergabe für die gesamte Mission, solange er überlebt</span>
+          <span className="info-value">
+            <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> Beute UND Teile-Vergabe für die gesamte Mission, solange er überlebt
+          </span>
         </div>
         <div className="info-row" style={{ borderBottom: 'none', fontSize: 11, color: 'var(--text-dim)' }}>
           <span className="info-label">💡 Taktischer Hinweis</span>
@@ -109,37 +120,55 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
     <div className="sektor-info-box">
       <div className="info-row">
         <span className="info-label">⛏️ Abbaurate</span>
-        <span className="info-value">{cfg.farmRate?.toLocaleString('de-DE')} Ressourcen/h pro Mining-Schiff (50% Metall / 30% Kristall / 20% Deuterium)</span>
+        <span className="info-value">
+          <strong style={{ color: 'var(--text)' }}>{cfg.farmRate?.toLocaleString('de-DE')}</strong> Ressourcen/h pro Mining-Schiff (
+          <span style={{ color: 'var(--accent-metall)' }}>50% Metall</span> / <span style={{ color: 'var(--accent-kristall)' }}>30% Kristall</span> /{' '}
+          <span style={{ color: 'var(--accent-deut)' }}>20% Deuterium</span>)
+        </span>
       </div>
       <div className="info-row">
         <span className="info-label">🚀 Max. Mining-Schiffe pro Einsatz</span>
-        <span className="info-value">{cfg.miningCap}</span>
+        <span className="info-value">
+          <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.miningCap}</strong>
+        </span>
       </div>
       <div className="info-row">
         <span className="info-label">🌑 Dunkle Materie</span>
-        <span className="info-value">Bis zu {cfg.dmCap} DM pro vollem 12h-Einsatz (linear über die Zeit)</span>
+        <span className="info-value">
+          Bis zu <strong style={{ color: 'var(--accent-dm)' }}>{cfg.dmCap} DM</strong> pro vollem 12h-Einsatz (linear über die Zeit)
+        </span>
       </div>
       <div className="info-row">
         <span className="info-label">✅ Sicherheit ohne Begleitschiff</span>
-        <span className="info-value">Kein Feindkontakt möglich - risikofreies Farmen</span>
+        <span className="info-value" style={{ color: 'var(--accent-deut)' }}>
+          Kein Feindkontakt möglich - risikofreies Farmen
+        </span>
       </div>
       <div className="info-row">
         <span className="info-label">🛡️ Begleitschiff (optional)</span>
         <span className="info-value">
-          Max. {cfg.escortCap} pro Einsatz · Bei jedem Stunden-Check garantiert ein kleiner Piraten-Überfall (nur Leichte/Schwere Jäger) mit{' '}
-          {(gameData.asteroidEscortPowerMin * 100).toFixed(0)}–{(gameData.asteroidEscortPowerMax * 100).toFixed(0)}% deiner Begleitschiff-Power
+          Max. <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.escortCap}</strong> pro Einsatz · Bei jedem Stunden-Check garantiert ein
+          kleiner Piraten-Überfall (nur Leichte/Schwere Jäger) mit{' '}
+          <strong style={{ color: 'var(--danger-bright)' }}>
+            {(gameData.asteroidEscortPowerMin * 100).toFixed(0)}–{(gameData.asteroidEscortPowerMax * 100).toFixed(0)}%
+          </strong>{' '}
+          deiner Begleitschiff-Power
         </span>
       </div>
       <div className="info-row">
         <span className="info-label">💰 Bonus-Beute pro vernichtetem Piratenschiff</span>
         <span className="info-value">
-          {gameData.asteroidEscortKillReward.metall.toLocaleString('de-DE')} Metall, {gameData.asteroidEscortKillReward.kristall.toLocaleString('de-DE')}{' '}
-          Kristall, {gameData.asteroidEscortKillReward.deuterium.toLocaleString('de-DE')} Deuterium - gutgeschrieben bei Rückkehr
+          <strong style={{ color: 'var(--accent-metall)' }}>{gameData.asteroidEscortKillReward.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
+          <strong style={{ color: 'var(--accent-kristall)' }}>{gameData.asteroidEscortKillReward.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
+          <strong style={{ color: 'var(--accent-deut)' }}>{gameData.asteroidEscortKillReward.deuterium.toLocaleString('de-DE')} Deuterium</strong> -
+          gutgeschrieben bei Rückkehr
         </span>
       </div>
       <div className="info-row" style={{ borderBottom: 'none' }}>
         <span className="info-label">⭐ Sandronator</span>
-        <span className="info-value">Verdoppelt die gesamte Ausbeute (Ressourcen + DM) für die Mission</span>
+        <span className="info-value">
+          <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> die gesamte Ausbeute (Ressourcen + DM) für die Mission
+        </span>
       </div>
     </div>
   );
