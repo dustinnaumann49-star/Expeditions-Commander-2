@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { EVENT_NAMES, ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS } from './data/economy.js';
+import { EVENT_NAMES, ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -308,22 +308,29 @@ async function resolveGroupEvent(
 
   const npcFullyDestroyed = npcIds.every((id) => result.survivorsB[id] <= 0);
   const playerWiped = accepted.every((p) => Object.keys(p.ships).every((id) => (result.survivorsByOwner[String(p.userId)]?.[id] || 0) <= 0));
+  const anyPlayerLoss = playerResults.some((r) => (r.lost || 0) > 0);
   const outcome = result.retreated
     ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
     : playerWiped || !npcFullyDestroyed
     ? 'Rückzug – Notruf gescheitert'
     : 'Notruf erfolgreich – Gemeinsam geholfen';
 
-  let containerReward: 'silber' | 'gold' | null = null;
-  if (!playerWiped && npcFullyDestroyed) containerReward = 'gold';
-  else if (!playerWiped && !npcFullyDestroyed) containerReward = 'silber';
-  if (containerReward) {
-    accepted.forEach((p) => addContainerToState(participantStates.get(p.userId)!, containerReward!));
+  // Belohnung gibt es NUR noch bei echtem Sieg, wie beim Solo-Pendant in events.ts (Punkt 35) -
+  // 1-3 Container zufaellig, jeder Teilnehmer bekommt dieselbe Anzahl (Mehrspieler-Belohnungen
+  // werden nie geteilt/unterschiedlich verteilt, siehe README "Wichtige Punkte" Punkt 5).
+  let containerCount = 0;
+  let containerTier: 'silber' | 'gold' | null = null;
+  if (!playerWiped && npcFullyDestroyed) {
+    containerTier = anyPlayerLoss ? 'silber' : 'gold';
+    containerCount = 1 + Math.floor(Math.random() * 3); // 1-3
+    accepted.forEach((p) => {
+      for (let i = 0; i < containerCount; i++) addContainerToState(participantStates.get(p.userId)!, containerTier!);
+    });
   }
-  const rewardText = containerReward
-    ? containerReward === 'gold'
-      ? '🏆 Jeder Teilnehmer erhält einen Gold-Container'
-      : '📦 Jeder Teilnehmer erhält einen Silber-Container'
+  const rewardText = containerTier
+    ? containerTier === 'gold'
+      ? `🏆 Jeder Teilnehmer erhält ${containerCount}x Gold-Container`
+      : `📦 Jeder Teilnehmer erhält ${containerCount}x Silber-Container`
     : '';
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
   const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Gegenwehr]' : outlier === 'schwach' ? ' [Auffällig schwache Gegenwehr]' : '';
@@ -337,7 +344,7 @@ async function resolveGroupEvent(
     playerResults,
     allyResult,
     replay: result.replay,
-    rewards: containerReward ? { containerTier: containerReward } : undefined,
+    rewards: containerTier ? { containerTier } : undefined,
   };
   const messageText = `${op.eventName}${waveText} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}${modifierText}`;
 
@@ -535,9 +542,18 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     });
   });
 
+  // Belohnungs-Eskalation: verdoppelt sich mit jedem aufeinanderfolgenden Sieg innerhalb DERSELBEN
+  // Expedition, bricht bei einem Check ohne vernichteten Gegner auf 0 zurueck (siehe
+  // REWARD_ESCALATION in economy.ts - piraten_elite nutzt den "double"-Modus). Nutzt den
+  // Streak-Stand VOR diesem Check (Check 1 = 0 Vorsiege = 1x, kein Bonus).
+  const streakBefore = op.streakWins || 0;
+  const escalationMultiplier = getEscalationMultiplier(op.sektorId!, streakBefore);
+  op.streakWins = anyNpcDestroyed ? streakBefore + 1 : 0;
+  const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(0)}]` : '';
+
   let teileGainText = '';
   if (anyNpcDestroyed && cfg.teileCap) {
-    const outcomeShare = 0.1;
+    const outcomeShare = 0.1 * escalationMultiplier;
     accepted.forEach((p) => {
       if (!p.teile) return;
       (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
@@ -548,15 +564,20 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   }
   let lootText = '';
   if (anyNpcDestroyed && cfg.lootBase) {
+    const loot = {
+      metall: Math.round(cfg.lootBase.metall * escalationMultiplier),
+      kristall: Math.round(cfg.lootBase.kristall * escalationMultiplier),
+      deuterium: Math.round(cfg.lootBase.deuterium * escalationMultiplier),
+    };
     accepted.forEach((p) => {
       if (!p.farmed) return;
-      p.farmed.metall += cfg.lootBase!.metall;
-      p.farmed.kristall += cfg.lootBase!.kristall;
-      p.farmed.deuterium += cfg.lootBase!.deuterium;
+      p.farmed.metall += loot.metall;
+      p.farmed.kristall += loot.kristall;
+      p.farmed.deuterium += loot.deuterium;
     });
-    lootText = ` Jeder Teilnehmer erbeutet ${cfg.lootBase.metall.toLocaleString('de-DE')} Metall, ${cfg.lootBase.kristall.toLocaleString(
+    lootText = ` Jeder Teilnehmer erbeutet${escalationText} ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
-    )} Kristall, ${cfg.lootBase.deuterium.toLocaleString('de-DE')} Deuterium.`;
+    )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
   }
 
   const captainResult = npcResults.find((r) => r.isCaptain);

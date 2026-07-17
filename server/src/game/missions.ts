@@ -9,6 +9,7 @@ import {
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
   COMBAT_SHIP_IDS,
+  getEscalationMultiplier,
 } from './data/economy.js';
 import {
   getEffectiveStats,
@@ -390,6 +391,14 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     pushMessage(state, 'kampf', 'Der Sandronator wurde zerstört. Der Ressourcen-Bonus (+100%) fällt für diese Mission weg.');
   }
 
+  // Belohnungs-Eskalation: steigt mit jedem aufeinanderfolgenden Sieg innerhalb DERSELBEN Mission,
+  // bricht bei einem Check ohne vernichteten Gegner auf 0 zurueck (siehe REWARD_ESCALATION in
+  // economy.ts). Nutzt den Streak-Stand VOR diesem Check (Check 1 = 0 Vorsiege = kein Bonus).
+  const streakBefore = mission.streakWins || 0;
+  const escalationMultiplier = getEscalationMultiplier(mission.sektorId, streakBefore);
+  mission.streakWins = anyNpcDestroyed ? streakBefore + 1 : 0;
+  const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(2)}]` : '';
+
   let teileText = '';
   let gainedTeile: { waffen: number; schild: number; panzerung: number } | undefined;
   if (cfg.type === 'piraten' && cfg.teileCap) {
@@ -397,7 +406,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     const outcomeShare = anyNpcDestroyed && !anyPlayerLoss ? 0.15 : anyNpcDestroyed ? 0.08 : 0.02;
     const gained: Record<string, number> = {};
     (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-      const amount = cfg.teileCap! * outcomeShare * sandronatorBonus;
+      const amount = cfg.teileCap! * outcomeShare * sandronatorBonus * escalationMultiplier;
       const before = mission.teile[part];
       mission.teile[part] = Math.min(cfg.teileCap!, before + amount);
       gained[part] = Math.round(mission.teile[part] - before);
@@ -414,7 +423,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (anyNpcDestroyed && cfg.lootBase) {
     const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
     const bonusHit = cfg.bonusLootChance ? Math.random() < cfg.bonusLootChance : false;
-    const lootMultiplier = (bonusHit ? cfg.bonusLootMultiplier! : 1) * sandronatorBonus;
+    const lootMultiplier = (bonusHit ? cfg.bonusLootMultiplier! : 1) * sandronatorBonus * escalationMultiplier;
     const loot = {
       metall: Math.round(cfg.lootBase.metall * lootMultiplier),
       kristall: Math.round(cfg.lootBase.kristall * lootMultiplier),
@@ -423,7 +432,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     mission.farmed.metall += loot.metall;
     mission.farmed.kristall += loot.kristall;
     mission.farmed.deuterium += loot.deuterium;
-    lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
+    lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}${escalationText}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
     lootGained = loot;

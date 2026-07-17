@@ -174,13 +174,22 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const playerWiped = playerIds.every((id) => result.survivorsA[id] <= 0) && result.survivorsA['verbuendete'] <= 0;
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
-  let containerReward: 'silber' | 'gold' | null = null;
-  if (!playerWiped && npcFullyDestroyed) containerReward = 'gold';
-  else if (!playerWiped && !npcFullyDestroyed) containerReward = 'silber';
-  if (containerReward) {
-    state.inventory.push({ id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), tier: containerReward, receivedAt: Date.now() });
+  // Belohnung gibt es NUR noch bei echtem Sieg (Gegner vollstaendig vernichtet, eigene Flotte
+  // nicht ausgeloescht) - ein Kampf, bei dem der Gegner ueberlebt, gibt keinen Trost-Container
+  // mehr. Bei Sieg werden 1-3 Container zufaellig vergeben (Tier: Gold ohne eigene Verluste,
+  // Silber mit Verlusten).
+  let containerCount = 0;
+  let containerTier: 'silber' | 'gold' | null = null;
+  if (!playerWiped && npcFullyDestroyed) {
+    containerTier = anyPlayerLoss ? 'silber' : 'gold';
+    containerCount = 1 + Math.floor(Math.random() * 3); // 1-3
+    for (let i = 0; i < containerCount; i++) {
+      state.inventory.push({ id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8), tier: containerTier, receivedAt: Date.now() });
+    }
   }
-  const rewardText = containerReward ? (containerReward === 'gold' ? '🏆 Gold-Container erhalten' : '📦 Silber-Container erhalten') : '';
+  const rewardText = containerTier
+    ? `${containerTier === 'gold' ? '🏆' : '📦'} ${containerCount}x ${containerTier === 'gold' ? 'Gold' : 'Silber'}-Container erhalten`
+    : '';
 
   const eventName = state.event.name;
   const outcome = result.retreated

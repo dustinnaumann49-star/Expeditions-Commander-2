@@ -94,6 +94,11 @@ export interface Mission {
   teile: { waffen: number; schild: number; panzerung: number };
   sandronatorAlive: boolean;
   finalized: boolean;
+  // Anzahl aufeinanderfolgender Stunden-Checks mit mindestens einem vernichteten Gegner, seit dem
+  // letzten Check ohne Vernichtung - treibt die Belohnungs-Eskalation an (siehe
+  // getEscalationMultiplier() in missions.ts). Bricht auf 0 zurueck, sobald ein Check ohne
+  // vernichteten Gegner endet.
+  streakWins?: number;
   // Nur fuer Asteroiden-Eskorte: gesammelte Stunden-Kaempfe. Werden NICHT sofort als eigene
   // Nachricht verschickt, sondern erst gesammelt am Ende der Mission (Rueckkehr oder Abbruch) als
   // EIN gemeinsamer Bericht zugestellt - sonst wuerden bei mehreren gleichzeitig laufenden
@@ -279,6 +284,9 @@ export interface GroupOperation {
   // sonst wuerde sich das Risiko ueber die 4 Stunden-Checks unfair aufsummieren. Wird beim ersten
   // Zutreffen (egal ob Ausreisser oder Modifikator) auf true gesetzt.
   eliteSurpriseUsed?: boolean;
+  // Analog zu Mission.streakWins (missions.ts), aber fuer die gesamte Elite-Bollwerk-Expedition -
+  // treibt die Verdopplungs-Eskalation der Belohnungen an (siehe getEscalationMultiplier()).
+  streakWins?: number;
   resultMessage?: string;
   resultDetail?: CombatDetail;
 }

@@ -1,5 +1,5 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints } from './data/economy.js';
+import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -308,19 +308,39 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
           shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
         });
       });
-      const reinforcerContainer: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';
-      reinforcerState.inventory.push({
-        id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-        tier: reinforcerContainer,
-        receivedAt: Date.now(),
-      });
       // Wird unten (nachdem alle playerResults/npcResults feststehen) mit der vollen Detailansicht
       // versehen - siehe pushMessage-Aufrufe am Ende dieser Funktion.
     });
   }
 
+  // Bergungs-DM ("Bergung aus der zerstoerten Flotte") - skaliert mit der Anzahl vernichteter
+  // Piratenschiffe/-anlagen, unabhaengig davon ob der Angriff vollstaendig abgewehrt wurde. Jeder
+  // Beteiligte (Verteidiger + Verstaerker) bekommt den vollen Betrag, keine Aufteilung (Punkt 5).
+  const destroyedCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  const salvageDm = Math.min(RAID_SALVAGE_DM_MAX, Math.round(destroyedCount * RAID_SALVAGE_DM_PER_KILL));
+  if (salvageDm > 0) {
+    state.resources.dm += salvageDm;
+    reinforcerStates.forEach(({ playerState: reinforcerState }) => (reinforcerState.resources.dm += salvageDm));
+  }
+
+  // Bei vollstaendig abgewehrtem Angriff (echter "Sieg") 1-3 Container zufaellig, sonst weiterhin
+  // genau 1 (analog zu Notruf-Events, siehe events.ts) - Verteidiger UND alle Verstaerker
+  // bekommen dieselbe Anzahl/Stufe (gemeinsamer Ausgang, keine Aufteilung, siehe Punkt 5).
+  const containerCount = piratesRepelled ? 1 + Math.floor(Math.random() * 3) : 1;
   const containerReward: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';
-  state.inventory.push({ id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), tier: containerReward, receivedAt: Date.now() });
+  for (let i = 0; i < containerCount; i++) {
+    state.inventory.push({ id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8), tier: containerReward, receivedAt: Date.now() });
+  }
+  reinforcerStates.forEach(({ playerState: reinforcerState }) => {
+    for (let i = 0; i < containerCount; i++) {
+      reinforcerState.inventory.push({
+        id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8),
+        tier: containerReward,
+        receivedAt: Date.now(),
+      });
+    }
+  });
+  const salvageText = salvageDm > 0 ? ` Bergung aus der zerstörten Flotte: ${salvageDm} Dunkle Materie.` : '';
 
   const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starker Angriff]' : outlier === 'schwach' ? ' [Auffällig schwacher Angriff]' : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
@@ -345,21 +365,21 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       npcResults,
       playerResults,
       replay: result.replay,
-      rewards: { stolenMetall: stolen.metall, stolenKristall: stolen.kristall, stolenDeuterium: stolen.deuterium, containerTier: containerReward },
+      rewards: { stolenMetall: stolen.metall, stolenKristall: stolen.kristall, stolenDeuterium: stolen.deuterium, containerTier: containerReward, dm: salvageDm || undefined },
     };
     pushMessage(
       state,
       'kampf',
-      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})${modifierText}`,
+      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium. (Container: ${containerCount}x ${containerReward === 'gold' ? 'Gold' : 'Silber'})${salvageText}${modifierText}`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
       pushMessage(
         reinforcerState,
         'kampf',
-        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Angriff nur teilweise abgewehrt (${result.roundsFought} Runden). Auch du erhältst einen ${
-          piratesRepelled ? 'Gold' : 'Silber'
-        }-Container für deinen Einsatz.`,
+        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Angriff nur teilweise abgewehrt (${result.roundsFought} Runden). Auch du erhältst ${containerCount}x ${
+          containerReward === 'gold' ? 'Gold' : 'Silber'
+        }-Container für deinen Einsatz.${salvageText}`,
         detail
       );
       if (r.userId !== currentUserId) savePlayerState(reinforcerState);
@@ -373,21 +393,21 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       npcResults,
       playerResults,
       replay: result.replay,
-      rewards: { containerTier: containerReward },
+      rewards: { containerTier: containerReward, dm: salvageDm || undefined },
     };
     pushMessage(
       state,
       'kampf',
-      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerReward === 'gold' ? 'Gold' : 'Silber'})${modifierText}`,
+      `${outcome}${waveText} (${result.roundsFought} Runden). Eigene Verluste: ${lossText}. Verteidigung wurde zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert. Ressourcen sicher. (Container: ${containerCount}x ${containerReward === 'gold' ? 'Gold' : 'Silber'})${salvageText}${modifierText}`,
       detail
     );
     reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
       pushMessage(
         reinforcerState,
         'kampf',
-        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Piratenüberfall erfolgreich abgewehrt (${result.roundsFought} Runden)! Auch du erhältst einen ${
-          piratesRepelled ? 'Gold' : 'Silber'
-        }-Container für deinen Einsatz.`,
+        `Deine Verstärkung für die Heimatbasis von ${ownerUsername}: Piratenüberfall erfolgreich abgewehrt (${result.roundsFought} Runden)! Auch du erhältst ${containerCount}x ${
+          containerReward === 'gold' ? 'Gold' : 'Silber'
+        }-Container für deinen Einsatz.${salvageText}`,
         detail
       );
       if (r.userId !== currentUserId) savePlayerState(reinforcerState);
