@@ -396,3 +396,23 @@ client/
     Anzeigen und Rechenfehlern als Folge. Getestet: alter Stand ohne die neuen Felder wird korrekt
     ergaenzt, vorhandener Forschungsfortschritt bleibt dabei erhalten. Bei kuenftigen NEUEN
     Feldern (nicht Forschungen) im `PlayerState` hier ebenfalls eine Migrationszeile ergaenzen.
+
+34. **Die drei Salvenschiffe (Punkt 24) waren zwar baubar, aber in KEINER Kampf-Situation
+    einsetzbar** - eine reine Auflistungs-Luecke, kein Verhalten mit Absicht. Ursache:
+    `COMBAT_SHIP_IDS` (`data/economy.ts`) definiert, welche Schiffstypen ausserhalb von
+    Asteroiden-Feldern ueberhaupt zur Auswahl stehen, wurde bei der Einfuehrung der Salvenschiffe
+    nicht erweitert - und dieselbe Liste war zusaetzlich als Kopie in drei Client-Dateien
+    hartkodiert. Betraf konkret: `missions.ts`s `availableFleetForSektor()` (Solo-Piraten-Sektor +
+    Notsignal-Event serverseitig), `raids.ts`s `resolveRaid()` Zeile "homeShipIds" (Salvenschiffe
+    im eigenen Hangar zaehlten NICHT zur Heimverteidigung gegen Raids, unabhaengig von Stueckzahl),
+    sowie client-seitig `pages/Sektor.tsx` (Piraten-Sektor/Notsignal-Auswahl), `pages/Multiplayer.tsx`
+    (Elite-Bollwerk-Expeditionen + Verstaerkung entsenden) und `pages/RaidHilfe.tsx` (Verstaerkung
+    zu fremden Raids). Nur `pages/Simulator.tsx` hatte bereits eine eigene, korrekte Liste inkl.
+    aller drei Salvenschiffe und war nicht betroffen. Fix: alle vier Vorkommen um `salvenjaeger`,
+    `salvenkreuzer`, `salvendreadnought` ergaenzt. Die Piraten-/NPC-Sperre (Punkt 26,
+    `MULTI_TARGET_VOLLEY_SHIPS`-Filter in `generatePiratenFleet()`/`generateFallbackFleet()`)
+    ist davon unabhaengig und bleibt unveraendert bestehen - Spieler koennen die Schiffe jetzt
+    ueberall einsetzen, Piraten/NPCs weiterhin nicht. Bei kuenftigen neuen Kampfschiffen IMMER
+    pruefen, ob `COMBAT_SHIP_IDS` (zentral UND alle Client-Kopien) den neuen Typ enthaelt -
+    Baubarkeit (`ships.ts`) und Einsetzbarkeit in Missionen/Events/Multiplayer/Heimverteidigung
+    sind zwei getrennte Schalter, die beide gesetzt sein muessen.
