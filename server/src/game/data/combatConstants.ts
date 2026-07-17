@@ -10,14 +10,10 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     schwer: 4
   },
   kreuzer: {
-    leicht: 6,
-    schwer: 4,
-    raketenwerfer: 10
+    schwer: 4
   },
   schlachtschiff: {
-    schwer: 5,
-    kreuzer: 5,
-    leichteslaser: 3
+    kreuzer: 5
   },
   schlachtkreuzer: {
     leicht: 3,
@@ -27,8 +23,7 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
   },
   zerstoerer: {
     schlachtkreuzer: 2,
-    bomber: 5,
-    leichteslaser: 10
+    bomber: 5
   },
   reaper: {
     zerstoerer: 3,
