@@ -630,3 +630,20 @@ client/
       `op.status`), jede mit eigener Zwischenueberschrift. Die tote `resolved`-Zweig-Behandlung
       (kam nie vor, da `listMyGroupOperations()` serverseitig bereits nur `inviting`/`departed`
       ausliefert, siehe Kommentar dort) wurde beim Umbau entfernt.
+
+43. **Sektor-Info-Popup (`SektorInfoBox` in `Sektor.tsx`) farblich ueberarbeitet - Piraten-Schiffe
+    und Verteidigungsanlagen waren als identische graue `piraten-pool-tag`-Pillen nicht auf einen
+    Blick unterscheidbar.** Zwei neue Farbvarianten (`theme.css`): `.piraten-pool-tag.ship`
+    (Kristall-Cyan, dieselbe Akzentfarbe wie ueberall sonst fuer Kampfeinheiten) und
+    `.piraten-pool-tag.defense` (`--rf-gold`, bereits fuer RapidFire-Werte reserviert, passt
+    thematisch zu Geschuetzen) - Klassen einfach an den bestehenden `<span>`-Tags in `Sektor.tsx`
+    ergaenzt, keine Strukturaenderung. Zusaetzlich alle uebrigen Werte in BEIDEN Info-Box-Varianten
+    (Piraten-Sektor UND Asteroiden-Feld) farblich hervorgehoben, damit wichtige Zahlen schneller
+    auffindbar sind: Ressourcen durchgaengig in ihren bereits etablierten Akzentfarben (Metall/
+    Kristall/Deuterium - dieselben wie in `ResourceBar.tsx`), Dunkle Materie in `--accent-dm`,
+    Gefahren-/Verlust-Werte (Feindstaerke, Begleitschiff-Ueberfallstaerke, Niederlage-Teile-Bonus)
+    in `--danger-bright`, positive/eigene Werte (Verteidigungs-Anteil, Sofort-Bonus bei Sieg) in
+    `--accent-kristall`/`--accent-deut`, Piratenkapitaen-Chance in `--rf-gold`, Container-Name in
+    seiner tatsaechlichen Tier-Farbe (`containerCfg.color` - Silber/Gold/Elite, siehe Punkt 39).
+    Bewusst NICHT farblich veraendert: der "💡 Taktischer Hinweis"-Absatz (bleibt bewusst gedimmt/
+    klein, siehe urspruengliches Design) und rein beschreibende Fliesstexte ohne konkrete Zahl.
