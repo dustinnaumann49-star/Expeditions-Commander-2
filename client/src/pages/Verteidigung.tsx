@@ -123,10 +123,15 @@ export function VerteidigungPage() {
           const precision = getPrecisionChance(gameData, state.research, infoDef.id);
           const shieldRegen = getShieldRegenRate(gameData, state.research, infoDef.id);
           const critChance = getCritChance(gameData, state.research, infoDef.id);
-          rows.push(['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`]);
-          rows.push(['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`]);
+          const hasWeapon = infoDef.stats.waffen > 0;
+          if (hasWeapon) {
+            rows.push(['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`]);
+            rows.push(['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`]);
+          }
           rows.push(['💨 Ausweichen', 'Unbeweglich – kann nicht ausweichen']);
-          if (!infoDef.isDome) {
+          if (infoDef.isDome) {
+            rows.push(['🛡️ Schild-Regeneration (Pool)', `${(shieldRegen * 100).toFixed(0)}% des Pools pro Runde (Basis-Energieversorgung)`]);
+          } else {
             rows.push(['🛡️ Schild-Regeneration', `${(shieldRegen * 100).toFixed(0)}% pro Runde (Basis-Energieversorgung)`]);
           }
           return (
