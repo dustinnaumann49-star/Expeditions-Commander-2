@@ -416,3 +416,45 @@ client/
     pruefen, ob `COMBAT_SHIP_IDS` (zentral UND alle Client-Kopien) den neuen Typ enthaelt -
     Baubarkeit (`ships.ts`) und Einsetzbarkeit in Missionen/Events/Multiplayer/Heimverteidigung
     sind zwei getrennte Schalter, die beide gesetzt sein muessen.
+
+35. **RF-Tabelle war ungleichmaessig gewachsen: zu viele Angreifer zielten auf `leicht`/`schwer`,
+    waehrend andere Verteidigungs-RF-Eintraege wie zufaellig verteilt wirkten (nicht das
+    urspruengliche, in Punkt 32 getestete Schere-Stein-Papier-Design).** Vor der Bereinigung hatten
+    `leicht` 8 und `schwer` 7 verschiedene RF-Angreifer, gegenueber 3-5 bei allen anderen
+    Schiffsklassen - Jaeger-Schwaerme hatten dadurch kaum noch eine realistische Ueberlebenschance.
+    Zusaetzlich hatten `kreuzer`, `schlachtschiff` und `zerstoerer` RF gegen einzelne
+    Verteidigungsanlagen (`raketenwerfer`/`leichteslaser`), obwohl das laut urspruenglichem Design
+    (Punkt 24) ausschliesslich die Rolle des Bombers sein sollte. Bereinigt in
+    `combatConstants.ts`, RAPIDFIRE-Tabelle, NUR fuer `leicht`, `schwer`, `kreuzer`,
+    `schlachtschiff`, `schlachtkreuzer`, `zerstoerer`, `reaper` (Bomber, Imperator, die drei
+    Salvenschiffe und alle Verteidigungsanlagen-eigenen RF-Eintraege bleiben bewusst unveraendert):
+    - `kreuzer`: RF-Ziele auf `schwer` (4) reduziert - jedes Schiff soll wegen des
+      Zielerfassungssystems mindestens ein RF-Ziel haben, aber `kreuzer` jagt nicht mehr `leicht`
+      und keine Verteidigungsanlagen mehr.
+    - `schlachtschiff`: nur noch RF gegen `kreuzer` (5, seine eigentliche Beute-Klasse eine Stufe
+      unter sich) - RF gegen `schwer` und `leichteslaser` entfernt.
+    - `zerstoerer`: RF gegen `leichteslaser` entfernt, `schlachtkreuzer` (2) und `bomber` (5)
+      bleiben unveraendert (zielten ohnehin schon nicht auf Jaeger/Verteidigung).
+    - `schwer` (RF nur gegen `leicht`, 3) und `schlachtkreuzer` (RF gegen
+      `leicht`/`schwer`/`kreuzer`/`schlachtschiff`, unveraendert) bleiben wie zuvor - Letzterer ist
+      bewusst der EINZIGE dedizierte Jaeger-/Mid-Tier-Zerleger unter den Schiffen.
+    - `reaper` unveraendert (zielte schon vorher nur auf `zerstoerer`/`schlachtkreuzer`/`bomber`).
+    Ergebnis: klare 1:1-Rollenverteilung statt Haeufung auf Jaeger - jede Klasse (ausser `leicht`
+    selbst) hat jetzt genau eine oder zwei definierte "Beute"-Klassen eine Stufe unter sich, statt
+    von mehreren Seiten gleichzeitig gejagt zu werden. Der client-seitige taktische Hinweistext in
+    `Sektor.tsx` (statischer String, NICHT aus `gameData.rapidfire` generiert) musste manuell
+    nachgezogen werden - im Gegensatz zu den Schiffskarten-Popups (`Werft.tsx`/`Verteidigung.tsx`/
+    `Spezialteile.tsx`), die RF-Werte ueber `combatInfo.ts`s `getRapidFireDisplay()` dynamisch aus
+    `gameData.rapidfire` lesen und sich automatisch aktualisieren.
+
+36. **Rueckzugs-Schwelle (Punkt 18) war auf Stueckzahl statt Kampfkraft bezogen** -
+    `unitsA.length / initialCountA <= RETREAT_THRESHOLD`. Eine Flotte aus vielen billigen Jaegern
+    und wenigen teuren Kapitalschiffen zog sich dadurch faelschlich zurueck, sobald die
+    zahlenmaessig dominanten (aber kampfkraftmaessig unbedeutenden) Jaeger gefallen waren, obwohl
+    die eigentliche Staerke der Flotte (die ueberlebenden Kapitalschiffe) den Kampf noch haette
+    gewinnen koennen. Umgestellt auf die Summe aus `waffen+schild+panzerung` ueber alle
+    ueberlebenden Einheiten (`unitPower()`, dieselbe Definition wie `combatFleetPower()`/
+    `homePower` in `raids.ts`), Schwelle bleibt unveraendert bei 50%. Betrifft nur die
+    Berechnungsgrundlage, nicht das Verhalten an sich (weiterhin nur Seite A, nicht Seite B/NPCs;
+    weiterhin `allowRetreat`-abhaengig, siehe Punkt 27; weiterhin kein Rueckzug bei bereits
+    gewonnenem Kampf, siehe Punkt 29).
