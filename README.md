@@ -544,3 +544,31 @@ client/
     wieder auf neu investierte UND bereits gespeicherte Forschungsstufen (bestehende
     `research.spionage`-Werte in `PlayerState` bleiben unangetastet gespeichert, gehen nicht
     verloren, wirken nur aktuell nicht).
+
+42. **Verteidigungsanlagen waren trotz fair kalibrierter Waffen-Kosteneffizienz (~65
+    Kosten/Waffenpunkt, Punkt 18) in der GESAMT-Kosteneffizienz (Waffen+Schild+Panzerung pro
+    Kosten-Einheit) massiv unterlegen gegenueber Schiffen** - bei den teureren Anlagen (Gauss-
+    Kanone, Ionengeschuetz, Plasmawerfer) lag die Effizienz bei nur 0,14-0,28 gegenueber ~0,95-1,02
+    bei vergleichbaren Schiffen. Je teurer/staerker die Anlage, desto schlechter ihr Gegenwert -
+    das Gegenteil von dem, was eine Basis-Verteidigung leisten sollte. Fix in zwei Teilen:
+    1. **Schild/Panzerung aller sechs Waffen-Verteidigungsanlagen angehoben** (`defenses.ts`),
+       Waffen bewusst UNVERAENDERT gelassen (bereits fair kalibriert) - Ziel-Effizienz 1,15
+       (spuerbar, aber nicht extrem zaeher als Schiffe). Z.B. Plasmawerfer: Schild 1.800→106.200,
+       Panzerung 96.000→779.000.
+    2. **Verteidigungsanlagen (inkl. Schildkuppel-Pool) aus der Raid-Feindstaerke-Berechnung
+       herausgenommen** (`homePower` in `raids.ts` zaehlt jetzt NUR noch die Flotte, nicht mehr
+       Verteidigung/Kuppel-Pool) - notwendige Voraussetzung fuer Schritt 1: ohne diese Entkopplung
+       haette eine zaehere Verteidigung automatisch einen staerkeren Angriff heraufbeschworen
+       (Verteidigung -> homePower -> targetPower -> mehr Angreifer), was bei gleichzeitig
+       aufgeblaehten HP-Pools auf beiden Seiten (aber unveraendertem eigenen Schaden) Kaempfe stark
+       in die Laenge gezogen haette (Raids kennen keinen Rueckzug, Punkt 27 - liefen sonst haeufig
+       bis `MAX_ROUNDS=100`). Verteidigungsanlagen wirken im TATSAECHLICHEN Kampf weiterhin voll
+       (unveraendert Teil von `defenderShips`), nur die Frage "wie stark wird der Angriff" ignoriert
+       sie jetzt. **Dabei entdeckter Folgefehler:** Die alte Absicherung `homePower === 0` fuer
+       "keine Verteidigung vorhanden" waere durch die Entkopplung fehlerhaft geworden (homePower
+       kann jetzt legitim 0 sein bei reinem Verteidigungsanlagen-Aufbau ohne eigene Flotte, ohne
+       dass das automatisch "keine Verteidigung" bedeutet) - Guard korrigiert auf reine Pruefung
+       von `defenderShips` (Flotte ODER Verteidigung vorhanden). Zusaetzlich neue
+       `RAID_MIN_TARGET_POWER`-Konstante (`economy.ts`, 200.000) als Untergrenze fuer
+       `targetPower`, damit ein reiner Verteidigungsanlagen-Aufbau ohne Flotte nicht auf eine
+       triviale/leere Gegnerwelle trifft.
