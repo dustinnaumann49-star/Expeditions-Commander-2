@@ -478,3 +478,52 @@ client/
     einheitlich eine neue `.modal-title`-Klasse (dezenter Trennstrich statt reinem
     `marginBottom`-Inline-Style) - aus Konsistenzgruenden auch in `LoreModal.tsx` uebernommen,
     da beide Modals dieselbe `#combat-modal`/`#modal-box`-Huelle teilen.
+
+38. **Grundproblem behoben: Raids/Notruf-Events/Multiplayer-Expeditionen liefen bisher NUR, wenn
+    der jeweils betroffene Spieler selbst gerade online war und eine Anfrage stellte** - der Server
+    hat keinen Dauerprozess (kein `setInterval`, kein Cron), `tick()` laeuft ausschliesslich
+    innerhalb einer eingehenden Anfrage (siehe Kommentar in `actions.ts`: "zustandsloses catch-up-
+    Prinzip ... ohne Dauer-Prozess"). Die festen Checkpoints (00/06/12/18 Uhr UTC, Punkt 13) waren
+    dadurch nur ein Fahrplan auf dem Papier: der Wuerfelwurf, OB ein Raid/Notruf entsteht, fand real
+    erst beim naechsten Login des betroffenen Spielers statt - basierend auf DESSEN Login-Zeitpunkt
+    statt auf dem eigentlichen Checkpoint, und alle waehrenddessen verstrichenen Checkpoints wurden
+    ersatzlos uebersprungen (kein Nachholen). Fuer Notruf-Events gab es nicht mal die (bereits in
+    Punkt 25 fuer Raid-AUFLOESUNG nachgeruestete) Cross-User-Verarbeitung - dort lief ALLES
+    ausschliesslich im eigenen `tick()`. Multiplayer-Expeditionen (`processGroupOperationsForUser`)
+    hatten dasselbe Problem: Fortschritt einer Expedition stand komplett still, wenn zufaellig KEIN
+    Teilnehmer gerade aktiv war, trotz laufender `arriveTime`/`endTime`.
+
+    **Fix, in zwei Teilen:**
+
+    1. **Checkpoints werden jetzt korrekt nachgeholt statt uebersprungen.** Neue Funktion
+       `rollFixedCheckpoints()` (`data/economy.ts`) rollt JEDEN verpassten Checkpoint zwischen dem
+       letzten bekannten und "jetzt" einzeln nach (bricht beim ersten Erfolg ab, da immer nur ein
+       Raid/Event gleichzeitig aktiv sein kann) und uebergibt dabei den TATSAECHLICHEN Checkpoint-
+       Zeitpunkt (nicht den Login-Zeitpunkt) an `spawnRaidAt()`/`spawnEventAt()` - `spawnedAt`/
+       `arrivalTime`/`deadline` basieren dadurch wieder auf der eigentlich vorgesehenen Uhrzeit.
+       Ersetzt in `raids.ts` und `events.ts` den bisherigen einzelnen `nextFixedCheckpoint()`-Sprung.
+    2. **Jeder Tick verarbeitet jetzt zusaetzlich ALLE anderen Spieler**, nicht nur Raid-Ausloesung
+       (Punkt 25 - unveraendert), sondern auch Raid-SPAWN (`processOverdueRaidSpawnsForOtherUsers`,
+       neu in `raids.ts`), Notruf-Events komplett (`processOverdueEventsForOtherUsers`, komplett
+       neu in `events.ts` - gab es vorher gar nicht), und Multiplayer-Expeditionen
+       (`processAllDepartedGroupOperations` in `groupOps.ts`, ersetzt die alte
+       `processGroupOperationsForUser` - der Teilnehmer-Filter auf `currentState.userId` entfaellt,
+       `tickGroupExpedition()` behandelte Teilnehmer-Zustaende ohnehin schon korrekt einzeln, siehe
+       Punkt 4, wodurch diese Verallgemeinerung gefahrlos moeglich war). Dadurch reicht jetzt EIN
+       beliebiger aktiver Spieler, damit das gesamte Spiel fuer ALLE weiterlaeuft.
+    3. **Zusaetzlich: neuer oeffentlicher Endpunkt `GET /api/heartbeat`** (`heartbeat.ts`,
+       registriert in `index.ts` VOR der `requireAuth`-Middleware des `gameRouter`, also ohne
+       Login erreichbar), der `runGlobalHeartbeat()` ausfuehrt - verarbeitet Missionen/Raids/
+       Notruf-Events fuer ALLE registrierten Nutzer und Multiplayer-Expeditionen EINMAL global,
+       komplett unabhaengig davon, ob irgendein Spieler gerade eingeloggt ist. Ohne diesen
+       Endpunkt bleibt bei NULL aktiven Spielern weiterhin alles stehen (das ist eine
+       Architektur-Grenze ohne echten Server-Dauerprozess, kein Bug) - der Endpunkt ist dafuer
+       gedacht, von einem externen Taktgeber alle paar Minuten aufgerufen zu werden, z.B. einem
+       kostenlosen Uptime-Pinger (cron-job.org, UptimeRobot) oder einem Render Cron Job. Das
+       `render.yaml` wurde bewusst NICHT automatisch um einen Cron-Service erweitert, da das eine
+       Kosten-/Infrastruktur-Entscheidung ist, die aktiv getroffen werden muss.
+
+    **Client:** Polling-Intervall in `GameContext.tsx` von 5s auf 3s verkuerzt fuer ein
+    reaktiveres Multiplayer-Gefuehl (unkritisch bei der geringen Spielerzahl, siehe Punkt 25).
+    Echtes Server-Push (WebSockets/SSE) wurde NICHT umgesetzt - deutlich groesserer Eingriff in
+    Architektur und Abhaengigkeiten, hier bewusst nicht vorgenommen ohne explizite Anfrage.
