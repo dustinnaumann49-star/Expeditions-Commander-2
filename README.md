@@ -59,6 +59,8 @@ server/
   src/game/data/economy.ts           Booster, Gutscheine, Container, NPC-Spezial-Einheiten,
                                       Event-/Raid-/Asteroiden-Konstanten
   src/game/data/combatConstants.ts   RAPIDFIRE-Tabelle, ZIELERFASSUNG_BASE, MAX_*-Konstanten
+  src/game/data/changelog.ts         CHANGELOG - spielerlesbare Update-Historie fuer die
+                                      Im-Spiel-Updates-Seite (client/src/pages/Updates.tsx)
 
 client/
   vite.config.ts                     Dev-Proxy: /api → localhost:4000
@@ -111,6 +113,8 @@ client/
                                       Multiplayer eingebunden)
   src/pages/Nachrichten.tsx           Kampf-/Farmberichte mit aufklappbarer Detailansicht
   src/pages/Inventar.tsx              Container öffnen, Belohnungen einlösen
+  src/pages/Updates.tsx               Spielerlesbare Update-Historie (aus gameData.changelog),
+                                      neuester Eintrag zuerst
 ```
 
 ## Wichtige Punkte, die eingehalten werden müssen
@@ -438,3 +442,17 @@ client/
     haben KEINE eigene Info-Box (sie werden nicht wie Sektoren aktiv ausgewaehlt, sondern lösen
     zufaellig aus) - dort war nichts zu aktualisieren, die neuen Container-Mengen/DM-Bergung
     werden bereits vollstaendig im Kampfbericht selbst angezeigt.
+
+37. **Im-Spiel-Updates-Seite (`/updates`, `UpdatesPage` in `Updates.tsx`) fuer spielerlesbare
+    Aenderungshistorie - bewusst GETRENNT von dieser README.** Diese README ist Entwickler-
+    Dokumentation (technische Details, Dateipfade, Code-Referenzen); `CHANGELOG` in
+    `data/changelog.ts` ist die SPIELER-Version derselben Ereignisse - in Alltagssprache, ohne
+    Code-Referenzen, fokussiert auf "was aendert sich fuers Spielgefuehl" statt "wie wurde es
+    umgesetzt". Wird ueber `gameRouter.get('/data')` als `changelog`-Feld an den Client
+    ausgeliefert (`ChangelogEntry[]`, neueste zuerst). **Bei jeder kuenftigen spielrelevanten
+    Aenderung IMMER ZWEI Dokumentationen aktuell halten:** diese README (fuer mich/den naechsten
+    Bearbeitungsdurchlauf) UND `changelog.ts` (fuer die Spieler) - unterschiedliche Zielgruppe,
+    unterschiedlicher Ton, beide muessen unabhaengig voneinander gepflegt werden. Als neuer
+    Top-Level-Sidebar-Punkt eingetragen (nicht als Untertab, siehe Punkt 10) - Update-Historie
+    laesst sich thematisch keiner bestehenden Seite unterordnen, anders als z.B. Schrotthaendler/
+    Spezialteile/Raid-Hilfe.
