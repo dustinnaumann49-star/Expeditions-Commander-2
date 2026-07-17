@@ -456,3 +456,23 @@ client/
     Top-Level-Sidebar-Punkt eingetragen (nicht als Untertab, siehe Punkt 10) - Update-Historie
     laesst sich thematisch keiner bestehenden Seite unterordnen, anders als z.B. Schrotthaendler/
     Spezialteile/Raid-Hilfe.
+
+38. **Feindstaerke-Formel unterschaetzte Salvenschiffe massiv - via Kampfsimulator entdeckt
+    (reine Salvenschiff-Flotten gewannen jeden Kampf, selbst Elite-Bollwerk).** Ursache:
+    `combatFleetPower()`/`combatFleetPowerBase()` (Punkt 15) gewichten Waffen/Schild/Panzerung
+    GLEICH - bei normalen Schiffen macht Waffen nur ~1-2% der Power-Zahl aus (Schild/Panzerung
+    dominieren), bei den bewusst extrem einseitigen "Glaskanonen"-Salvenschiffen (Punkt 22) aber
+    ~9-11%. Konkret gemessen: 100 Salvenkreuzer liefern 4,5x mehr Gesamt-Waffen als 100
+    Schlachtkreuzer, wurden aber nur mit 40% von deren Power-Zahl bewertet - die generierte
+    Gegnerstaerke war dadurch strukturell viel zu niedrig fuer reine Salvenschiff-Flotten. Fix:
+    neue Konstante `MULTI_TARGET_POWER_CORRECTION = 8` (`combatConstants.ts`), angewendet in BEIDEN
+    Power-Funktionen fuer alle `MULTI_TARGET_VOLLEY_SHIPS` (rechnerisch waeren 6,3-7,6x noetig, um
+    ihren Waffenwert allein fair zu gewichten - auf 8x leicht aufgerundet, um zusaetzlich den
+    Mehrfachziel-Effekt selbst mit abzudecken, der in der reinen Waffen-Vergleichsrechnung noch
+    nicht enthalten ist). Ergebnis nach Korrektur: 100 Salvenkreuzer bewerten jetzt mit ~3,2x der
+    Power von 100 Schlachtkreuzern - deutlich ausgewogener als vorher (0,4x), aber bewusst nicht
+    exakt 1:1 zur reinen Feuerkraft-Ratio (4,5x), da die extreme Schild-/Panzerungs-Schwaeche der
+    Salvenschiffe weiterhin ein echter, spuerbarer Nachteil bleiben soll. Zentral an EINER Stelle
+    behoben (beide Power-Funktionen), wirkt dadurch automatisch ueberall dort, wo Feindstaerke
+    berechnet wird (Piraten-Sektoren, Raid, Notruf, Elite-Bollwerk, Kampfsimulator) - kein
+    Einzelfall-Fix pro Aufrufstelle noetig.
