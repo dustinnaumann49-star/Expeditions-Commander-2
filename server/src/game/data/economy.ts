@@ -140,6 +140,7 @@ export const TRADE_FEE = 0.2;
 export const COMBAT_SHIP_IDS = [
   'leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber',
   'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator',
+  'salvenjaeger', 'salvenkreuzer', 'salvendreadnought',
 ];
 
 // Liefert den naechsten der vier festen Tages-Checkpunkte (00/06/12/18 Uhr UTC) NACH "now".
