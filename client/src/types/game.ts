@@ -217,6 +217,31 @@ export interface FleetPreset {
   ships: Record<string, number>;
 }
 
+export interface PlayerStats {
+  missionsNiedrig: number;
+  missionsMittel: number;
+  missionsHoch: number;
+  asteroidMissions: number;
+  eliteBollwerkChecks: number;
+  raidsRepelledFull: number;
+  raidsRepelledPartial: number;
+  notrufCompleted: number;
+  captainsDefeated: number;
+  enemiesDestroyed: number;
+  ownShipsLost: number;
+  resourcesLooted: number;
+  containersOpened: { silber: number; gold: number; elite: number };
+  researchCompleted: number;
+  shipsBuilt: number;
+}
+
+export interface LeaderboardEntry {
+  userId: number;
+  username: string;
+  points: number;
+  stats: PlayerStats;
+}
+
 export interface PlayerState {
   userId: number;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
@@ -238,6 +263,7 @@ export interface PlayerState {
   nextEventCheck: number;
   lastUpdate: number;
   serverTime?: number;
+  stats: PlayerStats;
 }
 
 export interface SektorDefinition {
