@@ -663,3 +663,22 @@ client/
       (siehe Punkt 39: 40%/75%/100% je nach Container-Stufe) wird jetzt auf JEDEN Eintrag in
       `state.researchQueue` einzeln angewendet. `zeitgutschein_bau` (Bau-Warteschlange) bewusst
       NICHT angetastet - das war nicht Teil dieser Anfrage, `MAX_BUILD_SLOTS` bleibt bei 3.
+
+45. **Raid-/Notruf-Warnungen waren bisher NUR auf der Sektor-Seite selbst sichtbar** (`state.raid`/
+    `state.event`-Banner nur in `Sektor.tsx` gerendert) - obwohl die Daten dank 3s-Polling laengst
+    im Client verfuegbar sind, sah man als Spieler nichts, wenn man gerade z.B. in der Werft oder
+    Forschung war. Neue globale Warn-Badges in `ResourceBar.tsx` (auf JEDER Seite sichtbar, da
+    `Layout` in `App.tsx` die Komponente immer ueber allen Routen rendert):
+    - ⚠ Eigener Raid im Anflug (mit Live-Countdown) - Klick fuehrt zu `/sektor`.
+    - 📡 Eigener aktiver Notruf - Klick fuehrt zu `/sektor`.
+    - 🛡️ **Neu: Raid bei einem ANDEREN Spieler** (`activeRaids` aus `GameContext`, dieselbe
+      Datenquelle wie `RaidHilfe.tsx`, bereits serverseitig ohne den eigenen Raid gefiltert,
+      siehe `listActiveRaids()` in `raidReinforce.ts`) - vorher musste man manuell und wiederholt
+      im Multiplayer-Tab nachschauen, ob gerade jemand angegriffen wird, um rechtzeitig
+      Verstaerkung schicken zu koennen. Zeigt bei genau einem betroffenen Spieler dessen Namen,
+      bei mehreren die Anzahl. Klick fuehrt direkt zu `/multiplayer?tab=raid` (neuer
+      `useSearchParams()`-Read in `MultiplayerPage`, damit man nicht erst manuell zum
+      Raid-Hilfe-Unter-Tab wechseln muss).
+    - Nutzt die bereits vorhandene, aber bis dahin ungenutzte `pulseGlow`-Keyframe-Animation
+      (`theme.css`) fuer dezente Aufmerksamkeit ohne aufdringliches Blinken (neue
+      `.alert-badge`-Klasse).
