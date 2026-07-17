@@ -377,3 +377,18 @@ client/
     Bewusst NICHT angetastet: `generateDefenseFleet()` (Verteidigungsanlagen-Generierung) - hatte
     bereits durch `Math.random()`-Gewichtung pro Aufruf inhaerente Varianz, war nicht Teil des
     urspruenglichen "eintoenig"-Problems.
+
+34. **Info-Texte (`SektorInfoBox` in `Sektor.tsx`, Sektor-Beschreibung in `sectors.ts`) an die
+    neue Wellen-Vielfalt (Punkt 33) angepasst - bewusst OHNE exakte Werte/Auflistung, um die
+    Ueberraschung nicht vorwegzunehmen.** Die "🎲 Feindstärke"-Zeile zeigte vorher nur die reine
+    3-Werte-Tabelle als vermeintlich vollstaendige Wahrheit, obwohl jetzt zusaetzlich ein
+    Ausreisser moeglich ist - Zusatz "gelegentlich auch deutlich schwaecher oder staerker als
+    ueblich" ergaenzt, ohne die genaue Ausreisser-Chance/den Faktor zu verraten. Zwei neue Zeilen:
+    "🌊 Zusammensetzung" (Hinweis auf die drei Wellen-Profile, ohne sie namentlich zu nennen) und
+    "⚡ Unvorhersehbare Umstände" (Hinweis auf die Kampf-Modifikatoren, ohne die fuenf Typen
+    aufzuzaehlen). Elite-Bollwerk-Beschreibungstext in `sectors.ts` von "skalieren mit 120%" auf
+    "skalieren mit DURCHSCHNITTLICH 120%, mit spuerbarer Schwankung" praezisiert, da die Tabelle
+    jetzt echte Varianz hat (Punkt 33). Prinzip fuer kuenftige Ueberraschungs-Mechaniken: der
+    tatsaechliche Ausgang wird IMMER erst im Kampfbericht nach dem Kampf als Klartext sichtbar
+    (siehe Punkt 33), die Info-Popups duerfen nur ANKUENDIGEN, dass so etwas vorkommen kann, nie
+    die genauen Zahlen/Optionen vorab offenlegen.
