@@ -592,3 +592,17 @@ client/
     gefunden - falls er weiterhin auftritt, jetzt aber sichtbar in den Render-Logs statt komplett
     stumm. Bei JEDER kuenftigen neuen Cross-User-Sweep-Funktion dieses Try/Catch-Pro-Element-Muster
     zwingend uebernehmen, sonst droht dieselbe Klasse von unsichtbarem Totalausfall erneut.
+
+44. **Schildkuppeln (Punkt 42 fehlte hier) waren nach der Verteidigungsanlagen-Ueberarbeitung
+    ebenfalls unbrauchbar geworden - sogar staerker als die urspruengliche Waffenanlagen-
+    Schwaeche.** Der komplette Schildwert einer Kuppel fliesst NICHT in ihre eigene Verteidigung,
+    sondern ausschliesslich in den gemeinsamen Pool fuer die GESAMTE Verteidigungslinie
+    (`ownSchild = def.isDome ? 0 : def.stats.schild` in `getEffectiveStats()`, `combat.ts`) - mit
+    Kuppel-Effizienz von nur 0,22-0,30 (schlechter als die 0,14-0,28 der Waffenanlagen VOR Punkt 42)
+    war dieser Pool gegenueber den jetzt viel hoeheren Einzelschilden der anderen Anlagen
+    (10.400-162.000) komplett bedeutungslos geworden - ein einzelner Treffer erschoepfte ihn quasi
+    sofort. Fix (`defenses.ts`): dieselbe Ziel-Effizienz 1,4 wie bei den sechs Waffenanlagen, aber
+    mit staerkerer Schild-Gewichtung (85% Schild / 15% Panzerung statt eines festen Verhaeltnisses),
+    da der Schildwert hier explizit die Kernfunktion ist. Kleine Schildkuppel: Schild 2.000→24.000,
+    Panzerung 4.000→4.000 (unveraendert, lag schon nahe am Zielwert). Grosse Schildkuppel: Schild
+    10.000→119.000, Panzerung 12.000→21.000. `maxCount:1` fuer beide bleibt unveraendert.
