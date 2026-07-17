@@ -90,13 +90,16 @@ export function applyReward(state: PlayerState, reward: ContainerReward): boolea
       return false;
     }
     case 'zeitgutschein_forschung': {
-      if (state.researchQueue.length > 0) {
-        const job = state.researchQueue[0];
+      if (state.researchQueue.length === 0) return false;
+      // Wirkt auf ALLE gleichzeitig laufenden Forschungen, nicht nur die erste in der
+      // Warteschlange - seit MAX_RESEARCH_SLOTS auf 4 angehoben wurde (mehr gleichzeitige
+      // Forschungen moeglich, siehe README), waere ein Gutschein sonst nur noch fuer einen
+      // Bruchteil der aktuell laufenden Forschungen wirksam gewesen.
+      state.researchQueue.forEach((job) => {
         const remaining = job.endTime - Date.now();
         job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
-        return true;
-      }
-      return false;
+      });
+      return true;
     }
     default:
       return true;
