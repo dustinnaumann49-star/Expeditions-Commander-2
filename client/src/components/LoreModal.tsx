@@ -17,7 +17,7 @@ export function LoreModal({ target, gameData, onClose }: { target: LoreTarget | 
         <button id="modal-close" onClick={onClose}>
           ×
         </button>
-        <h3 style={{ marginBottom: 12 }}>{entry.name}</h3>
+        <h3 className="modal-title">{entry.name}</h3>
         <img
           src={`/${entry.img}`}
           style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', marginBottom: 12 }}

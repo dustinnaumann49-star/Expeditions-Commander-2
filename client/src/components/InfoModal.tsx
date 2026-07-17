@@ -7,7 +7,7 @@ export function InfoModal({ title, onClose, children }: { title: string; onClose
         <button id="modal-close" onClick={onClose}>
           ×
         </button>
-        <h3 style={{ marginBottom: 12 }}>{title}</h3>
+        <h3 className="modal-title">{title}</h3>
         {children}
       </div>
     </div>
@@ -16,15 +16,13 @@ export function InfoModal({ title, onClose, children }: { title: string; onClose
 
 export function InfoTable({ rows }: { rows: [string, ReactNode][] }) {
   return (
-    <table className="combat-table" style={{ marginBottom: 16 }}>
-      <tbody>
-        {rows.map(([label, value], i) => (
-          <tr key={i}>
-            <td style={{ textAlign: 'left', width: '45%' }}>{label}</td>
-            <td style={{ textAlign: 'left' }}>{value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="info-list">
+      {rows.map(([label, value], i) => (
+        <div className="info-list-row" key={i}>
+          <span className="info-list-label">{label}</span>
+          <span className="info-list-value">{value}</span>
+        </div>
+      ))}
+    </div>
   );
 }
