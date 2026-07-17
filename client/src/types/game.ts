@@ -298,6 +298,12 @@ export interface ContainerTypeDef {
   rewards: ContainerReward[];
 }
 
+export interface ChangelogEntry {
+  date: string;
+  title: string;
+  changes: string[];
+}
+
 export interface GameData {
   ships: ShipDefinition[];
   defenses: DefenseDefinition[];
@@ -333,6 +339,7 @@ export interface GameData {
   asteroidEscortPowerMin: number;
   asteroidEscortPowerMax: number;
   asteroidEscortKillReward: { metall: number; kristall: number; deuterium: number };
+  changelog: ChangelogEntry[];
 }
 
 export interface AppUser {
