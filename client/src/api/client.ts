@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -89,6 +89,7 @@ export const api = {
   cancelParty: (opId: string) => request<PlayerState>('/game/party/cancel', { method: 'POST', body: JSON.stringify({ opId }) }),
   startParty: (opId: string) => request<PlayerState>('/game/party/start', { method: 'POST', body: JSON.stringify({ opId }) }),
   listActiveRaids: () => request<{ raids: ActiveRaidInfo[] }>('/game/raids/active'),
+  getLeaderboard: () => request<{ leaderboard: LeaderboardEntry[] }>('/game/leaderboard'),
   reinforceRaid: (targetUserId: number, ships: Record<string, number>) =>
     request<PlayerState>('/game/raids/reinforce', { method: 'POST', body: JSON.stringify({ targetUserId, ships }) }),
   simulateCombat: (sektorId: string, selection: Record<string, number>) =>
