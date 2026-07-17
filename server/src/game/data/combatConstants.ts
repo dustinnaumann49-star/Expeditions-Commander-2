@@ -233,3 +233,67 @@ export const MAX_PLAYER_SHIPS = 100000;
 // RF-anfaelliges Ziel zu treffen, feuern sie auf JEDEN anfaelligen SCHIFFSTYP einmal (nicht auf
 // jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).
 export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer', 'salvendreadnought']);
+
+// ===== Wellen-Vielfalt (gegen "man weiss schon, was einen erwartet") =====
+// Vorher nutzten ALLE Feindflotten-Generatoren (Piraten-Sektor, Raid, Notruf, Elite-Bollwerk)
+// dieselbe feste, abfallende Gewichtungskurve - nur die reine Staerke variierte, nie die FORM der
+// Gegnerflotte. Jetzt wird bei jedem Kampf eines von drei Profilen gewuerfelt.
+export type WaveProfile = 'schwarm' | 'kampfgruppe' | 'elitekader';
+
+// Gewichtung der Profile je Kontext-Schluessel (Sektor-ID fuer Piraten-Sektoren/Elite-Bollwerk,
+// 'raid'/'notruf' fuer die beiden Mehrspieler-relevanten Sonderfaelle ohne eigenen Sektor).
+export const WAVE_PROFILE_WEIGHTS: Record<string, Partial<Record<WaveProfile, number>>> = {
+  piraten_niedrig: { schwarm: 0.8, kampfgruppe: 0.2 },
+  piraten_mittel: { schwarm: 0.45, kampfgruppe: 0.45, elitekader: 0.1 },
+  piraten_hoch: { schwarm: 0.1, kampfgruppe: 0.45, elitekader: 0.45 },
+  piraten_elite: { schwarm: 0.1, kampfgruppe: 0.4, elitekader: 0.5 },
+  notruf: { schwarm: 0.1, kampfgruppe: 0.5, elitekader: 0.4 },
+  raid: { schwarm: 0.5, kampfgruppe: 0.4, elitekader: 0.1 },
+};
+
+// Basis-Wellentabellen fuer Kontexte OHNE eigene Sektor-Tabelle (Raid/Notruf liefen vorher exakt
+// auf 100% ohne jede Schwankung) - ersetzt durch eine leichte Grund-Varianz, siehe
+// rollMultiplierWithOutlier() in combat.ts.
+export const RAID_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
+export const NOTRUF_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
+
+// Chance pro Kampf auf einen Wellen-AUSREISSER (deutlich schwaecher/staerker als die normale
+// Tabelle), je Kontext-Schluessel. Beim Elite-Bollwerk gilt zusaetzlich eine Kappung auf maximal
+// 1x pro GESAMTER Expedition (nicht pro Einzel-Check) - sonst wuerde sich das Risiko ueber die 4
+// Stunden-Checks unfair aufsummieren, siehe `eliteSurpriseUsed` in groupOps.ts.
+export const WAVE_OUTLIER_CHANCE: Record<string, number> = {
+  piraten_niedrig: 0.05,
+  piraten_mittel: 0.08,
+  piraten_hoch: 0.15,
+  piraten_elite: 0.10,
+  notruf: 0.10,
+  raid: 0.06,
+};
+export const WAVE_OUTLIER_LOW_FACTOR = 0.6;
+export const WAVE_OUTLIER_HIGH_FACTOR = 1.5;
+
+// ===== Kampf-Modifikatoren (seltene Ueberraschungen zusaetzlich zur reinen Staerke/Form) =====
+// Immer nur EINER pro Kampf, nie mehrere gleichzeitig. Wirkt gezielt auf EINE Seite (siehe
+// Anwendung in combat.ts) - Nebel/Ionensturm/Truemmerfeld/Sensorstoerung schwaechen den SPIELER,
+// Strahlungssturm verstaerkt den GEGNER. Wird im Kampfbericht als Klartext angezeigt, damit es
+// sich wie eine erklaerte Ueberraschung anfuehlt, nicht wie unsichtbare Willkuer.
+export type BattleModifierType = 'nebel' | 'ionensturm' | 'truemmerfeld' | 'sensorstoerung' | 'strahlungssturm';
+
+export const BATTLE_MODIFIER_LABELS: Record<BattleModifierType, string> = {
+  nebel: '🌫️ Nebel im Sektor – deine Präzision -15% in diesem Kampf',
+  ionensturm: '⚡ Ionensturm – deine Schild-Regeneration -20% in diesem Kampf',
+  truemmerfeld: '☄️ Trümmerfeld – dein Ausweichen -15% in diesem Kampf',
+  sensorstoerung: '📡 Sensorstörung – deine RapidFire-Trefferquote -20% in diesem Kampf',
+  strahlungssturm: '☢️ Strahlungssturm – gegnerische Kritische-Treffer-Chance +50% in diesem Kampf',
+};
+
+// Chance pro Kampf auf EINEN der obigen Modifikatoren, je Kontext-Schluessel. Beim Elite-Bollwerk
+// gilt dieselbe Kappung auf 1x pro gesamter Expedition wie bei WAVE_OUTLIER_CHANCE.
+export const BATTLE_MODIFIER_CHANCE: Record<string, number> = {
+  piraten_niedrig: 0.05,
+  piraten_mittel: 0.10,
+  piraten_hoch: 0.18,
+  piraten_elite: 0.15,
+  notruf: 0.10,
+  raid: 0.06,
+};
