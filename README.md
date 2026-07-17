@@ -50,6 +50,8 @@ server/
   src/game/simulator.ts              Kampfsimulator: rechnet mehrere Durchläufe gegen einen
                                       Sektor durch, OHNE den Spielstand zu verändern
   src/game/messages.ts               pushMessage()/clearMessages() - Nachrichten-Verlauf
+  src/game/stats.ts                  PlayerStats-Punkteberechnung (POINT_WEIGHTS,
+                                      calculatePoints()) und Bestenliste (getLeaderboard())
 
   src/game/data/ships.ts             Alle Schiffsdaten (Werte, Kosten, Bauzeit, Lore)
   src/game/data/defenses.ts          Alle Verteidigungsanlagen-Daten
@@ -115,6 +117,8 @@ client/
   src/pages/Inventar.tsx              Container öffnen, Belohnungen einlösen
   src/pages/Updates.tsx               Spielerlesbare Update-Historie (aus gameData.changelog),
                                       neuester Eintrag zuerst
+  src/pages/Statistik.tsx             Eigene Statistik-Aufschlüsselung + Bestenliste (Punkte)
+                                      zwischen allen Spielern
 ```
 
 ## Wichtige Punkte, die eingehalten werden müssen
@@ -476,3 +480,31 @@ client/
     behoben (beide Power-Funktionen), wirkt dadurch automatisch ueberall dort, wo Feindstaerke
     berechnet wird (Piraten-Sektoren, Raid, Notruf, Elite-Bollwerk, Kampfsimulator) - kein
     Einzelfall-Fix pro Aufrufstelle noetig.
+
+39. **Statistik/Bestenliste-Feature** (`/statistik`, `StatistikPage` in `Statistik.tsx`) - neues
+    `PlayerStats`-Objekt auf `PlayerState` (`types.ts`), das kumulative ROHWERTE zaehlt (nie
+    direkt Punkte - siehe unten), inkrementiert an mehreren Stellen:
+    - `missions.ts`: Missionen-Siege je Gefahrenstufe (Niedrig/Mittel/Hoch), Asteroiden-Einsaetze
+      (in `finalizeMission()`), Feinde vernichtet, eigene Verluste, Piratenkapitaene besiegt,
+      erbeutete Ressourcen.
+    - `raids.ts`: Raids voll/teilweise abgewehrt, Feinde vernichtet, eigene Verluste - fuer
+      Verteidiger UND alle Verstaerker (keine Aufteilung, Punkt 5).
+    - `events.ts`/`groupOps.ts`: Notruf-Events abgeschlossen (solo + gemeinsam), Elite-Bollwerk-
+      Stunden-Checks gewonnen, Piratenkapitaene, erbeutete Ressourcen - bei gemeinsamen Operationen
+      wieder fuer ALLE Teilnehmer identisch.
+    - `actions.ts`: gebaute Schiffe, abgeschlossene Forschungen (in `tick()`s Warteschlangen-
+      Abarbeitung).
+    - `inventory.ts`: geoeffnete Container nach Stufe (Silber/Gold/Elite) in `openContainer()`.
+    - Migration in `state.ts`s `loadPlayerState()` fuer bestehende Spielstaende ohne `stats`-Feld
+      (Musterfeld-fuer-Feld-Abgleich gegen `defaultPlayerStats()`, analog zur Forschungs-Migration).
+
+    **Punkte werden NIE gespeichert, nur aus den Rohwerten berechnet** (`calculatePoints()` in
+    neuer Datei `stats.ts`, `POINT_WEIGHTS`-Tabelle: Piraten-Sektor Niedrig/Mittel/Hoch 10/25/50,
+    Elite-Bollwerk-Check 150, Raid voll/teilweise 40/15, Notruf 30, Kapitaen-Bonus 20, pro Kill 1) -
+    damit laesst sich die Gewichtung jederzeit anpassen, ohne bestehende Spielstaende migrieren zu
+    muessen. Neue Route `GET /game/leaderboard` (`getLeaderboard()` in `stats.ts`) liefert alle
+    registrierten Nutzer sortiert nach Punkten inkl. voller `PlayerStats` - Basis sowohl fuer die
+    eigene Statistik-Anzeige als auch die Bestenliste (Client filtert die eigene Zeile per
+    `userId`-Abgleich heraus, kein separater "eigene Stats"-Endpunkt noetig). Client pollt die
+    Bestenliste alle 15s (eigener Fetch-Zyklus in `Statistik.tsx`, unabhaengig vom 3s-Haupt-Polling
+    in `GameContext.tsx` - Statistik-Aenderungen sind nicht zeitkritisch).
