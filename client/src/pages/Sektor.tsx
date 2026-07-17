@@ -63,8 +63,17 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         <div className="info-row">
           <span className="info-label">🎲 Feindstärke (wird pro Stunden-Check gewürfelt)</span>
           <span className="info-value">
-            <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power
+            <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power · gelegentlich auch deutlich
+            schwächer oder stärker als üblich
           </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">🌊 Zusammensetzung</span>
+          <span className="info-value">Variiert von Kampf zu Kampf – mal viele kleine Schiffe, mal wenige starke</span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">⚡ Unvorhersehbare Umstände</span>
+          <span className="info-value">Seltene Sonderbedingungen können einzelne Kämpfe zu deinen Gunsten oder Ungunsten beeinflussen</span>
         </div>
         <div className="info-row">
           <span className="info-label">🛡️ Verteidigung</span>
