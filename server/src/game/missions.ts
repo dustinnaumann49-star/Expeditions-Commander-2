@@ -19,15 +19,16 @@ import {
   generateFallbackFleet,
   generateDefenseFleet,
   generateAsteroidPirateFleet,
+  pickWaveProfile,
+  rollMultiplierWithOutlier,
+  rollBattleModifier,
 } from './combat.js';
 import { pushMessage } from './messages.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
+import type { BattleModifierType } from './data/combatConstants.js';
+import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
-
-function rollMultiplier(options: number[]): number {
-  return options[Math.floor(Math.random() * options.length)];
-}
 
 function miningMultiplier(state: PlayerState): number {
   // RESEARCH[4] = "mining" (siehe data/research.ts) - 0.10 Effekt pro Stufe
@@ -278,24 +279,24 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   // runHourlyCheck laeuft nur fuer Piraten-Sektoren (Asteroiden-Sektoren kehren weiter oben schon
   // frueher zurueck), daher wird hier IMMER die Wuerfel-Tabelle verwendet, kein Fallback noetig.
   const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];
-  const rolledMultiplier = rollMultiplier(table);
-  const pct = Math.round(rolledMultiplier * 100);
-  const waveLabel =
-    pct === Math.round(table[0] * 100) ? 'Schwache Welle' : pct === Math.round(table[2] * 100) ? 'Starke Welle' : 'Normale Welle';
+  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(table, mission.sektorId);
+  const waveLabel = outlier === 'stark' ? '⚠ Ungewöhnlich starke Welle' : outlier === 'schwach' ? 'Auffällig schwache Welle' : 'Normale Welle';
   const targetPower = Math.max(sentPower * rolledMultiplier, cfg.npcFloor || 0);
+  const profile = pickWaveProfile(mission.sektorId);
+  const battleModifier = rollBattleModifier(mission.sektorId);
 
   let npcShips: Record<string, number> = {};
   let npcDefenses: Record<string, number> = {};
 
   if (cfg.type === 'piraten') {
-    npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0);
+    npcShips = generatePiratenFleet(targetPower, state.research.spionage || 0, profile);
     let defenseFactor = 0;
     if (mission.sektorId === 'piraten_niedrig') defenseFactor = 0.05;
     else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.1;
     else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.15;
     npcDefenses = generateDefenseFleet(sentPower * defenseFactor, state.research.spionage || 0);
   } else {
-    npcShips = generatePiratenFleet(targetPower, 0) || generateFallbackFleet(targetPower);
+    npcShips = generatePiratenFleet(targetPower, 0, profile) || generateFallbackFleet(targetPower, profile);
   }
 
   const captainSpawned = cfg.type === 'piraten' && cfg.captainChance && Math.random() < cfg.captainChance;
@@ -311,7 +312,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     return;
   }
 
-  const result = await runCombatInWorker({ sideAShips: mission.ships, sideBShips: npcCombined, research: state.research });
+  const result = await runCombatInWorker({ sideAShips: mission.ships, sideBShips: npcCombined, research: state.research, battleModifier });
 
   let anyNpcDestroyed = false;
   const npcLosses: Record<string, number> = {};
@@ -448,12 +449,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const defenseCount = npcResults.filter((r) => r.isDefense && !r.isCaptain).length;
   const defenseText = defenseCount > 0 ? ` (${defenseCount} Verteidigungsanlagen)` : '';
   const waveText = waveLabel ? ` [${waveLabel}]` : '';
+  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
 
   const hasRewards = lootGained || gainedTeile || captainContainerTier || captainDmGained > 0;
   pushMessage(
     state,
     'kampf',
-    `Feindkontakt${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Ergebnis: ${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}`,
+    `Feindkontakt${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Ergebnis: ${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${modifierText}`,
     {
       sektorName: mission.sektorId,
       outcome,
