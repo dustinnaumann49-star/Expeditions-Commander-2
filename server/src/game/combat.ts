@@ -202,6 +202,26 @@ export function combatFleetPower(
   return total;
 }
 
+// Feindstaerke-Grundlage OHNE jegliche Spieler-Forschung - nutzt ausschliesslich die
+// Basiswerte aus ships.ts/defenses.ts. Grund: Wurde die Feindstaerke (wie zuvor in
+// combatFleetPower()) aus den FORSCHUNGS-ANGEREICHERTEN Werten berechnet, machte jede Stufe
+// Waffen-/Schild-/Panzerungtechnik automatisch auch die Piraten staerker - die Forschung brachte
+// dadurch keinen echten Vorteil, nur eine gleichzeitig staerkere Gegenseite. Piraten/NPC-Angreifer
+// (Piraten-Sektoren, Notruf-Events, Raids, Elite-Bollwerk, Asteroiden-Eskorte) skalieren jetzt
+// ausschliesslich auf Basis dieser Funktion - Forschung wirkt sich weiterhin auf die EIGENEN
+// Kampfwerte aus (ueber getEffectiveStats() bei der eigentlichen Kampfberechnung), aber nicht mehr
+// auf die Staerke des Gegners.
+export function combatFleetPowerBase(fleetObj: Record<string, number>): number {
+  let total = 0;
+  Object.entries(fleetObj).forEach(([id, count]) => {
+    if (count <= 0) return;
+    const base = baseStats(id);
+    if (base.waffen <= 0) return;
+    total += count * (base.waffen + base.schild + base.panzerung);
+  });
+  return total;
+}
+
 // ========== VERTEILUNG VON NPC-FLOTTEN (mit Maxima + Ueberlauf) ==========
 
 /**

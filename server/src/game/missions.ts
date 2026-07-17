@@ -14,7 +14,7 @@ import {
   getEffectiveStats,
   baseStats,
   shipName,
-  combatFleetPower,
+  combatFleetPowerBase,
   generatePiratenFleet,
   generateFallbackFleet,
   generateDefenseFleet,
@@ -148,7 +148,7 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   const escortCount = mission.ships.begleitschiff || 0;
   if (escortCount <= 0) return;
 
-  const escortStats = getEffectiveStats('begleitschiff', state.research);
+  const escortStats = baseStats('begleitschiff');
   const escortPower = escortCount * (escortStats.waffen + escortStats.schild + escortStats.panzerung);
   const powerShare = ASTEROID_ESCORT_POWER_MIN + Math.random() * (ASTEROID_ESCORT_POWER_MAX - ASTEROID_ESCORT_POWER_MIN);
   const targetPower = escortPower * powerShare;
@@ -274,7 +274,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const playerIds = Object.keys(mission.ships).filter((id) => mission.ships[id] > 0);
   if (playerIds.length === 0) return;
 
-  const sentPower = combatFleetPower(mission.ships, state.research);
+  const sentPower = combatFleetPowerBase(mission.ships);
   // runHourlyCheck laeuft nur fuer Piraten-Sektoren (Asteroiden-Sektoren kehren weiter oben schon
   // frueher zurueck), daher wird hier IMMER die Wuerfel-Tabelle verwendet, kein Fallback noetig.
   const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];

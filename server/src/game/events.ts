@@ -5,7 +5,7 @@ import {
   ALLY_STATS,
   rollFixedCheckpoints,
 } from './data/economy.js';
-import { getEffectiveStats, baseStats, shipName, combatFleetPower, generateFallbackFleet } from './combat.js';
+import { getEffectiveStats, baseStats, shipName, combatFleetPowerBase, generateFallbackFleet } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -72,7 +72,7 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   state.event.started = true;
   playerIds.forEach((id) => (state.fleet[id] -= selection[id]));
 
-  const sentPower = combatFleetPower(selection, state.research);
+  const sentPower = combatFleetPowerBase(selection);
   const allyCount = Math.max(8, Math.round(sentPower / 18000));
 
   // Feindstaerke = exakt 100% der eingesetzten Flotten-Power, keine Zufalls-Schwankung mehr.

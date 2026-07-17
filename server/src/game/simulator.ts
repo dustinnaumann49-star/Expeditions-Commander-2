@@ -1,6 +1,6 @@
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import {
-  combatFleetPower,
+  combatFleetPowerBase,
   generatePiratenFleet,
   generateDefenseFleet,
   shipName,
@@ -56,7 +56,7 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
   // Bewusst KEINE Pruefung gegen die tatsaechlich vorhandene Flotte: der Simulator soll auch
   // Was-waere-wenn-Szenarien mit noch nicht gebauten Schiffen durchrechnen koennen.
 
-  const sentPower = combatFleetPower(ships, state.research);
+  const sentPower = combatFleetPowerBase(ships);
   const table = PIRATEN_MULTIPLIER_ROLL[sektorId];
 
   let defenseFactor = 0;

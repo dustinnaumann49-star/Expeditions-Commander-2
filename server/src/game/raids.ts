@@ -92,11 +92,15 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
 
   let homePower = 0;
   Object.entries(defenderShips).forEach(([id, count]) => {
-    const eff = getEffectiveStats(id, state.research, state.defense);
-    homePower += count * (eff.waffen + eff.schild + eff.panzerung);
+    const base = baseStats(id);
+    homePower += count * (base.waffen + base.schild + base.panzerung);
   });
-  const domePool = computeDomeSharedPool(state.defense, state.research);
-  homePower += domePool;
+  // Feindstaerke-Basis nutzt bewusst den Kuppel-Pool OHNE Forschungsbonus (schildMultiplier({}) = 1x)
+  // - der tatsaechliche, forschungs-verstaerkte Pool (domePoolReal) wird weiter unten unveraendert
+  // an die eigentliche Kampfberechnung uebergeben, wirkt dort also weiterhin voll.
+  const domePoolBase = computeDomeSharedPool(state.defense, {});
+  homePower += domePoolBase;
+  const domePoolReal = computeDomeSharedPool(state.defense, state.research);
 
   if (Object.keys(defenderShips).length === 0 || homePower === 0) {
     const stolen = {
@@ -134,10 +138,10 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   }));
 
   let reinforcementPower = 0;
-  reinforcerStates.forEach(({ r, playerState }) => {
+  reinforcerStates.forEach(({ r }) => {
     Object.entries(r.ships).forEach(([id, count]) => {
-      const eff = getEffectiveStats(id, playerState.research);
-      reinforcementPower += count * (eff.waffen + eff.schild + eff.panzerung);
+      const base = baseStats(id);
+      reinforcementPower += count * (base.waffen + base.schild + base.panzerung);
     });
   });
 
@@ -164,8 +168,8 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
 
   const result =
     reinforcerStates.length > 0
-      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool, allowRetreat: false })
-      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePool, allowRetreat: false });
+      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false })
+      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 

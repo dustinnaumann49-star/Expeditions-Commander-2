@@ -5,7 +5,7 @@ import {
   getEffectiveStats,
   baseStats,
   shipName,
-  combatFleetPower,
+  combatFleetPowerBase,
   generatePiratenFleet,
   generateFallbackFleet,
   generateDefenseFleet,
@@ -179,8 +179,7 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   accepted.forEach((p) => participantStates.set(p.userId, p.userId === state.userId ? state : loadPlayerState(p.userId)));
 
   accepted.forEach((p) => {
-    const pState = participantStates.get(p.userId)!;
-    p.contributedPower = combatFleetPower(p.ships, pState.research) || 1;
+    p.contributedPower = combatFleetPowerBase(p.ships) || 1;
     p.farmed = { metall: 0, kristall: 0, deuterium: 0 };
     p.teile = { waffen: 0, schild: 0, panzerung: 0 };
     p.dmFound = 0;
@@ -441,10 +440,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   if (!cfg) return;
   if (Math.random() >= cfg.checkChance) return;
 
-  const totalSentPower = accepted.reduce((sum, p) => {
-    const pState = participantStates.get(p.userId)!;
-    return sum + combatFleetPower(p.ships, pState.research);
-  }, 0);
+  const totalSentPower = accepted.reduce((sum, p) => sum + combatFleetPowerBase(p.ships), 0);
 
   const table = PIRATEN_MULTIPLIER_ROLL[op.sektorId!];
   const rolledMultiplier = rollMultiplier(table);
