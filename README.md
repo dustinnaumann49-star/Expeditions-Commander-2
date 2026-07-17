@@ -610,3 +610,23 @@ client/
       Karte (`refundText()`, berechnet `cost * scrapRefundRate * qty` client-seitig) - vorher
       wusste man erst nach dem Klick auf "Verschrotten", wie viel man zurueckbekommt, jetzt sofort
       sichtbar waehrend der Mengeneingabe.
+
+42. **Multiplayer-Bereich (`Multiplayer.tsx`/`RaidHilfe.tsx`) fuer bessere Uebersicht ueberarbeitet
+    - bewusst NICHT die Optik, sondern reine Lesbarkeits-/Struktur-Probleme.** Gefundene Maengel:
+    - `FleetPicker` (Multiplayer.tsx) und die inline Flottenauswahl in RaidHilfe.tsx zeigten rohe
+      Schiffs-IDs ("leicht (verfuegbar: 12)") statt Namen - jetzt ueber `shipName()` aus
+      `combatInfo.ts` (dieselbe Funktion, die Werft/Verteidigung/Sektor bereits nutzen).
+    - Expeditions-/Event-Eintraege zeigten die Sektor-ID roh ("Expedition nach piraten_elite")
+      statt des Anzeigenamens - neue Hilfsfunktion `opKindLabel()` loest das ueber
+      `gameData.sektoren` auf und ergaenzt gleich ein Kind-Icon (🛡️ Expedition / 📡 Notruf-Event)
+      fuer schnelleres Scannen, statt nur am Fliesstext erkennbar zu sein.
+    - Interne Status-Enums wurden 1:1 durchgereicht ("Status: departed", Teilnehmerliste
+      "username: accepted") statt verstaendlichem Text - neue `OP_STATUS_LABELS`/
+      `PARTICIPANT_STATUS_LABELS`-Maps uebersetzen ins Deutsche (🕓 Wartet auf Zusagen / 🚀
+      Unterwegs bzw. Offen/Zugesagt/Abgelehnt).
+    - **"Meine Operationen" mischte wartende Einladungen und bereits laufende Expeditionen in
+      einer einzigen, undifferenzierten Liste** - musste jeden Eintrag einzeln lesen, um Status zu
+      erkennen. Jetzt in zwei klar beschriftete Gruppen aufgeteilt (`waiting`/`active`-Filter nach
+      `op.status`), jede mit eigener Zwischenueberschrift. Die tote `resolved`-Zweig-Behandlung
+      (kam nie vor, da `listMyGroupOperations()` serverseitig bereits nur `inviting`/`departed`
+      ausliefert, siehe Kommentar dort) wurde beim Umbau entfernt.
