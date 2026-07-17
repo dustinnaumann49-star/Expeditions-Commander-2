@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
@@ -388,7 +389,11 @@ const MULTIPLAYER_TABS = [
 ];
 
 export function MultiplayerPage() {
-  const [tab, setTab] = useState<'expedition' | 'raid' | 'spieler'>('expedition');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [tab, setTab] = useState<'expedition' | 'raid' | 'spieler'>(
+    initialTab === 'raid' || initialTab === 'spieler' ? initialTab : 'expedition'
+  );
 
   return (
     <div>
