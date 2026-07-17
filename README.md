@@ -12,7 +12,12 @@ server/
   package.json                       "dev" startet tsc --watch + tsx watch parallel (siehe unten)
   data/                              SQLite-Datenbankdatei liegt hier zur Laufzeit (game.db)
 
-  src/index.ts                       Express-Einstiegspunkt, Routen-Registrierung
+  src/index.ts                       Express-Einstiegspunkt, Routen-Registrierung, startet
+                                      zusaetzlich den internen Heartbeat-Timer (alle 2 Min.) und
+                                      den oeffentlichen /api/heartbeat-Endpunkt (siehe unten)
+  src/game/heartbeat.ts               runGlobalHeartbeat() - verarbeitet Missionen/Raids/Notruf-
+                                      Events/Gruppen-Expeditionen fuer ALLE Nutzer unabhaengig
+                                      von jedem Login (siehe "Wichtige Punkte" Punkt 13)
 
   src/db.ts                          SQLite-Zugriff: Nutzer, Spielstände, gemeinsame Operationen
 
@@ -76,8 +81,10 @@ client/
   src/components/ResourceBar.tsx     Kopfleiste: Ressourcen, Uhr, Abmelden
   src/components/BuildQueue.tsx      Fortschrittsbalken für Bau-Warteschlangen (Lane-basiert)
   src/components/LoreModal.tsx       Popup bei Klick auf Schiffs-/Verteidigungs-/Forschungsnamen
-  src/components/CombatReplayView.tsx  Animierte Canvas-Visualisierung des echten Kampfverlaufs
-                                      (Laser, Explosionen, Runde für Runde abspielbar)
+  src/components/CombatReplayView.tsx  UNGENUTZT seit Punkt 24 (Canvas-Kampfvisualisierung wurde
+                                      aus dem Frontend entfernt) - Datei bleibt bestehen, falls die
+                                      Anzeige spaeter wieder gewuenscht wird, keine Referenzen mehr
+                                      im aktuellen Code
   src/components/ProtectedRoute.tsx  Leitet zu /login um, falls nicht angemeldet
 
   src/pages/Login.tsx                 Login/Registrierung
