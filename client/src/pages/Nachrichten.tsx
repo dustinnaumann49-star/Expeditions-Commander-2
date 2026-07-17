@@ -88,7 +88,8 @@ function combatRewardRows(rewards: CombatDetail['rewards']): [string, string][] 
   if (rewards.teileWaffen) rows.push(['Waffen-Teile', rewards.teileWaffen.toLocaleString('de-DE')]);
   if (rewards.teileSchild) rows.push(['Schild-Teile', rewards.teileSchild.toLocaleString('de-DE')]);
   if (rewards.teilePanzerung) rows.push(['Panzerungs-Teile', rewards.teilePanzerung.toLocaleString('de-DE')]);
-  if (rewards.containerTier) rows.push(['Container', rewards.containerTier === 'gold' ? '🏆 Gold' : '📦 Silber']);
+  if (rewards.containerTier)
+    rows.push(['Container', rewards.containerTier === 'elite' ? '💎 Elite' : rewards.containerTier === 'gold' ? '🏆 Gold' : '📦 Silber']);
   if (rewards.stolenMetall || rewards.stolenKristall || rewards.stolenDeuterium) {
     rows.push([
       'Gestohlen (Verlust)',
