@@ -4,9 +4,9 @@ import { RESEARCH } from './data/research.js';
 import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_PLAYER_SHIPS } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
-import { processEventTimer } from './events.js';
-import { processRaidTimer, processOverdueRaidsForOtherUsers } from './raids.js';
-import { processGroupOperationsForUser } from './groupOps.js';
+import { processEventTimer, processOverdueEventsForOtherUsers } from './events.js';
+import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
+import { processAllDepartedGroupOperations } from './groupOps.js';
 import type { PlayerState, ResourceCost } from './types.js';
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN (Bauzeit/Forschungszeit) ==========
@@ -105,8 +105,14 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   await processMissions(state);
   await processEventTimer(state);
   await processRaidTimer(state);
+  // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
+  // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
+  // damit Raids/Notrufe/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils
+  // betroffene Spieler selbst gerade nicht online ist (siehe README fuer den Hintergrund).
   await processOverdueRaidsForOtherUsers(state);
-  await processGroupOperationsForUser(state);
+  await processOverdueRaidSpawnsForOtherUsers(state);
+  await processOverdueEventsForOtherUsers(state);
+  await processAllDepartedGroupOperations(state);
 
   state.lastUpdate = now;
   return state;
