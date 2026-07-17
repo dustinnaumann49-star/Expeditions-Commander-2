@@ -234,6 +234,19 @@ export const MAX_PLAYER_SHIPS = 100000;
 // jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).
 export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer', 'salvendreadnought']);
 
+// Korrekturfaktor fuer die Feindstaerke-Berechnung (combatFleetPower()/combatFleetPowerBase() in
+// combat.ts): Salvenschiffe haben bewusst extrem hohe Waffenwerte bei sehr geringem Schild/
+// Panzerung ("Glaskanone", siehe Punkt 22) - die Power-Formel (Waffen+Schild+Panzerung) gewichtet
+// aber alle drei Werte gleich. Bei normalen Schiffen macht Waffen nur ~1-2% der Power-Zahl aus, bei
+// Salvenschiffen aber ~9-11% - das unterschaetzt ihre tatsaechliche Kampfkraft massiv (rechnerisch
+// noetiger Korrekturfaktor liegt bei 6,3-7,6x je nach Typ, um ihren Waffenwert fair zu gewichten).
+// Ohne Korrektur wurde eine reine Salvenschiff-Flotte immer gegen einen viel zu schwachen Gegner
+// antreten (bestaetigt ueber den Kampfsimulator: 100 Salvenkreuzer liefern 4,5x mehr Feuerkraft als
+// 100 Schlachtkreuzer, wurden aber mit nur 40% von deren Power-Zahl bewertet). 8x gewaehlt (leicht
+// aufgerundet gegenueber dem errechneten 6,3-7,6x-Bereich), um zusaetzlich den Mehrfachziel-Effekt
+// selbst mit abzudecken, der in der reinen Waffen-Vergleichsrechnung noch nicht enthalten ist.
+export const MULTI_TARGET_POWER_CORRECTION = 8;
+
 // ===== Wellen-Vielfalt (gegen "man weiss schon, was einen erwartet") =====
 // Vorher nutzten ALLE Feindflotten-Generatoren (Piraten-Sektor, Raid, Notruf, Elite-Bollwerk)
 // dieselbe feste, abfallende Gewichtungskurve - nur die reine Staerke variierte, nie die FORM der
