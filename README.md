@@ -458,3 +458,23 @@ client/
     Berechnungsgrundlage, nicht das Verhalten an sich (weiterhin nur Seite A, nicht Seite B/NPCs;
     weiterhin `allowRetreat`-abhaengig, siehe Punkt 27; weiterhin kein Rueckzug bei bereits
     gewonnenem Kampf, siehe Punkt 29).
+
+37. **Visuelle Kampf-Anzeige (Punkt 30, `CombatReplayView.tsx`) wurde aus dem Frontend entfernt**
+    (optisch nicht erwuenscht). Beide Einbindungen in `Nachrichten.tsx` (normaler Kampfbericht UND
+    gesammelte Asteroiden-Skirmishes) sowie der zugehoerige Import geloescht. Bewusst NICHT
+    angetastet: die Server-seitige Aufzeichnung (`replay`-Feld in `CombatResult`/`CombatDetail`,
+    `runRounds()` in `combat.ts`) laeuft unveraendert weiter - Entfernen der Anzeige ist reine
+    Darstellungsentscheidung, keine Datenstruktur-Aenderung, falls die Visualisierung spaeter
+    wieder gewuenscht wird. `components/CombatReplayView.tsx` selbst bleibt als ungenutzte Datei
+    bestehen (keine Referenzen mehr im Code).
+
+    **Info-Popups (`InfoModal.tsx`) optisch ueberarbeitet**, vorher rohe `combat-table`-Tabelle
+    (fuer Zahlen-Grids gedacht, mit zentriertem Text - fuer Label/Wert-Paare unpassend), jetzt
+    eigene `.info-list`/`.info-list-row`-Klassen (`theme.css`) im selben Look wie die bereits
+    vorhandene `sektor-info-box` (Punkt 14): Karten-Container mit Rahmen, Zeilen mit
+    Label links (gedimmt) / Wert rechtsbuendig, dezenter Trenner, Hover-Highlight passend zur
+    `combat-table`-Konvention. `InfoTable({rows})` behaelt exakt dieselbe API - keine Aenderung an
+    `Werft.tsx`/`Verteidigung.tsx`/`Spezialteile.tsx` noetig. Modal-Titel (`<h3>`) bekommt
+    einheitlich eine neue `.modal-title`-Klasse (dezenter Trennstrich statt reinem
+    `marginBottom`-Inline-Style) - aus Konsistenzgruenden auch in `LoreModal.tsx` uebernommen,
+    da beide Modals dieselbe `#combat-modal`/`#modal-box`-Huelle teilen.
