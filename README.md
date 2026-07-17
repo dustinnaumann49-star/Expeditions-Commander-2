@@ -572,3 +572,23 @@ client/
        `RAID_MIN_TARGET_POWER`-Konstante (`economy.ts`, 200.000) als Untergrenze fuer
        `targetPower`, damit ein reiner Verteidigungsanlagen-Aufbau ohne Flotte nicht auf eine
        triviale/leere Gegnerwelle trifft.
+
+43. **Kritische Luecke behoben: keiner der Cross-User-Sweeps (`runGlobalHeartbeat()` in
+    `heartbeat.ts`, `processOverdueRaidsForOtherUsers()`/`processOverdueRaidSpawnsForOtherUsers()`
+    in `raids.ts`, `processOverdueEventsForOtherUsers()` in `events.ts`,
+    `processAllDepartedGroupOperations()` in `groupOps.ts`) hatte Fehler-Isolation PRO NUTZER/
+    OPERATION.** Symptom, das darauf gefuehrt hat: trotz aktivem Heartbeat wurde ueber mehrere
+    Checkpoints hinweg bei KEINEM von zwei Spielern ein Raid/Notruf ausgeloest - statistisch nur
+    ~0,001% Wahrscheinlichkeit reiner Zufall. Ursache: Eine Ausnahme bei EINEM Nutzer (z.B. durch
+    einen unerwarteten Datenzustand) brach die gesamte `for`-Schleife ab - bei nur 2 registrierten
+    Nutzern reichte ein Fehler beim ersten in der Liste, um den zweiten (und JEDEN kuenftigen
+    Durchlauf, da der Heartbeat alle 2 Minuten dieselbe Nutzerliste in derselben Reihenfolge
+    durchgeht) dauerhaft und komplett unsichtbar stillzulegen - der Heartbeat laeuft unabhaengig
+    von jeder Spieler-Anfrage, ein Fehler dort zeigt sich nirgends in der UI. Fix: JEDER Nutzer/
+    JEDE Operation einzeln in `try/catch` verarbeitet, Fehler werden geloggt (`console.error`)
+    statt die Verarbeitung fuer alle Nachfolgenden zu blockieren. `runGlobalHeartbeat()` gibt jetzt
+    zusaetzlich eine `errors`-Zaehlung zurueck (`{ usersProcessed, errors }`). Der eigentliche
+    urspruengliche Fehler (WARUM die Ausnahme ausgeloest wurde) ist damit noch nicht zwingend
+    gefunden - falls er weiterhin auftritt, jetzt aber sichtbar in den Render-Logs statt komplett
+    stumm. Bei JEDER kuenftigen neuen Cross-User-Sweep-Funktion dieses Try/Catch-Pro-Element-Muster
+    zwingend uebernehmen, sonst droht dieselbe Klasse von unsichtbarem Totalausfall erneut.
