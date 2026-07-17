@@ -511,17 +511,17 @@ client/
        `tickGroupExpedition()` behandelte Teilnehmer-Zustaende ohnehin schon korrekt einzeln, siehe
        Punkt 4, wodurch diese Verallgemeinerung gefahrlos moeglich war). Dadurch reicht jetzt EIN
        beliebiger aktiver Spieler, damit das gesamte Spiel fuer ALLE weiterlaeuft.
-    3. **Zusaetzlich: neuer oeffentlicher Endpunkt `GET /api/heartbeat`** (`heartbeat.ts`,
-       registriert in `index.ts` VOR der `requireAuth`-Middleware des `gameRouter`, also ohne
-       Login erreichbar), der `runGlobalHeartbeat()` ausfuehrt - verarbeitet Missionen/Raids/
-       Notruf-Events fuer ALLE registrierten Nutzer und Multiplayer-Expeditionen EINMAL global,
-       komplett unabhaengig davon, ob irgendein Spieler gerade eingeloggt ist. Ohne diesen
-       Endpunkt bleibt bei NULL aktiven Spielern weiterhin alles stehen (das ist eine
-       Architektur-Grenze ohne echten Server-Dauerprozess, kein Bug) - der Endpunkt ist dafuer
-       gedacht, von einem externen Taktgeber alle paar Minuten aufgerufen zu werden, z.B. einem
-       kostenlosen Uptime-Pinger (cron-job.org, UptimeRobot) oder einem Render Cron Job. Das
-       `render.yaml` wurde bewusst NICHT automatisch um einen Cron-Service erweitert, da das eine
-       Kosten-/Infrastruktur-Entscheidung ist, die aktiv getroffen werden muss.
+    3. **Interner Taktgeber statt externem Pinger.** `runGlobalHeartbeat()` (`heartbeat.ts`) wird
+       jetzt zusaetzlich per `setInterval` direkt in `index.ts` alle 2 Minuten SERVERSEITIG
+       aufgerufen, sobald der Prozess startet - komplett ohne externe Abhaengigkeit. Das
+       funktioniert nur, WEIL Render Starter-Tarif (oder hoeher) genutzt wird: dort schlaeft der
+       Node-Prozess bei Inaktivitaet NICHT ein (im Gegensatz zum kostenlosen Tarif), ein Dauerlauf-
+       Timer im Prozess ist also zuverlaessig nutzbar. Der oeffentliche Endpunkt `GET /api/heartbeat`
+       (ohne `requireAuth`, VOR der gameRouter-Middleware registriert) bleibt zusaetzlich bestehen -
+       nuetzlich zum manuellen Testen oder falls spaeter doch auf den kostenlosen Tarif (mit
+       Einschlafen) zurueckgestuft wird, dann per externem Uptime-Pinger (cron-job.org, UptimeRobot)
+       oder Render Cron Job ansprechbar. `render.yaml` wurde NICHT um einen Cron-Service erweitert -
+       mit dem Starter-Tarif unnoetig, der interne Takt deckt das bereits ab.
 
     **Client:** Polling-Intervall in `GameContext.tsx` von 5s auf 3s verkuerzt fuer ein
     reaktiveres Multiplayer-Gefuehl (unkritisch bei der geringen Spielerzahl, siehe Punkt 25).
