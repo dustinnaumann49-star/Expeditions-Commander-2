@@ -75,11 +75,12 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
 
 // Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig/Mittel/Hoch bleiben
 // bewusst bei maximal 100% (Solo spielbar); nur das Multiplayer-exklusive Elite-Bollwerk geht
-// bewusst darueber (120% der KOMBINIERTEN Flottenstaerke aller Teilnehmer).
+// bewusst darueber (durchschnittlich 120% der KOMBINIERTEN Flottenstaerke aller Teilnehmer,
+// jetzt mit echter Varianz 105-135% statt eines komplett flachen Werts).
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> = 
 {
   piraten_niedrig: [0.15, 0.175, 0.20],
   piraten_mittel:  [0.50, 0.55, 0.60],
   piraten_hoch:    [0.90, 0.95, 1.00],
-  piraten_elite:   [1.20, 1.20, 1.20]
+  piraten_elite:   [1.05, 1.20, 1.35]
 };
