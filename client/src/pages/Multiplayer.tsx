@@ -6,7 +6,7 @@ import { shipName } from '../lib/combatInfo';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal } from '../components/InfoModal';
-import type { GameData } from '../types/game';
+import type { GameData, GroupOperation } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
@@ -73,6 +73,53 @@ function FleetPicker({
   );
 }
 
+function OpEntry({
+  op,
+  gameData,
+  myUserId,
+  now,
+  onCancel,
+  onStart,
+}: {
+  op: GroupOperation;
+  gameData: GameData;
+  myUserId: number;
+  now: number;
+  onCancel: (opId: string) => void;
+  onStart: (opId: string) => void;
+}) {
+  const isCreator = op.creatorId === myUserId;
+  const acceptedCount = op.participants.filter((p) => p.status === 'accepted').length;
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
+      <p>
+        <strong>{opKindLabel(op, gameData)}</strong>
+        <br />
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{acceptedCount} Teilnehmer bestätigt</span>
+      </p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+        {op.participants.map((p) => `${p.username}: ${PARTICIPANT_STATUS_LABELS[p.status] || p.status}`).join(' · ')}
+      </p>
+      {op.status === 'departed' && op.processedHours !== undefined && (
+        <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+          Fortschritt: {op.processedHours}/4 Stunden ·{' '}
+          {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
+        </p>
+      )}
+      {isCreator && op.status === 'inviting' && (
+        <div className="build-row">
+          <button className="qty-btn" onClick={() => onCancel(op.id)}>
+            Abbrechen
+          </button>
+          <button className="build-btn" onClick={() => onStart(op.id)}>
+            Jetzt starten ({acceptedCount} dabei)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExpeditionEventsView() {
   const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, error } = useGame();
   const [tab, setTab] = useState<'expedition' | 'event'>('expedition');
@@ -136,39 +183,6 @@ function ExpeditionEventsView() {
           const waiting = myOwn.filter((op) => op.status === 'inviting');
           const active = myOwn.filter((op) => op.status === 'departed');
 
-          function OpEntry({ op }: { op: (typeof myOwn)[number] }) {
-            const isCreator = op.creatorId === myUserId;
-            const acceptedCount = op.participants.filter((p) => p.status === 'accepted').length;
-            return (
-              <div key={op.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
-                <p>
-                  <strong>{opKindLabel(op, gameData)}</strong>
-                  <br />
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{acceptedCount} Teilnehmer bestätigt</span>
-                </p>
-                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                  {op.participants.map((p) => `${p.username}: ${PARTICIPANT_STATUS_LABELS[p.status] || p.status}`).join(' · ')}
-                </p>
-                {op.status === 'departed' && op.processedHours !== undefined && (
-                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                    Fortschritt: {op.processedHours}/4 Stunden ·{' '}
-                    {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
-                  </p>
-                )}
-                {isCreator && op.status === 'inviting' && (
-                  <div className="build-row">
-                    <button className="qty-btn" onClick={() => cancelParty(op.id)}>
-                      Abbrechen
-                    </button>
-                    <button className="build-btn" onClick={() => startParty(op.id)}>
-                      Jetzt starten ({acceptedCount} dabei)
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
           return (
             <div className="queue-box" style={{ marginBottom: 20 }}>
               <h3 style={{ fontSize: 14, marginBottom: 8 }}>Meine Operationen</h3>
@@ -176,7 +190,7 @@ function ExpeditionEventsView() {
                 <>
                   <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 6 }}>{OP_STATUS_LABELS.inviting}</p>
                   {waiting.map((op) => (
-                    <OpEntry op={op} key={op.id} />
+                    <OpEntry op={op} gameData={gameData} myUserId={myUserId} now={now} onCancel={cancelParty} onStart={startParty} key={op.id} />
                   ))}
                 </>
               )}
@@ -186,7 +200,7 @@ function ExpeditionEventsView() {
                     {OP_STATUS_LABELS.departed}
                   </p>
                   {active.map((op) => (
-                    <OpEntry op={op} key={op.id} />
+                    <OpEntry op={op} gameData={gameData} myUserId={myUserId} now={now} onCancel={cancelParty} onStart={startParty} key={op.id} />
                   ))}
                 </>
               )}
