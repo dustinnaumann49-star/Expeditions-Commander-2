@@ -1,5 +1,5 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX } from './data/economy.js';
+import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_MIN_TARGET_POWER } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -99,19 +99,29 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   homeShipIds.forEach((id) => (defenderShips[id] = state.fleet[id]));
   homeDefIds.forEach((id) => (defenderShips[id] = state.defense[id]));
 
+  // Feindstaerke-Basis nutzt bewusst NUR die Flotte, NICHT die Verteidigungsanlagen - sonst wuerde
+  // eine staerkere Verteidigung automatisch einen staerkeren Angriff heraufbeschwoeren (Verteidigung
+  // steigert homePower -> steigert targetPower -> mehr/staerkere Angreifer). Das widerspraeche dem
+  // eigentlichen Zweck von Verteidigungsanlagen (zaeher machen, OHNE einen haerteren Angriff
+  // anzuziehen) und wuerde durch aufgeblaehte HP-Pools auf beiden Seiten Kaempfe unnoetig in die
+  // Laenge ziehen (Raids kennen keinen Rueckzug, siehe Punkt 27 - liefen sonst oft bis MAX_ROUNDS).
+  // Verteidigungsanlagen wirken im TATSAECHLICHEN Kampf weiterhin voll (defenderShips oben
+  // enthaelt sie unveraendert) - nur die Berechnung "wie stark soll der Angriff werden" ignoriert sie.
   let homePower = 0;
-  Object.entries(defenderShips).forEach(([id, count]) => {
+  homeShipIds.forEach((id) => {
     const base = baseStats(id);
-    homePower += count * (base.waffen + base.schild + base.panzerung);
+    homePower += state.fleet[id] * (base.waffen + base.schild + base.panzerung);
   });
-  // Feindstaerke-Basis nutzt bewusst den Kuppel-Pool OHNE Forschungsbonus (schildMultiplier({}) = 1x)
-  // - der tatsaechliche, forschungs-verstaerkte Pool (domePoolReal) wird weiter unten unveraendert
-  // an die eigentliche Kampfberechnung uebergeben, wirkt dort also weiterhin voll.
-  const domePoolBase = computeDomeSharedPool(state.defense, {});
-  homePower += domePoolBase;
+  // Kuppel-Pool fliesst bewusst NICHT mehr in homePower ein (siehe Kommentar oben zur
+  // Entkopplung) - domePoolReal wird trotzdem berechnet und unten unveraendert an die
+  // tatsaechliche Kampfberechnung uebergeben, wirkt dort also weiterhin voll.
   const domePoolReal = computeDomeSharedPool(state.defense, state.research);
 
-  if (Object.keys(defenderShips).length === 0 || homePower === 0) {
+  // Nicht mehr auf homePower === 0 prüfen - das ist jetzt ein legitimer Zustand bei einem reinen
+  // Verteidigungsanlagen-Aufbau ohne eigene Flotte zu Hause (homePower zaehlt nur noch die
+  // Flotte). Massgeblich ist allein, ob UEBERHAUPT etwas zur Verteidigung bereitsteht
+  // (defenderShips, enthaelt Flotte UND Verteidigung unveraendert).
+  if (Object.keys(defenderShips).length === 0) {
     const stolen = {
       metall: Math.round(state.resources.metall * RAID_LOOT_PERCENT),
       kristall: Math.round(state.resources.kristall * RAID_LOOT_PERCENT),
@@ -159,7 +169,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   // combatConstants.ts) und einem gewuerfelten Zusammensetzungs-Profil, damit sich nicht jeder
   // Raid identisch anfuehlt.
   const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(RAID_MULTIPLIER_ROLL, 'raid');
-  const targetPower = (homePower + reinforcementPower) * rolledMultiplier;
+  const targetPower = Math.max((homePower + reinforcementPower) * rolledMultiplier, RAID_MIN_TARGET_POWER);
   const profile = pickWaveProfile('raid');
   const battleModifier = rollBattleModifier('raid');
   const npcShips = generateFallbackFleet(targetPower, profile);
