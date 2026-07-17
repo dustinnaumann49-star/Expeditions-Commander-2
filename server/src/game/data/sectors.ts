@@ -12,13 +12,13 @@ export interface SektorDefinition {
 export const SEKTOREN: SektorDefinition[] = 
 [
   { id:"asteroid_niedrig", name:"Sektor A7 – Asteroiden-Feld (Niedrig)", img:"sektoren/asteroid_niedrig.png",
-    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (5.000/h je Schiff) / Dunkle Materie bis 5",
+    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (5.000/h je Schiff) / Dunkle Materie bis 15",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"asteroid_mittel", name:"Sektor A7 – Asteroiden-Feld (Mittel)", img:"sektoren/asteroid_mittel.png",
-    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (15.000/h je Schiff) / Dunkle Materie bis 10",
+    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (15.000/h je Schiff) / Dunkle Materie bis 30",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"asteroid_hoch", name:"Sektor A7 – Asteroiden-Feld (Hoch)", img:"sektoren/asteroid_hoch.png",
-    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (25.000/h je Schiff) / Dunkle Materie bis 15",
+    typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (25.000/h je Schiff) / Dunkle Materie bis 45",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"piraten_niedrig", name:"Sektor P9 – Piraten-Sektor (Niedrig)", img:"sektoren/piraten_niedrig.png",
     typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 5 Teile pro Kategorie.",
@@ -50,14 +50,14 @@ export interface SektorConfig {
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
-  resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // zusaetzlich zur normalen Beute, laeuft wie dmCap linear ueber die 4h
+  resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // NUR bei piraten_elite (Elite-Bollwerk) genutzt, laeuft linear ueber dessen 4h-Missionsdauer (MISSION_DURATION_MS) - NICHT zu verwechseln mit dmCap bei Asteroiden-Feldern, das ueber ASTEROID_MISSION_DURATION_MS (12h) laeuft
 }
 
 export const SEKTOR_CONFIG: Record<string, SektorConfig> = 
 {
-  asteroid_niedrig: { checkChance:0.00, type:"asteroid", farmRate:5000, dmCap:5, miningCap:300, escortCap:500, npcFloor:300000 },
-  asteroid_mittel:  { checkChance:0.00, type:"asteroid", farmRate:15000, dmCap:10, miningCap:220, escortCap:500, npcFloor:800000 },
-  asteroid_hoch:    { checkChance:0.00, type:"asteroid", farmRate:25000, dmCap:15, miningCap:180, escortCap:500, npcFloor:1800000 },
+  asteroid_niedrig: { checkChance:0.00, type:"asteroid", farmRate:5000, dmCap:15, miningCap:300, escortCap:500, npcFloor:300000 },
+  asteroid_mittel:  { checkChance:0.00, type:"asteroid", farmRate:15000, dmCap:30, miningCap:220, escortCap:500, npcFloor:800000 },
+  asteroid_hoch:    { checkChance:0.00, type:"asteroid", farmRate:25000, dmCap:45, miningCap:180, escortCap:500, npcFloor:1800000 },
   piraten_niedrig:  { checkChance:0.50, type:"piraten", teileCap:5, npcFloor:300000,
     lootBase:{metall:8000, kristall:5000, deuterium:2000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.05, captainContainerTier:"silber", captainDm:10 },
