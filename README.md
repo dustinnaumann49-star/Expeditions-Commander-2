@@ -552,9 +552,9 @@ client/
     bei vergleichbaren Schiffen. Je teurer/staerker die Anlage, desto schlechter ihr Gegenwert -
     das Gegenteil von dem, was eine Basis-Verteidigung leisten sollte. Fix in zwei Teilen:
     1. **Schild/Panzerung aller sechs Waffen-Verteidigungsanlagen angehoben** (`defenses.ts`),
-       Waffen bewusst UNVERAENDERT gelassen (bereits fair kalibriert) - Ziel-Effizienz 1,15
-       (spuerbar, aber nicht extrem zaeher als Schiffe). Z.B. Plasmawerfer: Schild 1.800→106.200,
-       Panzerung 96.000→779.000.
+       Waffen bewusst UNVERAENDERT gelassen (bereits fair kalibriert) - Ziel-Effizienz 1,4
+       (spuerbar zaeher als Schiffe, auf ausdruecklichen Wunsch hoeher als der zunaechst erwogene
+       Zwischenwert 1,15). Z.B. Plasmawerfer: Schild 1.800→162.000, Panzerung 96.000→918.000.
     2. **Verteidigungsanlagen (inkl. Schildkuppel-Pool) aus der Raid-Feindstaerke-Berechnung
        herausgenommen** (`homePower` in `raids.ts` zaehlt jetzt NUR noch die Flotte, nicht mehr
        Verteidigung/Kuppel-Pool) - notwendige Voraussetzung fuer Schritt 1: ohne diese Entkopplung
