@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { shipName } from '../lib/combatInfo';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
 export function RaidHilfePage() {
-  const { state, activeRaids, reinforceRaid, error } = useGame();
+  const { gameData, state, activeRaids, reinforceRaid, error } = useGame();
   const [openFor, setOpenFor] = useState<number | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [, forceTick] = useState(0);
@@ -16,7 +17,7 @@ export function RaidHilfePage() {
     return () => clearInterval(i);
   }, []);
 
-  if (!state) return <p>Lade...</p>;
+  if (!state || !gameData) return <p>Lade...</p>;
   const now = serverNow();
 
   return (
@@ -51,7 +52,7 @@ export function RaidHilfePage() {
                       return (
                         <div className="queue-item" key={id}>
                           <span>
-                            {id} (verfügbar: {avail})
+                            {shipName(gameData, id)} (verfügbar: {avail})
                           </span>
                           <span className="qty-row">
                             <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>

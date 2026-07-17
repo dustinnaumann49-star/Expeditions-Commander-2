@@ -2,18 +2,42 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { shipName } from '../lib/combatInfo';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal } from '../components/InfoModal';
+import type { GameData } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
+// Zentrale Uebersetzung interner Statuswerte in verstaendlichen deutschen Text - vorher wurden
+// die rohen enum-Werte ("inviting"/"departed"/"pending"/"accepted"/"declined") direkt angezeigt.
+const OP_STATUS_LABELS: Record<string, string> = {
+  inviting: '🕓 Wartet auf Zusagen',
+  departed: '🚀 Unterwegs',
+};
+const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Offen',
+  accepted: 'Zugesagt',
+  declined: 'Abgelehnt',
+};
+
+function opKindLabel(op: { kind: 'expedition' | 'event'; sektorId?: string; eventName?: string }, gameData: GameData): string {
+  if (op.kind === 'expedition') {
+    const sektor = gameData.sektoren.find((s) => s.id === op.sektorId);
+    return `🛡️ Expedition: ${sektor?.name || op.sektorId}`;
+  }
+  return `📡 Notruf-Event: "${op.eventName}"`;
+}
+
 function FleetPicker({
+  gameData,
   availableIds,
   fleet,
   selection,
   setSelection,
 }: {
+  gameData: GameData;
   availableIds: string[];
   fleet: Record<string, number>;
   selection: Record<string, number>;
@@ -28,7 +52,7 @@ function FleetPicker({
         return (
           <div className="queue-item" key={id}>
             <span>
-              {id} (verfügbar: {avail})
+              {shipName(gameData, id)} (verfügbar: {avail})
             </span>
             <span className="qty-row">
               <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
@@ -88,10 +112,11 @@ function ExpeditionEventsView() {
             return (
               <div key={op.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
                 <p>
-                  <strong>{creator?.username}</strong> lädt dich ein zu:{' '}
-                  {op.kind === 'expedition' ? `Expedition nach ${op.sektorId}` : `Notruf-Event "${op.eventName}"`}
+                  <strong>{opKindLabel(op, gameData)}</strong>
+                  <br />
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Eingeladen von {creator?.username}</span>
                 </p>
-                <FleetPicker availableIds={availableIds} fleet={state.fleet} selection={sel} setSelection={setSel} />
+                <FleetPicker gameData={gameData} availableIds={availableIds} fleet={state.fleet} selection={sel} setSelection={setSel} />
                 <div className="build-row">
                   <button className="qty-btn" onClick={() => respondToParty(op.id, false, {})}>
                     Ablehnen
@@ -106,20 +131,23 @@ function ExpeditionEventsView() {
         </div>
       )}
 
-      {myOwn.length > 0 && (
-        <div className="queue-box" style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Meine Operationen</h3>
-          {myOwn.map((op) => {
+      {myOwn.length > 0 &&
+        (() => {
+          const waiting = myOwn.filter((op) => op.status === 'inviting');
+          const active = myOwn.filter((op) => op.status === 'departed');
+
+          function OpEntry({ op }: { op: (typeof myOwn)[number] }) {
             const isCreator = op.creatorId === myUserId;
             const acceptedCount = op.participants.filter((p) => p.status === 'accepted').length;
-            const label = op.kind === 'expedition' ? `Expedition nach ${op.sektorId}` : `Notruf-Event "${op.eventName}"`;
             return (
               <div key={op.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
                 <p>
-                  <strong>{label}</strong> – Status: {op.status} ({acceptedCount} Teilnehmer bestätigt)
+                  <strong>{opKindLabel(op, gameData)}</strong>
+                  <br />
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{acceptedCount} Teilnehmer bestätigt</span>
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                  {op.participants.map((p) => `${p.username}: ${p.status}`).join(' · ')}
+                  {op.participants.map((p) => `${p.username}: ${PARTICIPANT_STATUS_LABELS[p.status] || p.status}`).join(' · ')}
                 </p>
                 {op.status === 'departed' && op.processedHours !== undefined && (
                   <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
@@ -127,7 +155,6 @@ function ExpeditionEventsView() {
                     {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
                   </p>
                 )}
-                {op.status === 'resolved' && op.resultMessage && <p style={{ fontSize: 12, color: 'var(--accent-deut)' }}>{op.resultMessage}</p>}
                 {isCreator && op.status === 'inviting' && (
                   <div className="build-row">
                     <button className="qty-btn" onClick={() => cancelParty(op.id)}>
@@ -140,9 +167,32 @@ function ExpeditionEventsView() {
                 )}
               </div>
             );
-          })}
-        </div>
-      )}
+          }
+
+          return (
+            <div className="queue-box" style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>Meine Operationen</h3>
+              {waiting.length > 0 && (
+                <>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 6 }}>{OP_STATUS_LABELS.inviting}</p>
+                  {waiting.map((op) => (
+                    <OpEntry op={op} key={op.id} />
+                  ))}
+                </>
+              )}
+              {active.length > 0 && (
+                <>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 6, marginTop: waiting.length > 0 ? 12 : 0 }}>
+                    {OP_STATUS_LABELS.departed}
+                  </p>
+                  {active.map((op) => (
+                    <OpEntry op={op} key={op.id} />
+                  ))}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
       <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         <button className={`nav-btn${tab === 'expedition' ? ' active' : ''}`} onClick={() => setTab('expedition')}>
@@ -186,7 +236,7 @@ function ExpeditionEventsView() {
 
           <div className="queue-box">
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
-            <FleetPicker availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+            <FleetPicker gameData={gameData} availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
 
             <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
             {users
@@ -236,7 +286,7 @@ function ExpeditionEventsView() {
                 Aktiver Notruf: <strong>{state.event.name}</strong>
               </p>
               <p style={{ fontSize: 13, marginBottom: 6 }}>Deine Flotte:</p>
-              <FleetPicker availableIds={COMBAT_SHIP_IDS} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+              <FleetPicker gameData={gameData} availableIds={COMBAT_SHIP_IDS} fleet={state.fleet} selection={selection} setSelection={setSelection} />
 
               <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
               {users
