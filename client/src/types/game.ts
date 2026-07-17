@@ -113,7 +113,7 @@ export interface RewardSummary {
   teileWaffen?: number;
   teileSchild?: number;
   teilePanzerung?: number;
-  containerTier?: 'silber' | 'gold';
+  containerTier?: 'silber' | 'gold' | 'elite';
   stolenMetall?: number;
   stolenKristall?: number;
   stolenDeuterium?: number;
@@ -167,7 +167,7 @@ export interface GameMessage {
 
 export interface Container {
   id: string;
-  tier: 'silber' | 'gold';
+  tier: 'silber' | 'gold' | 'elite';
   receivedAt: number;
 }
 
@@ -264,7 +264,7 @@ export interface SektorConfig {
   bonusLootChance?: number;
   bonusLootMultiplier?: number;
   captainChance?: number;
-  captainContainerTier?: 'silber' | 'gold';
+  captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
   multiplayerOnly?: boolean;
   resourceCapOverTime?: { metall: number; kristall: number; deuterium: number };
