@@ -647,3 +647,19 @@ client/
     seiner tatsaechlichen Tier-Farbe (`containerCfg.color` - Silber/Gold/Elite, siehe Punkt 39).
     Bewusst NICHT farblich veraendert: der "💡 Taktischer Hinweis"-Absatz (bleibt bewusst gedimmt/
     klein, siehe urspruengliches Design) und rein beschreibende Fliesstexte ohne konkrete Zahl.
+
+44. **Forschungstempo erhoeht - mit inzwischen 12 Forschungen (vorher deutlich weniger) haette die
+    Gesamt-Forschungszeit bei nur 2 gleichzeitigen Slots unverhaeltnismaessig lange gedauert,
+    obwohl lange Einzel-Forschungszeiten weiterhin bewusst gewollt sind (nicht die einzelne Dauer
+    wurde reduziert, nur die Parallelitaet erhoeht).** Zwei unabhaengige Massnahmen:
+    - **`MAX_RESEARCH_SLOTS` von 2 auf 4 erhoeht** (`combatConstants.ts`) - Client liest diesen
+      Wert bereits dynamisch aus `gameData.maxResearchSlots` (`Forschung.tsx`), keine
+      Client-Anpassung noetig.
+    - **Zeit-Gutschein Forschung wirkt jetzt auf ALLE gleichzeitig laufenden Forschungen, nicht
+      nur die erste in der Warteschlange** (`applyReward()` in `inventory.ts`, Fall
+      `zeitgutschein_forschung`) - bei nur einem Slot war "die erste in der Queue" noch dasselbe
+      wie "die einzige", mit jetzt bis zu 4 parallelen Slots waere ein Gutschein sonst nur noch
+      fuer einen Bruchteil der laufenden Forschungen wirksam gewesen. Der prozentuale Rabatt
+      (siehe Punkt 39: 40%/75%/100% je nach Container-Stufe) wird jetzt auf JEDEN Eintrag in
+      `state.researchQueue` einzeln angewendet. `zeitgutschein_bau` (Bau-Warteschlange) bewusst
+      NICHT angetastet - das war nicht Teil dieser Anfrage, `MAX_BUILD_SLOTS` bleibt bei 3.
