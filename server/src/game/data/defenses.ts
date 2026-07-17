@@ -16,7 +16,7 @@ export const DEFENSES: DefenseDefinition[] =
   { id:"plasmawerfer", name:"Plasmawerfer", img:"defense/plasmawerfer.png", lore:"Der Plasmawerfer ist die stärkste stationäre Waffe, die je in Serie gefertigt wurde – und entsprechend selten, da sein Bau enorme Mengen Deuterium bindet. Basen mit Plasmawerfern gelten als nahezu uneinnehmbar.", buildTime:240,
     cost:{metall:300000, kristall:300000, deuterium:180000}, stats:{waffen:12000, schild:162000, panzerung:918000} },
   { id:"kleineschildkuppel", name:"Kleine Schildkuppel", img:"defense/kleineschildkuppel.png", lore:"Die Kleine Schildkuppel überspannt eine Basis mit einem Energiefeld und verteilt überschüssige Kapazität automatisch an alle anderen Verteidigungsanlagen. Ihre Bauzahl ist bewusst begrenzt, um die Netzstabilität nicht zu gefährden.", buildTime:12.73, maxCount:1, isDome:true,
-    cost:{metall:10000, kristall:10000, deuterium:0}, stats:{waffen:0, schild:2000, panzerung:4000} },
+    cost:{metall:10000, kristall:10000, deuterium:0}, stats:{waffen:0, schild:24000, panzerung:4000} },
   { id:"grosseschildkuppel", name:"Große Schildkuppel", img:"defense/grosseschildkuppel.jpg", lore:"Die Große Schildkuppel ist die ausgereifte Weiterentwicklung ihres kleinen Pendants und kann ganze Sektoren mit einem einzigen Energiefeld abdecken. Ihr Bau gilt in vielen Kolonien als Statussymbol militärischer Stärke.", buildTime:16.36, maxCount:1, isDome:true,
-    cost:{metall:50000, kristall:50000, deuterium:0}, stats:{waffen:0, schild:10000, panzerung:12000} }
+    cost:{metall:50000, kristall:50000, deuterium:0}, stats:{waffen:0, schild:119000, panzerung:21000} }
 ];
