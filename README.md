@@ -392,3 +392,35 @@ client/
     tatsaechliche Ausgang wird IMMER erst im Kampfbericht nach dem Kampf als Klartext sichtbar
     (siehe Punkt 33), die Info-Popups duerfen nur ANKUENDIGEN, dass so etwas vorkommen kann, nie
     die genauen Zahlen/Optionen vorab offenlegen.
+
+35. **Belohnungs-Eskalation und Container-Ueberarbeitung fuer alle vier Missionsarten** (neue
+    zentrale Funktion `getEscalationMultiplier()` in `economy.ts`, `REWARD_ESCALATION`-Tabelle):
+    - **Piraten-Sektoren (Niedrig/Mittel/Hoch):** Beute (`lootBase`) und Teile-Sofortbonus steigen
+      ADDITIV mit jedem aufeinanderfolgenden Sieg INNERHALB derselben Mission (`Mission.streakWins`
+      in `missions.ts`), gedeckelt je Gefahrenstufe - Niedrig +10%/Sieg bis max. 130%, Mittel +20%
+      bis 160%, Hoch +35% bis 205%. Serie bricht bei einem Check ohne vernichteten Gegner auf 0
+      zurueck. Captain-Belohnung bleibt bewusst FLACH (seltener Bonus, keine Eskalation).
+    - **Elite-Bollwerk:** `piraten_elite`s `lootBase` in `sectors.ts` auf 25M/15M/10M (50M gesamt,
+      50/30/20-Split) angehoben (vorher 40k/25k/11k - trivial im Vergleich). Verdoppelt sich PRO
+      Sieg (`GroupOperation.streakWins`, `REWARD_ESCALATION.piraten_elite` im `'double'`-Modus) -
+      bei fix 4 Stunden-Checks ergibt das 50M/100M/200M/400M. Teile-Sofortbonus verdoppelt sich
+      ebenso. Piratenkapitaen-Belohnung (DM + Elite-Container) bleibt auf Wunsch FLACH, keine
+      Verdopplung. Alles pro Teilnehmer, kein Splitting (Punkt 5).
+    - **Notruf-Event (solo + gemeinsam):** Belohnung gibt es jetzt AUSSCHLIESSLICH bei echtem Sieg
+      (Gegner vollstaendig vernichtet, eigene Flotte nicht ausgeloescht) - der bisherige
+      Trost-Silber-Container bei ueberlebtem Gegner entfaellt ersatzlos. Bei Sieg 1-3 Container
+      zufaellig (`1 + Math.floor(Math.random()*3)`), Tier weiterhin Gold (ohne eigene Verluste)
+      oder Silber (mit Verlusten). Gemeinsames Notruf-Event: alle Teilnehmer bekommen dieselbe
+      Anzahl/Stufe (gemeinsamer Ausgang, keine Aufteilung).
+    - **Raid (Heimverteidigung):** Bei vollstaendig abgewehrtem Angriff jetzt ebenfalls 1-3
+      Container zufaellig (vorher immer genau 1), bei nur teilweiser Abwehr bleibt es bei genau 1
+      (das ist kein echter "Sieg"). Verteidiger UND alle Verstaerker bekommen dieselbe Anzahl.
+      NEU: **Bergungs-DM** ("Bergung aus der zerstoerten Flotte", `RAID_SALVAGE_DM_PER_KILL`/
+      `RAID_SALVAGE_DM_MAX` in `economy.ts`) - skaliert mit der Anzahl vernichteter Piratenschiffe/
+      -anlagen (0,3 DM/Kill, gedeckelt bei 20 DM), unabhaengig vom Ausgang (auch bei teilweiser
+      Abwehr, sofern ueberhaupt Gegner vernichtet wurden). Jeder Beteiligte bekommt den vollen
+      Betrag. Beim Einbau wurde eine versehentliche Duplizierung der Verstaerker-Kampfergebnisse
+      (playerResults) durch ueberlappende Code-Bloecke entdeckt und bereinigt, bevor sie ausgeliefert
+      wurde - bei kuenftigen Aenderungen an diesem Funktionsteil auf doppelte `reinforcerStates.
+      forEach(...)`-Schleifen achten, die versehentlich denselben `playerResults`-Eintrag zweimal
+      erzeugen koennten.
