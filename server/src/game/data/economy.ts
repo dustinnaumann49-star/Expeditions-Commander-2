@@ -219,3 +219,30 @@ export function rollFixedCheckpoints(lastCheck: number, now: number, spawnChance
   // Sicherheitsnetz gegriffen (extrem lange Abwesenheit) - Rest ueberspringen statt zu haengen.
   return nextFixedCheckpoint(now);
 }
+
+// ===== Belohnungs-Eskalation pro ueberlebtem Stunden-Check (Piraten-Sektoren + Elite-Bollwerk) =====
+// Wirkt auf Beute (lootBase) UND Teile-Sofortbonus. "additive" waechst prozentual pro Sieg-Serie
+// mit einer Obergrenze (Niedrig/Mittel/Hoch), "double" verdoppelt sich pro Sieg ohne Obergrenze
+// (Elite-Bollwerk - bei fest 4 Stunden-Checks ergibt das max. 8x, siehe README). Serie bricht bei
+// jedem Check ohne vernichteten Gegner auf 0 zurueck (Mission.streakWins/GroupOperation.streakWins).
+export type EscalationConfig = { mode: 'additive'; step: number; max: number } | { mode: 'double' };
+
+export const REWARD_ESCALATION: Record<string, EscalationConfig> = {
+  piraten_niedrig: { mode: 'additive', step: 0.10, max: 1.30 },
+  piraten_mittel: { mode: 'additive', step: 0.20, max: 1.60 },
+  piraten_hoch: { mode: 'additive', step: 0.35, max: 2.05 },
+  piraten_elite: { mode: 'double' },
+};
+
+export function getEscalationMultiplier(sektorId: string, streak: number): number {
+  const cfg = REWARD_ESCALATION[sektorId];
+  if (!cfg) return 1;
+  if (cfg.mode === 'double') return Math.pow(2, streak);
+  return Math.min(cfg.max, 1 + streak * cfg.step);
+}
+
+// Kleiner DM-Bonus bei erfolgreicher Raid-Verteidigung ("Bergung aus der zerstoerten Flotte") -
+// skaliert mit der Anzahl vernichteter Piratenschiffe/-anlagen, gedeckelt gegen Ausreisser bei
+// riesigen Angreiferwellen.
+export const RAID_SALVAGE_DM_PER_KILL = 0.3;
+export const RAID_SALVAGE_DM_MAX = 20;

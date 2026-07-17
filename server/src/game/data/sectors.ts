@@ -68,7 +68,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
     lootBase:{metall:26000, kristall:16000, deuterium:7000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.12, captainContainerTier:"gold", captainDm:35 },
   piraten_elite:    { checkChance:0.50, type:"piraten", teileCap:20, npcFloor:3000000,
-    lootBase:{metall:40000, kristall:25000, deuterium:11000}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000} }
 };
