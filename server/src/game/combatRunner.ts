@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { CombatResult, MultiOwnerCombatResult, OwnedFleetContribution } from './combat.js';
+import type { BattleModifierType } from './data/combatConstants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +32,11 @@ export interface CombatWorkerRequest {
   // wuerde ein Rueckzug sonst die ganze Streitmacht zu frueh abziehen, obwohl die Flotte selbst noch
   // laengst kampffaehig waere.
   allowRetreat?: boolean;
+  // Seltener Kampf-Modifikator fuer diesen einen Kampf (Nebel/Ionensturm/etc., siehe
+  // BATTLE_MODIFIER_LABELS in combatConstants.ts) - wird vor dem Kampf gewuerfelt und hier nur
+  // durchgereicht, damit die eigentliche Wuerfel-Logik ausserhalb des Workers bleibt (der Worker
+  // bekommt nur reine Daten, siehe README "Wichtige Punkte" Punkt 3).
+  battleModifier?: BattleModifierType | null;
 }
 
 function runWorker<T>(request: CombatWorkerRequest): Promise<T> {
