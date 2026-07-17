@@ -603,11 +603,19 @@ function runRounds(
 
   let roundsFought = 0;
   let retreated = false;
-  const initialCountA = unitsA.length;
-  // Ab welchem Anteil verbliebener Einheiten (bezogen auf den Start) zieht sich Seite A
-  // (Spieler-Flotte) zurueck, statt bis zur voelligen Vernichtung weiterzukaempfen. Gilt nicht
-  // fuer Seite B (NPCs) und nicht fuer reine Verteidigungsanlagen (koennen nicht "fliehen"),
-  // sondern nur fuer die kombinierte Ueberlebensrate der gesamten Seite A.
+  // Kampfkraft-Basis fuer den Rueckzug statt reiner Stueckzahl (siehe unten) - waffen+schild+panzerung
+  // je Einheit, identische Definition wie combatFleetPower()/homePower in raids.ts.
+  function unitPower(u: CombatUnit): number {
+    return u.waffen + u.shieldMax + u.hpMax;
+  }
+  const initialPowerA = unitsA.reduce((sum, u) => sum + unitPower(u), 0);
+  // Ab welchem Anteil verbliebener KAMPFKRAFT (nicht Stueckzahl - eine Flotte aus vielen billigen
+  // Jaegern + wenigen teuren Kapitalschiffen wuerde sonst schon beim Verlust der zahlenmaessig
+  // dominanten, aber wertmaessig unbedeutenden Jaeger faelschlich als "aussichtslos" gelten, obwohl
+  // die eigentliche Staerke der Flotte noch unversehrt ist) zieht sich Seite A (Spieler-Flotte)
+  // zurueck, statt bis zur voelligen Vernichtung weiterzukaempfen. Gilt nicht fuer Seite B (NPCs)
+  // und nicht fuer reine Verteidigungsanlagen (koennen nicht "fliehen"), sondern nur fuer die
+  // kombinierte Kampfkraft der gesamten Seite A.
   const RETREAT_THRESHOLD = 0.5;
 
   // ---- Rundenverlauf fuer die spaetere Visualisierung aufzeichnen ----
@@ -677,9 +685,12 @@ function runRounds(
     // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Fallen in derselben Runde der letzte
     // Gegner UND die eigene Truppe unter die Schwelle, ist der Kampf GEWONNEN - dann waere ein
     // "Rueckzug" sowohl unlogisch als auch im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
-    if (allowRetreat && unitsB.length > 0 && initialCountA > 0 && unitsA.length > 0 && unitsA.length / initialCountA <= RETREAT_THRESHOLD) {
-      retreated = true;
-      break;
+    if (allowRetreat && unitsB.length > 0 && initialPowerA > 0 && unitsA.length > 0) {
+      const currentPowerA = unitsA.reduce((sum, u) => sum + unitPower(u), 0);
+      if (currentPowerA / initialPowerA <= RETREAT_THRESHOLD) {
+        retreated = true;
+        break;
+      }
     }
   }
 
