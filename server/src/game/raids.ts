@@ -1,5 +1,5 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, nextFixedCheckpoint } from './data/economy.js';
+import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints } from './data/economy.js';
 import { getEffectiveStats, baseStats, shipName, generateFallbackFleet, computeDomeSharedPool } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
@@ -8,6 +8,19 @@ import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getUserById, listAllUsers } from '../db.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
+
+// Spawnt einen Raid ausgehend vom TATSAECHLICHEN Checkpoint-Zeitpunkt (nicht "jetzt") - wichtig
+// beim Nachrollen verpasster Checkpoints (siehe rollFixedCheckpoints in economy.ts), damit
+// spawnedAt/arrivalTime der eigentlich vorgesehenen Uhrzeit entsprechen und nicht dem zufaelligen
+// Moment, in dem irgendjemand als Naechstes online war.
+function spawnRaidAt(state: PlayerState, checkpointTime: number): void {
+  state.raid = { id: 'raid_' + checkpointTime, spawnedAt: checkpointTime, arrivalTime: checkpointTime + RAID_WARNING_MS, resolved: false, reinforcements: [] };
+  pushMessage(
+    state,
+    'kampf',
+    `⚠ Piratenflotte im Anflug auf deine Heimatbasis! Ankunft in ${Math.round(RAID_WARNING_MS / 60000)} Minuten. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
+  );
+}
 
 export async function processRaidTimer(state: PlayerState) {
   const now = Date.now();
@@ -23,17 +36,7 @@ export async function processRaidTimer(state: PlayerState) {
   if (state.raid) return;
   if (now < state.nextRaidCheck) return;
 
-  // Fester Checkpoint erreicht (00/06/12/18 Uhr Server-Zeit) - naechsten Checkpoint sofort setzen,
-  // unabhaengig davon, ob diesmal tatsaechlich ein Raid ausgeloest wird.
-  state.nextRaidCheck = nextFixedCheckpoint(now);
-  if (Math.random() >= RAID_SPAWN_CHANCE) return;
-
-  state.raid = { id: 'raid_' + now, spawnedAt: now, arrivalTime: now + RAID_WARNING_MS, resolved: false, reinforcements: [] };
-  pushMessage(
-    state,
-    'kampf',
-    `⚠ Piratenflotte im Anflug auf deine Heimatbasis! Ankunft in ${Math.round(RAID_WARNING_MS / 60000)} Minuten. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
-  );
+  state.nextRaidCheck = rollFixedCheckpoints(state.nextRaidCheck, now, RAID_SPAWN_CHANCE, (checkpointTime) => spawnRaidAt(state, checkpointTime));
 }
 
 /**
@@ -54,6 +57,28 @@ export async function processOverdueRaidsForOtherUsers(currentState: PlayerState
       await resolveRaid(otherState, currentState.userId, currentState);
       savePlayerState(otherState);
     }
+  }
+}
+
+/**
+ * Ergaenzung zu processOverdueRaidsForOtherUsers: das loest nur bereits GESPAWNTE Raids auf, aber
+ * der Spawn-Checkpoint selbst (nextRaidCheck erreicht -> wuerfeln, ob ueberhaupt ein Raid entsteht)
+ * lief bisher AUSSCHLIESSLICH im processRaidTimer des betroffenen Spielers - war der komplett
+ * offline, wurde fuer ihn nie gewuerfelt, selbst wenn andere Spieler die ganze Zeit aktiv waren.
+ * Prueft daher bei JEDEM tick() zusaetzlich, ob fuer ANDERE Spieler ein Checkpoint faellig ist, und
+ * wuerfelt/spawnt bei Bedarf genau wie processRaidTimer es fuer den eigenen Zustand tun wuerde.
+ */
+export async function processOverdueRaidSpawnsForOtherUsers(currentState: PlayerState): Promise<void> {
+  const now = Date.now();
+  const others = listAllUsers(currentState.userId);
+  for (const u of others) {
+    const otherState = loadPlayerState(u.id);
+    if (otherState.raid) continue; // bereits ein Raid aktiv - nichts zu tun
+    if (now < otherState.nextRaidCheck) continue;
+    otherState.nextRaidCheck = rollFixedCheckpoints(otherState.nextRaidCheck, now, RAID_SPAWN_CHANCE, (checkpointTime) =>
+      spawnRaidAt(otherState, checkpointTime)
+    );
+    savePlayerState(otherState);
   }
 }
 

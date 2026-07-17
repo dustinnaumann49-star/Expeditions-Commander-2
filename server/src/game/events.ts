@@ -3,16 +3,25 @@ import {
   EVENT_WINDOW_MS,
   EVENT_NAMES,
   ALLY_STATS,
-  nextFixedCheckpoint,
+  rollFixedCheckpoints,
 } from './data/economy.js';
 import { getEffectiveStats, baseStats, shipName, combatFleetPower, generateFallbackFleet } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
+import { loadPlayerState, savePlayerState } from './state.js';
+import { listAllUsers } from '../db.js';
 import type { ActionResult } from './actions.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Spawnt ein Notruf-Event ausgehend vom TATSAECHLICHEN Checkpoint-Zeitpunkt (nicht "jetzt") -
+// siehe spawnRaidAt() in raids.ts fuer denselben Gedanken beim Raid-Pendant.
+function spawnEventAt(state: PlayerState, checkpointTime: number): void {
+  state.event = { id: 'event_' + checkpointTime, name: pickRandom(EVENT_NAMES), spawnedAt: checkpointTime, deadline: checkpointTime + EVENT_WINDOW_MS, started: false };
+  pushMessage(state, 'kampf', `Notruf empfangen: ${state.event.name}. Zeit zum Eingreifen: ${Math.round(EVENT_WINDOW_MS / 60000)} Minuten.`);
 }
 
 export function processEventTimer(state: PlayerState) {
@@ -21,13 +30,35 @@ export function processEventTimer(state: PlayerState) {
     state.event = null;
   }
   if (now < state.nextEventCheck) return;
-  // Fester Checkpoint erreicht (00/06/12/18 Uhr Server-Zeit) - naechsten Checkpoint sofort setzen,
-  // unabhaengig davon, ob diesmal tatsaechlich ein Notruf ausgeloest wird.
-  state.nextEventCheck = nextFixedCheckpoint(now);
   if (state.event) return;
-  if (Math.random() < EVENT_SPAWN_CHANCE) {
-    state.event = { id: 'event_' + now, name: pickRandom(EVENT_NAMES), spawnedAt: now, deadline: now + EVENT_WINDOW_MS, started: false };
-    pushMessage(state, 'kampf', `Notruf empfangen: ${state.event.name}. Zeit zum Eingreifen: ${Math.round(EVENT_WINDOW_MS / 60000)} Minuten.`);
+  state.nextEventCheck = rollFixedCheckpoints(state.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) => spawnEventAt(state, checkpointTime));
+}
+
+/**
+ * Pendant zu processOverdueRaidSpawnsForOtherUsers/processOverdueRaidsForOtherUsers (raids.ts),
+ * bisher aber komplett gefehlt: Notruf-Events wurden ausschliesslich im processEventTimer des
+ * betroffenen Spielers selbst gespawnt UND abgelaufen/verworfen (Deadline ueberschritten ohne
+ * Eingreifen). War der Spieler laengere Zeit offline, blieb sein naechster Checkpoint einfach
+ * liegen, bis er selbst wieder online kam - kein anderer Spieler konnte das anstossen. Wird bei
+ * JEDEM tick() zusaetzlich zum eigenen processEventTimer aufgerufen.
+ */
+export async function processOverdueEventsForOtherUsers(currentState: PlayerState): Promise<void> {
+  const now = Date.now();
+  const others = listAllUsers(currentState.userId);
+  for (const u of others) {
+    const otherState = loadPlayerState(u.id);
+    let changed = false;
+    if (otherState.event && now > otherState.event.deadline && !otherState.event.started) {
+      otherState.event = null;
+      changed = true;
+    }
+    if (!otherState.event && now >= otherState.nextEventCheck) {
+      otherState.nextEventCheck = rollFixedCheckpoints(otherState.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) =>
+        spawnEventAt(otherState, checkpointTime)
+      );
+      changed = true;
+    }
+    if (changed) savePlayerState(otherState);
   }
 }
 

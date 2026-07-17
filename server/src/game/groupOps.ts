@@ -349,14 +349,19 @@ async function resolveGroupEvent(
   return { ok: true };
 }
 
-// ========== EXPEDITIONS-FORTSCHRITT (wird aus jedem Teilnehmer-tick() heraus aufgerufen) ==========
-
-export async function processGroupOperationsForUser(currentState: PlayerState): Promise<void> {
+// ========== EXPEDITIONS-FORTSCHRITT ==========
+// Wird bei JEDEM tick() irgendeines beliebigen Nutzers aufgerufen - nicht nur bei den eigentlichen
+// Teilnehmern. Grund: Vorher liefen nur Expeditionen weiter, an denen der GERADE tickende Nutzer
+// selbst teilnahm - waren alle Teilnehmer einer Expedition zwischenzeitlich offline, blieb ihr
+// Fortschritt (Farming, Ankunft, Kampfausloesung) trotz verstreichender arriveTime/endTime komplett
+// stehen, bis einer von ihnen zufaellig wieder online kam. tickGroupExpedition() behandelt
+// Teilnehmer-Zustaende ohnehin schon korrekt (laedt/speichert jeden State einzeln, nutzt nur bei
+// echter Teilnahme das schon geladene currentState-Objekt wieder, siehe README Punkt 4) - dadurch
+// ist die Verallgemeinerung auf ALLE Expeditionen gefahrlos moeglich.
+export async function processAllDepartedGroupOperations(currentState: PlayerState): Promise<void> {
   const ops = listGroupOperationsJson()
     .map((j) => JSON.parse(j) as GroupOperation)
-    .filter(
-      (op) => op.kind === 'expedition' && op.status === 'departed' && op.participants.some((p) => p.userId === currentState.userId && p.status === 'accepted')
-    );
+    .filter((op) => op.kind === 'expedition' && op.status === 'departed');
 
   for (const op of ops) {
     await tickGroupExpedition(op, currentState);
