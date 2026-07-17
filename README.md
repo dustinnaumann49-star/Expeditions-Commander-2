@@ -682,3 +682,19 @@ client/
     - Nutzt die bereits vorhandene, aber bis dahin ungenutzte `pulseGlow`-Keyframe-Animation
       (`theme.css`) fuer dezente Aufmerksamkeit ohne aufdringliches Blinken (neue
       `.alert-badge`-Klasse).
+
+46. **Salvenschiffe: Baulimit angehoben, aber bewusst NICHT ohne Gegenleistung** - die Kombination
+    aus RapidFire-Immunitaet (Punkt 35, bewusst so gewollt) und Mehrfachziel-Salve (Punkt 24,
+    trifft JEDEN anfaelligen Gegner-Typ nahezu voll, nicht nur eine zufaellige Einheit) macht
+    zusaetzliche Stueckzahl bei diesen drei Schiffen wirksamer als bei normalen Schiffen - eine
+    reine Baulimit-Erhoehung haette dieses Machtgefaelle unveraendert weiter nach oben verschoben.
+    Kompromiss (Kosten UND `maxCount` je verdoppelt, `ships.ts`):
+    - `salvenjaeger`: Kosten 800k/500k/200k → 1,6M/1M/400k, `maxCount` 30 → 60
+    - `salvenkreuzer`: Kosten 2M/1,5M/700k → 4M/3M/1,4M, `maxCount` 15 → 30
+    - `salvendreadnought`: Kosten 4,5M/3,8M/2M → 9M/7,6M/4M, `maxCount` 8 → 16
+    Effekt: Vollausbau-Gesamtkosten je Typ steigen auf das VIERFACHE (2x Preis × 2x Stueckzahl),
+    waehrend die erreichbare Gesamt-Kampfkraft bei Vollausbau nur auf das ZWEIFACHE steigt (Stats
+    pro Schiff unveraendert) - die Grenzkosten pro zusaetzlicher Kampfkraft-Einheit steigen also
+    bewusst ueberproportional. Das erhoeht die Obergrenze fuer Spieler, die den vollen Weg gehen
+    wollen, ohne sie guenstiger oder schneller erreichbar zu machen. `buildTime` bewusst
+    unveraendert gelassen (war nicht Teil der Anfrage).
