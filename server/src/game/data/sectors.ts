@@ -30,7 +30,7 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 15 Teile pro Kategorie.",
     aktivitaet:"Piraten-Chance 50%", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit 150% der kombinierten Flottenstärke aller Teilnehmer. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
+    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit 120% der kombinierten Flottenstärke aller Teilnehmer. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
     aktivitaet:"Piraten-Chance 50%", gefahr:"Extrem", level:"rot" }
 ];
 
@@ -47,7 +47,7 @@ export interface SektorConfig {
   bonusLootChance?: number;
   bonusLootMultiplier?: number;
   captainChance?: number;
-  captainContainerTier?: 'silber' | 'gold';
+  captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // zusaetzlich zur normalen Beute, laeuft wie dmCap linear ueber die 4h
@@ -69,17 +69,17 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
     captainChance:0.12, captainContainerTier:"gold", captainDm:35 },
   piraten_elite:    { checkChance:0.50, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:40000, kristall:25000, deuterium:11000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.15, captainContainerTier:"gold", captainDm:50,
+    captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000} }
 };
 
 // Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig/Mittel/Hoch bleiben
 // bewusst bei maximal 100% (Solo spielbar); nur das Multiplayer-exklusive Elite-Bollwerk geht
-// bewusst darueber (150% der KOMBINIERTEN Flottenstaerke aller Teilnehmer).
+// bewusst darueber (120% der KOMBINIERTEN Flottenstaerke aller Teilnehmer).
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> = 
 {
   piraten_niedrig: [0.15, 0.175, 0.20],
   piraten_mittel:  [0.50, 0.55, 0.60],
   piraten_hoch:    [0.90, 0.95, 1.00],
-  piraten_elite:   [1.50, 1.50, 1.50]
+  piraten_elite:   [1.20, 1.20, 1.20]
 };

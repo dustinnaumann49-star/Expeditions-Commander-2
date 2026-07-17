@@ -69,11 +69,11 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     color: "#b0b0b0",
     pickCount: 3,
     rewards: [
-      { type:'resources', label:'Rohstoff-Fracht', metall:5000000, kristall:3000000, deuterium:1500000 },
-      { type:'teile', label:'Ausrüstungs-Kiste', waffen:10, schild:10, panzerung:10 },
-      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (30%)', percent:0.30 },
-      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (30%)', percent:0.30 },
-      { type:'freischiff', label:'Geschenkte Flotte', ships:{ leicht:15, schwer:15, kreuzer:10, schlachtschiff:10, bomber:10, schlachtkreuzer:5, zerstoerer:5, reaper:5 } }
+      { type:'resources', label:'Rohstoff-Fracht', metall:10000000, kristall:6000000, deuterium:3000000 },
+      { type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 },
+      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (40%)', percent:0.40 },
+      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (40%)', percent:0.40 },
+      { type:'freischiff', label:'Geschenkte Flotte', ships:{ leicht:25, schwer:25, kreuzer:15, schlachtschiff:15, bomber:15, schlachtkreuzer:8, zerstoerer:8, reaper:8 } }
     ]
   },
   gold: {
@@ -83,14 +83,44 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     color: "#ffd700",
     pickCount: 4,
     rewards: [
-      { type:'resources', label:'Große Rohstoff-Fracht', metall:15000000, kristall:13000000, deuterium:11500000 },
-      { type:'dm', label:'Dunkle Materie', amount:15 },
-      { type:'teile', label:'Große Ausrüstungs-Kiste', waffen:30, schild:30, panzerung:30 },
-      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (60%)', percent:0.60 },
-      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (60%)', percent:0.60 },
-      { type:'freischiff', label:'Geschenkte Großflotte', ships:{ leicht:30, schwer:30, kreuzer:20, schlachtschiff:20, bomber:20, schlachtkreuzer:10, zerstoerer:10, reaper:10 } }
+      { type:'resources', label:'Große Rohstoff-Fracht', metall:25000000, kristall:20000000, deuterium:17000000 },
+      { type:'dm', label:'Dunkle Materie', amount:25 },
+      { type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 },
+      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (75%)', percent:0.75 },
+      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (75%)', percent:0.75 },
+      { type:'freischiff', label:'Geschenkte Großflotte', ships:{ leicht:50, schwer:50, kreuzer:35, schlachtschiff:35, bomber:35, schlachtkreuzer:18, zerstoerer:18, reaper:18 } }
+    ]
+  },
+  // Neue Top-Stufe UEBER Gold - exklusiv fuer Elite-Bollwerk-Abschluss (Multiplayer, Punkt 39) und
+  // Piratenkapitaen-Kills im Elite-Bollwerk selbst (sectors.ts, captainContainerTier:"elite").
+  // Bewusst NICHT ueber normale Piraten-Sektoren/Raids/Notruf-Events erreichbar - siehe README.
+  elite: {
+    name: "Elite-Container",
+    tier: "elite",
+    icon: "💎",
+    color: "#c99bff",
+    pickCount: 5,
+    rewards: [
+      { type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:45000000, kristall:38000000, deuterium:32000000 },
+      { type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 },
+      { type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 },
+      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (100%)', percent:1.0 },
+      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (100%)', percent:1.0 },
+      { type:'freischiff', label:'Geschenkte Elite-Flotte', ships:{ leicht:80, schwer:80, kreuzer:60, schlachtschiff:60, bomber:60, schlachtkreuzer:30, zerstoerer:30, reaper:30, salvenkreuzer:2 } }
     ]
   }
+};
+
+// ===== Jackpot-Mechanik =====
+// Bei JEDER Container-Oeffnung (unabhaengig von der Stufe) besteht zusaetzlich zu den normalen
+// gewuerfelten Belohnungen eine kleine Chance auf EINE zusaetzliche Jackpot-Belohnung, skaliert
+// nach Container-Stufe. Bewusst ZUSAETZLICH statt als Ersatz fuer eine der normalen Belohnungen -
+// ein Jackpot soll sich immer wie ein reiner Bonus anfuehlen, nie wie ein verpasster Normal-Pick.
+export const JACKPOT_CHANCE = 0.05; // 5% Chance pro Container-Oeffnung
+export const JACKPOT_REWARDS: Record<string, ContainerRewardDef> = {
+  silber: { type:'resources', label:'🎰 Jackpot! Rohstoff-Ladung', metall:30000000, kristall:22000000, deuterium:11000000 },
+  gold:   { type:'dm', label:'🎰 Jackpot! Dunkle-Materie-Fund', amount:120 },
+  elite:  { type:'freischiff', label:'🎰 Jackpot! Flaggschiff-Geschenk', ships:{ schlachtkreuzer:20, zerstoerer:15, reaper:15, salvenkreuzer:5 } }
 };
 
 export interface NpcSpecialDef {
