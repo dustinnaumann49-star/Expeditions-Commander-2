@@ -571,3 +571,24 @@ client/
        explizit hoeher als bei jedem Solo-Sektor (die bei maximal 100% bleiben, siehe Punkt 76-78 im
        Code-Kommentar), was in Kombination mit dem gleichwertigen Belohnungs-Pool (jetzt behoben,
        siehe oben) unverhaeltnismaessig schwer fuer den Ertrag wirkte.
+
+40. **`Flotte.tsx` (Bestandsseite) nach Schiffsklassen sortiert statt einer flachen, unsortierten
+    Liste** - dieselbe Klassen-Einteilung wie in `Werft.tsx`s `WERFT_KLASSEN` (Jäger-/Kreuzer-/
+    Elite-Klasse, Versorgungsschiffe), als eigene `FLOTTE_KLASSEN`-Konstante lokal in `Flotte.tsx`
+    dupliziert (kein gemeinsamer Import, um WERFT_KLASSEN nicht mit fremder Bedeutung zu
+    ueberladen - dort ist es "baubar in dieser Werft-Klasse", hier "gehoert zu dieser Klasse fuer
+    die Anzeige", subtil unterschiedliche Semantik). Zusaetzliche fuenfte Gruppe "Spezialschiffe"
+    (aktuell nur Imperator) ergaenzt, damit auch er in der Bestandsuebersicht auftaucht - er ist in
+    keiner Werft-Klasse baubar (eigene Spezialteile-Seite), fehlte in einer reinen Werft-Klassen-
+    Kopie sonst komplett.
+
+    **"Unterwegs"-Sektion (rohe Schiffs-IDs + Sektor-IDs als Text) komplett aus `Flotte.tsx`
+    entfernt** - war der falsche Ort dafuer (Bestandsseite sollte zeigen, was zu HAUSE steht, nicht
+    wo unterwegs befindliche Flotten gerade stecken). Stattdessen: **`Sektor.tsx`s
+    `MissionStatus`-Komponente zeigt jetzt direkt an der jeweiligen Sektor-Karte, wie viele Schiffe
+    dort gerade im Einsatz sind** (Gesamtzahl inline: "🚀 Flotte vor Ort: X Schiffe"), mit einem
+    kleinen "Details"-Button, der ein Popup mit der vollen Zusammensetzung (Schiffsname + Stückzahl
+    pro Typ, ueber `shipName()` aus `combatInfo.ts` statt roher IDs) oeffnet - folgt demselben
+    "Info-Popup statt vollgepackter Karte"-Muster wie der bereits bestehende "ℹ️ Info"-Button
+    (Punkt 14), damit die Karte selbst uebersichtlich bleibt. Neuer State `fleetMissionId` in
+    `SektorPage` steuert das Popup, analog zu `infoSektorId`.
