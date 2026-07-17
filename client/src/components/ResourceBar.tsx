@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { serverNow } from '../lib/serverTime';
+import { formatTime } from '../lib/format';
 
 export function ResourceBar() {
-  const { state } = useGame();
+  const { state, activeRaids } = useGame();
   const { username, logout } = useAuth();
+  const navigate = useNavigate();
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -17,6 +20,11 @@ export function ResourceBar() {
 
   const fmt = (n: number) => Math.floor(n).toLocaleString('de-DE');
   const clockText = new Date(serverNow()).toLocaleTimeString('de-DE');
+  const now = serverNow();
+
+  const ownRaid = state.raid && !state.raid.resolved ? state.raid : null;
+  const ownEvent = state.event && !state.event.started ? state.event : null;
+  const otherRaidsCount = activeRaids.length;
 
   return (
     <div id="resourcebar">
@@ -43,6 +51,27 @@ export function ResourceBar() {
           Dunkle Materie: {fmt(state.resources.dm)}
         </span>
       </div>
+
+      {(ownRaid || ownEvent || otherRaidsCount > 0) && (
+        <div className="res-group" style={{ gap: 8 }}>
+          {ownRaid && (
+            <button className="alert-badge" onClick={() => navigate('/sektor')}>
+              ⚠ Raid im Anflug · {formatTime(ownRaid.arrivalTime - now)}
+            </button>
+          )}
+          {ownEvent && (
+            <button className="alert-badge" onClick={() => navigate('/sektor')}>
+              📡 Notruf aktiv
+            </button>
+          )}
+          {otherRaidsCount > 0 && (
+            <button className="alert-badge" onClick={() => navigate('/multiplayer?tab=raid')}>
+              🛡️ {otherRaidsCount === 1 ? `Raid bei ${activeRaids[0].targetUsername}` : `${otherRaidsCount} Raids bei Mitspielern`}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="res-group">
         <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>{username}</span>
         <span id="clock">{clockText}</span>
