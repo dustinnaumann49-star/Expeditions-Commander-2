@@ -327,3 +327,53 @@ client/
     (`combatInfo.ts`), Sektor-IDs über `gameData.sektoren`-Lookup, Status-Enums über eigene
     Label-Maps (z.B. `OP_STATUS_LABELS`/`PARTICIPANT_STATUS_LABELS` in `Multiplayer.tsx`) in
     lesbaren Text übersetzen.
+
+33. **Wellen-Vielfalt gegen "man weiss schon, was einen erwartet": alle vier Missionsarten
+    (Piraten-Sektor, Raid, Notruf-Event, Elite-Bollwerk) liefen vorher durch dieselben
+    Generierungsfunktionen mit EINER festen, abfallenden Gewichtungskurve - nur die reine Staerke
+    variierte, nie die FORM der Gegnerflotte.** Drei unabhaengige Bausteine, zentral in `combat.ts`/
+    `combatConstants.ts` (nicht pro Aufrufstelle dupliziert):
+    - **Zusammensetzungs-Profile** (`WaveProfile`: `schwarm`/`kampfgruppe`/`elitekader`,
+      `pickWaveProfile()`): unterschiedliche Gewichtskurven ueber denselben Schiffs-Pool - Schwarm
+      (viele billige Jaeger, bisherige Kurve), Kampfgruppe (gleichmaessig), Elitekader (wenige,
+      teure Schiffe). `WAVE_PROFILE_WEIGHTS` je Kontext-Schluessel gewichtet die Wahrscheinlichkeit
+      unterschiedlich (z.B. `piraten_niedrig` fast nur Schwarm, `piraten_hoch`/`piraten_elite`
+      ueberwiegend Kampfgruppe/Elitekader). `generatePiratenFleet()`/`generateFallbackFleet()`
+      nehmen jetzt einen optionalen `profile`-Parameter (Standard `'schwarm'` fuer
+      Abwaertskompatibilitaet).
+    - **Wellen-Ausreisser** (`rollMultiplierWithOutlier()`): zusaetzlich zur normalen 3-Werte-
+      Tabelle (`PIRATEN_MULTIPLIER_ROLL`) eine kontextabhaengige Chance (`WAVE_OUTLIER_CHANCE`) auf
+      einen deutlichen Ausschlag nach oben (`WAVE_OUTLIER_HIGH_FACTOR`, 1.5x) oder unten
+      (`WAVE_OUTLIER_LOW_FACTOR`, 0.6x) - verhindert, dass sich Kaempfe immer nur zwischen denselben
+      drei Werten bewegen. Raid und Notruf (solo + gemeinsam) hatten VORHER ueberhaupt keine
+      Schwankung (exakt 100% der eigenen Kampf-Power) - neue Basistabellen `RAID_MULTIPLIER_ROLL`/
+      `NOTRUF_MULTIPLIER_ROLL` (`[0.90, 1.00, 1.10]`) geben ihnen jetzt dieselbe Grund-Varianz plus
+      Ausreisser-Chance wie den Piraten-Sektoren. Auch die Elite-Bollwerk-Tabelle
+      (`piraten_elite` in `sectors.ts`) war zuvor komplett flach (`[1.20, 1.20, 1.20]`) und wurde
+      auf echte Varianz umgestellt (`[1.05, 1.20, 1.35]`).
+    - **Kampf-Modifikatoren** (`BattleModifierType`: `nebel`/`ionensturm`/`truemmerfeld`/
+      `sensorstoerung`/`strahlungssturm`, `rollBattleModifier()`): seltene, kontextabhaengige
+      Chance (`BATTLE_MODIFIER_CHANCE`) auf EINEN zusaetzlichen Effekt fuer genau diesen Kampf -
+      Nebel/Sensorstoerung/Truemmerfeld schwaechen gezielt den SPIELER (Praezision/RapidFire-
+      Trefferquote/Ausweichen), Ionensturm schwaecht die Schild-Regeneration des Spielers
+      (inklusive Kuppel-Pool), Strahlungssturm verstaerkt die Kritische-Treffer-Chance des GEGNERS.
+      Musste als reiner Datenparameter (`battleModifier: BattleModifierType | null`) durch die
+      GESAMTE Kampf-Kette gereicht werden, bis hinunter zu `rollHit()`/`fireShots()`/`runRounds()`,
+      und durch `combatRunner.ts`/`combat.worker.ts` (Worker-Thread-Grenze, siehe Punkt 3 - keine
+      Funktionen, nur Daten). Wird im Kampfbericht als Klartext angezeigt (z.B. "🌫️ Nebel im
+      Sektor – deine Präzision -15% in diesem Kampf"), damit es sich wie eine erklaerte
+      Ueberraschung anfuehlt, nicht wie unsichtbare Willkuer - aber bewusst NICHT vorher in der
+      UI angekuendigt, sonst waere die Ueberraschung dahin.
+    - **Elite-Bollwerk-Sonderregel:** Da dort 4 Stunden-Checks hintereinander stattfinden, wuerden
+      Ausreisser UND Kampf-Modifikatoren bei gleicher Pro-Check-Chance wie bei Piraten-Hoch das
+      Risiko ueber die gesamte Expedition unfair aufsummieren. Neues Feld `eliteSurpriseUsed` auf
+      `GroupOperation` (`types.ts`) kappt BEIDE auf zusammen maximal 1x pro GESAMTER Expedition,
+      nicht pro Einzel-Check (`runGroupHourlyCheck()` in `groupOps.ts`) - sobald einmal ein
+      Ausreisser ODER ein Modifikator zugetroffen ist, bleiben alle folgenden Stunden-Checks dieser
+      Expedition bei der normalen 3-Werte-Tabelle ohne weitere Ueberraschung.
+    - `simulator.ts` wurde ebenfalls umgestellt (jeder Simulationslauf wuerfelt unabhaengig sein
+      eigenes Profil/Ausreisser/Modifikator) - die Statistik ueber mehrere Laeufe zeigt dadurch
+      automatisch die tatsaechliche Bandbreite moeglicher Begegnungen, nicht nur einen Einzelfall.
+    Bewusst NICHT angetastet: `generateDefenseFleet()` (Verteidigungsanlagen-Generierung) - hatte
+    bereits durch `Math.random()`-Gewichtung pro Aufruf inhaerente Varianz, war nicht Teil des
+    urspruenglichen "eintoenig"-Problems.
