@@ -23,6 +23,7 @@ import {
   WAVE_OUTLIER_HIGH_FACTOR,
   BATTLE_MODIFIER_CHANCE,
   BATTLE_MODIFIER_LABELS,
+  MULTI_TARGET_POWER_CORRECTION,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
@@ -204,7 +205,8 @@ export function combatFleetPower(
     if (count <= 0) return;
     const eff = getEffectiveStats(id, research, defenseCounts);
     if (eff.waffen <= 0) return;
-    total += count * (eff.waffen + eff.schild + eff.panzerung);
+    const correction = MULTI_TARGET_VOLLEY_SHIPS.has(id) ? MULTI_TARGET_POWER_CORRECTION : 1;
+    total += count * (eff.waffen + eff.schild + eff.panzerung) * correction;
   });
   return total;
 }
@@ -224,7 +226,8 @@ export function combatFleetPowerBase(fleetObj: Record<string, number>): number {
     if (count <= 0) return;
     const base = baseStats(id);
     if (base.waffen <= 0) return;
-    total += count * (base.waffen + base.schild + base.panzerung);
+    const correction = MULTI_TARGET_VOLLEY_SHIPS.has(id) ? MULTI_TARGET_POWER_CORRECTION : 1;
+    total += count * (base.waffen + base.schild + base.panzerung) * correction;
   });
   return total;
 }
