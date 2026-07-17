@@ -102,7 +102,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       refreshUsers();
       refreshParties();
       refreshRaids();
-    }, 5000);
+    }, 3000);
     // Wenn der Tab aus dem Hintergrund zurueckkommt (Browser drosseln Timer dort teils stark),
     // sofort nachziehen statt bis zu 5s auf den naechsten Poll zu warten - wichtig fuer den
     // Online/Offline-Status anderer Spieler.
