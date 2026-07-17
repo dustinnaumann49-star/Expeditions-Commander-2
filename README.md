@@ -527,3 +527,47 @@ client/
     reaktiveres Multiplayer-Gefuehl (unkritisch bei der geringen Spielerzahl, siehe Punkt 25).
     Echtes Server-Push (WebSockets/SSE) wurde NICHT umgesetzt - deutlich groesserer Eingriff in
     Architektur und Abhaengigkeiten, hier bewusst nicht vorgenommen ohne explizite Anfrage.
+
+39. **Belohnungs-Ueberarbeitung (Piraten-Sektoren, Raid-Verteidigung, Notruf-Event,
+    Elite-Bollwerk-Multiplayer) - ausdruecklich NICHT die Darstellung, sondern der Inhalt selbst.**
+    Befund vorher: alle vier Quellen griffen auf denselben zweistufigen Silber/Gold-Pool zu, ohne
+    Staffelung nach Schwierigkeit - das anspruchsvollste Content (Elite-Bollwerk, nur per
+    koordinierter Multiplayer-Expedition erreichbar) fuehlte sich dadurch nicht bedeutsamer an als
+    ein einfaches Solo-Notruf-Event. Umgesetzt in drei Teilen:
+
+    1. **Bestehende Silber/Gold-Inhalte deutlich erhoeht** (`CONTAINER_TYPES` in `data/economy.ts`):
+       Silber-Rohstoffe 5M/3M/1,5M -> 10M/6M/3M, Teile 10 -> 20, Zeit-Gutscheine 30% -> 40%,
+       Geschenkte Flotte ~1,7x groesser. Gold-Rohstoffe 15M/13M/11,5M -> 25M/20M/17M, DM 15 -> 25,
+       Teile 30 -> 50, Zeit-Gutscheine 60% -> 75%, Geschenkte Grossflotte ~1,7x groesser.
+    2. **Neue Top-Stufe UEBER Gold: Elite-Container** (💎, Farbe `#c99bff` - bewusst dieselbe
+       Elite-Akzentfarbe wie in der bereits bestehenden `sektor-info-box`/`piraten-pool-tag`,
+       Punkt 14, fuer visuelle Konsistenz). Enthaelt 45M/38M/32M Rohstoffe, 50 DM, 90 Teile, 100%
+       Zeit-Gutscheine (sofortiger Bau-/Forschungsabschluss), Geschenkte Elite-Flotte (inkl. 2
+       Salvenkreuzer), `pickCount:5` (eine Auswahl mehr als Gold). Bewusst NICHT ueber normale
+       Piraten-Sektoren/Raids/Notruf-Events erreichbar, sondern exklusiv ueber
+       `captainContainerTier:"elite"` beim Piratenkapitaen im Elite-Bollwerk (`piraten_elite` in
+       `sectors.ts` - vorher `"gold"`, damit war der Elite-Bollwerk-Kapitaen nicht wertvoller als
+       der Kapitaen in `piraten_hoch`, der bleibt bewusst bei `"gold"` als bestes SOLO-erreichbares
+       Ergebnis). Neuer zentraler `ContainerTier`-Typ (`'silber' | 'gold' | 'elite'`, `types.ts`)
+       ersetzt die bisher an ~10 Stellen wiederholte `'silber' | 'gold'`-Literal-Union
+       (`inventory.ts`, `missions.ts`, `groupOps.ts`, `sectors.ts`, `types.ts`, Client-Mirror in
+       `types/game.ts`) - Raids und (solo wie gemeinsame) Notruf-Events bleiben bewusst bei den
+       lokalen `'silber' | 'gold'`-Typen in `raids.ts`/`events.ts`/`groupOps.ts`s
+       `resolveGroupEvent()`, geben also niemals Elite-Container aus. WICHTIG: KEINE zusaetzliche
+       Abschluss-Belohnung in `finalizeGroupExpedition()` (Elite-Bollwerk-Rueckkehr) ergaenzt, obwohl
+       das ein naheliegender Ort gewesen waere - Solo-Piraten-Missionen geben ebenfalls keinen
+       Bonus-Container fuers blosse Zurueckkehren (nur ueber Piratenkapitaen-Kills), und Punkt 5
+       verlangt, dass Multiplayer-Belohnungen 1:1 dem Solo-Aequivalent entsprechen. Ein Elite-Only-
+       Bonus dort haette dieses Prinzip gebrochen.
+    3. **Jackpot-Mechanik** (`JACKPOT_CHANCE`/`JACKPOT_REWARDS` in `data/economy.ts`, angewendet in
+       `openContainer()`, `inventory.ts`): 5% Chance PRO Container-Oeffnung (unabhaengig von der
+       Stufe) auf eine ZUSAETZLICHE Jackpot-Belohnung, skaliert nach Container-Stufe (Silber:
+       30M/22M/11M Rohstoffe: Gold: 120 DM; Elite: Flaggschiff-Geschenk mit Schlachtkreuzern/
+       Zerstoerern/Reapern/5 Salvenkreuzern). Bewusst ZUSAETZLICH zu den normalen `pickCount`-Picks,
+       nicht als deren Ersatz - ein Jackpot soll sich immer wie reiner Bonus anfuehlen, nie wie ein
+       verpasster Normal-Pick. Eigene Nachrichtenzeile ("🎰 JACKPOT!") beim Oeffnen.
+    4. **Elite-Bollwerk-Skalierung von 150% auf 120% gesenkt** (`PIRATEN_MULTIPLIER_ROLL.piraten_elite`
+       in `sectors.ts`, plus Sektor-Beschreibungstext und Code-Kommentar angepasst) - war zuvor
+       explizit hoeher als bei jedem Solo-Sektor (die bei maximal 100% bleiben, siehe Punkt 76-78 im
+       Code-Kommentar), was in Kombination mit dem gleichwertigen Belohnungs-Pool (jetzt behoben,
+       siehe oben) unverhaeltnismaessig schwer fuer den Ertrag wirkte.
