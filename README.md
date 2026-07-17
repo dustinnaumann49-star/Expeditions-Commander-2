@@ -424,3 +424,17 @@ client/
       wurde - bei kuenftigen Aenderungen an diesem Funktionsteil auf doppelte `reinforcerStates.
       forEach(...)`-Schleifen achten, die versehentlich denselben `playerResults`-Eintrag zweimal
       erzeugen koennten.
+
+36. **Info-Texte (`SektorInfoBox` in `Sektor.tsx`) an die Belohnungs-Eskalation (Punkt 35)
+    angepasst.** Neue Zeile "📈 Sieges-Serie" - je nach `sektorId` unterschiedlicher Text:
+    Elite-Bollwerk zeigt die Verdopplungs-Mechanik ("bis zu 8x nach 4 Siegen in Folge"), die
+    anderen drei Piraten-Sektoren zeigen ihre jeweiligen additiven Werte (+10%/130%,
+    +20%/160%, +35%/205% - hartcodiert client-seitig nach `sektorId`, da es sich um feste
+    Balance-Konstanten handelt, keine dynamischen Serverdaten). "💰 Beute pro Sieg" und "🔧
+    Teile-Sammlung" bekamen den Zusatz "(vor Sieges-Serie-Bonus)", damit klar ist, dass die
+    angezeigten Zahlen die BASIS sind, nicht der tatsaechliche Endwert bei einer laufenden Serie -
+    der tatsaechliche eskalierte Betrag ist ohnehin erst nach dem jeweiligen Kampf im Bericht
+    sichtbar (`[Serie x...]`-Zusatz im Nachrichtentext, siehe Punkt 35). Notruf-Event und Raid
+    haben KEINE eigene Info-Box (sie werden nicht wie Sektoren aktiv ausgewaehlt, sondern lösen
+    zufaellig aus) - dort war nichts zu aktualisieren, die neuen Container-Mengen/DM-Bergung
+    werden bereits vollstaendig im Kampfbericht selbst angezeigt.
