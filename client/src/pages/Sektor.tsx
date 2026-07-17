@@ -90,12 +90,36 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           </span>
         </div>
         <div className="info-row">
+          <span className="info-label">📈 Sieges-Serie</span>
+          <span className="info-value">
+            {sektorId === 'piraten_elite' ? (
+              <>
+                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt sich</strong> mit jedem aufeinanderfolgenden Sieg in derselben Expedition
+                (bis zu <strong style={{ color: 'var(--accent-dm)' }}>8x</strong> nach 4 Siegen in Folge) - wirkt auf Beute und Teile-Bonus
+              </>
+            ) : (
+              <>
+                Beute und Teile-Bonus steigen mit jedem aufeinanderfolgenden Sieg in derselben Mission um{' '}
+                <strong style={{ color: 'var(--accent-deut)' }}>
+                  {sektorId === 'piraten_niedrig' ? '+10%' : sektorId === 'piraten_mittel' ? '+20%' : '+35%'}
+                </strong>{' '}
+                (max.{' '}
+                <strong style={{ color: 'var(--accent-deut)' }}>
+                  {sektorId === 'piraten_niedrig' ? '130%' : sektorId === 'piraten_mittel' ? '160%' : '205%'}
+                </strong>
+                )
+              </>
+            )}{' '}
+            - bricht bei einem Check ohne vernichteten Gegner ab
+          </span>
+        </div>
+        <div className="info-row">
           <span className="info-label">💰 Beute pro Sieg</span>
           <span className="info-value">
             <strong style={{ color: 'var(--accent-metall)' }}>{cfg.lootBase?.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
             <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
             <strong style={{ color: 'var(--accent-deut)' }}>{cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium</strong> ·{' '}
-            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% Chance auf {cfg.bonusLootMultiplier}x Volltreffer
+            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% Chance auf {cfg.bonusLootMultiplier}x Volltreffer (vor Sieges-Serie-Bonus)
           </span>
         </div>
         <div className="info-row">
@@ -104,7 +128,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
             Läuft passiv über die Zeit bis Cap (<strong style={{ color: 'var(--accent-kristall)' }}>{cfg.teileCap}</strong>), zusätzlicher
             Sofort-Bonus bei jedem Sieg (klar <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> / mit Verlusten{' '}
             <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> / Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
-            Cap)
+            Cap, vor Sieges-Serie-Bonus)
           </span>
         </div>
         <div className="info-row">
