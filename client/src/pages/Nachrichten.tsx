@@ -28,7 +28,8 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
             <th>Gesendet</th>
             <th>Überlebt</th>
             <th>Verloren</th>
-            <th>Schaden</th>
+            <th>Schaden ausgeteilt</th>
+            <th>Schaden erlitten</th>
             <th>Schild absorb.</th>
             <th>Schild regen.</th>
             <th>Schüsse/Treffer</th>
@@ -43,6 +44,7 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
                 <td>{u.sent ?? u.count}</td>
                 <td className={lost > 0 ? '' : 'level-gruen'}>{u.survived ?? u.survivedCount}</td>
                 <td className={lost > 0 ? 'level-rot' : ''}>{lost}</td>
+                <td>{Math.round(u.dmgDealt || 0).toLocaleString('de-DE')}</td>
                 <td>{u.dmgTaken.toLocaleString('de-DE')}</td>
                 <td>{u.shieldDmgTaken.toLocaleString('de-DE')}</td>
                 <td>{u.shieldRegen.toLocaleString('de-DE')}</td>
