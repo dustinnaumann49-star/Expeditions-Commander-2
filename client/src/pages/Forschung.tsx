@@ -45,6 +45,7 @@ export function ForschungPage() {
         {gameData.research.map((tech) => {
           const level = state.research[tech.id] || 0;
           const maxed = level >= gameData.maxResearchLevel;
+          const isLocked = tech.id === 'spionage';
           const nextLevel = level + 1;
           const cost = maxed ? null : researchCostForLevel(tech.baseCost, tech.costGrowth, nextLevel);
           const timeMs = maxed ? null : researchTimeForLevel(tech.baseTimeHours, tech.timeGrowth, nextLevel, forschungszeitMult);
@@ -68,7 +69,11 @@ export function ForschungPage() {
                   <span>Effekt: +{(tech.effectPerLevel * 100).toFixed(0)}% pro Stufe</span>
                 </div>
 
-                {maxed ? (
+                {isLocked ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                    🔒 Vorerst gesperrt – ihr bisheriger Effekt wurde durch andere Systeme überlagert. Bleibt für zukünftigen Spielausbau vorbereitet.
+                  </p>
+                ) : maxed ? (
                   <p className="level-gruen">Maximalstufe erreicht</p>
                 ) : activeJob ? (
                   <>
