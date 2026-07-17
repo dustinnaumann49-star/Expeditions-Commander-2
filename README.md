@@ -592,3 +592,21 @@ client/
     "Info-Popup statt vollgepackter Karte"-Muster wie der bereits bestehende "ℹ️ Info"-Button
     (Punkt 14), damit die Karte selbst uebersichtlich bleibt. Neuer State `fleetMissionId` in
     `SektorPage` steuert das Popup, analog zu `infoSektorId`.
+
+41. **Haendler-Bereich (`Haendler.tsx`/`Schrotthaendler.tsx`) optisch an das Karten-Design des
+    restlichen Spiels angeglichen** - beide nutzten bisher noch die schlichten `queue-box`/
+    `queue-item`-Listenzeilen (gedacht fuer Warteschlangen/einfache Listen), waehrend
+    Werft/Verteidigung/Shop bereits laenger das `ship-grid`/`ship-card`-Muster (Bilder, Hover-
+    Animation, siehe `theme.css`) nutzen - dieser Stilbruch war der eigentliche Grund fuer den
+    "nicht so huebsch"-Eindruck.
+    - **Ressourcentausch**: `<select>`-Dropdowns durch anklickbare Icon-Chips ersetzt
+      (`ResourcePicker`, wiederverwendet `.qty-btn`/`.qty-btn.active`, Icons aus `/resources/*.png`
+      - dieselben Bilder wie in `ResourceBar.tsx`). Neu: Schnellwahl-Buttons (25% / 50% / Alles
+      vom aktuellen Bestand) statt nur manueller Zahleneingabe. Handelsfluss jetzt als klare
+      Geben-⇄-Erhalten-Karte (`ship-card`) statt loser `queue-box`-Zeilen. Handelslogik selbst
+      (Kurs, Spanne, `executeTrade()`) unveraendert.
+    - **Schrotthaendler**: Schiffe/Verteidigungsanlagen jetzt als `ship-grid`/`ship-card` mit
+      echten Bildern (`s.img`/`d.img`) statt reiner Textzeilen. Neu: LIVE-Erstattungsvorschau pro
+      Karte (`refundText()`, berechnet `cost * scrapRefundRate * qty` client-seitig) - vorher
+      wusste man erst nach dem Klick auf "Verschrotten", wie viel man zurueckbekommt, jetzt sofort
+      sichtbar waehrend der Mengeneingabe.
