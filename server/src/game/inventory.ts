@@ -1,9 +1,9 @@
-import { CONTAINER_TYPES } from './data/economy.js';
+import { CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS } from './data/economy.js';
 import { pushMessage } from './messages.js';
 import type { ActionResult } from './actions.js';
-import type { Container, ContainerReward, PlayerState, RewardItem } from './types.js';
+import type { Container, ContainerReward, ContainerTier, PlayerState, RewardItem } from './types.js';
 
-export function addContainer(state: PlayerState, tier: 'silber' | 'gold') {
+export function addContainer(state: PlayerState, tier: ContainerTier) {
   const container: Container = {
     id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     tier,
@@ -23,8 +23,14 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
   const count = config.pickCount || 2;
   const selected = shuffled.slice(0, count);
 
+  // Jackpot: zusaetzlich zu den normalen Picks, mit kleiner Chance (siehe JACKPOT_CHANCE in
+  // economy.ts) - ein Bonus obendrauf, kein Ersatz fuer einen der gewuerfelten Picks.
+  const jackpotHit = Math.random() < JACKPOT_CHANCE;
+  const jackpotReward = jackpotHit ? JACKPOT_REWARDS[container.tier] : null;
+  const allRewards = jackpotReward ? [...selected, jackpotReward] : selected;
+
   const labels: string[] = [];
-  selected.forEach((reward) => {
+  allRewards.forEach((reward) => {
     const stackKey = `${reward.type}|${reward.label}`;
     const existing = state.inventory.find((i) => 'type' in i && i.type === 'rewardItem' && (i as RewardItem).stackKey === stackKey) as
       | RewardItem
@@ -47,7 +53,8 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
   });
 
   state.inventory.splice(idx, 1);
-  pushMessage(state, 'farm', `📦 ${config.name} geöffnet! Ins Inventar gelegt: ${labels.join(', ')}. Du kannst sie jederzeit einzeln einlösen.`);
+  const jackpotText = jackpotHit ? ' 🎰 JACKPOT! Eine zusätzliche Belohnung wartet im Inventar!' : '';
+  pushMessage(state, 'farm', `📦 ${config.name} geöffnet! Ins Inventar gelegt: ${labels.join(', ')}. Du kannst sie jederzeit einzeln einlösen.${jackpotText}`);
   return { ok: true };
 }
 

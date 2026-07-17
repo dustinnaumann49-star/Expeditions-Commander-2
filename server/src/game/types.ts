@@ -134,7 +134,7 @@ export interface RewardSummary {
   teileWaffen?: number;
   teileSchild?: number;
   teilePanzerung?: number;
-  containerTier?: 'silber' | 'gold';
+  containerTier?: ContainerTier;
   stolenMetall?: number;
   stolenKristall?: number;
   stolenDeuterium?: number;
@@ -152,6 +152,10 @@ export interface CombatReplay {
   roundsB: number[][];
   totalRounds: number;
 }
+
+// Container-Stufe: 'elite' ist die neue Top-Stufe ueber Gold (siehe README) - exklusiv fuer
+// Elite-Bollwerk-Abschluss und Piratenkapitaen-Kills in den schwersten Piraten-Sektoren.
+export type ContainerTier = 'silber' | 'gold' | 'elite';
 
 export interface CombatDetail {
   sektorName: string;
@@ -183,7 +187,7 @@ export interface GameMessage {
 
 export interface Container {
   id: string;
-  tier: 'silber' | 'gold';
+  tier: ContainerTier;
   receivedAt: number;
 }
 

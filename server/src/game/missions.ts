@@ -23,7 +23,7 @@ import {
 import { pushMessage } from './messages.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
-import type { CombatUnitResult, FarmDetail, Mission, PlayerState } from './types.js';
+import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
@@ -430,13 +430,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
 
   const captainResult = npcResults.find((r) => r.isCaptain);
   let captainText = '';
-  let captainContainerTier: 'silber' | 'gold' | undefined;
+  let captainContainerTier: ContainerTier | undefined;
   let captainDmGained = 0;
   if (captainResult) {
     if (captainResult.destroyed) {
       addContainerToState(state, cfg.captainContainerTier!);
       mission.dmFound += cfg.captainDm || 0;
-      const tierLabel = cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
+      const tierLabel = cfg.captainContainerTier === 'elite' ? 'Elite-Container' : cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
       captainText = ` Der Piratenkapitän wurde vernichtet! Ein ${tierLabel} und ${cfg.captainDm} Dunkle Materie wurden erbeutet.`;
       captainContainerTier = cfg.captainContainerTier;
       captainDmGained = cfg.captainDm || 0;
@@ -479,7 +479,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
 
 // Kleine, lokal gehaltene Hilfsfunktion, um einen Kreisimport mit inventory.ts zu vermeiden
 // (Piratenkapitän-Belohnung fuegt einen Container direkt hinzu).
-function addContainerToState(state: PlayerState, tier: 'silber' | 'gold') {
+function addContainerToState(state: PlayerState, tier: ContainerTier) {
   state.inventory.push({
     id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     tier,

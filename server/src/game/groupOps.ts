@@ -15,7 +15,7 @@ import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import type { ActionResult } from './actions.js';
-import type { CombatUnitResult, CombatDetail, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
+import type { CombatUnitResult, CombatDetail, ContainerTier, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
 
 function rollMultiplier(options: number[]): number {
   return options[Math.floor(Math.random() * options.length)];
@@ -35,7 +35,7 @@ function saveOp(op: GroupOperation) {
   saveGroupOperationJson(op.id, op.creatorId, op.status, JSON.stringify(op));
 }
 
-function addContainerToState(state: PlayerState, tier: 'silber' | 'gold') {
+function addContainerToState(state: PlayerState, tier: ContainerTier) {
   state.inventory.push({ id: newId('container'), tier, receivedAt: Date.now() });
 }
 
