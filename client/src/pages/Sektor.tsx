@@ -6,7 +6,7 @@ import { InfoModal } from '../components/InfoModal';
 import { SimulatorView } from './Simulator';
 import type { GameData, Mission } from '../types/game';
 
-const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
+const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
 const SEKTOR_KLASSEN = [
   { id: 'asteroid', name: 'Asteroiden-Feld', match: (id: string) => id.startsWith('asteroid_') },

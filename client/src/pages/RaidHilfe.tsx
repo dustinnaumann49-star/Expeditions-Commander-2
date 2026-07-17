@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 
-const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
+const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
 export function RaidHilfePage() {
   const { state, activeRaids, reinforceRaid, error } = useGame();

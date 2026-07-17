@@ -6,7 +6,7 @@ import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal } from '../components/InfoModal';
 
-const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'];
+const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
 function FleetPicker({
   availableIds,
