@@ -524,3 +524,23 @@ client/
     Feldern) zu vermeiden - beide Felder hatten denselben irrefuehrenden "laeuft ueber die 4h"-
     Kommentar, obwohl nur eines davon noch bei 4h liegt. Client zeigt `cfg.dmCap` bereits dynamisch
     an (`SektorInfoBox` in `Sektor.tsx`), keine Client-Aenderung noetig.
+
+41. **Spionage-Forschung als Platzhalter gesperrt - bewusst NICHT entfernt, fuer spaeteren
+    Spielausbau vorbereitet.** Ihr einziger Effekt (Glaettung der Gegner-Zusammensetzung in
+    `generatePiratenFleet()`/`generateDefenseFleet()`, `combat.ts`) wurde durch die neuen
+    Wellen-Profile (Punkt 33) weitgehend ueberschattet - welches Profil gewuerfelt wird, hat viel
+    groesseren Einfluss auf die Zusammensetzung als das, was Spionage danach noch glaetten kann.
+    **Server:** `startResearch()` in `actions.ts` lehnt `techId === 'spionage'` explizit ab (Fehler
+    "aktuell gesperrt"), unabhaengig vom Client - Sperre gilt also auch bei direkten API-Aufrufen.
+    Effekt zusaetzlich neutralisiert: `missions.ts`/`groupOps.ts`/`simulator.ts` uebergeben jetzt
+    ueberall fest `0` statt `state.research.spionage` an `generatePiratenFleet()`/
+    `generateDefenseFleet()` - der Mechanismus selbst (Funktionssignaturen, Glaettungs-Formel)
+    bleibt UNVERAENDERT in `combat.ts` bestehen, nur die Aufrufstellen ignorieren den tatsaechlichen
+    Forschungsstand. **Client:** `Forschung.tsx` zeigt Spionage weiterhin normal an (Bild, Name,
+    aktuelle Stufe, Effekt-Beschreibung), ersetzt aber den Kosten-/Button-Bereich durch einen
+    Sperr-Hinweis ("🔒 Vorerst gesperrt..."). Bei spaeterer Reaktivierung: Sperre in `actions.ts`
+    entfernen, `Forschung.tsx`s `isLocked`-Zweig entfernen, UND an allen drei Aufrufstellen wieder
+    `state.research.spionage || 0` statt der hartcodierten `0` einsetzen - erst dann wirkt sie
+    wieder auf neu investierte UND bereits gespeicherte Forschungsstufen (bestehende
+    `research.spionage`-Werte in `PlayerState` bleiben unangetastet gespeichert, gehen nicht
+    verloren, wirken nur aktuell nicht).
