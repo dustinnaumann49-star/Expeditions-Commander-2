@@ -95,6 +95,7 @@ export interface CombatUnitResult {
   schild: number;
   panzerung: number;
   dmgTaken: number;
+  dmgDealt: number;
   shotsFired: number;
   hits: number;
   rapidFireTriggers: number;
