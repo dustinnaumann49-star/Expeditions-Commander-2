@@ -17,7 +17,14 @@ import {
   CRIT_CHANCE_BASE,
   CRIT_CHANCE_MAX,
   CRIT_DAMAGE_MULTIPLIER,
+  WAVE_PROFILE_WEIGHTS,
+  WAVE_OUTLIER_CHANCE,
+  WAVE_OUTLIER_LOW_FACTOR,
+  WAVE_OUTLIER_HIGH_FACTOR,
+  BATTLE_MODIFIER_CHANCE,
+  BATTLE_MODIFIER_LABELS,
 } from './data/combatConstants.js';
+import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
 import type { CombatStats, CombatReplay } from './types.js';
 
@@ -286,22 +293,75 @@ export function generateCappedFleet(
   return npc;
 }
 
-export function generatePiratenFleet(targetPower: number, spionageLevel: number): Record<string, number> {
+// ===== Wellen-Vielfalt: Profil-Wahl, Ausreisser-Wurf, Kampf-Modifikator-Wurf =====
+// Zentral hier statt in jeder Aufrufstelle (missions.ts/events.ts/groupOps.ts/raids.ts/
+// simulator.ts) dupliziert, damit alle vier Missionsarten garantiert dieselbe Logik nutzen.
+
+export function pickWaveProfile(contextKey: string): WaveProfile {
+  const weights = WAVE_PROFILE_WEIGHTS[contextKey] || { schwarm: 1 };
+  const entries = Object.entries(weights) as [WaveProfile, number][];
+  const total = entries.reduce((sum, [, w]) => sum + w, 0);
+  let roll = Math.random() * total;
+  for (const [profile, w] of entries) {
+    if (roll < w) return profile;
+    roll -= w;
+  }
+  return entries[entries.length - 1][0];
+}
+
+function weightsForProfile(profile: WaveProfile, poolLength: number): number[] {
+  if (profile === 'elitekader') return Array.from({ length: poolLength }, (_, i) => 1 / (poolLength - i));
+  if (profile === 'kampfgruppe') return Array.from({ length: poolLength }, () => 1);
+  return Array.from({ length: poolLength }, (_, i) => 1 / (i + 1)); // 'schwarm' - bisherige Standardkurve
+}
+
+export interface RolledWave {
+  multiplier: number;
+  outlier: 'schwach' | 'stark' | null;
+}
+
+/**
+ * Wie rollMultiplier (Zufallswert aus der 3-Werte-Tabelle des Sektors/Kontexts), aber mit
+ * zusaetzlicher, kontextabhaengiger Chance auf einen deutlichen AUSREISSER nach oben oder unten -
+ * verhindert, dass sich Begegnungen immer nur zwischen denselben drei Werten bewegen.
+ */
+export function rollMultiplierWithOutlier(table: number[], contextKey: string): RolledWave {
+  const base = table[Math.floor(Math.random() * table.length)];
+  const outlierChance = WAVE_OUTLIER_CHANCE[contextKey] || 0;
+  if (Math.random() < outlierChance) {
+    const isHigh = Math.random() < 0.5;
+    return { multiplier: base * (isHigh ? WAVE_OUTLIER_HIGH_FACTOR : WAVE_OUTLIER_LOW_FACTOR), outlier: isHigh ? 'stark' : 'schwach' };
+  }
+  return { multiplier: base, outlier: null };
+}
+
+/**
+ * Wuerfelt, ob dieser Kampf einen der seltenen Kampf-Modifikatoren bekommt (siehe
+ * BATTLE_MODIFIER_LABELS) - immer hoechstens einer, nie mehrere gleichzeitig.
+ */
+export function rollBattleModifier(contextKey: string): BattleModifierType | null {
+  const chance = BATTLE_MODIFIER_CHANCE[contextKey] || 0;
+  if (Math.random() >= chance) return null;
+  const types = Object.keys(BATTLE_MODIFIER_LABELS) as BattleModifierType[];
+  return types[Math.floor(Math.random() * types.length)];
+}
+
+export function generatePiratenFleet(targetPower: number, spionageLevel: number, profile: WaveProfile = 'schwarm'): Record<string, number> {
   const smoothing = Math.min(0.5, spionageLevel * 0.05);
   const pool = SHIPS.filter(
     (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
   ).map((s) => s.id);
-  const baseWeights = pool.map((_, i) => 1 / (i + 1));
+  const baseWeights = weightsForProfile(profile, pool.length);
   const uniform = 1 / pool.length;
   const weights = baseWeights.map((w) => (1 - smoothing) * w + smoothing * uniform);
   return generateCappedFleet(targetPower, pool, weights);
 }
 
-export function generateFallbackFleet(targetPower: number): Record<string, number> {
+export function generateFallbackFleet(targetPower: number, profile: WaveProfile = 'schwarm'): Record<string, number> {
   const pool = SHIPS.filter(
     (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
   ).map((s) => s.id);
-  const weights = pool.map((_, i) => 1 / (i + 1));
+  const weights = weightsForProfile(profile, pool.length);
   return generateCappedFleet(targetPower, pool, weights);
 }
 
@@ -462,11 +522,14 @@ function rollHit(
   target: CombatUnit,
   precision: number,
   research: Record<string, number>,
-  applyPlayerResearch: boolean
+  applyPlayerResearch: boolean,
+  battleModifier: BattleModifierType | null = null
 ): boolean {
   if (Math.random() >= precision) return false;
   const targetIsPlayerUnit = !applyPlayerResearch;
-  const evasion = getEvasionChance(research, targetIsPlayerUnit, target.typeId);
+  let evasion = getEvasionChance(research, targetIsPlayerUnit, target.typeId);
+  // Truemmerfeld schwaecht gezielt das Ausweichen des SPIELERS, nicht das der NPCs.
+  if (battleModifier === 'truemmerfeld' && targetIsPlayerUnit) evasion *= 0.85;
   if (evasion > 0 && Math.random() < evasion) return false;
   return true;
 }
@@ -479,7 +542,8 @@ function fireShots(
   applyPlayerResearch: boolean,
   research: Record<string, number>,
   shooterStats: ShotStats,
-  targetsSharedShieldPool?: { remaining: number }
+  targetsSharedShieldPool?: { remaining: number },
+  battleModifier: BattleModifierType | null = null
 ) {
   if (targets.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
@@ -491,15 +555,22 @@ function fireShots(
     let fired = 0;
     // Praezision und Krit-Chance haengen vom SCHIFFSTYP des Schuetzen ab (kleine Schiffe treffen
     // besser, grosse richten oefter kritischen Schaden an) - daher pro Schuetze berechnet.
-    const precision = getPrecisionChance(research, applyPlayerResearch, shooter.typeId);
-    const critChance = getCritChance(research, applyPlayerResearch, shooter.typeId);
+    let precision = getPrecisionChance(research, applyPlayerResearch, shooter.typeId);
+    let critChance = getCritChance(research, applyPlayerResearch, shooter.typeId);
     const rfMap = RAPIDFIRE[shooter.typeId] || {};
     const hasRFPotential = Object.keys(rfMap).length > 0;
-    const accuracy = hasRFPotential
+    let accuracy = hasRFPotential
       ? applyPlayerResearch
         ? getZielerfassungAccuracy(research, shooter.typeId)
         : ZIELERFASSUNG_BASE[shooter.typeId] || 0
       : 0;
+
+    // Kampf-Modifikatoren (siehe BATTLE_MODIFIER_LABELS, combatConstants.ts) - Nebel/
+    // Sensorstoerung schwaechen gezielt den SPIELER als Schuetzen, Strahlungssturm verstaerkt
+    // gezielt den GEGNER als Schuetzen. Immer nur einer aktiv, nie mehrere gleichzeitig.
+    if (battleModifier === 'nebel' && applyPlayerResearch) precision *= 0.85;
+    if (battleModifier === 'sensorstoerung' && applyPlayerResearch) accuracy *= 0.8;
+    if (battleModifier === 'strahlungssturm' && !applyPlayerResearch) critChance = Math.min(1, critChance * 1.5);
 
     while (shots > 0 && fired < MAX_SHOTS_PER_UNIT) {
       shots--;
@@ -538,7 +609,7 @@ function fireShots(
         // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
         let anyHit = false;
         volleyTargets.forEach((vt) => {
-          if (!rollHit(vt, precision, research, applyPlayerResearch)) {
+          if (!rollHit(vt, precision, research, applyPlayerResearch, battleModifier)) {
             const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
             if (missRfChance > 0 && Math.random() < missRfChance) {
               shots++;
@@ -561,7 +632,7 @@ function fireShots(
         continue;
       }
 
-      if (!rollHit(target, precision, research, applyPlayerResearch)) {
+      if (!rollHit(target, precision, research, applyPlayerResearch, battleModifier)) {
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;
@@ -608,7 +679,8 @@ function runRounds(
   unitsBIn: CombatUnit[],
   research: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true
+  allowRetreat = true,
+  battleModifier: BattleModifierType | null = null
 ): RoundsResult {
   let unitsA = unitsAIn;
   let unitsB = unitsBIn;
@@ -667,13 +739,16 @@ function runRounds(
       v = isPlayerSide
         ? getShieldRegenRate(research, typeId)
         : Math.max(0, Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + (SHIELD_REGEN_MODIFIER[typeId] || 0)));
+      // Ionensturm schwaecht gezielt die Schild-Regeneration des SPIELERS, nicht die der NPCs.
+      if (battleModifier === 'ionensturm' && isPlayerSide) v *= 0.8;
       cache.set(typeId, v);
     }
     return v;
   }
   // Der Kuppel-Pool nutzt weiterhin die reine Spieler-Rate (Kuppeln sind Verteidigungsanlagen,
-  // deren eigener Modifikator steckt bereits in ihrem Beitrag zum Pool).
-  const poolRegen = getShieldRegenRate(research);
+  // deren eigener Modifikator steckt bereits in ihrem Beitrag zum Pool). Ionensturm wirkt auch hier,
+  // da der Pool ausschliesslich Seite A (Spieler) gehoert.
+  const poolRegen = getShieldRegenRate(research) * (battleModifier === 'ionensturm' ? 0.8 : 1);
   // Gemeinsamer Kuppel-Schild-Pool fuer Seite A (nur relevant bei Heimatverteidigung mit
   // Schildkuppeln) - faengt Schaden fuer die GESAMTE Seite ab, bevor einzelne Anlagen getroffen
   // werden. Regeneriert sich zwischen den Runden mit derselben Rate wie normale Schilde.
@@ -682,8 +757,8 @@ function runRounds(
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     if (unitsA.length === 0 || unitsB.length === 0) break;
     roundsFought = round;
-    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA);
-    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB, poolA);
+    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA, undefined, battleModifier);
+    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB, poolA, battleModifier);
     unitsA = unitsA.filter((u) => u.hpCur > 0);
     unitsB = unitsB.filter((u) => u.hpCur > 0);
     unitsA.forEach((u) => {
@@ -780,11 +855,12 @@ export function resolveCombat(
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true
+  allowRetreat = true,
+  battleModifier: BattleModifierType | null = null
 ): CombatResult {
   const unitsA0 = buildUnits(sideAShips, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat, battleModifier);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
@@ -834,11 +910,12 @@ export function resolveCombatMultiOwner(
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true
+  allowRetreat = true,
+  battleModifier: BattleModifierType | null = null
 ): MultiOwnerCombatResult {
   const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat);
+  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat, battleModifier);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};
