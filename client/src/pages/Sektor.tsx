@@ -16,6 +16,163 @@ const SEKTOR_KLASSEN = [
   { id: 'simulator', name: '🎯 Kampfsimulator', match: () => false },
 ];
 
+function SektorCard({
+  sektor,
+  cfg,
+  activeMission,
+  availableIds,
+  position,
+  isSelected,
+  selection,
+  setSelection,
+  fleet,
+  now,
+  presetName,
+  setPresetName,
+  savePreset,
+  sendMission,
+  setSelectedSektor,
+  recallMission,
+  setFleetMissionId,
+  setInfoSektorId,
+}: {
+  sektor: GameData['sektoren'][number];
+  cfg: GameData['sektorConfig'][string];
+  activeMission: Mission | undefined;
+  availableIds: string[];
+  position: { system: number; position: number } | undefined;
+  isSelected: boolean;
+  selection: Record<string, number>;
+  setSelection: (fn: (p: Record<string, number>) => Record<string, number>) => void;
+  fleet: Record<string, number>;
+  now: number;
+  presetName: string;
+  setPresetName: (v: string) => void;
+  savePreset: (name: string, ships: Record<string, number>) => void;
+  sendMission: (sektorId: string, ships: Record<string, number>) => void;
+  setSelectedSektor: (id: string | null) => void;
+  recallMission: (missionId: string) => void;
+  setFleetMissionId: (id: string | null) => void;
+  setInfoSektorId: (id: string | null) => void;
+}) {
+  // Eigene Komponenteninstanz pro Karte - WICHTIG fuer die Hook-Regeln: die Anzahl der Sektoren
+  // pro Tab variiert (3 Asteroiden-Sektoren, aber 4 Piraten-Sektoren, da piraten_elite mit
+  // "piraten_" beginnt und mitgezaehlt wird). Wuerde useGalaxyPreview() stattdessen direkt in
+  // einer .map()-Schleife der uebergeordneten Seite aufgerufen, aenderte sich die Anzahl der
+  // Hook-Aufrufe beim Tab-Wechsel innerhalb DERSELBEN Komponente - React error #310 ("Rendered
+  // more hooks than during the previous render"), die App stuerzt komplett ab. Als eigene
+  // Komponente hat jede Karte ihren EIGENEN, stabilen Hook-Aufruf, unabhaengig davon wie viele
+  // Karten insgesamt gerendert werden (exakt dasselbe Muster wie PendingInviteCard in
+  // Multiplayer.tsx).
+  const preview = useGalaxyPreview(isSelected ? selection : {}, isSelected ? position || null : null);
+
+  return (
+    <div className="ship-card">
+      <img className="ship-img" src={`/${sektor.img}`} alt={sektor.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+      <div className="ship-info">
+        <h3>{sektor.name}</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+          Typ: {sektor.typ} · {sektor.zweck}
+        </p>
+        {position && (
+          <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            📍 Position 1:{position.system}:{position.position}
+          </p>
+        )}
+        <div className="ship-stats">
+          <span className="level-gruen">Aktivität: {sektor.aktivitaet}</span>
+          <span>Gefahrenstufe: {sektor.gefahr}</span>
+        </div>
+
+        <button className="qty-btn" style={{ alignSelf: 'flex-start', marginBottom: 4 }} onClick={() => setInfoSektorId(sektor.id)}>
+          ℹ️ Info
+        </button>
+
+        {activeMission ? (
+          <>
+            <MissionStatus mission={activeMission} now={now} onShowFleet={() => setFleetMissionId(activeMission.id)} />
+            <div className="build-row">
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Vorzeitiger Abbruch holt Flotte + bisherigen Ertrag sofort zurück.</span>
+              <button className="qty-btn" style={{ color: 'var(--danger)' }} onClick={() => recallMission(activeMission.id)}>
+                Zurückrufen
+              </button>
+            </div>
+          </>
+        ) : isSelected ? (
+          <>
+            {availableIds.map((id) => {
+              const avail = fleet[id] || 0;
+              if (avail === 0) return null;
+              const cap = id === 'mining' ? cfg.miningCap : id === 'begleitschiff' ? cfg.escortCap : undefined;
+              const maxSendable = cap ? Math.min(avail, cap) : avail;
+              const qty = selection[id] || 0;
+              return (
+                <div className="queue-item" key={id}>
+                  <span>
+                    {id} (verfügbar: {avail}
+                    {cap ? `, max ${cap}` : ''})
+                  </span>
+                  <span className="qty-row">
+                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
+                      -10
+                    </button>
+                    <span style={{ padding: '0 6px' }}>{qty}</span>
+                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 10) }))}>
+                      +10
+                    </button>
+                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: maxSendable }))}>
+                      Alle
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+            {preview.loading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
+            {preview.preview && !preview.loading && <p style={{ fontSize: 13, marginTop: 6 }}>Anflugzeit: {formatTime(preview.preview.durationMs)} (Rückflug identisch)</p>}
+            <div className="qty-row" style={{ marginTop: 8 }}>
+              <input className="qty-input" placeholder="Name für Vorlage" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+              <button
+                className="qty-btn"
+                onClick={() => {
+                  savePreset(presetName, selection);
+                  setPresetName('');
+                }}
+              >
+                Als Vorlage speichern
+              </button>
+            </div>
+            <div className="build-row">
+              <button
+                className="qty-btn"
+                onClick={() => {
+                  setSelectedSektor(null);
+                  setSelection(() => ({}));
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="build-btn"
+                onClick={() => {
+                  sendMission(sektor.id, selection);
+                  setSelection(() => ({}));
+                  setSelectedSektor(null);
+                }}
+              >
+                Entsenden
+              </button>
+            </div>
+          </>
+        ) : (
+          <button className="build-btn" onClick={() => setSelectedSektor(sektor.id)}>
+            Entsenden
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, { type: string }>): string[] {
   const cfg = sektorConfig[sektorId];
   if (cfg?.type === 'asteroid') return ['mining', 'begleitschiff', 'sandronator'];
@@ -401,112 +558,29 @@ export function SektorPage() {
           const availableIds = availableFleetForSektor(sektor.id, gameData.sektorConfig);
           const position = sektorPositions.find((p) => p.sektorId === sektor.id);
           const isSelected = selectedSektor === sektor.id;
-          const preview = useGalaxyPreview(isSelected ? selection : {}, isSelected ? position : null);
 
           return (
-            <div className="ship-card" key={sektor.id}>
-              <img className="ship-img" src={`/${sektor.img}`} alt={sektor.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-              <div className="ship-info">
-                <h3>{sektor.name}</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                  Typ: {sektor.typ} · {sektor.zweck}
-                </p>
-                {position && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>📍 Position 1:{position.system}:{position.position}</p>}
-                <div className="ship-stats">
-                  <span className="level-gruen">Aktivität: {sektor.aktivitaet}</span>
-                  <span>Gefahrenstufe: {sektor.gefahr}</span>
-                </div>
-
-                <button className="qty-btn" style={{ alignSelf: 'flex-start', marginBottom: 4 }} onClick={() => setInfoSektorId(sektor.id)}>
-                  ℹ️ Info
-                </button>
-
-                {activeMission ? (
-                  <>
-                    <MissionStatus mission={activeMission} now={now} onShowFleet={() => setFleetMissionId(activeMission.id)} />
-                    <div className="build-row">
-                      <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Vorzeitiger Abbruch holt Flotte + bisherigen Ertrag sofort zurück.</span>
-                      <button className="qty-btn" style={{ color: 'var(--danger)' }} onClick={() => recallMission(activeMission.id)}>
-                        Zurückrufen
-                      </button>
-                    </div>
-                  </>
-                ) : selectedSektor === sektor.id ? (
-                  <>
-                    {availableIds.map((id) => {
-                      const avail = state.fleet[id] || 0;
-                      if (avail === 0) return null;
-                      const cap = id === 'mining' ? cfg.miningCap : id === 'begleitschiff' ? cfg.escortCap : undefined;
-                      const maxSendable = cap ? Math.min(avail, cap) : avail;
-                      const qty = selection[id] || 0;
-                      return (
-                        <div className="queue-item" key={id}>
-                          <span>
-                            {id} (verfügbar: {avail}
-                            {cap ? `, max ${cap}` : ''})
-                          </span>
-                          <span className="qty-row">
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-                              -10
-                            </button>
-                            <span style={{ padding: '0 6px' }}>{qty}</span>
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 10) }))}>
-                              +10
-                            </button>
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: maxSendable }))}>
-                              Alle
-                            </button>
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {preview.loading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
-                    {preview.preview && !preview.loading && (
-                      <p style={{ fontSize: 13, marginTop: 6 }}>
-                        Anflugzeit: {formatTime(preview.preview.durationMs)} (Rückflug identisch)
-                      </p>
-                    )}
-                    <div className="qty-row" style={{ marginTop: 8 }}>
-                      <input className="qty-input" placeholder="Name für Vorlage" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
-                      <button
-                        className="qty-btn"
-                        onClick={() => {
-                          savePreset(presetName, selection);
-                          setPresetName('');
-                        }}
-                      >
-                        Als Vorlage speichern
-                      </button>
-                    </div>
-                    <div className="build-row">
-                      <button
-                        className="qty-btn"
-                        onClick={() => {
-                          setSelectedSektor(null);
-                          setSelection({});
-                        }}
-                      >
-                        Abbrechen
-                      </button>
-                      <button
-                        className="build-btn"
-                        onClick={() => {
-                          sendMission(sektor.id, selection);
-                          setSelection({});
-                          setSelectedSektor(null);
-                        }}
-                      >
-                        Entsenden
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button className="build-btn" onClick={() => setSelectedSektor(sektor.id)}>
-                    Entsenden
-                  </button>
-                )}
-              </div>
-            </div>
+            <SektorCard
+              key={sektor.id}
+              sektor={sektor}
+              cfg={cfg}
+              activeMission={activeMission}
+              availableIds={availableIds}
+              position={position}
+              isSelected={isSelected}
+              selection={isSelected ? selection : {}}
+              setSelection={setSelection}
+              fleet={state.fleet}
+              now={now}
+              presetName={presetName}
+              setPresetName={setPresetName}
+              savePreset={savePreset}
+              sendMission={sendMission}
+              setSelectedSektor={setSelectedSektor}
+              recallMission={recallMission}
+              setFleetMissionId={setFleetMissionId}
+              setInfoSektorId={setInfoSektorId}
+            />
           );
         })}
       </div>
