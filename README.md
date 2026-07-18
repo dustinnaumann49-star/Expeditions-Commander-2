@@ -1382,9 +1382,8 @@ aktuellen Kartenliste in `Forschung.tsx`).
    Sonderfall pro Zweig, leicht zu merken.
 2. Migration bestehender Spielstaende: aktuelle Forschungsstufen (0-10 pro Technologie) muessten
    unveraendert in die neue Struktur uebernommen werden koennen, ohne Fortschritt zu verlieren.
-3. Bleibt `MAX_RESEARCH_LEVEL = 10` pro Unter-Technologie erhalten, oder aendert sich das mit
-   mehr Technologien insgesamt (Balance-Frage - mehr Techs bedeuten mehr Gesamt-Nutzen, wenn
-   jede weiterhin bis Stufe 10 skaliert)?
+3. **GEKLAERT:** `MAX_RESEARCH_LEVEL = 10` bleibt einheitlich fuer JEDE Forschung erhalten, auch
+   die neuen Zweige - keine Ausnahme, keine abweichenden Maxima.
 4. **GEKLAERT:** doch eine ECHTE grafische Baum-Darstellung mit Verbindungslinien (nicht die
    bestehende Karten-/Listenoptik wie im Rest der App) - war der urspruengliche Ansporn fuer die
    ganze Idee, bewusste Kurskorrektur gegenueber der anfaenglichen Empfehlung (Karten
@@ -1404,10 +1403,10 @@ aktuellen Kartenliste in `Forschung.tsx`).
      Kartenliste (Positionierung der Knoten, SVG/CSS-Verbindungslinien zwischen Eltern und
      Kindern, Groessen-Skalierung) - bewusst in Kauf genommen, da genau dieser Baum-Stil der
      eigentliche Wunsch war.
-5. Sollen komplett NEUE Technologien (ueber die aktuellen 13 hinaus) im Zuge des Umbaus ergaenzt
-   werden (wie im Referenzbild angedeutet: "Hyperraumantrieb", "Kuenstliche Intelligenz"), oder
-   zunaechst nur die BESTEHENDEN 13 (+ die 8 neuen Zweige aus der Gruppierung oben) in Baumform
-   neu anordnen?
+5. **GEKLAERT:** vorerst NUR die bestehenden 13 + die 8 neu geplanten Zweige (siehe Gruppierung
+   oben) - keine zusaetzlichen, komplett neuen Technologien in dieser Runde. Weitere
+   Technologien/Zweige sind als spaetere, eigene Erweiterung denkbar, aber nicht Teil dieser
+   Umsetzung.
 
 **Empfehlung bei Umsetzungsbeginn:** wie beim Galaxie-Umbau in mehreren kleinen, einzeln
 testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehenden Technologien
