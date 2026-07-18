@@ -844,3 +844,54 @@ client/
       Gruppen-Expeditionen (`groupOps.ts`) tauchen dort noch NICHT auf, da fuer sie bisher keine
       Bewegungs-Historie im eigenen `PlayerState` mitgefuehrt wird - waere ein moeglicher
       naechster Schritt fuer eine wirklich vollstaendige Flottenbewegungen-Uebersicht.
+
+51. **Elite-Bollwerk und Notruf haben jetzt ebenfalls je EINE feste Galaxie-Position** (anders als
+    die 12 Piratenbasen oder die 3+3 normalen Sektoren: hier gibt es bewusst nur genau einen festen
+    Ort, keine Zufallsauswahl). Elite-Bollwerk-Position steckt direkt in `SEKTOR_CONFIG.piraten_elite`
+    (`data/sectors.ts`, wiederverwendet dasselbe `galaxyPosition`-Feld wie die anderen Sektoren);
+    Notruf-Position ist `NOTRUF_POSITION` in `galaxyConstants.ts` (kein SEKTOREN-Eintrag, daher
+    eigene Konstante). Beide ueber `/game/galaxy` (`sektorPositions`/`notrufPosition`) an den
+    Client ausgeliefert und in der Galaxie-Ansicht sichtbar (🛰️ bzw. 🆘).
+
+    - **Notruf ist jetzt NUR NOCH SOLO moeglich** (`groupOps.ts`s `createGroupOperation()` lehnt
+      `kind:'event'` explizit ab) - das bisherige Multiplayer-Notruf-Pendant (`resolveGroupEvent()`)
+      bleibt im Code als Sicherheitsnetz fuer eventuell noch bestehende alte Datensaetze erhalten,
+      ist aber ueber die UI nicht mehr erreichbar (Notruf-Tab in `Multiplayer.tsx` komplett entfernt).
+    - **Notruf-Ablauf grundlegend umgebaut** (`events.ts`): `startEventMission()` loest den Kampf
+      NICHT MEHR sofort aus, sondern zieht nur noch die Flotte ab und berechnet die echte
+      Flugzeit zur `NOTRUF_POSITION` (`galaxyDistance()`/`galaxyDurationMs()`/`galaxyFleetSpeed()`
+      aus `galaxy.ts`, exakt wie bei Sektor-Missionen). Der eigentliche Kampf
+      (`resolveEventCombat()`, inhaltlich unveraendert) laeuft jetzt erst bei Ankunft
+      (`state.event.arriveTime` erreicht) - ueber `processEventTimer()` (eigener Tick) UND
+      `processOverdueEventsForOtherUsers()` (Cross-User, Punkt 25 gilt weiterhin: andere Spieler
+      muessen nicht online sein). `EventState` fuehrt dafuer neu `ships`/`arriveTime` mit,
+      da die Flottenauswahl zwischen "losschicken" und "Kampf" jetzt persistiert werden muss statt
+      wie vorher synchron in einem einzigen Funktionsaufruf verarbeitet zu werden.
+    - **`EVENT_WINDOW_MS` (Frist zum LOSSCHICKEN, nicht zur Ankunft) von 60 auf 90 Minuten
+      angehoben** (`economy.ts`), da nach der Entscheidung ja noch die Flugzeit obendrauf kommt.
+      Getestet: Notruf-Flotte (Leichter Jaeger) brauchte bei mittlerer Entfernung ~28 Minuten zur
+      Notruf-Position, Kampf loeste danach korrekt aus, Ueberlebende kehrten normal zurueck.
+    - **Migration:** alte, vor dieser Erweiterung gespawnte Notrufe ohne `arriveTime`-Feld werden
+      beim naechsten `loadPlayerState()` sicherheitshalber verworfen (analog Punkt 49 bei Raids).
+    - **Elite-Bollwerk-Rendezvous** (`groupOps.ts`): eingeladene Teilnehmer fliegen nach dem
+      Annehmen (`respondToGroupOperation()`) zuerst automatisch zum ERSTELLER, nicht direkt zum
+      Ziel - `GroupOperationParticipant.rendezvousArrivalTime` wird dabei aus der Distanz
+      Teilnehmer->Ersteller und der Geschwindigkeit der ANGENOMMENEN Flotte berechnet. Der
+      Ersteller selbst braucht keine Rendezvous-Zeit (ist ja schon an seiner eigenen Position).
+    - **`startGroupOperation()` verweigert den Start, solange nicht ALLE angenommenen Teilnehmer
+      eingetroffen sind** (`rendezvousArrivalTime <= now`), mit Fehlermeldung inkl. Namen der noch
+      Fehlenden. Client spiegelt das: "Jetzt starten"-Button in `Multiplayer.tsx` ist deaktiviert,
+      solange jemand noch unterwegs ist, Status pro Teilnehmer ("unterwegs zu dir (Xmin)" /
+      "bei dir eingetroffen") wird live angezeigt.
+    - **Nach erfolgreichem Rendezvous fliegt die GESAMTE vereinte Flotte gemeinsam weiter** zum
+      Elite-Bollwerk - Distanz vom ERSTELLER (nicht von einem Durchschnittsort) zur
+      Elite-Bollwerk-Position, Geschwindigkeit = langsamstes Schiff UEBER ALLE angenommenen
+      Teilnehmer-Flotten kombiniert (`combinedShips`, gemergte Schiffszahlen aller Teilnehmer).
+      Ersetzt die vorherige feste `MISSION_TRAVEL_MS` fuer beide Etappen (hin UND zurueck).
+      Getestet: 50 Kreuzer (Ersteller) + 30 Kreuzer (Teilnehmer, erst nach Rendezvous-Ankunft
+      startbar) ergaben korrekt 25 Minuten Flugzeit zum Bollwerk basierend auf der tatsaechlichen
+      Distanz vom Ersteller aus.
+    - **Bewusst NICHT Teil dieser Runde:** Rueckruf/Verhalten, falls ein Teilnehmer NIE eintrifft
+      (Operation bleibt dann einfach unbegrenzt im "inviting"-Status haengen, der Ersteller kann sie
+      aber jederzeit ueber `cancelGroupOperation()` abbrechen - alle bereits eingesetzten Flotten,
+      inklusive bereits angereister, werden dabei an ihre Besitzer zurueckerstattet).
