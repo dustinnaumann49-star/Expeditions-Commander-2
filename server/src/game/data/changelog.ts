@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Fehlerbehebung: Sektor-Tab stürzte ab',
+    changes: [
+      'Bug behoben, durch den die App beim Wechsel zwischen "Asteroiden-Feld" und "Piraten-Sektor" im Sektor-Tab abstürzte (kurz sichtbar, dann verschwunden) - das sollte jetzt zuverlässig funktionieren.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Sichtbare Fehleranzeige bei Abstürzen',
     changes: [
       'Falls die App doch einmal abstürzt, wird jetzt eine Fehlermeldung direkt auf dem Bildschirm angezeigt statt eines leeren/verschwindenden Bildschirms - hilfreich für die Fehlersuche, besonders ohne Zugriff auf Entwicklertools.',
