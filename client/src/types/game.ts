@@ -64,6 +64,7 @@ export interface GalaxyOccupant {
   username: string;
   system: number;
   position: number;
+  isBot: boolean;
 }
 
 export interface SektorGalaxyPosition {
@@ -449,6 +450,7 @@ export interface AppUser {
   id: number;
   username: string;
   online: boolean;
+  isBot: boolean;
 }
 
 export interface GroupOperationParticipant {
