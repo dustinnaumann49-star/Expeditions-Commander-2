@@ -932,3 +932,48 @@ client/
       einmalig eingefroren (Erstellerposition zum Erstellungszeitpunkt) statt live nachgeschlagen -
       Einladungsempfaenger brauchen diesen Wert fuer ihre Rendezvous-Vorschau, OHNE dass der
       Server dafuer bei jeder Anzeige extra den Ersteller-State laden muesste.
+
+53. **Raid-Hilfe als eigenstaendiger Verstaerkungs-Mechanismus ENTFERNT - "Halten" ist jetzt der
+    EINZIGE Weg, einem anderen Spieler bei Piratenraids zu helfen.** Die alte `reinforceRaid()`-
+    Funktion (feste 1-Minute-Anflugzeit, Flotte kehrt nach dem einen Kampf automatisch heim, nur
+    waehrend eines LAUFENDEN Raids nutzbar) war inhaltlich redundant zu einer haltenden
+    Galaxie-Flotte (echte Flugzeit, dauerhaft stationiert, verteidigt automatisch bei JEDEM
+    kuenftigen Raid, siehe Punkt 51) - zwei parallele Mechaniken mit unterschiedlicher Physik fuer
+    denselben Zweck waeren nur Verwirrung und Wartungsaufwand gewesen.
+    - **`POST /game/raids/reinforce` ersatzlos entfernt**, `reinforceRaid()` aus `raidReinforce.ts`
+      geloescht. `listActiveRaids()`/`ActiveRaidInfo` bleiben bestehen, dienen aber nur noch der
+      NAVIGATION: `targetPosition` (statt vorher gar keiner Positionsangabe) und `holdingCount`
+      (Anzahl bereits dort haltender Fremdflotten, ueber `getHoldingDeploymentsTargeting()` aus
+      galaxy.ts - ersetzt das alte, nun immer leere `reinforcementCount`/`reinforcements`-Array).
+    - **`RaidHilfePage` (Multiplayer-Tab) komplett vereinfacht:** zeigt nur noch Spielername,
+      Position, Piraten-Ankunftszeit und Anzahl bereits haltender Flotten, mit einem Button "Zur
+      Position in der Galaxie" (`navigate('/galaxie?system=X&targetUserId=Y')`). Kein
+      Flottenauswahl-Formular mehr an dieser Stelle - das Halten-Formular in `Galaxie.tsx`
+      uebernimmt das jetzt vollstaendig.
+    - **`Galaxie.tsx` liest `?system=`/`?targetUserId=` per `useSearchParams()`** (gleiches Muster
+      wie der bestehende `?tab=`-Parameter in `Multiplayer.tsx`) und springt beim Laden direkt zum
+      passenden System UND oeffnet automatisch das Halten-Formular fuer den genannten Zielspieler.
+
+54. **Vollstaendige Ursprungs-/Ziel-Transparenz aller Flottenbewegungen** - vorher fehlten an
+    mehreren Stellen entweder Koordinaten oder ganze Bewegungsarten in der Uebersicht:
+    - **Ursprungskoordinaten ergaenzt** bei Sektor-Missionen, Notruf und Halten-Fluegen in der
+      Flottenbewegungen-Liste (`Galaxie.tsx`) - vorher stand dort nur "wohin", nie "von wo"
+      (bei Halten-Fluegen war das Ziel zwar sichtbar, aber `d.originSystem`/`d.originPosition`
+      - obwohl laengst im Datenmodell vorhanden, siehe Punkt 47 - wurden clientseitig nie
+      angezeigt).
+    - **Gemeinsame Elite-Bollwerk-Expeditionen tauchen jetzt ebenfalls in der
+      Flottenbewegungen-Liste auf** (`parties.filter(op => op.status === 'departed')`), inkl.
+      Phase (unterwegs/vor Ort/Rueckflug) und Ursprung (`op.creatorPosition`) - vorher eine
+      bewusst dokumentierte Luecke (siehe Punkt 50).
+    - **Neuer Abschnitt "Eingehende Flotten"** (`Galaxie.tsx`, unterhalb der eigenen
+      Flottenbewegungen): zeigt ALLE fremden Flotten, die gerade zu einem selbst unterwegs sind
+      oder bereits bei einem halten - mit Absender, Ursprungskoordinaten, Status und (bei Klick)
+      der EXAKTEN Schiffszusammensetzung, da bei Halten-Fluegen die Zusammensetzung von Anfang an
+      feststeht (kein Geheimnis wie bei NPC-Flotten). Neue Server-Funktion
+      `getIncomingDeploymentsFor()` (`galaxy.ts`) liefert das, `/game/galaxy` liefert es als
+      `incomingDeployments` mit aus.
+    - **Eingehende Piratenflotten ebenfalls in "Eingehende Flotten"**: Ursprung (Piratenbasis-
+      Koordinaten) und Timer (Vorbereitung/Flugzeit) werden angezeigt, der Flotteninhalt aber
+      bewusst NICHT - der steht serverseitig erst bei `resolveRaid()` (Ankunft) fest, siehe
+      `generateFallbackFleet()` in `combat.ts`, ist also kein UI-Versaeumnis, sondern Teil des
+      Spieldesigns (Ungewissheit bis zum Einschlag).
