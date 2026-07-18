@@ -25,6 +25,7 @@ export interface ShipDefinition {
   teileCost?: { waffen: number; schild: number; panzerung: number };
   speed: number;
   fuelConsumption: number;
+  driveType: 'rakete' | 'impuls' | 'hyperraum';
 }
 
 export interface DefenseDefinition {
@@ -108,6 +109,9 @@ export interface ResearchDefinition {
   costGrowth: number;
   baseTimeHours: number;
   timeGrowth: number;
+  mainBranch: 'waffen' | 'verteidigung' | 'antrieb' | 'wirtschaft';
+  parentId?: string;
+  driveType?: 'rakete' | 'impuls' | 'hyperraum';
 }
 
 export interface BuildJob {
@@ -432,6 +436,7 @@ export interface GameData {
   critChanceMax: number;
   critDamageMultiplier: number;
   maxResearchLevel: number;
+  parentUnlockLevel: number;
   maxBuildSlots: number;
   maxDefenseSlots: number;
   maxResearchSlots: number;
