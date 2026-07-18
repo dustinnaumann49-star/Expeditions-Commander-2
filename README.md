@@ -1200,6 +1200,47 @@ client/
     - Getestet: Leichter Jaeger (Basisgeschwindigkeit 12500) ergab bei Forschungsstufe 5 korrekt
       ~14375 (+15%), bei Stufe 10 korrekt 16250 (+30%).
 
+63. **Ressourcenleiste, Sidebar und Hauptbereich zu EINEM zusammenhaengenden Fenster
+    verschmolzen** (`theme.css`), Deckkraft insgesamt auf "Mittel" reduziert (~45% statt vorher
+    ~72%, Blur von 8px auf 6px) - Hintergrundbild kommt dadurch deutlich staerker zur Geltung.
+    Vorschau mehrerer Deckkraft-Stufen wurde vorher als eigenstaendiges HTML-Mockup mit dem
+    echten Hintergrundbild gezeigt (Nutzer hat "Mittel" gewaehlt), bevor es in den echten Code
+    uebernommen wurde.
+    - **Kein `overflow:hidden` auf einem gemeinsamen Wrapper verwendet**, um die drei Bereiche
+      optisch zu vereinen - das haette die `position:sticky`-Eigenschaft der `<ResourceBar>`
+      riskiert (ein Vorfahr mit `overflow` ungleich `visible` bestimmt den Sticky-Bezugsrahmen).
+      Stattdessen bekommt jeder der drei Bereiche (`#resourcebar`, `#sidebar`, `#mainbar`)
+      identische Deckkraft/Blur-Werte OHNE Abstand dazwischen, mit gezielt nur an den AEUSSEREN
+      Ecken abgerundeten Radien (`#resourcebar` oben, `#sidebar` unten-links, `#mainbar`
+      unten-rechts) - wirkt wie ein Fenster, ist aber technisch weiterhin sicher getrennt.
+    - **Karten (`.ship-card`, `.queue-box`) deutlich transparenter** (`rgba(36,38,43,0.35)` +
+      `blur(3px)` statt vorher blickdichtem `var(--carbon-light)`) - "leicht erkennbar, Text
+      bleibt lesbar", wie gewuenscht. Modal-Popups (`#modal-box`) bewusst NICHT angefasst - die
+      sollen als Overlay weiterhin gut lesbar/deckend bleiben, unabhaengig vom Rest.
+
+64. **Seitenspezifische Hintergrundbilder** (`App.tsx` `PAGE_BACKGROUNDS`, `theme.css`
+    `--page-bg`) - jede Seite kann jetzt ihr eigenes thematisches Hintergrundbild bekommen
+    (Werft -> Werft-Halle, Forschung -> Labor, Galaxie -> Sternenkarte, usw.) statt ueberall
+    nur `hauptbild.png` zu zeigen.
+    - **`usePageBackground(pathname)`** (neuer Hook in `App.tsx`, in `Layout` per `useLocation()`
+      aufgerufen) setzt bei jedem Routenwechsel die CSS-Variable `--page-bg` auf `document.body`
+      auf den zur Route passenden Dateinamen aus `PAGE_BACKGROUNDS` - faellt auf `hauptbild.png`
+      zurueck, falls fuer eine Route noch kein eigenes Bild hinterlegt ist (aktuell: NUR
+      `hauptbild.png` existiert tatsaechlich als Datei, alle anderen Eintraege in
+      `PAGE_BACKGROUNDS` sind Platzhalter-Dateinamen fuer noch zu liefernde Bilder - fehlende
+      Datei fuehrt lediglich zu leerem/keinem sichtbaren Hintergrund an dieser Route, kein
+      Absturz, siehe `body`s Fallback-Layer mit der radialen Verlaufs-Ueberlagerung).
+    - **Kein Ueberblenden zwischen Seitenwechseln** - CSS kann zwischen zwei verschiedenen
+      `background-image`-URLs nicht weich interpolieren, der Wechsel ist bewusst hart/sofort.
+    - Reine CSS-Variable statt `<img>`-Tag - kein zusaetzliches DOM-Element, kein Layout-Shift,
+      funktioniert nahtlos mit dem bestehenden `background-attachment:fixed`-Verhalten.
+    - **Naechster Schritt (liegt beim Nutzer):** passende Bilder fuer jede Route liefern
+      (`werft.png`, `verteidigung.png`, `sektor.png`, `forschung.png`, `flotte.png`,
+      `haendler.png`, `shop.png`, `multiplayer.png`, `galaxie.png`, `nachrichten.png`,
+      `inventar.png`, `statistik.png`, `updates.png`), jeweils unter `client/public/background/`
+      ablegen - der Code ist bereits vollstaendig darauf vorbereitet, kein weiterer
+      Code-Eingriff noetig, sobald die Bilder geliefert werden.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst GROB geplant,
@@ -1259,3 +1300,4 @@ aktuellen Kartenliste in `Forschung.tsx`).
 testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehenden Technologien
 einfuehren OHNE UI-Aenderung, dann erst die Baum-UI nachziehen) statt eines einzigen grossen
 Umbaus.
+
