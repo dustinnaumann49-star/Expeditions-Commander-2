@@ -1224,6 +1224,20 @@ client/
       mit der neuen Panel-Abdunkelung (45%) aufaddiert - am Rand kamen so nur noch ca. 6% der
       Bildhelligkeit durch. Fix: Verlauf auf einen dezenten Farbstich reduziert (18%/28% statt
       60%/88%) - die Panels selbst uebernehmen die Lesbarkeits-Abdunkelung jetzt allein.
+    - **Zweiter Nachtrag:** selbst danach war der Hintergrund gefuehlt noch zu schwach sichtbar -
+      Ursache war diesmal, dass die UI (Ressourcenleiste + Layout) bis zum Rand JEDES Bildschirms
+      auffuellte (kein `max-width`), auf breiten Monitoren blieb dadurch praktisch kein
+      Hintergrund sichtbar. Fix: `#resourcebar`/`#layout` haben jetzt `max-width:1400px` und sind
+      zentriert (`margin: ... auto`) - auf schmalen Bildschirmen unveraendertes Verhalten (volle
+      Breite), auf breiten Monitoren bleibt jetzt sichtbar Hintergrund links/rechts der UI.
+    - **BUGFIX (`App.tsx` `PAGE_BACKGROUNDS`):** fuer Shop/Nachrichten/Inventar/Statistik/Updates
+      waren bereits Dateinamen eingetragen (`shop.png` usw.), OBWOHL diese Bilder noch gar nicht
+      existierten - das fuehrte zu einem defekten `background-image`-Verweis (404) statt zum
+      erwarteten Fallback auf `hauptbild.png`. Der Fallback (`PAGE_BACKGROUNDS[pathname] ||
+      DEFAULT_BACKGROUND`) greift naemlich nur, wenn die ROUTE komplett in der Map fehlt, NICHT
+      wenn die verlinkte DATEI fehlt. Fix: diese 5 Eintraege wieder entfernt, bis echte Bilder
+      dafuer geliefert werden - erst DANN sollten neue Eintraege in `PAGE_BACKGROUNDS` ergaenzt
+      werden, nicht vorher (sonst tritt derselbe Fehler wieder auf).
 
 64. **Seitenspezifische Hintergrundbilder** (`App.tsx` `PAGE_BACKGROUNDS`, `theme.css`
     `--page-bg`) - jede Seite kann jetzt ihr eigenes thematisches Hintergrundbild bekommen
