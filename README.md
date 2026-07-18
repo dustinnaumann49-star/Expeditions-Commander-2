@@ -1134,3 +1134,21 @@ client/
     - Getestet: Server startet jetzt sowohl mit als auch OHNE vorhandenes `data`-Verzeichnis
       sauber durch (vorher: sofortiger Absturz ohne Verzeichnis, Exit-Code 1); anschliessender
       voller Smoke-Test (Registrierung, `/game/data`, `/game/state`) erfolgreich.
+
+60. **Sichtbare Fehleranzeige im Client** (`components/ErrorBoundary.tsx`, `errorOverlay.ts`,
+    eingebunden in `main.tsx`) - vorher verschwand die App bei einem JS-Fehler stillschweigend
+    (nur Hintergrundbild blieb sichtbar), ohne jeden Hinweis auf die Ursache. Problematisch
+    insbesondere fuer Nutzer OHNE Zugriff auf die Browser-Entwicklertools (z.B. mobil ueber
+    Samsung DEX, kein PC verfuegbar) - Diagnose war ohne sichtbaren Fehlertext praktisch
+    unmoeglich.
+    - **`ErrorBoundary`** (React Class Component, `getDerivedStateFromError`/`componentDidCatch`)
+      faengt Fehler WAEHREND des Renderns ab, zeigt Fehlermeldung + Stacktrace + Komponenten-Stack
+      in einem Vollbild-Overlay statt eines leeren/verschwindenden Bildschirms. Umschliesst
+      `<App />` in `main.tsx`.
+    - **`errorOverlay.ts`** deckt Fehler AUSSERHALB von Reacts Render-Zyklus ab (Promises/
+      async-Code, Event-Handler) - ueber `window.addEventListener('error'/'unhandledrejection')`
+      in `main.tsx` registriert, da React-ErrorBoundaries diese NICHT abfangen (React-Doku:
+      Error Boundaries fangen nur Fehler in Lifecycle-Methoden/Render/Constructor ab).
+    - Beide Wege sind bewusst getrennt (Komponenten-Baum-Fehler vs. alles andere), decken
+      zusammen aber praktisch jeden JS-Fehler ab, der die App sonst unsichtbar zum Absturz
+      gebracht haette.
