@@ -25,9 +25,14 @@
   #root{ display:flex; flex-direction:column; }
   body{
     font-family: 'Segoe UI', Arial, sans-serif;
+    /* --page-bg wird von App.tsx per Route gesetzt (siehe PAGE_BACKGROUNDS) - jede Seite kann so
+       ihr eigenes thematisches Hintergrundbild bekommen (Werft -> Werft-Bild, Forschung ->
+       Forschungslabor-Bild, usw.), Fallback ist hauptbild.png, falls fuer eine Route noch kein
+       eigenes Bild hinterlegt ist. Der Wechsel passiert hart (kein Ueberblenden) - CSS kann
+       zwischen zwei background-image-URLs nicht weich interpolieren. */
     background:
       radial-gradient(circle at 50% 0%, rgba(61,15,18,0.6), rgba(10,3,4,0.88) 70%),
-      url('/background/hauptbild.png');
+      var(--page-bg, url('/background/hauptbild.png'));
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -54,10 +59,12 @@
   }
 
   #resourcebar{
-    background: rgba(28,28,28,0.72);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(20,20,22,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border-bottom: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    margin: 12px 12px 0 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -111,12 +118,14 @@
 
   #layout{
     display:flex;
+    margin: 0 12px 12px 12px;
   }
   #sidebar{
-    background: rgba(28,28,28,0.72);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(20,20,22,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border-right: 1px solid var(--border);
+    border-radius: 0 0 0 8px;
     width: 200px;
     display:flex;
     flex-direction:column;
@@ -158,12 +167,12 @@
 
   #mainbar{
     flex: 1;
-    background: rgba(28,28,28,0.72);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    margin: 10px;
+    background: rgba(20,20,22,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-left: none;
+    border-radius: 0 0 8px 0;
     padding: 24px;
   }
   #mainbar h2{
@@ -185,7 +194,9 @@
 
   .queue-box{
     position: relative;
-    background: var(--carbon-light);
+    background: rgba(36,38,43,0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px 16px;
@@ -242,7 +253,9 @@
     gap: 16px;
   }
   .ship-card{
-    background: var(--carbon-light);
+    background: rgba(36,38,43,0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     border: 1px solid var(--border);
     border-radius: 6px;
     overflow:hidden;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
@@ -34,6 +35,40 @@ const NAV_ITEMS = [
   { to: '/updates', label: 'Updates' },
 ];
 
+// Seitenspezifisches Hintergrundbild pro Route (siehe theme.css `--page-bg`) - jede Seite kann so
+// ihr eigenes thematisches Bild bekommen (Werft -> Werft-Halle, Forschung -> Labor, usw.), statt
+// ueberall dasselbe Hauptbild zu zeigen. Fehlt fuer eine Route ein eigener Eintrag, greift der
+// Fallback auf hauptbild.png (siehe usePageBackground() unten) - noch nicht jede Seite hat schon
+// ein eigenes Bild, wird nach und nach ergaenzt, sobald neue Bilder geliefert werden.
+const PAGE_BACKGROUNDS: Record<string, string> = {
+  '/': 'werft.png',
+  '/verteidigung': 'verteidigung.png',
+  '/sektor': 'sektor.png',
+  '/forschung': 'forschung.png',
+  '/flotte': 'flotte.png',
+  '/haendler': 'haendler.png',
+  '/shop': 'shop.png',
+  '/multiplayer': 'multiplayer.png',
+  '/galaxie': 'galaxie.png',
+  '/nachrichten': 'nachrichten.png',
+  '/inventar': 'inventar.png',
+  '/statistik': 'statistik.png',
+  '/updates': 'updates.png',
+};
+const DEFAULT_BACKGROUND = 'hauptbild.png';
+
+// Setzt die CSS-Variable --page-bg auf body, sobald sich die Route aendert - das eigentliche
+// Umschalten des Bildes passiert rein per CSS (theme.css), hier wird nur der passende Dateiname
+// ermittelt. Kein <img>-Tag noetig, laeuft komplett ueber background-image. Faellt automatisch
+// auf hauptbild.png zurueck, solange fuer eine Route noch kein eigenes Bild existiert (fehlende
+// Bilddatei fuehrt lediglich zu einem leeren Hintergrund an dieser Route, kein Absturz).
+function usePageBackground(pathname: string) {
+  useEffect(() => {
+    const file = PAGE_BACKGROUNDS[pathname] || DEFAULT_BACKGROUND;
+    document.body.style.setProperty('--page-bg', `url('/background/${file}')`);
+  }, [pathname]);
+}
+
 function Sidebar() {
   const location = useLocation();
   return (
@@ -48,6 +83,8 @@ function Sidebar() {
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  usePageBackground(location.pathname);
   return (
     <>
       <ResourceBar />
