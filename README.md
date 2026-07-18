@@ -1315,9 +1315,10 @@ aktuellen Kartenliste in `Forschung.tsx`).
 **Gruppierung der 13 bestehenden Forschungen in 4 Hauptbereiche - vom Nutzer BESTAETIGT**
 (nicht mehr nur Entwurf, siehe Ruecksprache):
 
-- **Waffensysteme** (Angriff): `waffen` (Basis) → `zielerfassung` (Zweig) → `durchschlag` (Zweig)
-  → `kritischetreffer` (baut auf `zielerfassung` auf) · `praezision` evtl. ebenfalls hier
-  (Trefferchance passt sowohl zu Angriff als auch zu Verteidigung, noch zu entscheiden).
+- **Waffensysteme** (Angriff) - Struktur final bestaetigt (siehe Ruecksprache): `waffen` (Basis)
+  verzweigt sich in ZWEI parallele Zweige. Oberer Zweig: `zielerfassung` → `praezision` (baut auf
+  `zielerfassung` auf). Unterer Zweig: `durchschlag` → `kritischetreffer` (baut auf `durchschlag`
+  auf). `praezision` gehoert damit zu Waffensysteme, nicht zu Verteidigung.
 - **Verteidigungssysteme**: `schild` (Basis) → `schildregeneration` (Zweig) · `panzerung` (Basis,
   parallel) → `ausweichen` (Zweig, baut auf `panzerung` auf - thematisch: schwere Panzerung
   ermoeglicht ausweichende Manöver? Oder eher eigener Zweig ohne Voraussetzung, noch zu klaeren).
