@@ -3,7 +3,7 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
-import { nextFixedCheckpoint } from './data/economy.js';
+import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, EVENT_CHECK_HOURS_LOCAL } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson, listAllUsers } from '../db.js';
 
@@ -73,9 +73,9 @@ export function defaultPlayerState(userId: number): PlayerState {
     inventory: [],
     presets: [],
     raid: null,
-    nextRaidCheck: nextFixedCheckpoint(Date.now()),
+    nextRaidCheck: nextFixedCheckpoint(Date.now(), RAID_CHECK_HOURS_LOCAL),
     event: null,
-    nextEventCheck: nextFixedCheckpoint(Date.now()),
+    nextEventCheck: nextFixedCheckpoint(Date.now(), EVENT_CHECK_HOURS_LOCAL),
     lastUpdate: Date.now(),
     stats: defaultPlayerStats(),
   };

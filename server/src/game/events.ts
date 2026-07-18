@@ -4,6 +4,7 @@ import {
   EVENT_NAMES,
   ALLY_STATS,
   rollFixedCheckpoints,
+  EVENT_CHECK_HOURS_LOCAL,
 } from './data/economy.js';
 import { NOTRUF_POSITION } from './data/galaxyConstants.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
@@ -60,7 +61,7 @@ export async function processEventTimer(state: PlayerState) {
   }
   if (now < state.nextEventCheck) return;
   if (state.event) return;
-  state.nextEventCheck = rollFixedCheckpoints(state.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) => spawnEventAt(state, checkpointTime));
+  state.nextEventCheck = rollFixedCheckpoints(state.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) => spawnEventAt(state, checkpointTime), EVENT_CHECK_HOURS_LOCAL);
 }
 
 /**
@@ -85,8 +86,12 @@ export async function processOverdueEventsForOtherUsers(currentState: PlayerStat
         changed = true;
       }
       if (!otherState.event && now >= otherState.nextEventCheck) {
-        otherState.nextEventCheck = rollFixedCheckpoints(otherState.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) =>
-          spawnEventAt(otherState, checkpointTime)
+        otherState.nextEventCheck = rollFixedCheckpoints(
+          otherState.nextEventCheck,
+          now,
+          EVENT_SPAWN_CHANCE,
+          (checkpointTime) => spawnEventAt(otherState, checkpointTime),
+          EVENT_CHECK_HOURS_LOCAL
         );
         changed = true;
       }
