@@ -139,7 +139,26 @@ export const NPC_SPECIALS: NpcSpecialDef[] =
 export const ALLY_STATS = { waffen: 4000, schild: 2000, panzerung: 30000 };
 // Beide Ereignisse pruefen an denselben vier festen Tageszeiten (Server-UTC-Zeit), nicht mehr
 // in zufaelligen Intervallen. Sinn: Alle Spieler wissen genau, wann ein Check stattfindet.
-export const FIXED_CHECK_HOURS_UTC = [0, 6, 12, 18];
+// Check-Zeitpunkte in DEUTSCHER ORTSZEIT (nicht mehr UTC) - Raid und Notruf bewusst um 3 Stunden
+// versetzt, damit nie beide zur gleichen Zeit ausgeloest werden koennen, sondern sich im
+// 3-Stunden-Rhythmus abwechseln (00/06/12/18 Uhr Raid, 03/09/15/21 Uhr Notruf).
+export const RAID_CHECK_HOURS_LOCAL = [0, 6, 12, 18];
+export const EVENT_CHECK_HOURS_LOCAL = [3, 9, 15, 21];
+
+const BERLIN_TZ = 'Europe/Berlin';
+
+// Ermittelt den aktuellen UTC-Offset (in ganzen Stunden) fuer Berliner Ortszeit zu einem
+// gegebenen Zeitpunkt - Deutschland hat immer +1 (Winterzeit/CET) oder +2 (Sommerzeit/CEST),
+// nie halbe Stunden. Wird bei jeder Checkpoint-Berechnung frisch ermittelt, deckt daher den
+// Wechsel zwischen Sommer-/Winterzeit automatisch ab (mit vernachlaessigbarer Ungenauigkeit
+// exakt in der Wechselnacht selbst, 2x im Jahr - fuer ein Spiel mit wenigen Spielern hinnehmbar,
+// statt dafuer eine vollstaendige Zeitzonen-Bibliothek einzubinden).
+function berlinOffsetHours(utcMs: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: BERLIN_TZ, timeZoneName: 'shortOffset' }).formatToParts(new Date(utcMs));
+  const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT+1';
+  const match = tzPart.match(/GMT([+-]\d+)/);
+  return match ? parseInt(match[1], 10) : 1;
+}
 
 export const EVENT_SPAWN_CHANCE = 0.4; // 40% Chance bei jedem der vier Checks
 // Zeit zum Entscheiden/Losschicken (nicht die Flugzeit selbst - die kommt zusaetzlich obendrauf,
@@ -181,16 +200,21 @@ export const COMBAT_SHIP_IDS = [
 // Liefert den naechsten der vier festen Tages-Checkpunkte (00/06/12/18 Uhr UTC) NACH "now".
 // Wird sowohl fuer Raids als auch fuer Notruf-Events verwendet, damit beide Ereignisse an
 // denselben, fuer alle Spieler vorhersehbaren Zeitpunkten geprueft werden.
-export function nextFixedCheckpoint(now: number): number {
+export function nextFixedCheckpoint(now: number, localHours: number[] = RAID_CHECK_HOURS_LOCAL): number {
+  const offset = berlinOffsetHours(now);
+  // Deutsche Ortszeit-Stunden in die entsprechenden UTC-Stunden umrechnen (Date arbeitet intern
+  // mit UTC-Methoden, wie im Rest der Datei) - sortiert, damit die Schleife unten korrekt die
+  // naechstgelegene findet.
+  const utcHours = [...new Set(localHours.map((h) => (((h - offset) % 24) + 24) % 24))].sort((a, b) => a - b);
   const d = new Date(now);
   d.setUTCMinutes(0, 0, 0);
-  for (const hour of FIXED_CHECK_HOURS_UTC) {
+  for (const hour of utcHours) {
     d.setUTCHours(hour);
     if (d.getTime() > now) return d.getTime();
   }
   // Kein Checkpoint mehr heute uebrig -> erster Checkpoint morgen
   d.setUTCDate(d.getUTCDate() + 1);
-  d.setUTCHours(FIXED_CHECK_HOURS_UTC[0]);
+  d.setUTCHours(utcHours[0]);
   return d.getTime();
 }
 
@@ -211,18 +235,33 @@ const MAX_BACKFILL_CHECKPOINTS = 400;
  * Gibt den naechsten zu speichernden Checkpoint zurueck (das naechste Mal, ab dem wieder geprueft
  * werden soll).
  */
-export function rollFixedCheckpoints(lastCheck: number, now: number, spawnChance: number, onSuccess: (checkpointTime: number) => void): number {
+export function rollFixedCheckpoints(
+  lastCheck: number,
+  now: number,
+  spawnChance: number,
+  onSuccess: (checkpointTime: number) => void,
+  localHours: number[] = RAID_CHECK_HOURS_LOCAL
+): number {
   let checkpoint = lastCheck;
   for (let i = 0; i < MAX_BACKFILL_CHECKPOINTS; i++) {
-    checkpoint = nextFixedCheckpoint(checkpoint);
+    // WICHTIG: erst pruefen, ob der AKTUELL gespeicherte Checkpoint faellig ist, dann erst
+    // weiterruecken. Die vorherige Reihenfolge (erst nextFixedCheckpoint() aufrufen, DANACH
+    // pruefen) hat den eigentlich faelligen, gespeicherten Checkpoint nie selbst gewuerfelt,
+    // sondern ist sofort zum naechsten gesprungen und hat DAS als "noch nicht faellig" erkannt -
+    // dadurch wurde bei jedem Tick eines aktiv spielenden Nutzers (Checkpoint gerade eben faellig
+    // geworden) der faellige Checkpoint komplett uebersprungen, ohne je gewuerfelt zu werden.
+    // Raids/Notrufe konnten dadurch praktisch nie spawnen, solange jemand aktiv online war -
+    // nur bei mehrtaegiger Abwesenheit (mehrere uebersprungene Checkpoints) gab es zufaellig
+    // noch einen Treffer, weil dann IMMER NOCH ein Checkpoint in der Vergangenheit lag.
     if (checkpoint > now) return checkpoint;
     if (Math.random() < spawnChance) {
       onSuccess(checkpoint);
-      return nextFixedCheckpoint(checkpoint);
+      return nextFixedCheckpoint(checkpoint, localHours);
     }
+    checkpoint = nextFixedCheckpoint(checkpoint, localHours);
   }
   // Sicherheitsnetz gegriffen (extrem lange Abwesenheit) - Rest ueberspringen statt zu haengen.
-  return nextFixedCheckpoint(now);
+  return nextFixedCheckpoint(now, localHours);
 }
 
 // ===== Belohnungs-Eskalation pro ueberlebtem Stunden-Check (Piraten-Sektoren + Elite-Bollwerk) =====
