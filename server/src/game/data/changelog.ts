@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Neu: Zwei KI-Mitspieler',
+    changes: [
+      'Zwei KI-Spieler ("KI-Vega" und "KI-Nyx") sind jetzt Teil der Galaxie - sie bauen Gebäude aus, forschen, bauen Schiffe und Verteidigung, schicken Mining-Flotten zu Asteroiden-Feldern und nehmen an gemeinsamen Elite-Bollwerk-Expeditionen teil (können euch einladen oder eure Einladungen annehmen).',
+      'Beide unterliegen exakt denselben Kosten, Bauzeiten und Flugzeiten wie echte Spieler - kein Vorteil, keine Abkürzung.',
+      'Die KI-Spieler schicken euch gelegentlich von sich aus eine Teilflotte zum "Halten", die euch dann automatisch bei Piratenraids verteidigen hilft.',
+      'In der Galaxie-Ansicht sind KI-Spieler mit 🤖 gekennzeichnet.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Fehlerbehebung: Popups nicht mehr von der Kopfleiste verdeckt',
     changes: [
       'Kampfberichte, Info-Popups und Lore-Ansichten wurden am oberen Rand teilweise von der Ressourcenleiste überdeckt - das ist jetzt behoben, alle Popups werden vollständig sichtbar angezeigt.',
