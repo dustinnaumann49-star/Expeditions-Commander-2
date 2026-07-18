@@ -1152,3 +1152,27 @@ client/
     - Beide Wege sind bewusst getrennt (Komponenten-Baum-Fehler vs. alles andere), decken
       zusammen aber praktisch jeden JS-Fehler ab, der die App sonst unsichtbar zum Absturz
       gebracht haette.
+
+61. **BUGFIX: Sektor-Tab stürzte beim Wechsel zwischen "Asteroiden-Feld" und "Piraten-Sektor"
+    komplett ab (React error #310 "Rendered more hooks than during the previous render"), dank
+    Punkt 60 erstmals sichtbar geworden.** Ursache: `useGalaxyPreview()` (aus Punkt 52) wurde
+    direkt in der `.map()`-Schleife ueber `sektorenInTab` aufgerufen, in derselben Komponente wie
+    die Seite selbst - beim "Asteroiden-Feld"-Tab sind das 3 Sektoren (3 Hook-Aufrufe), beim
+    "Piraten-Sektor"-Tab aber 4 (`piraten_elite` beginnt ebenfalls mit `"piraten_"` und wird vom
+    Tab-Filter mitgezaehlt) - die Anzahl der Hook-Aufrufe AENDERTE SICH beim Tab-Wechsel innerhalb
+    DERSELBEN Komponente, was React explizit verbietet (Regeln der Hooks: IMMER dieselbe Anzahl/
+    Reihenfolge von Hook-Aufrufen bei jedem Render). Genau das Muster, das schon in Punkt 52 fuer
+    `PendingInviteCard` (Multiplayer.tsx) bewusst vermieden wurde ("eigene Komponente statt Hook
+    in variabel-langer `.map()`-Schleife") - hier bei den Sektor-Karten aber uebersehen, weil die
+    Laenge FUER JEDEN EINZELNEN TAB fuer sich genommen konstant erschien (3 bzw. 4), der
+    Tab-WECHSEL selbst aber trotzdem die Hook-Anzahl innerhalb derselben Komponente veraendert.
+    - **Fix:** neue `SektorCard`-Komponente extrahiert (`Sektor.tsx`) - jede Sektor-Karte ist jetzt
+      eine eigene Komponenteninstanz mit eigenem, stabilem `useGalaxyPreview()`-Aufruf,
+      unabhaengig von der Gesamtzahl der Karten oder Tab-Wechseln.
+    - **Wichtige Lehre fuer kuenftigen Code:** ein Hook-Aufruf in einer `.map()`-Schleife ist NUR
+      dann sicher, wenn die Array-LAENGE UEBER ALLE MOEGLICHEN ZUSTAENDE dieser Komponente hinweg
+      IMMER gleich bleibt (nicht nur "meistens" oder "pro Ansicht") - im Zweifel IMMER eine eigene
+      Unterkomponente pro Listenelement extrahieren, wie bereits in Punkt 52 als Grundsatz notiert.
+    - Ohne die sichtbare Fehleranzeige aus Punkt 60 waere dieser Bug vermutlich unbemerkt
+      geblieben (Symptom vorher: App laedt kurz, verschwindet dann wieder - ohne jeden Hinweis
+      auf die Ursache, siehe Diagnose-Verlauf).
