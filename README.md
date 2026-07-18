@@ -695,8 +695,8 @@ client/
     - **UI-Platzierung bewusst als Untertab** von `Forschung.tsx` statt eigener Sidebar-Punkt
       (Punkt 11: Sidebar schlank halten) - `ForschungPage` wurde dafuer in einen duennen
       Tab-Wrapper plus die bisherige Ansicht als `ForschungListView` aufgeteilt.
-    - Bilder unter `client/public/buildings/*.png` (metallmine, kristallmine, deuteriummine,
-      solarkraftwerk, roboterfabrik, nanitenfabrik) existieren noch nicht - der bestehende
-      `onError`-Fallback blendet das Bild dann aus, Rest der Karte bleibt voll funktional. Bei
-      Lieferung der Bilder reicht das Ablegen unter diesen Pfaden, kein Code muss angepasst
-      werden.
+    - Bilder unter `client/public/buildings/*.jpg` (metallmine, kristallmine, deuteriummine,
+      solarkraftwerk, roboterfabrik, nanitenfabrik) inzwischen geliefert und wie die Salvenschiffe
+      (Punkt 24) auf 700x382 verkleinert und als komprimiertes JPEG abgelegt (~66-71 KB statt der
+      ursprünglich hochgeladenen ~1408x768-PNGs) - wichtig für Mobil-Ladezeiten. `img`-Feld in
+      `data/buildings.ts` entsprechend auf `.jpg` umgestellt.
