@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Neu: Forschungsbaum',
+    changes: [
+      'Die Forschung ist jetzt ein echter Baum mit Verbindungslinien statt einer einfachen Liste - 4 Hauptbereiche (Waffensysteme, Verteidigungssysteme, Antriebstechnik, Wirtschaft & Logistik), viele Zweige schalten sich erst frei, wenn die Basis-Forschung Stufe 3 erreicht hat.',
+      '8 neue Forschungen: drei Antriebsklassen (Raketen-/Impuls-/Hyperraumantrieb, je nach Schiffstyp), zwei Mining-Spezialisierungen (nur Schiffe / nur Minen) und drei Bauzeit-Spezialisierungen (nur Gebäude / nur Schiffe / nur Verteidigung) - alle stapeln zusätzlich zu den bestehenden Basis-Forschungen.',
+      'Jede Forschungskarte zeigt jetzt nur noch Bild, Name und Stufe - alle Details (Kosten, Effekt, Voraussetzungen) stecken in einem Info-Popup.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Überarbeitetes Design: schlankere Oberfläche',
     changes: [
       'Ressourcenleiste bleibt oben über die volle Breite, die Seitenleiste fest links - der Hauptbereich hat jetzt eine feste, zentrierte Breite, sodass rundherum sichtbar Hintergrund bleibt.',

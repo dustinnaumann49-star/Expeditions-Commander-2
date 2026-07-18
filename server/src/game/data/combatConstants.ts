@@ -214,6 +214,10 @@ export const CRIT_CHANCE_MAX = 0.35;
 export const CRIT_DAMAGE_MULTIPLIER = 2;
 
 export const MAX_RESEARCH_LEVEL = 10;
+// Forschungsbaum: einheitliche Voraussetzungs-Schwelle fuer JEDE Eltern->Kind-Verbindung (siehe
+// ResearchDefinition.parentId in types.ts) - bewusst ein einziger globaler Wert statt individuell
+// pro Zweig, wie besprochen.
+export const PARENT_UNLOCK_LEVEL = 3;
 export const SHIELD_REGEN_BASE = 0.20;
 export const SHIELD_REGEN_MAX = 0.80;
 export const PRECISION_BASE = 0.40;
