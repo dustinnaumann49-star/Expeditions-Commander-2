@@ -14,7 +14,7 @@ import type { BuildingDefinition } from '../types.js';
 // Energieertrag Solarkraftwerk (Stufe L): baseEnergyOutput * L * 1.1^L.
 export const BUILDINGS: BuildingDefinition[] = [
   {
-    id: 'metallmine', name: 'Metallmine', img: 'buildings/metallmine.png',
+    id: 'metallmine', name: 'Metallmine', img: 'buildings/metallmine.jpg',
     lore: 'Die Metallmine gräbt sich tief in die Kruste des Heimatplaneten und fördert das Rohmaterial, aus dem jede Flotte gebaut wird. Ohne sie steht jede Werft still.',
     kind: 'mine_metall',
     baseCost: { metall: 3000, kristall: 1200, deuterium: 0 }, costGrowth: 1.55,
@@ -22,7 +22,7 @@ export const BUILDINGS: BuildingDefinition[] = [
     baseOutput: 10000, baseEnergyUse: 700,
   },
   {
-    id: 'kristallmine', name: 'Kristallmine', img: 'buildings/kristallmine.png',
+    id: 'kristallmine', name: 'Kristallmine', img: 'buildings/kristallmine.jpg',
     lore: 'Kristall entsteht nur unter enormem Druck über Jahrtausende - die Kristallmine erschließt Adern, die für Elektronik und Schildgeneratoren unverzichtbar sind.',
     kind: 'mine_kristall',
     baseCost: { metall: 4000, kristall: 2500, deuterium: 0 }, costGrowth: 1.6,
@@ -30,7 +30,7 @@ export const BUILDINGS: BuildingDefinition[] = [
     baseOutput: 6700, baseEnergyUse: 700,
   },
   {
-    id: 'deuteriummine', name: 'Deuterium-Synthetisierer', img: 'buildings/deuteriummine.png',
+    id: 'deuteriummine', name: 'Deuterium-Synthetisierer', img: 'buildings/deuteriummine.jpg',
     lore: 'Der Synthetisierer filtert schweren Wasserstoff aus unterirdischen Eisvorkommen - der Treibstoff, ohne den keine Flotte ihren Heimathafen verlassen könnte.',
     kind: 'mine_deuterium',
     baseCost: { metall: 5000, kristall: 4000, deuterium: 1000 }, costGrowth: 1.6,
@@ -38,7 +38,7 @@ export const BUILDINGS: BuildingDefinition[] = [
     baseOutput: 3300, baseEnergyUse: 1100,
   },
   {
-    id: 'solarkraftwerk', name: 'Solarkraftwerk', img: 'buildings/solarkraftwerk.png',
+    id: 'solarkraftwerk', name: 'Solarkraftwerk', img: 'buildings/solarkraftwerk.jpg',
     lore: 'Endlose Reihen von Kollektoren versorgen die Minen mit der Energie, die sie zum Betrieb brauchen. Ohne ausreichend Energie laufen selbst die größten Minen nur auf Sparflamme.',
     kind: 'energie',
     baseCost: { metall: 3500, kristall: 1800, deuterium: 0 }, costGrowth: 1.5,
@@ -46,14 +46,14 @@ export const BUILDINGS: BuildingDefinition[] = [
     baseEnergyOutput: 1300,
   },
   {
-    id: 'roboterfabrik', name: 'Roboterfabrik', img: 'buildings/roboterfabrik.png',
+    id: 'roboterfabrik', name: 'Roboterfabrik', img: 'buildings/roboterfabrik.jpg',
     lore: 'Automatisierte Fertigungsstraßen übernehmen die Schwerstarbeit beim Bau von Gebäuden, Schiffen und Verteidigungsanlagen und verkürzen so jede Bauzeit spürbar.',
     kind: 'roboter',
     baseCost: { metall: 8000, kristall: 4500, deuterium: 1500 }, costGrowth: 1.85,
     baseTimeSeconds: 3600, timeGrowth: 1.4,
   },
   {
-    id: 'nanitenfabrik', name: 'Nanitenfabrik', img: 'buildings/nanitenfabrik.png',
+    id: 'nanitenfabrik', name: 'Nanitenfabrik', img: 'buildings/nanitenfabrik.jpg',
     lore: 'Schwärme mikroskopischer Bau-Einheiten arbeiten parallel an jedem Projekt - die Krönung der Fertigungstechnik, deutlich stärker als jede Roboterfabrik.',
     kind: 'nanit',
     baseCost: { metall: 250000, kristall: 150000, deuterium: 100000 }, costGrowth: 2.0,
