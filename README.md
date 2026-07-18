@@ -811,3 +811,36 @@ client/
       gelassen - das ist ein separates System, dessen eigene Flugzeit-Herleitung (Distanz-basiert
       wie bei Halten-Flotten) ein moeglicher naechster Schritt waere, aber nicht Teil dieser
       Aenderung war.
+
+50. **Die 3 Asteroiden-Felder und 3 (normalen) Piraten-Sektoren haben jetzt ebenfalls feste
+    Galaxie-Positionen** (`galaxyPosition` in `SEKTOR_CONFIG`, `data/sectors.ts`) - Anflug- UND
+    Rueckflugzeit werden jetzt wie bei Galaxie-Halten-Fluegen ECHT aus der Distanz zur eigenen
+    Position berechnet (`galaxyDistance()`/`galaxyDurationMs()`/`galaxyFleetSpeed()` aus
+    `galaxy.ts`, in `sendFleet()` (`missions.ts`) wiederverwendet statt dupliziert), statt der
+    vorher fixen `MISSION_TRAVEL_MS` (1 Minute). Getestet: Mining-Flotte von System 1 zu
+    Asteroid-Hoch (System 34) brauchte 37 Minuten pro Strecke statt vorher 1 Minute - Aufenthalts-
+    dauer vor Ort (4h Piraten- / 12h Asteroiden-Sektoren) bleibt davon unberuehrt.
+    - **Fallback bei fehlender Position:** ist entweder der Sektor (aktuell nur Elite-Bollwerk,
+      siehe unten) oder der Spieler (sollte dank Migration nicht vorkommen) ohne Galaxie-Position,
+      greift weiterhin die alte feste `MISSION_TRAVEL_MS` - kein Absturz, nur die alte Anflugzeit.
+    - **Elite-Bollwerk (`piraten_elite`) bewusst AUSGENOMMEN:** bleibt bei der alten festen
+      Anflugzeit ueber `groupOps.ts` - ist nur ueber gemeinsame Expeditionen erreichbar (Punkt 7)
+      und war nicht Teil dieser Anfrage; eine eigene Position dafuer waere ein moeglicher
+      naechster Schritt, wirft aber zusaetzliche Fragen auf (z.B. wessen Position als Ausgangspunkt
+      zaehlt bei mehreren Teilnehmern).
+    - **Kein Konflikt bei gemeinsamer Zielposition:** mehrere Spieler koennen gleichzeitig zum
+      selben Sektor fliegen, ohne dass sich das gegenseitig beeinflusst - jede Mission wuerfelt
+      weiterhin ihre EIGENE Piratenflotte/Ausbeute unabhaengig (`generateFallbackFleet()` pro
+      Mission, kein gemeinsamer Vorrat). Die Galaxie-Position ist nur ein gemeinsamer Wegpunkt
+      fuer die Flugzeit-Berechnung, kein geteilter Ressourcen-Pool - exakt wie es schon vorher
+      implizit der Fall war (nur jetzt mit einer echten Position statt einer abstrakten Sektor-ID).
+    - **Sektor-Positionen jetzt auch in der Galaxie-Ansicht sichtbar** (🛰️-Markierung,
+      `sektorPositions` in der `/game/galaxy`-Antwort, analog zu den Piratenbasen).
+    - **Flottenbewegungen-Liste zeigt jetzt ZUSAETZLICH alle eigenen Sektor-Missionen**
+      (`state.missions`), nicht mehr nur die Galaxie-Halten-Flotten - mit Phase (Anflug/vor Ort/
+      Rückflug), Restzeit, Rückruf-Button (nutzt das bestehende `recallMission()`) und
+      aufklappbarer Schiffsdetail-Ansicht, genau wie bei Halten-Flotten. Bekannte, bewusst NICHT
+      in dieser Runde behobene Luecke: eigene Raid-Verstaerkungen (`raidReinforce.ts`) und
+      Gruppen-Expeditionen (`groupOps.ts`) tauchen dort noch NICHT auf, da fuer sie bisher keine
+      Bewegungs-Historie im eigenen `PlayerState` mitgefuehrt wird - waere ein moeglicher
+      naechster Schritt fuer eine wirklich vollstaendige Flottenbewegungen-Uebersicht.
