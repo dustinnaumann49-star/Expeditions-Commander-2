@@ -11,6 +11,7 @@ interface GameContextValue {
   refresh: () => Promise<void>;
   buildShip: (shipId: string, qty: number) => Promise<void>;
   buildDefense: (defId: string, qty: number) => Promise<void>;
+  buildBuilding: (buildingId: string) => Promise<void>;
   startResearch: (techId: string) => Promise<void>;
   buildImperator: () => Promise<void>;
   sendMission: (sektorId: string, selection: Record<string, number>) => Promise<void>;
@@ -147,6 +148,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refresh,
     buildShip: (shipId, qty) => run(() => api.buildShip(shipId, qty)),
     buildDefense: (defId, qty) => run(() => api.buildDefense(defId, qty)),
+    buildBuilding: (buildingId) => run(() => api.buildBuilding(buildingId)),
     startResearch: (techId) => run(() => api.startResearch(techId)),
     buildImperator: () => run(() => api.buildImperator()),
     sendMission: (sektorId, selection) => run(() => api.sendMission(sektorId, selection)),
