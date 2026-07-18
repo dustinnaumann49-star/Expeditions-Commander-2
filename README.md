@@ -977,3 +977,56 @@ client/
       bewusst NICHT - der steht serverseitig erst bei `resolveRaid()` (Ankunft) fest, siehe
       `generateFallbackFleet()` in `combat.ts`, ist also kein UI-Versaeumnis, sondern Teil des
       Spieldesigns (Ungewissheit bis zum Einschlag).
+
+55. **BUGFIX: `rollFixedCheckpoints()` (economy.ts) hat Raids/Notrufe fuer aktiv online
+    spielende Nutzer praktisch NIE ausgeloest** - ein vorbestehender Fehler, nicht Teil der
+    Galaxie-Erweiterung. Die Funktion rueckte den gespeicherten Checkpoint IMMER zuerst einen
+    Schritt weiter (`checkpoint = nextFixedCheckpoint(checkpoint)`), BEVOR sie prueft, ob er
+    faellig ist - dadurch wurde der tatsaechlich faellige, gespeicherte Checkpoint nie selbst
+    gewuerfelt, sondern die Funktion sprang sofort zum naechsten (6 Stunden spaeter), erkannte
+    "der ist ja noch in der Zukunft" und brach ab, OHNE JE ZU WUERFELN. Bei jedem `tick()` (alle
+    paar Sekunden, solange die Seite offen ist) wurde der faellige Checkpoint so immer wieder
+    uebersprungen. Nur wer tagelang komplett offline war (mehrere Checkpoints "verpasst") bekam
+    zufaellig noch einen Treffer, weil dann nach dem einen Ueberspringen IMMER NOCH ein
+    Checkpoint in der Vergangenheit lag - das hat den Fehler beim eigenen Testen waehrend der
+    Entwicklung (immer mit mehrtaegigem Backfill getestet) verdeckt.
+    - **Fix:** Reihenfolge getauscht - erst pruefen, ob der AKTUELL gespeicherte Checkpoint
+      faellig ist (`if (checkpoint > now) return checkpoint;`), NUR bei einem Fehlschlag (Wuerfel
+      nicht getroffen) einen Schritt weiterruecken, um ggf. weitere verpasste Checkpoints
+      nachzuholen.
+    - **Getestet:** 500 Durchlaeufe mit einem gerade erst faellig gewordenen Checkpoint und 60%
+      Chance ergaben vorher 0 Treffer (exakt der beobachtete Fehler), nachher ~56% Treffer (nahe
+      am erwarteten Wert). Der bestehende Mehrtage-Backfill-Fall (verpasste Checkpoints waehrend
+      Abwesenheit nachholen) funktioniert unveraendert weiter (200/200 Treffer im Test).
+    - Betrifft sowohl Raids (`RAID_SPAWN_CHANCE`) als auch Notruf-Events (`EVENT_SPAWN_CHANCE`),
+      da beide dieselbe Funktion nutzen - erklaert, warum ueber mehrere Tage keines von beiden
+      ausgeloest wurde, obwohl beide Systeme komplett unabhaengig voneinander laufen (keine
+      Ueberschneidung/Konflikt zwischen ihnen, wie zunaechst vermutet).
+
+56. **Check-Zeitpunkte auf deutsche Ortszeit umgestellt, Raid und Notruf laufen jetzt versetzt
+    im 3-Stunden-Wechsel statt zur selben Zeit.** Vorher liefen beide auf denselben UTC-Stunden
+    (`FIXED_CHECK_HOURS_UTC = [0,6,12,18]`), jetzt getrennt: Raid `RAID_CHECK_HOURS_LOCAL =
+    [0,6,12,18]`, Notruf `EVENT_CHECK_HOURS_LOCAL = [3,9,15,21]` - beide in Berliner ORTSZEIT
+    (nicht mehr UTC), sodass sich beide im 3-Stunden-Rhythmus abwechseln (z.B. 21 Uhr Notruf,
+    00 Uhr Raid, 03 Uhr Notruf, 06 Uhr Raid, ...).
+    - **Sommer-/Winterzeit-Umrechnung** (`berlinOffsetHours()` in `economy.ts`): ermittelt per
+      `Intl.DateTimeFormat` mit `timeZoneName: 'shortOffset'` den aktuellen UTC-Versatz fuer
+      Europe/Berlin (+1 im Winter/CET, +2 im Sommer/CEST) und rechnet die deutschen Ortszeit-
+      Stunden bei JEDER Checkpoint-Berechnung frisch in UTC-Stunden um - deckt den Wechsel
+      zwischen Sommer- und Winterzeit automatisch ab. Einzige (bewusst hingenommene)
+      Ungenauigkeit: in der exakten Wechselnacht selbst (2x im Jahr) kann ein einzelner
+      Checkpoint um eine Stunde verschoben sein - fuer ein Spiel mit wenigen Spielern kein
+      Problem, keine vollstaendige Zeitzonen-Bibliothek noetig.
+    - **`nextFixedCheckpoint()`/`rollFixedCheckpoints()` nehmen jetzt einen `localHours`-Parameter**
+      (Standardwert `RAID_CHECK_HOURS_LOCAL`, damit bestehende Aufrufe ohne den Parameter nicht
+      brechen) - raids.ts/events.ts/state.ts uebergeben jeweils explizit ihren eigenen
+      Stundensatz.
+    - **Keine Migration noetig:** bereits gespeicherte `nextRaidCheck`/`nextEventCheck`-Zeitstempel
+      (unter dem alten UTC-Schema berechnet) bleiben als rohe Zeitstempel weiterhin gueltig, bis
+      sie erreicht werden - der DARAUFFOLGENDE Checkpoint wird dann automatisch nach dem neuen
+      deutschen Ortszeit-Rhythmus berechnet. Der Umstieg passiert also von selbst beim naechsten
+      faelligen Check, ohne Sonderbehandlung beim Laden alter Spielstaende.
+    - Getestet: naechster Raid-Checkpoint korrekt auf Berliner 00:00 Uhr berechnet, naechster
+      Notruf-Checkpoint auf Berliner 21:00 Uhr (3 Stunden auseinander, wie vorgesehen); je 500
+      Durchlaeufe mit frisch faelligem Checkpoint bei 60%/40% Chance ergaben ~299/217 Treffer
+      (Bugfix aus Punkt 55 bleibt korrekt wirksam).
