@@ -1345,11 +1345,19 @@ aktuellen Kartenliste in `Forschung.tsx`).
     verkuerzt die Flugzeit (wegen der Wurzel-Formel in `galaxyDurationMs()`) um ca. 18%, nicht um
     50% - die Formel daempft grosse Geschwindigkeitsgewinne von selbst ab, dadurch ist ein
     ueberzogenes Balance-Risiko eher gering.
-  - **Verbleibende offene Fragen:** welches der 15 Schiffe gehoert zu welcher Antriebsklasse
-    (grobe Erwartung: kleine/schnelle Schiffe wie Leichter/Schwerer Jaeger, Begleitschiff ->
-    Rakete; mittlere wie Kreuzer/Schlachtschiff/Bomber/Salvenjaeger/-kreuzer -> Impuls; schwere/
-    Kapital-Schiffe wie Schlachtkreuzer/Zerstoerer/Reaper/Sandronator/Imperator/Salvendreadnought
-    -> Hyperraum - nur eine erste Einschaetzung, keine finale Zuordnung).
+  - **Schiffszuordnung final bestaetigt** (deckt sich 1:1 mit der bereits bestehenden
+    `SCHIFF_KLASSEN`-Einteilung im Werft-UI, `Werft.tsx` - keine neue Kategorisierung noetig,
+    einfach wiederverwenden):
+    - **Raketenantrieb:** Jaeger-Klasse (`leicht`, `schwer`, `salvenjaeger`) + Versorgungsschiffe
+      (`mining`, `begleitschiff`).
+    - **Impulsantrieb:** Kreuzer-Klasse (`kreuzer`, `schlachtschiff`, `bomber`, `salvenkreuzer`).
+    - **Hyperraumantrieb:** Elite-Klasse (`schlachtkreuzer`, `zerstoerer`, `reaper`,
+      `sandronator`, `salvendreadnought`) + `imperator` (separat gebaut ueber Spezialteile, aber
+      antriebstechnisch hier einsortiert).
+    - Diese Klassen-Einteilung existiert bisher NUR client-seitig als UI-Gruppierung
+      (`SCHIFF_KLASSEN` in `Werft.tsx`) - fuer die Antriebs-Zuordnung braeuchte `ShipDefinition`
+      serverseitig (`data/ships.ts`) ein neues Feld (z.B. `driveType`), das dieselbe Zuordnung
+      widerspiegelt.
 - **Wirtschaft & Logistik**: `mining` (Basis) → `bauzeit` (Zweig, wirkt auf Schiffe/Verteidigung/
   Gebaeude gleichermassen, siehe Punkt 1) · `spionage` (aktuell: glaettet NPC-Flottenvarianz bei
   generierten Piraten-/Notruf-Gegnern, siehe `combat.ts` `generatePiratenFleet()`/
