@@ -29,9 +29,15 @@
        ihr eigenes thematisches Hintergrundbild bekommen (Werft -> Werft-Bild, Forschung ->
        Forschungslabor-Bild, usw.), Fallback ist hauptbild.png, falls fuer eine Route noch kein
        eigenes Bild hinterlegt ist. Der Wechsel passiert hart (kein Ueberblenden) - CSS kann
-       zwischen zwei background-image-URLs nicht weich interpolieren. */
+       zwischen zwei background-image-URLs nicht weich interpolieren.
+       Der radiale Verlauf hier ist bewusst nur noch ein SEHR leichter Farbstich/Vignette (vorher
+       bis zu 88% dunkel!) - der wurde eingefuehrt, BEVOR die Panels selbst transparent waren,
+       und hat sich mit deren eigener Abdunkelung (45%, siehe #resourcebar/#sidebar/#mainbar)
+       gnadenlos aufaddiert: an den Raendern kamen so nur noch ca. 6% der urspruenglichen
+      Bildhelligkeit durch. Die Panels uebernehmen die Lesbarkeits-Abdunkelung jetzt selbst - der
+       Verlauf hier ist nur noch ein dezenter Rotstich, kein zusaetzlicher Verdunkelungs-Layer. */
     background:
-      radial-gradient(circle at 50% 0%, rgba(61,15,18,0.6), rgba(10,3,4,0.88) 70%),
+      radial-gradient(circle at 50% 0%, rgba(61,15,18,0.18), rgba(10,3,4,0.28) 70%),
       var(--page-bg, url('/background/hauptbild.png'));
     background-size: cover;
     background-position: center;
