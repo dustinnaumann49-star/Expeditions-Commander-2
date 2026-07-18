@@ -17,7 +17,12 @@ server/
                                       den oeffentlichen /api/heartbeat-Endpunkt (siehe unten)
   src/game/heartbeat.ts               runGlobalHeartbeat() - verarbeitet Missionen/Raids/Notruf-
                                       Events/Gruppen-Expeditionen fuer ALLE Nutzer unabhaengig
-                                      von jedem Login (siehe "Wichtige Punkte" Punkt 13)
+                                      von jedem Login (siehe "Wichtige Punkte" Punkt 13), ruft
+                                      dabei auch runBotTurn() fuer Bot-Accounts auf (Punkt 58)
+  src/game/bot.ts                    KI-Spieler-Entscheidungslogik: Gebaeude/Forschung/Schiffe/
+                                      Verteidigung/Sektor-Missionen/Elite-Bollwerk/Halten - nutzt
+                                      dieselben Aktionsfunktionen wie die UI (siehe Punkt 58),
+                                      ensureBotUsers() legt die Accounts einmalig beim Start an
 
   src/db.ts                          SQLite-Zugriff: Nutzer, Spielstände, gemeinsame Operationen
 
@@ -39,14 +44,21 @@ server/
 
   src/game/missions.ts               Solo-Missionen: Flotte entsenden, stündlicher Check, Rückkehr
   src/game/events.ts                 Solo-Notruf-Events
-  src/game/raids.ts                  Basis-Raids (inkl. Einbindung von Verstärkungen UND
-                                      haltenden Galaxie-Flotten, siehe galaxy.ts)
-  src/game/raidReinforce.ts          Liste aktiver Raids, Verstärkung entsenden
+  src/game/raids.ts                  Basis-Raids (inkl. Einbindung haltender Galaxie-Flotten,
+                                      siehe galaxy.ts; ad-hoc Verstärkungen ueber reinforcements[]
+                                      strukturell noch vorhanden, aber seit Punkt 53 immer leer)
+  src/game/raidReinforce.ts          Liste aktiver Raids zur Navigation (kein eigener
+                                      Verstärkungs-Versand mehr, siehe Punkt 53 - "Halten" in der
+                                      Galaxie-Ansicht ist der einzige Weg zu helfen)
   src/game/galaxy.ts                 GESAMTE Galaxie-Logik: Distanz/Flugzeit/Treibstoff,
                                       Positionsvergabe, "Halten"-Mechanik (Flotte stationieren/
                                       zurückrufen), Übersicht, Raid-Verteidigungs-Einbindung
-  src/game/groupOps.ts               GESAMTE Multiplayer-Logik: gemeinsame Expeditionen/Events,
-                                      Einladen/Beitreten/Starten, Belohnungsvergabe
+  src/game/groupOps.ts               GESAMTE Multiplayer-Logik: gemeinsame Elite-Bollwerk-
+                                      Expeditionen (Einladen/Rendezvous/Starten,
+                                      Belohnungsvergabe) - Notruf ist seit Punkt 53 nur noch solo,
+                                      der alte Multiplayer-Notruf-Codepfad (kind:'event') bleibt
+                                      als totes Sicherheitsnetz im Code, ueber die UI nicht mehr
+                                      erreichbar
 
   src/game/inventory.ts              Container öffnen, Belohnungen einlösen
   src/game/economyActions.ts         Händler-Tausch, Schrotthändler, Shop (Booster/Gutscheine)
@@ -120,13 +132,16 @@ client/
                                       (rendert Spezialteile.tsx als Untertab-Inhalt)
   src/pages/Spezialteile.tsx          Imperator bauen (kein eigener Nav-Punkt mehr, nur als
                                       Untertab von Shop eingebunden)
-  src/pages/Multiplayer.tsx           Gemeinsame Expeditionen/Events + Untertabs "Raid-Hilfe"
-                                      (rendert RaidHilfe.tsx) und "Spieler" (Online/Offline-Liste)
+  src/pages/Multiplayer.tsx           Gemeinsame Elite-Bollwerk-Expeditionen + Untertabs
+                                      "Raid-Hilfe" (rendert RaidHilfe.tsx) und "Spieler"
+                                      (Online/Offline-Liste) - kein Notruf mehr hier (nur solo,
+                                      siehe Sektor.tsx)
   src/pages/Galaxie.tsx               Galaxie-Ansicht: System-Browser, Positionsraster,
                                       Flotte "halten" (stationieren/zurückrufen),
                                       Flottenbewegungen-Übersicht (eigener Nav-Punkt)
-  src/pages/RaidHilfe.tsx             Alle aktiven Raids anderer Spieler, Verstärkung entsenden
-                                      (kein eigener Nav-Punkt mehr, nur als Untertab von
+  src/pages/RaidHilfe.tsx             Liste aktiver Raids anderer Spieler zur Navigation - Klick
+                                      springt zur Position in der Galaxie-Ansicht (kein eigenes
+                                      Formular mehr, kein eigener Nav-Punkt, nur als Untertab von
                                       Multiplayer eingebunden)
   src/pages/Nachrichten.tsx           Kampf-/Farmberichte mit aufklappbarer Detailansicht
   src/pages/Inventar.tsx              Container öffnen, Belohnungen einlösen
@@ -201,9 +216,11 @@ client/
     gestartet - funktioniert nur zuverlässig, WEIL der Render-Tarif den Prozess durchgehend laufen
     lässt statt ihn bei Inaktivität einzuschläfern; bei Ruecksstufung auf einen Tarif mit
     Einschlafen stattdessen `GET /api/heartbeat` extern anpingen lassen, z.B. cron-job.org).
-    Fixe Checkpoints (00/06/12/18 Uhr UTC, `FIXED_CHECK_HOURS_UTC`/`nextFixedCheckpoint()` in
-    `economy.ts`) werden per `rollFixedCheckpoints()` einzeln nachgeholt, wenn ein Spieler laenger
-    offline war - nicht einfach uebersprungen. `tick()` verarbeitet zusaetzlich zum eigenen Zustand
+    Fixe Checkpoints (`nextFixedCheckpoint()` in `economy.ts`, siehe Punkt 56 fuer die aktuellen
+    Stundensaetze - deutsche Ortszeit, Raid und Notruf getrennt/versetzt) werden per
+    `rollFixedCheckpoints()` einzeln nachgeholt, wenn ein Spieler laenger offline war - nicht
+    einfach uebersprungen (Punkt 55 zur Reihenfolge-Korrektur beachten, sonst wird der jeweils
+    faellige Checkpoint selbst nie gewuerfelt). `tick()` verarbeitet zusaetzlich zum eigenen Zustand
     auch Raid-Spawn/-Aufloesung, Notruf-Events und alle laufenden Gruppen-Expeditionen fuer ALLE
     anderen Nutzer (`processOverdueRaidsForOtherUsers`, `processOverdueRaidSpawnsForOtherUsers`,
     `processOverdueEventsForOtherUsers`, `processAllDepartedGroupOperations` in `actions.ts`) -
@@ -220,7 +237,8 @@ client/
 
 15. **Feindstärke skaliert ausschließlich auf Basiswerten der Schiffe/Verteidigung, NIE auf
     Spieler-Forschung.** `combatFleetPowerBase()` (`combat.ts`) berechnet die Ziel-/Feindstärke für
-    Piraten-Sektoren, Notruf-Events (solo + gemeinsam), Raids (Heimverteidigung) und Elite-Bollwerk
+    Piraten-Sektoren, Notruf-Events (nur noch solo, siehe Punkt 53), Raids (Heimverteidigung) und
+    Elite-Bollwerk
     ausschließlich aus `baseStats()`. Grund: Würde Feindstärke aus forschungs-angereicherten Werten
     berechnet, machte jede Stufe Waffen-/Schild-/Panzerungtechnik die Gegner automatisch genauso
     stark mit - die Forschung würde sich dadurch nicht lohnen. Piraten profitieren in KEINER Form
@@ -368,7 +386,8 @@ client/
       Tabelle (`PIRATEN_MULTIPLIER_ROLL`) eine kontextabhaengige Chance (`WAVE_OUTLIER_CHANCE`) auf
       einen deutlichen Ausschlag nach oben (`WAVE_OUTLIER_HIGH_FACTOR`, 1.5x) oder unten
       (`WAVE_OUTLIER_LOW_FACTOR`, 0.6x) - verhindert, dass sich Kaempfe immer nur zwischen denselben
-      drei Werten bewegen. Raid und Notruf (solo + gemeinsam) hatten VORHER ueberhaupt keine
+      drei Werten bewegen. Raid und Notruf (Notruf war zu diesem Zeitpunkt noch solo+gemeinsam,
+      seit Punkt 53 nur noch solo) hatten VORHER ueberhaupt keine
       Schwankung (exakt 100% der eigenen Kampf-Power) - neue Basistabellen `RAID_MULTIPLIER_ROLL`/
       `NOTRUF_MULTIPLIER_ROLL` (`[0.90, 1.00, 1.10]`) geben ihnen jetzt dieselbe Grund-Varianz plus
       Ausreisser-Chance wie den Piraten-Sektoren. Auch die Elite-Bollwerk-Tabelle
@@ -429,7 +448,7 @@ client/
       bei fix 4 Stunden-Checks ergibt das 50M/100M/200M/400M. Teile-Sofortbonus verdoppelt sich
       ebenso. Piratenkapitaen-Belohnung (DM + Elite-Container) bleibt auf Wunsch FLACH, keine
       Verdopplung. Alles pro Teilnehmer, kein Splitting (Punkt 5).
-    - **Notruf-Event (solo + gemeinsam):** Belohnung gibt es jetzt AUSSCHLIESSLICH bei echtem Sieg
+    - **Notruf-Event (nur noch solo, siehe Punkt 53):** Belohnung gibt es jetzt AUSSCHLIESSLICH bei echtem Sieg
       (Gegner vollstaendig vernichtet, eigene Flotte nicht ausgeloescht) - der bisherige
       Trost-Silber-Container bei ueberlebtem Gegner entfaellt ersatzlos. Bei Sieg 1-3 Container
       zufaellig (`1 + Math.floor(Math.random()*3)`), Tier weiterhin Gold (ohne eigene Verluste)
@@ -504,7 +523,7 @@ client/
       erbeutete Ressourcen.
     - `raids.ts`: Raids voll/teilweise abgewehrt, Feinde vernichtet, eigene Verluste - fuer
       Verteidiger UND alle Verstaerker (keine Aufteilung, Punkt 5).
-    - `events.ts`/`groupOps.ts`: Notruf-Events abgeschlossen (solo + gemeinsam), Elite-Bollwerk-
+    - `events.ts`/`groupOps.ts`: Notruf-Events abgeschlossen (nur noch solo, siehe Punkt 53), Elite-Bollwerk-
       Stunden-Checks gewonnen, Piratenkapitaene, erbeutete Ressourcen - bei gemeinsamen Operationen
       wieder fuer ALLE Teilnehmer identisch.
     - `actions.ts`: gebaute Schiffe, abgeschlossene Forschungen (in `tick()`s Warteschlangen-
@@ -751,7 +770,11 @@ client/
       kein kostenloser Dauerzustand ist. `state.galaxyDeployments` traegt sowohl unterwegs
       befindliche als auch bereits haltende Flotten - der Uebergang ist rein zeitbasiert
       (`arriveTime <= now`), keine explizite Statusaenderung noetig.
-    - **Raid-Kampf-Integration (bewusst NUR Piraten-Raids, NICHT Notruf-Events - kommt spaeter):**
+    - **Raid-Kampf-Integration (bewusst NUR Piraten-Raids, NICHT Notruf-Events):**
+      Notruf-Events sind seit Punkt 53 ohnehin nur noch solo und kein Angriff auf die eigene
+      Basis - eine Integration mit haltenden Flotten ist hier konzeptionell nicht sinnvoll,
+      die urspruenglich hier angekuendigte spaetere Erweiterung ("kommt spaeter") ist damit
+      gegenstandslos geworden.
       `getHoldingDeploymentsTargeting()` in `galaxy.ts` scannt bei JEDER Raid-Aufloesung
       (`resolveRaid()` in raids.ts) alle anderen Spieler nach aktuell bei diesem Verteidiger
       haltenden Flotten und bindet sie als zusaetzliche `OwnedFleetContribution`-Eintraege ein
