@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Fehlerbehebung: Popups nicht mehr von der Kopfleiste verdeckt',
+    changes: [
+      'Kampfberichte, Info-Popups und Lore-Ansichten wurden am oberen Rand teilweise von der Ressourcenleiste überdeckt - das ist jetzt behoben, alle Popups werden vollständig sichtbar angezeigt.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Fehlerbehebung: Raids und Notrufe lösten kaum noch aus',
     changes: [
       'Bug behoben, durch den Piratenraids und Notruf-Events bei aktivem Spielen praktisch nie mehr ausgelöst wurden - beide sollten jetzt zuverlässig zu ihren Check-Zeiten auftauchen.',
