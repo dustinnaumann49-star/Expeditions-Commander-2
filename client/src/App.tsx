@@ -42,7 +42,7 @@ const NAV_ITEMS = [
 // ein eigenes Bild, wird nach und nach ergaenzt, sobald neue Bilder geliefert werden.
 const PAGE_BACKGROUNDS: Record<string, string> = {
   '/': 'werft.png',
-  '/verteidigung': 'verteidigung.png',
+  '/verteidigung': 'werft.png',
   '/sektor': 'sektor.png',
   '/forschung': 'forschung.png',
   '/flotte': 'flotte.png',
