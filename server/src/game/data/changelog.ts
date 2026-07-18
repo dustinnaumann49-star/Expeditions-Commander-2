@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Überarbeitetes Design: schlankere Oberfläche',
+    changes: [
+      'Ressourcenleiste, Seitenleiste und Hauptbereich sind jetzt ein zusammenhängendes Fenster statt drei getrennter Kästen.',
+      'Deckkraft insgesamt reduziert - das Hintergrundbild kommt jetzt deutlich mehr zur Geltung.',
+      'Karten (Schiffe, Warteschlangen usw.) sind jetzt transparenter, bleiben aber gut lesbar.',
+      'Jede Seite kann künftig ihr eigenes thematisches Hintergrundbild bekommen (Werft, Forschung, Galaxie, ...) - wird nach und nach ergänzt.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Neue Forschung: Antriebstechnik',
     changes: [
       'Neue Forschung "Antriebstechnik" verkürzt alle Flugzeiten in der Galaxie um 3% pro Stufe - bei voll ausgebauter Stufe 10 also 30% schneller unterwegs (Sektor-Missionen, Notruf, Halten, Elite-Bollwerk).',
