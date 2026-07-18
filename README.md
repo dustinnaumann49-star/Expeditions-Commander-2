@@ -1050,3 +1050,49 @@ client/
     - Bei kuenftigen neuen Popup-artigen Komponenten mit `position:fixed`-Overlay: IMMER per
       `createPortal` rendern, nie inline - sonst tritt dieselbe Falle wieder auf, sobald sie
       irgendwo unterhalb von `#mainbar` eingebunden werden.
+
+58. **Neu: KI-Spieler** (`game/bot.ts`). Zwei Bot-Accounts ("KI-Vega", "KI-Nyx", siehe
+    `BOT_USERNAMES`), technisch ganz normale Nutzer mit eigenem `PlayerState` und eigener
+    Galaxie-Position - unterscheiden sich von echten Spielern NUR durch das neue `is_bot`-Flag in
+    der `users`-Tabelle (`db.ts`, per Migration nachgeruestet).
+    - **Bewusst KEINE Sonderkonditionen:** jeder Entscheidungs-Baustein ruft exakt dieselben
+      Aktionsfunktionen auf, die auch die UI fuer Menschen nutzt (`startBuild`,
+      `startBuildingConstruction`, `startResearch`, `sendFleet`, `respondToGroupOperation`,
+      `startHoldDeployment`, ...) - identische Kosten, Bauzeiten, Flugzeiten. Ein Aufruf schlaegt
+      einfach `{ok:false}` fehl, wenn nicht leistbar oder ein Slot belegt ist - eigene
+      Kostenformeln mussten dafuer nicht dupliziert werden.
+    - **`ensureBotUsers()`** legt beide Accounts einmalig beim Serverstart an (`index.ts`,
+      idempotent ueber Namens-Check), mit zufaelligem, irrelevantem Passwort - Bots loggen sich
+      nie ueber die UI ein, ihr `PlayerState` wird ausschliesslich ueber `runBotTurn()` gesteuert.
+    - **`runBotTurn()` laeuft im globalen Heartbeat** (`heartbeat.ts`, alle 2 Minuten bzw. bei
+      externem Pinger-Aufruf) NACH der normalen Zeit-Verarbeitung (Missionen/Raids/Notruf) fuer
+      jeden Bot-Account, mit einer festen Prioritaeten-Reihenfolge:
+      1. Energie-Engpass beheben (Solarkraftwerk), sonst Minen ausbalanciert ausbauen
+         (niedrigste Stufe zuerst), danach frueh Roboterfabrik, spaeter Nanitenfabrik.
+      2. Forschung: erste noch nicht maximierte Technologie in Listen-Reihenfolge.
+      3. Schiffe: erst Mining-Schiffe bis 50 Stueck (Wirtschaft zuerst), danach Kampfschiffe.
+      4. Verteidigungsanlagen: einfacher Basis-Ausbau.
+      5. Mining-Schiffe zum passenden Asteroiden-Feld schicken (Sektor-Wahl nach Flottengroesse).
+      6. Elite-Bollwerk: offene Einladungen annehmen (30% der verfuegbaren Kampfflotte),
+         als Ersteller starten sobald alle eingetroffen sind (Rendezvous, siehe Punkt 51), mit
+         kleiner Zufallschance (5%/Heartbeat) selbst eine Expedition eroeffnen und dabei ALLE
+         menschlichen Spieler einladen.
+      7. Menschlichen Spielern gelegentlich (10%/Heartbeat, nur falls dort noch keine eigene
+         Flotte haelt/unterwegs ist) eine Teilflotte (15% der Kampfschiffe) zum Halten schicken -
+         verteidigt sie dann automatisch mit bei Piratenraids (Punkt 51), genau wie eine
+         menschliche Halten-Flotte.
+    - **Eigene Verteidigung gegen Raids/Notruf braucht KEINEN bot-spezifischen Code** - Bots
+      durchlaufen dieselben `processRaidTimer()`/`processEventTimer()`-Aufrufe wie jeder andere
+      Nutzer im Heartbeat, ihre selbst gebaute Flotte/Verteidigung zaehlt genauso in die
+      Kampfberechnung.
+    - **Client:** `isBot`-Flag bis in `AppUser`/`GalaxyOccupant` durchgereicht, Bots erscheinen in
+      der Galaxie-Ansicht mit 🤖-Markierung neben ihrem Namen.
+    - Getestet: 5 simulierte Heartbeat-Durchlaeufe fuer einen frischen Bot-Account fuellten
+      korrekt Gebaeude-Warteschlange (Metallmine), Schiffs-Warteschlange (3x10 Mining-Schiffe,
+      bis `MAX_BUILD_SLOTS` erreicht) und Forschungs-Warteschlange (4 Technologien, bis
+      `MAX_RESEARCH_SLOTS` erreicht); ein Bot nahm eine echte Elite-Bollwerk-Einladung eines
+      Testnutzers korrekt mit 30% seiner Kreuzer-Flotte an.
+    - **Nebenbei entdeckt und behoben:** `processEventTimer()` wurde im Heartbeat ohne `await`
+      aufgerufen (seit der Notruf-Flugzeit-Erweiterung in Punkt 51 async) - dadurch haette
+      `savePlayerState()` teils VOR Abschluss einer Notruf-Kampfaufloesung greifen koennen
+      (Race Condition). Ergaenzt.
