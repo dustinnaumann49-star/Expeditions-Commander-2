@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Fehlerbehebung: Server startete nicht mehr',
+    changes: [
+      'Bug behoben, durch den der Server beim Start abstürzte, wenn das Datenverzeichnis fehlte (z.B. nach einem Redeploy) - der Server legt das Verzeichnis jetzt automatisch an, falls nötig.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Neu: Zwei KI-Mitspieler',
     changes: [
       'Zwei KI-Spieler ("KI-Vega" und "KI-Nyx") sind jetzt Teil der Galaxie - sie bauen Gebäude aus, forschen, bauen Schiffe und Verteidigung, schicken Mining-Flotten zu Asteroiden-Feldern und nehmen an gemeinsamen Elite-Bollwerk-Expeditionen teil (können euch einladen oder eure Einladungen annehmen).',
