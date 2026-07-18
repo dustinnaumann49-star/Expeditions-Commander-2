@@ -4,9 +4,10 @@ import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
+import { getEnergyProduced, getEnergyConsumed } from '../lib/multipliers';
 
 export function ResourceBar() {
-  const { state, activeRaids } = useGame();
+  const { state, gameData, activeRaids } = useGame();
   const { username, logout } = useAuth();
   const navigate = useNavigate();
   const [, forceTick] = useState(0);
@@ -25,6 +26,10 @@ export function ResourceBar() {
   const ownRaid = state.raid && !state.raid.resolved ? state.raid : null;
   const ownEvent = state.event && !state.event.started ? state.event : null;
   const otherRaidsCount = activeRaids.length;
+
+  const energyProduced = state.energyProduced ?? (gameData ? getEnergyProduced(gameData, state) : 0);
+  const energyConsumed = state.energyConsumed ?? (gameData ? getEnergyConsumed(gameData, state) : 0);
+  const energyDeficit = energyConsumed > energyProduced;
 
   return (
     <div id="resourcebar">
@@ -49,6 +54,9 @@ export function ResourceBar() {
             onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
           />
           Dunkle Materie: {fmt(state.resources.dm)}
+        </span>
+        <span className="res-item" style={energyDeficit ? { color: 'var(--danger)' } : undefined} title="Energie: Erzeugt/Verbraucht">
+          ⚡ {fmt(energyProduced)}/{fmt(energyConsumed)}
         </span>
       </div>
 
