@@ -4,6 +4,7 @@ import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { shipName } from '../lib/combatInfo';
+import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import { SimulatorView } from './Simulator';
 import type { GameData, Mission } from '../types/game';
 
@@ -268,11 +269,12 @@ function MissionStatus({ mission, now, onShowFleet }: { mission: Mission; now: n
 }
 
 export function SektorPage() {
-  const { gameData, state, sendMission, recallMission, joinEvent, savePreset, deletePreset, error } = useGame();
+  const { gameData, state, sendMission, recallMission, joinEvent, savePreset, deletePreset, sektorPositions, notrufPosition, error } = useGame();
   const [tab, setTab] = useState('asteroid');
   const [selectedSektor, setSelectedSektor] = useState<string | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [eventSelection, setEventSelection] = useState<Record<string, number>>({});
+  const notrufPreview = useGalaxyPreview(eventSelection, notrufPosition);
   const [presetName, setPresetName] = useState('');
   const [infoSektorId, setInfoSektorId] = useState<string | null>(null);
   const [fleetMissionId, setFleetMissionId] = useState<string | null>(null);
@@ -302,10 +304,22 @@ export function SektorPage() {
         </div>
       )}
 
+      {state.event && state.event.started && (
+        <div className="queue-box" style={{ borderColor: 'var(--accent-kristall)', marginBottom: 16 }}>
+          <strong style={{ color: 'var(--accent-kristall)' }}>⚠ {state.event.name}</strong>
+          <p style={{ fontSize: 13, marginTop: 4 }}>
+            Deine Flotte ist unterwegs zur Notruf-Position - Ankunft in {formatTime(state.event.arriveTime - now)}.
+          </p>
+        </div>
+      )}
+
       {state.event && !state.event.started && (
         <div className="queue-box" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
           <strong style={{ color: 'var(--danger)' }}>⚠ {state.event.name}</strong>
-          <p style={{ fontSize: 13, marginTop: 4, marginBottom: 8 }}>Noch {formatTime(state.event.deadline - now)} Zeit zum Eingreifen.</p>
+          {notrufPosition && (
+            <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>📍 Position 1:{notrufPosition.system}:{notrufPosition.position}</p>
+          )}
+          <p style={{ fontSize: 13, marginTop: 4, marginBottom: 8 }}>Noch {formatTime(state.event.deadline - now)} Zeit zum Losschicken.</p>
           {COMBAT_SHIP_IDS.map((id) => {
             const avail = state.fleet[id] || 0;
             if (avail === 0) return null;
@@ -331,7 +345,10 @@ export function SektorPage() {
             );
           })}
           <div className="build-row">
-            <span></span>
+            <span>
+              {notrufPreview.loading && 'Berechne Flugroute...'}
+              {notrufPreview.preview && !notrufPreview.loading && `Anflugzeit: ${formatTime(notrufPreview.preview.durationMs)}`}
+            </span>
             <button
               className="build-btn"
               onClick={() => {
@@ -382,6 +399,9 @@ export function SektorPage() {
           const cfg = gameData.sektorConfig[sektor.id];
           const activeMission = state.missions.find((m) => m.sektorId === sektor.id && !m.finalized);
           const availableIds = availableFleetForSektor(sektor.id, gameData.sektorConfig);
+          const position = sektorPositions.find((p) => p.sektorId === sektor.id);
+          const isSelected = selectedSektor === sektor.id;
+          const preview = useGalaxyPreview(isSelected ? selection : {}, isSelected ? position : null);
 
           return (
             <div className="ship-card" key={sektor.id}>
@@ -391,6 +411,7 @@ export function SektorPage() {
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                   Typ: {sektor.typ} · {sektor.zweck}
                 </p>
+                {position && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>📍 Position 1:{position.system}:{position.position}</p>}
                 <div className="ship-stats">
                   <span className="level-gruen">Aktivität: {sektor.aktivitaet}</span>
                   <span>Gefahrenstufe: {sektor.gefahr}</span>
@@ -439,6 +460,12 @@ export function SektorPage() {
                         </div>
                       );
                     })}
+                    {preview.loading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
+                    {preview.preview && !preview.loading && (
+                      <p style={{ fontSize: 13, marginTop: 6 }}>
+                        Anflugzeit: {formatTime(preview.preview.durationMs)} (Rückflug identisch)
+                      </p>
+                    )}
                     <div className="qty-row" style={{ marginTop: 8 }}>
                       <input className="qty-input" placeholder="Name für Vorlage" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
                       <button

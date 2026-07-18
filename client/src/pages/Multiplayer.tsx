@@ -7,6 +7,7 @@ import { shipName } from '../lib/combatInfo';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal } from '../components/InfoModal';
+import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import type { GameData, GroupOperation } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
@@ -99,7 +100,19 @@ function OpEntry({
         <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{acceptedCount} Teilnehmer bestätigt</span>
       </p>
       <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-        {op.participants.map((p) => `${p.username}: ${PARTICIPANT_STATUS_LABELS[p.status] || p.status}`).join(' · ')}
+        {op.participants
+          .map((p) => {
+            const label = PARTICIPANT_STATUS_LABELS[p.status] || p.status;
+            if (p.status !== 'accepted' || p.isCreator) return `${p.username}: ${label}`;
+            const arrived = p.rendezvousArrivalTime !== undefined && p.rendezvousArrivalTime <= now;
+            const rendezvousText = arrived
+              ? 'bei dir eingetroffen'
+              : p.rendezvousArrivalTime
+              ? `unterwegs zu dir (${formatTime(p.rendezvousArrivalTime - now)})`
+              : 'unterwegs zu dir';
+            return `${p.username}: ${label} - ${rendezvousText}`;
+          })
+          .join(' · ')}
       </p>
       {op.status === 'departed' && op.processedHours !== undefined && (
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
@@ -112,7 +125,11 @@ function OpEntry({
           <button className="qty-btn" onClick={() => onCancel(op.id)}>
             Abbrechen
           </button>
-          <button className="build-btn" onClick={() => onStart(op.id)}>
+          <button
+            className="build-btn"
+            disabled={op.participants.some((p) => p.status === 'accepted' && !p.isCreator && (!p.rendezvousArrivalTime || p.rendezvousArrivalTime > now))}
+            onClick={() => onStart(op.id)}
+          >
             Jetzt starten ({acceptedCount} dabei)
           </button>
         </div>
@@ -121,15 +138,67 @@ function OpEntry({
   );
 }
 
+function PendingInviteCard({
+  op,
+  gameData,
+  fleet,
+  sel,
+  setSel,
+  onRespond,
+}: {
+  op: GroupOperation;
+  gameData: GameData;
+  fleet: Record<string, number>;
+  sel: Record<string, number>;
+  setSel: (fn: (p: Record<string, number>) => Record<string, number>) => void;
+  onRespond: (opId: string, accept: boolean, ships: Record<string, number>) => void;
+}) {
+  const creator = op.participants.find((p) => p.isCreator);
+  const availableIds = op.kind === 'expedition' ? [...COMBAT_SHIP_IDS, 'imperator'] : COMBAT_SHIP_IDS;
+  const rendezvousPreview = useGalaxyPreview(sel, op.creatorPosition);
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
+      <p>
+        <strong>{opKindLabel(op, gameData)}</strong>
+        <br />
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+          Eingeladen von {creator?.username}
+          {op.creatorPosition && ` (1:${op.creatorPosition.system}:${op.creatorPosition.position})`}
+        </span>
+      </p>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+        Deine Flotte fliegt nach Annahme zuerst zu {creator?.username} (Rendezvous), bevor es gemeinsam weitergeht.
+      </p>
+      <FleetPicker gameData={gameData} availableIds={availableIds} fleet={fleet} selection={sel} setSelection={setSel} />
+      <div className="build-row">
+        <span>
+          {rendezvousPreview.loading && 'Berechne Flugroute...'}
+          {rendezvousPreview.preview && !rendezvousPreview.loading && `Flugzeit bis zum Rendezvous: ~${formatTime(rendezvousPreview.preview.durationMs)}`}
+        </span>
+        <span>
+          <button className="qty-btn" onClick={() => onRespond(op.id, false, {})}>
+            Ablehnen
+          </button>{' '}
+          <button className="build-btn" onClick={() => onRespond(op.id, true, sel)}>
+            Annehmen
+          </button>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function ExpeditionEventsView() {
-  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, error } = useGame();
-  const [tab, setTab] = useState<'expedition' | 'event'>('expedition');
+  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, sektorPositions, error } = useGame();
   const [sektorId] = useState('piraten_elite');
   const [showEliteInfo, setShowEliteInfo] = useState(false);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
   const [, forceTick] = useState(0);
+  const elitePosition = sektorPositions.find((p) => p.sektorId === 'piraten_elite') || null;
+  const eliteTravelPreview = useGalaxyPreview(selection, elitePosition);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -145,37 +214,26 @@ function ExpeditionEventsView() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 16 }}>Multiplayer – Gemeinsame Expeditionen &amp; Notruf-Events</h2>
+      <h2 style={{ marginBottom: 16 }}>Multiplayer – Gemeinsame Expeditionen</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 12 }}>
+        Notruf-Events sind jetzt nur noch solo möglich (siehe Sektor-Tab) - hier geht es nur noch um gemeinsame Elite-Bollwerk-Expeditionen.
+      </p>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       {pendingForMe.length > 0 && (
         <div className="queue-box" style={{ marginBottom: 20, borderColor: 'var(--accent-kristall)' }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Einladungen an dich</h3>
-          {pendingForMe.map((op) => {
-            const creator = op.participants.find((p) => p.isCreator);
-            const availableIds = op.kind === 'expedition' ? [...COMBAT_SHIP_IDS, 'imperator'] : COMBAT_SHIP_IDS;
-            const sel = respondSelections[op.id] || {};
-            const setSel = (fn: (p: Record<string, number>) => Record<string, number>) =>
-              setRespondSelections((prev) => ({ ...prev, [op.id]: fn(prev[op.id] || {}) }));
-            return (
-              <div key={op.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
-                <p>
-                  <strong>{opKindLabel(op, gameData)}</strong>
-                  <br />
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Eingeladen von {creator?.username}</span>
-                </p>
-                <FleetPicker gameData={gameData} availableIds={availableIds} fleet={state.fleet} selection={sel} setSelection={setSel} />
-                <div className="build-row">
-                  <button className="qty-btn" onClick={() => respondToParty(op.id, false, {})}>
-                    Ablehnen
-                  </button>
-                  <button className="build-btn" onClick={() => respondToParty(op.id, true, sel)}>
-                    Annehmen
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {pendingForMe.map((op) => (
+            <PendingInviteCard
+              key={op.id}
+              op={op}
+              gameData={gameData}
+              fleet={state.fleet}
+              sel={respondSelections[op.id] || {}}
+              setSel={(fn) => setRespondSelections((prev) => ({ ...prev, [op.id]: fn(prev[op.id] || {}) }))}
+              onRespond={respondToParty}
+            />
+          ))}
         </div>
       )}
 
@@ -209,131 +267,86 @@ function ExpeditionEventsView() {
           );
         })()}
 
-      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        <button className={`nav-btn${tab === 'expedition' ? ' active' : ''}`} onClick={() => setTab('expedition')}>
-          Neue Expedition
-        </button>
-        <button className={`nav-btn${tab === 'event' ? ' active' : ''}`} onClick={() => setTab('event')}>
-          Notruf-Event einladen
-        </button>
-      </div>
-
-      {tab === 'expedition' && (
-        <div>
-          <div className="ship-grid" style={{ marginBottom: 16 }}>
-            {(() => {
-              const eliteSektor = gameData.sektoren.find((s) => s.id === 'piraten_elite')!;
-              return (
-                <div className="ship-card">
-                  <img
-                    className="ship-img"
-                    src={`/${eliteSektor.img}`}
-                    alt={eliteSektor.name}
-                    onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-                  />
-                  <div className="ship-info">
-                    <h3>{eliteSektor.name}</h3>
+      <div>
+        <div className="ship-grid" style={{ marginBottom: 16 }}>
+          {(() => {
+            const eliteSektor = gameData.sektoren.find((s) => s.id === 'piraten_elite')!;
+            return (
+              <div className="ship-card">
+                <img
+                  className="ship-img"
+                  src={`/${eliteSektor.img}`}
+                  alt={eliteSektor.name}
+                  onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                />
+                <div className="ship-info">
+                  <h3>{eliteSektor.name}</h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                    Typ: {eliteSektor.typ} · {eliteSektor.zweck}
+                  </p>
+                  {elitePosition && (
                     <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                      Typ: {eliteSektor.typ} · {eliteSektor.zweck}
+                      📍 Position 1:{elitePosition.system}:{elitePosition.position}
                     </p>
-                    <div className="ship-stats">
-                      <span className="level-gruen">Aktivität: {eliteSektor.aktivitaet}</span>
-                      <span>Gefahrenstufe: {eliteSektor.gefahr}</span>
-                    </div>
-                    <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowEliteInfo(true)}>
-                      ℹ️ Info
-                    </button>
+                  )}
+                  <div className="ship-stats">
+                    <span className="level-gruen">Aktivität: {eliteSektor.aktivitaet}</span>
+                    <span>Gefahrenstufe: {eliteSektor.gefahr}</span>
                   </div>
+                  <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowEliteInfo(true)}>
+                    ℹ️ Info
+                  </button>
                 </div>
-              );
-            })()}
-          </div>
-
-          <div className="queue-box">
-            <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
-            <FleetPicker gameData={gameData} availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
-
-            <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
-            {users
-              .filter((u) => u.id !== myUserId)
-              .map((u) => (
-                <label key={u.id} style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
-                  <input
-                    type="checkbox"
-                    checked={invitees.includes(u.id)}
-                    onChange={(e) => setInvitees((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
-                  />{' '}
-                  {u.username}
-                </label>
-              ))}
-            {users.filter((u) => u.id !== myUserId).length === 0 && (
-              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Keine weiteren Spieler registriert.</p>
-            )}
-
-            <div className="build-row">
-              <span></span>
-              <button
-                className="build-btn"
-                onClick={() => {
-                  createParty('expedition', sektorId, selection, invitees);
-                  setSelection({});
-                  setInvitees([]);
-                }}
-              >
-                Erstellen &amp; einladen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === 'event' && (
-        <div className="queue-box">
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Notruf-Event gemeinsam bekämpfen</h3>
-          {!state.event || state.event.started ? (
-            <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-              Du hast gerade keinen aktiven Notruf. Warte auf einen Notruf in deinem Sektor-Tab, dann kannst du hier Mitspieler einladen, bevor
-              du eingreifst.
-            </p>
-          ) : (
-            <>
-              <p style={{ fontSize: 13, marginBottom: 6 }}>
-                Aktiver Notruf: <strong>{state.event.name}</strong>
-              </p>
-              <p style={{ fontSize: 13, marginBottom: 6 }}>Deine Flotte:</p>
-              <FleetPicker gameData={gameData} availableIds={COMBAT_SHIP_IDS} fleet={state.fleet} selection={selection} setSelection={setSelection} />
-
-              <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
-              {users
-                .filter((u) => u.id !== myUserId)
-                .map((u) => (
-                  <label key={u.id} style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={invitees.includes(u.id)}
-                      onChange={(e) => setInvitees((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
-                    />{' '}
-                    {u.username}
-                  </label>
-                ))}
-
-              <div className="build-row">
-                <span></span>
-                <button
-                  className="build-btn"
-                  onClick={() => {
-                    createParty('event', undefined, selection, invitees);
-                    setSelection({});
-                    setInvitees([]);
-                  }}
-                >
-                  Erstellen &amp; einladen
-                </button>
               </div>
-            </>
-          )}
+            );
+          })()}
         </div>
-      )}
+
+        <div className="queue-box">
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
+          <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
+            Eingeladene Spieler fliegen mit ihrer gewählten Flotte zuerst zu dir - erst wenn alle bei dir eingetroffen sind, kannst du gemeinsam
+            zum Elite-Bollwerk weiterstarten.
+          </p>
+          <FleetPicker gameData={gameData} availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+
+          <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
+          {users
+            .filter((u) => u.id !== myUserId)
+            .map((u) => (
+              <label key={u.id} style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={invitees.includes(u.id)}
+                  onChange={(e) => setInvitees((prev) => (e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id)))}
+                />{' '}
+                {u.username}
+              </label>
+            ))}
+          {users.filter((u) => u.id !== myUserId).length === 0 && (
+            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Keine weiteren Spieler registriert.</p>
+          )}
+
+          <div className="build-row">
+            <span>
+              {eliteTravelPreview.loading && 'Berechne Flugroute...'}
+              {eliteTravelPreview.preview &&
+                !eliteTravelPreview.loading &&
+                `Weiterflug ab dir zum Bollwerk: ~${formatTime(eliteTravelPreview.preview.durationMs)}`}
+            </span>
+            <button
+              className="build-btn"
+              onClick={() => {
+                createParty('expedition', sektorId, selection, invitees);
+                setSelection({});
+                setInvitees([]);
+              }}
+            >
+              Erstellen &amp; einladen
+            </button>
+          </div>
+        </div>
+      </div>
 
       {showEliteInfo && (
         <InfoModal title="Sektor P9 – Elite-Bollwerk" onClose={() => setShowEliteInfo(false)}>

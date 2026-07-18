@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
-import { shipName } from '../lib/combatInfo';
 
-const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
-
+// Verstärkung läuft seit der Galaxie-Erweiterung ausschließlich über "Halten" (Galaxie-Tab) - hier
+// nur noch eine Übersicht/Navigation: wer wird gerade angegriffen, wo, und ein Klick springt zur
+// passenden Position in der Galaxie-Ansicht (dort dann direkt auf die Basis klicken -> Flotte
+// halten lassen, verteidigt automatisch bei jedem künftigen Raid).
 export function RaidHilfePage() {
-  const { gameData, state, activeRaids, reinforceRaid, error } = useGame();
-  const [openFor, setOpenFor] = useState<number | null>(null);
-  const [selection, setSelection] = useState<Record<string, number>>({});
+  const { activeRaids, error } = useGame();
+  const navigate = useNavigate();
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -17,14 +18,15 @@ export function RaidHilfePage() {
     return () => clearInterval(i);
   }, []);
 
-  if (!state || !gameData) return <p>Lade...</p>;
   const now = serverNow();
 
   return (
     <div>
       <h2 style={{ marginBottom: 8 }}>Raid-Hilfe</h2>
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
-        Hier siehst du alle laufenden Piratenangriffe auf die Basen anderer Spieler. Anflugzeit deiner Verstärkung: 1 Minute.
+        Hier siehst du alle laufenden Piratenangriffe auf die Basen anderer Spieler. Verstärkung schickst du über die Galaxie-Ansicht: Position
+        anklicken, dort auf die Basis klicken und deine Flotte "halten" lassen - sie verteidigt dann automatisch bei diesem und jedem künftigen
+        Raid, bis du sie zurückrufst.
       </p>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
@@ -32,73 +34,29 @@ export function RaidHilfePage() {
         <p style={{ color: 'var(--text-dim)' }}>Aktuell läuft kein Angriff auf eine andere Basis.</p>
       ) : (
         <div className="queue-box">
-          {activeRaids.map((raid) => {
-            const timeLeft = raid.arrivalTime - now;
-            const canStillHelp = timeLeft > 60000; // Verstaerkung braucht selbst 1 Minute, danach zu spaet
-            return (
-              <div key={raid.raidId} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
-                <p>
-                  <strong>{raid.targetUsername}</strong> wird angegriffen – Ankunft der Piraten in {formatTime(timeLeft)}
-                  {raid.reinforcementCount > 0 && ` · ${raid.reinforcementCount} Verstärkung(en) bereits unterwegs`}
-                </p>
-                {!canStillHelp ? (
-                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Zu spät - deine Flotte würde nicht mehr rechtzeitig ankommen.</p>
-                ) : openFor === raid.targetUserId ? (
-                  <>
-                    {COMBAT_SHIP_IDS.map((id) => {
-                      const avail = state.fleet[id] || 0;
-                      if (avail === 0) return null;
-                      const qty = selection[id] || 0;
-                      return (
-                        <div className="queue-item" key={id}>
-                          <span>
-                            {shipName(gameData, id)} (verfügbar: {avail})
-                          </span>
-                          <span className="qty-row">
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-                              -10
-                            </button>
-                            <span style={{ padding: '0 6px' }}>{qty}</span>
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>
-                              +10
-                            </button>
-                            <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>
-                              Alle
-                            </button>
-                          </span>
-                        </div>
-                      );
-                    })}
-                    <div className="build-row">
-                      <button
-                        className="qty-btn"
-                        onClick={() => {
-                          setOpenFor(null);
-                          setSelection({});
-                        }}
-                      >
-                        Abbrechen
-                      </button>
-                      <button
-                        className="build-btn"
-                        onClick={() => {
-                          reinforceRaid(raid.targetUserId, selection);
-                          setOpenFor(null);
-                          setSelection({});
-                        }}
-                      >
-                        Verstärkung entsenden
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button className="build-btn" onClick={() => setOpenFor(raid.targetUserId)}>
-                    Zur Verteidigung entsenden
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {activeRaids.map((raid) => (
+            <div key={raid.raidId} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 10 }}>
+              <p>
+                <strong>{raid.targetUsername}</strong>
+                {raid.targetPosition && (
+                  <span style={{ color: 'var(--text-dim)' }}>
+                    {' '}
+                    (1:{raid.targetPosition.system}:{raid.targetPosition.position})
+                  </span>
+                )}{' '}
+                wird angegriffen – Ankunft der Piraten in {formatTime(raid.arrivalTime - now)}
+                {raid.holdingCount > 0 && ` · ${raid.holdingCount} Flotte(n) halten dort bereits`}
+              </p>
+              {raid.targetPosition && (
+                <button
+                  className="qty-btn"
+                  onClick={() => navigate(`/galaxie?system=${raid.targetPosition!.system}&targetUserId=${raid.targetUserId}`)}
+                >
+                  Zur Position in der Galaxie
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
