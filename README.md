@@ -1251,6 +1251,9 @@ client/
       Zielbreite anstrebt, unabhaengig vom Seiteninhalt (`margin:auto` auf einem Flex-Item
       innerhalb eines ROW-Flex-Elternteils zentriert zuverlaessig auf der Hauptachse, ohne die
       Stretch-Falle von vorhin - die trat nur bei COLUMN-Flex-Eltern auf).
+    - **Finale Deckkraft-Stufe: "Schlank"** (`rgba(16,16,18,0.30)` + `blur(4px)` fuer
+      `#resourcebar`/`#sidebar`/`#mainbar`, eine Stufe dunkler als "Mittel") - nach diesem Schritt
+      als abgeschlossen bestaetigt.
     - **BUGFIX (`App.tsx` `PAGE_BACKGROUNDS`):** fuer Shop/Nachrichten/Inventar/Statistik/Updates
       waren bereits Dateinamen eingetragen (`shop.png` usw.), OBWOHL diese Bilder noch gar nicht
       existierten - das fuehrte zu einem defekten `background-image`-Verweis (404) statt zum
