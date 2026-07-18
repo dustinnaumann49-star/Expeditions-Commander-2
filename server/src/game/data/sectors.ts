@@ -1,3 +1,5 @@
+import type { GalaxyPosition } from '../types.js';
+
 export interface SektorDefinition {
   id: string;
   name: string;
@@ -51,26 +53,35 @@ export interface SektorConfig {
   captainDm?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // NUR bei piraten_elite (Elite-Bollwerk) genutzt, laeuft linear ueber dessen 4h-Missionsdauer (MISSION_DURATION_MS) - NICHT zu verwechseln mit dmCap bei Asteroiden-Feldern, das ueber ASTEROID_MISSION_DURATION_MS (12h) laeuft
+  // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
+  // (ersetzt die vorher feste MISSION_TRAVEL_MS, siehe sendFleet() in missions.ts). Fehlt bewusst
+  // bei piraten_elite (Elite-Bollwerk, nur ueber Gruppen-Expeditionen erreichbar) - bleibt bei der
+  // alten festen Anflugzeit, ist nicht Teil dieser Erweiterung.
+  galaxyPosition?: GalaxyPosition;
 }
 
 export const SEKTOR_CONFIG: Record<string, SektorConfig> = 
 {
-  asteroid_niedrig: { checkChance:0.00, type:"asteroid", farmRate:5000, dmCap:15, miningCap:300, escortCap:500, npcFloor:300000 },
-  asteroid_mittel:  { checkChance:0.00, type:"asteroid", farmRate:15000, dmCap:30, miningCap:220, escortCap:500, npcFloor:800000 },
-  asteroid_hoch:    { checkChance:0.00, type:"asteroid", farmRate:25000, dmCap:45, miningCap:180, escortCap:500, npcFloor:1800000 },
+  asteroid_niedrig: { checkChance:0.00, type:"asteroid", farmRate:5000, dmCap:15, miningCap:300, escortCap:500, npcFloor:300000,
+    galaxyPosition:{system:5, position:3} },
+  asteroid_mittel:  { checkChance:0.00, type:"asteroid", farmRate:15000, dmCap:30, miningCap:220, escortCap:500, npcFloor:800000,
+    galaxyPosition:{system:19, position:7} },
+  asteroid_hoch:    { checkChance:0.00, type:"asteroid", farmRate:25000, dmCap:45, miningCap:180, escortCap:500, npcFloor:1800000,
+    galaxyPosition:{system:34, position:1} },
   piraten_niedrig:  { checkChance:0.50, type:"piraten", teileCap:5, npcFloor:300000,
     lootBase:{metall:8000, kristall:5000, deuterium:2000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.05, captainContainerTier:"silber", captainDm:10 },
+    captainChance:0.05, captainContainerTier:"silber", captainDm:10, galaxyPosition:{system:10, position:5} },
   piraten_mittel:   { checkChance:0.50, type:"piraten", teileCap:10, npcFloor:800000,
     lootBase:{metall:16000, kristall:10000, deuterium:4000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.08, captainContainerTier:"silber", captainDm:20 },
+    captainChance:0.08, captainContainerTier:"silber", captainDm:20, galaxyPosition:{system:27, position:9} },
   piraten_hoch:     { checkChance:0.50, type:"piraten", teileCap:15, npcFloor:1800000,
     lootBase:{metall:26000, kristall:16000, deuterium:7000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.12, captainContainerTier:"gold", captainDm:35 },
+    captainChance:0.12, captainContainerTier:"gold", captainDm:35, galaxyPosition:{system:45, position:3} },
   piraten_elite:    { checkChance:0.50, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
-    multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000} }
+    multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000},
+    galaxyPosition:{system:37, position:5} }
 };
 
 // Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig/Mittel/Hoch bleiben

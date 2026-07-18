@@ -142,14 +142,19 @@ export const ALLY_STATS = { waffen: 4000, schild: 2000, panzerung: 30000 };
 export const FIXED_CHECK_HOURS_UTC = [0, 6, 12, 18];
 
 export const EVENT_SPAWN_CHANCE = 0.4; // 40% Chance bei jedem der vier Checks
-export const EVENT_WINDOW_MS = 60 * 60 * 1000;
+// Zeit zum Entscheiden/Losschicken (nicht die Flugzeit selbst - die kommt zusaetzlich obendrauf,
+// siehe events.ts). Von 60 auf 90 Minuten angehoben, seit der Notruf eine echte Galaxie-Position
+// hat und die Flotte tatsaechlich erst noch hinfliegen muss.
+export const EVENT_WINDOW_MS = 90 * 60 * 1000;
 export const EVENT_NAMES = [
   'Notruf: Handelsgilde in Bedrängnis',
   'Notruf: Kolonieschiff unter Beschuss',
   'Notruf: Forschungsstation angegriffen',
 ];
 
-export const RAID_WARNING_MS = 30 * 60 * 1000;
+// RAID_WARNING_MS wurde durch RAID_PREP_MS (galaxyConstants.ts) ersetzt - Raids haben jetzt eine
+// echte, distanzabhaengige Flugzeit von einer zufaelligen Piratenbasis statt einer festen
+// Vorwarnzeit, siehe raids.ts.
 export const RAID_SPAWN_CHANCE = 0.6; // 60% Chance bei jedem der vier Checks
 export const RAID_LOOT_PERCENT = 0.25;
 

@@ -10,6 +10,44 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Raid-Hilfe entfernt – "Halten" ist jetzt der einzige Weg zu helfen',
+    changes: [
+      'Die alte Raid-Hilfe (Flotte für 1 Minute zu einem laufenden Angriff schicken, kehrt danach automatisch heim) gibt es nicht mehr - sie war überflüssig, seit haltende Flotten automatisch mitverteidigen.',
+      'Der Raid-Hilfe-Tab zeigt jetzt nur noch, wer gerade angegriffen wird (mit Position und Anzahl bereits dort haltender Flotten) und bringt dich per Klick direkt zur richtigen Stelle in der Galaxie-Ansicht.',
+      'Neuer Bereich "Eingehende Flotten" in der Galaxie-Ansicht: zeigt dir jede fremde Flotte, die gerade zu dir unterwegs ist oder bei dir hält - mit Absender, Herkunft und exaktem Inhalt (per Klick aufklappbar). Ein ankommender Piratenraid wird dort ebenfalls mit Herkunft und Zeit angezeigt, der Flotteninhalt bleibt wie gewohnt bis zur Ankunft unbekannt.',
+      'Flottenbewegungen zeigen jetzt überall auch die Herkunft an, nicht nur das Ziel - inklusive gemeinsamer Elite-Bollwerk-Expeditionen, die jetzt ebenfalls dort auftauchen.',
+      'Anflugzeit-Vorschau ergänzt: Sektor-Karten, der Notruf und Elite-Bollwerk-Expeditionen zeigen jetzt vorab an, wie lange der Flug dauern wird, bevor du dich festlegst.',
+    ],
+  },
+  {
+    date: '18.07.2026',
+    title: 'Elite-Bollwerk und Notruf jetzt auch in der Galaxie',
+    changes: [
+      'Notruf-Events sind jetzt nur noch solo lösbar - dafür fliegt deine Flotte wirklich zur Notruf-Position, der Kampf entscheidet sich erst bei Ankunft. Die Zeit zum Losschicken wurde von 60 auf 90 Minuten verlängert, damit für die Flugzeit noch genug Puffer bleibt.',
+      'Elite-Bollwerk-Expeditionen laufen jetzt realistischer ab: eingeladene Mitspieler fliegen zuerst zu dir, und erst wenn alle eingetroffen sind, geht es gemeinsam weiter zum Bollwerk.',
+    ],
+  },
+  {
+    date: '18.07.2026',
+    title: 'Piratenraids und Sektor-Flüge mit echten Distanzen',
+    changes: [
+      'Piraten greifen jetzt von einer von zwölf festen Basen in der Galaxie aus an - du siehst, von wo sie kommen. Nach der einstündigen Vorwarnzeit brauchen sie zusätzlich echte Flugzeit, abhängig von der Entfernung zu dir.',
+      'Asteroiden-Felder und Piraten-Sektoren haben jetzt feste Positionen in der Galaxie - Hin- und Rückflug dauern entsprechend der tatsächlichen Entfernung, nicht mehr pauschal eine Minute.',
+    ],
+  },
+  {
+    date: '18.07.2026',
+    title: 'Neu: Galaxie-Ansicht',
+    changes: [
+      'Neue Seite "Galaxie" in der Seitenleiste: jeder Spieler hat eine feste Position (Format Galaxie:System:Position, z.B. 1:25:3) in einer Galaxie mit 50 Systemen à 9 Positionen.',
+      'Kein PvP: Flotten können bei anderen Spielern nicht angreifen, aber "gehalten" werden – sie fliegen hin und bleiben dort stationiert, bis du sie zurückrufst.',
+      'Schiffe haben jetzt eine Geschwindigkeit und einen Treibstoffverbrauch (an OGame angelehnt) – Entfernung und Schiffsgeschwindigkeit bestimmen die Flugzeit, Hin- und Rückflug kosten jeweils Deuterium.',
+      'Neuer Bereich "Flottenbewegungen" auf der Galaxie-Seite: zeigt alle eigenen unterwegs befindlichen und haltenden Flotten mit Status, Restzeit und Rückruf-Button; die genaue Schiffszusammensetzung lässt sich per Klick aufklappen.',
+      'Haltende Flotten bei einem anderen Spieler unterstützen diesen jetzt automatisch, wenn dessen Basis von Piraten überfallen wird (Notruf-Events sind davon bewusst noch ausgenommen, das folgt später) – Verluste und Belohnungen werden fair zwischen allen Beteiligten abgerechnet, ohne Aufteilung.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Neues System: Gebäude',
     changes: [
       'Sechs neue Gebäude eingeführt: Metallmine, Kristallmine, Deuterium-Synthetisierer, Solarkraftwerk, Roboterfabrik, Nanitenfabrik – zu finden im Forschungs-Bereich unter dem neuen Untertab "Gebäude".',
