@@ -65,9 +65,9 @@
   }
 
   #resourcebar{
-    background: rgba(20,20,22,0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(16,16,18,0.30);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border-bottom: 1px solid var(--border);
     display:flex;
     align-items:center;
@@ -124,9 +124,9 @@
     display:flex;
   }
   #sidebar{
-    background: rgba(20,20,22,0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(16,16,18,0.30);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border-right: 1px solid var(--border);
     width: 200px;
     display:flex;
@@ -171,9 +171,9 @@
     flex: 0 1 1100px;
     max-width: 1100px;
     margin: 12px auto;
-    background: rgba(20,20,22,0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(16,16,18,0.30);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 24px;
