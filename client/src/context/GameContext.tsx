@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { updateServerTimeOffset } from '../lib/serverTime';
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment } from '../types/game';
 
 interface GameContextValue {
   gameData: GameData | null;
@@ -38,7 +38,17 @@ interface GameContextValue {
   respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) => Promise<void>;
   cancelParty: (opId: string) => Promise<void>;
   startParty: (opId: string) => Promise<void>;
-  reinforceRaid: (targetUserId: number, ships: Record<string, number>) => Promise<void>;
+
+  // Galaxie
+  galaxyOccupants: GalaxyOccupant[];
+  ownGalaxyPosition: GalaxyPosition | null;
+  pirateBases: GalaxyPosition[];
+  sektorPositions: SektorGalaxyPosition[];
+  notrufPosition: GalaxyPosition | null;
+  incomingDeployments: IncomingDeployment[];
+  refreshGalaxy: () => Promise<void>;
+  holdFleet: (targetUserId: number, ships: Record<string, number>) => Promise<void>;
+  recallHold: (deploymentId: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -51,6 +61,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [parties, setParties] = useState<GroupOperation[]>([]);
   const [activeRaids, setActiveRaids] = useState<ActiveRaidInfo[]>([]);
+  const [galaxyOccupants, setGalaxyOccupants] = useState<GalaxyOccupant[]>([]);
+  const [ownGalaxyPosition, setOwnGalaxyPosition] = useState<GalaxyPosition | null>(null);
+  const [pirateBases, setPirateBases] = useState<GalaxyPosition[]>([]);
+  const [sektorPositions, setSektorPositions] = useState<SektorGalaxyPosition[]>([]);
+  const [notrufPosition, setNotrufPosition] = useState<GalaxyPosition | null>(null);
+  const [incomingDeployments, setIncomingDeployments] = useState<IncomingDeployment[]>([]);
 
   function applyState(newState: PlayerState) {
     if (newState.serverTime) updateServerTimeOffset(newState.serverTime);
@@ -82,6 +98,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshGalaxy() {
+    try {
+      const res = await api.getGalaxy();
+      setGalaxyOccupants(res.occupants);
+      setOwnGalaxyPosition(res.ownPosition);
+      setPirateBases(res.pirateBases);
+      setSektorPositions(res.sektorPositions);
+      setNotrufPosition(res.notrufPosition);
+      setIncomingDeployments(res.incomingDeployments);
+    } catch {
+      // siehe oben
+    }
+  }
+
   async function refreshUsers() {
     try {
       const res = await api.listUsers();
@@ -98,11 +128,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refreshUsers();
     refreshParties();
     refreshRaids();
+    refreshGalaxy();
     const interval = setInterval(() => {
       api.getState().then(applyState).catch(() => {});
       refreshUsers();
       refreshParties();
       refreshRaids();
+      refreshGalaxy();
     }, 3000);
     // Wenn der Tab aus dem Hintergrund zurueckkommt (Browser drosseln Timer dort teils stark),
     // sofort nachziehen statt bis zu 5s auf den naechsten Poll zu warten - wichtig fuer den
@@ -174,7 +206,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
     respondToParty: (opId, accept, ships) => runAndRefreshParties(() => api.respondToParty(opId, accept, ships)),
     cancelParty: (opId) => runAndRefreshParties(() => api.cancelParty(opId)),
     startParty: (opId) => runAndRefreshParties(() => api.startParty(opId)),
-    reinforceRaid: (targetUserId, ships) => run(() => api.reinforceRaid(targetUserId, ships)).then(refreshRaids),
+
+    galaxyOccupants,
+    ownGalaxyPosition,
+    pirateBases,
+    sektorPositions,
+    notrufPosition,
+    incomingDeployments,
+    refreshGalaxy,
+    holdFleet: (targetUserId, ships) => run(() => api.holdFleet(targetUserId, ships)),
+    recallHold: (deploymentId) => run(() => api.recallHold(deploymentId)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
