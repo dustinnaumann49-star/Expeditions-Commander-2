@@ -1119,3 +1119,18 @@ client/
       aufgerufen (seit der Notruf-Flugzeit-Erweiterung in Punkt 51 async) - dadurch haette
       `savePlayerState()` teils VOR Abschluss einer Notruf-Kampfaufloesung greifen koennen
       (Race Condition). Ergaenzt.
+
+59. **BUGFIX: Server stuerzte beim Start komplett ab, wenn das `data`-Verzeichnis fehlte** -
+    `better-sqlite3` legt das Verzeichnis fuer die SQLite-Datei NICHT selbst an; fehlt es (z.B.
+    nach einem Redeploy ohne persistenten Datenspeicher, oder wenn es aus irgendeinem Grund
+    geloescht wurde), wirft `new Database(dbPath)` in `db.ts` sofort beim Modul-Import eine
+    Exception - NOCH BEVOR Express startet oder irgendein Log ausgegeben wird. Fuer den Betreiber
+    sah das aus wie "das Spiel laeuft nicht mehr", ohne erkennbare Fehlermeldung im normalen
+    Anwendungslog (nur im rohen Prozess-Stderr sichtbar: "Cannot open database because the
+    directory does not exist").
+    - **Fix:** `fs.mkdirSync(dataDir, { recursive: true })` in `db.ts`, BEVOR die Datenbank
+      geoeffnet wird - legt das Verzeichnis defensiv an, egal ob es beim Start existiert oder
+      nicht.
+    - Getestet: Server startet jetzt sowohl mit als auch OHNE vorhandenes `data`-Verzeichnis
+      sauber durch (vorher: sofortiger Absturz ohne Verzeichnis, Exit-Code 1); anschliessender
+      voller Smoke-Test (Registrierung, `/game/data`, `/game/state`) erfolgreich.
