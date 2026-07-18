@@ -31,7 +31,7 @@ import type { BattleModifierType } from './data/combatConstants.js';
 import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
 
-function miningMultiplier(state: PlayerState): number {
+export function miningMultiplier(state: PlayerState): number {
   // RESEARCH[4] = "mining" (siehe data/research.ts) - 0.10 Effekt pro Stufe
   return 1 + (state.research.mining || 0) * 0.1;
 }

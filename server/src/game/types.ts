@@ -42,6 +42,23 @@ export interface DefenseDefinition {
   isDome?: boolean;
 }
 
+export interface BuildingDefinition {
+  id: string;
+  name: string;
+  img: string;
+  lore: string;
+  // mine_*: erzeugt Ressourcen (verbraucht Energie). energie: erzeugt Energie fuer die Minen.
+  // roboter/nanit: verkuerzen Bauzeiten (Gebaeude staerker, Schiffe/Verteidigung schwaecher).
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie' | 'roboter' | 'nanit';
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+  baseOutput?: number; // Ressourcenertrag/Stunde bei Stufe 1 (nur Minen)
+  baseEnergyUse?: number; // Energieverbrauch bei Stufe 1 (nur Minen)
+  baseEnergyOutput?: number; // Energieertrag bei Stufe 1 (nur Solarkraftwerk)
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -57,6 +74,7 @@ export interface ResearchDefinition {
 export interface BuildJob {
   shipId?: string;
   defId?: string;
+  buildingId?: string;
   count: number;
   startTime: number;
   endTime: number;
@@ -324,6 +342,11 @@ export interface PlayerState {
   buildQueue: BuildJob[];
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
+  buildings: Record<string, number>;
+  // Gebaeude teilen sich EINEN globalen Bauslot (anders als Schiffe/Verteidigung) - siehe README.
+  // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
+  // Komponente, maxSlots=1) unveraendert wiederverwenden laesst.
+  buildingQueue: BuildJob[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

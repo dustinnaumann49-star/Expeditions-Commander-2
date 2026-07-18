@@ -1,20 +1,47 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
-import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_PLAYER_SHIPS } from './data/combatConstants.js';
+import { BUILDINGS, findBuilding } from './data/buildings.js';
+import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
-import { processMissions } from './missions.js';
+import { processMissions, miningMultiplier } from './missions.js';
 import { processEventTimer, processOverdueEventsForOtherUsers } from './events.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
-import type { PlayerState, ResourceCost } from './types.js';
+import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN (Bauzeit/Forschungszeit) ==========
 
-export function bauzeitMultiplier(state: PlayerState): number {
+// Basis-Multiplikator aus Bauzeit-Forschung + "bautempo"-Booster - gilt fuer ALLE Bauarten
+// (Schiffe, Verteidigung, Gebaeude) gleichermassen, siehe README Punkt 1.
+function baseTimeMultiplier(state: PlayerState): number {
   let m = Math.max(0.3, 1 - (state.research.bauzeit || 0) * RESEARCH[3].effectPerLevel);
   if (isBoosterActive(state, 'bautempo')) m *= 0.5;
   return m;
+}
+
+// Roboterfabrik/Nanitenfabrik wirken multiplikativ (kompoundierend) pro Stufe, nicht linear -
+// linear wuerde bei wenigen Stufen zu negativen/Null-Bauzeiten fuehren. Beide Effekte stapeln
+// sich. Gebaeude werden deutlich staerker beschleunigt (25%/50% pro Stufe) als Schiffe/
+// Verteidigung (1%/2% pro Stufe), da fuer Gebaeude ohnehin nur ein einziger globaler Bauslot
+// existiert.
+function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefense'): number {
+  const roboterLevel = state.buildings?.roboterfabrik || 0;
+  const naniteLevel = state.buildings?.nanitenfabrik || 0;
+  if (target === 'building') {
+    return Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel);
+  }
+  return Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
+}
+
+export function bauzeitMultiplier(state: PlayerState): number {
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense');
+}
+
+// Eigener Multiplikator fuer Gebaeude-Bauzeiten (Punkt 1 der README gilt auch hier: jede neue
+// Zeit-Anzeige im Frontend fuer Gebaeude MUSS die client-seitige Entsprechung verwenden).
+export function gebaeudeBauzeitMultiplier(state: PlayerState): number {
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building');
 }
 
 export function researchTimeMultiplier(state: PlayerState): number {
@@ -59,12 +86,92 @@ function countDefenseEverywhere(state: PlayerState, defId: string): number {
   return total;
 }
 
+// ========== GEBAEUDE: ENERGIE + PRODUKTION ==========
+// Ogame-artiges Energie-System: die drei Minen verbrauchen Energie, das Solarkraftwerk liefert
+// sie. Reicht die Energie nicht, wird die Produktion ALLER Minen anteilig gedrosselt (nie mehr
+// als 100%, kein Energie-Ueberschuss-Bonus).
+
+const MINE_BUILDING_IDS = ['metallmine', 'kristallmine', 'deuteriummine'] as const;
+
+function levelScaledValue(base: number, level: number): number {
+  return level > 0 ? base * level * Math.pow(1.1, level) : 0;
+}
+
+export function energyProduced(state: PlayerState): number {
+  const solar = findBuilding('solarkraftwerk');
+  if (!solar) return 0;
+  return levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
+}
+
+export function energyConsumed(state: PlayerState): number {
+  let total = 0;
+  MINE_BUILDING_IDS.forEach((id) => {
+    const building = findBuilding(id);
+    if (!building) return;
+    total += levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
+  });
+  return total;
+}
+
+export function energyFactor(state: PlayerState): number {
+  const consumed = energyConsumed(state);
+  if (consumed <= 0) return 1;
+  return Math.min(1, energyProduced(state) / consumed);
+}
+
+// Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor und Mining-Forschung (dieselbe
+// Forschung, die auch den Mining-Schiff-Ertrag boostet - EIN Wirtschaftssystem statt zweier
+// getrennter Boni).
+export function mineOutputPerHour(state: PlayerState, buildingId: string): number {
+  const building = findBuilding(buildingId);
+  if (!building || !building.baseOutput) return 0;
+  const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
+  return base * energyFactor(state) * miningMultiplier(state);
+}
+
+// Rechnet die seit dem letzten tick() vergangene Zeit als passive Minen-Produktion hoch.
+export function accrueBuildingProduction(state: PlayerState, deltaSec: number): void {
+  if (deltaSec <= 0) return;
+  state.resources.metall += (mineOutputPerHour(state, 'metallmine') / 3600) * deltaSec;
+  state.resources.kristall += (mineOutputPerHour(state, 'kristallmine') / 3600) * deltaSec;
+  state.resources.deuterium += (mineOutputPerHour(state, 'deuteriummine') / 3600) * deltaSec;
+}
+
+function buildingCostForLevel(building: BuildingDefinition, level: number): ResourceCost {
+  const f = Math.pow(building.costGrowth, level - 1);
+  return {
+    metall: Math.round(building.baseCost.metall * f),
+    kristall: Math.round(building.baseCost.kristall * f),
+    deuterium: Math.round(building.baseCost.deuterium * f),
+  };
+}
+
+function buildingTimeForLevel(state: PlayerState, building: BuildingDefinition, level: number): number {
+  return building.baseTimeSeconds * Math.pow(building.timeGrowth, level - 1) * 1000 * gebaeudeBauzeitMultiplier(state);
+}
+
 // ========== PRODUKTION + WARTESCHLANGEN "NACHHOLEN" ==========
 // Wird bei jedem Laden des Spielzustands aufgerufen und rechnet alles seit `lastUpdate` hoch -
 // ersetzt den setInterval-Loop aus dem HTML-Prototyp durch ein zustandsloses "catch up"-Prinzip,
 // das serverseitig ohne Dauer-Prozess auskommt.
 export async function tick(state: PlayerState): Promise<PlayerState> {
   const now = Date.now();
+  const deltaSec = Math.max(0, (now - state.lastUpdate) / 1000);
+
+  // Passive Minen-Produktion seit dem letzten Tick hochrechnen (vor der Bau-Warteschlange, damit
+  // eine in derselben Sekunde fertigwerdende Mine erst ab jetzt mit ihrer neuen Stufe zaehlt -
+  // unkritisch bei Sekunden-Aufloesung, aber so bleibt die Reihenfolge eindeutig).
+  accrueBuildingProduction(state, deltaSec);
+
+  // Gebaeude-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_BUILDING_SLOTS)
+  const stillBuildingBuildings = state.buildingQueue.filter((job) => {
+    if (job.endTime <= now && job.buildingId) {
+      state.buildings[job.buildingId] = (state.buildings[job.buildingId] || 0) + job.count;
+      return false;
+    }
+    return true;
+  });
+  state.buildingQueue = stillBuildingBuildings;
 
   // Bau-Warteschlange abarbeiten
   const stillBuilding = state.buildQueue.filter((job) => {
@@ -193,6 +300,30 @@ export function startDefenseBuild(state: PlayerState, defId: string, qty: number
   }
   const duration = def.buildTime * bauzeitMultiplier(state) * qty * 1000;
   state.defenseQueue.push({ defId, count: qty, startTime, endTime: startTime + duration });
+  return { ok: true };
+}
+
+// ========== GEBAEUDE BAUEN ==========
+
+export function startBuildingConstruction(state: PlayerState, buildingId: string): ActionResult {
+  const building = findBuilding(buildingId);
+  if (!building) return { ok: false, error: 'Unbekanntes Gebäude.' };
+  if (state.buildingQueue.length >= MAX_BUILDING_SLOTS) {
+    return { ok: false, error: 'Es kann immer nur ein Gebäude gleichzeitig gebaut werden.' };
+  }
+
+  const level = state.buildings[buildingId] || 0;
+  const nextLevel = level + 1;
+  const cost = buildingCostForLevel(building, nextLevel);
+  if (!canAfford(state, cost, 1)) return { ok: false, error: 'Nicht genug Ressourcen.' };
+
+  state.resources.metall -= cost.metall;
+  state.resources.kristall -= cost.kristall;
+  state.resources.deuterium -= cost.deuterium;
+
+  const now = Date.now();
+  const duration = buildingTimeForLevel(state, building, nextLevel);
+  state.buildingQueue.push({ buildingId, count: 1, startTime: now, endTime: now + duration });
   return { ok: true };
 }
 

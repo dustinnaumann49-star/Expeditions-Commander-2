@@ -1,6 +1,7 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
+import { BUILDINGS } from './data/buildings.js';
 import { nextFixedCheckpoint } from './data/economy.js';
 import type { PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson } from '../db.js';
@@ -10,6 +11,8 @@ export function defaultPlayerState(userId: number): PlayerState {
   SHIPS.forEach((s) => (fleet[s.id] = 0));
   const defense: Record<string, number> = {};
   DEFENSES.forEach((d) => (defense[d.id] = 0));
+  const buildings: Record<string, number> = {};
+  BUILDINGS.forEach((b) => (buildings[b.id] = 0));
 
   return {
     userId,
@@ -26,6 +29,8 @@ export function defaultPlayerState(userId: number): PlayerState {
     buildQueue: [],
     defenseQueue: [],
     researchQueue: [],
+    buildings,
+    buildingQueue: [],
     activeBoosters: {},
     teile: { waffen: 0, schild: 0, panzerung: 0 },
     missions: [],
@@ -80,6 +85,14 @@ export function loadPlayerState(userId: number): PlayerState {
   });
   // Statistik-Objekt nachruesten (existierte vor Einfuehrung der Statistik-Seite nicht) - siehe
   // "Wichtige Punkte" zu kuenftigen neuen PlayerState-Feldern.
+  // Gebaeude nachruesten (existierten vor Einfuehrung dieses Systems nicht) - gleiches Muster wie
+  // bei RESEARCH oben: Abgleich gegen BUILDINGS deckt automatisch alle aktuellen und kuenftigen
+  // Gebaeudetypen ab.
+  if (!parsed.buildings) parsed.buildings = {} as Record<string, number>;
+  BUILDINGS.forEach((b) => {
+    if (parsed.buildings[b.id] === undefined) parsed.buildings[b.id] = 0;
+  });
+  if (!parsed.buildingQueue) parsed.buildingQueue = [];
   if (!parsed.stats) parsed.stats = defaultPlayerStats();
   const statsDefaults = defaultPlayerStats();
   (Object.keys(statsDefaults) as (keyof typeof statsDefaults)[]).forEach((key) => {
