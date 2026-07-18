@@ -157,6 +157,7 @@ export function GalaxiePage() {
                 {occ ? (
                   <>
                     <p style={{ fontWeight: 600 }}>
+                      {occ.isBot && '🤖 '}
                       {occ.username} {isOwn && '(du)'}
                     </p>
                     {!isOwn && (
