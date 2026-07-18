@@ -1330,17 +1330,26 @@ aktuellen Kartenliste in `Forschung.tsx`).
   (`galaxyFleetSpeed()` in `galaxy.ts`) muesste dann bei GEMISCHTEN Flotten die Antriebsklasse DES
   langsamsten Schiffs ermitteln und NUR dessen zugehoerige Forschungsstufe anwenden (nicht mehr
   einen einzigen flachen `antrieb`-Wert fuer die gesamte Flotte).
-  - **Offene Fragen dazu, noch NICHT entschieden:** welches der 15 Schiffe gehoert zu welcher
-    Antriebsklasse (grobe Erwartung: kleine/schnelle Schiffe wie Leichter/Schwerer Jaeger,
-    Begleitschiff -> Rakete; mittlere wie Kreuzer/Schlachtschiff/Bomber/Salvenjaeger/-kreuzer ->
-    Impuls; schwere/Kapital-Schiffe wie Schlachtkreuzer/Zerstoerer/Reaper/Sandronator/Imperator/
-    Salvendreadnought -> Hyperraum - nur eine erste Einschaetzung, keine finale Zuordnung); ob der
-    Prozentbonus pro Stufe fuer alle drei Antriebsklassen gleich bleibt (3%/Stufe wie bisher) oder
-    sich unterscheidet (z.B. Hyperraumantrieb pro Stufe staerker, da seltener/teurer erforscht);
-    was mit der bereits ausgelieferten, einzelnen `antrieb`-Forschung (Punkt 62) passiert - wird
-    sie komplett durch die drei neuen Antriebsklassen ERSETZT (Migration bestehender Spielerstufen
-    noetig, z.B. 1:1 auf alle drei Zweige uebertragen) oder bleibt sie als vierter, uebergreifender
-    Zweig zusaetzlich bestehen?
+  - **Geklaert (siehe Ruecksprache):** die bestehende, allgemeine `antrieb`-Forschung (Punkt 62)
+    bleibt als BASIS-Boost fuer die GESAMTE Flotte bestehen (weiterhin 3%/Stufe, max. 30% bei
+    Stufe 10) - die drei neuen Antriebsklassen-Forschungen kommen ZUSAETZLICH als gezielter Bonus
+    fuer die jeweilige Schiffsklasse obendrauf (additiv gestapelt: Basis-Bonus + Klassen-Bonus fuer
+    die Antriebsklasse des jeweils langsamsten Schiffs der Flotte). Kein Ersatz, keine Migration
+    noetig.
+  - **Balance-Vorschlag (noch nicht final, nur Diskussionsgrundlage):** damit Schiffe durch die
+    Stapelung nicht zu schnell werden, sollten die drei Klassen-Forschungen einen KLEINEREN
+    Pro-Stufe-Bonus haben als die Basis-Forschung, z.B. 2%/Stufe (max. 20% bei Stufe 10) statt
+    3%/Stufe - bei voller Ausforschung einer Klasse ergaebe das in Kombination mit der Basis
+    maximal 30%+20% = 50% Geschwindigkeitsbonus fuer Schiffe dieser Klasse (Schiffe anderer
+    Klassen profitieren weiterhin nur von den 30% Basis). Zur Einordnung: 50% mehr Geschwindigkeit
+    verkuerzt die Flugzeit (wegen der Wurzel-Formel in `galaxyDurationMs()`) um ca. 18%, nicht um
+    50% - die Formel daempft grosse Geschwindigkeitsgewinne von selbst ab, dadurch ist ein
+    ueberzogenes Balance-Risiko eher gering.
+  - **Verbleibende offene Fragen:** welches der 15 Schiffe gehoert zu welcher Antriebsklasse
+    (grobe Erwartung: kleine/schnelle Schiffe wie Leichter/Schwerer Jaeger, Begleitschiff ->
+    Rakete; mittlere wie Kreuzer/Schlachtschiff/Bomber/Salvenjaeger/-kreuzer -> Impuls; schwere/
+    Kapital-Schiffe wie Schlachtkreuzer/Zerstoerer/Reaper/Sandronator/Imperator/Salvendreadnought
+    -> Hyperraum - nur eine erste Einschaetzung, keine finale Zuordnung).
 - **Wirtschaft & Logistik**: `mining` (Basis) → `bauzeit` (Zweig, wirkt auf Schiffe/Verteidigung/
   Gebaeude gleichermassen, siehe Punkt 1) · `spionage` (aktuell: glaettet NPC-Flottenvarianz bei
   generierten Piraten-/Notruf-Gegnern, siehe `combat.ts` `generatePiratenFleet()`/
