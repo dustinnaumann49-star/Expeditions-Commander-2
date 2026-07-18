@@ -1240,6 +1240,11 @@ client/
       `inventar.png`, `statistik.png`, `updates.png`), jeweils unter `client/public/background/`
       ablegen - der Code ist bereits vollstaendig darauf vorbereitet, kein weiterer
       Code-Eingriff noetig, sobald die Bilder geliefert werden.
+    - **Update:** Bilder fuer Werft (`/`), Flotte, Forschung, Sektor, Galaxie, Multiplayer und
+      Haendler wurden geliefert und sind aktiv. `/verteidigung` nutzt bewusst DASSELBE Bild wie
+      Werft (`werft.png` statt eines eigenen `verteidigung.png`) - beide Seiten spielen sich
+      thematisch am selben Ort ab (Werft-Halle). Noch offen (fallen bis dahin auf `hauptbild.png`
+      zurueck): Shop, Nachrichten, Inventar, Statistik, Updates.
 
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
