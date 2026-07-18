@@ -1030,3 +1030,23 @@ client/
       Notruf-Checkpoint auf Berliner 21:00 Uhr (3 Stunden auseinander, wie vorgesehen); je 500
       Durchlaeufe mit frisch faelligem Checkpoint bei 60%/40% Chance ergaben ~299/217 Treffer
       (Bugfix aus Punkt 55 bleibt korrekt wirksam).
+
+57. **BUGFIX: Alle Popups (Kampfbericht/InfoModal/LoreModal) wurden am oberen Rand von der
+    Ressourcenleiste verdeckt.** Ursache war eine klassische CSS-Stacking-Context-Falle: `#mainbar`
+    hat `backdrop-filter: blur(8px)` (fuer den Glas-Effekt) - das erzeugt per Spezifikation einen
+    EIGENEN Stacking-Context fuer alle Nachfahren. Da `#combat-modal` (`position:fixed;
+    z-index:1000`) als Kind von `#mainbar` gerendert wurde, galt sein `z-index:1000` nur INNERHALB
+    von `#mainbar`s Stacking-Context - er wurde nie mit der `<ResourceBar>` verglichen, die als
+    eigenstaendiges Element auf oberster Ebene ein explizites `z-index:10` traegt. Ein
+    z-index:1000, das in einem fremden Stacking-Context "gefangen" ist, gewinnt NIE gegen ein
+    z-index:10 ausserhalb davon, egal wie hoch die Zahl ist - deshalb lag die Ressourcenleiste
+    trotz niedrigerem Wert sichtbar ueber dem oberen Rand jedes Popups.
+    - **Fix:** `InfoModal.tsx`, `LoreModal.tsx` und das `DetailModal` in `Nachrichten.tsx` (der
+      Kampfbericht) rendern jetzt ueber `createPortal(..., document.body)` direkt in den
+      Dokument-Body statt inline im normalen Seitenbaum - dadurch entkommt das Popup `#mainbar`s
+      Stacking-Context komplett, ohne dass der Blur-Effekt auf `#mainbar` selbst angetastet
+      werden musste. Betraf alle drei Popup-Komponenten gleichermassen (gleiche
+      `#combat-modal`/`#modal-box`-Struktur), nicht nur den Kampfbericht.
+    - Bei kuenftigen neuen Popup-artigen Komponenten mit `position:fixed`-Overlay: IMMER per
+      `createPortal` rendern, nie inline - sonst tritt dieselbe Falle wieder auf, sobald sie
+      irgendwo unterhalb von `#mainbar` eingebunden werden.
