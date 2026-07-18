@@ -895,3 +895,40 @@ client/
       (Operation bleibt dann einfach unbegrenzt im "inviting"-Status haengen, der Ersteller kann sie
       aber jederzeit ueber `cancelGroupOperation()` abbrechen - alle bereits eingesetzten Flotten,
       inklusive bereits angereister, werden dabei an ihre Besitzer zurueckerstattet).
+
+52. **Distanz-/Flugzeit-Vorschau auf ALLE Flugziele verallgemeinert**, nicht mehr nur auf
+    Galaxie-Halten-Fluege zu anderen Spielern. Vorher gab es die Vorschau nur dort, waehrend
+    Sektor-Missionen, Notruf und Elite-Bollwerk-Expeditionen trotz echter (Punkt 50/51)
+    Flugzeit-Berechnung weder ihre Galaxie-Position noch eine Flugzeit-Vorschau anzeigten - man
+    haette dafuer immer erst in die Galaxie-Ansicht wechseln muessen (und selbst dort war fuer
+    diese drei Ziele nichts vorbereitet).
+    - **`POST /game/galaxy/preview` verallgemeinert:** akzeptiert jetzt entweder `targetUserId`
+      (Halten, unveraendert) ODER eine beliebige feste `targetPosition` (Sektor/Notruf/
+      Elite-Bollwerk/Rendezvous) - dieselbe Route, kein zweiter Endpunkt noetig.
+    - **Neuer Client-Hook `useGalaxyPreview()`** (`lib/useGalaxyPreview.ts`): debouncte
+      Distanz-/Flugzeit-Abfrage zu einer festen Zielposition, an drei Stellen wiederverwendet statt
+      dreimal separat gebaut.
+    - **Sektor-Tab:** jede Sektor-Karte zeigt jetzt ihre Position (📍 1:X:Y); ist eine Karte
+      aufgeklappt und eine Flotte gewaehlt, erscheint die Anflugzeit-Vorschau vor dem
+      "Entsenden"-Button. Wichtig fuer die Implementierung: `useGalaxyPreview()` wird pro
+      Sektor-Karte in der `.map()`-Schleife aufgerufen - das ist hier unbedenklich, weil
+      `sektorenInTab` eine FESTE Laenge/Reihenfolge pro Tab hat (anders als die naechsten beiden
+      Faelle, siehe unten), Ships-Objekt fuer nicht-aufgeklappte Karten ist einfach `{}` und loest
+      keinen Request aus (leere Flotte).
+    - **Notruf-Karte** (Sektor-Tab, vor dem Losschicken): zeigt jetzt ebenfalls Position und
+      Anflugzeit-Vorschau waehrend der Flottenauswahl, Text von "Zeit zum Eingreifen" zu "Zeit zum
+      Losschicken" praezisiert (das war ohnehin schon die eigentliche Bedeutung, siehe Punkt 51).
+    - **Elite-Bollwerk-Karte** (Multiplayer-Tab): zeigt Position; beim Ersteller erscheint beim
+      Waehlen der eigenen Flotte eine Vorschau des SPAETEREN Weiterflugs zum Bollwerk.
+    - **Einladungs-Karten fuer Elite-Bollwerk WURDEN IN EINE EIGENE KOMPONENTE
+      (`PendingInviteCard`) AUSGELAGERT**, statt `useGalaxyPreview()` direkt in der
+      `.map()`-Schleife ueber `pendingForMe` aufzurufen - im Gegensatz zu den Sektor-Karten hat
+      diese Liste KEINE feste Laenge (Einladungen kommen/verschwinden waehrend der Nutzung durch
+      Annehmen/Ablehnen), ein Hook direkt in einer variabel-langen `.map()`-Schleife wuerde gegen
+      die React Hook-Regeln verstossen. Jede Karte ist jetzt eine eigene Komponenteninstanz mit
+      eigenem, stabilem Hook-Aufruf. Zeigt dem Eingeladenen VOR dem Annehmen die
+      Rendezvous-Flugzeit zur Position des Erstellers (`op.creatorPosition`, siehe Punkt 51).
+    - **`GroupOperation.creatorPosition`** (neu, `types.ts`) wird bei `createGroupOperation()`
+      einmalig eingefroren (Erstellerposition zum Erstellungszeitpunkt) statt live nachgeschlagen -
+      Einladungsempfaenger brauchen diesen Wert fuer ihre Rendezvous-Vorschau, OHNE dass der
+      Server dafuer bei jeder Anzeige extra den Ersteller-State laden muesste.
