@@ -1199,3 +1199,63 @@ client/
       Mittelwerts ueber alle Teilnehmer.
     - Getestet: Leichter Jaeger (Basisgeschwindigkeit 12500) ergab bei Forschungsstufe 5 korrekt
       ~14375 (+15%), bei Stufe 10 korrekt 16250 (+30%).
+
+## Geplante Erweiterungen (noch NICHT umgesetzt)
+
+Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst GROB geplant,
+nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
+spaetere Umsetzung, nicht als Spezifikation.
+
+### Forschungsbaum (Tech-Tree) statt 13 unabhaengiger Einzelforschungen
+
+Auslöser: Nutzer zeigte ein KI-generiertes Referenzbild eines klassischen Tech-Tree-UIs
+("Forschungsbaum: Antriebstechnik" mit mehreren verzweigten Unter-Technologien, die aufeinander
+aufbauen). Aktuell (Stand: Punkt 62) hat jede der 13 Forschungen (`data/research.ts`) eine
+eigene, unabhaengige Stufe 0-10 ohne Voraussetzungen zueinander. Die Idee: mehrere
+**Hauptbereiche**, jeder mit mehreren **Unter-Technologien**, die teils aufeinander aufbauen
+(Voraussetzungen wie "Technologie B erst ab Technologie A Stufe X freischaltbar").
+
+**Das ist ein deutlich groesserer Umbau als ein normales Feature** - vergleichbar mit dem
+Galaxie-Umbau (Punkte 46-62), nur fuer den Forschungsbereich. Betrifft Datenmodell (Voraussetzungen
+zwischen Technologien), Server-Logik (`startResearch()` muesste Voraussetzungen pruefen, nicht nur
+Kosten/Slot), und komplett neue UI (Baum-/Graph-Darstellung mit Verbindungslinien statt der
+aktuellen Kartenliste in `Forschung.tsx`).
+
+**Grober Vorschlag fuer die Gruppierung der 13 bestehenden Forschungen in 4 Hauptbereiche**
+(nur ein erster Entwurf, keine finale Entscheidung):
+
+- **Waffensysteme** (Angriff): `waffen` (Basis) → `zielerfassung` (Zweig) → `durchschlag` (Zweig)
+  → `kritischetreffer` (baut auf `zielerfassung` auf) · `praezision` evtl. ebenfalls hier
+  (Trefferchance passt sowohl zu Angriff als auch zu Verteidigung, noch zu entscheiden).
+- **Verteidigungssysteme**: `schild` (Basis) → `schildregeneration` (Zweig) · `panzerung` (Basis,
+  parallel) → `ausweichen` (Zweig, baut auf `panzerung` auf - thematisch: schwere Panzerung
+  ermoeglicht ausweichende Manöver? Oder eher eigener Zweig ohne Voraussetzung, noch zu klaeren).
+- **Antriebstechnik** (Mobilitaet): `antrieb` (Basis, Punkt 62) → Raum fuer kuenftige Unter-
+  Technologien (z.B. Treibstoffeffizienz/geringerer Verbrauch, wie im Referenzbild
+  "Optimierte Antriebssysteme"/"Hyperraumantrieb" angedeutet - aktuell nur EIN Basis-Wert ohne
+  Verzweigung, siehe Punkt 62).
+- **Wirtschaft & Logistik**: `mining` (Basis) → `bauzeit` (Zweig, wirkt auf Schiffe/Verteidigung/
+  Gebaeude gleichermassen, siehe Punkt 1) · `spionage` (aktuell: glaettet NPC-Flottenvarianz bei
+  generierten Piraten-/Notruf-Gegnern, siehe `combat.ts` `generatePiratenFleet()`/
+  `generateDefenseFleet()` - passt thematisch am ehesten hierher, da informations-/vorbereitungs-
+  bezogen statt reiner Kampfwert).
+
+**Offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
+1. Exakte Voraussetzungs-Stufen zwischen den Technologien (z.B. "Zielerfassung ab Waffentechnik
+   Stufe 3") - im Entwurf oben bewusst nicht festgelegt.
+2. Migration bestehender Spielstaende: aktuelle Forschungsstufen (0-10 pro Technologie) muessten
+   unveraendert in die neue Struktur uebernommen werden koennen, ohne Fortschritt zu verlieren.
+3. Bleibt `MAX_RESEARCH_LEVEL = 10` pro Unter-Technologie erhalten, oder aendert sich das mit
+   mehr Technologien insgesamt (Balance-Frage - mehr Techs bedeuten mehr Gesamt-Nutzen, wenn
+   jede weiterhin bis Stufe 10 skaliert)?
+4. UI-Ansatz: eigene Baum-/Graph-Darstellung (wie im Referenzbild, mit Verbindungslinien) ist
+   deutlich aufwendiger als die aktuelle Kartenliste - client-seitig voraussichtlich eine der
+   groesseren UI-Neuentwicklungen des Projekts.
+5. Sollen komplett NEUE Technologien (ueber die aktuellen 13 hinaus) im Zuge des Umbaus ergaenzt
+   werden (wie im Referenzbild angedeutet: "Hyperraumantrieb", "Kuenstliche Intelligenz"), oder
+   zunaechst nur die BESTEHENDEN 13 in Baumform neu anordnen?
+
+**Empfehlung bei Umsetzungsbeginn:** wie beim Galaxie-Umbau in mehreren kleinen, einzeln
+testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehenden Technologien
+einfuehren OHNE UI-Aenderung, dann erst die Baum-UI nachziehen) statt eines einzigen grossen
+Umbaus.
