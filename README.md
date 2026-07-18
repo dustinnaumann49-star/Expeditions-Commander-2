@@ -1176,3 +1176,26 @@ client/
     - Ohne die sichtbare Fehleranzeige aus Punkt 60 waere dieser Bug vermutlich unbemerkt
       geblieben (Symptom vorher: App laedt kurz, verschwindet dann wieder - ohne jeden Hinweis
       auf die Ursache, siehe Diagnose-Verlauf).
+
+62. **Neue Forschung: Antriebstechnik** (`data/research.ts`, id `antrieb`) - verkuerzt ALLE
+    Flugzeiten in der Galaxie um 3% pro Stufe, bei Stufe 10 (Maximum, wie jede Forschung ueber
+    `MAX_RESEARCH_LEVEL`) also 30% schneller. Nutzt die bestehende Forschungs-Infrastruktur
+    unveraendert (Kosten/Bauzeit/Warteschlange) - kein neues System noetig, nur ein neuer
+    Eintrag im `RESEARCH`-Array plus Verdrahtung in `galaxyFleetSpeed()`.
+    - **`galaxyFleetSpeed(ships, research?)`** (`galaxy.ts`) nimmt jetzt optional die Forschung
+      des Absenders entgegen und multipliziert die Basisgeschwindigkeit (langsamstes Schiff der
+      Flotte) mit `1 + Stufe * 0.03`, BEVOR sie in `galaxyDurationMs()` einfliesst. Optionaler
+      Parameter, damit kein bestehender Aufruf bricht - ohne Forschungskontext gilt weiterhin die
+      reine Basisgeschwindigkeit.
+    - **Wessen Forschung zaehlt, ist ueberall der ABSENDER der jeweiligen Flugbewegung:** eigene
+      Forschung bei Sektor-Missionen (`missions.ts`), Notruf (`events.ts`), Halten inkl. Rueckruf
+      (`galaxy.ts`) und der Vorschau-Route (`routes.ts`).
+    - **Elite-Bollwerk-Sonderfall (zwei Etappen, zwei unterschiedliche Regeln):** beim
+      Rendezvous-Flug (Teilnehmer fliegt zum Ersteller) zaehlt die Forschung des ANTWORTENDEN
+      Teilnehmers selbst (`respondToGroupOperation()`); beim anschliessenden gemeinsamen
+      Weiterflug zum Ziel zaehlt bewusst NUR die Forschung des ERSTELLERS
+      (`startGroupOperation()`, `combinedShips` aller Teilnehmer, aber `state.research` = der
+      Ersteller "befehligt" den Konvoi) - einfachste, nachvollziehbare Regel statt eines
+      Mittelwerts ueber alle Teilnehmer.
+    - Getestet: Leichter Jaeger (Basisgeschwindigkeit 12500) ergab bei Forschungsstufe 5 korrekt
+      ~14375 (+15%), bei Stufe 10 korrekt 16250 (+30%).
