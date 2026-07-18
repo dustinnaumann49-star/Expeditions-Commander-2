@@ -4,6 +4,7 @@ import cors from 'cors';
 import { authRouter } from './auth/routes.js';
 import { gameRouter } from './game/routes.js';
 import { runGlobalHeartbeat } from './game/heartbeat.js';
+import { ensureBotUsers } from './game/bot.js';
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -36,6 +37,9 @@ app.use('/api/game', gameRouter);
 
 app.listen(PORT, () => {
   console.log(`Expedition-Commander Server läuft auf Port ${PORT}`);
+
+  // KI-Spieler-Accounts einmalig anlegen, falls noch nicht vorhanden (siehe game/bot.ts).
+  ensureBotUsers().catch((err) => console.error('ensureBotUsers-Fehler:', err));
 
   // Interner Taktgeber: laeuft direkt im Node-Prozess, sobald der Server steht - keine externe
   // Abhaengigkeit noetig. Setzt voraus, dass der Prozess durchgehend laeuft (Render Starter-Tarif+),

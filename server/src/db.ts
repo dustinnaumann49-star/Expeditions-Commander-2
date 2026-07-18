@@ -43,6 +43,14 @@ try {
   // Spalte existiert schon - kein Problem, einfach ignorieren.
 }
 
+// Migration: is_bot-Spalte fuer KI-Spieler (siehe game/bot.ts) - unterscheidet Bot-Accounts von
+// echten Spielern, ansonsten technisch ein ganz normaler Nutzer mit eigenem PlayerState.
+try {
+  db.exec('ALTER TABLE users ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0');
+} catch {
+  // Spalte existiert schon - kein Problem, einfach ignorieren.
+}
+
 // Ein Nutzer gilt als "online", wenn seine letzte Anfrage nicht laenger als dieses Fenster
 // zurueckliegt. Das Frontend fragt den Zustand alle 5s ab, aber Browser drosseln Timer in
 // Hintergrund-Tabs teils stark (z.B. auf 1x/Minute) - daher grosszuegiger Puffer, damit ein
@@ -53,17 +61,19 @@ export function touchUserLastSeen(userId: number): void {
   db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(Date.now(), userId);
 }
 
-export function listAllUsers(excludeUserId?: number): { id: number; username: string; online: boolean }[] {
-  const rows = db.prepare('SELECT id, username, last_seen FROM users ORDER BY username').all() as {
+export function listAllUsers(excludeUserId?: number): { id: number; username: string; online: boolean; isBot: boolean }[] {
+  const rows = db.prepare('SELECT id, username, last_seen, is_bot FROM users ORDER BY username').all() as {
     id: number;
     username: string;
     last_seen: number | null;
+    is_bot: number;
   }[];
   const now = Date.now();
   const withStatus = rows.map((r) => ({
     id: r.id,
     username: r.username,
     online: !!r.last_seen && now - r.last_seen < ONLINE_THRESHOLD_MS,
+    isBot: !!r.is_bot,
   }));
   return excludeUserId ? withStatus.filter((r) => r.id !== excludeUserId) : withStatus;
 }
@@ -94,6 +104,7 @@ export interface UserRow {
   username: string;
   password_hash: string;
   created_at: number;
+  is_bot?: number;
 }
 
 export function getUserByUsername(username: string): UserRow | undefined {
@@ -104,11 +115,15 @@ export function getUserById(id: number): UserRow | undefined {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
 }
 
-export function createUser(username: string, passwordHash: string): UserRow {
+export function createUser(username: string, passwordHash: string, isBot = false): UserRow {
   const info = db
-    .prepare('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)')
-    .run(username, passwordHash, Date.now());
+    .prepare('INSERT INTO users (username, password_hash, created_at, is_bot) VALUES (?, ?, ?, ?)')
+    .run(username, passwordHash, Date.now(), isBot ? 1 : 0);
   return getUserById(info.lastInsertRowid as number)!;
+}
+
+export function listBotUserIds(): number[] {
+  return (db.prepare('SELECT id FROM users WHERE is_bot = 1').all() as { id: number }[]).map((r) => r.id);
 }
 
 export function loadGameStateJson(userId: number): string | undefined {
