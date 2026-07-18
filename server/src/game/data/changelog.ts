@@ -9,6 +9,18 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '18.07.2026',
+    title: 'Neues System: Gebäude',
+    changes: [
+      'Sechs neue Gebäude eingeführt: Metallmine, Kristallmine, Deuterium-Synthetisierer, Solarkraftwerk, Roboterfabrik, Nanitenfabrik – zu finden im Forschungs-Bereich unter dem neuen Untertab "Gebäude".',
+      'Minen produzieren jetzt passiv Ressourcen pro Stunde, auch während du nicht eingeloggt bist – vorher kamen Ressourcen ausschließlich aus Mining-Schiffen auf Expedition.',
+      'Neues Energie-System: die drei Minen verbrauchen Energie, das Solarkraftwerk liefert sie. Reicht die Energie nicht, produzieren alle Minen anteilig gedrosselt statt auf voller Leistung – im Gebäude-Tab jederzeit als "Erzeugt/Verbraucht" einsehbar.',
+      'Roboterfabrik und Nanitenfabrik verkürzen Bauzeiten: Roboterfabrik senkt Gebäude-Bauzeit um 25% pro Stufe und Schiffs-/Verteidigungs-Bauzeit um 1% pro Stufe, Nanitenfabrik um 50% bzw. 2% pro Stufe – beide Effekte stapeln sich.',
+      'Bestehende Mining-Effizienz-Forschung wirkt jetzt zusätzlich auf die Minen-Produktion, nicht mehr nur auf Mining-Schiffe.',
+      'Gebäude teilen sich bewusst nur einen einzigen Bauplatz (anders als Schiffe/Verteidigung mit mehreren Slots) – es kann immer nur ein Gebäude gleichzeitig ausgebaut werden.',
+    ],
+  },
+  {
     date: '17.07.2026',
     title: 'Großes Update: Kampf, Belohnungen & Übersicht',
     changes: [
