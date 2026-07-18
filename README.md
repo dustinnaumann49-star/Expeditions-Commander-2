@@ -39,8 +39,12 @@ server/
 
   src/game/missions.ts               Solo-Missionen: Flotte entsenden, stündlicher Check, Rückkehr
   src/game/events.ts                 Solo-Notruf-Events
-  src/game/raids.ts                  Basis-Raids (inkl. Einbindung von Verstärkungen)
+  src/game/raids.ts                  Basis-Raids (inkl. Einbindung von Verstärkungen UND
+                                      haltenden Galaxie-Flotten, siehe galaxy.ts)
   src/game/raidReinforce.ts          Liste aktiver Raids, Verstärkung entsenden
+  src/game/galaxy.ts                 GESAMTE Galaxie-Logik: Distanz/Flugzeit/Treibstoff,
+                                      Positionsvergabe, "Halten"-Mechanik (Flotte stationieren/
+                                      zurückrufen), Übersicht, Raid-Verteidigungs-Einbindung
   src/game/groupOps.ts               GESAMTE Multiplayer-Logik: gemeinsame Expeditionen/Events,
                                       Einladen/Beitreten/Starten, Belohnungsvergabe
 
@@ -61,6 +65,8 @@ server/
   src/game/data/economy.ts           Booster, Gutscheine, Container, NPC-Spezial-Einheiten,
                                       Event-/Raid-/Asteroiden-Konstanten
   src/game/data/combatConstants.ts   RAPIDFIRE-Tabelle, ZIELERFASSUNG_BASE, MAX_*-Konstanten
+  src/game/data/galaxyConstants.ts   Galaxie-Größe (50 Systeme x 9 Positionen), Distanz-/
+                                      Flugzeit-Formel-Konstanten
   src/game/data/buildings.ts         Alle Gebäudedaten (Metall-/Kristall-/Deuteriummine,
                                       Solarkraftwerk, Roboter-/Nanitenfabrik: Kosten, Bauzeit,
                                       Ertrag/Energie pro Stufe)
@@ -116,6 +122,9 @@ client/
                                       Untertab von Shop eingebunden)
   src/pages/Multiplayer.tsx           Gemeinsame Expeditionen/Events + Untertabs "Raid-Hilfe"
                                       (rendert RaidHilfe.tsx) und "Spieler" (Online/Offline-Liste)
+  src/pages/Galaxie.tsx               Galaxie-Ansicht: System-Browser, Positionsraster,
+                                      Flotte "halten" (stationieren/zurückrufen),
+                                      Flottenbewegungen-Übersicht (eigener Nav-Punkt)
   src/pages/RaidHilfe.tsx             Alle aktiven Raids anderer Spieler, Verstärkung entsenden
                                       (kein eigener Nav-Punkt mehr, nur als Untertab von
                                       Multiplayer eingebunden)
@@ -705,3 +714,65 @@ client/
       `state.energyConsumed` aus der Server-Antwort (siehe `routes.ts`), faellt aber auf die
       client-seitigen `getEnergyProduced()`/`getEnergyConsumed()` aus `multipliers.ts` zurueck,
       falls diese Felder (z.B. bei aeltern gecachten Antworten) fehlen sollten.
+
+48. **Neues System: Galaxie-Ansicht** (`game/galaxy.ts`, `pages/Galaxie.tsx`, eigener
+    Sidebar-Punkt). Eine Galaxie mit 50 Systemen x 9 Positionen (450 Plaetze, absichtlich viel
+    Reserve bei der aktuellen Spielerzahl). Zentrale Design-Entscheidungen:
+    - **Zufaellige Positionsvergabe, auch fuer Bestandsspieler.** `PlayerState.galaxyPosition`
+      wird bei der Registrierung UND per Migration in `loadPlayerState()` vergeben (analog Punkt
+      33/47 zu Forschungs-/Gebaeude-Feldern), damit auch bereits registrierte Spieler beim
+      naechsten Laden automatisch eine freie Position bekommen. Die Vergabe-Funktion lebt bewusst
+      DIREKT in `state.ts` (nicht in `galaxy.ts`) und liest andere Spielstaende ueber
+      `loadGameStateJson()` statt `loadPlayerState()`, um einen Zirkelbezug state.ts <-> galaxy.ts
+      zu vermeiden (galaxy.ts braucht seinerseits `loadPlayerState()` aus state.ts).
+    - **Schiffs-Geschwindigkeit/Treibstoffverbrauch neu eingefuehrt** (`speed`/`fuelConsumption`
+      in `ShipDefinition`). Bei Schiffen mit direktem OGame-Pendant an die dortigen
+      Basis-Geschwindigkeiten angelehnt (Leichter/Schwerer Jaeger, Kreuzer, Schlachtschiff,
+      Bomber, Schlachtkreuzer, Zerstoerer, Reaper); eigene Schiffe ohne OGame-Vorbild
+      (Sandronator, Mining-Schiff, Begleitschiff, Imperator, Salvenschiffe) sinngemaess an die
+      naechstliegende OGame-Klasse angepasst (z.B. Imperator so extrem langsam wie der
+      OGame-Todesstern, Mining-Schiff wie ein Grosser Transporter).
+    - **Distanz-/Flugzeit-Formel an OGame angelehnt, aber bewusst gestaucht**
+      (`data/galaxyConstants.ts`): Distanz gleiches System `1000 + 5×Positionsdifferenz`, anderes
+      System `2700 + 95×kuerzeste Systemdifferenz` (Galaxie "rund" gedacht, System 50 grenzt an
+      System 1) - identisch zu OGames Formel. Flugzeit `10 + FAKTOR × sqrt(Distanz×10/Speed)`
+      Sekunden, FAKTOR aber mit 925 statt OGames Standardwert 3500 bewusst kleiner gewaehlt, damit
+      eine Galaxie-Querung bei normal schnellen Schiffen 20-60 Minuten dauert statt mehrerer
+      Stunden. Getestet: System-Nachbarn (gleiches System, gleiche Flotte) ~14 Minuten,
+      gegenueberliegende Systeme (Distanz ~4600-5075) mit typischen Schiffsgeschwindigkeiten
+      28-56 Minuten - nur extrem langsame Einzelschiffe wie der Imperator (Speed 100) liegen
+      erwartungsgemaess deutlich darueber, das ist bei einem derart legendaeren Einzelstueck
+      hinzunehmen statt die gesamte Formel dafuer zu verzerren.
+    - **"Halten" (Stationieren) statt Angriff:** `startHoldDeployment()` schickt eine Flotte los,
+      sie bleibt ab Ankunft (`arriveTime`) unbegrenzt "haltend" am Ziel stehen (kein Kampf, kein
+      PvP), bis `recallHoldDeployment()` sie zurueckruft - auch waehrend des Hinflugs moeglich
+      (dreht sofort um, keine Teilstrecken-Physik, analog zum bestehenden `recallMission()` in
+      missions.ts). Treibstoff faellt bei BEIDEN Richtungen an (bestaetigt), damit Stationieren
+      kein kostenloser Dauerzustand ist. `state.galaxyDeployments` traegt sowohl unterwegs
+      befindliche als auch bereits haltende Flotten - der Uebergang ist rein zeitbasiert
+      (`arriveTime <= now`), keine explizite Statusaenderung noetig.
+    - **Raid-Kampf-Integration (bewusst NUR Piraten-Raids, NICHT Notruf-Events - kommt spaeter):**
+      `getHoldingDeploymentsTargeting()` in `galaxy.ts` scannt bei JEDER Raid-Aufloesung
+      (`resolveRaid()` in raids.ts) alle anderen Spieler nach aktuell bei diesem Verteidiger
+      haltenden Flotten und bindet sie als zusaetzliche `OwnedFleetContribution`-Eintraege ein
+      (Schluessel `held:${deploymentId}`, um Kollisionen mit ad-hoc Raid-Verstaerkungen
+      auszuschliessen, falls ein Spieler beides gleichzeitig hat). Wichtiger Unterschied zu
+      ad-hoc Verstaerkungen (`raidReinforce.ts`): Ueberlebende haltender Flotten fliegen NICHT
+      automatisch nach Hause zurueck, sondern bleiben (reduziert) weiterhin haltend am Platz -
+      `deployment.ships[id]` wird direkt mit den Ueberlebenden ueberschrieben, komplett vernichtete
+      Eintraege werden aus `galaxyDeployments` entfernt (`persistHeldDeployment()`). Halter
+      bekommen dieselbe volle Belohnung wie der Verteidiger (Container, Bergungs-DM, Statistik -
+      keine Aufteilung, Punkt 5) und eine eigene Nachricht. Getestet: ein Verteidiger mit eigener
+      Verteidigungsanlage UND mehreren gleichzeitig haltenden Fremdflotten (auch mehrere
+      Eintraege desselben Halters) - alle Beitraege wurden korrekt getrennt nach `ownerKey`
+      abgerechnet, Verluste realistisch verteilt, keine Vermischung der Bestandszahlen.
+    - **Galaxie-Uebersicht scannt ALLE Spieler bei jedem Laden** (`listGalaxyOccupants()`,
+      analog `listActiveRaids()`/Statistik-Bestenliste) - bei 2-5 Spielern unproblematisch, kein
+      Caching noetig.
+    - **Vorschau-Route** `POST /game/galaxy/preview` ist rein lesend (kein State-Update), damit
+      der Client Distanz/Flugzeit/Treibstoffkosten VOR der eigentlichen Bestaetigung exakt
+      anzeigen kann, ohne bereits Ressourcen zu verbrauchen.
+    - **UI bewusst als eigener Sidebar-Punkt** (nicht als Untertab) - im Gegensatz zu
+      Schrotthaendler/Spezialteile/Raid-Hilfe (Punkt 11) ist die Galaxie ein eigenstaendiges
+      Hauptsystem mit eigenem Navigationsbedarf (System-Browser, Positionsraster,
+      Flottenbewegungen-Liste).
