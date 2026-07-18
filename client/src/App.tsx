@@ -47,13 +47,13 @@ const PAGE_BACKGROUNDS: Record<string, string> = {
   '/forschung': 'forschung.png',
   '/flotte': 'flotte.png',
   '/haendler': 'haendler.png',
-  '/shop': 'shop.png',
   '/multiplayer': 'multiplayer.png',
   '/galaxie': 'galaxie.png',
-  '/nachrichten': 'nachrichten.png',
-  '/inventar': 'inventar.png',
-  '/statistik': 'statistik.png',
-  '/updates': 'updates.png',
+  // Shop, Nachrichten, Inventar, Statistik, Updates: noch KEIN eigenes Bild geliefert - bewusst
+  // NICHT eingetragen, damit der Fallback auf hauptbild.png unten tatsaechlich greift. Waere
+  // hier trotzdem ein Dateiname eingetragen, wuerde der Browser eine nicht existierende Datei
+  // anfragen (404) UND der Fallback wuerde NICHT greifen (er wirkt nur, wenn die Route komplett
+  // fehlt, nicht wenn die verlinkte Datei fehlt) - genau das ist vorher passiert.
 };
 const DEFAULT_BACKGROUND = 'hauptbild.png';
 
