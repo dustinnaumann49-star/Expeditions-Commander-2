@@ -1291,140 +1291,66 @@ client/
       thematisch am selben Ort ab (Werft-Halle). Noch offen (fallen bis dahin auf `hauptbild.png`
       zurueck): Shop, Nachrichten, Inventar, Statistik, Updates.
 
-## Geplante Erweiterungen (noch NICHT umgesetzt)
-
-Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst GROB geplant,
-nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
-spaetere Umsetzung, nicht als Spezifikation.
-
-### Forschungsbaum (Tech-Tree) statt 13 unabhaengiger Einzelforschungen
-
-Auslöser: Nutzer zeigte ein KI-generiertes Referenzbild eines klassischen Tech-Tree-UIs
-("Forschungsbaum: Antriebstechnik" mit mehreren verzweigten Unter-Technologien, die aufeinander
-aufbauen). Aktuell (Stand: Punkt 62) hat jede der 13 Forschungen (`data/research.ts`) eine
-eigene, unabhaengige Stufe 0-10 ohne Voraussetzungen zueinander. Die Idee: mehrere
-**Hauptbereiche**, jeder mit mehreren **Unter-Technologien**, die teils aufeinander aufbauen
-(Voraussetzungen wie "Technologie B erst ab Technologie A Stufe X freischaltbar").
-
-**Das ist ein deutlich groesserer Umbau als ein normales Feature** - vergleichbar mit dem
-Galaxie-Umbau (Punkte 46-62), nur fuer den Forschungsbereich. Betrifft Datenmodell (Voraussetzungen
-zwischen Technologien), Server-Logik (`startResearch()` muesste Voraussetzungen pruefen, nicht nur
-Kosten/Slot), und komplett neue UI (Baum-/Graph-Darstellung mit Verbindungslinien statt der
-aktuellen Kartenliste in `Forschung.tsx`).
-
-**Gruppierung der 13 bestehenden Forschungen in 4 Hauptbereiche - vom Nutzer BESTAETIGT**
-(nicht mehr nur Entwurf, siehe Ruecksprache):
-
-- **Waffensysteme** (Angriff) - Struktur final bestaetigt (siehe Ruecksprache): `waffen` (Basis)
-  verzweigt sich in ZWEI parallele Zweige. Oberer Zweig: `zielerfassung` → `praezision` (baut auf
-  `zielerfassung` auf). Unterer Zweig: `durchschlag` → `kritischetreffer` (baut auf `durchschlag`
-  auf). `praezision` gehoert damit zu Waffensysteme, nicht zu Verteidigung.
-- **Verteidigungssysteme** - Struktur final bestaetigt (siehe Ruecksprache): ZWEI eigenstaendige
-  Basis-Zweige nebeneinander (anders als bei Waffensysteme, dort teilen sich zwei Zweige EINE
-  gemeinsame Basis). Zweig 1: `schild` (Basis) → `schildregeneration`. Zweig 2: `panzerung`
-  (Basis) → `ausweichen`. Keine Verbindung zwischen den beiden Zweigen.
-- **Antriebstechnik** (Mobilitaet) - NEU KONKRETISIERT (siehe Ruecksprache): statt eines einzigen
-  `antrieb`-Basiswerts (Punkt 62, wirkt aktuell FLACH auf ALLE Schiffe gleichermassen) soll es
-  mehrere Antriebs-KLASSEN geben, jede mit eigenem Forschungs-Zweig: **Raketenantrieb** (kleine/
-  leichte Schiffe), **Impulsantrieb** (mittlere Schiffe), **Hyperraumantrieb** (schwere/Kapital-
-  Schiffe). Jedes Schiff braucht dafuer eine Antriebsklassen-Zuordnung (neues Feld in
-  `ShipDefinition`, z.B. `driveType: 'rakete' | 'impuls' | 'hyperraum'`), die Flugzeit-Formel
-  (`galaxyFleetSpeed()` in `galaxy.ts`) muesste dann bei GEMISCHTEN Flotten die Antriebsklasse DES
-  langsamsten Schiffs ermitteln und NUR dessen zugehoerige Forschungsstufe anwenden (nicht mehr
-  einen einzigen flachen `antrieb`-Wert fuer die gesamte Flotte).
-  - **Geklaert (siehe Ruecksprache):** die bestehende, allgemeine `antrieb`-Forschung (Punkt 62)
-    bleibt als BASIS-Boost fuer die GESAMTE Flotte bestehen (weiterhin 3%/Stufe, max. 30% bei
-    Stufe 10) - die drei neuen Antriebsklassen-Forschungen kommen ZUSAETZLICH als gezielter Bonus
-    fuer die jeweilige Schiffsklasse obendrauf (additiv gestapelt: Basis-Bonus + Klassen-Bonus fuer
-    die Antriebsklasse des jeweils langsamsten Schiffs der Flotte). Kein Ersatz, keine Migration
-    noetig.
-  - **Balance-Vorschlag (noch nicht final, nur Diskussionsgrundlage):** damit Schiffe durch die
-    Stapelung nicht zu schnell werden, sollten die drei Klassen-Forschungen einen KLEINEREN
-    Pro-Stufe-Bonus haben als die Basis-Forschung, z.B. 2%/Stufe (max. 20% bei Stufe 10) statt
-    3%/Stufe - bei voller Ausforschung einer Klasse ergaebe das in Kombination mit der Basis
-    maximal 30%+20% = 50% Geschwindigkeitsbonus fuer Schiffe dieser Klasse (Schiffe anderer
-    Klassen profitieren weiterhin nur von den 30% Basis). Zur Einordnung: 50% mehr Geschwindigkeit
-    verkuerzt die Flugzeit (wegen der Wurzel-Formel in `galaxyDurationMs()`) um ca. 18%, nicht um
-    50% - die Formel daempft grosse Geschwindigkeitsgewinne von selbst ab, dadurch ist ein
-    ueberzogenes Balance-Risiko eher gering.
-  - **Schiffszuordnung final bestaetigt** (deckt sich 1:1 mit der bereits bestehenden
-    `SCHIFF_KLASSEN`-Einteilung im Werft-UI, `Werft.tsx` - keine neue Kategorisierung noetig,
-    einfach wiederverwenden):
-    - **Raketenantrieb:** Jaeger-Klasse (`leicht`, `schwer`, `salvenjaeger`) + Versorgungsschiffe
-      (`mining`, `begleitschiff`).
-    - **Impulsantrieb:** Kreuzer-Klasse (`kreuzer`, `schlachtschiff`, `bomber`, `salvenkreuzer`).
-    - **Hyperraumantrieb:** Elite-Klasse (`schlachtkreuzer`, `zerstoerer`, `reaper`,
-      `sandronator`, `salvendreadnought`) + `imperator` (separat gebaut ueber Spezialteile, aber
-      antriebstechnisch hier einsortiert).
-    - Diese Klassen-Einteilung existiert bisher NUR client-seitig als UI-Gruppierung
-      (`SCHIFF_KLASSEN` in `Werft.tsx`) - fuer die Antriebs-Zuordnung braeuchte `ShipDefinition`
-      serverseitig (`data/ships.ts`) ein neues Feld (z.B. `driveType`), das dieselbe Zuordnung
-      widerspiegelt.
-- **Wirtschaft & Logistik** - Struktur final bestaetigt (siehe Ruecksprache), folgt demselben
-  Muster wie Antriebstechnik (allgemeine Basis + spezialisierte Zweige, die zusaetzlich
-  draufsatteln - nicht ersetzen):
-  - **Mining-Zweig:** `mining` (Basis, wirkt weiterhin auf BEIDES wie bisher, siehe Punkt 58) →
-    zwei spezialisierte Unter-Technologien obendrauf: "Mining-Boost fuer Mining-Schiffe" (nur
-    Schiffs-Ertrag) und "Mining-Boost fuer Minen" (nur passive Gebaeude-Produktion, siehe
-    Gebaeude-System Punkt 47). Beide NEU, existieren aktuell noch nicht als eigene Forschung.
-  - **Bauzeit-Zweig:** `bauzeit` (Basis, verkuerzt weiterhin ALLES wie bisher: Gebaeude+Schiffe+
-    Verteidigung, siehe Punkt 1) → drei spezialisierte Unter-Technologien obendrauf: "Bauzeit
-    Gebaeude", "Bauzeit Schiffe", "Bauzeit Verteidigung" - jede zusaetzlich stapelnd fuer genau
-    diese eine Kategorie. Alle drei NEU, existieren aktuell noch nicht als eigene Forschung.
-  - **Spionage-Zweig:** `spionage` (Basis) bleibt eigenstaendig, KEINE weiteren Unter-Technologien
-    geplant - aktuell ohnehin nur ein Platzhalter-Mechanismus (glaettet NPC-Flottenvarianz, siehe
-    `combat.ts`), noch keine ausgebaute Spielfunktion dahinter.
-
-**Offene Fragen fuer die eigentliche Umsetzung:**
-1. **GEKLAERT:** einheitlich Stufe 3 als Voraussetzungs-Schwelle fuer JEDE Eltern→Kind-Verbindung
-   im gesamten Baum (z.B. "Zielerfassung ab Waffen Stufe 3", "Praezision ab Zielerfassung Stufe 3",
-   ebenso bei allen Antriebsklassen- und Wirtschafts-Zweigen ab ihrer jeweiligen Basis) - kein
-   Sonderfall pro Zweig, leicht zu merken.
-2. Migration bestehender Spielstaende: aktuelle Forschungsstufen (0-10 pro Technologie) muessten
-   unveraendert in die neue Struktur uebernommen werden koennen, ohne Fortschritt zu verlieren.
-3. **GEKLAERT:** `MAX_RESEARCH_LEVEL = 10` bleibt einheitlich fuer JEDE Forschung erhalten, auch
-   die neuen Zweige - keine Ausnahme, keine abweichenden Maxima.
-4. **GEKLAERT:** doch eine ECHTE grafische Baum-Darstellung mit Verbindungslinien (nicht die
-   bestehende Karten-/Listenoptik wie im Rest der App) - war der urspruengliche Ansporn fuer die
-   ganze Idee, bewusste Kurskorrektur gegenueber der anfaenglichen Empfehlung (Karten
-   beizubehalten). Design-Vorgaben:
-   - **Groessenhierarchie wie ein echter Baum:** Basis-Forschung jedes Hauptbereichs deutlich
-     GROESSER dargestellt (dicker "Stamm"), Zweige/Unter-Technologien kleiner ("Aeste") -
-     visuelle Groesse spiegelt die Position im Baum wider, nicht nur Verbindungslinien allein.
-   - **Jeder Knoten bleibt bewusst SCHLANK:** nur Bild, Name und ein "Forschen"-Button sichtbar -
-     KEINE Kosten/Effekt-Details direkt am Knoten (anders als z.B. die aktuelle Forschungs-
-     Kartenliste, die Kosten/Bauzeit/Effekt direkt zeigt).
-   - **Alle Details (Kosten, Bauzeit, Effekt pro Stufe, aktuelle Stufe, Lore) hinter einem
-     Info-Popup pro Forschung versteckt** - reuse des bestehenden `InfoModal`-Musters
-     (`components/InfoModal.tsx`), das an anderer Stelle im Projekt schon durchgaengig genutzt
-     wird (Werft/Verteidigung/Gebaeude/Sektor, siehe Punkt 12/14). Kein neues Popup-Muster
-     noetig, nur inhaltlich pro Forschungsknoten befuellt statt wie bisher direkt auf der Karte.
-   - Damit einher geht zwangslaeufig ein groesserer client-seitiger UI-Aufwand als eine reine
-     Kartenliste (Positionierung der Knoten, SVG/CSS-Verbindungslinien zwischen Eltern und
-     Kindern, Groessen-Skalierung) - bewusst in Kauf genommen, da genau dieser Baum-Stil der
-     eigentliche Wunsch war.
-5. **GEKLAERT:** vorerst NUR die bestehenden 13 + die 8 neu geplanten Zweige (siehe Gruppierung
-   oben) - keine zusaetzlichen, komplett neuen Technologien in dieser Runde. Weitere
-   Technologien/Zweige sind als spaetere, eigene Erweiterung denkbar, aber nicht Teil dieser
-   Umsetzung.
-
-**Empfehlung bei Umsetzungsbeginn:** wie beim Galaxie-Umbau in mehreren kleinen, einzeln
-testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehenden Technologien
-einfuehren OHNE UI-Aenderung, dann erst die Baum-UI nachziehen) statt eines einzigen grossen
-Umbaus.
-
-### Benoetigte neue Forschungsbilder
-
-Jede Forschung hat bisher ein eigenes Bild (`client/public/research/*.png`, siehe die 13
-bestehenden). Mit den neuen Verzweigungen (siehe oben) kommen **8 komplett neue Technologien**
-dazu, die noch KEIN Bild haben - Liste zur Vorbereitung, ID-Namen noch nicht final/nur zur
-Orientierung (werden bei der eigentlichen Umsetzung final vergeben):
-
-- **Antriebstechnik (3 neue):** Raketenantrieb, Impulsantrieb, Hyperraumantrieb
-- **Wirtschaft/Mining (2 neue):** Mining-Boost fuer Mining-Schiffe, Mining-Boost fuer Minen
-- **Wirtschaft/Bauzeit (3 neue):** Bauzeit Gebaeude, Bauzeit Schiffe, Bauzeit Verteidigung
-
-Die bestehenden 13 Forschungen (inkl. der erst kuerzlich ergaenzten Antriebstechnik-Basis,
-Punkt 62) behalten ihre vorhandenen Bilder unveraendert - nur diese 8 neuen Zweige brauchen
-neues Bildmaterial, sobald die Umsetzung beginnt.
+65. **Neu: Forschungsbaum (Tech-Tree) - loest die vorherigen 13 unabhaengigen Einzelforschungen
+    ab.** Was vorher unter "Geplante Erweiterungen" grob skizziert war, ist jetzt vollstaendig
+    umgesetzt und getestet. 4 Hauptbereiche (`waffen`/`verteidigung`/`antrieb`/`wirtschaft`),
+    21 Forschungen insgesamt (13 bestehende + 8 neue), einheitliche Voraussetzungs-Schwelle
+    Stufe 3 fuer JEDE Eltern-Kind-Verbindung, `MAX_RESEARCH_LEVEL=10` bleibt ueberall gleich.
+    - **Datenmodell** (`types.ts`): `ResearchDefinition` um `mainBranch`, optionales `parentId`
+      (Voraussetzung) und optionales `driveType` (nur bei den 3 Antriebsklassen-Zweigen) erweitert.
+      `ShipDefinition` um `driveType` erweitert (alle 15 Schiffe zugeordnet: Jaeger-Klasse +
+      Versorgungsschiffe -> `rakete`, Kreuzer-Klasse -> `impuls`, Elite-Klasse + Imperator ->
+      `hyperraum` - deckt sich 1:1 mit der bestehenden `SCHIFF_KLASSEN`-Gruppierung in
+      `Werft.tsx`). Neue Konstante `PARENT_UNLOCK_LEVEL=3` in `combatConstants.ts`.
+    - **Voraussetzungsprüfung** in `startResearch()` (`actions.ts`): lehnt eine Forschung ab,
+      wenn `tech.parentId` gesetzt ist und die Elternforschung noch nicht Stufe 3 erreicht hat.
+      Getestet: Zielerfassung ohne Waffen Stufe 3 korrekt abgelehnt, mit Stufe 3 erlaubt.
+    - **Antriebsklassen stapeln auf die bestehende Antriebstechnik-Basis** (nicht ersetzt, wie
+      besprochen): `galaxyFleetSpeed()` (`galaxy.ts`) ermittelt jetzt zusaetzlich den `driveType`
+      DES LANGSAMSTEN SCHIFFS der Flotte und wendet dessen spezifische Forschungsstufe
+      (2%/Stufe) MULTIPLIKATIV zusaetzlich zur allgemeinen Antriebstechnik-Basis (3%/Stufe) an.
+      Getestet: Basis Stufe 5 (+15%) + Raketenantrieb Stufe 5 (+10%) auf einen Leichten Jaeger
+      (Speed 12500) ergab korrekt 15812,5 (12500×1,15×1,10); ein Kreuzer (Impuls-Klasse) ohne
+      Impuls-Forschung bekam im selben Test korrekt NUR den Basis-Bonus.
+    - **Mining aufgesplittet** (`missions.ts` `miningMultiplier()` fuer Schiffe, neue
+      `miningBuildingMultiplier()` in `actions.ts` fuer Minen-Gebaeude): die Basis-Forschung
+      `mining` wirkt weiterhin auf BEIDES wie bisher (Punkt 58), die neuen Zweige "Mining-Boost:
+      Schiffe"/"Mining-Boost: Minen" (je 5%/Stufe) stapeln NUR fuer ihre jeweilige Kategorie
+      obendrauf. Getestet: Schiffs-Multiplikator mit Basis+Zweig korrekt 1,8 (1,5×1,2), Gebaeude-
+      Multiplikator ohne investierten Minen-Zweig korrekt nur 1,5 (reine Basis).
+    - **Bauzeit aufgesplittet in drei GETRENNTE Funktionen** (vorher `bauzeitMultiplier()` fuer
+      Schiffe UND Verteidigung gemeinsam): `bauzeitMultiplier()` jetzt NUR Schiffe (+ Zweig
+      "Bauzeit: Schiffe"), neue `defenseBauzeitMultiplier()` NUR Verteidigung (+ Zweig "Bauzeit:
+      Verteidigung"), `gebaeudeBauzeitMultiplier()` NUR Gebaeude (+ Zweig "Bauzeit: Gebaeude") -
+      `startDefenseBuild()` nutzt jetzt `defenseBauzeitMultiplier()` statt der gemeinsamen
+      Funktion. Basis-Forschung `bauzeit` wirkt weiterhin auf ALLE drei Kategorien gleichzeitig.
+      Getestet: mit `bauzeit_schiffe` Stufe 5 (-15%) ergab der Schiffs-Multiplikator 0,85,
+      Verteidigung/Gebaeude blieben unveraendert bei 1,0 (kein Zweig investiert).
+    - **Client-Spiegelung** (`multipliers.ts`, Punkt 1 gilt weiterhin): `getBauzeitMultiplier()`
+      jetzt schiffsspezifisch, neue `getDefenseBauzeitMultiplier()` (von `Verteidigung.tsx`
+      genutzt), `getGebaeudeBauzeitMultiplier()`/`getMiningMultiplier()`/neue
+      `getMiningBuildingMultiplier()` entsprechend erweitert.
+    - **`/game/data` liefert jetzt zusaetzlich `parentUnlockLevel`** aus, damit der Client die
+      Voraussetzungs-Schwelle nicht hartcodieren muss.
+    - **UI: echter Baum mit Verbindungslinien** (`Forschung.tsx` komplett neu, `theme.css`
+      `.research-tree`/`.research-node`-Regeln neu) - bewaehrtes REINES CSS-Baumdiagramm-Muster
+      (verschachtelte `<ul>/<li>`, jedes `<li>` zeichnet per `::before`/`::after` eine L-foermige
+      Linie, die sich mit Nachbar-`<li>`s zu einer durchgehenden horizontalen Leiste verbindet,
+      `ul ul::before` zeichnet den Ast vom Elternknoten herunter) - KEINE JavaScript-
+      Positionsberechnung noetig, funktioniert automatisch fuer beliebig viele Kinder pro Knoten.
+      Mehrere unabhaengige Basis-Baeume innerhalb eines Hauptbereichs (z.B. Verteidigung: `schild`
+      und `panzerung` als zwei getrennte Baeume) werden nebeneinander in einem `.research-forest`
+      (flex-wrap) dargestellt.
+    - **Knoten bewusst schlank** (nur Bild, Name, aktuelle Stufe, Info-Button, Forschen-Button/
+      Sperr-Symbol) - alle Details (Kosten, Zeit, Effekt, Voraussetzung, Lore) im `InfoModal`-
+      Popup (bestehendes Muster wiederverwendet). Basis-Knoten (`.research-node.basis`, kein
+      `parentId`) deutlich groesser dargestellt als Zweig-Knoten (`.research-node.zweig`).
+    - **Info-Popup der 3 Antriebsklassen-Zweige zeigt zusaetzlich die profitierenden Schiffe**
+      (`ResearchInfoContent` in `Forschung.tsx`) - DYNAMISCH aus `gameData.ships.filter(s =>
+      s.driveType === tech.driveType)` ermittelt statt hartcodiertem Text, bleibt dadurch
+      automatisch aktuell, falls sich die Schiffs-Antriebszuordnung spaeter je aendert.
+    - **8 neue Forschungsbilder werden benoetigt** (`research/raketenantrieb.png`,
+      `impulsantrieb.png`, `hyperraumantrieb.png`, `mining_schiffe.png`, `mining_minen.png`,
+      `bauzeit_gebaeude.png`, `bauzeit_schiffe.png`, `bauzeit_verteidigung.png`) - fehlen aktuell
+      noch, der bestehende `onError`-Fallback blendet das Bild bis dahin einfach aus.
 
