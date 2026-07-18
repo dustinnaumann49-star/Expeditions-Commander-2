@@ -4,6 +4,7 @@ import { processMissions } from './missions.js';
 import { processEventTimer } from './events.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
+import { runBotTurn } from './bot.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu tick()
@@ -34,8 +35,14 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     try {
       const state = loadPlayerState(u.id);
       await processMissions(state);
-      processEventTimer(state);
+      await processEventTimer(state);
       await processRaidTimer(state);
+      // KI-Spieler treffen hier ihre Entscheidungen (Bauen/Forschen/Fliegen/Halten) - siehe
+      // bot.ts. Laeuft NACH der normalen Zeit-Verarbeitung, damit z.B. gerade fertiggestellte
+      // Gebaeude/Forschung schon beruecksichtigt sind, bevor der naechste Schritt geplant wird.
+      if (u.isBot) {
+        await runBotTurn(state, users);
+      }
       state.lastUpdate = Date.now();
       savePlayerState(state);
     } catch (err) {

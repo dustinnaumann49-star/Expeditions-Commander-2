@@ -61,6 +61,7 @@ export interface GalaxyOccupant {
   username: string;
   system: number;
   position: number;
+  isBot: boolean;
 }
 
 // Scannt ALLE registrierten Spieler (wie listActiveRaids/stats.ts-Leaderboard) - bei der aktuellen
@@ -70,7 +71,7 @@ export function listGalaxyOccupants(): GalaxyOccupant[] {
   listAllUsers().forEach((u) => {
     const state = loadPlayerState(u.id);
     if (state.galaxyPosition) {
-      result.push({ userId: u.id, username: u.username, system: state.galaxyPosition.system, position: state.galaxyPosition.position });
+      result.push({ userId: u.id, username: u.username, system: state.galaxyPosition.system, position: state.galaxyPosition.position, isBot: u.isBot });
     }
   });
   return result;
