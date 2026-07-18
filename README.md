@@ -1227,9 +1227,30 @@ client/
     - **Zweiter Nachtrag:** selbst danach war der Hintergrund gefuehlt noch zu schwach sichtbar -
       Ursache war diesmal, dass die UI (Ressourcenleiste + Layout) bis zum Rand JEDES Bildschirms
       auffuellte (kein `max-width`), auf breiten Monitoren blieb dadurch praktisch kein
-      Hintergrund sichtbar. Fix: `#resourcebar`/`#layout` haben jetzt `max-width:1400px` und sind
-      zentriert (`margin: ... auto`) - auf schmalen Bildschirmen unveraendertes Verhalten (volle
-      Breite), auf breiten Monitoren bleibt jetzt sichtbar Hintergrund links/rechts der UI.
+      Hintergrund sichtbar. Erster Versuch: `#resourcebar`/`#layout` insgesamt als EIN Block auf
+      `max-width:1400px` begrenzt und zentriert - das brachte aber einen NEUEN Bug zum Vorschein
+      (naechster Punkt) und traf ausserdem nicht ganz, was der Nutzer wollte (siehe dritter
+      Nachtrag).
+    - **BUGFIX (`margin:auto` + Spalten-Flex-Elternelement):** durch das `margin:0 auto` auf
+      `#layout` (innerhalb von `#root{display:flex; flex-direction:column;}`) wurde die
+      Breitenberechnung inhaltsabhaengig statt konstant - bei WENIG Inhalt (z.B. Nachrichten-
+      Seite mit zwei kleinen Boxen) schrumpfte `#layout` auf Inhaltsgroesse zusammen (schmal), bei
+      VIEL Inhalt (z.B. Multiplayer) dehnte es sich bis zum `max-width`-Limit (breit) - klassische
+      Flexbox-Falle: `margin:auto` auf einem Flex-Item ueberschreibt das Standard-Stretch-
+      Verhalten und macht die Breite content-abhaengig (shrink-to-fit) statt konstant. Erst mit
+      zusaetzlichem `width:100%` waere das behoben gewesen, wurde aber durch den finalen
+      Loesungsansatz (naechster Punkt) ohnehin ueberholt.
+    - **Dritter (finaler) Nachtrag - eigentlicher gewuenschter Loesungsansatz:** Nutzer wollte
+      KEINEN insgesamt zentrierten Block, sondern: Ressourcenleiste bleibt volle Breite (klassische
+      Kopfleiste ueber den gesamten Bildschirm), Sidebar bleibt fest am LINKEN Rand (unveraendert,
+      keine Begrenzung), NUR der Hauptbereich (`#mainbar`) bekommt eine feste Zielbreite und wird
+      INNERHALB der nach der Sidebar verbleibenden Flex-Restflaeche zentriert (`flex: 0 1 1100px;
+      max-width:1100px; margin:12px auto;` statt `flex:1`) - dadurch bleibt sichtbarer Hintergrund
+      sowohl ZWISCHEN Sidebar und Hauptbereich als auch RECHTS davon. Das behebt gleichzeitig auch
+      den vorherigen Breiten-Inkonsistenz-Bug (Punkt daurber), da `#mainbar` jetzt IMMER dieselbe
+      Zielbreite anstrebt, unabhaengig vom Seiteninhalt (`margin:auto` auf einem Flex-Item
+      innerhalb eines ROW-Flex-Elternteils zentriert zuverlaessig auf der Hauptachse, ohne die
+      Stretch-Falle von vorhin - die trat nur bei COLUMN-Flex-Eltern auf).
     - **BUGFIX (`App.tsx` `PAGE_BACKGROUNDS`):** fuer Shop/Nachrichten/Inventar/Statistik/Updates
       waren bereits Dateinamen eingetragen (`shop.png` usw.), OBWOHL diese Bilder noch gar nicht
       existierten - das fuehrte zu einem defekten `background-image`-Verweis (404) statt zum
