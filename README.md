@@ -1319,9 +1319,10 @@ aktuellen Kartenliste in `Forschung.tsx`).
   verzweigt sich in ZWEI parallele Zweige. Oberer Zweig: `zielerfassung` → `praezision` (baut auf
   `zielerfassung` auf). Unterer Zweig: `durchschlag` → `kritischetreffer` (baut auf `durchschlag`
   auf). `praezision` gehoert damit zu Waffensysteme, nicht zu Verteidigung.
-- **Verteidigungssysteme**: `schild` (Basis) → `schildregeneration` (Zweig) · `panzerung` (Basis,
-  parallel) → `ausweichen` (Zweig, baut auf `panzerung` auf - thematisch: schwere Panzerung
-  ermoeglicht ausweichende Manöver? Oder eher eigener Zweig ohne Voraussetzung, noch zu klaeren).
+- **Verteidigungssysteme** - Struktur final bestaetigt (siehe Ruecksprache): ZWEI eigenstaendige
+  Basis-Zweige nebeneinander (anders als bei Waffensysteme, dort teilen sich zwei Zweige EINE
+  gemeinsame Basis). Zweig 1: `schild` (Basis) → `schildregeneration`. Zweig 2: `panzerung`
+  (Basis) → `ausweichen`. Keine Verbindung zwischen den beiden Zweigen.
 - **Antriebstechnik** (Mobilitaet) - NEU KONKRETISIERT (siehe Ruecksprache): statt eines einzigen
   `antrieb`-Basiswerts (Punkt 62, wirkt aktuell FLACH auf ALLE Schiffe gleichermassen) soll es
   mehrere Antriebs-KLASSEN geben, jede mit eigenem Forschungs-Zweig: **Raketenantrieb** (kleine/
