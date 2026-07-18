@@ -776,3 +776,38 @@ client/
       Schrotthaendler/Spezialteile/Raid-Hilfe (Punkt 11) ist die Galaxie ein eigenstaendiges
       Hauptsystem mit eigenem Navigationsbedarf (System-Browser, Positionsraster,
       Flottenbewegungen-Liste).
+
+49. **Piraten-Raids starten jetzt von einer zufaelligen Piratenbasis mit echter, distanzabhaengiger
+    Flugzeit statt einer festen Vorwarnzeit** (`data/galaxyConstants.ts`, `raids.ts`). Ablauf:
+    - **12 feste Piratenbasen-Positionen** (`PIRATE_BASES` in `galaxyConstants.ts`) ueber die
+      Galaxie verteilt - wie Spielerpositionen, aber nicht belegbar, sichtbar in der Galaxie-
+      Ansicht (🏴‍☠️-Markierung, ueber die neue `/game/galaxy`-Antwort `pirateBases` ausgeliefert).
+    - **Zwei-Phasen-Timing bei `spawnRaidAt()`:** Trigger (weiterhin die bestehenden 4 fixen
+      Tages-Checkpoints, 60% Chance, siehe Punkt 13) -> `RAID_PREP_MS` (60 Minuten, ersetzt die
+      alte feste `RAID_WARNING_MS`/30-Minuten-Vorwarnzeit) Vorbereitungszeit, WAEHREND der eine
+      zufaellig gewuerfelte Piratenbasis bereits feststeht -> danach echte Flugzeit von dieser
+      Basis zur Zielposition, berechnet mit DERSELBEN Distanz-/Flugzeit-Formel wie Spieler-Flotten
+      (`galaxyDistance()`/`galaxyDurationMs()` aus `galaxy.ts`, wiederverwendet statt dupliziert).
+    - **Distanz UND Flugzeit stehen sofort bei Trigger fest** (Basis- und Zielposition sind ja
+      beide sofort bekannt) - `arrivalTime` wird bereits in `spawnRaidAt()` vollstaendig berechnet,
+      keine nachtraegliche Neuberechnung beim tatsaechlichen Abflug noetig. Die "Abflug"-Phase
+      (`notifyRaidLaunchIfDue()`, ueber `launchNotified` einmalig abgesichert) verschickt nur eine
+      zweite, rein informative Nachricht ("Piratenflotte ist gestartet, Ankunft in X Minuten"),
+      wird sowohl im eigenen `processRaidTimer()` als auch in der Cross-User-Schleife
+      `processOverdueRaidsForOtherUsers()` geprueft (Punkt 25 gilt weiterhin: andere Spieler
+      muessen nicht selbst online sein, damit ihre Abflug-Nachricht verschickt wird).
+    - **Repraesentative Piraten-Flottengeschwindigkeit** (`PIRATE_FLEET_SPEED = 7000` in
+      `galaxyConstants.ts`) statt der "langsamstes Schiff"-Regel bei Spieler-Flotten - die
+      tatsaechliche Gegner-Zusammensetzung wird ja weiterhin erst beim Eintreffen gewuerfelt
+      (`generateFallbackFleet()` in `resolveRaid()`, unveraendert), ein fester Mittelwert ist
+      hier die einzig praktikable Wahl. Getestet: Gesamtzeit Trigger->Ankunft liegt damit typisch
+      bei 1h15min-1h40min (60 Minuten Vorbereitung + 15-40 Minuten Flug je nach Entfernung),
+      spuerbar laenger als frueher (fix 30 Minuten), aber immer noch planbar statt stundenlang.
+    - **Migration:** alte, vor dieser Erweiterung gespawnte Raids ohne `pirateBase`-Feld werden
+      beim naechsten `loadPlayerState()` sicherheitshalber verworfen (`state.raid = null`) statt
+      mit unvollstaendigen Werten weiterzurechnen - der naechste Checkpoint spawnt ganz regulaer
+      neu. Betrifft nur den kurzen Uebergangszeitraum, in dem zufaellig gerade ein Raid aktiv war.
+    - Raid-Verstaerkung (`raidReinforce.ts`, feste 1-Minute-Anflugzeit) bewusst UNVERAENDERT
+      gelassen - das ist ein separates System, dessen eigene Flugzeit-Herleitung (Distanz-basiert
+      wie bei Halten-Flotten) ein moeglicher naechster Schritt waere, aber nicht Teil dieser
+      Aenderung war.
