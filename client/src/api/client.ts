@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -92,8 +92,25 @@ export const api = {
   startParty: (opId: string) => request<PlayerState>('/game/party/start', { method: 'POST', body: JSON.stringify({ opId }) }),
   listActiveRaids: () => request<{ raids: ActiveRaidInfo[] }>('/game/raids/active'),
   getLeaderboard: () => request<{ leaderboard: LeaderboardEntry[] }>('/game/leaderboard'),
-  reinforceRaid: (targetUserId: number, ships: Record<string, number>) =>
-    request<PlayerState>('/game/raids/reinforce', { method: 'POST', body: JSON.stringify({ targetUserId, ships }) }),
   simulateCombat: (sektorId: string, selection: Record<string, number>) =>
     request<{ simulation: SimulationResult }>('/game/simulate', { method: 'POST', body: JSON.stringify({ sektorId, selection }) }),
+  getGalaxy: () =>
+    request<{
+      ownPosition: GalaxyPosition | null;
+      occupants: GalaxyOccupant[];
+      pirateBases: GalaxyPosition[];
+      sektorPositions: SektorGalaxyPosition[];
+      notrufPosition: GalaxyPosition;
+      incomingDeployments: IncomingDeployment[];
+      galaxySystems: number;
+      galaxyPositions: number;
+    }>('/game/galaxy'),
+  galaxyPreview: (ships: Record<string, number>, target: { targetUserId: number } | { targetPosition: GalaxyPosition }) =>
+    request<{ distance: number; durationMs: number; fuelCost: number }>('/game/galaxy/preview', {
+      method: 'POST',
+      body: JSON.stringify({ ships, ...target }),
+    }),
+  holdFleet: (targetUserId: number, ships: Record<string, number>) =>
+    request<PlayerState>('/game/galaxy/hold', { method: 'POST', body: JSON.stringify({ targetUserId, ships }) }),
+  recallHold: (deploymentId: string) => request<PlayerState>('/game/galaxy/recall', { method: 'POST', body: JSON.stringify({ deploymentId }) }),
 };
