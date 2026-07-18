@@ -148,7 +148,7 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   const creatorState = op.creatorId === state.userId ? state : loadPlayerState(op.creatorId);
   if (creatorState.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, creatorState.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships);
+    const speed = galaxyFleetSpeed(ships, state.research);
     const travelMs = galaxyDurationMs(distance, speed);
     me.rendezvousArrivalTime = Date.now() + (Number.isFinite(travelMs) ? travelMs : 0);
   } else {
@@ -235,7 +235,7 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg?.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(combinedShips);
+    const speed = galaxyFleetSpeed(combinedShips, state.research);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }

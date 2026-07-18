@@ -27,15 +27,21 @@ export function galaxyDistance(a: GalaxyPosition, b: GalaxyPosition): number {
   return GALAXY_DIFF_SYSTEM_BASE + GALAXY_DIFF_SYSTEM_FACTOR * sysDiff;
 }
 
-// Eine Flotte fliegt so schnell wie ihr langsamstes Schiff (wie in OGame).
-export function galaxyFleetSpeed(ships: Record<string, number>): number {
+// Eine Flotte fliegt so schnell wie ihr langsamstes Schiff (wie in OGame), zusaetzlich
+// beschleunigt durch die Antriebstechnik-Forschung des Absenders (3%/Stufe, bei Stufe 10 also
+// 30% schneller - siehe data/research.ts "antrieb"). `research` optional, damit bestehende
+// Aufrufe ohne Forschungskontext (z.B. reine Distanz-Vorschauen ohne Login-Kontext) nicht
+// brechen - ohne research-Parameter gilt einfach die reine Basisgeschwindigkeit.
+export function galaxyFleetSpeed(ships: Record<string, number>, research?: Record<string, number>): number {
   let slowest = Infinity;
   Object.entries(ships).forEach(([id, count]) => {
     if (!count) return;
     const ship = findShip(id);
     if (ship && ship.speed) slowest = Math.min(slowest, ship.speed);
   });
-  return slowest === Infinity ? 0 : slowest;
+  if (slowest === Infinity) return 0;
+  const antriebLevel = research?.antrieb || 0;
+  return slowest * (1 + antriebLevel * 0.03);
 }
 
 export function galaxyDurationMs(distance: number, speed: number): number {
@@ -97,7 +103,7 @@ export function startHoldDeployment(state: PlayerState, targetUserId: number, sh
   const targetState = loadPlayerState(targetUserId);
   if (!targetUser || !targetState.galaxyPosition) return { ok: false, error: 'Zielspieler nicht gefunden.' };
 
-  const speed = galaxyFleetSpeed(ships);
+  const speed = galaxyFleetSpeed(ships, state.research);
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
   const distance = galaxyDistance(state.galaxyPosition, targetState.galaxyPosition);
   const durationMs = galaxyDurationMs(distance, speed);
@@ -140,7 +146,7 @@ export function recallHoldDeployment(state: PlayerState, deploymentId: string): 
 
   const targetPos: GalaxyPosition = { system: deployment.targetSystem, position: deployment.targetPosition };
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const speed = galaxyFleetSpeed(deployment.ships);
+  const speed = galaxyFleetSpeed(deployment.ships, state.research);
   const durationMs = galaxyDurationMs(distance, speed);
   const fuelCost = galaxyFuelCost(deployment.ships, distance);
   if (state.resources.deuterium < fuelCost) {

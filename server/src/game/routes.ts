@@ -188,7 +188,7 @@ gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
     if (!target) return res.status(400).json({ error: 'Zielposition nicht verfügbar.' });
 
     const distance = galaxyDistance(state.galaxyPosition, target);
-    const speed = galaxyFleetSpeed(ships);
+    const speed = galaxyFleetSpeed(ships, state.research);
     const durationMs = galaxyDurationMs(distance, speed);
     const fuelCost = galaxyFuelCost(ships, distance);
     res.json({ distance, durationMs, fuelCost });

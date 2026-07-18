@@ -113,7 +113,7 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   for (const id of playerIds) {
     if ((state.fleet[id] || 0) < selection[id]) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
   }
-  const speed = galaxyFleetSpeed(selection);
+  const speed = galaxyFleetSpeed(selection, state.research);
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
 
   playerIds.forEach((id) => (state.fleet[id] -= selection[id]));

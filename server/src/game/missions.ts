@@ -81,7 +81,7 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships);
+    const speed = galaxyFleetSpeed(ships, state.research);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }
