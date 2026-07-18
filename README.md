@@ -1360,11 +1360,20 @@ aktuellen Kartenliste in `Forschung.tsx`).
       (`SCHIFF_KLASSEN` in `Werft.tsx`) - fuer die Antriebs-Zuordnung braeuchte `ShipDefinition`
       serverseitig (`data/ships.ts`) ein neues Feld (z.B. `driveType`), das dieselbe Zuordnung
       widerspiegelt.
-- **Wirtschaft & Logistik**: `mining` (Basis) → `bauzeit` (Zweig, wirkt auf Schiffe/Verteidigung/
-  Gebaeude gleichermassen, siehe Punkt 1) · `spionage` (aktuell: glaettet NPC-Flottenvarianz bei
-  generierten Piraten-/Notruf-Gegnern, siehe `combat.ts` `generatePiratenFleet()`/
-  `generateDefenseFleet()` - passt thematisch am ehesten hierher, da informations-/vorbereitungs-
-  bezogen statt reiner Kampfwert).
+- **Wirtschaft & Logistik** - Struktur final bestaetigt (siehe Ruecksprache), folgt demselben
+  Muster wie Antriebstechnik (allgemeine Basis + spezialisierte Zweige, die zusaetzlich
+  draufsatteln - nicht ersetzen):
+  - **Mining-Zweig:** `mining` (Basis, wirkt weiterhin auf BEIDES wie bisher, siehe Punkt 58) →
+    zwei spezialisierte Unter-Technologien obendrauf: "Mining-Boost fuer Mining-Schiffe" (nur
+    Schiffs-Ertrag) und "Mining-Boost fuer Minen" (nur passive Gebaeude-Produktion, siehe
+    Gebaeude-System Punkt 47). Beide NEU, existieren aktuell noch nicht als eigene Forschung.
+  - **Bauzeit-Zweig:** `bauzeit` (Basis, verkuerzt weiterhin ALLES wie bisher: Gebaeude+Schiffe+
+    Verteidigung, siehe Punkt 1) → drei spezialisierte Unter-Technologien obendrauf: "Bauzeit
+    Gebaeude", "Bauzeit Schiffe", "Bauzeit Verteidigung" - jede zusaetzlich stapelnd fuer genau
+    diese eine Kategorie. Alle drei NEU, existieren aktuell noch nicht als eigene Forschung.
+  - **Spionage-Zweig:** `spionage` (Basis) bleibt eigenstaendig, KEINE weiteren Unter-Technologien
+    geplant - aktuell ohnehin nur ein Platzhalter-Mechanismus (glaettet NPC-Flottenvarianz, siehe
+    `combat.ts`), noch keine ausgebaute Spielfunktion dahinter.
 
 **Offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
 1. Exakte Voraussetzungs-Stufen zwischen den Technologien (z.B. "Zielerfassung ab Waffentechnik
