@@ -1395,3 +1395,18 @@ testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehend
 einfuehren OHNE UI-Aenderung, dann erst die Baum-UI nachziehen) statt eines einzigen grossen
 Umbaus.
 
+### Benoetigte neue Forschungsbilder
+
+Jede Forschung hat bisher ein eigenes Bild (`client/public/research/*.png`, siehe die 13
+bestehenden). Mit den neuen Verzweigungen (siehe oben) kommen **8 komplett neue Technologien**
+dazu, die noch KEIN Bild haben - Liste zur Vorbereitung, ID-Namen noch nicht final/nur zur
+Orientierung (werden bei der eigentlichen Umsetzung final vergeben):
+
+- **Antriebstechnik (3 neue):** Raketenantrieb, Impulsantrieb, Hyperraumantrieb
+- **Wirtschaft/Mining (2 neue):** Mining-Boost fuer Mining-Schiffe, Mining-Boost fuer Minen
+- **Wirtschaft/Bauzeit (3 neue):** Bauzeit Gebaeude, Bauzeit Schiffe, Bauzeit Verteidigung
+
+Die bestehenden 13 Forschungen (inkl. der erst kuerzlich ergaenzten Antriebstechnik-Basis,
+Punkt 62) behalten ihre vorhandenen Bilder unveraendert - nur diese 8 neuen Zweige brauchen
+neues Bildmaterial, sobald die Umsetzung beginnt.
+
