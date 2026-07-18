@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage } from '../types/game';
 
@@ -118,7 +119,9 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
 function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }) {
   if (!msg.detail) return null;
 
-  return (
+  // Per Portal gerendert - siehe Kommentar in components/InfoModal.tsx (Stacking-Context-Falle
+  // durch backdrop-filter auf #mainbar, sonst von der Ressourcenleiste teilweise verdeckt).
+  return createPortal(
     <div id="combat-modal" style={{ display: 'flex' }} onClick={onClose}>
       <div id="modal-box" onClick={(e) => e.stopPropagation()}>
         <button id="modal-close" onClick={onClose}>
@@ -187,7 +190,8 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
