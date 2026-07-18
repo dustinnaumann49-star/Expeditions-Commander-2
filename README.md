@@ -1375,20 +1375,39 @@ aktuellen Kartenliste in `Forschung.tsx`).
     geplant - aktuell ohnehin nur ein Platzhalter-Mechanismus (glaettet NPC-Flottenvarianz, siehe
     `combat.ts`), noch keine ausgebaute Spielfunktion dahinter.
 
-**Offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
-1. Exakte Voraussetzungs-Stufen zwischen den Technologien (z.B. "Zielerfassung ab Waffentechnik
-   Stufe 3") - im Entwurf oben bewusst nicht festgelegt.
+**Offene Fragen fuer die eigentliche Umsetzung:**
+1. **GEKLAERT:** einheitlich Stufe 3 als Voraussetzungs-Schwelle fuer JEDE Eltern→Kind-Verbindung
+   im gesamten Baum (z.B. "Zielerfassung ab Waffen Stufe 3", "Praezision ab Zielerfassung Stufe 3",
+   ebenso bei allen Antriebsklassen- und Wirtschafts-Zweigen ab ihrer jeweiligen Basis) - kein
+   Sonderfall pro Zweig, leicht zu merken.
 2. Migration bestehender Spielstaende: aktuelle Forschungsstufen (0-10 pro Technologie) muessten
    unveraendert in die neue Struktur uebernommen werden koennen, ohne Fortschritt zu verlieren.
 3. Bleibt `MAX_RESEARCH_LEVEL = 10` pro Unter-Technologie erhalten, oder aendert sich das mit
    mehr Technologien insgesamt (Balance-Frage - mehr Techs bedeuten mehr Gesamt-Nutzen, wenn
    jede weiterhin bis Stufe 10 skaliert)?
-4. UI-Ansatz: eigene Baum-/Graph-Darstellung (wie im Referenzbild, mit Verbindungslinien) ist
-   deutlich aufwendiger als die aktuelle Kartenliste - client-seitig voraussichtlich eine der
-   groesseren UI-Neuentwicklungen des Projekts.
+4. **GEKLAERT:** doch eine ECHTE grafische Baum-Darstellung mit Verbindungslinien (nicht die
+   bestehende Karten-/Listenoptik wie im Rest der App) - war der urspruengliche Ansporn fuer die
+   ganze Idee, bewusste Kurskorrektur gegenueber der anfaenglichen Empfehlung (Karten
+   beizubehalten). Design-Vorgaben:
+   - **Groessenhierarchie wie ein echter Baum:** Basis-Forschung jedes Hauptbereichs deutlich
+     GROESSER dargestellt (dicker "Stamm"), Zweige/Unter-Technologien kleiner ("Aeste") -
+     visuelle Groesse spiegelt die Position im Baum wider, nicht nur Verbindungslinien allein.
+   - **Jeder Knoten bleibt bewusst SCHLANK:** nur Bild, Name und ein "Forschen"-Button sichtbar -
+     KEINE Kosten/Effekt-Details direkt am Knoten (anders als z.B. die aktuelle Forschungs-
+     Kartenliste, die Kosten/Bauzeit/Effekt direkt zeigt).
+   - **Alle Details (Kosten, Bauzeit, Effekt pro Stufe, aktuelle Stufe, Lore) hinter einem
+     Info-Popup pro Forschung versteckt** - reuse des bestehenden `InfoModal`-Musters
+     (`components/InfoModal.tsx`), das an anderer Stelle im Projekt schon durchgaengig genutzt
+     wird (Werft/Verteidigung/Gebaeude/Sektor, siehe Punkt 12/14). Kein neues Popup-Muster
+     noetig, nur inhaltlich pro Forschungsknoten befuellt statt wie bisher direkt auf der Karte.
+   - Damit einher geht zwangslaeufig ein groesserer client-seitiger UI-Aufwand als eine reine
+     Kartenliste (Positionierung der Knoten, SVG/CSS-Verbindungslinien zwischen Eltern und
+     Kindern, Groessen-Skalierung) - bewusst in Kauf genommen, da genau dieser Baum-Stil der
+     eigentliche Wunsch war.
 5. Sollen komplett NEUE Technologien (ueber die aktuellen 13 hinaus) im Zuge des Umbaus ergaenzt
    werden (wie im Referenzbild angedeutet: "Hyperraumantrieb", "Kuenstliche Intelligenz"), oder
-   zunaechst nur die BESTEHENDEN 13 in Baumform neu anordnen?
+   zunaechst nur die BESTEHENDEN 13 (+ die 8 neuen Zweige aus der Gruppierung oben) in Baumform
+   neu anordnen?
 
 **Empfehlung bei Umsetzungsbeginn:** wie beim Galaxie-Umbau in mehreren kleinen, einzeln
 testbaren Schritten vorgehen (z.B. zuerst nur Voraussetzungen zwischen bestehenden Technologien
