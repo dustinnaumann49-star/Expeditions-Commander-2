@@ -5,7 +5,7 @@ import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, computeDomeSharedPool, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy, getCritChance } from '../lib/combatInfo';
-import { getBauzeitMultiplier } from '../lib/multipliers';
+import { getDefenseBauzeitMultiplier } from '../lib/multipliers';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
@@ -16,7 +16,7 @@ export function VerteidigungPage() {
   if (!gameData || !state) return <p>Lade...</p>;
 
   const domePool = computeDomeSharedPool(gameData, state.defense, state.research);
-  const bauzeitMult = getBauzeitMultiplier(gameData, state);
+  const bauzeitMult = getDefenseBauzeitMultiplier(gameData, state);
   const infoDef = infoDefId ? gameData.defenses.find((d) => d.id === infoDefId) : null;
 
   return (
