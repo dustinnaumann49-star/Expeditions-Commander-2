@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Fehlerbehebung: Raids und Notrufe lösten kaum noch aus',
+    changes: [
+      'Bug behoben, durch den Piratenraids und Notruf-Events bei aktivem Spielen praktisch nie mehr ausgelöst wurden - beide sollten jetzt zuverlässig zu ihren Check-Zeiten auftauchen.',
+      'Check-Zeiten laufen jetzt in deutscher Ortszeit statt UTC: Raid um 0/6/12/18 Uhr, Notruf um 3/9/15/21 Uhr - beide wechseln sich im 3-Stunden-Rhythmus ab, statt gleichzeitig zu starten.',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Raid-Hilfe entfernt – "Halten" ist jetzt der einzige Weg zu helfen',
     changes: [
       'Die alte Raid-Hilfe (Flotte für 1 Minute zu einem laufenden Angriff schicken, kehrt danach automatisch heim) gibt es nicht mehr - sie war überflüssig, seit haltende Flotten automatisch mitverteidigen.',
