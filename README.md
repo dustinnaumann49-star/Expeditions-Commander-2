@@ -1312,8 +1312,8 @@ zwischen Technologien), Server-Logik (`startResearch()` muesste Voraussetzungen 
 Kosten/Slot), und komplett neue UI (Baum-/Graph-Darstellung mit Verbindungslinien statt der
 aktuellen Kartenliste in `Forschung.tsx`).
 
-**Grober Vorschlag fuer die Gruppierung der 13 bestehenden Forschungen in 4 Hauptbereiche**
-(nur ein erster Entwurf, keine finale Entscheidung):
+**Gruppierung der 13 bestehenden Forschungen in 4 Hauptbereiche - vom Nutzer BESTAETIGT**
+(nicht mehr nur Entwurf, siehe Ruecksprache):
 
 - **Waffensysteme** (Angriff): `waffen` (Basis) → `zielerfassung` (Zweig) → `durchschlag` (Zweig)
   → `kritischetreffer` (baut auf `zielerfassung` auf) · `praezision` evtl. ebenfalls hier
@@ -1321,10 +1321,26 @@ aktuellen Kartenliste in `Forschung.tsx`).
 - **Verteidigungssysteme**: `schild` (Basis) → `schildregeneration` (Zweig) · `panzerung` (Basis,
   parallel) → `ausweichen` (Zweig, baut auf `panzerung` auf - thematisch: schwere Panzerung
   ermoeglicht ausweichende Manöver? Oder eher eigener Zweig ohne Voraussetzung, noch zu klaeren).
-- **Antriebstechnik** (Mobilitaet): `antrieb` (Basis, Punkt 62) → Raum fuer kuenftige Unter-
-  Technologien (z.B. Treibstoffeffizienz/geringerer Verbrauch, wie im Referenzbild
-  "Optimierte Antriebssysteme"/"Hyperraumantrieb" angedeutet - aktuell nur EIN Basis-Wert ohne
-  Verzweigung, siehe Punkt 62).
+- **Antriebstechnik** (Mobilitaet) - NEU KONKRETISIERT (siehe Ruecksprache): statt eines einzigen
+  `antrieb`-Basiswerts (Punkt 62, wirkt aktuell FLACH auf ALLE Schiffe gleichermassen) soll es
+  mehrere Antriebs-KLASSEN geben, jede mit eigenem Forschungs-Zweig: **Raketenantrieb** (kleine/
+  leichte Schiffe), **Impulsantrieb** (mittlere Schiffe), **Hyperraumantrieb** (schwere/Kapital-
+  Schiffe). Jedes Schiff braucht dafuer eine Antriebsklassen-Zuordnung (neues Feld in
+  `ShipDefinition`, z.B. `driveType: 'rakete' | 'impuls' | 'hyperraum'`), die Flugzeit-Formel
+  (`galaxyFleetSpeed()` in `galaxy.ts`) muesste dann bei GEMISCHTEN Flotten die Antriebsklasse DES
+  langsamsten Schiffs ermitteln und NUR dessen zugehoerige Forschungsstufe anwenden (nicht mehr
+  einen einzigen flachen `antrieb`-Wert fuer die gesamte Flotte).
+  - **Offene Fragen dazu, noch NICHT entschieden:** welches der 15 Schiffe gehoert zu welcher
+    Antriebsklasse (grobe Erwartung: kleine/schnelle Schiffe wie Leichter/Schwerer Jaeger,
+    Begleitschiff -> Rakete; mittlere wie Kreuzer/Schlachtschiff/Bomber/Salvenjaeger/-kreuzer ->
+    Impuls; schwere/Kapital-Schiffe wie Schlachtkreuzer/Zerstoerer/Reaper/Sandronator/Imperator/
+    Salvendreadnought -> Hyperraum - nur eine erste Einschaetzung, keine finale Zuordnung); ob der
+    Prozentbonus pro Stufe fuer alle drei Antriebsklassen gleich bleibt (3%/Stufe wie bisher) oder
+    sich unterscheidet (z.B. Hyperraumantrieb pro Stufe staerker, da seltener/teurer erforscht);
+    was mit der bereits ausgelieferten, einzelnen `antrieb`-Forschung (Punkt 62) passiert - wird
+    sie komplett durch die drei neuen Antriebsklassen ERSETZT (Migration bestehender Spielerstufen
+    noetig, z.B. 1:1 auf alle drei Zweige uebertragen) oder bleibt sie als vierter, uebergreifender
+    Zweig zusaetzlich bestehen?
 - **Wirtschaft & Logistik**: `mining` (Basis) → `bauzeit` (Zweig, wirkt auf Schiffe/Verteidigung/
   Gebaeude gleichermassen, siehe Punkt 1) · `spionage` (aktuell: glaettet NPC-Flottenvarianz bei
   generierten Piraten-/Notruf-Gegnern, siehe `combat.ts` `generatePiratenFleet()`/
