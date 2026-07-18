@@ -700,3 +700,8 @@ client/
       (Punkt 24) auf 700x382 verkleinert und als komprimiertes JPEG abgelegt (~66-71 KB statt der
       ursprünglich hochgeladenen ~1408x768-PNGs) - wichtig für Mobil-Ladezeiten. `img`-Feld in
       `data/buildings.ts` entsprechend auf `.jpg` umgestellt.
+    - **Energie-Anzeige in der Kopfleiste** (`ResourceBar.tsx`): Format `Erzeugt/Verbraucht`
+      (z.B. `60/30`), rot eingefärbt bei Energiedefizit. Nutzt bevorzugt `state.energyProduced`/
+      `state.energyConsumed` aus der Server-Antwort (siehe `routes.ts`), faellt aber auf die
+      client-seitigen `getEnergyProduced()`/`getEnergyConsumed()` aus `multipliers.ts` zurueck,
+      falls diese Felder (z.B. bei aeltern gecachten Antworten) fehlen sollten.
