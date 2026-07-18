@@ -4,6 +4,7 @@ import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { LoreModal } from '../components/LoreModal';
 import { getForschungszeitMultiplier } from '../lib/multipliers';
+import { GebaeudePage } from './Gebaeude';
 
 function researchCostForLevel(baseCost: { metall: number; kristall: number; deuterium: number }, costGrowth: number, level: number) {
   const f = Math.pow(costGrowth, level - 1);
@@ -18,7 +19,7 @@ function researchTimeForLevel(baseTimeHours: number, timeGrowth: number, level: 
   return baseTimeHours * Math.pow(timeGrowth, level - 1) * 3600 * 1000 * multiplier;
 }
 
-export function ForschungPage() {
+function ForschungListView() {
   const { gameData, state, startResearch, error } = useGame();
   const [, forceTick] = useState(0);
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
@@ -107,6 +108,29 @@ export function ForschungPage() {
         })}
       </div>
       <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />
+    </div>
+  );
+}
+
+const FORSCHUNG_TABS = [
+  { id: 'forschung', name: 'Forschung' },
+  { id: 'gebaeude', name: 'Gebäude' },
+];
+
+export function ForschungPage() {
+  const [tab, setTab] = useState<'forschung' | 'gebaeude'>('forschung');
+
+  return (
+    <div>
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {FORSCHUNG_TABS.map((t) => (
+          <button key={t.id} className={`nav-btn${tab === t.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(t.id as any)}>
+            {t.name}
+          </button>
+        ))}
+      </div>
+      {tab === 'forschung' && <ForschungListView />}
+      {tab === 'gebaeude' && <GebaeudePage />}
     </div>
   );
 }
