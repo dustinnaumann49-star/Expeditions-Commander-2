@@ -37,6 +37,21 @@ export interface DefenseDefinition {
   isDome?: boolean;
 }
 
+export interface BuildingDefinition {
+  id: string;
+  name: string;
+  img: string;
+  lore: string;
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie' | 'roboter' | 'nanit';
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+  baseOutput?: number;
+  baseEnergyUse?: number;
+  baseEnergyOutput?: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -52,6 +67,7 @@ export interface ResearchDefinition {
 export interface BuildJob {
   shipId?: string;
   defId?: string;
+  buildingId?: string;
   count: number;
   startTime: number;
   endTime: number;
@@ -252,6 +268,8 @@ export interface PlayerState {
   buildQueue: BuildJob[];
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
+  buildings: Record<string, number>;
+  buildingQueue: BuildJob[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];
@@ -264,6 +282,8 @@ export interface PlayerState {
   nextEventCheck: number;
   lastUpdate: number;
   serverTime?: number;
+  energyProduced?: number;
+  energyConsumed?: number;
   stats: PlayerStats;
 }
 
@@ -335,6 +355,8 @@ export interface GameData {
   ships: ShipDefinition[];
   defenses: DefenseDefinition[];
   research: ResearchDefinition[];
+  buildings: BuildingDefinition[];
+  maxBuildingSlots: number;
   sektoren: SektorDefinition[];
   sektorConfig: Record<string, SektorConfig>;
   piratenMultiplierRoll: Record<string, number[]>;
