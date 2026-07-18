@@ -26,17 +26,34 @@ function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefen
   return Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
 }
 
-// Spiegelt server/src/game/actions.ts's bauzeitMultiplier() 1:1 - Bauzeit-Forschung reduziert bis
-// maximal 70% (Faktor min. 0.3), der "bautempo"-Booster halbiert das Ergebnis zusaetzlich,
-// Roboter-/Nanitenfabrik beschleunigen zusaetzlich (siehe roboterNaniteFactor).
+// Spiegelt server/src/game/actions.ts's specificTimeMultiplier() 1:1 - die Forschungsbaum-Zweige
+// "Bauzeit: X" stapeln zusaetzlich zur Basis-Forschung, jeweils nur fuer EINE Kategorie.
+function specificTimeMultiplier(level: number, effectPerLevel: number): number {
+  return Math.max(0.5, 1 - level * effectPerLevel);
+}
+
+// Spiegelt server/src/game/actions.ts's bauzeitMultiplier() 1:1 - jetzt SCHIFF-spezifisch
+// (Bauzeit-Forschung reduziert bis maximal 70%, der "bautempo"-Booster halbiert das Ergebnis
+// zusaetzlich, Roboter-/Nanitenfabrik beschleunigen zusaetzlich, "Bauzeit: Schiffe" stapelt
+// obendrauf).
 export function getBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'shipDefense');
+  const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+}
+
+// NEU: spiegelt server/src/game/actions.ts's defenseBauzeitMultiplier() 1:1 - fuer die
+// Bauzeit-Anzeige auf der Verteidigungs-Seite (vorher gemeinsam mit Schiffen ueber
+// getBauzeitMultiplier() berechnet).
+export function getDefenseBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
+  const specific = specificTimeMultiplier(state.research.bauzeit_verteidigung || 0, 0.03);
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'shipDefense') * specific;
 }
 
 // Spiegelt server/src/game/actions.ts's gebaeudeBauzeitMultiplier() 1:1 - fuer die Bauzeit-Anzeige
-// auf der Gebaeude-Seite.
+// auf der Gebaeude-Seite ("Bauzeit: Gebaeude" stapelt zusaetzlich zur Basis).
 export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'building');
+  const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'building') * specific;
 }
 
 // ---- Gebaeude: Energie + Produktion (spiegelt server/src/game/actions.ts 1:1) ----
@@ -46,7 +63,17 @@ function levelScaledValue(base: number, level: number): number {
 }
 
 export function getMiningMultiplier(state: PlayerState): number {
-  return 1 + (state.research.mining || 0) * 0.1;
+  // Basis (research.mining) wirkt auf BEIDES, "Mining-Boost: Schiffe" stapelt NUR fuer
+  // Mining-Schiffe obendrauf (Pendant fuer Gebaeude: getMiningBuildingMultiplier()).
+  const base = 1 + (state.research.mining || 0) * 0.1;
+  const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
+  return base * specific;
+}
+
+export function getMiningBuildingMultiplier(state: PlayerState): number {
+  const base = 1 + (state.research.mining || 0) * 0.1;
+  const specific = 1 + (state.research.mining_minen || 0) * 0.05;
+  return base * specific;
 }
 
 export function getEnergyProduced(gameData: GameData, state: PlayerState): number {
@@ -75,7 +102,7 @@ export function getMineOutputPerHour(gameData: GameData, state: PlayerState, bui
   const building = gameData.buildings.find((b) => b.id === buildingId);
   if (!building || !building.baseOutput) return 0;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  return base * getEnergyFactor(gameData, state) * getMiningMultiplier(state);
+  return base * getEnergyFactor(gameData, state) * getMiningBuildingMultiplier(state);
 }
 
 // Spiegelt server/src/game/actions.ts's researchTimeMultiplier() 1:1 - nur der
