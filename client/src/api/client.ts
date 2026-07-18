@@ -51,6 +51,8 @@ export const api = {
     request<PlayerState>('/game/build/ship', { method: 'POST', body: JSON.stringify({ shipId, qty }) }),
   buildDefense: (defId: string, qty: number) =>
     request<PlayerState>('/game/build/defense', { method: 'POST', body: JSON.stringify({ defId, qty }) }),
+  buildBuilding: (buildingId: string) =>
+    request<PlayerState>('/game/build/building', { method: 'POST', body: JSON.stringify({ buildingId }) }),
   startResearch: (techId: string) =>
     request<PlayerState>('/game/research/start', { method: 'POST', body: JSON.stringify({ techId }) }),
   buildImperator: () => request<PlayerState>('/game/imperator/build', { method: 'POST' }),
