@@ -61,6 +61,9 @@ server/
   src/game/data/economy.ts           Booster, Gutscheine, Container, NPC-Spezial-Einheiten,
                                       Event-/Raid-/Asteroiden-Konstanten
   src/game/data/combatConstants.ts   RAPIDFIRE-Tabelle, ZIELERFASSUNG_BASE, MAX_*-Konstanten
+  src/game/data/buildings.ts         Alle Gebäudedaten (Metall-/Kristall-/Deuteriummine,
+                                      Solarkraftwerk, Roboter-/Nanitenfabrik: Kosten, Bauzeit,
+                                      Ertrag/Energie pro Stufe)
   src/game/data/changelog.ts         CHANGELOG - spielerlesbare Update-Historie fuer die
                                       Im-Spiel-Updates-Seite (client/src/pages/Updates.tsx)
 
@@ -79,7 +82,8 @@ client/
   src/lib/format.ts                  formatTime() - Wochen/Tage/Stunden/Minuten/Sekunden
   src/lib/combatInfo.ts              RapidFire-Anzeige, Zielerfassung/Präzision/Schild-Regen-
                                       Berechnung für die UI (Kampf-Werte-Anzeige)
-  src/lib/multipliers.ts             Bauzeit-/Forschungszeit-Multiplikator (Forschung + Booster)
+  src/lib/multipliers.ts             Bauzeit-/Forschungszeit-Multiplikator (Forschung + Booster +
+                                      Roboter-/Nanitenfabrik), Energie-/Minen-Produktionsformeln
                                       MUSS bei jeder Zeit-Anzeige verwendet werden, siehe unten
 
   src/components/ResourceBar.tsx     Kopfleiste: Ressourcen, Uhr, Abmelden
@@ -94,7 +98,9 @@ client/
   src/pages/Login.tsx                 Login/Registrierung
   src/pages/Werft.tsx                 Schiffe bauen
   src/pages/Verteidigung.tsx          Verteidigungsanlagen bauen
-  src/pages/Forschung.tsx             Forschung
+  src/pages/Forschung.tsx             Forschung + Untertab "Gebäude" (rendert Gebaeude.tsx)
+  src/pages/Gebaeude.tsx               Gebäude ausbauen (kein eigener Nav-Punkt, nur als
+                                      Untertab von Forschung eingebunden)
   src/pages/Sektor.tsx                Solo-Missionen + Untertab "Kampfsimulator"
                                       (Asteroiden-Feld / Piraten-Sektor / Simulator)
   src/pages/Simulator.tsx             Kampfsimulator-Ansicht (kein eigener Nav-Punkt, nur als
@@ -639,3 +645,58 @@ client/
     `u.dmgDealt || 0` ab (aeltere, bereits gespeicherte Nachrichten haben das Feld noch nicht).
     Balance-Entscheidungen zu Schiffs-Feuerkraft (z.B. Salvenschiffe) sollten ab jetzt anhand
     dieser neuen Spalte getroffen werden, nicht anhand von "Schaden erlitten".
+
+47. **Neues System: Gebäude** (`data/buildings.ts`, `actions.ts`, `pages/Gebaeude.tsx` als
+    Untertab von `Forschung.tsx`). Sechs Typen: Metallmine, Kristallmine, Deuterium-
+    Synthetisierer, Solarkraftwerk, Roboterfabrik, Nanitenfabrik. Zentrale Design-Entscheidungen:
+    - **Stufensystem statt Stückzahl** (wie Forschung, nicht wie Schiffe): jedes Gebäude existiert
+      pro Spieler genau einmal und wird über Stufen ausgebaut (`state.buildings: Record<string,
+      number>`). Kein Stufen-Limit - passend zur bestehenden Design-Philosophie (Punkt 8:
+      bewusst unbegrenzt statt Deckelung).
+    - **Ein einziger globaler Bauslot fuer ALLE Gebäude zusammen** (`MAX_BUILDING_SLOTS = 1` in
+      `combatConstants.ts`), anders als Schiffe/Verteidigung mit mehreren Lane-Slots. Modelliert
+      als `state.buildingQueue: BuildJob[]` (immer max. 1 Eintrag), damit sich die bestehende
+      `BuildQueue.tsx`-Komponente (Lane-basiert, `maxSlots`-Parameter) unveraendert mit
+      `maxSlots={1}` wiederverwenden laesst, statt eine eigene Anzeige-Komponente zu bauen.
+    - **Energie-System, an OGame angelehnt:** die drei Minen verbrauchen Energie
+      (`baseEnergyUse * Stufe * 1,1^Stufe` je Mine), das Solarkraftwerk erzeugt sie
+      (`baseEnergyOutput * Stufe * 1,1^Stufe`). Reicht die Energie nicht, wird die Produktion
+      ALLER Minen gemeinsam gedrosselt (`energyFactor() = min(1, erzeugt/verbraucht)` in
+      `actions.ts`, nie ein Bonus bei Ueberschuss). Getestet: bei Metallmine Stufe 5 +
+      Solarkraftwerk Stufe 3 ergab sich ein Energiefaktor von ~92% (5.191 erzeugt vs. 5.637
+      benoetigt), die tatsaechliche Stundenproduktion lag entsprechend unter dem theoretischen
+      Maximum - Drosselung greift korrekt, kein Energie-Ueberschuss-Bonus entsteht.
+    - **Roboterfabrik/Nanitenfabrik verkuerzen Bauzeiten MULTIPLIKATIV (kompoundierend) pro
+      Stufe, nicht linear** - linear wuerde bei wenigen Stufen zu negativen/Null-Bauzeiten
+      fuehren. Gebaeude werden staerker beschleunigt (Roboterfabrik 25%/Stufe, Nanitenfabrik
+      50%/Stufe: `0,75^Stufe` bzw. `0,5^Stufe`) als Schiffe/Verteidigung (1%/2% pro Stufe:
+      `0,99^Stufe` bzw. `0,98^Stufe`), da fuer Gebaeude ohnehin nur der eine globale Bauslot
+      existiert. Beide Effekte stapeln sich multiplikativ. Getestet: Roboterfabrik Stufe 10 +
+      Nanitenfabrik Stufe 5 ergab einen Gebaeude-Zeitfaktor von ~0,18% (nie negativ/Null) und
+      einen Schiffs-/Verteidigungs-Zeitfaktor von ~81,7% - beide Faktoren fliessen zusaetzlich zur
+      bestehenden Bauzeit-Forschung/`bautempo`-Booster ein (`bauzeitMultiplier()` fuer
+      Schiffe/Verteidigung, neues `gebaeudeBauzeitMultiplier()` fuer Gebaeude - beide teilen sich
+      dieselbe Forschungs-/Booster-Basis ueber `baseTimeMultiplier()`, um Punkt 1 (Zeit-Anzeige
+      MUSS Multiplikator nutzen) konsistent zu erfuellen). Client spiegelt beide Funktionen 1:1 in
+      `multipliers.ts`.
+    - **Mining-Effizienz-Forschung (`research.mining`) wirkt jetzt auf ZWEI Systeme** statt nur
+      auf Mining-Schiffe: dieselbe Forschung boostet jetzt auch die Minen-Produktion
+      (`miningMultiplier()` aus `missions.ts` wurde dafuer exportiert und in `actions.ts`
+      wiederverwendet, statt einen zweiten, unabhaengigen Bonus einzufuehren) - EIN
+      Wirtschaftssystem statt zweier getrennter.
+    - **Passive Produktion laeuft ueber dasselbe "catch up"-Prinzip wie alles andere** (Punkt zu
+      `tick()`): `accrueBuildingProduction()` rechnet die seit `lastUpdate` vergangene Zeit als
+      Minen-Ertrag hoch, unabhaengig davon, ob der Spieler online ist. Getestet: 1 simulierte
+      Stunde mit Metallmine Stufe 5 (kein Solarkraftwerk) ergab exakt den erwarteten,
+      energiegedrosselten Stundenertrag als Ressourcen-Zuwachs.
+    - **`loadPlayerState()` migriert fehlende Gebaeude-Stufen automatisch** (analog Punkt 33 zu
+      Forschungsfeldern): Abgleich gegen `BUILDINGS` deckt automatisch alle aktuellen und
+      kuenftigen Gebaeudetypen ab, `buildingQueue` wird bei Bedarf auf `[]` nachgeruestet.
+    - **UI-Platzierung bewusst als Untertab** von `Forschung.tsx` statt eigener Sidebar-Punkt
+      (Punkt 11: Sidebar schlank halten) - `ForschungPage` wurde dafuer in einen duennen
+      Tab-Wrapper plus die bisherige Ansicht als `ForschungListView` aufgeteilt.
+    - Bilder unter `client/public/buildings/*.png` (metallmine, kristallmine, deuteriummine,
+      solarkraftwerk, roboterfabrik, nanitenfabrik) existieren noch nicht - der bestehende
+      `onError`-Fallback blendet das Bild dann aus, Rest der Karte bleibt voll funktional. Bei
+      Lieferung der Bilder reicht das Ablegen unter diesen Pfaden, kein Code muss angepasst
+      werden.
