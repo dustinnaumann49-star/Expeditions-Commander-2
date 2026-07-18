@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import type { GameData } from '../types/game';
 
 interface LoreTarget {
@@ -12,7 +13,9 @@ export function LoreModal({ target, gameData, onClose }: { target: LoreTarget | 
   const entry = list.find((e) => e.id === target.id);
   if (!entry) return null;
 
-  return (
+  // Per Portal gerendert - siehe Kommentar in InfoModal.tsx (Stacking-Context-Falle durch
+  // backdrop-filter auf #mainbar, sonst von der Ressourcenleiste teilweise verdeckt).
+  return createPortal(
     <div id="combat-modal" style={{ display: 'flex' }} onClick={onClose}>
       <div id="modal-box" onClick={(e) => e.stopPropagation()}>
         <button id="modal-close" onClick={onClose}>
@@ -29,6 +32,7 @@ export function LoreModal({ target, gameData, onClose }: { target: LoreTarget | 
           {entry.lore || 'Zu diesem Eintrag ist noch keine Geschichte bekannt.'}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
