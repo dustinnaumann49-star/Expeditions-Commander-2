@@ -5,6 +5,8 @@ import {
   ALLY_STATS,
   rollFixedCheckpoints,
 } from './data/economy.js';
+import { NOTRUF_POSITION } from './data/galaxyConstants.js';
+import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -28,16 +30,33 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 // Spawnt ein Notruf-Event ausgehend vom TATSAECHLICHEN Checkpoint-Zeitpunkt (nicht "jetzt") -
-// siehe spawnRaidAt() in raids.ts fuer denselben Gedanken beim Raid-Pendant.
+// siehe spawnRaidAt() in raids.ts fuer denselben Gedanken beim Raid-Pendant. `deadline` ist die
+// Frist zum LOSSCHICKEN, nicht zur Ankunft - die Flugzeit (siehe startEventMission()) kommt erst
+// danach obendrauf.
 function spawnEventAt(state: PlayerState, checkpointTime: number): void {
-  state.event = { id: 'event_' + checkpointTime, name: pickRandom(EVENT_NAMES), spawnedAt: checkpointTime, deadline: checkpointTime + EVENT_WINDOW_MS, started: false };
-  pushMessage(state, 'kampf', `Notruf empfangen: ${state.event.name}. Zeit zum Eingreifen: ${Math.round(EVENT_WINDOW_MS / 60000)} Minuten.`);
+  state.event = {
+    id: 'event_' + checkpointTime,
+    name: pickRandom(EVENT_NAMES),
+    spawnedAt: checkpointTime,
+    deadline: checkpointTime + EVENT_WINDOW_MS,
+    started: false,
+    ships: {},
+    arriveTime: 0,
+  };
+  pushMessage(
+    state,
+    'kampf',
+    `Notruf empfangen: ${state.event.name} (Position 1:${NOTRUF_POSITION.system}:${NOTRUF_POSITION.position}). Zeit zum Losschicken: ${Math.round(EVENT_WINDOW_MS / 60000)} Minuten - danach kommt noch die Flugzeit deiner Flotte dazu.`
+  );
 }
 
-export function processEventTimer(state: PlayerState) {
+export async function processEventTimer(state: PlayerState) {
   const now = Date.now();
-  if (state.event && now > state.event.deadline && !state.event.started) {
+  if (state.event && !state.event.started && now > state.event.deadline) {
     state.event = null;
+  }
+  if (state.event && state.event.started && now >= state.event.arriveTime) {
+    await resolveEventCombat(state);
   }
   if (now < state.nextEventCheck) return;
   if (state.event) return;
@@ -45,12 +64,10 @@ export function processEventTimer(state: PlayerState) {
 }
 
 /**
- * Pendant zu processOverdueRaidSpawnsForOtherUsers/processOverdueRaidsForOtherUsers (raids.ts),
- * bisher aber komplett gefehlt: Notruf-Events wurden ausschliesslich im processEventTimer des
- * betroffenen Spielers selbst gespawnt UND abgelaufen/verworfen (Deadline ueberschritten ohne
- * Eingreifen). War der Spieler laengere Zeit offline, blieb sein naechster Checkpoint einfach
- * liegen, bis er selbst wieder online kam - kein anderer Spieler konnte das anstossen. Wird bei
- * JEDEM tick() zusaetzlich zum eigenen processEventTimer aufgerufen.
+ * Pendant zu processOverdueRaidSpawnsForOtherUsers/processOverdueRaidsForOtherUsers (raids.ts):
+ * verwirft abgelaufene (nie losgeschickte) Notrufe UND loest bereits angekommene (gestartete)
+ * Notrufe auf UND wuerfelt faellige Checkpoints - alles auch fuer Spieler, die gerade nicht selbst
+ * online sind. Wird bei JEDEM tick() zusaetzlich zum eigenen processEventTimer aufgerufen.
  */
 export async function processOverdueEventsForOtherUsers(currentState: PlayerState): Promise<void> {
   const now = Date.now();
@@ -59,8 +76,12 @@ export async function processOverdueEventsForOtherUsers(currentState: PlayerStat
     try {
       const otherState = loadPlayerState(u.id);
       let changed = false;
-      if (otherState.event && now > otherState.event.deadline && !otherState.event.started) {
+      if (otherState.event && !otherState.event.started && now > otherState.event.deadline) {
         otherState.event = null;
+        changed = true;
+      }
+      if (otherState.event && otherState.event.started && now >= otherState.event.arriveTime) {
+        await resolveEventCombat(otherState);
         changed = true;
       }
       if (!otherState.event && now >= otherState.nextEventCheck) {
@@ -76,6 +97,10 @@ export async function processOverdueEventsForOtherUsers(currentState: PlayerStat
   }
 }
 
+// Schickt die Flotte zur Notruf-Position los (Ressourcen/Flotte werden HIER abgezogen) - der
+// eigentliche Kampf loest erst bei Ankunft aus (resolveEventCombat(), ueber processEventTimer()/
+// processOverdueEventsForOtherUsers() bei Erreichen von arriveTime). Notruf ist bewusst NUR NOCH
+// SOLO moeglich (kein Multiplayer-Pendant mehr, siehe groupOps.ts).
 export async function startEventMission(state: PlayerState, selection: Record<string, number>): Promise<ActionResult> {
   if (!state.event || state.event.started) return { ok: false, error: 'Kein aktiver Notruf.' };
   const playerIds = Object.keys(selection).filter((id) => selection[id] > 0);
@@ -83,15 +108,37 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   for (const id of playerIds) {
     if ((state.fleet[id] || 0) < selection[id]) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
   }
-  state.event.started = true;
+  const speed = galaxyFleetSpeed(selection);
+  if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
+
   playerIds.forEach((id) => (state.fleet[id] -= selection[id]));
+
+  const now = Date.now();
+  let travelMs = 60 * 1000;
+  if (state.galaxyPosition) {
+    const distance = galaxyDistance(state.galaxyPosition, NOTRUF_POSITION);
+    const computed = galaxyDurationMs(distance, speed);
+    if (Number.isFinite(computed)) travelMs = computed;
+  }
+  state.event.started = true;
+  state.event.ships = selection;
+  state.event.arriveTime = now + travelMs;
+
+  pushMessage(state, 'kampf', `Deine Flotte ist unterwegs zum Notruf "${state.event.name}" - Ankunft in ${Math.round(travelMs / 60000)} Minuten.`);
+  return { ok: true };
+}
+
+// Der eigentliche Kampf - laeuft erst bei Ankunft (state.event.arriveTime erreicht), nicht mehr
+// synchron beim Losschicken. Inhaltlich unveraendert gegenueber der vorherigen Version, liest die
+// Flottenauswahl jetzt aber aus state.event.ships statt aus einem Funktionsparameter.
+async function resolveEventCombat(state: PlayerState): Promise<void> {
+  if (!state.event) return;
+  const selection = state.event.ships;
+  const playerIds = Object.keys(selection).filter((id) => selection[id] > 0);
 
   const sentPower = combatFleetPowerBase(selection);
   const allyCount = Math.max(8, Math.round(sentPower / 18000));
 
-  // Feindstaerke war frueher exakt 100% der eingesetzten Flotten-Power ohne jede Schwankung -
-  // jetzt mit leichter Grund-Varianz (NOTRUF_MULTIPLIER_ROLL) plus seltenem Ausreisser, damit auch
-  // Notruf-Events nicht immer exakt gleich stark ausfallen (siehe combatConstants.ts).
   const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(NOTRUF_MULTIPLIER_ROLL, 'notruf');
   const targetPower = sentPower * rolledMultiplier;
   const profile = pickWaveProfile('notruf');
@@ -181,16 +228,11 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   const playerWiped = playerIds.every((id) => result.survivorsA[id] <= 0) && result.survivorsA['verbuendete'] <= 0;
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
-  // Statistik (siehe stats.ts)
   const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
   state.stats.enemiesDestroyed += destroyedEnemyCount;
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
   if (!playerWiped && npcFullyDestroyed) state.stats.notrufCompleted++;
 
-  // Belohnung gibt es NUR noch bei echtem Sieg (Gegner vollstaendig vernichtet, eigene Flotte
-  // nicht ausgeloescht) - ein Kampf, bei dem der Gegner ueberlebt, gibt keinen Trost-Container
-  // mehr. Bei Sieg werden 1-3 Container zufaellig vergeben (Tier: Gold ohne eigene Verluste,
-  // Silber mit Verlusten).
   let containerCount = 0;
   let containerTier: 'silber' | 'gold' | null = null;
   if (!playerWiped && npcFullyDestroyed) {
@@ -220,5 +262,4 @@ export async function startEventMission(state: PlayerState, selection: Record<st
   );
 
   state.event = null;
-  return { ok: true };
 }

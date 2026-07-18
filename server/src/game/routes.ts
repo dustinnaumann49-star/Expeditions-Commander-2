@@ -9,15 +9,17 @@ import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
-import { listActiveRaids, reinforceRaid } from './raidReinforce.js';
+import { listActiveRaids } from './raidReinforce.js';
 import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation } from './groupOps.js';
 import { simulateCombat } from './simulator.js';
+import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listAllUsers } from '../db.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, NOTRUF_POSITION } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER } from './data/combatConstants.js';
@@ -38,6 +40,8 @@ gameRouter.get('/data', (_req, res) => {
     research: RESEARCH,
     buildings: BUILDINGS,
     maxBuildingSlots: MAX_BUILDING_SLOTS,
+    galaxySystems: GALAXY_SYSTEMS,
+    galaxyPositions: GALAXY_POSITIONS,
     sektoren: SEKTOREN,
     sektorConfig: SEKTOR_CONFIG,
     piratenMultiplierRoll: PIRATEN_MULTIPLIER_ROLL,
@@ -132,6 +136,80 @@ gameRouter.post('/build/building', (req: AuthedRequest, res) => {
   const { buildingId } = req.body ?? {};
   if (typeof buildingId !== 'string') return res.status(400).json({ error: 'buildingId erforderlich.' });
   handleAction(req, res, (state) => startBuildingConstruction(state, buildingId));
+});
+
+// ---- Galaxie ----
+
+gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
+  try {
+    const state = loadPlayerState(req.userId!);
+    const sektorPositions = SEKTOREN.filter((s) => SEKTOR_CONFIG[s.id]?.galaxyPosition).map((s) => ({
+      sektorId: s.id,
+      name: s.name,
+      ...SEKTOR_CONFIG[s.id].galaxyPosition!,
+    }));
+    res.json({
+      ownPosition: state.galaxyPosition,
+      occupants: listGalaxyOccupants(),
+      pirateBases: PIRATE_BASES,
+      sektorPositions,
+      notrufPosition: NOTRUF_POSITION,
+      incomingDeployments: getIncomingDeploymentsFor(req.userId!),
+      galaxySystems: GALAXY_SYSTEMS,
+      galaxyPositions: GALAXY_POSITIONS,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden der Galaxie.' });
+  }
+});
+
+// Vorschau (Distanz/Flugzeit/Treibstoff) VOR dem tatsächlichen Losschicken - rein lesend, verändert
+// nichts, damit der Client vor der Bestätigung genaue Werte anzeigen kann. Verallgemeinert: Ziel
+// entweder ein anderer SPIELER (targetUserId, fuer Halten-Fluege) ODER eine beliebige feste
+// Position (targetPosition, fuer Sektor-Missionen/Notruf/Elite-Bollwerk-Rendezvous) - genau eines
+// von beiden muss angegeben werden.
+gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
+  try {
+    const { targetUserId, targetPosition, ships } = req.body ?? {};
+    if (typeof ships !== 'object' || ships === null) {
+      return res.status(400).json({ error: 'ships erforderlich.' });
+    }
+    const state = loadPlayerState(req.userId!);
+    if (!state.galaxyPosition) return res.status(400).json({ error: 'Position nicht verfügbar.' });
+
+    let target: { system: number; position: number } | null = null;
+    if (typeof targetUserId === 'number') {
+      const targetState = loadPlayerState(targetUserId);
+      target = targetState.galaxyPosition;
+    } else if (targetPosition && typeof targetPosition.system === 'number' && typeof targetPosition.position === 'number') {
+      target = targetPosition;
+    }
+    if (!target) return res.status(400).json({ error: 'Zielposition nicht verfügbar.' });
+
+    const distance = galaxyDistance(state.galaxyPosition, target);
+    const speed = galaxyFleetSpeed(ships);
+    const durationMs = galaxyDurationMs(distance, speed);
+    const fuelCost = galaxyFuelCost(ships, distance);
+    res.json({ distance, durationMs, fuelCost });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler bei der Vorschau.' });
+  }
+});
+
+gameRouter.post('/galaxy/hold', (req: AuthedRequest, res) => {
+  const { targetUserId, ships } = req.body ?? {};
+  if (typeof targetUserId !== 'number' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'targetUserId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => startHoldDeployment(state, targetUserId, ships));
+});
+
+gameRouter.post('/galaxy/recall', (req: AuthedRequest, res) => {
+  const { deploymentId } = req.body ?? {};
+  if (typeof deploymentId !== 'string') return res.status(400).json({ error: 'deploymentId erforderlich.' });
+  handleAction(req, res, (state) => recallHoldDeployment(state, deploymentId));
 });
 
 // ---- Sektor / Missionen ----
@@ -279,14 +357,6 @@ gameRouter.get('/leaderboard', (_req: AuthedRequest, res) => {
     console.error(err);
     res.status(500).json({ error: 'Interner Fehler beim Laden der Bestenliste.' });
   }
-});
-
-gameRouter.post('/raids/reinforce', (req: AuthedRequest, res) => {
-  const { targetUserId, ships } = req.body ?? {};
-  if (typeof targetUserId !== 'number' || typeof ships !== 'object' || ships === null) {
-    return res.status(400).json({ error: 'targetUserId und ships erforderlich.' });
-  }
-  handleAction(req, res, (state) => reinforceRaid(state, targetUserId, ships));
 });
 
 // ---- Gemeinsame Expeditionen / Notruf-Events (Einladung per Name, Ersteller startet manuell) ----

@@ -1,5 +1,6 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_WARNING_MS, RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_MIN_TARGET_POWER } from './data/economy.js';
+import { RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_MIN_TARGET_POWER } from './data/economy.js';
+import { PIRATE_BASES, PIRATE_FLEET_SPEED, RAID_PREP_MS } from './data/galaxyConstants.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -15,19 +16,53 @@ import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.j
 import { DEFENSE_REPAIR_PERCENT, RAID_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
+import { getHoldingDeploymentsTargeting, persistHeldDeployment, galaxyDistance, galaxyDurationMs } from './galaxy.js';
 import { getUserById, listAllUsers } from '../db.js';
 import type { CombatUnitResult, PlayerState } from './types.js';
 
 // Spawnt einen Raid ausgehend vom TATSAECHLICHEN Checkpoint-Zeitpunkt (nicht "jetzt") - wichtig
 // beim Nachrollen verpasster Checkpoints (siehe rollFixedCheckpoints in economy.ts), damit
-// spawnedAt/arrivalTime der eigentlich vorgesehenen Uhrzeit entsprechen und nicht dem zufaelligen
-// Moment, in dem irgendjemand als Naechstes online war.
+// spawnedAt/launchTime/arrivalTime der eigentlich vorgesehenen Uhrzeit entsprechen und nicht dem
+// zufaelligen Moment, in dem irgendjemand als Naechstes online war.
+//
+// Ablauf (siehe README): Trigger -> 60 Minuten Vorbereitungszeit (RAID_PREP_MS) -> Piraten heben
+// von einer zufaellig gewuerfelten Basis ab -> echte, distanzabhaengige Flugzeit zur Zielposition
+// (dieselbe Formel wie bei Spieler-Flotten, siehe galaxy.ts). Distanz und Flugzeit stehen sofort
+// bei Trigger fest (Basis- UND Zielposition sind ja schon bekannt) - kein zusaetzlicher
+// Verarbeitungsschritt beim tatsaechlichen Abflug noetig, nur eine informative zweite Nachricht.
 function spawnRaidAt(state: PlayerState, checkpointTime: number): void {
-  state.raid = { id: 'raid_' + checkpointTime, spawnedAt: checkpointTime, arrivalTime: checkpointTime + RAID_WARNING_MS, resolved: false, reinforcements: [] };
+  const pirateBase = PIRATE_BASES[Math.floor(Math.random() * PIRATE_BASES.length)];
+  const launchTime = checkpointTime + RAID_PREP_MS;
+  let arrivalTime = launchTime;
+  if (state.galaxyPosition) {
+    const distance = galaxyDistance(pirateBase, state.galaxyPosition);
+    const travelMs = galaxyDurationMs(distance, PIRATE_FLEET_SPEED);
+    if (Number.isFinite(travelMs)) arrivalTime = launchTime + travelMs;
+  }
+  state.raid = { id: 'raid_' + checkpointTime, spawnedAt: checkpointTime, pirateBase, launchTime, launchNotified: false, arrivalTime, resolved: false, reinforcements: [] };
+  const prepMin = Math.round(RAID_PREP_MS / 60000);
+  const totalMin = Math.round((arrivalTime - checkpointTime) / 60000);
   pushMessage(
     state,
     'kampf',
-    `⚠ Piratenflotte im Anflug auf deine Heimatbasis! Ankunft in ${Math.round(RAID_WARNING_MS / 60000)} Minuten. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
+    `⚠ Piratenaktivität bei Basis 1:${pirateBase.system}:${pirateBase.position} registriert! Ihre Flotte startet in ${prepMin} Minuten, geschätzte Gesamtankunft in ${totalMin} Minuten. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
+  );
+}
+
+// Verschickt (einmalig, ueber launchNotified abgesichert) die "Piraten sind jetzt gestartet"-
+// Nachricht, sobald die Vorbereitungszeit abgelaufen ist - rein informativ, arrivalTime steht ja
+// bereits seit spawnRaidAt() fest.
+function notifyRaidLaunchIfDue(state: PlayerState): void {
+  const raid = state.raid;
+  if (!raid || raid.resolved || raid.launchNotified) return;
+  const now = Date.now();
+  if (now < raid.launchTime) return;
+  raid.launchNotified = true;
+  const remainingMin = Math.max(0, Math.round((raid.arrivalTime - raid.launchTime) / 60000));
+  pushMessage(
+    state,
+    'kampf',
+    `⚠ Die Piratenflotte ist von Basis 1:${raid.pirateBase.system}:${raid.pirateBase.position} gestartet! Ankunft in ${remainingMin} Minuten.`
   );
 }
 
@@ -37,6 +72,9 @@ export async function processRaidTimer(state: PlayerState) {
   if (state.raid && !state.raid.resolved && now >= state.raid.arrivalTime) {
     await resolveRaid(state, state.userId, state);
     return;
+  }
+  if (state.raid && !state.raid.resolved) {
+    notifyRaidLaunchIfDue(state);
   }
   if (state.raid && state.raid.resolved) {
     state.raid = null;
@@ -71,6 +109,10 @@ export async function processOverdueRaidsForOtherUsers(currentState: PlayerState
       if (otherState.raid && !otherState.raid.resolved && now >= otherState.raid.arrivalTime) {
         await resolveRaid(otherState, currentState.userId, currentState);
         savePlayerState(otherState);
+      } else if (otherState.raid && !otherState.raid.resolved) {
+        const before = otherState.raid.launchNotified;
+        notifyRaidLaunchIfDue(otherState);
+        if (otherState.raid.launchNotified !== before) savePlayerState(otherState);
       }
     } catch (err) {
       console.error(`processOverdueRaidsForOtherUsers: Fehler bei Nutzer ${u.id}:`, err);
@@ -169,9 +211,20 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     playerState: r.userId === currentUserId && currentUserState ? currentUserState : loadPlayerState(r.userId),
   }));
 
+  // Zusaetzlich zu den ad-hoc Raid-Verstaerkungen: Flotten, die andere Spieler dauerhaft bei
+  // diesem Verteidiger "halten" (Galaxie-Ansicht, siehe galaxy.ts) - nehmen automatisch an der
+  // Verteidigung teil, kein PvP, nur diese eine Interaktion.
+  const heldStates = getHoldingDeploymentsTargeting(state.userId, currentUserId, currentUserState);
+
   let reinforcementPower = 0;
   reinforcerStates.forEach(({ r }) => {
     Object.entries(r.ships).forEach(([id, count]) => {
+      const base = baseStats(id);
+      reinforcementPower += count * (base.waffen + base.schild + base.panzerung);
+    });
+  });
+  heldStates.forEach(({ deployment }) => {
+    Object.entries(deployment.ships).forEach(([id, count]) => {
       const base = baseStats(id);
       reinforcementPower += count * (base.waffen + base.schild + base.panzerung);
     });
@@ -201,12 +254,17 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       ships: r.ships,
       research: playerState.research,
     })),
+    ...heldStates.map(({ deployment, ownerState }) => ({
+      ownerKey: `held:${deployment.id}`,
+      ships: deployment.ships,
+      research: ownerState.research,
+    })),
   ];
 
-  const result =
-    reinforcerStates.length > 0
-      ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier })
-      : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier });
+  const hasSupport = reinforcerStates.length > 0 || heldStates.length > 0;
+  const result = hasSupport
+    ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier })
+    : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 
@@ -340,6 +398,42 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     });
   }
 
+  // Haltende Fremdflotten: Ueberlebende bleiben (reduziert) weiterhin haltend am Platz - im
+  // Gegensatz zu ad-hoc Verstaerkungen fliegen sie NICHT automatisch nach Hause zurueck.
+  if (heldStates.length > 0) {
+    heldStates.forEach(({ deployment, ownerState, ownerUsername: holderUsername }) => {
+      const ownerKey = `held:${deployment.id}`;
+      const ownerSurvivors = survivorsByOwner?.[ownerKey] || {};
+      Object.entries(deployment.ships).forEach(([id, sentCount]) => {
+        const survived = ownerSurvivors[id] || 0;
+        const lost = sentCount - survived;
+        deployment.ships[id] = survived;
+        const eff = getEffectiveStats(id, ownerState.research);
+        const statKey = `${ownerKey}:${id}`;
+        playerResults.push({
+          id,
+          name: shipName(id),
+          ownerUsername: `${holderUsername} (haltende Flotte)`,
+          sent: sentCount,
+          survived,
+          lost,
+          waffen: Math.round(eff.waffen),
+          schild: Math.round(eff.schild),
+          panzerung: Math.round(eff.panzerung),
+          dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+          dmgDealt: Math.round(result.shotsA.dmgDealt[statKey] || 0),
+          shotsFired: result.shotsA.shotsFired[statKey] || 0,
+          hits: result.shotsA.hits[statKey] || 0,
+          rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+          shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+          shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
+        });
+      });
+      // Speichern/Aufraeumen (leere Eintraege entfernen) passiert erst unten nach den
+      // pushMessage-Aufrufen, sobald "detail" feststeht.
+    });
+  }
+
   // Bergungs-DM ("Bergung aus der zerstoerten Flotte") - skaliert mit der Anzahl vernichteter
   // Piratenschiffe/-anlagen, unabhaengig davon ob der Angriff vollstaendig abgewehrt wurde. Jeder
   // Beteiligte (Verteidiger + Verstaerker) bekommt den vollen Betrag, keine Aufteilung (Punkt 5).
@@ -348,6 +442,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   if (salvageDm > 0) {
     state.resources.dm += salvageDm;
     reinforcerStates.forEach(({ playerState: reinforcerState }) => (reinforcerState.resources.dm += salvageDm));
+    heldStates.forEach(({ ownerState }) => (ownerState.resources.dm += salvageDm));
   }
 
   // Statistik (siehe stats.ts) - Verteidiger UND alle Verstaerker bekommen denselben Ausgang
@@ -362,6 +457,11 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
     else reinforcerState.stats.raidsRepelledPartial++;
     reinforcerState.stats.enemiesDestroyed += destroyedCount;
   });
+  heldStates.forEach(({ ownerState }) => {
+    if (piratesRepelled) ownerState.stats.raidsRepelledFull++;
+    else ownerState.stats.raidsRepelledPartial++;
+    ownerState.stats.enemiesDestroyed += destroyedCount;
+  });
 
   // Bei vollstaendig abgewehrtem Angriff (echter "Sieg") 1-3 Container zufaellig, sonst weiterhin
   // genau 1 (analog zu Notruf-Events, siehe events.ts) - Verteidiger UND alle Verstaerker
@@ -374,6 +474,15 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   reinforcerStates.forEach(({ playerState: reinforcerState }) => {
     for (let i = 0; i < containerCount; i++) {
       reinforcerState.inventory.push({
+        id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8),
+        tier: containerReward,
+        receivedAt: Date.now(),
+      });
+    }
+  });
+  heldStates.forEach(({ ownerState }) => {
+    for (let i = 0; i < containerCount; i++) {
+      ownerState.inventory.push({
         id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8),
         tier: containerReward,
         receivedAt: Date.now(),
@@ -424,6 +533,17 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
       );
       if (r.userId !== currentUserId) savePlayerState(reinforcerState);
     });
+    heldStates.forEach((holding) => {
+      pushMessage(
+        holding.ownerState,
+        'kampf',
+        `Deine haltende Flotte bei ${ownerUsername}: Piratenüberfall nur teilweise abgewehrt (${result.roundsFought} Runden). Auch du erhältst ${containerCount}x ${
+          containerReward === 'gold' ? 'Gold' : 'Silber'
+        }-Container für den Einsatz.${salvageText}`,
+        detail
+      );
+      persistHeldDeployment(holding, currentUserId);
+    });
   } else {
     const outcome = 'Piratenüberfall abgewehrt – alle Feinde vernichtet';
     const detail = {
@@ -451,6 +571,17 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
         detail
       );
       if (r.userId !== currentUserId) savePlayerState(reinforcerState);
+    });
+    heldStates.forEach((holding) => {
+      pushMessage(
+        holding.ownerState,
+        'kampf',
+        `Deine haltende Flotte bei ${ownerUsername}: Piratenüberfall erfolgreich abgewehrt (${result.roundsFought} Runden)! Auch du erhältst ${containerCount}x ${
+          containerReward === 'gold' ? 'Gold' : 'Silber'
+        }-Container für den Einsatz.${salvageText}`,
+        detail
+      );
+      persistHeldDeployment(holding, currentUserId);
     });
   }
 

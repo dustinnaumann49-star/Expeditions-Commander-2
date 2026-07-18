@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { EVENT_NAMES, ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
+import { ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -17,6 +17,7 @@ import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
+import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import type { ActionResult } from './actions.js';
 import { NOTRUF_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, CombatDetail, ContainerTier, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
@@ -53,6 +54,11 @@ export function createGroupOperation(
       return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk möglich.' };
     }
   }
+  if (kind === 'event') {
+    // Notruf ist seit Einfuehrung der Galaxie-Positionen NUR NOCH SOLO moeglich (echte Flugzeit
+    // zur festen Notruf-Position, siehe events.ts) - das gemeinsame Multiplayer-Pendant entfaellt.
+    return { ok: false, error: 'Notruf-Events sind jetzt nur noch solo möglich (siehe Sektor-Tab), nicht mehr über gemeinsame Operationen.' };
+  }
   const totalShips = Object.values(ships).reduce((a, b) => a + (b || 0), 0);
   if (totalShips === 0) return { ok: false, error: 'Keine Schiffe ausgewählt.' };
   for (const [id, qty] of Object.entries(ships)) {
@@ -83,8 +89,11 @@ export function createGroupOperation(
     id: newId('groupop'),
     kind,
     sektorId: kind === 'expedition' ? sektorId : undefined,
-    eventName: kind === 'event' ? pickRandom(EVENT_NAMES) : undefined,
+    // 'event' wird oben bereits abgelehnt - kind ist ab hier immer 'expedition', eventName bleibt
+    // ungesetzt (Feld existiert im Typ nur noch fuer alte, bereits gespeicherte Datensaetze).
+    eventName: undefined,
     creatorId: state.userId,
+    creatorPosition: state.galaxyPosition,
     status: 'inviting',
     participants,
     createdAt: Date.now(),
@@ -132,6 +141,20 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   });
   me.status = 'accepted';
   me.ships = ships;
+
+  // Rendezvous: die Flotte fliegt zuerst zum ERSTELLER (nicht direkt zum Ziel) - erst wenn ALLE
+  // angenommenen Teilnehmer dort eingetroffen sind, kann der Ersteller gemeinsam weiterstarten
+  // (siehe startGroupOperation()).
+  const creatorState = op.creatorId === state.userId ? state : loadPlayerState(op.creatorId);
+  if (creatorState.galaxyPosition && state.galaxyPosition) {
+    const distance = galaxyDistance(state.galaxyPosition, creatorState.galaxyPosition);
+    const speed = galaxyFleetSpeed(ships);
+    const travelMs = galaxyDurationMs(distance, speed);
+    me.rendezvousArrivalTime = Date.now() + (Number.isFinite(travelMs) ? travelMs : 0);
+  } else {
+    me.rendezvousArrivalTime = Date.now();
+  }
+
   saveOp(op);
   return { ok: true };
 }
@@ -175,6 +198,16 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   if (op.status !== 'inviting') return { ok: false, error: 'Diese Operation wurde bereits gestartet.' };
 
   const accepted = op.participants.filter((p) => p.status === 'accepted');
+
+  // Rendezvous-Pflicht: ALLE angenommenen Flotten (ausser der des Erstellers selbst) muessen erst
+  // physisch beim Ersteller eingetroffen sein, bevor gemeinsam weitergeflogen werden kann.
+  const now = Date.now();
+  const notArrived = accepted.filter((p) => !p.isCreator && (p.rendezvousArrivalTime === undefined || p.rendezvousArrivalTime > now));
+  if (notArrived.length > 0) {
+    const names = notArrived.map((p) => p.username).join(', ');
+    return { ok: false, error: `Noch nicht alle Flotten eingetroffen (wartet auf: ${names}).` };
+  }
+
   const participantStates = new Map<number, PlayerState>();
   accepted.forEach((p) => participantStates.set(p.userId, p.userId === state.userId ? state : loadPlayerState(p.userId)));
 
@@ -189,12 +222,29 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
     return await resolveGroupEvent(op, accepted, participantStates, state);
   }
 
-  const now = Date.now();
+  // Gemeinsamer Weiterflug vom ERSTELLER aus (alle Flotten sind ja jetzt dort vereint) zum
+  // eigentlichen Ziel - echte, distanzabhaengige Flugzeit wie bei Solo-Sektor-Missionen, mit der
+  // Geschwindigkeit des langsamsten Schiffs UEBER ALLE vereinten Flotten hinweg.
+  const cfg = SEKTOR_CONFIG[op.sektorId!];
+  const combinedShips: Record<string, number> = {};
+  accepted.forEach((p) => {
+    Object.entries(p.ships).forEach(([id, qty]) => {
+      combinedShips[id] = (combinedShips[id] || 0) + qty;
+    });
+  });
+  let travelMs = MISSION_TRAVEL_MS;
+  if (cfg?.galaxyPosition && state.galaxyPosition) {
+    const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
+    const speed = galaxyFleetSpeed(combinedShips);
+    const computed = galaxyDurationMs(distance, speed);
+    if (Number.isFinite(computed)) travelMs = computed;
+  }
+
   op.status = 'departed';
   op.departedAt = now;
-  op.arriveTime = now + MISSION_TRAVEL_MS;
+  op.arriveTime = now + travelMs;
   op.endTime = op.arriveTime + MISSION_DURATION_MS;
-  op.returnTime = op.endTime + MISSION_TRAVEL_MS;
+  op.returnTime = op.endTime + travelMs;
   op.processedHours = 0;
   op.lastTick = null;
   saveOp(op);

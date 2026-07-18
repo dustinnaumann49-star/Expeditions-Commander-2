@@ -2,9 +2,42 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
 import { nextFixedCheckpoint } from './data/economy.js';
-import type { PlayerState } from './types.js';
-import { loadGameStateJson, saveGameStateJson } from '../db.js';
+import type { GalaxyPosition, PlayerState } from './types.js';
+import { loadGameStateJson, saveGameStateJson, listAllUsers } from '../db.js';
+
+// Zufaellige, freie Galaxie-Position vergeben (siehe README). Scannt dafuer die bereits
+// gespeicherten Zustaende ALLER anderen Spieler direkt ueber loadGameStateJson (NICHT ueber
+// loadPlayerState/galaxy.ts) - sonst entstuende ein Zirkelbezug state.ts <-> galaxy.ts, da
+// galaxy.ts seinerseits loadPlayerState() aus dieser Datei braucht.
+function assignRandomGalaxyPosition(excludeUserId?: number): GalaxyPosition {
+  const occupied = new Set<string>();
+  listAllUsers().forEach((u) => {
+    if (u.id === excludeUserId) return;
+    const json = loadGameStateJson(u.id);
+    if (!json) return;
+    try {
+      const parsed = JSON.parse(json) as { galaxyPosition?: GalaxyPosition | null };
+      if (parsed.galaxyPosition) occupied.add(`${parsed.galaxyPosition.system}:${parsed.galaxyPosition.position}`);
+    } catch {
+      // Kaputter/leerer Eintrag - einfach ignorieren, blockiert keine Position.
+    }
+  });
+
+  const free: GalaxyPosition[] = [];
+  for (let system = 1; system <= GALAXY_SYSTEMS; system++) {
+    for (let position = 1; position <= GALAXY_POSITIONS; position++) {
+      if (!occupied.has(`${system}:${position}`)) free.push({ system, position });
+    }
+  }
+  if (free.length === 0) {
+    // Galaxie voll (450/450) - bei der aktuellen Spielerzahl praktisch ausgeschlossen, aber
+    // sauberer Fallback statt Absturz.
+    return { system: 1, position: 1 };
+  }
+  return free[Math.floor(Math.random() * free.length)];
+}
 
 export function defaultPlayerState(userId: number): PlayerState {
   const fleet: Record<string, number> = {};
@@ -31,6 +64,8 @@ export function defaultPlayerState(userId: number): PlayerState {
     researchQueue: [],
     buildings,
     buildingQueue: [],
+    galaxyPosition: assignRandomGalaxyPosition(userId),
+    galaxyDeployments: [],
     activeBoosters: {},
     teile: { waffen: 0, schild: 0, panzerung: 0 },
     missions: [],
@@ -93,6 +128,21 @@ export function loadPlayerState(userId: number): PlayerState {
     if (parsed.buildings[b.id] === undefined) parsed.buildings[b.id] = 0;
   });
   if (!parsed.buildingQueue) parsed.buildingQueue = [];
+  // Galaxie-Position nachruesten (existierte vor Einfuehrung dieses Systems nicht) - betrifft
+  // ALLE bereits registrierten Spieler, bekommen beim naechsten Laden eine zufaellige freie
+  // Position zugewiesen (siehe README).
+  if (!parsed.galaxyPosition) parsed.galaxyPosition = assignRandomGalaxyPosition(parsed.userId);
+  if (!parsed.galaxyDeployments) parsed.galaxyDeployments = [];
+  // Alte, vor der Piratenbasen-Erweiterung gespawnte Raids haben kein pirateBase/launchTime-Feld -
+  // sicherheitshalber verwerfen statt mit kaputten Werten weiterzurechnen, der naechste
+  // Checkpoint spawnt ganz regulaer einen neuen (siehe raids.ts spawnRaidAt()).
+  if (parsed.raid && (parsed.raid as any).pirateBase === undefined) {
+    parsed.raid = null;
+  }
+  // Analog: altes Notruf-Format ohne ships/arriveTime (vor der Galaxie-Flugzeit-Erweiterung).
+  if (parsed.event && (parsed.event as any).arriveTime === undefined) {
+    parsed.event = null;
+  }
   if (!parsed.stats) parsed.stats = defaultPlayerStats();
   const statsDefaults = defaultPlayerStats();
   (Object.keys(statsDefaults) as (keyof typeof statsDefaults)[]).forEach((key) => {

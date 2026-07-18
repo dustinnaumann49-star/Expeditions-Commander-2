@@ -28,6 +28,8 @@ export interface ShipDefinition {
   unique?: boolean; // z.B. Sandronator: max. 1 Exemplar
   specialOnly?: boolean; // z.B. Imperator: nicht über normale Ressourcen baubar
   teileCost?: { waffen: number; schild: number; panzerung: number };
+  speed: number; // Galaxie-Flottengeschwindigkeit (an OGame-Basiswerte angelehnt)
+  fuelConsumption: number; // Deuterium pro 1.000 Distanz-Einheiten pro Schiff (Galaxie-Flüge)
 }
 
 export interface DefenseDefinition {
@@ -40,6 +42,26 @@ export interface DefenseDefinition {
   stats: CombatStats;
   maxCount?: number; // fehlt = unbegrenzt (nur noch Schildkuppeln haben ein Limit)
   isDome?: boolean;
+}
+
+export interface GalaxyPosition {
+  system: number; // 1-50
+  position: number; // 1-9
+}
+
+export interface GalaxyDeployment {
+  id: string;
+  targetUserId: number;
+  targetUsername: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number; // Ankunft am Ziel (danach: "haltend")
+  recalled: boolean;
+  returnTime: number | null; // gesetzt nach Rückruf, Ankunft zu Hause
 }
 
 export interface BuildingDefinition {
@@ -250,7 +272,10 @@ export interface RaidReinforcement {
 export interface RaidState {
   id: string;
   spawnedAt: number;
-  arrivalTime: number;
+  pirateBase: GalaxyPosition; // zufaellig gewaehlte Piratenbasis, von der aus dieser Raid startet
+  launchTime: number; // spawnedAt + RAID_PREP_MS - wann die Piraten tatsaechlich abheben
+  launchNotified: boolean; // ob die "jetzt gestartet"-Nachricht schon verschickt wurde
+  arrivalTime: number; // launchTime + Flugzeit (Distanz Basis->Ziel, wie bei Spieler-Flotten berechnet)
   resolved: boolean;
   reinforcements: RaidReinforcement[];
 }
@@ -259,8 +284,10 @@ export interface EventState {
   id: string;
   name: string;
   spawnedAt: number;
-  deadline: number;
-  started: boolean;
+  deadline: number; // Frist zum Losschicken (nicht zur Ankunft/Ausloesung)
+  started: boolean; // Flotte losgeschickt, unterwegs zur Notruf-Position?
+  ships: Record<string, number>; // welche Flotte losgeschickt wurde (erst ab started gesetzt)
+  arriveTime: number; // wann die Flotte ankommt und der Kampf ausgeloest wird (erst ab started gueltig)
 }
 
 export interface FleetPreset {
@@ -281,6 +308,10 @@ export interface GroupOperationParticipant {
   farmed?: { metall: number; kristall: number; deuterium: number };
   teile?: { waffen: number; schild: number; panzerung: number };
   dmFound?: number;
+  // Rendezvous (Elite-Bollwerk-Expeditionen): wann diese Teilnehmer-Flotte beim ERSTELLER
+  // eintrifft - erst danach kann die gesamte Gruppe gemeinsam weiter zum Ziel starten. Beim
+  // Ersteller selbst nicht gesetzt (ist ja schon an seiner eigenen Position).
+  rendezvousArrivalTime?: number;
 }
 
 export interface GroupOperation {
@@ -289,6 +320,12 @@ export interface GroupOperation {
   sektorId?: string;
   eventName?: string;
   creatorId: number;
+  // Position des Erstellers zum Zeitpunkt der Erstellung - Einladungsempfaenger nutzen das fuer
+  // die Rendezvous-Flugzeit-Vorschau (siehe /game/galaxy/preview), bevor sie ihre Flotte
+  // committen. Wird bewusst einmalig eingefroren statt live nachgeschlagen, damit die Vorschau
+  // konsistent bleibt, selbst falls (aktuell theoretisch, da Positionen fix sind) sich etwas
+  // aendern wuerde.
+  creatorPosition: GalaxyPosition | null;
   status: 'inviting' | 'departed' | 'resolved' | 'cancelled';
   participants: GroupOperationParticipant[];
   createdAt: number;
@@ -347,6 +384,8 @@ export interface PlayerState {
   // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
   // Komponente, maxSlots=1) unveraendert wiederverwenden laesst.
   buildingQueue: BuildJob[];
+  galaxyPosition: GalaxyPosition | null;
+  galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

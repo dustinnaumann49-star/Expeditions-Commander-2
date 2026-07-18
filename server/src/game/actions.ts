@@ -5,6 +5,7 @@ import { BUILDINGS, findBuilding } from './data/buildings.js';
 import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
 import { processMissions, miningMultiplier } from './missions.js';
+import { processGalaxyDeployments } from './galaxy.js';
 import { processEventTimer, processOverdueEventsForOtherUsers } from './events.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
@@ -162,6 +163,9 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   // eine in derselben Sekunde fertigwerdende Mine erst ab jetzt mit ihrer neuen Stufe zaehlt -
   // unkritisch bei Sekunden-Aufloesung, aber so bleibt die Reihenfolge eindeutig).
   accrueBuildingProduction(state, deltaSec);
+
+  // Zurueckgerufene Galaxie-Flotten heimkehren lassen, sobald ihre Rueckflugzeit erreicht ist.
+  processGalaxyDeployments(state);
 
   // Gebaeude-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_BUILDING_SLOTS)
   const stillBuildingBuildings = state.buildingQueue.filter((job) => {

@@ -1,6 +1,7 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
+import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import {
   MISSION_TRAVEL_MS,
   MISSION_DURATION_MS,
@@ -74,15 +75,25 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   });
 
   const now = Date.now();
+  // Echte, distanzabhaengige Flugzeit (wie bei Galaxie-Halten-Fluegen und Piraten-Raids) statt
+  // der vorher festen MISSION_TRAVEL_MS - faellt auf den alten festen Wert zurueck, falls Sektor
+  // oder Spieler (noch) keine Galaxie-Position haben (z.B. Elite-Bollwerk, siehe sectors.ts).
+  let travelMs = MISSION_TRAVEL_MS;
+  if (cfg.galaxyPosition && state.galaxyPosition) {
+    const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
+    const speed = galaxyFleetSpeed(ships);
+    const computed = galaxyDurationMs(distance, speed);
+    if (Number.isFinite(computed)) travelMs = computed;
+  }
   const durationMs = cfg.type === 'asteroid' ? ASTEROID_MISSION_DURATION_MS : MISSION_DURATION_MS;
   const mission: Mission = {
     id: 'mission_' + now + '_' + sektorId,
     sektorId,
     ships,
     startTime: now,
-    arriveTime: now + MISSION_TRAVEL_MS,
-    endTime: now + MISSION_TRAVEL_MS + durationMs,
-    returnTime: now + MISSION_TRAVEL_MS + durationMs + MISSION_TRAVEL_MS,
+    arriveTime: now + travelMs,
+    endTime: now + travelMs + durationMs,
+    returnTime: now + travelMs + durationMs + travelMs,
     processedHours: 0,
     lastTick: null,
     farmed: { metall: 0, kristall: 0, deuterium: 0 },
