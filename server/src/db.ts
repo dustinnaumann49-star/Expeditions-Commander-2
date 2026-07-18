@@ -1,9 +1,19 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '..', 'data', 'game.db');
+const dataDir = path.join(__dirname, '..', 'data');
+const dbPath = path.join(dataDir, 'game.db');
+
+// WICHTIG: better-sqlite3 legt das Verzeichnis NICHT selbst an - fehlt es (z.B. nach einem
+// Redeploy ohne persistenten Datenspeicher, oder wenn es aus irgendeinem Grund geloescht wurde),
+// stuerzt der Server sofort beim Start ab ("Cannot open database because the directory does not
+// exist"), noch bevor Express oder irgendein Log ausgegeben wird - fuer den Betreiber sieht das
+// aus wie "das Spiel laeuft nicht mehr", ohne erkennbare Fehlermeldung im normalen Log. Fix:
+// Verzeichnis defensiv sicherstellen, BEVOR die Datenbank geoeffnet wird.
+fs.mkdirSync(dataDir, { recursive: true });
 
 export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
