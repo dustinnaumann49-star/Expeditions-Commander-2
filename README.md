@@ -1217,6 +1217,13 @@ client/
       `blur(3px)` statt vorher blickdichtem `var(--carbon-light)`) - "leicht erkennbar, Text
       bleibt lesbar", wie gewuenscht. Modal-Popups (`#modal-box`) bewusst NICHT angefasst - die
       sollen als Overlay weiterhin gut lesbar/deckend bleiben, unabhaengig vom Rest.
+    - **Nachtrag (nach Live-Test):** trotz "Mittel"-Deckkraft war vom Hintergrund kaum etwas zu
+      sehen - Ursache war NICHT die Panel-Deckkraft, sondern der radiale Verlauf auf `body`
+      (`radial-gradient(...)`), der schon VOR den transparenten Panels existierte und fuer das
+      urspruengliche `hauptbild.png` gedacht war (bis zu 88% dunkel an den Raendern). Der hat sich
+      mit der neuen Panel-Abdunkelung (45%) aufaddiert - am Rand kamen so nur noch ca. 6% der
+      Bildhelligkeit durch. Fix: Verlauf auf einen dezenten Farbstich reduziert (18%/28% statt
+      60%/88%) - die Panels selbst uebernehmen die Lesbarkeits-Abdunkelung jetzt allein.
 
 64. **Seitenspezifische Hintergrundbilder** (`App.tsx` `PAGE_BACKGROUNDS`, `theme.css`
     `--page-bg`) - jede Seite kann jetzt ihr eigenes thematisches Hintergrundbild bekommen
