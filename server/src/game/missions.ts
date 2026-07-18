@@ -33,8 +33,13 @@ import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
 
 export function miningMultiplier(state: PlayerState): number {
-  // RESEARCH[4] = "mining" (siehe data/research.ts) - 0.10 Effekt pro Stufe
-  return 1 + (state.research.mining || 0) * 0.1;
+  // Basis-Mining-Forschung (RESEARCH[4] = "mining", 0.10 Effekt/Stufe) wirkt weiterhin auf
+  // BEIDES (Schiffe UND Minen-Gebaeude, siehe Punkt 58/actions.ts miningBuildingMultiplier) -
+  // der Forschungsbaum-Zweig "Mining-Boost: Schiffe" stapelt ZUSAETZLICH NUR fuer Mining-Schiffe
+  // obendrauf.
+  const base = 1 + (state.research.mining || 0) * 0.1;
+  const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
+  return base * specific;
 }
 
 // ========== FLOTTE ENTSENDEN ==========

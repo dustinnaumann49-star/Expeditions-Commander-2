@@ -30,6 +30,7 @@ export interface ShipDefinition {
   teileCost?: { waffen: number; schild: number; panzerung: number };
   speed: number; // Galaxie-Flottengeschwindigkeit (an OGame-Basiswerte angelehnt)
   fuelConsumption: number; // Deuterium pro 1.000 Distanz-Einheiten pro Schiff (Galaxie-Flüge)
+  driveType: 'rakete' | 'impuls' | 'hyperraum'; // fuer die Antriebsklassen-Forschungszweige
 }
 
 export interface DefenseDefinition {
@@ -91,6 +92,11 @@ export interface ResearchDefinition {
   costGrowth: number;
   baseTimeHours: number;
   timeGrowth: number;
+  // Forschungsbaum (siehe README "Geplante Erweiterungen" -> jetzt umgesetzt): Gruppierung in
+  // Hauptbereiche + Eltern-Kind-Voraussetzungen zwischen Technologien.
+  mainBranch: 'waffen' | 'verteidigung' | 'antrieb' | 'wirtschaft';
+  parentId?: string; // Voraussetzung: parentId muss PARENT_UNLOCK_LEVEL erreicht haben
+  driveType?: 'rakete' | 'impuls' | 'hyperraum'; // NUR bei den 3 Antriebsklassen-Zweigen gesetzt
 }
 
 export interface BuildJob {

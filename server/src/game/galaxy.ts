@@ -28,20 +28,43 @@ export function galaxyDistance(a: GalaxyPosition, b: GalaxyPosition): number {
 }
 
 // Eine Flotte fliegt so schnell wie ihr langsamstes Schiff (wie in OGame), zusaetzlich
-// beschleunigt durch die Antriebstechnik-Forschung des Absenders (3%/Stufe, bei Stufe 10 also
-// 30% schneller - siehe data/research.ts "antrieb"). `research` optional, damit bestehende
-// Aufrufe ohne Forschungskontext (z.B. reine Distanz-Vorschauen ohne Login-Kontext) nicht
-// brechen - ohne research-Parameter gilt einfach die reine Basisgeschwindigkeit.
+// beschleunigt durch ZWEI Forschungs-Ebenen (siehe Forschungsbaum "Antriebstechnik", research.ts):
+// die allgemeine Antriebstechnik-Basis (3%/Stufe, wirkt auf ALLE Schiffe) UND die spezialisierte
+// Antriebsklasse DES LANGSAMSTEN SCHIFFS (Raketen-/Impuls-/Hyperraumantrieb, je 2%/Stufe, wirkt
+// NUR auf Schiffe dieser Klasse, siehe driveType in data/ships.ts) - beide stapeln multiplikativ.
+// `research` optional, damit bestehende Aufrufe ohne Forschungskontext nicht brechen.
+const DRIVE_TYPE_TO_RESEARCH: Record<string, string> = {
+  rakete: 'raketenantrieb',
+  impuls: 'impulsantrieb',
+  hyperraum: 'hyperraumantrieb',
+};
+
 export function galaxyFleetSpeed(ships: Record<string, number>, research?: Record<string, number>): number {
   let slowest = Infinity;
+  let slowestShipId: string | null = null;
   Object.entries(ships).forEach(([id, count]) => {
     if (!count) return;
     const ship = findShip(id);
-    if (ship && ship.speed) slowest = Math.min(slowest, ship.speed);
+    if (ship && ship.speed && ship.speed < slowest) {
+      slowest = ship.speed;
+      slowestShipId = id;
+    }
   });
   if (slowest === Infinity) return 0;
-  const antriebLevel = research?.antrieb || 0;
-  return slowest * (1 + antriebLevel * 0.03);
+
+  const baseLevel = research?.antrieb || 0;
+  let multiplier = 1 + baseLevel * 0.03;
+
+  if (slowestShipId && research) {
+    const ship = findShip(slowestShipId);
+    const driveTechId = ship?.driveType ? DRIVE_TYPE_TO_RESEARCH[ship.driveType] : undefined;
+    if (driveTechId) {
+      const driveLevel = research[driveTechId] || 0;
+      multiplier *= 1 + driveLevel * 0.02;
+    }
+  }
+
+  return slowest * multiplier;
 }
 
 export function galaxyDurationMs(distance: number, speed: number): number {

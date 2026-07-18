@@ -2,9 +2,9 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS, findBuilding } from './data/buildings.js';
-import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS } from './data/combatConstants.js';
+import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
-import { processMissions, miningMultiplier } from './missions.js';
+import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
 import { processEventTimer, processOverdueEventsForOtherUsers } from './events.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
@@ -35,14 +35,31 @@ function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefen
   return Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
 }
 
+// Forschungsbaum-Zweige "Bauzeit: X" (siehe research.ts) stapeln ZUSAETZLICH zur Basis-Forschung
+// oben (die weiterhin ALLE drei Kategorien gleichzeitig verkuerzt) - jeweils nur fuer EINE
+// Kategorie. Gleiche Floor-Logik wie baseTimeMultiplier (min. 50%, nie negativ/Null).
+function specificTimeMultiplier(level: number, effectPerLevel: number): number {
+  return Math.max(0.5, 1 - level * effectPerLevel);
+}
+
 export function bauzeitMultiplier(state: PlayerState): number {
-  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense');
+  const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+}
+
+// NEU: eigener Multiplikator fuer Verteidigungsanlagen (vorher gemeinsam mit Schiffen ueber
+// bauzeitMultiplier() - jetzt getrennt, da der neue Zweig "Bauzeit: Verteidigung" NUR
+// Verteidigungsanlagen betreffen soll, nicht Schiffe).
+export function defenseBauzeitMultiplier(state: PlayerState): number {
+  const specific = specificTimeMultiplier(state.research.bauzeit_verteidigung || 0, 0.03);
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific;
 }
 
 // Eigener Multiplikator fuer Gebaeude-Bauzeiten (Punkt 1 der README gilt auch hier: jede neue
 // Zeit-Anzeige im Frontend fuer Gebaeude MUSS die client-seitige Entsprechung verwenden).
 export function gebaeudeBauzeitMultiplier(state: PlayerState): number {
-  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building');
+  const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific;
 }
 
 export function researchTimeMultiplier(state: PlayerState): number {
@@ -120,14 +137,22 @@ export function energyFactor(state: PlayerState): number {
   return Math.min(1, energyProduced(state) / consumed);
 }
 
-// Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor und Mining-Forschung (dieselbe
-// Forschung, die auch den Mining-Schiff-Ertrag boostet - EIN Wirtschaftssystem statt zweier
-// getrennter Boni).
+// Basis-Mining-Forschung (research.mining) wirkt weiterhin auf BEIDES (Schiffe UND Minen-
+// Gebaeude, siehe Punkt 58) - der neue Forschungsbaum-Zweig "Mining-Boost: Minen" stapelt
+// ZUSAETZLICH NUR fuer die Gebaeude-Produktion obendrauf (Pendant fuer Schiffe: siehe
+// miningMultiplier() in missions.ts mit "Mining-Boost: Schiffe").
+function miningBuildingMultiplier(state: PlayerState): number {
+  const base = 1 + (state.research.mining || 0) * 0.1;
+  const specific = 1 + (state.research.mining_minen || 0) * 0.05;
+  return base * specific;
+}
+
+// Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor und Mining-Forschung.
 export function mineOutputPerHour(state: PlayerState, buildingId: string): number {
   const building = findBuilding(buildingId);
   if (!building || !building.baseOutput) return 0;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  return base * energyFactor(state) * miningMultiplier(state);
+  return base * energyFactor(state) * miningBuildingMultiplier(state);
 }
 
 // Rechnet die seit dem letzten tick() vergangene Zeit als passive Minen-Produktion hoch.
@@ -302,7 +327,7 @@ export function startDefenseBuild(state: PlayerState, defId: string, qty: number
     const laneJob = state.defenseQueue[state.defenseQueue.length - MAX_DEFENSE_SLOTS];
     startTime = Math.max(now, laneJob.endTime);
   }
-  const duration = def.buildTime * bauzeitMultiplier(state) * qty * 1000;
+  const duration = def.buildTime * defenseBauzeitMultiplier(state) * qty * 1000;
   state.defenseQueue.push({ defId, count: qty, startTime, endTime: startTime + duration });
   return { ok: true };
 }
@@ -358,6 +383,16 @@ export function startResearch(state: PlayerState, techId: string): ActionResult 
   // den Mechanismus neu bauen zu muessen.
   if (techId === 'spionage') {
     return { ok: false, error: 'Spionage ist aktuell gesperrt (Platzhalter für zukünftige Erweiterungen).' };
+  }
+  // Forschungsbaum: Voraussetzung pruefen (siehe ResearchDefinition.parentId, types.ts) - die
+  // Elternforschung muss PARENT_UNLOCK_LEVEL (einheitlich Stufe 3) erreicht haben, bevor dieser
+  // Zweig ueberhaupt gestartet werden kann.
+  if (tech.parentId) {
+    const parentLevel = state.research[tech.parentId] || 0;
+    if (parentLevel < PARENT_UNLOCK_LEVEL) {
+      const parentTech = RESEARCH.find((r) => r.id === tech.parentId);
+      return { ok: false, error: `Erfordert ${parentTech?.name || tech.parentId} Stufe ${PARENT_UNLOCK_LEVEL}.` };
+    }
   }
   if (state.researchQueue.length >= MAX_RESEARCH_SLOTS) {
     return { ok: false, error: `Es laufen bereits ${MAX_RESEARCH_SLOTS} Forschungen gleichzeitig (Maximum).` };
