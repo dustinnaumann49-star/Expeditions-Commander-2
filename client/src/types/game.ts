@@ -23,6 +23,8 @@ export interface ShipDefinition {
   unique?: boolean;
   specialOnly?: boolean;
   teileCost?: { waffen: number; schild: number; panzerung: number };
+  speed: number;
+  fuelConsumption: number;
 }
 
 export interface DefenseDefinition {
@@ -35,6 +37,49 @@ export interface DefenseDefinition {
   stats: CombatStats;
   maxCount?: number;
   isDome?: boolean;
+}
+
+export interface GalaxyPosition {
+  system: number;
+  position: number;
+}
+
+export interface GalaxyDeployment {
+  id: string;
+  targetUserId: number;
+  targetUsername: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  recalled: boolean;
+  returnTime: number | null;
+}
+
+export interface GalaxyOccupant {
+  userId: number;
+  username: string;
+  system: number;
+  position: number;
+}
+
+export interface SektorGalaxyPosition {
+  sektorId: string;
+  name: string;
+  system: number;
+  position: number;
+}
+
+export interface IncomingDeployment {
+  ownerUsername: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  arriveTime: number;
+  holding: boolean;
 }
 
 export interface BuildingDefinition {
@@ -216,6 +261,9 @@ export type InventoryEntry = Container | RewardItem;
 export interface RaidState {
   id: string;
   spawnedAt: number;
+  pirateBase: GalaxyPosition;
+  launchTime: number;
+  launchNotified: boolean;
   arrivalTime: number;
   resolved: boolean;
 }
@@ -226,6 +274,8 @@ export interface EventState {
   spawnedAt: number;
   deadline: number;
   started: boolean;
+  ships: Record<string, number>;
+  arriveTime: number;
 }
 
 export interface FleetPreset {
@@ -270,6 +320,8 @@ export interface PlayerState {
   researchQueue: ResearchJob[];
   buildings: Record<string, number>;
   buildingQueue: BuildJob[];
+  galaxyPosition: GalaxyPosition | null;
+  galaxyDeployments: GalaxyDeployment[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];
@@ -357,6 +409,8 @@ export interface GameData {
   research: ResearchDefinition[];
   buildings: BuildingDefinition[];
   maxBuildingSlots: number;
+  galaxySystems: number;
+  galaxyPositions: number;
   sektoren: SektorDefinition[];
   sektorConfig: Record<string, SektorConfig>;
   piratenMultiplierRoll: Record<string, number[]>;
@@ -407,6 +461,7 @@ export interface GroupOperationParticipant {
   farmed?: { metall: number; kristall: number; deuterium: number };
   teile?: { waffen: number; schild: number; panzerung: number };
   dmFound?: number;
+  rendezvousArrivalTime?: number;
 }
 
 export interface GroupOperation {
@@ -415,6 +470,7 @@ export interface GroupOperation {
   sektorId?: string;
   eventName?: string;
   creatorId: number;
+  creatorPosition: GalaxyPosition | null;
   status: 'inviting' | 'departed' | 'resolved' | 'cancelled';
   participants: GroupOperationParticipant[];
   createdAt: number;
@@ -445,7 +501,8 @@ export interface SimulationResult {
 export interface ActiveRaidInfo {
   targetUserId: number;
   targetUsername: string;
+  targetPosition: GalaxyPosition | null;
   raidId: string;
   arrivalTime: number;
-  reinforcementCount: number;
+  holdingCount: number;
 }
