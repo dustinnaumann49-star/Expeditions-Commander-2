@@ -1,13 +1,14 @@
 import type { GameData } from '../types/game';
 
 interface LoreTarget {
-  kind: 'ship' | 'defense' | 'research';
+  kind: 'ship' | 'defense' | 'research' | 'building';
   id: string;
 }
 
 export function LoreModal({ target, gameData, onClose }: { target: LoreTarget | null; gameData: GameData; onClose: () => void }) {
   if (!target) return null;
-  const list = target.kind === 'ship' ? gameData.ships : target.kind === 'defense' ? gameData.defenses : gameData.research;
+  const list =
+    target.kind === 'ship' ? gameData.ships : target.kind === 'defense' ? gameData.defenses : target.kind === 'building' ? gameData.buildings : gameData.research;
   const entry = list.find((e) => e.id === target.id);
   if (!entry) return null;
 
