@@ -38,5 +38,8 @@ export const RESEARCH: ResearchDefinition[] =
     baseTimeHours:14, timeGrowth:1.6 },
   { id:"kritischetreffer", name:"Kritische Treffer", img:"research/kritischetreffer.png", lore:"Kritische Treffer lehrt die Zielsysteme, Schwachstellen im gegnerischen Rumpf zu erkennen – Reaktorkopplungen, Munitionslager, Schildgeneratoren. Wer dort trifft, richtet doppelten Schaden an.", effectPerLevel:0.015,
     baseCost:{metall:80000, kristall:70000, deuterium:30000}, costGrowth:1.8,
-    baseTimeHours:15, timeGrowth:1.6 }
+    baseTimeHours:15, timeGrowth:1.6 },
+  { id:"antrieb", name:"Antriebstechnik", img:"research/antrieb.png", lore:"Antriebstechnik verfeinert Schubdüsen und Treibstoffzufuhr, damit Flotten spürbar schneller zwischen den Sternen unterwegs sind – jede Stufe bedeutet kürzere Wartezeiten für jede Flugbewegung in der Galaxie.", effectPerLevel:0.03,
+    baseCost:{metall:70000, kristall:50000, deuterium:30000}, costGrowth:1.8,
+    baseTimeHours:16, timeGrowth:1.6 }
 ];

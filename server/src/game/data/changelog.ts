@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '18.07.2026',
+    title: 'Neue Forschung: Antriebstechnik',
+    changes: [
+      'Neue Forschung "Antriebstechnik" verkürzt alle Flugzeiten in der Galaxie um 3% pro Stufe - bei voll ausgebauter Stufe 10 also 30% schneller unterwegs (Sektor-Missionen, Notruf, Halten, Elite-Bollwerk).',
+    ],
+  },
+  {
+    date: '18.07.2026',
     title: 'Fehlerbehebung: Sektor-Tab stürzte ab',
     changes: [
       'Bug behoben, durch den die App beim Wechsel zwischen "Asteroiden-Feld" und "Piraten-Sektor" im Sektor-Tab abstürzte (kurz sichtbar, dann verschwunden) - das sollte jetzt zuverlässig funktionieren.',
