@@ -12,10 +12,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '18.07.2026',
     title: 'Überarbeitetes Design: schlankere Oberfläche',
     changes: [
-      'Ressourcenleiste, Seitenleiste und Hauptbereich sind jetzt ein zusammenhängendes Fenster statt drei getrennter Kästen.',
-      'Deckkraft insgesamt reduziert - das Hintergrundbild kommt jetzt deutlich mehr zur Geltung.',
+      'Ressourcenleiste bleibt oben über die volle Breite, die Seitenleiste fest links - der Hauptbereich hat jetzt eine feste, zentrierte Breite, sodass rundherum sichtbar Hintergrund bleibt.',
+      'Deckkraft insgesamt deutlich reduziert - das Hintergrundbild kommt jetzt klar zur Geltung.',
       'Karten (Schiffe, Warteschlangen usw.) sind jetzt transparenter, bleiben aber gut lesbar.',
-      'Jede Seite kann künftig ihr eigenes thematisches Hintergrundbild bekommen (Werft, Forschung, Galaxie, ...) - wird nach und nach ergänzt.',
+      'Jede Seite kann künftig ihr eigenes thematisches Hintergrundbild bekommen (Werft, Forschung, Sektor, Galaxie, Multiplayer, Händler sind schon dabei) - wird nach und nach ergänzt.',
     ],
   },
   {
