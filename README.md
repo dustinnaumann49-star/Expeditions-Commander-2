@@ -1540,59 +1540,50 @@ client/
       nach `{id}`-Ausgaben in JSX) - keine weiteren Fundstellen, Multiplayer.tsx nutzte
       `shipName()` bereits korrekt.
 
+71. **Neu: Gebaeude-Modulsystem - analog zum Forschungsbaum (Punkt 65), aber pro Gebaeude statt
+    eines gemeinsamen Baums.** 15 Module ueber alle 6 Gebaeude verteilt (9 fuer die drei Minen,
+    je 2 fuer Solarkraftwerk/Roboterfabrik/Nanitenfabrik) - jedes verbessert GENAU EINEN Aspekt
+    seines Basis-Gebaeudes zusaetzlich, stapelt sich mit der allgemeinen Forschung (Mining-Boost/
+    Bauzeit-Zweige aus Punkt 65), ersetzt sie nicht (wie besprochen).
+    - **Datenmodell** (`types.ts`): neuer `BuildingModuleDefinition`-Typ (`buildingId`,
+      `moduleKind`, `requiredBuildingLevel`, `effectPerLevel`, `maxLevel`), `PlayerState.
+      buildingModules: Record<string, number>` (Modul-ID -> Stufe), `BuildJob.moduleId`.
+      Module nutzen bewusst DASSELBE Bild wie ihr Basis-Gebaeude (kein eigenes Bild noetig, wie
+      besprochen) - der Client ermittelt es ueber `buildingId`.
+    - **Voraussetzungs-Stufen wie besprochen NICHT einheitlich** (anders als beim
+      Forschungsbaum, dort immer Stufe 3): Minen/Solarkraftwerk Stufe 20, Roboterfabrik Stufe 10,
+      Nanitenfabrik Stufe 5. Maximalstufe pro Modul: 10 (wie ueberall sonst). Kosten/Bauzeit
+      bewusst hoch angesetzt (`data/buildingModules.ts`).
+    - **Vier Effekt-Kategorien (`moduleKind`), jede mit eigener Verdrahtung in `actions.ts`:**
+      `output` (Foerdereffizienz der Minen, Ertragssteigerung Solarkraftwerk - `mineOutputPerHour()`/
+      `energyProduced()`), `energy_reduction` (Energiesparmodul der Minen - `energyConsumed()`,
+      PRO MINE einzeln), `buildtime_self` (Automatisierung/Wartungsoptimierung/Wartungsfreiheit -
+      verkuerzt NUR die Bauzeit fuer weitere Ausbaustufen GENAU DIESES Gebaeudes, neuer optionaler
+      `buildingId`-Parameter bei `gebaeudeBauzeitMultiplier()`), `strengthen_factor`
+      (Verstaerkte Automatisierung bei Roboterfabrik/Nanitenfabrik - verstaerkt deren
+      BESTEHENDEN Bauzeit-Bonus auf ALLES, ohne die Fabrik selbst weiter ausbauen zu muessen,
+      direkt in `roboterNaniteFactor()` eingebunden).
+    - **`startModuleUpgrade()`** (`actions.ts`) teilt sich den Bau-Slot mit `startBuildingConstruction()`
+      (`MAX_BUILDING_SLOTS=1`, dieselbe `state.buildingQueue`) - ein Modul ist konzeptionell ein
+      Ausbauprojekt AM Gebaeude, kein eigenstaendiges Bauvorhaben. Neue Route `/game/build/module`.
+    - Getestet: Voraussetzungsprüfung (Metallmine-Modul ohne/mit Stufe 20 korrekt abgelehnt/
+      erlaubt); Foerdereffizienz Stufe 5 ergab exakt Faktor 1,25 (+25%), Energiesparmodul Stufe 5
+      exakt Faktor 0,75 (-25%), Solarkraftwerk-Ertragssteigerung Stufe 4 exakt Faktor 1,20 (+20%);
+      Metallmine-Automatisierung Stufe 5 senkte NUR die Metallmine-Bauzeit (Faktor 0,85), liess
+      die Kristallmine-Bauzeit korrekt unveraendert; Roboterfabrik-Verstaerkung Stufe 5 senkte
+      sowohl Schiffs- als auch Gebaeude-Bauzeit korrekt um Faktor 0,75 zusaetzlich zum
+      bestehenden Roboterfabrik-Stufen-Effekt. Voller HTTP-Test (Registrierung, `/game/data`
+      liefert 15 Module, `/game/build/module` lehnt ohne Voraussetzung korrekt ab) erfolgreich.
+    - **UI: derselbe Baum-Stil wie beim Forschungsbaum** (`Gebaeude.tsx`), komplett per
+      Inline-Style (kein externes CSS, siehe Punkt 65 Nachtrag zum dortigen CSS-Problem) - jede
+      Gebaeude-Karte bekommt darunter ihre 2-3 Modul-Knoten mit Verbindungslinie, gesperrte Module
+      grau/abgedunkelt mit 🔒, alle Details im Info-Popup.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
 nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
 spaetere Umsetzung, nicht als Spezifikation.
-
-### Gebaeude-Modulsystem (analog zum Forschungsbaum)
-
-Nutzer-Idee im Anschluss an den Forschungsbaum (Punkt 65): dasselbe Baum-Prinzip auch fuer
-Gebaeude - jedes der 6 Gebaeude bleibt die "Basis" (normaler Stufen-Ausbau wie bisher), Module
-zweigen davon ab und verbessern jeweils EINEN bestimmten Aspekt des Gebaeudes zusaetzlich.
-
-**Vorgeschlagene Module (Diskussionsgrundlage, noch nicht final):**
-- **Metallmine/Kristallmine/Deuterium-Synthetisierer** (strukturell identisch, dasselbe
-  3er-Set fuer alle drei): "Foerdereffizienz" (mehr Ertrag dieser einen Mine), "Energiesparmodul"
-  (weniger Energieverbrauch dieser einen Mine), "Automatisierung" (kuerzere Bauzeit fuer weitere
-  Ausbaustufen dieser einen Mine).
-- **Solarkraftwerk**: "Ertragssteigerung" (mehr Energie pro Stufe), "Wartungsoptimierung"
-  (kuerzere Bauzeit fuer weitere Solarkraftwerk-Stufen).
-- **Roboterfabrik/Nanitenfabrik**: "Verstaerkte Automatisierung" (staerkerer Bauzeit-Bonus als
-  die Basis-Wirkung bisher), "Wartungsfreiheit" (guenstigere/schnellere eigene Ausbaustufen).
-
-**Zwei Design-Fragen bereits geklaert (siehe Ruecksprache):**
-1. **Stapelverhalten mit der bestehenden Forschung:** Gebaeude-Module stapeln sich EINFACH
-   zusaetzlich zu den bereits existierenden allgemeinen Forschungs-Zweigen ("Mining-Boost:
-   Minen", "Bauzeit: Gebaeude" aus Punkt 65) - keine Ersetzung, keine gegenseitige Abschwaechung,
-   bewusst mehr Optimierungstiefe/Ebenen (Grundstufe + allgemeine Forschung + gebaeudespezifisches
-   Modul).
-2. **UI-Stil:** derselbe grafische Baum mit Verbindungslinien wie beim Forschungsbaum (Punkt 65),
-   nicht die einfachere Listen-/Popup-Darstellung.
-
-**Bereits geklaert (siehe Ruecksprache):**
-- **Maximale Modul-Stufe: 10**, wie ueberall sonst im Spiel - kein eigenes Limit fuer Module.
-- **Prozentwerte pro Modul-Stufe: aehnlich wie bei vergleichbaren Forschungen** - grobe
-  Orientierung an bestehenden `effectPerLevel`-Werten aus `research.ts` (z.B. Mining-Boost-Zweige
-  aktuell 5%/Stufe, Bauzeit-Zweige 3%/Stufe) - exakte Werte pro Modul folgen bei der eigentlichen
-  Umsetzung, aber die Groessenordnung ist damit vorgegeben.
-- **Bilder: KEINE neuen Bilder noetig** - jedes Modul nutzt einfach dasselbe Bild wie sein
-  Basis-Gebaeude (z.B. alle drei Metallmine-Module zeigen `metallmine.jpg`). Spart die zuvor
-  befuerchteten bis zu 16 neuen Bilder komplett ein.
-
-**Alle Fragen jetzt geklaert (siehe Ruecksprache) - Planung damit vollstaendig:**
-- **Voraussetzungs-Stufen der Gebaeude-Basis, um Module ueberhaupt freizuschalten** (anders als
-  beim Forschungsbaum NICHT einheitlich, sondern pro Gebaeudetyp verschieden, da die Gebaeude
-  unterschiedlich schnell/teuer wachsen):
-  - Metallmine/Kristallmine/Deuterium-Synthetisierer: **Stufe 20**
-  - Solarkraftwerk: **Stufe 20**
-  - Roboterfabrik: **Stufe 10**
-  - Nanitenfabrik: **Stufe 5**
-- **Kosten und Bauzeit der Module: bewusst hoch angesetzt** (beides, nicht nur eines von beiden)
-  - passt zum bereits hohen Voraussetzungs-Niveau (Module sind ein spaetes Ausbauziel, kein
-    fruehes Upgrade) und verhindert, dass Module die grundlegende Gebaeude-Ausbaustrategie zu
-    frueh verdraengen.
 
 ### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
