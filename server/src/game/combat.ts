@@ -501,6 +501,34 @@ class AliveTargetPool {
   }
 }
 
+// PERFORMANCE: wie AliveTargetPool oben, aber zusaetzlich nach Schiffs-/Verteidigungstyp
+// gruppiert - fuer die Kaskaden-Zielsuche bei Durchschlag-Ueberschussschaden in
+// applyHitToTarget() (vorher `targets.filter(t => t.typeId === X && t.hpCur > 0)`, jedes Mal
+// ein voller Array-Scan). Wird EINMAL pro fireShots()-Aufruf aufgebaut, bleibt ueber onKill()
+// synchron zur flachen AliveTargetPool.
+class AliveTargetsByType {
+  private pools = new Map<string, AliveTargetPool>();
+
+  constructor(units: CombatUnit[]) {
+    const grouped = new Map<string, CombatUnit[]>();
+    units.forEach((u) => {
+      if (u.hpCur <= 0) return;
+      const list = grouped.get(u.typeId);
+      if (list) list.push(u);
+      else grouped.set(u.typeId, [u]);
+    });
+    grouped.forEach((list, typeId) => this.pools.set(typeId, new AliveTargetPool(list)));
+  }
+
+  arrayFor(typeId: string): CombatUnit[] {
+    return this.pools.get(typeId)?.array || [];
+  }
+
+  remove(unit: CombatUnit): void {
+    this.pools.get(unit.typeId)?.remove(unit);
+  }
+}
+
 function applyHitToTarget(
   target: CombatUnit,
   dmg: number,
@@ -509,7 +537,8 @@ function applyHitToTarget(
   targets: CombatUnit[],
   overkillFraction: number,
   targetsSharedShieldPool?: { remaining: number },
-  onKill?: (unit: CombatUnit) => void
+  onKill?: (unit: CombatUnit) => void,
+  typedPool?: AliveTargetsByType
 ) {
   const MAX_CASCADE = 5;
   let currentTarget: CombatUnit | undefined = target;
@@ -543,7 +572,7 @@ function applyHitToTarget(
       currentTarget.hpCur = 0;
       onKill?.(currentTarget);
       if (overflow <= 0) break;
-      const sameTypeAlive = targets.filter((t) => t.typeId === currentTarget!.typeId && t.hpCur > 0);
+      const sameTypeAlive: CombatUnit[] = typedPool ? typedPool.arrayFor(currentTarget!.typeId) : targets.filter((t) => t.typeId === currentTarget!.typeId && t.hpCur > 0);
       if (sameTypeAlive.length === 0) break;
       currentTarget = sameTypeAlive[Math.floor(Math.random() * sameTypeAlive.length)];
       remainingDmg = overflow;
@@ -598,9 +627,15 @@ function fireShots(
   if (targets.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
   const overkillFraction = applyPlayerResearch ? getDurchschlagFraction(research) : 0;
-  // Einmal pro fireShots()-Aufruf aufgebaut (nicht pro Schuss!) - siehe AliveTargetPool oben.
+  // Einmal pro fireShots()-Aufruf aufgebaut (nicht pro Schuss!) - siehe AliveTargetPool/
+  // AliveTargetsByType oben. Nur bei Durchschlag-Forschung > 0 lohnt sich der zusaetzliche
+  // Aufwand fuer die typisierte Pool ueberhaupt (Kaskaden treten sonst nie auf).
   const alivePool = new AliveTargetPool(targets);
-  const onKill = (unit: CombatUnit) => alivePool.remove(unit);
+  const typedPool = overkillFraction > 0 ? new AliveTargetsByType(targets) : undefined;
+  const onKill = (unit: CombatUnit) => {
+    alivePool.remove(unit);
+    typedPool?.remove(unit);
+  };
 
   shooters.forEach((shooter) => {
     let shots = 1;
@@ -674,7 +709,7 @@ function fireShots(
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
           const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-          applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill);
+          applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
             shots++;
@@ -699,7 +734,7 @@ function fireShots(
       if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
       const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
       shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill);
+      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
       const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
       if (hitRfChance > 0 && Math.random() < hitRfChance) {
         shots++;

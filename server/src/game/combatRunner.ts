@@ -39,6 +39,69 @@ export interface CombatWorkerRequest {
   battleModifier?: BattleModifierType | null;
 }
 
+// PERFORMANCE-NOTMASSNAHME (siehe README): auf dem Starter-Tarif (0,5 CPU / 512MB RAM) fuehrte
+// das wiederholte Erzeugen+Beenden eines NEUEN Worker-Threads pro Kampf zu kurzzeitigen CPU-UND
+// Speicher-Spitzen bis 100% (jede Worker-Neuerzeugung hat einen spuerbaren Grundverbrauch durch
+// den eigenen V8-Isolate) - selbst bei nur EINEM Kampf. Fix: ein kleiner, WIEDERVERWENDETER Pool
+// aus dauerhaft laufenden Workern (siehe combat.worker.ts, laesst sich jetzt per postMessage
+// mehrfach nutzen) statt Neuerzeugung pro Kampf. Wird erst beim ALLERERSTEN Kampf angelegt
+// (kein Overhead, solange nie gekaempft wird), bleibt danach fuer die gesamte Laufzeit des
+// Server-Prozesses bestehen.
+const POOL_SIZE = 2; // begrenzt gleichzeitig laufende Worker - genug fuer zwei parallele Kaempfe,
+// ohne bei mehr gleichzeitigen Anfragen unbegrenzt viele Worker (und damit Speicher) zu erzeugen.
+
+interface PoolEntry {
+  worker: Worker;
+  busy: boolean;
+}
+
+let pool: PoolEntry[] | null = null;
+const waitQueue: Array<() => void> = [];
+
+function getPool(): PoolEntry[] {
+  if (!pool) {
+    pool = Array.from({ length: POOL_SIZE }, () => ({ worker: new Worker(workerPath), busy: false }));
+  }
+  return pool;
+}
+
+function acquireWorker(): Promise<PoolEntry> {
+  return new Promise((resolve) => {
+    const tryAcquire = () => {
+      const entry = getPool().find((e) => !e.busy);
+      if (entry) {
+        entry.busy = true;
+        resolve(entry);
+      } else {
+        waitQueue.push(tryAcquire);
+      }
+    };
+    tryAcquire();
+  });
+}
+
+function releaseWorker(entry: PoolEntry): void {
+  entry.busy = false;
+  const next = waitQueue.shift();
+  if (next) next();
+}
+
+// Ersetzt einen kaputten Worker durch einen frischen, statt ihn dauerhaft im Pool zu behalten -
+// verhindert, dass ein einmal fehlgeschlagener Kampf den Pool-Slot fuer immer blockiert.
+function discardWorker(entry: PoolEntry): void {
+  if (!pool) return;
+  const idx = pool.indexOf(entry);
+  if (idx === -1) return;
+  try {
+    entry.worker.terminate();
+  } catch {
+    // Worker war ohnehin schon kaputt/beendet - nichts weiter zu tun.
+  }
+  pool[idx] = { worker: new Worker(workerPath), busy: false };
+  const next = waitQueue.shift();
+  if (next) next();
+}
+
 function runWorker<T>(request: CombatWorkerRequest): Promise<T> {
   return new Promise((resolve, reject) => {
     if (isTs && !fs.existsSync(workerPath)) {
@@ -49,17 +112,27 @@ function runWorker<T>(request: CombatWorkerRequest): Promise<T> {
       );
       return;
     }
-    const worker = new Worker(workerPath, { workerData: request });
-    worker.once('message', (result: T) => {
-      resolve(result);
-      worker.terminate();
-    });
-    worker.once('error', (err) => {
-      reject(err);
-    });
-    worker.once('exit', (code) => {
-      if (code !== 0) reject(new Error(`Combat-Worker beendet mit Code ${code}`));
-    });
+    acquireWorker()
+      .then((entry) => {
+        const cleanup = () => {
+          entry.worker.off('message', onMessage);
+          entry.worker.off('error', onError);
+        };
+        const onMessage = (result: T) => {
+          cleanup();
+          releaseWorker(entry);
+          resolve(result);
+        };
+        const onError = (err: Error) => {
+          cleanup();
+          discardWorker(entry); // Worker war offenbar in einem kaputten Zustand - nicht wiederverwenden
+          reject(err);
+        };
+        entry.worker.once('message', onMessage);
+        entry.worker.once('error', onError);
+        entry.worker.postMessage(request);
+      })
+      .catch(reject);
   });
 }
 
