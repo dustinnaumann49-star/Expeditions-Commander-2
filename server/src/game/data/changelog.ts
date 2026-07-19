@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Kampf-Engine deutlich beschleunigt',
+    changes: [
+      'Kampfberechnungen laufen jetzt ca. 2-2,5x schneller, besonders spürbar bei großen Flotten - hilft gegen Server-Überlastung, wenn eure Flotten weiter wachsen.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Elite-Bollwerk: garantierte Kämpfe + Abschluss-Bonus',
     changes: [
       'Alle 4 Stunden-Kämpfe im Elite-Bollwerk finden jetzt garantiert statt (vorher nur 50% Chance pro Stunde).',
