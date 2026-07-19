@@ -9,7 +9,7 @@ import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
-import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation } from './groupOps.js';
+import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter } from './groupOps.js';
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listAllUsers } from '../db.js';
@@ -22,7 +22,7 @@ import { BUILDING_MODULES } from './data/buildingModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
-import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER } from './data/combatConstants.js';
+import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
 import { getLeaderboard } from './stats.js';
 import type { ActionResult } from './actions.js';
@@ -41,6 +41,7 @@ gameRouter.get('/data', (_req, res) => {
     buildings: BUILDINGS,
     buildingModules: BUILDING_MODULES,
     maxBuildingSlots: MAX_BUILDING_SLOTS,
+    admiralAllowedShipIds: ADMIRAL_ALLOWED_SHIP_IDS,
     galaxySystems: GALAXY_SYSTEMS,
     galaxyPositions: GALAXY_POSITIONS,
     sektoren: SEKTOREN,
@@ -393,6 +394,14 @@ gameRouter.post('/party/start', (req: AuthedRequest, res) => {
   const { opId } = req.body ?? {};
   if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
   handleAction(req, res, (state) => startGroupOperation(state, opId));
+});
+
+gameRouter.post('/party/admiral-decide', (req: AuthedRequest, res) => {
+  const { opId, action } = req.body ?? {};
+  if (typeof opId !== 'string' || (action !== 'extract' && action !== 'continue')) {
+    return res.status(400).json({ error: 'opId und action ("extract"|"continue") erforderlich.' });
+  }
+  handleAction(req, res, (state) => respondAdminEncounter(state, opId, action));
 });
 
 // ---- Kampfsimulator ----

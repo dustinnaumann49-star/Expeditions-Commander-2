@@ -13,14 +13,24 @@ function statsFnFor(request: CombatWorkerRequest) {
   return (id: string) => getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive);
 }
 
+// Boss-Gefecht (Punkt 76): Seite B nutzt normalerweise die statischen baseStats() - fuer einzelne
+// dynamisch berechnete Einheiten (z.B. den Piratenadmiral) wird stattdessen der mitgelieferte
+// Override-Wert genutzt, siehe sideBStatsOverride in combatRunner.ts.
+function statsFnBFor(request: CombatWorkerRequest) {
+  const override = request.sideBStatsOverride;
+  if (!override) return baseStats;
+  return (id: string) => override[id] || baseStats(id);
+}
+
 parentPort?.on('message', (request: CombatWorkerRequest) => {
   const statsFnA = statsFnFor(request);
+  const statsFnB = statsFnBFor(request);
   const result = request.contributions
     ? resolveCombatMultiOwner(
         request.contributions,
         statsFnA,
         request.sideBShips,
-        baseStats,
+        statsFnB,
         request.research,
         request.sharedShieldPoolA || 0,
         request.allowRetreat !== false,
@@ -30,7 +40,7 @@ parentPort?.on('message', (request: CombatWorkerRequest) => {
         request.sideAShips || {},
         statsFnA,
         request.sideBShips,
-        baseStats,
+        statsFnB,
         request.research,
         request.sharedShieldPoolA || 0,
         request.allowRetreat !== false,

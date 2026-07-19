@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { CombatResult, MultiOwnerCombatResult, OwnedFleetContribution } from './combat.js';
 import type { BattleModifierType } from './data/combatConstants.js';
+import type { CombatStats } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,6 +37,11 @@ export interface CombatWorkerRequest {
   // durchgereicht, damit die eigentliche Wuerfel-Logik ausserhalb des Workers bleibt (der Worker
   // bekommt nur reine Daten, siehe README "Wichtige Punkte" Punkt 3).
   battleModifier?: BattleModifierType | null;
+  // Boss-Gefecht (Punkt 76): dynamisch berechnete Kampfwerte fuer einzelne Seite-B-Einheiten
+  // (z.B. der Piratenadmiral, siehe generateAdmiralEncounter() in combat.ts) - ueberschreibt
+  // fuer die genannten IDs die normalen statischen baseStats()-Werte. Alle anderen Seite-B-
+  // Einheiten (z.B. die Eskorte) nutzen weiterhin ganz normal ihre statischen Schiffswerte.
+  sideBStatsOverride?: Record<string, CombatStats>;
 }
 
 // PERFORMANCE-NOTMASSNAHME (siehe README): auf dem Starter-Tarif (0,5 CPU / 512MB RAM) fuehrte

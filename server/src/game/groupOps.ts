@@ -9,6 +9,7 @@ import {
   generatePiratenFleet,
   generateFallbackFleet,
   generateDefenseFleet,
+  generateAdmiralEncounter,
   pickWaveProfile,
   rollMultiplierWithOutlier,
   rollBattleModifier,
@@ -18,6 +19,18 @@ import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
+import {
+  ADMIRAL_BOSS_ID,
+  ADMIRAL_CHECK_INTERVAL_MS,
+  ADMIRAL_TOTAL_CHECKS,
+  ADMIRAL_ESCALATION_PER_CHECK,
+  ADMIRAL_ALLOWED_SHIP_IDS,
+  ADMIRAL_EXTRACTION_BASE,
+  ADMIRAL_EXTRACTION_GROWTH_PER_CHECK,
+  ADMIRAL_VICTORY_BONUS,
+  ADMIRAL_VICTORY_DM,
+  ADMIRAL_MULTIPLIER_ROLL,
+} from './data/combatConstants.js';
 import type { ActionResult } from './actions.js';
 import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, CombatDetail, ContainerTier, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
@@ -49,13 +62,21 @@ export function createGroupOperation(
   ships: Record<string, number>,
   inviteUserIds: number[]
 ): ActionResult {
-  if (sektorId !== 'piraten_elite') {
-    return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk möglich.' };
+  if (sektorId !== 'piraten_elite' && sektorId !== 'piraten_admiral') {
+    return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk oder P10 – Piratenadmiral möglich.' };
   }
   const totalShips = Object.values(ships).reduce((a, b) => a + (b || 0), 0);
   if (totalShips === 0) return { ok: false, error: 'Keine Schiffe ausgewählt.' };
   for (const [id, qty] of Object.entries(ships)) {
     if (qty > 0 && (state.fleet[id] || 0) < qty) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
+  }
+  // Boss-Gefecht (Sektor P10): nur Kreuzer-Klasse und aufwaerts erlaubt - macht "wenige grosse
+  // Schiffe" mechanisch zur Pflicht, nicht nur zur Empfehlung (siehe README Punkt 76).
+  if (sektorId === 'piraten_admiral') {
+    const disallowed = Object.entries(ships).find(([id, qty]) => qty > 0 && !ADMIRAL_ALLOWED_SHIP_IDS.includes(id));
+    if (disallowed) {
+      return { ok: false, error: `${shipName(disallowed[0])} ist im Piratenadmiral-Gefecht nicht erlaubt - nur Kreuzer-Klasse und größere Schiffe.` };
+    }
   }
   const invitees = inviteUserIds.filter((id) => id !== state.userId);
   for (const uid of invitees) {
@@ -125,6 +146,12 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   if (totalShips === 0) return { ok: false, error: 'Keine Schiffe ausgewählt.' };
   for (const [id, qty] of Object.entries(ships)) {
     if (qty > 0 && (state.fleet[id] || 0) < qty) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
+  }
+  if (op.sektorId === 'piraten_admiral') {
+    const disallowed = Object.entries(ships).find(([id, qty]) => qty > 0 && !ADMIRAL_ALLOWED_SHIP_IDS.includes(id));
+    if (disallowed) {
+      return { ok: false, error: `${shipName(disallowed[0])} ist im Piratenadmiral-Gefecht nicht erlaubt - nur Kreuzer-Klasse und größere Schiffe.` };
+    }
   }
   Object.entries(ships).forEach(([id, qty]) => {
     if (qty > 0) state.fleet[id] -= qty;
@@ -229,10 +256,19 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   op.status = 'departed';
   op.departedAt = now;
   op.arriveTime = now + travelMs;
-  op.endTime = op.arriveTime + MISSION_DURATION_MS;
-  op.returnTime = op.endTime + travelMs;
-  op.processedHours = 0;
-  op.lastTick = null;
+  if (op.sektorId === 'piraten_admiral') {
+    // Boss-Gefecht (siehe README Punkt 76): eigener Ablauf statt des Stunden-Zeitfenster-Modells
+    // - 10-Minuten-Checks, kein festes endTime/returnTime im Voraus (die Flotte fliegt erst beim
+    // tatsaechlichen Ausgang - Abzug/Sieg/Niederlage - wieder heim, siehe tickAdminEncounter()).
+    op.adminChecksElapsed = 0;
+    op.adminNextCheckTime = op.arriveTime + ADMIRAL_CHECK_INTERVAL_MS;
+    op.adminAwaitingDecision = false;
+  } else {
+    op.endTime = op.arriveTime + MISSION_DURATION_MS;
+    op.returnTime = op.endTime + travelMs;
+    op.processedHours = 0;
+    op.lastTick = null;
+  }
   saveOp(op);
 
   accepted.forEach((p) => {
@@ -271,8 +307,198 @@ export async function processAllDepartedGroupOperations(currentState: PlayerStat
   }
 }
 
+// ========== BOSS-GEFECHT: PIRATENADMIRAL (Sektor P10, siehe README Punkt 76) ==========
+// Eigenstaendiger Ablauf statt des Stunden-Zeitfenster-Modells unten: 10-Minuten-Checks, mit
+// einer Rueckzugs-("Extraction")-Entscheidung nach jedem gewonnenen Check statt eines simplen
+// Durchhalte-Timers. "Gewonnen" heisst hier: die eigene Flotte musste sich NICHT zurueckziehen
+// (siehe RETREAT_THRESHOLD, combat.ts) - der bestehende Rueckzugs-Mechanismus dient als
+// natuerliches Signal fuer "diesen Check verloren", OHNE dass die Flotte dabei vernichtet wird
+// (siehe README-Vorgabe: bei einer Niederlage geht nur die UNGESICHERTE Beute verloren, nicht
+// die Flotte selbst).
+
+async function tickAdminEncounter(op: GroupOperation, currentState: PlayerState): Promise<void> {
+  const now = Date.now();
+  if (!op.arriveTime) return;
+  if (now < op.arriveTime) return;
+  if (op.status !== 'departed') return;
+  if (op.adminAwaitingDecision) return; // pausiert, bis der Ersteller per respondAdminEncounter() entscheidet
+
+  const accepted = op.participants.filter((p) => p.status === 'accepted');
+  const participantStates = new Map<number, PlayerState>();
+  accepted.forEach((p) => participantStates.set(p.userId, p.userId === currentState.userId ? currentState : loadPlayerState(p.userId)));
+
+  const checksElapsed = op.adminChecksElapsed || 0;
+  if (checksElapsed >= ADMIRAL_TOTAL_CHECKS) return; // sollte durch finalizeAdminEncounter() bereits beendet worden sein
+
+  if (!op.adminNextCheckTime || now < op.adminNextCheckTime) return;
+
+  await runAdminCheck(op, accepted, participantStates, currentState.userId);
+
+  accepted.forEach((p) => {
+    if (p.userId !== currentState.userId) savePlayerState(participantStates.get(p.userId)!);
+  });
+}
+
+async function runAdminCheck(
+  op: GroupOperation,
+  accepted: GroupOperationParticipant[],
+  participantStates: Map<number, PlayerState>,
+  currentUserId: number
+): Promise<void> {
+  const checksElapsed = op.adminChecksElapsed || 0;
+  const totalSentPower = accepted.reduce((sum, p) => sum + (p.contributedPower || 0), 0);
+
+  // Basis-Machtskalierung: 110-150% der eingesetzten Flottenstaerke (haerter als das
+  // Elite-Bollwerk mit 105-135%, siehe ADMIRAL_MULTIPLIER_ROLL) - wird bei JEDEM Check neu
+  // gewuerfelt (wie beim Bollwerk), plus die kompoundierende "Eskalierende Wut" obendrauf.
+  const { multiplier: rolledMultiplier } = rollMultiplierWithOutlier(ADMIRAL_MULTIPLIER_ROLL, 'piraten_admiral');
+  const escalationFactor = Math.pow(1 + ADMIRAL_ESCALATION_PER_CHECK, checksElapsed);
+  const encounter = generateAdmiralEncounter(totalSentPower * rolledMultiplier * escalationFactor);
+
+  const contributions = contributionsFromParticipants(op, participantStates);
+  const research = participantStates.get(op.creatorId)!.research;
+  const result = await runMultiOwnerCombatInWorker({
+    contributions,
+    sideBShips: encounter.npcShips,
+    sideBStatsOverride: encounter.statsOverride,
+    research,
+    allowRetreat: true,
+  });
+
+  // Ueberlebende Schiffe sofort in die Teilnehmer-Flotten uebernehmen (auch bei einer laufenden,
+  // noch nicht abgeschlossenen Begegnung) - vermeidet doppeltes Verrechnen, falls der naechste
+  // Check erst viel spaeter (naechster tick()) verarbeitet wird.
+  accepted.forEach((p) => {
+    Object.keys(p.ships).forEach((id) => {
+      const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
+      p.ships[id] = survived;
+    });
+  });
+
+  const bossDestroyed = (result.survivorsB[ADMIRAL_BOSS_ID] || 0) <= 0;
+  const playerRetreated = !!result.retreated;
+
+  if (bossDestroyed) {
+    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'victory', checksElapsed + 1);
+    return;
+  }
+
+  if (playerRetreated) {
+    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'defeat', checksElapsed + 1);
+    return;
+  }
+
+  // Check gewonnen (Flotte musste sich nicht zurueckziehen), Boss aber noch nicht besiegt -
+  // Rueckzugs-Entscheidung faellig, bevor es (falls gewuenscht) weitergeht.
+  op.adminChecksElapsed = checksElapsed + 1;
+  op.adminAwaitingDecision = true;
+  saveOp(op);
+
+  const checkNr = op.adminChecksElapsed;
+  accepted.forEach((p) => {
+    const pState = participantStates.get(p.userId)!;
+    pushMessage(
+      pState,
+      'kampf',
+      `Piratenadmiral (Check ${checkNr}/${ADMIRAL_TOTAL_CHECKS}): Check überstanden, der Admiral kämpft weiter. Entscheidung nötig: Beute sichern und abziehen, oder weitermachen?`,
+      { sektorName: 'Sektor P10 – Piratenadmiral', resources: { metall: 0, kristall: 0, deuterium: 0 }, dm: 0, teile: { waffen: 0, schild: 0, panzerung: 0 } }
+    );
+  });
+}
+
+// Rueckzugs-/Weitermachen-Entscheidung - nur der Ersteller kann entscheiden (analog zu
+// startGroupOperation(), gemeinsame Belohnung ohne Aufteilung nach Flottenanteil, siehe Punkt 5).
+export async function respondAdminEncounter(state: PlayerState, opId: string, action: 'extract' | 'continue'): Promise<ActionResult> {
+  const op = loadOp(opId);
+  if (!op) return { ok: false, error: 'Operation nicht gefunden.' };
+  if (op.creatorId !== state.userId) return { ok: false, error: 'Nur der Ersteller kann entscheiden.' };
+  if (op.sektorId !== 'piraten_admiral') return { ok: false, error: 'Diese Operation ist kein Boss-Gefecht.' };
+  if (!op.adminAwaitingDecision) return { ok: false, error: 'Aktuell ist keine Entscheidung fällig.' };
+
+  const accepted = op.participants.filter((p) => p.status === 'accepted');
+  const participantStates = new Map<number, PlayerState>();
+  accepted.forEach((p) => participantStates.set(p.userId, p.userId === state.userId ? state : loadPlayerState(p.userId)));
+
+  if (action === 'extract') {
+    await finalizeAdminEncounter(op, accepted, participantStates, state.userId, 'extracted', op.adminChecksElapsed || 0);
+  } else {
+    const checksElapsed = op.adminChecksElapsed || 0;
+    if (checksElapsed >= ADMIRAL_TOTAL_CHECKS) {
+      // Kein weiterer Check mehr moeglich (1 Stunde/6 Checks erreicht) - erzwungener Abzug.
+      await finalizeAdminEncounter(op, accepted, participantStates, state.userId, 'extracted', checksElapsed);
+    } else {
+      op.adminAwaitingDecision = false;
+      op.adminNextCheckTime = Date.now() + ADMIRAL_CHECK_INTERVAL_MS;
+      saveOp(op);
+    }
+  }
+
+  accepted.forEach((p) => {
+    if (p.userId !== state.userId) savePlayerState(participantStates.get(p.userId)!);
+  });
+  return { ok: true };
+}
+
+async function finalizeAdminEncounter(
+  op: GroupOperation,
+  accepted: GroupOperationParticipant[],
+  participantStates: Map<number, PlayerState>,
+  currentUserId: number,
+  outcome: 'victory' | 'defeat' | 'extracted',
+  checksCompleted: number
+): Promise<void> {
+  op.adminChecksElapsed = checksCompleted; // fuer Konsistenz, auch wenn die Operation direkt danach 'resolved' wird
+  let reward = { metall: 0, kristall: 0, deuterium: 0 };
+  let dmReward = 0;
+  let outcomeText: string;
+
+  if (outcome === 'victory') {
+    reward = { ...ADMIRAL_VICTORY_BONUS };
+    dmReward = ADMIRAL_VICTORY_DM;
+    outcomeText = `🏆 Piratenadmiral besiegt! Nach ${checksCompleted} Check(s) endgültig vernichtet - volle Siegprämie ausgezahlt.`;
+  } else if (outcome === 'extracted') {
+    if (checksCompleted > 0) {
+      reward = {
+        metall: ADMIRAL_EXTRACTION_BASE.metall + ADMIRAL_EXTRACTION_GROWTH_PER_CHECK.metall * (checksCompleted - 1),
+        kristall: ADMIRAL_EXTRACTION_BASE.kristall + ADMIRAL_EXTRACTION_GROWTH_PER_CHECK.kristall * (checksCompleted - 1),
+        deuterium: ADMIRAL_EXTRACTION_BASE.deuterium + ADMIRAL_EXTRACTION_GROWTH_PER_CHECK.deuterium * (checksCompleted - 1),
+      };
+    }
+    outcomeText =
+      checksCompleted > 0
+        ? `Rückzug nach ${checksCompleted} überstandenem(n) Check(s) - Beute gesichert und mit nach Hause gebracht.`
+        : 'Rückzug ohne einen einzigen überstandenen Check - keine Beute gesichert.';
+  } else {
+    outcomeText = `Rückzug nach hohen Verlusten im Check ${checksCompleted}/${ADMIRAL_TOTAL_CHECKS} - die noch ungesicherte Beute dieses Durchlaufs ist verloren, die Flotte kehrt aber zurück.`;
+  }
+
+  accepted.forEach((p) => {
+    const pState = participantStates.get(p.userId)!;
+    Object.entries(p.ships).forEach(([id, count]) => {
+      if (count > 0) pState.fleet[id] = (pState.fleet[id] || 0) + count;
+    });
+    pState.resources.metall += Math.floor(reward.metall);
+    pState.resources.kristall += Math.floor(reward.kristall);
+    pState.resources.deuterium += Math.floor(reward.deuterium);
+    pState.resources.dm += dmReward;
+    pushMessage(pState, 'kampf', `Piratenadmiral (Sektor P10): ${outcomeText}`, {
+      sektorName: 'Sektor P10 – Piratenadmiral',
+      resources: reward,
+      dm: dmReward,
+      teile: { waffen: 0, schild: 0, panzerung: 0 },
+      fleetReturned: { ...p.ships },
+    });
+  });
+
+  op.status = 'resolved';
+  saveOp(op);
+}
+
 async function tickGroupExpedition(op: GroupOperation, currentState: PlayerState): Promise<void> {
   const now = Date.now();
+  if (op.sektorId === 'piraten_admiral') {
+    return tickAdminEncounter(op, currentState);
+  }
   if (!op.arriveTime || !op.endTime || !op.returnTime) return;
   if (now < op.arriveTime) return;
 

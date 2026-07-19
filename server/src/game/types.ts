@@ -360,6 +360,13 @@ export interface GroupOperation {
   streakWins?: number;
   resultMessage?: string;
   resultDetail?: CombatDetail;
+  // ===== Boss-Gefecht Piratenadmiral (Sektor P10, siehe README Punkt 76) =====
+  // Eigenstaendiger Ablauf, NICHT das arriveTime/endTime/returnTime-Zeitfenster-Modell des
+  // Elite-Bollwerks wiederverwendet: 10-Minuten-Checks statt Stunden-Checks, mit einer
+  // Rueckzugs-Entscheidung nach jedem gewonnenen Check statt eines simplen Durchhalte-Timers.
+  adminChecksElapsed?: number; // wie viele der max. ADMIRAL_TOTAL_CHECKS bereits abgehandelt wurden
+  adminNextCheckTime?: number; // wann der naechste 10-Minuten-Check faellig ist (nur relevant, wenn NICHT awaitingDecision)
+  adminAwaitingDecision?: boolean; // true direkt nach einem gewonnenen Check - pausiert weitere Checks, bis der Ersteller entscheidet
 }
 
 // Kumulative Statistik ueber die gesamte Spieler-Historie - Grundlage fuer die Statistik-Seite

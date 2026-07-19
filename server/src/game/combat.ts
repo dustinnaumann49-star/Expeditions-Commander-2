@@ -26,7 +26,7 @@ import {
   MULTI_TARGET_POWER_CORRECTION,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
-import { NPC_JAEGER_CAP_ENABLED, NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS } from './data/combatConstants.js';
+import { NPC_JAEGER_CAP_ENABLED, NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS, ADMIRAL_BOSS_ID } from './data/combatConstants.js';
 import { NPC_SPECIALS } from './data/economy.js';
 import type { CombatStats, CombatReplay } from './types.js';
 
@@ -385,6 +385,44 @@ export function generateDefenseFleet(targetPower: number, spionageLevel: number)
   const uniform = 1 / pool.length;
   const weights = pool.map(() => (1 - smoothing) * Math.random() + smoothing * uniform);
   return generateCappedFleet(targetPower, pool, weights);
+}
+
+// ========== BOSS-GEFECHT: PIRATENADMIRAL (Sektor P10, siehe README Punkt 76) ==========
+// Bewusst KEINE festen Werte (siehe Nutzer-Feedback: waeren mit wachsenden Flotten schnell
+// trivial geworden) - skaliert wie die anderen Piraten-Sektoren mit der eingesetzten
+// Flottenstaerke, nur konzentriert auf EINE zaehe Einheit + kleine Eskorte statt vieler
+// schwacher Gegner.
+const ADMIRAL_STAT_SHARE = 0.55; // Anteil der Gesamt-Zielstaerke, der auf den Admiral selbst entfaellt
+// WICHTIG (nach Funktionstest korrigiert): eine rein panzerungslastige Verteilung wie beim
+// Imperator (~97,6% Panzerung) macht den Admiral zu einem reinen Tank OHNE Gegenwehr - da ein
+// einzelner Kampf bis zu 100 Runden dauern kann, wird ein Gegner ohne nennenswerte Offensive
+// einfach ueber die Zeit leergeschossen, VOELLIG UNABHAENGIG von der Flottengroesse (getestet:
+// selbst 100 Kreuzer + 25 Schlachtkreuzer mit kaum Forschung gewannen den allerersten Check
+// muehelos). Fix: deutlich mehr Waffenanteil, damit der Admiral selbst genug zurückschlaegt, um
+// eine unzureichende Flotte tatsaechlich zum Rueckzug zu zwingen, statt bloss auszuhalten.
+const ADMIRAL_STAT_RATIO = { waffen: 0.14, schild: 0.05, panzerung: 0.81 };
+// Eskorte bevorzugt WENIGE STARKE statt vieler schwacher Schiffe (Profil "elitekader" gewichtet
+// das jeweils LETZTE Element im Pool am staerksten, siehe weightsForProfile()) - absichtlich nur
+// grosse Schiffsklassen, keine Jaeger.
+const ADMIRAL_ESCORT_POOL = ['schlachtschiff', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
+
+export function generateAdmiralEncounter(totalTargetPower: number): { npcShips: Record<string, number>; statsOverride: Record<string, CombatStats> } {
+  const adminPower = totalTargetPower * ADMIRAL_STAT_SHARE;
+  const escortPower = totalTargetPower * (1 - ADMIRAL_STAT_SHARE);
+
+  const adminStats: CombatStats = {
+    waffen: adminPower * ADMIRAL_STAT_RATIO.waffen,
+    schild: adminPower * ADMIRAL_STAT_RATIO.schild,
+    panzerung: adminPower * ADMIRAL_STAT_RATIO.panzerung,
+  };
+
+  const escortWeights = weightsForProfile('elitekader', ADMIRAL_ESCORT_POOL.length);
+  const escort = generateCappedFleet(escortPower, ADMIRAL_ESCORT_POOL, escortWeights);
+
+  return {
+    npcShips: { [ADMIRAL_BOSS_ID]: 1, ...escort },
+    statsOverride: { [ADMIRAL_BOSS_ID]: adminStats },
+  };
 }
 
 export function generateAsteroidPirateFleet(targetPower: number): Record<string, number> {
