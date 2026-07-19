@@ -1290,6 +1290,19 @@ client/
       Werft (`werft.png` statt eines eigenen `verteidigung.png`) - beide Seiten spielen sich
       thematisch am selben Ort ab (Werft-Halle). Noch offen (fallen bis dahin auf `hauptbild.png`
       zurueck): Shop, Nachrichten, Inventar, Statistik, Updates.
+    - **BUGFIX (nach Live-Test): weisses Aufblitzen beim Seitenwechsel.** Ursache: `usePageBackground()`
+      schaltete die CSS-Variable SOFORT auf das neue Bild um, ohne zu pruefen, ob es ueberhaupt
+      schon geladen war - bis das (bis zu ~2MB grosse) Bild ueber's Netz nachgeladen war, zeigte
+      der Hintergrund kurz nichts (weiss/leer), besonders auf mobilen Verbindungen spuerbar. Fix:
+      neues Bild wird jetzt per unsichtbarem `Image()`-Objekt im Hintergrund VORGELADEN, das ALTE
+      Bild bleibt waehrenddessen sichtbar - erst nach vollstaendigem Laden (`onload`) wird
+      umgeschaltet, kein Aufblitzen mehr. Zusaetzlich laedt `usePreloadAllBackgrounds()` (neuer
+      Hook, einmalig in `Layout` aufgerufen) ALLE bekannten Hintergrundbilder direkt beim
+      App-Start im Hintergrund vor - dadurch ist meistens schon der ALLERERSTE Besuch jeder Seite
+      sofort ohne sichtbare Wartezeit. Bereits geladene URLs werden in einem modul-weiten Set
+      (`preloadedBackgrounds`) gemerkt, damit nicht bei jedem Routenwechsel erneut ueber ein
+      neues `Image()`-Objekt nachgeprueft werden muss (der Browser haelt das Bild ohnehin im
+      HTTP-Cache, das Set spart nur den kleinen Umweg).
 
 65. **Neu: Forschungsbaum (Tech-Tree) - loest die vorherigen 13 unabhaengigen Einzelforschungen
     ab.** Was vorher unter "Geplante Erweiterungen" grob skizziert war, ist jetzt vollstaendig
