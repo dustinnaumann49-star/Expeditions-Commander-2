@@ -1546,6 +1546,43 @@ Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst 
 nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
 spaetere Umsetzung, nicht als Spezifikation.
 
+### Gebaeude-Modulsystem (analog zum Forschungsbaum)
+
+Nutzer-Idee im Anschluss an den Forschungsbaum (Punkt 65): dasselbe Baum-Prinzip auch fuer
+Gebaeude - jedes der 6 Gebaeude bleibt die "Basis" (normaler Stufen-Ausbau wie bisher), Module
+zweigen davon ab und verbessern jeweils EINEN bestimmten Aspekt des Gebaeudes zusaetzlich.
+
+**Vorgeschlagene Module (Diskussionsgrundlage, noch nicht final):**
+- **Metallmine/Kristallmine/Deuterium-Synthetisierer** (strukturell identisch, dasselbe
+  3er-Set fuer alle drei): "Foerdereffizienz" (mehr Ertrag dieser einen Mine), "Energiesparmodul"
+  (weniger Energieverbrauch dieser einen Mine), "Automatisierung" (kuerzere Bauzeit fuer weitere
+  Ausbaustufen dieser einen Mine).
+- **Solarkraftwerk**: "Ertragssteigerung" (mehr Energie pro Stufe), "Wartungsoptimierung"
+  (kuerzere Bauzeit fuer weitere Solarkraftwerk-Stufen).
+- **Roboterfabrik/Nanitenfabrik**: "Verstaerkte Automatisierung" (staerkerer Bauzeit-Bonus als
+  die Basis-Wirkung bisher), "Wartungsfreiheit" (guenstigere/schnellere eigene Ausbaustufen).
+
+**Zwei Design-Fragen bereits geklaert (siehe Ruecksprache):**
+1. **Stapelverhalten mit der bestehenden Forschung:** Gebaeude-Module stapeln sich EINFACH
+   zusaetzlich zu den bereits existierenden allgemeinen Forschungs-Zweigen ("Mining-Boost:
+   Minen", "Bauzeit: Gebaeude" aus Punkt 65) - keine Ersetzung, keine gegenseitige Abschwaechung,
+   bewusst mehr Optimierungstiefe/Ebenen (Grundstufe + allgemeine Forschung + gebaeudespezifisches
+   Modul).
+2. **UI-Stil:** derselbe grafische Baum mit Verbindungslinien wie beim Forschungsbaum (Punkt 65),
+   nicht die einfachere Listen-/Popup-Darstellung.
+
+**Noch offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
+- Voraussetzungs-Stufen fuer die Module (analog zum Forschungsbaum vermutlich ein einheitlicher
+  Wert wie Stufe X der jeweiligen Gebaeude-Basis, aber noch nicht festgelegt).
+- Exakte Prozentwerte pro Modul-Stufe (noch keine konkreten Zahlen wie effectPerLevel besprochen).
+- Maximale Modul-Stufe (bleibt es bei 10 wie ueberall sonst, oder eigenes Limit fuer Module?).
+- Kosten/Bauzeit-Formeln fuer Module (eigene baseCost/costGrowth, oder an die jeweilige
+  Gebaeude-Basis gekoppelt?).
+- Benoetigte neue Bilder: bei 6 Gebaeuden x bis zu 3 Modulen waeren das bis zu 16 neue Module
+  insgesamt (3 pro Mine x 3 Minen = 9, 2 fuer Solarkraftwerk, 2 fuer Roboterfabrik, 2 fuer
+  Nanitenfabrik) - noch nicht besprochen, ob jedes Modul ein eigenes Bild braucht (wie bei der
+  Forschung) oder ob Module bildlos/mit generischem Icon auskommen sollen.
+
 ### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
 Nutzer-Vorschlag im Anschluss an die Kampf-Engine-Optimierung (Punkt 69): Waffen/Schild/
