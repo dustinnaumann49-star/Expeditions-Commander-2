@@ -30,6 +30,12 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     schlachtkreuzer: 4,
     bomber: 4
   },
+  // Boss-Gefecht (Punkt 76): "RapidFire-Waechter" gegen Jaeger-Klasse - bestraft Masse an
+  // kleinen Schiffen ganz natuerlich ueber die bestehende RapidFire-Mechanik, keine Sonderregel.
+  piratenadmiral: {
+    leicht: 10,
+    schwer: 8
+  },
   bomber: {
     raketenwerfer: 20,
     leichteslaser: 20,
@@ -335,3 +341,42 @@ export const BATTLE_MODIFIER_CHANCE: Record<string, number> = {
   piraten_elite: 0.15,
   raid: 0.06,
 };
+
+// ========== BOSS-GEFECHT: PIRATENADMIRAL (Sektor P10, siehe README Punkt 76) ==========
+// Zweiter Multiplayer-Sektor neben dem Elite-Bollwerk - bewusst eine ANDERE Art Herausforderung:
+// ein einzelner starker Boss + kleine Eskorte statt Massen-Feindwellen, mit einer wiederkehrenden
+// Rueckzugs-("Extraction")-Entscheidung statt eines simplen Durchhalte-Checks.
+
+export const ADMIRAL_BOSS_ID = 'piratenadmiral'; // siehe NPC_SPECIALS in economy.ts fuer die Basiswerte
+export const ADMIRAL_CHECK_INTERVAL_MS = 10 * 60 * 1000; // alle 10 Minuten ein Check
+export const ADMIRAL_TOTAL_CHECKS = 6; // 6 Checks x 10 Minuten = 1 Stunde Gesamtdauer
+export const ADMIRAL_ESCALATION_PER_CHECK = 0.15; // "Eskalierende Wut": +15% auf Boss+Eskorte-Werte pro Check, wenn nicht besiegt/abgezogen
+
+// Nur Kreuzer-Klasse und aufwaerts erlaubt (macht "wenige grosse Schiffe" mechanisch zur Pflicht,
+// nicht nur zur Empfehlung) - explizit OHNE Jaeger-Klasse (leicht/schwer/salvenjaeger, siehe
+// MULTI_TARGET_VOLLEY_SHIPS) und ohne Versorgungsschiffe (mining/begleitschiff).
+export const ADMIRAL_ALLOWED_SHIP_IDS = [
+  'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper',
+  'sandronator', 'salvenkreuzer', 'salvendreadnought', 'imperator',
+];
+
+// Feste Eskorte-Grundzusammensetzung (KEINE Macht-Skalierung anhand der Spieler-Flotte, bewusst
+// anders als bei den normalen Piraten-Sektoren) - wird wie der Boss selbst pro Check eskaliert.
+export const ADMIRAL_ESCORT_BASE: Record<string, number> = {
+  schlachtkreuzer: 3,
+  zerstoerer: 2,
+};
+
+// Belohnung: sicherer Sofort-Ertrag bei Abzug, MODERAT/ADDITIV mit der Check-Nummer wachsend
+// (bewusst KEIN Verdopplungs-Modus wie beim Elite-Bollwerk, sonst zu aehnliches Gefuehl).
+export const ADMIRAL_EXTRACTION_BASE = { metall: 20_000_000, kristall: 12_000_000, deuterium: 6_000_000 };
+export const ADMIRAL_EXTRACTION_GROWTH_PER_CHECK = { metall: 6_000_000, kristall: 3_500_000, deuterium: 2_000_000 };
+
+// Einmalige Sieg-Praemie (nur beim tatsaechlichen Sieg ueber den Admiral, "Trophaeen"-Charakter
+// statt wiederholbarem Farmen) + exklusiver Dunkle-Materie-Bonus, den es sonst nirgends gibt.
+export const ADMIRAL_VICTORY_BONUS = { metall: 300_000_000, kristall: 200_000_000, deuterium: 100_000_000 };
+export const ADMIRAL_VICTORY_DM = 200;
+// Basis-Machtskalierung (analog zu PIRATEN_MULTIPLIER_ROLL bei piraten_elite, siehe sectors.ts) -
+// bewusst HAERTER als das Elite-Bollwerk (105-135%), da hier ja nur EINE zaehe Einheit + kleine
+// Eskorte statt vieler Gegner die Feindstaerke traegt (siehe Ruecksprache mit dem Nutzer).
+export const ADMIRAL_MULTIPLIER_ROLL = [1.10, 1.30, 1.50];

@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Neu: Sektor P10 – Piratenadmiral (Boss-Gefecht)',
+    changes: [
+      'Zweiter Multiplayer-Sektor: ein einzelner, extrem zäher Piratenadmiral + kleine Elite-Eskorte statt vieler Gegner - nur Kreuzer-Klasse und größere Schiffe erlaubt.',
+      'Bis zu 6 Kämpfe im 10-Minuten-Abstand. Nach jedem gewonnenen Kampf: Beute sichern und abziehen, oder weitermachen für mehr - der Admiral wird dabei mit jedem Check +15% stärker.',
+      'Bei einer Niederlage nach "weitermachen" geht nur die noch ungesicherte Beute verloren, nicht die Flotte.',
+      'Bei echtem Sieg über den Admiral: große Einmalprämie plus exklusiver Dunkle-Materie-Bonus.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Notruf-Events endgültig entfernt',
     changes: [
       'Notruf-Events sind jetzt komplett aus dem Spiel entfernt (waren zuvor bereits pausiert) - dafür gibt es wieder unbegrenzt viele Jäger bei Piraten-Angriffen und die KI-Mitspieler sind zurück.',

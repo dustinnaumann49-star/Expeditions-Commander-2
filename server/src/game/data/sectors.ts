@@ -33,7 +33,10 @@ export const SEKTOREN: SektorDefinition[] =
     aktivitaet:"Piraten-Chance 50%", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
     typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 120% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
-    aktivitaet:"Kampf garantiert (jede Stunde)", gefahr:"Extrem", level:"rot" }
+    aktivitaet:"Kampf garantiert (jede Stunde)", gefahr:"Extrem", level:"rot" },
+  { id:"piraten_admiral", name:"Sektor P10 – Piratenadmiral", img:"sektoren/piraten_admiral.jpg",
+    typ:"Boss-Gefecht (Nur Multiplayer)", zweck:"Ein einzelner, extrem zäher Piratenadmiral + kleine Elite-Eskorte statt einer Masse an Gegnern - nur Kreuzer-Klasse und größere Schiffe erlaubt (keine Jäger, keine Versorgungsschiffe). Alle 10 Minuten ein garantierter Kampf, bis zu 6 Checks über 1 Stunde. Nach jedem gewonnenen Kampf: Beute sichern und abziehen, oder weitermachen für mehr - der Admiral wird dabei mit jedem Check wütender (+15% auf seine Werte). Beim echten Sieg eine große Einmalprämie plus Dunkle Materie.",
+    aktivitaet:"Kampf garantiert (alle 10 Minuten)", gefahr:"Extrem", level:"rot" }
 ];
 
 export interface SektorConfig {
@@ -81,7 +84,15 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000},
-    galaxyPosition:{system:37, position:5} }
+    galaxyPosition:{system:37, position:5} },
+  // Boss-Gefecht (Punkt 76, siehe README): NUTZT SEKTOR_CONFIG nur fuer Anzeige-Zwecke/
+  // Voraussetzungspruefung (multiplayerOnly, galaxyPosition fuer die Anflugzeit) - die eigentliche
+  // Kampf-/Eskalations-/Rueckzugslogik ist bewusst NICHT hier, sondern in eigenen Konstanten in
+  // combatConstants.ts (ADMIRAL_*) und der Ablauf-Logik in groupOps.ts, da sich das Boss-Gefecht
+  // strukturell zu stark von den anderen Piraten-Sektoren unterscheidet (fester Gegner statt
+  // Macht-Skalierung, 10-Minuten-Checks statt Stunden-Checks, Rueckzugs-Entscheidung).
+  piraten_admiral:  { checkChance:1, type:"piraten", npcFloor:0,
+    multiplayerOnly:true, galaxyPosition:{system:50, position:1} }
 };
 
 // Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig/Mittel/Hoch bleiben

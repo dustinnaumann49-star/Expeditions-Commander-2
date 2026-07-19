@@ -133,7 +133,14 @@ export interface NpcSpecialDef {
 export const NPC_SPECIALS: NpcSpecialDef[] = 
 [
   { id:"piratenkapitan", name:"Piratenkapitän", isCaptain:true,
-    stats:{waffen:6500, schild:1800, panzerung:48000} }
+    stats:{waffen:6500, schild:1800, panzerung:48000} },
+  // Boss-Gefecht (Sektor P10, siehe README Punkt 76): dieser Eintrag dient NUR der Namens-
+  // Aufloesung in Kampfberichten (shipName()) - die tatsaechlichen Kampfwerte werden bei jedem
+  // Boss-Gefecht dynamisch anhand der eingesetzten Flottenstaerke berechnet (siehe
+  // generateAdmiralEncounter() in combat.ts) und per statsOverride an den Worker durchgereicht,
+  // NICHT aus diesem statischen `stats`-Feld gelesen. Werte hier sind reiner Platzhalter.
+  { id:"piratenadmiral", name:"Piratenadmiral",
+    stats:{waffen:0, schild:0, panzerung:0} },
 ];
 
 // Raid prueft zu vier festen Tageszeiten (Server-Ortszeit), nicht mehr in zufaelligen
