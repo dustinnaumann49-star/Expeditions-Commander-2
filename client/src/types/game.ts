@@ -286,7 +286,10 @@ export interface RaidState {
   launchTime: number;
   launchNotified: boolean;
   arrivalTime: number;
-  resolved: boolean;
+  waveTimes: number[];
+  wavesProcessed: number;
+  wavesWon: number;
+  accumulatedDestroyed: number;
 }
 
 export interface FleetPreset {
@@ -519,5 +522,7 @@ export interface ActiveRaidInfo {
   targetPosition: GalaxyPosition | null;
   raidId: string;
   arrivalTime: number;
+  wavesProcessed: number;
+  waveCount: number;
   holdingCount: number;
 }
