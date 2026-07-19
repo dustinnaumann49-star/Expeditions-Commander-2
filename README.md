@@ -1612,6 +1612,33 @@ client/
       weitere Kaempfe, kein Speicherleck). Voller HTTP-Regressionstest (Registrierung,
       Kampfsimulator, der den Pool intern nutzt) erfolgreich.
 
+73. **PERFORMANCE-NOTMASSNAHME: Piraten-generierte Flotten auf Jaeger-Klasse (leicht/schwer)
+    begrenzt.** Nutzer identifizierte anhand eines echten Kampfberichts die eigentliche
+    Hauptursache der Server-Abstuerze: die generierte Piratenflotte enthielt 6828 Leichter
+    Jaeger + 1703 Schwerer Jaeger - zusammen ueber 8500 einzelne Einheiten, deutlich mehr als
+    die eigene oder ShadowEagles Flotte zusammen. Grund: das "schwarm"-Wellenprofil gewichtet
+    guenstige, kleine Schiffe stark, ohne Obergrenze - bei sehr starken Ziel-Gegnern (hohe
+    Flotten-/Verteidigungsstaerke des Spielers) fuehrte das zu ungebremstem Anwachsen der
+    Jaeger-Anzahl.
+    - **Neue Konstante `NPC_JAEGER_MAX_COUNT = 500`** (`combatConstants.ts`, zusammen mit
+      `NPC_JAEGER_CAPPED_IDS = ['leicht', 'schwer']`) - deckelt NUR die NPC-generierten
+      Piraten-/Notruf-/Verteidigungs-Wellen (`generateCappedFleet()` in `combat.ts`), NICHT die
+      Spieler-eigenen Baulimits (`ShipDefinition.maxCount`, bleibt fuer Spieler-Flotten bewusst
+      unbegrenzt, siehe Punkt 8 - ausdruecklich UNVERAENDERT).
+      Neue Funktion `getNpcMaxCountFor()` kombiniert das normale `getMaxCountFor()` mit dieser
+      zusaetzlichen NPC-only-Grenze, wird ausschliesslich in `generateCappedFleet()` verwendet.
+    - **Erreicht eine Jaeger-Klasse die Grenze, weicht die Flottengenerierung automatisch auf
+      andere (groessere) Schiffstypen aus**, um die restliche Ziel-Staerke zu erreichen (bereits
+      bestehende Umverteilungs-Logik in `generateCappedFleet()`, keine neue Logik dafuer noetig -
+      die Funktion war von Anfang an darauf ausgelegt, ein erreichtes Limit zu erkennen und den
+      betroffenen Typ aus der weiteren Verteilung herauszunehmen).
+    - Getestet: bei einer kuenstlich sehr hohen Ziel-Staerke (500 Mio., deutlich ueber dem
+      beobachteten Vorfall) generierte die Piratenflotte korrekt exakt 500 Leichter Jaeger + 500
+      Schwerer Jaeger (statt zehntausender), der Rest der Staerke verteilte sich automatisch auf
+      Kreuzer/Schlachtschiff/Schlachtkreuzer/Bomber/Zerstoerer/Reaper - Gesamtzahl aller
+      generierten Einheiten nur noch 1448 statt vorher vermutlich 10.000+. Spieler-Baulimits
+      fuer `leicht`/`schwer` per `getMaxCountFor()` weiterhin korrekt `Infinity` (unveraendert).
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
