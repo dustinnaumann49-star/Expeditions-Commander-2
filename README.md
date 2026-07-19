@@ -1725,7 +1725,13 @@ Umzug von Render (Starter-Tarif, 0,5 CPU/512MB) zu einem eigenen Hetzner-Server 
 8GB RAM, ~10€/Monat) mit Coolify als Verwaltungsoberflaeche (aehnliches Dashboard-Gefuehl wie
 Render, nur auf eigener, deutlich staerkerer Hardware). Aktuell noch nicht umsetzbar (kein
 Zugriff auf PC/Terminal fuer SSH-Key-Erzeugung und Ersteinrichtung) - wird auf spaeter verschoben,
-bis PC verfuegbar ist. Falls umgesetzt: unbedingt auf persistenten Speicher fuer die SQLite-
-Datenbank achten (Coolify-Volume), sonst derselbe Datenverlust-Fehler wie urspruenglich bei
-Render ohne Disk (siehe Punkt 59).
+bis PC verfuegbar ist.
+- **Datenverlust BEIM Umzug selbst ist ausdruecklich AKZEPTIERT** - eine frische, neu angelegte
+  Datenbank auf dem neuen Server (statt einer muehsamen Daten-Migration von Render herueber) ist
+  fuer den Nutzer voellig in Ordnung, kein Show-Stopper fuer den Umzug.
+- **Trotzdem wichtig FUER DIE ZEIT DANACH:** auf dem NEUEN Server unbedingt auf persistenten
+  Speicher fuer die SQLite-Datenbank achten (Coolify-Volume), damit sich der urspruengliche
+  Datenverlust-Fehler (siehe Punkt 59, fehlendes `data`-Verzeichnis bei jedem Redeploy) auf der
+  neuen Plattform nicht bei jedem kuenftigen Update wiederholt - der einmalige akzeptierte
+  Verlust beim Umzug selbst ist etwas anderes als wiederholter Verlust danach.
 
