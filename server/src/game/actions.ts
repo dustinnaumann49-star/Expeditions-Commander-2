@@ -7,7 +7,6 @@ import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SL
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
-import { processEventTimer, processOverdueEventsForOtherUsers } from './events.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
@@ -307,17 +306,15 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
     if (state.activeBoosters[id] <= now) delete state.activeBoosters[id];
   });
 
-  // Missionen (Farmen/Kampf), Notruf-Events und Basis-Raids nachholen
+  // Missionen (Farmen/Kampf) und Basis-Raids nachholen
   await processMissions(state);
-  await processEventTimer(state);
   await processRaidTimer(state);
   // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
   // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
-  // damit Raids/Notrufe/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils
-  // betroffene Spieler selbst gerade nicht online ist (siehe README fuer den Hintergrund).
+  // damit Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene
+  // Spieler selbst gerade nicht online ist (siehe README fuer den Hintergrund).
   await processOverdueRaidsForOtherUsers(state);
   await processOverdueRaidSpawnsForOtherUsers(state);
-  await processOverdueEventsForOtherUsers(state);
   await processAllDepartedGroupOperations(state);
 
   state.lastUpdate = now;
