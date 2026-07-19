@@ -46,7 +46,6 @@ export function StatistikPage() {
     ['🛡️ Elite-Bollwerk – gewonnene Stunden-Checks', (s) => s.eliteBollwerkChecks],
     ['🏠 Raids vollständig abgewehrt', (s) => s.raidsRepelledFull],
     ['🏚️ Raids teilweise abgewehrt', (s) => s.raidsRepelledPartial],
-    ['📡 Notruf-Events geholfen', (s) => s.notrufCompleted],
     ['☠ Piratenkapitäne besiegt', (s) => s.captainsDefeated],
     ['💥 Feinde vernichtet', (s) => s.enemiesDestroyed.toLocaleString('de-DE')],
     ['💔 Eigene Schiffe verloren', (s) => s.ownShipsLost.toLocaleString('de-DE')],
