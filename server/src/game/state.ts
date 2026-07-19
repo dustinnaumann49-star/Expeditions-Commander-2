@@ -167,6 +167,12 @@ export function loadPlayerState(userId: number): PlayerState {
   if (parsed.raid && (parsed.raid as any).pirateBase === undefined) {
     parsed.raid = null;
   }
+  // Alte, vor dem Wellensystem gespawnte Raids haben kein waveTimes-Feld - sicherheitshalber
+  // verwerfen statt mit kaputten Werten weiterzurechnen (analog zur pirateBase-Migration oben),
+  // der naechste Checkpoint spawnt ganz regulaer einen neuen (siehe raids.ts spawnRaidAt()).
+  if (parsed.raid && (parsed.raid as any).waveTimes === undefined) {
+    parsed.raid = null;
+  }
   // Notruf-Events komplett entfernt (siehe README) - falls ein alter Spielstand noch die
   // Felder event/nextEventCheck enthaelt, werden sie beim Speichern einfach ignoriert (kein
   // Loeschen noetig, sie sind schlicht nicht mehr Teil des PlayerState-Typs).

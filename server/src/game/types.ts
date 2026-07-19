@@ -301,9 +301,19 @@ export interface RaidState {
   pirateBase: GalaxyPosition; // zufaellig gewaehlte Piratenbasis, von der aus dieser Raid startet
   launchTime: number; // spawnedAt + RAID_PREP_MS - wann die Piraten tatsaechlich abheben
   launchNotified: boolean; // ob die "jetzt gestartet"-Nachricht schon verschickt wurde
-  arrivalTime: number; // launchTime + Flugzeit (Distanz Basis->Ziel, wie bei Spieler-Flotten berechnet)
-  resolved: boolean;
+  arrivalTime: number; // launchTime + Flugzeit - Beginn der Wellen-Phase (siehe waveTimes unten)
   reinforcements: RaidReinforcement[];
+  // Wellensystem (siehe README/economy.ts RAID_WAVE_COUNT): waveTimes wird EINMALIG bei
+  // spawnRaidAt() geplant (RAID_WAVE_COUNT Zeitpunkte, ungefaehr gleich verteilt innerhalb von
+  // RAID_ASSAULT_DURATION_MS nach arrivalTime). wavesProcessed zaehlt abgearbeitete Wellen
+  // (0..RAID_WAVE_COUNT), wavesWon davon erfolgreich abgewehrte (fuer die Abschluss-Belohnung).
+  // accumulatedDestroyed summiert vernichtete Feinde ueber ALLE Wellen (eine gemeinsame
+  // Bergungs-DM-Berechnung am Ende statt pro Welle). Der Raid wird geloescht (state.raid = null),
+  // sobald wavesProcessed RAID_WAVE_COUNT erreicht - kein separates "resolved"-Flag mehr noetig.
+  waveTimes: number[];
+  wavesProcessed: number;
+  wavesWon: number;
+  accumulatedDestroyed: number;
 }
 
 export interface FleetPreset {

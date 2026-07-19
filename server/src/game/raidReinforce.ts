@@ -9,6 +9,8 @@ export interface ActiveRaidInfo {
   targetPosition: GalaxyPosition | null;
   raidId: string;
   arrivalTime: number;
+  wavesProcessed: number;
+  waveCount: number;
   holdingCount: number;
 }
 
@@ -26,13 +28,15 @@ export function listActiveRaids(excludeUserId: number): ActiveRaidInfo[] {
   users.forEach((u) => {
     if (u.id === excludeUserId) return;
     const state = loadPlayerState(u.id);
-    if (state.raid && !state.raid.resolved) {
+    if (state.raid) {
       result.push({
         targetUserId: u.id,
         targetUsername: u.username,
         targetPosition: state.galaxyPosition,
         raidId: state.raid.id,
         arrivalTime: state.raid.arrivalTime,
+        wavesProcessed: state.raid.wavesProcessed,
+        waveCount: state.raid.waveTimes.length,
         holdingCount: getHoldingDeploymentsTargeting(u.id).length,
       });
     }
