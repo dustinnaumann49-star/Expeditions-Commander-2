@@ -87,7 +87,7 @@
     width:20px; height:20px; object-fit:contain; display:inline-block;
     filter: drop-shadow(0 0 4px rgba(255,255,255,0.15));
   }
-  /* Warn-Badges in der Kopfleiste (eigener Raid/Notruf, Raids bei anderen Spielern) - von jeder
+  /* Warn-Badges in der Kopfleiste (eigener Raid, Raids bei anderen Spielern) - von jeder
      Seite aus sichtbar, nicht nur auf der Sektor-/Multiplayer-Seite selbst. Nutzt die bereits
      vorhandene pulseGlow-Animation (vorher ungenutzt definiert) fuer dezente Aufmerksamkeit,
      ohne aufdringlich zu blinken. */
