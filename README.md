@@ -1579,6 +1579,39 @@ client/
       Gebaeude-Karte bekommt darunter ihre 2-3 Modul-Knoten mit Verbindungslinie, gesperrte Module
       grau/abgedunkelt mit 🔒, alle Details im Info-Popup.
 
+72. **PERFORMANCE (Fortsetzung von Punkt 69): Server brach weiterhin ab und zu ab, sogar bei
+    nur EINEM einzelnen Kampf** - CPU UND Speicher spitzten dabei jeweils kurzzeitig auf 100%
+    (vom Nutzer per Render-Metrics bestaetigt). Zwei zusaetzliche Ursachen gefunden und behoben:
+    - **Worker-Thread-Pool statt Neuerzeugung pro Kampf.** Vorher wurde fuer JEDEN einzelnen
+      Kampf ein komplett neuer Node-Worker-Thread erzeugt und danach wieder beendet
+      (`combatRunner.ts`, `new Worker(...)` + `terminate()`) - jede Worker-Neuerzeugung hat
+      einen spuerbaren Speicher-Grundverbrauch (eigener V8-Isolate), was auf der knapp bemessenen
+      Starter-Instanz zusammen mit der eigentlichen Kampfberechnung zu genau den beobachteten
+      Spitzen fuehren konnte, selbst bei nur einem Kampf. Fix: ein kleiner, WIEDERVERWENDETER
+      Pool aus 2 dauerhaft laufenden Workern (`POOL_SIZE=2` in `combatRunner.ts`) - wird erst
+      beim allerersten Kampf angelegt (kein Overhead, solange nie gekaempft wird), danach fuer
+      die gesamte Laufzeit des Server-Prozesses wiederverwendet. `combat.worker.ts` liest
+      Anfragen jetzt wiederholt per `postMessage` statt einmalig ueber `workerData` beim Start.
+      Warteschlange (`waitQueue`) fuer den Fall, dass mehr als 2 Kaempfe gleichzeitig anfallen -
+      kein unbegrenztes Worker-Wachstum. Ein fehlgeschlagener Worker wird durch einen frischen
+      ersetzt (`discardWorker()`), statt den Pool-Platz dauerhaft zu blockieren.
+    - **Zweite, bisher bewusst uebersprungene Ineffizienz jetzt doch behoben:** die Kaskaden-
+      Zielsuche bei Durchschlag-Ueberschussschaden (`applyHitToTarget()`) filterte weiterhin bei
+      JEDEM Kaskaden-Schritt die komplette Zielliste nach Typ+lebend
+      (`targets.filter(t => t.typeId === X && t.hpCur > 0)`) - in Punkt 69 bewusst als "seltener,
+      geringerer Nutzen" zurueckgestellt, erwies sich aber bei hoher Durchschlag-Forschung
+      (viele Kaskaden-Kills pro Schuss) doch als relevant. Neue `AliveTargetsByType`-Klasse
+      (nach Typ gruppierte Pools, gleiches O(1)-Entfernungsprinzip wie `AliveTargetPool` aus
+      Punkt 69) - wird nur aufgebaut, wenn ueberhaupt Durchschlag-Forschung vorhanden ist
+      (`overkillFraction > 0`), sonst entsteht gar kein zusaetzlicher Aufwand.
+    - **Getestet:** 5 aufeinanderfolgende Kaempfe ueber den Pool liefen korrekt (konsistente
+      Rundenzahlen); 3 GLEICHZEITIGE Kaempfe bei nur 2 Pool-Workern liefen alle korrekt ab (der
+      dritte wartete via Warteschlange und schloss danach erfolgreich ab); Speicherverbrauch
+      ueber 25 aufeinanderfolgende Kaempfe beobachtet - RSS stabilisierte sich nach kurzer
+      Aufwaermphase (86,7MB -> ~112MB) und wuchs danach nicht weiter (112MB -> 116MB ueber 15
+      weitere Kaempfe, kein Speicherleck). Voller HTTP-Regressionstest (Registrierung,
+      Kampfsimulator, der den Pool intern nutzt) erfolgreich.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
