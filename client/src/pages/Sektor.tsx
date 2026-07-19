@@ -508,11 +508,16 @@ export function SektorPage() {
       <h2 style={{ marginBottom: 16 }}>Sektor</h2>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
-      {state.raid && !state.raid.resolved && (
+      {state.raid && (
         <div className="queue-box" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
           <strong style={{ color: 'var(--danger)' }}>⚠ Piratenflotte im Anflug auf deine Heimatbasis</strong>
           <p style={{ fontSize: 13, marginTop: 4 }}>
-            Ankunft in {formatTime(state.raid.arrivalTime - now)}. Verstärke deine Verteidigung oder rufe deine Flotte zurück.
+            {now < state.raid.arrivalTime
+              ? `Ankunft der ersten Welle in ${formatTime(state.raid.arrivalTime - now)}.`
+              : `Welle ${Math.min(state.raid.wavesProcessed + 1, state.raid.waveTimes.length)}/${state.raid.waveTimes.length} - nächste in ${formatTime(
+                  Math.max(0, (state.raid.waveTimes[state.raid.wavesProcessed] ?? now) - now)
+                )}. Bisher ${state.raid.wavesWon} von ${state.raid.wavesProcessed} abgewehrt.`}{' '}
+            Verstärke deine Verteidigung oder rufe deine Flotte zurück.
           </p>
         </div>
       )}

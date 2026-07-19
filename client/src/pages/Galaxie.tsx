@@ -343,11 +343,11 @@ export function GalaxiePage() {
 
       <div className="queue-box" style={{ marginTop: 20 }}>
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Eingehende Flotten</h3>
-        {incomingDeployments.length === 0 && !(state.raid && !state.raid.resolved) ? (
+        {incomingDeployments.length === 0 && !state.raid ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine fremden Flotten unterwegs zu dir oder bei dir haltend.</p>
         ) : (
           <>
-            {state.raid && !state.raid.resolved && (
+            {state.raid && (
               <div className="queue-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
                 <div className="progress-row">
                   <span style={{ color: 'var(--danger)', fontWeight: 600 }}>
@@ -357,7 +357,11 @@ export function GalaxiePage() {
                 <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                   {now < state.raid.launchTime
                     ? `Startet in ${formatTime(state.raid.launchTime - now)}`
-                    : `Ankunft in ${formatTime(state.raid.arrivalTime - now)}`}{' '}
+                    : now < state.raid.arrivalTime
+                    ? `Ankunft der ersten Welle in ${formatTime(state.raid.arrivalTime - now)}`
+                    : `Welle ${Math.min(state.raid.wavesProcessed + 1, state.raid.waveTimes.length)}/${state.raid.waveTimes.length} in ${formatTime(
+                        Math.max(0, (state.raid.waveTimes[state.raid.wavesProcessed] ?? now) - now)
+                      )}`}{' '}
                   · Flotteninhalt erst bei Ankunft bekannt
                 </span>
               </div>

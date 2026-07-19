@@ -44,7 +44,7 @@ export function RaidHilfePage() {
                     (1:{raid.targetPosition.system}:{raid.targetPosition.position})
                   </span>
                 )}{' '}
-                wird angegriffen – Ankunft der Piraten in {formatTime(raid.arrivalTime - now)}
+                wird angegriffen – {now < raid.arrivalTime ? `Ankunft der Piraten in ${formatTime(raid.arrivalTime - now)}` : `Welle ${Math.min(raid.wavesProcessed + 1, raid.waveCount)}/${raid.waveCount} im Gange`}
                 {raid.holdingCount > 0 && ` · ${raid.holdingCount} Flotte(n) halten dort bereits`}
               </p>
               {raid.targetPosition && (
