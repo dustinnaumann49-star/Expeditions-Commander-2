@@ -99,6 +99,21 @@ export interface BuildingDefinition {
   baseEnergyOutput?: number;
 }
 
+export interface BuildingModuleDefinition {
+  id: string;
+  name: string;
+  lore: string;
+  buildingId: string;
+  moduleKind: 'output' | 'energy_reduction' | 'buildtime_self' | 'strengthen_factor';
+  requiredBuildingLevel: number;
+  effectPerLevel: number;
+  maxLevel: number;
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -118,6 +133,7 @@ export interface BuildJob {
   shipId?: string;
   defId?: string;
   buildingId?: string;
+  moduleId?: string;
   count: number;
   startTime: number;
   endTime: number;
@@ -324,6 +340,7 @@ export interface PlayerState {
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
   buildings: Record<string, number>;
+  buildingModules: Record<string, number>;
   buildingQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[];
@@ -413,6 +430,7 @@ export interface GameData {
   defenses: DefenseDefinition[];
   research: ResearchDefinition[];
   buildings: BuildingDefinition[];
+  buildingModules: BuildingModuleDefinition[];
   maxBuildingSlots: number;
   galaxySystems: number;
   galaxyPositions: number;
