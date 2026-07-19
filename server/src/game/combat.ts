@@ -464,6 +464,43 @@ function statKey(u: CombatUnit): string {
 // Wendet einen einzelnen Treffer (inkl. Schild-Pool-Absorption und Durchschlag-Kaskade) auf EIN
 // Ziel an. Ausgelagert aus fireShots(), damit sowohl der normale Einzelziel-Fall als auch die
 // Mehrfachziel-Salve (siehe MULTI_TARGET_VOLLEY_SHIPS) dieselbe Logik nutzen koennen.
+// PERFORMANCE: haelt eine Liste aktuell lebender Ziele + eine Index-Zuordnung, damit eine
+// gestorbene Einheit in O(1) entfernt werden kann (Swap-mit-letztem-Element-und-Pop), statt bei
+// JEDEM einzelnen Schuss die komplette Zielliste neu zu durchsuchen (`targets.filter(t =>
+// t.hpCur > 0)`). Bei grossen Flotten war genau diese Zeile die Hauptursache fuer extrem hohe
+// Rechenlast (siehe README) - vorher O(Schuetzen x Schuesse x Zielanzahl) PRO RUNDE, jetzt
+// O(Schuetzen x Schuesse) fuer die Zielauswahl selbst (die Entfernung beim Sterben ist O(1)).
+// Die Reihenfolge der Liste ist dabei absichtlich NICHT stabil (Swap-Remove vertauscht Eintraege)
+// - unproblematisch, da Zielauswahl ohnehin zufaellig erfolgt (pickRandom), nie nach Position.
+class AliveTargetPool {
+  private list: CombatUnit[];
+  private indexOf = new Map<CombatUnit, number>();
+
+  constructor(units: CombatUnit[]) {
+    this.list = units.filter((u) => u.hpCur > 0);
+    this.list.forEach((u, i) => this.indexOf.set(u, i));
+  }
+
+  get array(): CombatUnit[] {
+    return this.list;
+  }
+
+  get size(): number {
+    return this.list.length;
+  }
+
+  remove(unit: CombatUnit): void {
+    const idx = this.indexOf.get(unit);
+    if (idx === undefined) return; // bereits entfernt (z.B. Explosions-Check traf ein schon totes Ziel)
+    const lastIdx = this.list.length - 1;
+    const lastUnit = this.list[lastIdx];
+    this.list[idx] = lastUnit;
+    this.indexOf.set(lastUnit, idx);
+    this.list.pop();
+    this.indexOf.delete(unit);
+  }
+}
+
 function applyHitToTarget(
   target: CombatUnit,
   dmg: number,
@@ -471,7 +508,8 @@ function applyHitToTarget(
   shieldDmgTakenTarget: Record<string, number>,
   targets: CombatUnit[],
   overkillFraction: number,
-  targetsSharedShieldPool?: { remaining: number }
+  targetsSharedShieldPool?: { remaining: number },
+  onKill?: (unit: CombatUnit) => void
 ) {
   const MAX_CASCADE = 5;
   let currentTarget: CombatUnit | undefined = target;
@@ -503,6 +541,7 @@ function applyHitToTarget(
       dmgTakenTarget[statKey(currentTarget)] = (dmgTakenTarget[statKey(currentTarget)] || 0) + currentTarget.hpCur;
       const overflow = (remainingDmg - currentTarget.hpCur) * overkillFraction;
       currentTarget.hpCur = 0;
+      onKill?.(currentTarget);
       if (overflow <= 0) break;
       const sameTypeAlive = targets.filter((t) => t.typeId === currentTarget!.typeId && t.hpCur > 0);
       if (sameTypeAlive.length === 0) break;
@@ -516,7 +555,10 @@ function applyHitToTarget(
   // Schadensgrad steigende Chance, sofort komplett auszufallen ("explodiert").
   if (currentTarget && currentTarget.hpCur > 0 && currentTarget.hpCur < 0.7 * currentTarget.hpMax) {
     const pExplode = 1 - currentTarget.hpCur / currentTarget.hpMax;
-    if (Math.random() < pExplode) currentTarget.hpCur = 0;
+    if (Math.random() < pExplode) {
+      currentTarget.hpCur = 0;
+      onKill?.(currentTarget);
+    }
   }
 }
 
@@ -555,8 +597,10 @@ function fireShots(
 ) {
   if (targets.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
-  const MAX_CASCADE = 5;
   const overkillFraction = applyPlayerResearch ? getDurchschlagFraction(research) : 0;
+  // Einmal pro fireShots()-Aufruf aufgebaut (nicht pro Schuss!) - siehe AliveTargetPool oben.
+  const alivePool = new AliveTargetPool(targets);
+  const onKill = (unit: CombatUnit) => alivePool.remove(unit);
 
   shooters.forEach((shooter) => {
     let shots = 1;
@@ -585,8 +629,8 @@ function fireShots(
       fired++;
       shooterStats.shotsFired[statKey(shooter)] = (shooterStats.shotsFired[statKey(shooter)] || 0) + 1;
 
-      const aliveTargets = targets.filter((t) => t.hpCur > 0);
-      if (aliveTargets.length === 0) break;
+      const aliveTargets = alivePool.array;
+      if (alivePool.size === 0) break;
 
       let target: CombatUnit;
       let volleyTargets: CombatUnit[] | null = null;
@@ -630,7 +674,7 @@ function fireShots(
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
           const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-          applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+          applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill);
           const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
             shots++;
@@ -655,7 +699,7 @@ function fireShots(
       if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
       const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
       shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool);
+      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill);
       const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
       if (hitRfChance > 0 && Math.random() < hitRfChance) {
         shots++;
