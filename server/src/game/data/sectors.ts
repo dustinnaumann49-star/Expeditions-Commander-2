@@ -33,7 +33,7 @@ export const SEKTOREN: SektorDefinition[] =
     aktivitaet:"Piraten-Chance 50%", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
     typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 120% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
-    aktivitaet:"Piraten-Chance 50%", gefahr:"Extrem", level:"rot" }
+    aktivitaet:"Kampf garantiert (jede Stunde)", gefahr:"Extrem", level:"rot" }
 ];
 
 export interface SektorConfig {
@@ -77,7 +77,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   piraten_hoch:     { checkChance:0.50, type:"piraten", teileCap:15, npcFloor:1800000,
     lootBase:{metall:26000, kristall:16000, deuterium:7000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.12, captainContainerTier:"gold", captainDm:35, galaxyPosition:{system:45, position:3} },
-  piraten_elite:    { checkChance:0.50, type:"piraten", teileCap:20, npcFloor:3000000,
+  piraten_elite:    { checkChance:1, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000},

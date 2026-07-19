@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Elite-Bollwerk: garantierte Kämpfe + Abschluss-Bonus',
+    changes: [
+      'Alle 4 Stunden-Kämpfe im Elite-Bollwerk finden jetzt garantiert statt (vorher nur 50% Chance pro Stunde).',
+      'Neuer Abschluss-Bonus: schafft ihr alle 4 Kämpfe ohne einen einzigen Rückschlag, wird die gesamte Ressourcen-Ausbeute der Expedition am Ende nochmal komplett verdoppelt - bis zu 1,5 Milliarden Ressourcen für eine perfekte Serie.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Zurück zu einem einzigen Hintergrundbild',
     changes: [
       'Die unterschiedlichen Hintergrundbilder pro Seite bereiteten weiter Probleme - zurück zu einem einzigen, festen Hintergrundbild für die ganze App.',
