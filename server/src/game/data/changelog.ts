@@ -10,6 +10,20 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Notruf-Events endgültig entfernt',
+    changes: [
+      'Notruf-Events sind jetzt komplett aus dem Spiel entfernt (waren zuvor bereits pausiert) - dafür gibt es wieder unbegrenzt viele Jäger bei Piraten-Angriffen und die KI-Mitspieler sind zurück.',
+    ],
+  },
+  {
+    date: '19.07.2026',
+    title: 'Server umgezogen',
+    changes: [
+      'Der Server läuft jetzt auf deutlich stärkerer Hardware (8x mehr Rechenleistung, 16x mehr Arbeitsspeicher) - sollte die bisherigen gelegentlichen Serverausfälle bei großen Kämpfen endgültig beheben.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Piratenflotten: Jäger-Massen begrenzt',
     changes: [
       'Piraten-/Notruf-Flotten können nicht mehr unbegrenzt viele Leichte/Schwere Jäger stellen (max. 500 pro Typ) - der Rest ihrer Stärke verteilt sich stattdessen auf größere Schiffe. Sollte weitere Server-Überlastungen bei besonders starken Angriffswellen verhindern. Betrifft nicht eure eigenen Flotten, die bleiben unverändert unbegrenzt.',

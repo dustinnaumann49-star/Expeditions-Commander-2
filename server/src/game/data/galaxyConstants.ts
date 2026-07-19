@@ -47,9 +47,3 @@ export const PIRATE_FLEET_SPEED = 7000;
 // vorherige feste 30-Minuten-Vorwarnzeit) - danach kommt zusaetzlich die echte, distanzabhaengige
 // Flugzeit (siehe raids.ts spawnRaidAt()).
 export const RAID_PREP_MS = 60 * 60 * 1000;
-
-// Feste Galaxie-Position des Notrufs (nur EINE, anders als die 12 Piratenbasen - der Notruf
-// kommt immer von derselben Stelle). Die Elite-Bollwerk-Position steckt bewusst direkt in
-// SEKTOR_CONFIG (data/sectors.ts, Feld galaxyPosition bei piraten_elite), da es ja bereits ein
-// regulaerer SEKTOREN-Eintrag ist - hier waere sie nur redundant.
-export const NOTRUF_POSITION: GalaxyPosition = { system: 15, position: 6 };

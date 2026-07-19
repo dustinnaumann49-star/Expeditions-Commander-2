@@ -93,7 +93,7 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
   },
   // Neue Top-Stufe UEBER Gold - exklusiv fuer Elite-Bollwerk-Abschluss (Multiplayer, Punkt 39) und
   // Piratenkapitaen-Kills im Elite-Bollwerk selbst (sectors.ts, captainContainerTier:"elite").
-  // Bewusst NICHT ueber normale Piraten-Sektoren/Raids/Notruf-Events erreichbar - siehe README.
+  // Bewusst NICHT ueber normale Piraten-Sektoren/Raids erreichbar - siehe README.
   elite: {
     name: "Elite-Container",
     tier: "elite",
@@ -136,12 +136,8 @@ export const NPC_SPECIALS: NpcSpecialDef[] =
     stats:{waffen:6500, schild:1800, panzerung:48000} }
 ];
 
-export const ALLY_STATS = { waffen: 4000, schild: 2000, panzerung: 30000 };
-// Beide Ereignisse pruefen an denselben vier festen Tageszeiten (Server-UTC-Zeit), nicht mehr
-// in zufaelligen Intervallen. Sinn: Alle Spieler wissen genau, wann ein Check stattfindet.
-// Check-Zeitpunkte in DEUTSCHER ORTSZEIT (nicht mehr UTC) - Raid und Notruf bewusst um 3 Stunden
-// versetzt, damit nie beide zur gleichen Zeit ausgeloest werden koennen, sondern sich im
-// 3-Stunden-Rhythmus abwechseln (00/06/12/18 Uhr Raid, 03/09/15/21 Uhr Notruf).
+// Raid prueft zu vier festen Tageszeiten (Server-Ortszeit), nicht mehr in zufaelligen
+// Intervallen. Sinn: Spieler wissen genau, wann ein Check stattfindet.
 export const RAID_CHECK_HOURS_LOCAL = [0, 6, 12, 18];
 
 // WICHTIG (Performance-Notmassnahme, siehe Nutzerentscheidung nach Server-Absturz): auf dem
@@ -156,7 +152,6 @@ export const RAID_SCHEDULE_BY_USERNAME: Record<string, number[]> = {
   ShadowEagle: [0, 6, 12, 18],
   SchnelleRatte: [3, 9, 15, 21],
 };
-export const EVENT_CHECK_HOURS_LOCAL = [3, 9, 15, 21];
 
 const BERLIN_TZ = 'Europe/Berlin';
 
@@ -172,17 +167,6 @@ function berlinOffsetHours(utcMs: number): number {
   const match = tzPart.match(/GMT([+-]\d+)/);
   return match ? parseInt(match[1], 10) : 1;
 }
-
-export const EVENT_SPAWN_CHANCE = 0.4; // 40% Chance bei jedem der vier Checks
-// Zeit zum Entscheiden/Losschicken (nicht die Flugzeit selbst - die kommt zusaetzlich obendrauf,
-// siehe events.ts). Von 60 auf 90 Minuten angehoben, seit der Notruf eine echte Galaxie-Position
-// hat und die Flotte tatsaechlich erst noch hinfliegen muss.
-export const EVENT_WINDOW_MS = 90 * 60 * 1000;
-export const EVENT_NAMES = [
-  'Notruf: Handelsgilde in Bedrängnis',
-  'Notruf: Kolonieschiff unter Beschuss',
-  'Notruf: Forschungsstation angegriffen',
-];
 
 // RAID_WARNING_MS wurde durch RAID_PREP_MS (galaxyConstants.ts) ersetzt - Raids haben jetzt eine
 // echte, distanzabhaengige Flugzeit von einer zufaelligen Piratenbasis statt einer festen
@@ -211,7 +195,7 @@ export const COMBAT_SHIP_IDS = [
 ];
 
 // Liefert den naechsten der vier festen Tages-Checkpunkte (00/06/12/18 Uhr UTC) NACH "now".
-// Wird sowohl fuer Raids als auch fuer Notruf-Events verwendet, damit beide Ereignisse an
+// Wird fuer Raids verwendet, damit sie an
 // denselben, fuer alle Spieler vorhersehbaren Zeitpunkten geprueft werden.
 export function nextFixedCheckpoint(now: number, localHours: number[] = RAID_CHECK_HOURS_LOCAL): number {
   const offset = berlinOffsetHours(now);
@@ -263,7 +247,7 @@ export function rollFixedCheckpoints(
     // sondern ist sofort zum naechsten gesprungen und hat DAS als "noch nicht faellig" erkannt -
     // dadurch wurde bei jedem Tick eines aktiv spielenden Nutzers (Checkpoint gerade eben faellig
     // geworden) der faellige Checkpoint komplett uebersprungen, ohne je gewuerfelt zu werden.
-    // Raids/Notrufe konnten dadurch praktisch nie spawnen, solange jemand aktiv online war -
+    // Raids konnten dadurch praktisch nie spawnen, solange jemand aktiv online war -
     // nur bei mehrtaegiger Abwesenheit (mehrere uebersprungene Checkpoints) gab es zufaellig
     // noch einen Treffer, weil dann IMMER NOCH ein Checkpoint in der Vergangenheit lag.
     if (checkpoint > now) return checkpoint;

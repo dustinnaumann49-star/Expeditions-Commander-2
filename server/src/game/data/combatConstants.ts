@@ -236,18 +236,25 @@ export const MAX_BUILDING_SLOTS = 1;
 // im selben Piraten-Sektor) genug Platz haben.
 export const MAX_PLAYER_SHIPS = 100000;
 
-// PERFORMANCE-NOTMASSNAHME (siehe README): Piraten-/Notruf-Flotten wurden bislang OHNE
+// PERFORMANCE-NOTMASSNAHME (siehe README): Piraten-Flotten wurden bislang OHNE
 // Obergrenze mit Jaeger-Klasse (leicht/schwer) aufgefuellt, sobald deren Gewichtung in der
 // Wellen-Kurve hoch war ("schwarm"-Profil bevorzugt guenstige, kleine Schiffe) - bei einem sehr
 // starken Ziel-Gegner konnte das zu zehntausenden generierten Jaeger-Einheiten fuehren (real
 // beobachtet: 6828 Leichter Jaeger + 1703 Schwerer Jaeger in einem einzigen Raid), was die
 // Kampf-Engine trotz der Optimierungen in Punkt 69/72 an ihre Grenzen brachte. NICHT identisch
 // mit dem Spieler-Baulimit (`ShipDefinition.maxCount`, siehe Punkt 8 - bewusst weiterhin
-// unbegrenzt fuer SPIELER-Flotten) - gilt NUR fuer NPC-generierte Piraten-/Notruf-/
+// unbegrenzt fuer SPIELER-Flotten) - gilt NUR fuer NPC-generierte Piraten-/
 // Verteidigungs-Wellen (siehe generateCappedFleet() in combat.ts). Sobald eine Jaeger-Klasse
 // diese Grenze erreicht, weicht die Flottengenerierung automatisch auf andere Schiffstypen aus,
 // um die restliche Ziel-Staerke zu erreichen (weniger, aber groessere Gegner statt endloser
 // Jaeger-Massen).
+// PERFORMANCE-NOTMASSNAHME - nach dem Server-Umzug (Hetzner, deutlich mehr CPU/RAM) NICHT MEHR
+// AKTIV (siehe README): der Umzug hat die urspruengliche Server-Ueberlastung geloest, die
+// Jaeger-Deckelung wird daher wieder aufgehoben. Konstanten UND Logik bleiben aber vollstaendig
+// im Code erhalten (nur per Schalter deaktiviert) - falls die Serverlast doch wieder zum Problem
+// wird, reicht ein einziges "true" hier, um die Massnahme sofort wieder zu aktivieren, ohne die
+// gesamte Logik neu bauen zu muessen.
+export const NPC_JAEGER_CAP_ENABLED = false;
 export const NPC_JAEGER_MAX_COUNT = 500;
 export const NPC_JAEGER_CAPPED_IDS = ['leicht', 'schwer'];
 
@@ -270,27 +277,25 @@ export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer
 export const MULTI_TARGET_POWER_CORRECTION = 8;
 
 // ===== Wellen-Vielfalt (gegen "man weiss schon, was einen erwartet") =====
-// Vorher nutzten ALLE Feindflotten-Generatoren (Piraten-Sektor, Raid, Notruf, Elite-Bollwerk)
+// Vorher nutzten ALLE Feindflotten-Generatoren (Piraten-Sektor, Raid, Elite-Bollwerk)
 // dieselbe feste, abfallende Gewichtungskurve - nur die reine Staerke variierte, nie die FORM der
 // Gegnerflotte. Jetzt wird bei jedem Kampf eines von drei Profilen gewuerfelt.
 export type WaveProfile = 'schwarm' | 'kampfgruppe' | 'elitekader';
 
 // Gewichtung der Profile je Kontext-Schluessel (Sektor-ID fuer Piraten-Sektoren/Elite-Bollwerk,
-// 'raid'/'notruf' fuer die beiden Mehrspieler-relevanten Sonderfaelle ohne eigenen Sektor).
+// 'raid' fuer den Mehrspieler-relevanten Sonderfall ohne eigenen Sektor).
 export const WAVE_PROFILE_WEIGHTS: Record<string, Partial<Record<WaveProfile, number>>> = {
   piraten_niedrig: { schwarm: 0.8, kampfgruppe: 0.2 },
   piraten_mittel: { schwarm: 0.45, kampfgruppe: 0.45, elitekader: 0.1 },
   piraten_hoch: { schwarm: 0.1, kampfgruppe: 0.45, elitekader: 0.45 },
   piraten_elite: { schwarm: 0.1, kampfgruppe: 0.4, elitekader: 0.5 },
-  notruf: { schwarm: 0.1, kampfgruppe: 0.5, elitekader: 0.4 },
   raid: { schwarm: 0.5, kampfgruppe: 0.4, elitekader: 0.1 },
 };
 
-// Basis-Wellentabellen fuer Kontexte OHNE eigene Sektor-Tabelle (Raid/Notruf liefen vorher exakt
+// Basis-Wellentabelle fuer Kontexte OHNE eigene Sektor-Tabelle (Raid lief vorher exakt
 // auf 100% ohne jede Schwankung) - ersetzt durch eine leichte Grund-Varianz, siehe
 // rollMultiplierWithOutlier() in combat.ts.
 export const RAID_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
-export const NOTRUF_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
 
 // Chance pro Kampf auf einen Wellen-AUSREISSER (deutlich schwaecher/staerker als die normale
 // Tabelle), je Kontext-Schluessel. Beim Elite-Bollwerk gilt zusaetzlich eine Kappung auf maximal
@@ -301,7 +306,6 @@ export const WAVE_OUTLIER_CHANCE: Record<string, number> = {
   piraten_mittel: 0.08,
   piraten_hoch: 0.15,
   piraten_elite: 0.10,
-  notruf: 0.10,
   raid: 0.06,
 };
 export const WAVE_OUTLIER_LOW_FACTOR = 0.6;
@@ -329,6 +333,5 @@ export const BATTLE_MODIFIER_CHANCE: Record<string, number> = {
   piraten_mittel: 0.10,
   piraten_hoch: 0.18,
   piraten_elite: 0.15,
-  notruf: 0.10,
   raid: 0.06,
 };
