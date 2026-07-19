@@ -1585,6 +1585,67 @@ Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst 
 nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
 spaetere Umsetzung, nicht als Spezifikation.
 
+### Neuer Multiplayer-Sektor: Boss-Gefecht (Piratenadmiral) - vollstaendig durchgeplant, bereit
+### zur Umsetzung
+
+Zweiter Multiplayer-Sektor NEBEN dem bestehenden Elite-Bollwerk (P9) - bewusst eine ANDERE Art
+Herausforderung, kein reines "mehr Zahlen"-Duplikat. Kernidee: statt Masse an Schiffen ein
+einzelner starker Boss-Gegner + wenige grosse Schiffe, plus eine wiederkehrende Rueckzugs-
+Entscheidung ("Extraction") statt eines simplen Durchhalte-Checks.
+
+**Ablauf:**
+- Gesamtdauer der eigentlichen Aktion: **1 Stunde** ab Ankunft der Flotte (reine Hinflugzeit,
+  abhaengig von Position/Flottengeschwindigkeit wie beim Bollwerk, zaehlt NICHT zu dieser Stunde
+  dazu - die Stunde beginnt erst mit dem ersten Check).
+- **Check alle 10 Minuten -> 6 Entscheidungspunkte** innerhalb der Stunde.
+- Nach JEDEM gewonnenen Check: echte Risiko/Ertrag-Entscheidung - mit der bisher gesammelten
+  Beute abziehen (sicher), oder weitermachen fuer mehr, aber mit steigendem Risiko (siehe
+  "Eskalierende Wut" unten). Bei einer Niederlage NACH einem Weitermachen-Entschluss ist die
+  gesamte bisher UNGESICHERTE Beute dieser Runde verloren (NICHT die Flotte selbst - nur die
+  Beute dieses Durchlaufs).
+- KEIN festes Zeitfenster, das alle Teilnehmer exakt einhalten muessen (wie beim urspruenglich
+  erwogenen, dann verworfenen Zeitfenster-Konzept) - bewusst verworfen, da nicht jeder
+  Mitspieler gleich gut mit engen Zeitfenstern zurechtkommt.
+
+**Boss-Fähigkeiten (nutzen bewusst bestehende Spielmechanik kreativ, keine komplett neuen
+Systeme noetig):**
+1. **Eskalierende Wut:** wird der Boss NICHT besiegt (oder es wird "weitergemacht" statt
+   abgezogen), werden seine Werte (Waffen/Schild/Panzerung) mit jedem weiteren Check staerker
+   (Vorschlag als Ausgangswert: +15%/Check, EXAKTER Wert noch nicht final - Tuning-Parameter fuer
+   die eigentliche Umsetzung). Verzahnt sich direkt mit der Rueckzugs-Entscheidung: je laenger
+   gezoegert wird, desto riskanter wird "noch einmal versuchen".
+2. **RapidFire-Waechter gegen Jaeger-Klasse:** starkes RapidFire speziell gegen kleine Schiffe
+   (analog zum bestehenden Schere-Stein-Papier-System zwischen Kapitalschiffen, siehe Punkt 32) -
+   bestraft Masse an kleinen Schiffen ganz natuerlich ueber die bestehende Kampfmechanik, ohne
+   eine kuenstliche Sonderregel noetig zu machen.
+3. **Gepanzerte Schwachstelle:** extrem hohe Basis-Panzerung, die ohne ausreichend investierte
+   Durchschlag-Forschung (Waffensysteme-Zweig, siehe Punkt 65) grossteils wirkungslos abprallt -
+   bindet die Forschungs-Entscheidungen der Teilnehmer mit ein, nicht nur die Flottenzusammen-
+   stellung.
+
+**Zugangsvoraussetzung (macht "wenige grosse Schiffe" auch MECHANISCH zur Pflicht, nicht nur zur
+Empfehlung):** nur Kreuzer-Klasse und aufwaerts erlaubt - Jaeger-Klasse und Versorgungsschiffe
+koennen fuer diesen Sektor gar nicht erst in die Flottenauswahl aufgenommen werden.
+
+**Belohnungsstruktur (Grundidee steht, exakte Zahlen noch NICHT final):**
+- Sicherer Sofort-Ertrag bei Abzug nach einem gewonnenen Check, moderat mit der Anzahl
+  ueberstandener Checks wachsend (KEIN Verdopplungs-Modus wie beim Elite-Bollwerk - bewusst
+  anders, sonst zu aehnliches Gefuehl).
+- Deutlich groesserer Ertrag beim tatsaechlichen Sieg ueber den Boss (Vorschlag: vergleichbar
+  zum aktuellen Bollwerk-Gesamtertrag, aber als EINMALIGE Ausschuettung statt ueber mehrere
+  Checks verteilt - "Trophaeen"-Charakter statt wiederholbarem Farmen).
+- Exklusive Zusatzbelohnung nur beim echten Sieg denkbar (z.B. seltener Bauplan fuer ein neues
+  Spezialschiff, oder eine groessere Menge Dunkle Materie) - Idee erwaehnt, noch NICHT
+  spezifiziert.
+
+**Noch offene, aber NICHT blockierende Detailfragen fuer die eigentliche Umsetzung:**
+- Exakter Eskalations-Prozentsatz pro Check (Vorschlag 15%, nicht final bestaetigt).
+- Exakte Ressourcen-/Bonuswerte fuer sicheren Abzug vs. Sieg-Trophaee.
+- Ob/welche exklusive Sieg-Zusatzbelohnung konkret umgesetzt wird.
+- Genauer Sektor-Name/ID (Platzhalter bisher: "Piratenadmiral"), Position in der Galaxie.
+- Exakte Boss-Statwerte (Waffen/Schild/Panzerung-Basiswerte, RapidFire-Tabelle gegen welche
+  Jaeger-Typen genau).
+
 ### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
 Nutzer-Vorschlag im Anschluss an die Kampf-Engine-Optimierung (Punkt 69): Waffen/Schild/
