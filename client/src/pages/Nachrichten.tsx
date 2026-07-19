@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
+import { shipName } from '../lib/combatInfo';
 import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage } from '../types/game';
 
 function isFarmDetail(detail: CombatDetail | FarmDetail): detail is FarmDetail {
@@ -117,6 +118,7 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
 }
 
 function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }) {
+  const { gameData } = useGame();
   if (!msg.detail) return null;
 
   // Per Portal gerendert - siehe Kommentar in components/InfoModal.tsx (Stacking-Context-Falle
@@ -149,7 +151,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                       .filter(([, c]) => c > 0)
                       .map(([id, c]) => (
                         <tr key={id}>
-                          <td style={{ textAlign: 'left' }}>{id}</td>
+                          <td style={{ textAlign: 'left' }}>{gameData ? shipName(gameData, id) : id}</td>
                           <td>{c}</td>
                         </tr>
                       ))}

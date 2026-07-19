@@ -35,6 +35,7 @@ function SektorCard({
   recallMission,
   setFleetMissionId,
   setInfoSektorId,
+  gameData,
 }: {
   sektor: GameData['sektoren'][number];
   cfg: GameData['sektorConfig'][string];
@@ -54,6 +55,7 @@ function SektorCard({
   recallMission: (missionId: string) => void;
   setFleetMissionId: (id: string | null) => void;
   setInfoSektorId: (id: string | null) => void;
+  gameData: GameData;
 }) {
   // Eigene Komponenteninstanz pro Karte - WICHTIG fuer die Hook-Regeln: die Anzahl der Sektoren
   // pro Tab variiert (3 Asteroiden-Sektoren, aber 4 Piraten-Sektoren, da piraten_elite mit
@@ -109,7 +111,7 @@ function SektorCard({
               return (
                 <div className="queue-item" key={id}>
                   <span>
-                    {id} (verfügbar: {avail}
+                    {shipName(gameData, id)} (verfügbar: {avail}
                     {cap ? `, max ${cap}` : ''})
                   </span>
                   <span className="qty-row">
@@ -484,7 +486,7 @@ export function SektorPage() {
             return (
               <div className="queue-item" key={id}>
                 <span>
-                  {id} (verfügbar: {avail})
+                  {shipName(gameData, id)} (verfügbar: {avail})
                 </span>
                 <span className="qty-row">
                   <button className="qty-btn" onClick={() => setEventSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
@@ -580,6 +582,7 @@ export function SektorPage() {
               recallMission={recallMission}
               setFleetMissionId={setFleetMissionId}
               setInfoSektorId={setInfoSektorId}
+              gameData={gameData}
             />
           );
         })}
