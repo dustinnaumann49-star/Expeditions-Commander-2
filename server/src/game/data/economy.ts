@@ -319,3 +319,17 @@ export const RAID_SALVAGE_DM_MAX = 20;
 // triviale/leere Gegnerwelle zusammenschrumpft, nur weil Verteidigung nicht mehr in die
 // Feindstaerke einfliesst (siehe README "Wichtige Punkte" zur Entkopplung).
 export const RAID_MIN_TARGET_POWER = 200000;
+
+// Raid-Wellensystem (Nutzerentscheidung): ein Raid ist nicht mehr EIN Kampf bei Ankunft, sondern
+// RAID_WAVE_COUNT einzelne Angriffswellen innerhalb eines RAID_ASSAULT_DURATION_MS-Fensters NACH
+// der Ankunft (Vorbereitungszeit/Flugzeit davor bleiben unveraendert, siehe RAID_PREP_MS in
+// galaxyConstants.ts - die Stunde ist NUR fuer die Wellen-Phase, nicht fuer An-/Abflug). Die
+// Gesamt-Feindstaerke bleibt gleich wie bei einem einzelnen Raid vorher (auf die Wellen verteilt,
+// siehe raids.ts), Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung
+// am Ende, die mit der Anzahl gewonnener Wellen skaliert (siehe finalizeRaidWaves() in raids.ts).
+export const RAID_WAVE_COUNT = 5;
+export const RAID_ASSAULT_DURATION_MS = 60 * 60 * 1000; // 1 Stunde
+// Zufalls-Anteil bei der Wellen-Zeitplanung (siehe planRaidWaveTimes() in raids.ts) - haelt die
+// Abstaende "ungefaehr" gleich statt exakt im Metronom-Takt, ohne dass sich Wellen ueberholen oder
+// das Gesamtfenster gesprengt wird (letzte Welle wird dort hart auf das Fensterende gekappt).
+export const RAID_WAVE_JITTER_FACTOR = 0.25;

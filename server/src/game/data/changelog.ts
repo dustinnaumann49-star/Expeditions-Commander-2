@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Raids kommen jetzt in 5 Wellen',
+    changes: [
+      'Ein Piratenraid ist nicht mehr ein einzelner Kampf bei Ankunft, sondern 5 Angriffswellen im Abstand von ungefähr 15 Minuten, die innerhalb einer Stunde nach Ankunft der Piratenflotte komplett abgeschlossen sind.',
+      'Die Gesamtstärke der Angreifer bleibt wie bisher - sie verteilt sich nur auf die 5 Wellen statt in einem Schlag zu kommen. Verluste aus früheren Wellen bleiben bestehen, eure Verteidigung erholt sich nicht zwischen den Wellen (Reparatur-Bonus nach jedem Kampf wirkt weiterhin).',
+      'Wird eure Verteidigung zwischendurch komplett aufgerieben, laufen die restlichen Wellen ohne weiteren Kampf durch - ihr bekommt dafür keine einzelne Nachricht pro leerer Welle.',
+      'Belohnung gibt es nicht mehr pro Welle einzeln, sondern erst am Ende: ein Container pro erfolgreich abgewehrter Welle. Schlagt ihr alle 5 Wellen zurück, werden alle Container zu Gold aufgewertet statt Silber.',
+      'Kopfleiste, Sektor- und Galaxie-Seite zeigen jetzt an, in welcher Welle sich ein laufender Raid gerade befindet.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Zeit-Gutscheine für Bauzeit aufgeteilt: Schiffe, Verteidigung, Gebäude',
     changes: [
       'Der bisherige "Zeit-Gutschein Bau" wirkte nur auf Schiffe. Jetzt gibt es ihn getrennt für Schiffe, Verteidigung und Gebäude - im Shop und als Container-Belohnung.',
