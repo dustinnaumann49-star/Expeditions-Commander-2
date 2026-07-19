@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Fehlerbehebung: weißes Aufblitzen beim Seitenwechsel',
+    changes: [
+      'Hintergrundbilder werden jetzt vorgeladen, statt beim Seitenwechsel kurz weiß/leer zu bleiben, bis das neue Bild nachgeladen ist.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Server-Stabilität: Maßnahmen gegen Abstürze',
     changes: [
       'Die KI-Mitspieler sind vorerst wieder entfernt - der Server war auf dem aktuellen Tarif nicht dafür ausgelegt.',
