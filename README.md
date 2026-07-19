@@ -1720,18 +1720,51 @@ Werte staerker als Kosten steigen lassen = zusaetzlicher Bonus fuers Umsteigen),
 final entschieden - Nutzer wollte das erst nach einer Beobachtungsphase der Server-Last
 klaeren.
 
-**Zwischenzeitlich (parallel besprochen, ebenfalls zurueckgestellt):** Nutzer erwaegt einen
-Umzug von Render (Starter-Tarif, 0,5 CPU/512MB) zu einem eigenen Hetzner-Server (CX33: 4 vCPU/
-8GB RAM, ~10€/Monat) mit Coolify als Verwaltungsoberflaeche (aehnliches Dashboard-Gefuehl wie
-Render, nur auf eigener, deutlich staerkerer Hardware). Aktuell noch nicht umsetzbar (kein
-Zugriff auf PC/Terminal fuer SSH-Key-Erzeugung und Ersteinrichtung) - wird auf spaeter verschoben,
-bis PC verfuegbar ist.
-- **Datenverlust BEIM Umzug selbst ist ausdruecklich AKZEPTIERT** - eine frische, neu angelegte
-  Datenbank auf dem neuen Server (statt einer muehsamen Daten-Migration von Render herueber) ist
-  fuer den Nutzer voellig in Ordnung, kein Show-Stopper fuer den Umzug.
-- **Trotzdem wichtig FUER DIE ZEIT DANACH:** auf dem NEUEN Server unbedingt auf persistenten
-  Speicher fuer die SQLite-Datenbank achten (Coolify-Volume), damit sich der urspruengliche
-  Datenverlust-Fehler (siehe Punkt 59, fehlendes `data`-Verzeichnis bei jedem Redeploy) auf der
-  neuen Plattform nicht bei jedem kuenftigen Update wiederholt - der einmalige akzeptierte
-  Verlust beim Umzug selbst ist etwas anderes als wiederholter Verlust danach.
+### Geplanter Server-Umzug: Render -> Hetzner + Coolify (WICHTIG fuer einen kuenftigen neuen Chat)
+
+**Status: pausiert, wartet auf PC-Zugriff des Nutzers - kein technischer Blocker im Code, rein
+eine Verfuegbarkeits-Frage beim Nutzer.** Dieser Abschnitt ist bewusst ausfuehrlich gehalten,
+damit ein KUENFTIGER neuer Chat (falls dieser hier zu voll wird, um weiterzumachen) sofort
+versteht, worum es geht, ohne die gesamte bisherige Unterhaltung nachlesen zu muessen.
+
+**Worum es geht:** Nutzer moechte vom aktuellen Render-Starter-Tarif (0,5 CPU / 512MB RAM) zu
+einem eigenen Hetzner-VPS wechseln - Typ **CX33** (4 vCPU / 8GB RAM / 80GB SSD, Standort
+Helsinki, ~10€/Monat), verwaltet ueber **Coolify** (Self-Hosted-Deployment-Plattform mit
+Docker-Unterbau, bietet ein Render-aehnliches Dashboard-Erlebnis: Deploys, Logs, Umgebungs-
+variablen, Neustarts alles per Browser-Oberflaeche statt roher Kommandozeile).
+
+**Warum:** urspruenglich als Reaktion auf wiederholte Server-Abstuerze bei grossen Kaempfen
+(siehe Punkte 66/69/72) - 8x mehr CPU-Leistung und 16x mehr RAM sollten die bisherigen Engpaesse
+mit hoher Wahrscheinlichkeit vollstaendig loesen, selbst OHNE weitere Software-Optimierungen.
+Bonus-Perspektive, falls der Umzug stattfindet: mit so viel mehr Leistung koennten die aktuell
+deaktivierten KI-Spieler (Punkt 66) und Notruf-Events (Punkt 66) eventuell wieder reaktiviert
+werden - noch keine feste Entscheidung, nur als Option festgehalten.
+
+**Warum es aktuell noch nicht passiert:** Nutzer hat aktuell KEINEN Zugriff auf einen PC/
+Terminal (nur Handy ueber Samsung DEX an einem Monitor, siehe fruehere Diagnose-Sitzung zum
+weissen Bildschirm) - SSH-Key-Erzeugung und die Hetzner-Ersteinrichtung erfordern das. Wird
+verschoben, bis ein PC verfuegbar ist. Nutzer hat bereits ein Hetzner-Projekt ("Expedition-
+Commander") angelegt und die Server-Konfiguration im Bestell-Dialog vorbereitet (CX33, Helsinki,
+Coolify-Image), aber noch NICHT kostenpflichtig bestellt.
+
+**Was zu tun ist, sobald der Nutzer wieder anfaengt (fuer den dann aktiven Chat):**
+1. Nutzer bestellt/richtet den Hetzner-Server ein (Claude kann dabei unterstuetzen, hat aber
+   **keine tiefe Coolify-Erfahrung wie bei Render** - auf Screenshots/Fehlermeldungen angewiesen,
+   genau wie das bisherige Vorgehen bei Render-Problemen in diesem Projekt).
+2. **Umgebungsvariablen aus der bestehenden `server/.env.example`/Render-Konfiguration
+   uebertragen:** `JWT_SECRET`, `PORT`, `CLIENT_ORIGIN` (Client-URL wird sich aendern, sobald der
+   Client ebenfalls umzieht oder weiterhin auf Render bleibt - noch nicht entschieden, ob NUR der
+   Server umzieht oder auch der Client).
+3. **UNBEDINGT auf persistenten Speicher fuer die SQLite-Datenbank achten** (Coolify-Volume fuer
+   das `data`-Verzeichnis) - sonst wiederholt sich der urspruengliche Datenverlust-Fehler von
+   Render (Punkt 59, fehlendes Verzeichnis bei jedem Redeploy) auf der neuen Plattform.
+4. **Datenverlust BEIM Umzug selbst ist ausdruecklich vom Nutzer AKZEPTIERT** - eine frische,
+   neu angelegte Datenbank auf dem neuen Server (statt einer muehsamen Daten-Migration von Render
+   herueber) ist voellig in Ordnung, kein Show-Stopper. Wichtig ist nur, dass es DANACH (also ab
+   dem produktiven Betrieb auf dem neuen Server) nicht wieder zu wiederholtem Datenverlust kommt
+   (siehe Punkt 3 oben).
+5. Nach erfolgreichem Umzug: pruefen, ob die Schiffs-/Verteidigungs-Skalierung (siehe Abschnitt
+   direkt oberhalb) ueberhaupt noch noetig ist, oder ob die reine Hardware-Verbesserung schon
+   ausreicht - war der urspruengliche Grund fuer beide Massnahmen (Server-Abstuerze bei grossen
+   Kaempfen).
 
