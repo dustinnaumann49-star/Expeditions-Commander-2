@@ -1482,3 +1482,43 @@ client/
       Gesamtrechnung vor/nach Bonus stimmte exakt mit 750 Mio./1,5 Mrd. ueberein;
       `SEKTOR_CONFIG.piraten_elite.checkChance` bestaetigt auf `1`.
 
+69. **PERFORMANCE: Kampf-Engine optimiert - der eigentliche Grund, warum grosse Flotten (nicht
+    nur gleichzeitige Kaempfe, siehe Punkt 66) den Server ueberlasten konnten.** Jedes einzelne
+    Schiff wird als eigenes `CombatUnit`-Objekt simuliert (nicht nach Typ zusammengefasst, siehe
+    `buildUnits()`/`buildUnitsMultiOwner()`) - `fireShots()` filterte dabei bei JEDEM EINZELNEN
+    SCHUSS (nicht nur einmal pro Runde!) die KOMPLETTE Zielliste neu nach lebenden Einheiten
+    (`targets.filter(t => t.hpCur > 0)`) - eine mit der Flottengroesse QUADRATISCH wachsende
+    Ineffizienz (O(Schuetzen x Schuesse x Zielanzahl) pro Runde), verschaerft durch RapidFire
+    (mehrere Schuesse pro Schiff) und bis zu 100 moegliche Runden.
+    - **Fix: neue `AliveTargetPool`-Klasse** (`combat.ts`) haelt eine Liste lebender Ziele +
+      eine Index-Zuordnung, damit eine gestorbene Einheit in O(1) entfernt werden kann
+      (Swap-mit-letztem-Element-und-Pop) statt bei jedem Schuss neu gefiltert zu werden. Wird
+      EINMAL pro `fireShots()`-Aufruf aufgebaut (nicht pro Schuss). `applyHitToTarget()` bekam
+      dafuer einen optionalen `onKill`-Callback, der bei JEDEM Kill (direkter Treffer,
+      Durchschlag-Kaskade, kritische Explosion) den Pool synchron haelt.
+    - **Bewusst NICHT angefasst:** die deutlich seltenere Kaskaden-Zielsuche innerhalb von
+      `applyHitToTarget()` (nur bei Durchschlag-Ueberschuss-Schaden relevant, max. 5x pro Schuss
+      statt pro-Schuss-garantiert) - geringerer Nutzen, zusaetzliches Risiko fuer eine erste,
+      kontrollierte Optimierungsrunde. Kann bei Bedarf spaeter ebenfalls optimiert werden.
+    - **Sorgfaeltig verifiziert (auf Nutzerwunsch "langsam und sicher"):** alte und neue
+      Implementierung mit identischem, seedbarem Pseudo-Zufallsgenerator (Mulberry32) verglichen.
+      Bei EINEM einzelnen Testszenario (1.500 vs. 1.400 Schiffe) waren die Ergebnisse
+      bitgenau identisch. Bei GROESSEREN/komplexeren Szenarien mit vielen Todesfaellen wichen
+      einzelne Werte leicht ab - Ursache erkannt und dokumentiert: Swap-Remove aendert die
+      Array-Reihenfolge, `pickRandom()` waehlt per Zufalls-INDEX - bei identischer Zufallszahl
+      landet die alte und neue Version nach dem ersten Tod dadurch auf einem anderen (aber
+      weiterhin gleichverteilt zufaelligen) Index. KEIN Bias, nur eine andere gueltige
+      Zufallsreihenfolge. Per 300 unabhaengigen Durchlaeufen je Version statistisch bestaetigt:
+      mittlere Ueberlebende/Schadenswerte/Rundenzahl zwischen alter und neuer Version lagen
+      durchgehend im Rahmen normaler Zufallsschwankung (z.B. 721,4 vs. 719,8 Ueberlebende bei
+      Standardabweichung ~14-15), kein systematischer Unterschied feststellbar - sowohl bei
+      ueberlegenem als auch bei knappem Kraeftefeld getestet.
+    - **Geschwindigkeitsmessung** (gleiche Flotte, gleiche Forschung, 19 Runden):
+      1.000 Schiffe gesamt: 302ms -> 149ms; 4.000: 2.035ms -> 818ms; 10.000: 12.044ms -> 4.778ms;
+      20.000: 48.139ms -> 19.001ms - durchgehend ca. 2-2,5x schneller, mit wachsender absoluter
+      Zeitersparnis bei groesseren Flotten.
+    - **Ehrliche Einordnung:** eine deutliche Verbesserung, aber KEINE vollstaendige Loesung -
+      die Engine simuliert weiterhin jedes Schiff einzeln statt nach Typ zusammengefasst, bei
+      wirklich extremen Flottengroessen bleibt Kampf grundsaetzlich rechenintensiv. Diese eine
+      Zeile war aber nachweislich der groesste Einzelposten.
+
