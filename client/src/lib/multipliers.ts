@@ -17,13 +17,14 @@ function baseTimeMultiplier(gameData: GameData, state: PlayerState): number {
 // Spiegelt server/src/game/actions.ts's roboterNaniteFactor() 1:1 - kompoundierend (nicht
 // linear) pro Stufe, damit Bauzeiten nie negativ/Null werden. Gebaeude werden staerker
 // beschleunigt (25%/50% pro Stufe) als Schiffe/Verteidigung (1%/2% pro Stufe).
-function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefense'): number {
+function roboterNaniteFactor(gameData: GameData, state: PlayerState, target: 'building' | 'shipDefense'): number {
   const roboterLevel = state.buildings?.roboterfabrik || 0;
   const naniteLevel = state.buildings?.nanitenfabrik || 0;
-  if (target === 'building') {
-    return Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel);
-  }
-  return Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
+  let factor =
+    target === 'building' ? Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel) : Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
+  factor *= moduleReductionFactor(gameData, state, 'roboterfabrik_verstaerkte_automatisierung');
+  factor *= moduleReductionFactor(gameData, state, 'nanitenfabrik_verstaerkte_automatisierung');
+  return factor;
 }
 
 // Spiegelt server/src/game/actions.ts's specificTimeMultiplier() 1:1 - die Forschungsbaum-Zweige
@@ -38,7 +39,7 @@ function specificTimeMultiplier(level: number, effectPerLevel: number): number {
 // obendrauf).
 export function getBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific;
 }
 
 // NEU: spiegelt server/src/game/actions.ts's defenseBauzeitMultiplier() 1:1 - fuer die
@@ -46,17 +47,57 @@ export function getBauzeitMultiplier(gameData: GameData, state: PlayerState): nu
 // getBauzeitMultiplier() berechnet).
 export function getDefenseBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_verteidigung || 0, 0.03);
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific;
 }
 
 // Spiegelt server/src/game/actions.ts's gebaeudeBauzeitMultiplier() 1:1 - fuer die Bauzeit-Anzeige
 // auf der Gebaeude-Seite ("Bauzeit: Gebaeude" stapelt zusaetzlich zur Basis).
-export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
+export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerState, buildingId?: string): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(state, 'building') * specific;
+  let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building') * specific;
+  const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
+  if (selfModuleId) m *= moduleReductionFactor(gameData, state, selfModuleId);
+  return m;
 }
 
 // ---- Gebaeude: Energie + Produktion (spiegelt server/src/game/actions.ts 1:1) ----
+
+// ========== GEBAEUDE-MODULSYSTEM (spiegelt server/src/game/actions.ts 1:1) ==========
+
+function moduleLevel(state: PlayerState, moduleId: string): number {
+  return state.buildingModules?.[moduleId] || 0;
+}
+
+function moduleBoostFactor(gameData: GameData, state: PlayerState, moduleId: string): number {
+  const mod = gameData.buildingModules.find((m) => m.id === moduleId);
+  if (!mod) return 1;
+  return 1 + moduleLevel(state, moduleId) * mod.effectPerLevel;
+}
+
+function moduleReductionFactor(gameData: GameData, state: PlayerState, moduleId: string): number {
+  const mod = gameData.buildingModules.find((m) => m.id === moduleId);
+  if (!mod) return 1;
+  return Math.max(0.5, 1 - moduleLevel(state, moduleId) * mod.effectPerLevel);
+}
+
+const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_automatisierung',
+  kristallmine: 'kristallmine_automatisierung',
+  deuteriummine: 'deuteriummine_automatisierung',
+  solarkraftwerk: 'solarkraftwerk_wartungsoptimierung',
+  roboterfabrik: 'roboterfabrik_wartungsfreiheit',
+  nanitenfabrik: 'nanitenfabrik_wartungsfreiheit',
+};
+const MINE_OUTPUT_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_foerdereffizienz',
+  kristallmine: 'kristallmine_foerdereffizienz',
+  deuteriummine: 'deuteriummine_foerdereffizienz',
+};
+const MINE_ENERGY_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_energiesparmodul',
+  kristallmine: 'kristallmine_energiesparmodul',
+  deuteriummine: 'deuteriummine_energiesparmodul',
+};
 
 function levelScaledValue(base: number, level: number): number {
   return level > 0 ? base * level * Math.pow(1.1, level) : 0;
@@ -79,7 +120,8 @@ export function getMiningBuildingMultiplier(state: PlayerState): number {
 export function getEnergyProduced(gameData: GameData, state: PlayerState): number {
   const solar = gameData.buildings.find((b) => b.id === 'solarkraftwerk');
   if (!solar) return 0;
-  return levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
+  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
+  return base * moduleBoostFactor(gameData, state, 'solarkraftwerk_ertragssteigerung');
 }
 
 export function getEnergyConsumed(gameData: GameData, state: PlayerState): number {
@@ -87,7 +129,8 @@ export function getEnergyConsumed(gameData: GameData, state: PlayerState): numbe
   ['metallmine', 'kristallmine', 'deuteriummine'].forEach((id) => {
     const building = gameData.buildings.find((b) => b.id === id);
     if (!building) return;
-    total += levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
+    const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
+    total += base * moduleReductionFactor(gameData, state, MINE_ENERGY_MODULE[id]);
   });
   return total;
 }
@@ -102,8 +145,12 @@ export function getMineOutputPerHour(gameData: GameData, state: PlayerState, bui
   const building = gameData.buildings.find((b) => b.id === buildingId);
   if (!building || !building.baseOutput) return 0;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  return base * getEnergyFactor(gameData, state) * getMiningBuildingMultiplier(state);
+  const moduleId = MINE_OUTPUT_MODULE[buildingId];
+  const moduleFactor = moduleId ? moduleBoostFactor(gameData, state, moduleId) : 1;
+  return base * getEnergyFactor(gameData, state) * getMiningBuildingMultiplier(state) * moduleFactor;
 }
+
+
 
 // Spiegelt server/src/game/actions.ts's researchTimeMultiplier() 1:1 - nur der
 // "forschungstempo"-Booster halbiert die Forschungszeit, es gibt keine Forschung, die sich selbst
