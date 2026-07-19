@@ -1581,11 +1581,18 @@ zweigen davon ab und verbessern jeweils EINEN bestimmten Aspekt des Gebaeudes zu
   Basis-Gebaeude (z.B. alle drei Metallmine-Module zeigen `metallmine.jpg`). Spart die zuvor
   befuerchteten bis zu 16 neuen Bilder komplett ein.
 
-**Noch offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
-- Voraussetzungs-Stufen fuer die Module (analog zum Forschungsbaum vermutlich ein einheitlicher
-  Wert wie Stufe X der jeweiligen Gebaeude-Basis, aber noch nicht festgelegt).
-- Kosten/Bauzeit-Formeln fuer Module (eigene baseCost/costGrowth, oder an die jeweilige
-  Gebaeude-Basis gekoppelt?).
+**Alle Fragen jetzt geklaert (siehe Ruecksprache) - Planung damit vollstaendig:**
+- **Voraussetzungs-Stufen der Gebaeude-Basis, um Module ueberhaupt freizuschalten** (anders als
+  beim Forschungsbaum NICHT einheitlich, sondern pro Gebaeudetyp verschieden, da die Gebaeude
+  unterschiedlich schnell/teuer wachsen):
+  - Metallmine/Kristallmine/Deuterium-Synthetisierer: **Stufe 20**
+  - Solarkraftwerk: **Stufe 20**
+  - Roboterfabrik: **Stufe 10**
+  - Nanitenfabrik: **Stufe 5**
+- **Kosten und Bauzeit der Module: bewusst hoch angesetzt** (beides, nicht nur eines von beiden)
+  - passt zum bereits hohen Voraussetzungs-Niveau (Module sind ein spaetes Ausbauziel, kein
+    fruehes Upgrade) und verhindert, dass Module die grundlegende Gebaeude-Ausbaustrategie zu
+    frueh verdraengen.
 
 ### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
