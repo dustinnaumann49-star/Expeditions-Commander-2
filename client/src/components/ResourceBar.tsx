@@ -23,7 +23,7 @@ export function ResourceBar() {
   const clockText = new Date(serverNow()).toLocaleTimeString('de-DE');
   const now = serverNow();
 
-  const ownRaid = state.raid && !state.raid.resolved ? state.raid : null;
+  const ownRaid = state.raid;
   const otherRaidsCount = activeRaids.length;
 
   const energyProduced = state.energyProduced ?? (gameData ? getEnergyProduced(gameData, state) : 0);
@@ -63,7 +63,11 @@ export function ResourceBar() {
         <div className="res-group" style={{ gap: 8 }}>
           {ownRaid && (
             <button className="alert-badge" onClick={() => navigate('/sektor')}>
-              ⚠ Raid im Anflug · {formatTime(ownRaid.arrivalTime - now)}
+              {now < ownRaid.arrivalTime
+                ? `⚠ Raid im Anflug · ${formatTime(ownRaid.arrivalTime - now)}`
+                : `⚠ Welle ${Math.min(ownRaid.wavesProcessed + 1, ownRaid.waveTimes.length)}/${ownRaid.waveTimes.length} · ${formatTime(
+                    Math.max(0, (ownRaid.waveTimes[ownRaid.wavesProcessed] ?? now) - now)
+                  )}`}
             </button>
           )}
           {otherRaidsCount > 0 && (
