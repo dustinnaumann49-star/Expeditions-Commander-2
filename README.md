@@ -1353,4 +1353,18 @@ client/
       `impulsantrieb.png`, `hyperraumantrieb.png`, `mining_schiffe.png`, `mining_minen.png`,
       `bauzeit_gebaeude.png`, `bauzeit_schiffe.png`, `bauzeit_verteidigung.png`) - fehlen aktuell
       noch, der bestehende `onError`-Fallback blendet das Bild bis dahin einfach aus.
+    - **Nachtrag (nach Live-Test):** die urspruengliche Umsetzung nutzte externe CSS-Klassen
+      (`.research-tree`/`.research-node` in `theme.css`, klassisches verschachteltes `<ul>/<li>`-
+      Baumdiagramm-Muster) - beim Live-Test blieben Bilder/Knoten komplett unstyled (riesige
+      Bilder in voller Breite, keine erkennbare Baumstruktur, keine Verbindungslinien). Ursache
+      nicht abschliessend geklaert (vermutlich eine Deploy-/Cache-Unstimmigkeit bei der
+      CSS-Datei), aber statt der Ursache hinterherzujagen: **komplett auf Inline-Styles
+      umgestellt** (`Forschung.tsx`) - Knotengroesse, Bildgroesse, Kartenoptik UND die
+      Verbindungslinien (kleine `<div>`-Striche statt `::before`/`::after`-Pseudoelemente) werden
+      jetzt alle direkt im Bauteil selbst berechnet, OHNE jede Abhaengigkeit von externen
+      CSS-Klassen ausser den globalen `--border-bright`/`--accent-kristall`-Variablen (die schon
+      ganz am Dateianfang definiert sind und daher praktisch nie fehlen koennen). Robuster gegen
+      genau diese Art von Cache-/Deploy-Problem, auch wenn dadurch mehr Code direkt im
+      TSX steht statt sauber in der CSS-Datei getrennt. Die nun ungenutzten CSS-Klassen wurden
+      wieder aus `theme.css` entfernt.
 
