@@ -82,6 +82,25 @@ export interface BuildingDefinition {
   baseEnergyOutput?: number; // Energieertrag bei Stufe 1 (nur Solarkraftwerk)
 }
 
+// Gebaeude-Modulsystem (Baum-Zweige pro Gebaeude, analog zum Forschungsbaum in types.ts
+// ResearchDefinition) - jedes Modul verbessert GENAU EINEN Aspekt seines Basis-Gebaeudes
+// zusaetzlich, stapelt sich mit der allgemeinen Forschung (Mining-Boost/Bauzeit-Zweige), ersetzt
+// sie nicht. Nutzt dasselbe Bild wie sein Basis-Gebaeude (kein eigenes Bild noetig).
+export interface BuildingModuleDefinition {
+  id: string;
+  name: string;
+  lore: string;
+  buildingId: string; // welches Basis-Gebaeude (Bild-Wiederverwendung + Anzeige-Gruppierung)
+  moduleKind: 'output' | 'energy_reduction' | 'buildtime_self' | 'strengthen_factor';
+  requiredBuildingLevel: number; // Mindeststufe DES BASIS-GEBAEUDES, um das Modul freizuschalten
+  effectPerLevel: number;
+  maxLevel: number; // anders als die Basis-Gebaeude (unbegrenzt) haben Module ein festes Limit
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -103,6 +122,7 @@ export interface BuildJob {
   shipId?: string;
   defId?: string;
   buildingId?: string;
+  moduleId?: string; // Gebaeude-Modul (siehe BuildingModuleDefinition) - teilt sich den Slot mit buildingId
   count: number;
   startTime: number;
   endTime: number;
@@ -386,6 +406,7 @@ export interface PlayerState {
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
   buildings: Record<string, number>;
+  buildingModules: Record<string, number>; // moduleId -> Stufe (siehe BuildingModuleDefinition)
   // Gebaeude teilen sich EINEN globalen Bauslot (anders als Schiffe/Verteidigung) - siehe README.
   // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
   // Komponente, maxSlots=1) unveraendert wiederverwenden laesst.

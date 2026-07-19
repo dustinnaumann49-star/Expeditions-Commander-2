@@ -2,6 +2,7 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS, findBuilding } from './data/buildings.js';
+import { BUILDING_MODULES, findBuildingModule } from './data/buildingModules.js';
 import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
@@ -29,10 +30,14 @@ function baseTimeMultiplier(state: PlayerState): number {
 function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefense'): number {
   const roboterLevel = state.buildings?.roboterfabrik || 0;
   const naniteLevel = state.buildings?.nanitenfabrik || 0;
-  if (target === 'building') {
-    return Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel);
-  }
-  return Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
+  let factor =
+    target === 'building' ? Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel) : Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
+  // Module "Verstaerkte Automatisierung" (Roboterfabrik/Nanitenfabrik) verstaerken den
+  // bestehenden Stufen-Effekt zusaetzlich, OHNE dass die Fabrik selbst weiter ausgebaut werden
+  // muss - stapelt multiplikativ mit dem obigen Basiswert.
+  factor *= moduleReductionFactor(state, 'roboterfabrik_verstaerkte_automatisierung');
+  factor *= moduleReductionFactor(state, 'nanitenfabrik_verstaerkte_automatisierung');
+  return factor;
 }
 
 // Forschungsbaum-Zweige "Bauzeit: X" (siehe research.ts) stapeln ZUSAETZLICH zur Basis-Forschung
@@ -41,6 +46,53 @@ function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefen
 function specificTimeMultiplier(level: number, effectPerLevel: number): number {
   return Math.max(0.5, 1 - level * effectPerLevel);
 }
+
+// ========== GEBAEUDE-MODULSYSTEM (siehe types.ts BuildingModuleDefinition/README) ==========
+// Stapelt sich MULTIPLIKATIV mit der allgemeinen Forschung (Mining-Boost/Bauzeit-Zweige) - keine
+// Ersetzung, mehr Optimierungstiefe wie in der Ruecksprache besprochen.
+
+function moduleLevel(state: PlayerState, moduleId: string): number {
+  return state.buildingModules?.[moduleId] || 0;
+}
+
+// Fuer "output"/"strengthen_factor"-Module: hebt den Basiswert an (1 + Stufe*Effekt).
+function moduleBoostFactor(state: PlayerState, moduleId: string): number {
+  const mod = findBuildingModule(moduleId);
+  if (!mod) return 1;
+  return 1 + moduleLevel(state, moduleId) * mod.effectPerLevel;
+}
+
+// Fuer "energy_reduction"/"buildtime_self"-Module: senkt den Basiswert (nie unter 50%, analog zu
+// specificTimeMultiplier oben - verhindert negative/Null-Werte bei voll ausgebautem Modul).
+function moduleReductionFactor(state: PlayerState, moduleId: string): number {
+  const mod = findBuildingModule(moduleId);
+  if (!mod) return 1;
+  return Math.max(0.5, 1 - moduleLevel(state, moduleId) * mod.effectPerLevel);
+}
+
+// Zuordnung Gebaeude -> eigenes "buildtime_self"-Modul (verkuerzt NUR die Bauzeit fuer weitere
+// Ausbaustufen GENAU DIESES Gebaeudes).
+const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_automatisierung',
+  kristallmine: 'kristallmine_automatisierung',
+  deuteriummine: 'deuteriummine_automatisierung',
+  solarkraftwerk: 'solarkraftwerk_wartungsoptimierung',
+  roboterfabrik: 'roboterfabrik_wartungsfreiheit',
+  nanitenfabrik: 'nanitenfabrik_wartungsfreiheit',
+};
+
+// Zuordnung Mine -> eigenes "output"-Modul (Foerdereffizienz) bzw. "energy_reduction"-Modul
+// (Energiesparmodul).
+const MINE_OUTPUT_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_foerdereffizienz',
+  kristallmine: 'kristallmine_foerdereffizienz',
+  deuteriummine: 'deuteriummine_foerdereffizienz',
+};
+const MINE_ENERGY_MODULE: Record<string, string> = {
+  metallmine: 'metallmine_energiesparmodul',
+  kristallmine: 'kristallmine_energiesparmodul',
+  deuteriummine: 'deuteriummine_energiesparmodul',
+};
 
 export function bauzeitMultiplier(state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
@@ -57,9 +109,15 @@ export function defenseBauzeitMultiplier(state: PlayerState): number {
 
 // Eigener Multiplikator fuer Gebaeude-Bauzeiten (Punkt 1 der README gilt auch hier: jede neue
 // Zeit-Anzeige im Frontend fuer Gebaeude MUSS die client-seitige Entsprechung verwenden).
-export function gebaeudeBauzeitMultiplier(state: PlayerState): number {
+// `buildingId` optional: wird er angegeben, fliesst zusaetzlich das GEBAEUDE-EIGENE
+// "buildtime_self"-Modul ein (siehe BUILDING_SELF_BUILDTIME_MODULE) - wirkt NUR auf die
+// Bauzeit fuer weitere Ausbaustufen GENAU DIESES Gebaeudes, nicht auf andere.
+export function gebaeudeBauzeitMultiplier(state: PlayerState, buildingId?: string): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific;
+  let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific;
+  const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
+  if (selfModuleId) m *= moduleReductionFactor(state, selfModuleId);
+  return m;
 }
 
 export function researchTimeMultiplier(state: PlayerState): number {
@@ -118,7 +176,8 @@ function levelScaledValue(base: number, level: number): number {
 export function energyProduced(state: PlayerState): number {
   const solar = findBuilding('solarkraftwerk');
   if (!solar) return 0;
-  return levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
+  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
+  return base * moduleBoostFactor(state, 'solarkraftwerk_ertragssteigerung');
 }
 
 export function energyConsumed(state: PlayerState): number {
@@ -126,7 +185,8 @@ export function energyConsumed(state: PlayerState): number {
   MINE_BUILDING_IDS.forEach((id) => {
     const building = findBuilding(id);
     if (!building) return;
-    total += levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
+    const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
+    total += base * moduleReductionFactor(state, MINE_ENERGY_MODULE[id]);
   });
   return total;
 }
@@ -147,12 +207,15 @@ function miningBuildingMultiplier(state: PlayerState): number {
   return base * specific;
 }
 
-// Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor und Mining-Forschung.
+// Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor, Mining-Forschung und dem
+// gebaeudeeigenen "Foerdereffizienz"-Modul.
 export function mineOutputPerHour(state: PlayerState, buildingId: string): number {
   const building = findBuilding(buildingId);
   if (!building || !building.baseOutput) return 0;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  return base * energyFactor(state) * miningBuildingMultiplier(state);
+  const moduleId = MINE_OUTPUT_MODULE[buildingId];
+  const moduleFactor = moduleId ? moduleBoostFactor(state, moduleId) : 1;
+  return base * energyFactor(state) * miningBuildingMultiplier(state) * moduleFactor;
 }
 
 // Rechnet die seit dem letzten tick() vergangene Zeit als passive Minen-Produktion hoch.
@@ -173,7 +236,7 @@ function buildingCostForLevel(building: BuildingDefinition, level: number): Reso
 }
 
 function buildingTimeForLevel(state: PlayerState, building: BuildingDefinition, level: number): number {
-  return building.baseTimeSeconds * Math.pow(building.timeGrowth, level - 1) * 1000 * gebaeudeBauzeitMultiplier(state);
+  return building.baseTimeSeconds * Math.pow(building.timeGrowth, level - 1) * 1000 * gebaeudeBauzeitMultiplier(state, building.id);
 }
 
 // ========== PRODUKTION + WARTESCHLANGEN "NACHHOLEN" ==========
@@ -192,10 +255,15 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   // Zurueckgerufene Galaxie-Flotten heimkehren lassen, sobald ihre Rueckflugzeit erreicht ist.
   processGalaxyDeployments(state);
 
-  // Gebaeude-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_BUILDING_SLOTS)
+  // Gebaeude-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_BUILDING_SLOTS) - Module
+  // teilen sich denselben Slot/dieselbe Warteschlange (siehe startModuleUpgrade).
   const stillBuildingBuildings = state.buildingQueue.filter((job) => {
     if (job.endTime <= now && job.buildingId) {
       state.buildings[job.buildingId] = (state.buildings[job.buildingId] || 0) + job.count;
+      return false;
+    }
+    if (job.endTime <= now && job.moduleId) {
+      state.buildingModules[job.moduleId] = (state.buildingModules[job.moduleId] || 0) + job.count;
       return false;
     }
     return true;
@@ -353,6 +421,54 @@ export function startBuildingConstruction(state: PlayerState, buildingId: string
   const now = Date.now();
   const duration = buildingTimeForLevel(state, building, nextLevel);
   state.buildingQueue.push({ buildingId, count: 1, startTime: now, endTime: now + duration });
+  return { ok: true };
+}
+
+// ========== GEBAEUDE-MODULSYSTEM (siehe types.ts BuildingModuleDefinition/README) ==========
+
+function moduleCostForLevel(mod: (typeof BUILDING_MODULES)[number], level: number): ResourceCost {
+  const f = Math.pow(mod.costGrowth, level - 1);
+  return {
+    metall: Math.round(mod.baseCost.metall * f),
+    kristall: Math.round(mod.baseCost.kristall * f),
+    deuterium: Math.round(mod.baseCost.deuterium * f),
+  };
+}
+
+function moduleTimeForLevel(state: PlayerState, mod: (typeof BUILDING_MODULES)[number], level: number): number {
+  // Module nutzen bewusst DIESELBE Bauzeit-Multiplikator-Kette wie ihr Basis-Gebaeude (inkl.
+  // dessen eigenem "buildtime_self"-Modul, siehe gebaeudeBauzeitMultiplier) - ein Modul ist
+  // schliesslich Teil desselben Bauprojekts, keine eigene Kategorie.
+  return mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000 * gebaeudeBauzeitMultiplier(state, mod.buildingId);
+}
+
+export function startModuleUpgrade(state: PlayerState, moduleId: string): ActionResult {
+  const mod = findBuildingModule(moduleId);
+  if (!mod) return { ok: false, error: 'Unbekanntes Modul.' };
+  const buildingLevel = state.buildings[mod.buildingId] || 0;
+  if (buildingLevel < mod.requiredBuildingLevel) {
+    const building = findBuilding(mod.buildingId);
+    return { ok: false, error: `Erfordert ${building?.name || mod.buildingId} Stufe ${mod.requiredBuildingLevel}.` };
+  }
+  const level = state.buildingModules[moduleId] || 0;
+  if (level >= mod.maxLevel) return { ok: false, error: 'Maximalstufe erreicht.' };
+  // Module teilen sich den Bau-Slot mit den Gebaeuden selbst (MAX_BUILDING_SLOTS=1) - ein Modul
+  // ist konzeptionell ein Ausbauprojekt AM Gebaeude, kein eigenstaendiges Bauvorhaben.
+  if (state.buildingQueue.length >= MAX_BUILDING_SLOTS) {
+    return { ok: false, error: 'Es kann immer nur ein Gebäude/Modul gleichzeitig gebaut werden.' };
+  }
+
+  const nextLevel = level + 1;
+  const cost = moduleCostForLevel(mod, nextLevel);
+  if (!canAfford(state, cost, 1)) return { ok: false, error: 'Nicht genug Ressourcen.' };
+
+  state.resources.metall -= cost.metall;
+  state.resources.kristall -= cost.kristall;
+  state.resources.deuterium -= cost.deuterium;
+
+  const now = Date.now();
+  const duration = moduleTimeForLevel(state, mod, nextLevel);
+  state.buildingQueue.push({ moduleId, count: 1, startTime: now, endTime: now + duration });
   return { ok: true };
 }
 

@@ -2,6 +2,7 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
+import { BUILDING_MODULES } from './data/buildingModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
 import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, EVENT_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
@@ -54,6 +55,8 @@ export function defaultPlayerState(userId: number): PlayerState {
   DEFENSES.forEach((d) => (defense[d.id] = 0));
   const buildings: Record<string, number> = {};
   BUILDINGS.forEach((b) => (buildings[b.id] = 0));
+  const buildingModules: Record<string, number> = {};
+  BUILDING_MODULES.forEach((m) => (buildingModules[m.id] = 0));
 
   return {
     userId,
@@ -71,6 +74,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     defenseQueue: [],
     researchQueue: [],
     buildings,
+    buildingModules,
     buildingQueue: [],
     galaxyPosition: assignRandomGalaxyPosition(userId),
     galaxyDeployments: [],
@@ -135,6 +139,11 @@ export function loadPlayerState(userId: number): PlayerState {
   if (!parsed.buildings) parsed.buildings = {} as Record<string, number>;
   BUILDINGS.forEach((b) => {
     if (parsed.buildings[b.id] === undefined) parsed.buildings[b.id] = 0;
+  });
+  // Gebaeude-Module nachruesten (gleiches Migrationsmuster wie oben).
+  if (!parsed.buildingModules) parsed.buildingModules = {} as Record<string, number>;
+  BUILDING_MODULES.forEach((m) => {
+    if (parsed.buildingModules[m.id] === undefined) parsed.buildingModules[m.id] = 0;
   });
   // PERFORMANCE-NOTMASSNAHME (siehe README): bestehende Spielstaende hatten ihren
   // `nextRaidCheck` noch nach dem alten, gemeinsamen 0/6/12/18-Uhr-Rhythmus berechnet - EINMALIG

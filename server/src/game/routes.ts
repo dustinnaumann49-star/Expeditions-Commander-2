@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import type { AuthedRequest } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
-import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, energyProduced, energyConsumed } from './actions.js';
+import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
 import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
@@ -19,6 +19,7 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
+import { BUILDING_MODULES } from './data/buildingModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, NOTRUF_POSITION } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
@@ -39,6 +40,7 @@ gameRouter.get('/data', (_req, res) => {
     defenses: DEFENSES,
     research: RESEARCH,
     buildings: BUILDINGS,
+    buildingModules: BUILDING_MODULES,
     maxBuildingSlots: MAX_BUILDING_SLOTS,
     galaxySystems: GALAXY_SYSTEMS,
     galaxyPositions: GALAXY_POSITIONS,
@@ -137,6 +139,12 @@ gameRouter.post('/build/building', (req: AuthedRequest, res) => {
   const { buildingId } = req.body ?? {};
   if (typeof buildingId !== 'string') return res.status(400).json({ error: 'buildingId erforderlich.' });
   handleAction(req, res, (state) => startBuildingConstruction(state, buildingId));
+});
+
+gameRouter.post('/build/module', (req: AuthedRequest, res) => {
+  const { moduleId } = req.body ?? {};
+  if (typeof moduleId !== 'string') return res.status(400).json({ error: 'moduleId erforderlich.' });
+  handleAction(req, res, (state) => startModuleUpgrade(state, moduleId));
 });
 
 // ---- Galaxie ----
