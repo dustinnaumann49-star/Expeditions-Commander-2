@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Geschwindigkeit im Schiffs-Info sichtbar',
+    changes: [
+      'Das Info-Popup jedes Schiffs zeigt jetzt auch Geschwindigkeit und Antriebsklasse an (vorher gar nicht einsehbar).',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Hintergrundbilder verkleinert',
     changes: [
       'Alle Hintergrundbilder sind jetzt rund 10x kleiner (komprimiert) - Seitenwechsel sollten dadurch spürbar schneller und ohne Aufblitzen laden.',
