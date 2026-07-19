@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Weitere Server-Performance-Verbesserung',
+    changes: [
+      'Kampfberechnungen laufen jetzt über wiederverwendete Hintergrund-Prozesse statt für jeden Kampf neue zu erzeugen - sollte kurzzeitige Speicher-/CPU-Spitzen weiter reduzieren, besonders bei einzelnen Kämpfen.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Neu: Gebäude-Module',
     changes: [
       'Gebäude bekommen jetzt Module, ähnlich wie der Forschungsbaum - jedes Modul verbessert einen bestimmten Aspekt seines Gebäudes zusätzlich (z.B. mehr Ertrag, weniger Energieverbrauch, kürzere Bauzeit).',
