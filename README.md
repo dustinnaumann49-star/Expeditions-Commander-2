@@ -1522,3 +1522,39 @@ client/
       wirklich extremen Flottengroessen bleibt Kampf grundsaetzlich rechenintensiv. Diese eine
       Zeile war aber nachweislich der groesste Einzelposten.
 
+## Geplante Erweiterungen (noch NICHT umgesetzt)
+
+Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
+nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
+spaetere Umsetzung, nicht als Spezifikation.
+
+### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
+
+Nutzer-Vorschlag im Anschluss an die Kampf-Engine-Optimierung (Punkt 69): Waffen/Schild/
+Panzerung UND Baukosten aller Schiffe pauschal **5x** anheben. Da die Rechenlast im Kampf mit
+der STUECKZAHL simulierter Einheiten skaliert (nicht mit deren Staerke, siehe Punkt 69), wuerde
+dieselbe Gesamt-Flottenstaerke dann mit 5x WENIGER Schiffs-Objekten pro Kampf auskommen.
+
+**Explizite Nutzer-Vorgabe, falls umgesetzt:** sowohl Werte ALS AUCH Kosten 5x, nicht nur eines
+von beiden - Werte hoch, weil weniger Schiffe fuer dieselbe Staerke noetig sind; Kosten hoch,
+damit sich erneut anwachsende Massenflotten in absehbarer Zeit gar nicht erst wieder aufbauen
+lassen ("bis so eine Masse wieder an Grenzen stoesst, dauert lange").
+
+**Status: bewusst zurueckgestellt.** Erst beobachten, ob die Engine-Optimierung (Punkt 69) allein
+schon ausreicht, bevor an der Balance gedreht wird. Zwei wichtige Einschraenkungen dazu
+besprochen:
+- **Wirkt nur auf NEU gebaute Schiffe, nicht rueckwirkend** - bereits bestehende grosse Flotten
+  bleiben unveraendert viele Einzel-Objekte im Kampf, keine sofortige Entlastung fuer JETZT schon
+  vorhandene Massenflotten.
+- **Jaeger-Klassen komplett entfernen** (urspruenglich mit vorgeschlagen, um "viele kleine
+  Schiffe" grundsaetzlich zu vermeiden) wurde als zu tiefer Eingriff eingestuft - Jaeger sind
+  bewusster Teil des Schere-Stein-Papier-Kampfsystems (RapidFire-Konter gegen Zerstoerer/Reaper,
+  siehe Punkt 32) und wuerden dessen Balance mit aufreissen. Nur als allerletztes Mittel in
+  Betracht ziehen, falls die 5x-Skalierung allein nicht ausreicht.
+
+**Offene Frage fuer die eigentliche Umsetzung, falls es soweit kommt:** exaktes Verhaeltnis
+Werte-Anstieg zu Kosten-Anstieg wurde angesprochen (1:1 skalieren = wirtschaftlich neutral, oder
+Werte staerker als Kosten steigen lassen = zusaetzlicher Bonus fuers Umsteigen), aber noch NICHT
+final entschieden - Nutzer wollte das erst nach einer Beobachtungsphase der Server-Last
+klaeren.
+
