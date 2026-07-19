@@ -275,7 +275,7 @@ export interface RewardItem {
 export type InventoryEntry = Container | RewardItem;
 
 export interface ContainerReward {
-  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau' | 'zeitgutschein_forschung' | 'freischiff';
+  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau_schiffe' | 'zeitgutschein_bau_verteidigung' | 'zeitgutschein_bau_gebaeude' | 'zeitgutschein_forschung' | 'freischiff';
   label: string;
   metall?: number;
   kristall?: number;

@@ -69,8 +69,14 @@ export function buyVoucher(state: PlayerState, voucherId: string): ActionResult 
   const voucher = SHOP_VOUCHERS.find((v) => v.id === voucherId);
   if (!voucher) return { ok: false, error: 'Unbekannter Gutschein.' };
   if (state.resources.dm < voucher.cost) return { ok: false, error: 'Nicht genug Dunkle Materie.' };
-  if (voucher.type === 'zeitgutschein_bau' && state.buildQueue.length === 0) {
+  if (voucher.type === 'zeitgutschein_bau_schiffe' && state.buildQueue.length === 0) {
     return { ok: false, error: 'Es läuft gerade kein Schiffsbau.' };
+  }
+  if (voucher.type === 'zeitgutschein_bau_verteidigung' && state.defenseQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade kein Verteidigungsbau.' };
+  }
+  if (voucher.type === 'zeitgutschein_bau_gebaeude' && state.buildingQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade kein Gebäudeausbau.' };
   }
   if (voucher.type === 'zeitgutschein_forschung' && state.researchQueue.length === 0) {
     return { ok: false, error: 'Es läuft gerade keine Forschung.' };

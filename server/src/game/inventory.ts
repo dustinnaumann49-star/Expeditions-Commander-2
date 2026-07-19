@@ -62,7 +62,12 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
 }
 
 export function applyReward(state: PlayerState, reward: ContainerReward): boolean {
-  switch (reward.type) {
+  // Sehr alte, vor der Aufteilung in Schiffe/Verteidigung/Gebaeude vergebene Gutscheine tragen
+  // noch den frueheren Typ 'zeitgutschein_bau' (ohne Suffix) im gespeicherten Spielstand - hier
+  // einmalig auf den neuen "Schiffe"-Typ abgebildet, damit bereits vergebene Exemplare weiterhin
+  // einloesbar bleiben.
+  const type: ContainerReward['type'] = (reward.type as string) === 'zeitgutschein_bau' ? 'zeitgutschein_bau_schiffe' : reward.type;
+  switch (type) {
     case 'resources':
       state.resources.metall += reward.metall || 0;
       state.resources.kristall += reward.kristall || 0;
@@ -83,14 +88,35 @@ export function applyReward(state: PlayerState, reward: ContainerReward): boolea
         });
       }
       return true;
-    case 'zeitgutschein_bau': {
-      if (state.buildQueue.length > 0) {
-        const job = state.buildQueue[0];
+    // Bauzeit-Gutscheine sind nach Bereich getrennt (Schiffe/Verteidigung/Gebaeude, siehe
+    // economy.ts). Schiffe/Verteidigung wirken auf ALLE aktuell belegten Lanes der jeweiligen
+    // Warteschlange (MAX_BUILD_SLOTS/MAX_DEFENSE_SLOTS = 3), analog zum bestehenden Forschungs-
+    // Gutschein-Muster unten.
+    case 'zeitgutschein_bau_schiffe': {
+      if (state.buildQueue.length === 0) return false;
+      state.buildQueue.forEach((job) => {
         const remaining = job.endTime - Date.now();
         job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
-        return true;
-      }
-      return false;
+      });
+      return true;
+    }
+    case 'zeitgutschein_bau_verteidigung': {
+      if (state.defenseQueue.length === 0) return false;
+      state.defenseQueue.forEach((job) => {
+        const remaining = job.endTime - Date.now();
+        job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
+      });
+      return true;
+    }
+    case 'zeitgutschein_bau_gebaeude': {
+      if (state.buildingQueue.length === 0) return false;
+      // MAX_BUILDING_SLOTS = 1 - hier ist forEach nur der Vollstaendigkeit halber wie bei den
+      // anderen beiden Typen, es gibt nie mehr als einen Eintrag.
+      state.buildingQueue.forEach((job) => {
+        const remaining = job.endTime - Date.now();
+        job.endTime -= Math.max(0, Math.floor(remaining * (reward.percent || 0)));
+      });
+      return true;
     }
     case 'zeitgutschein_forschung': {
       if (state.researchQueue.length === 0) return false;
@@ -115,8 +141,17 @@ export function redeemRewardItem(state: PlayerState, itemId: string): ActionResu
   const item = state.inventory[idx] as RewardItem;
   const reward = item.reward;
 
-  if (reward.type === 'zeitgutschein_bau' && state.buildQueue.length === 0) {
+  // 'zeitgutschein_bau' (ohne Suffix) ist der alte, vor der Bereichs-Aufteilung vergebene Typ -
+  // wird wie applyReward() als "Schiffe" behandelt.
+  const isLegacyBauSchiffe = (reward.type as string) === 'zeitgutschein_bau';
+  if ((reward.type === 'zeitgutschein_bau_schiffe' || isLegacyBauSchiffe) && state.buildQueue.length === 0) {
     return { ok: false, error: 'Es läuft gerade kein Schiffsbau - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
+  }
+  if (reward.type === 'zeitgutschein_bau_verteidigung' && state.defenseQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade kein Verteidigungsbau - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
+  }
+  if (reward.type === 'zeitgutschein_bau_gebaeude' && state.buildingQueue.length === 0) {
+    return { ok: false, error: 'Es läuft gerade kein Gebäudeausbau - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
   }
   if (reward.type === 'zeitgutschein_forschung' && state.researchQueue.length === 0) {
     return { ok: false, error: 'Es läuft gerade keine Forschung - der Gutschein bleibt im Inventar, bis du einen brauchst.' };
