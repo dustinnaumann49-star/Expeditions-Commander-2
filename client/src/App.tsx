@@ -57,16 +57,58 @@ const PAGE_BACKGROUNDS: Record<string, string> = {
 };
 const DEFAULT_BACKGROUND = 'hauptbild.png';
 
-// Setzt die CSS-Variable --page-bg auf body, sobald sich die Route aendert - das eigentliche
-// Umschalten des Bildes passiert rein per CSS (theme.css), hier wird nur der passende Dateiname
-// ermittelt. Kein <img>-Tag noetig, laeuft komplett ueber background-image. Faellt automatisch
-// auf hauptbild.png zurueck, solange fuer eine Route noch kein eigenes Bild existiert (fehlende
-// Bilddatei fuehrt lediglich zu einem leeren Hintergrund an dieser Route, kein Absturz).
+// Merkt sich, welche Hintergrundbild-URLs bereits erfolgreich geladen wurden (Modul-Ebene, nicht
+// Komponenten-State - bleibt ueber die gesamte Sitzung/alle Seitenwechsel hinweg erhalten).
+const preloadedBackgrounds = new Set<string>();
+
+// Setzt die CSS-Variable --page-bg auf body, sobald sich die Route aendert. WICHTIG: schaltet
+// NICHT sofort auf das neue Bild um, sondern laedt es erst im Hintergrund vor (per unsichtbarem
+// Image()-Objekt) - das ALTE Bild bleibt waehrenddessen sichtbar. Ohne das wuerde bei jedem
+// Seitenwechsel kurz eine weisse/leere Flaeche aufblitzen, bis das neue Bild ueber's Netz
+// nachgeladen ist (besonders auf mobilen Verbindungen spuerbar). Bereits geladene Bilder werden
+// gemerkt (siehe preloadedBackgrounds) und beim naechsten Besuch derselben Seite sofort ohne
+// erneutes Nachladen angezeigt - der Browser haelt das Bild ohnehin im HTTP-Cache, `preloadedBackgrounds`
+// spart nur den kurzen Umweg ueber ein neues Image()-Objekt.
 function usePageBackground(pathname: string) {
   useEffect(() => {
     const file = PAGE_BACKGROUNDS[pathname] || DEFAULT_BACKGROUND;
-    document.body.style.setProperty('--page-bg', `url('/background/${file}')`);
+    const url = `/background/${file}`;
+    const apply = () => document.body.style.setProperty('--page-bg', `url('${url}')`);
+
+    if (preloadedBackgrounds.has(url)) {
+      apply();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      preloadedBackgrounds.add(url);
+      apply();
+    };
+    img.onerror = () => {
+      // Bild fehlt/fehlerhaft - trotzdem als "erledigt" markieren, damit nicht bei jedem
+      // Routenwechsel erneut (erfolglos) nachgeladen wird.
+      preloadedBackgrounds.add(url);
+      apply();
+    };
+    img.src = url;
   }, [pathname]);
+}
+
+// Laedt beim allerersten App-Start ALLE bekannten Hintergrundbilder einmal im Hintergrund vor
+// (unabhaengig davon, welche Seite gerade aktiv ist) - dadurch ist nach kurzer Zeit jeder
+// Seitenwechsel sofort ohne Nachladen, auch beim ALLERERSTEN Besuch einer Seite.
+function usePreloadAllBackgrounds() {
+  useEffect(() => {
+    const files = new Set([DEFAULT_BACKGROUND, ...Object.values(PAGE_BACKGROUNDS)]);
+    files.forEach((file) => {
+      const url = `/background/${file}`;
+      if (preloadedBackgrounds.has(url)) return;
+      const img = new Image();
+      img.onload = () => preloadedBackgrounds.add(url);
+      img.onerror = () => preloadedBackgrounds.add(url);
+      img.src = url;
+    });
+  }, []);
 }
 
 function Sidebar() {
@@ -84,6 +126,7 @@ function Sidebar() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  usePreloadAllBackgrounds();
   usePageBackground(location.pathname);
   return (
     <>
