@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Zurück zu einem einzigen Hintergrundbild',
+    changes: [
+      'Die unterschiedlichen Hintergrundbilder pro Seite bereiteten weiter Probleme - zurück zu einem einzigen, festen Hintergrundbild für die ganze App.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Geschwindigkeit im Schiffs-Info sichtbar',
     changes: [
       'Das Info-Popup jedes Schiffs zeigt jetzt auch Geschwindigkeit und Antriebsklasse an (vorher gar nicht einsehbar).',
