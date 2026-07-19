@@ -17,7 +17,6 @@ interface GameContextValue {
   buildImperator: () => Promise<void>;
   sendMission: (sektorId: string, selection: Record<string, number>) => Promise<void>;
   recallMission: (missionId: string) => Promise<void>;
-  joinEvent: (selection: Record<string, number>) => Promise<void>;
   openContainer: (containerId: string) => Promise<void>;
   redeemRewardItem: (itemId: string) => Promise<void>;
   executeTrade: (amount: number, from: string, to: string) => Promise<void>;
@@ -35,7 +34,7 @@ interface GameContextValue {
   activeRaids: ActiveRaidInfo[];
   refreshParties: () => Promise<void>;
   refreshRaids: () => Promise<void>;
-  createParty: (kind: 'expedition' | 'event', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) => Promise<void>;
+  createParty: (kind: 'expedition', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) => Promise<void>;
   respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) => Promise<void>;
   cancelParty: (opId: string) => Promise<void>;
   startParty: (opId: string) => Promise<void>;
@@ -45,7 +44,6 @@ interface GameContextValue {
   ownGalaxyPosition: GalaxyPosition | null;
   pirateBases: GalaxyPosition[];
   sektorPositions: SektorGalaxyPosition[];
-  notrufPosition: GalaxyPosition | null;
   incomingDeployments: IncomingDeployment[];
   refreshGalaxy: () => Promise<void>;
   holdFleet: (targetUserId: number, ships: Record<string, number>) => Promise<void>;
@@ -66,7 +64,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [ownGalaxyPosition, setOwnGalaxyPosition] = useState<GalaxyPosition | null>(null);
   const [pirateBases, setPirateBases] = useState<GalaxyPosition[]>([]);
   const [sektorPositions, setSektorPositions] = useState<SektorGalaxyPosition[]>([]);
-  const [notrufPosition, setNotrufPosition] = useState<GalaxyPosition | null>(null);
   const [incomingDeployments, setIncomingDeployments] = useState<IncomingDeployment[]>([]);
 
   function applyState(newState: PlayerState) {
@@ -106,7 +103,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setOwnGalaxyPosition(res.ownPosition);
       setPirateBases(res.pirateBases);
       setSektorPositions(res.sektorPositions);
-      setNotrufPosition(res.notrufPosition);
       setIncomingDeployments(res.incomingDeployments);
     } catch {
       // siehe oben
@@ -187,7 +183,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     buildImperator: () => run(() => api.buildImperator()),
     sendMission: (sektorId, selection) => run(() => api.sendMission(sektorId, selection)),
     recallMission: (missionId) => run(() => api.recallMission(missionId)),
-    joinEvent: (selection) => run(() => api.joinEvent(selection)),
     openContainer: (containerId) => run(() => api.openContainer(containerId)),
     redeemRewardItem: (itemId) => run(() => api.redeemRewardItem(itemId)),
     executeTrade: (amount, from, to) => run(() => api.executeTrade(amount, from, to)),
@@ -213,7 +208,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     ownGalaxyPosition,
     pirateBases,
     sektorPositions,
-    notrufPosition,
     incomingDeployments,
     refreshGalaxy,
     holdFleet: (targetUserId, ships) => run(() => api.holdFleet(targetUserId, ships)),
