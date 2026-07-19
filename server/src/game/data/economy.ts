@@ -19,26 +19,39 @@ export interface VoucherDefinition {
   id: string;
   label: string;
   img: string;
-  type: 'zeitgutschein_bau' | 'zeitgutschein_forschung';
+  type: 'zeitgutschein_bau_schiffe' | 'zeitgutschein_bau_verteidigung' | 'zeitgutschein_bau_gebaeude' | 'zeitgutschein_forschung';
   percent: number;
   cost: number;
   desc: string;
 }
 
+// Bauzeit-Gutscheine sind nach Bereich getrennt (Schiffe/Verteidigung/Gebaeude), analog zum
+// Forschungsbaum-Split bei den Bauzeit-Forschungszweigen (siehe README). Schiffe und Verteidigung
+// wirken auf ALLE aktuell belegten Lanes ihrer jeweiligen Warteschlange (MAX_BUILD_SLOTS/
+// MAX_DEFENSE_SLOTS = 3), Gebaeude auf den einen moeglichen Bauslot (MAX_BUILDING_SLOTS = 1) -
+// siehe applyReward() in inventory.ts.
 export const SHOP_VOUCHERS: VoucherDefinition[] = 
 [
-  { id:"gutschein_bau_30", label:"Zeit-Gutschein Bau (30%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau", percent:0.30, cost:150,
-    desc:"Reduziert die Restzeit des aktuell laufenden Bau-Auftrags um 30%. Nur nutzbar, wenn gerade etwas gebaut wird." },
-  { id:"gutschein_bau_60", label:"Zeit-Gutschein Bau (60%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau", percent:0.60, cost:300,
-    desc:"Reduziert die Restzeit des aktuell laufenden Bau-Auftrags um 60%. Nur nutzbar, wenn gerade etwas gebaut wird." },
+  { id:"gutschein_bau_schiffe_30", label:"Zeit-Gutschein Bau: Schiffe (30%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_schiffe", percent:0.30, cost:150,
+    desc:"Reduziert die Restzeit aller aktuell laufenden Schiffs-Bauaufträge um 30%. Nur nutzbar, wenn gerade Schiffe gebaut werden." },
+  { id:"gutschein_bau_schiffe_60", label:"Zeit-Gutschein Bau: Schiffe (60%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_schiffe", percent:0.60, cost:300,
+    desc:"Reduziert die Restzeit aller aktuell laufenden Schiffs-Bauaufträge um 60%. Nur nutzbar, wenn gerade Schiffe gebaut werden." },
+  { id:"gutschein_bau_verteidigung_30", label:"Zeit-Gutschein Bau: Verteidigung (30%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_verteidigung", percent:0.30, cost:150,
+    desc:"Reduziert die Restzeit aller aktuell laufenden Verteidigungs-Bauaufträge um 30%. Nur nutzbar, wenn gerade Verteidigungsanlagen gebaut werden." },
+  { id:"gutschein_bau_verteidigung_60", label:"Zeit-Gutschein Bau: Verteidigung (60%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_verteidigung", percent:0.60, cost:300,
+    desc:"Reduziert die Restzeit aller aktuell laufenden Verteidigungs-Bauaufträge um 60%. Nur nutzbar, wenn gerade Verteidigungsanlagen gebaut werden." },
+  { id:"gutschein_bau_gebaeude_30", label:"Zeit-Gutschein Bau: Gebäude (30%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_gebaeude", percent:0.30, cost:150,
+    desc:"Reduziert die Restzeit des aktuell laufenden Gebäude-Bauauftrags um 30%. Nur nutzbar, wenn gerade ein Gebäude ausgebaut wird." },
+  { id:"gutschein_bau_gebaeude_60", label:"Zeit-Gutschein Bau: Gebäude (60%)", img:"booster/gutschein_bau.png", type:"zeitgutschein_bau_gebaeude", percent:0.60, cost:300,
+    desc:"Reduziert die Restzeit des aktuell laufenden Gebäude-Bauauftrags um 60%. Nur nutzbar, wenn gerade ein Gebäude ausgebaut wird." },
   { id:"gutschein_forschung_30", label:"Zeit-Gutschein Forschung (30%)", img:"booster/gutschein_forschung.png", type:"zeitgutschein_forschung", percent:0.30, cost:200,
-    desc:"Reduziert die Restzeit der aktuell laufenden Forschung um 30%. Nur nutzbar, wenn gerade geforscht wird." },
+    desc:"Reduziert die Restzeit aller aktuell laufenden Forschungen um 30%. Nur nutzbar, wenn gerade geforscht wird." },
   { id:"gutschein_forschung_60", label:"Zeit-Gutschein Forschung (60%)", img:"booster/gutschein_forschung.png", type:"zeitgutschein_forschung", percent:0.60, cost:400,
-    desc:"Reduziert die Restzeit der aktuell laufenden Forschung um 60%. Nur nutzbar, wenn gerade geforscht wird." }
+    desc:"Reduziert die Restzeit aller aktuell laufenden Forschungen um 60%. Nur nutzbar, wenn gerade geforscht wird." }
 ];
 
 export interface ContainerRewardDef {
-  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau' | 'zeitgutschein_forschung' | 'freischiff';
+  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau_schiffe' | 'zeitgutschein_bau_verteidigung' | 'zeitgutschein_bau_gebaeude' | 'zeitgutschein_forschung' | 'freischiff';
   label: string;
   metall?: number;
   kristall?: number;
@@ -71,7 +84,9 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     rewards: [
       { type:'resources', label:'Rohstoff-Fracht', metall:10000000, kristall:6000000, deuterium:3000000 },
       { type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 },
-      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (40%)', percent:0.40 },
+      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (40%)', percent:0.40 },
+      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (40%)', percent:0.40 },
+      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (40%)', percent:0.40 },
       { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (40%)', percent:0.40 },
       { type:'freischiff', label:'Geschenkte Flotte', ships:{ leicht:25, schwer:25, kreuzer:15, schlachtschiff:15, bomber:15, schlachtkreuzer:8, zerstoerer:8, reaper:8 } }
     ]
@@ -86,7 +101,9 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
       { type:'resources', label:'Große Rohstoff-Fracht', metall:25000000, kristall:20000000, deuterium:17000000 },
       { type:'dm', label:'Dunkle Materie', amount:25 },
       { type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 },
-      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (75%)', percent:0.75 },
+      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (75%)', percent:0.75 },
+      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (75%)', percent:0.75 },
+      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (75%)', percent:0.75 },
       { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (75%)', percent:0.75 },
       { type:'freischiff', label:'Geschenkte Großflotte', ships:{ leicht:50, schwer:50, kreuzer:35, schlachtschiff:35, bomber:35, schlachtkreuzer:18, zerstoerer:18, reaper:18 } }
     ]
@@ -104,7 +121,9 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
       { type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:45000000, kristall:38000000, deuterium:32000000 },
       { type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 },
       { type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 },
-      { type:'zeitgutschein_bau', label:'Zeit-Gutschein Bau (100%)', percent:1.0 },
+      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (100%)', percent:1.0 },
+      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (100%)', percent:1.0 },
+      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (100%)', percent:1.0 },
       { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (100%)', percent:1.0 },
       { type:'freischiff', label:'Geschenkte Elite-Flotte', ships:{ leicht:80, schwer:80, kreuzer:60, schlachtschiff:60, bomber:60, schlachtkreuzer:30, zerstoerer:30, reaper:30, salvenkreuzer:2 } }
     ]
