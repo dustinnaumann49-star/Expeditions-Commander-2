@@ -1455,3 +1455,30 @@ client/
     kein staendig relevanter Wert wie Waffen/Schild/Panzerung), sondern als erste Zeile im
     Info-Popup, direkt vor den Kampfwerten.
 
+68. **Elite-Bollwerk: garantierte Stunden-Checks + Verdopplungs-Abschlussbonus bei perfekter
+    Serie.** Auf Wunsch: die vier Kaempfe waehrend der 4-stuendigen Elite-Bollwerk-Expedition
+    fanden bisher nur mit 50% Chance PRO STUNDE ueberhaupt statt (`checkChance`), was den bereits
+    haerteren Sektor zusaetzlich unvorhersehbar machte, ohne dafuer entsprechend zu belohnen.
+    - **`checkChance` fuer `piraten_elite` auf `1` (garantiert) gesetzt** (`data/sectors.ts`) -
+      alle 4 Stunden-Checks finden jetzt sicher statt, kein Wuerfeln mehr darueber ob ueberhaupt
+      gekaempft wird (Sieg/Niederlage im Kampf selbst bleibt natuerlich weiterhin ergebnisoffen).
+      Anzeige-Text ("Aktivitaet") von "Piraten-Chance 50%" auf "Kampf garantiert (jede Stunde)"
+      angepasst.
+    - **Neuer Abschluss-Bonus bei perfekter Serie** (`finalizeGroupExpedition()` in
+      `groupOps.ts`): schafft eine Teilnehmergruppe alle 4 garantierten Kaempfe OHNE einen
+      einzigen Rueckschlag (`op.streakWins >= 4` - wird bei jedem verlorenen Check auf 0
+      zurueckgesetzt, siehe `runGroupHourlyCheck()`), wird die GESAMTE ueber die Expedition
+      angesammelte Ressourcen-Ausbeute (Metall/Kristall/Deuterium, NICHT Teile/DM) am Ende
+      nochmal komplett verdoppelt - zusaetzlich zur bereits bestehenden Pro-Sieg-Verdopplung
+      (`REWARD_ESCALATION`-"double"-Modus, Punkt siehe README-Kommentar in `economy.ts`).
+    - **Rechnung (nachvollzogen und per Skript bestaetigt):** die vier Kaempfe skalieren mit
+      1x/2x/4x/8x auf die Beute-Basis (25 Mio. Metall + 15 Mio. Kristall + 10 Mio. Deuterium =
+      50 Mio. Ressourcen gesamt pro Basiswert) - Summe der Multiplikatoren = 15, ergibt bei einer
+      perfekten Serie **750 Millionen Ressourcen** VOR dem neuen Abschluss-Bonus, danach durch die
+      Verdopplung **1,5 Milliarden Ressourcen** insgesamt fuer die komplette Expedition, verteilt
+      auf ALLE Teilnehmer (jeder bekommt den vollen Betrag, keine Aufteilung nach Flottenanteil,
+      siehe Punkt 5 - gilt weiterhin).
+    - Getestet: `getEscalationMultiplier()`-Sequenz fuer 4 Checks ergab korrekt 1/2/4/8 (Summe 15),
+      Gesamtrechnung vor/nach Bonus stimmte exakt mit 750 Mio./1,5 Mrd. ueberein;
+      `SEKTOR_CONFIG.piraten_elite.checkChance` bestaetigt auf `1`.
+
