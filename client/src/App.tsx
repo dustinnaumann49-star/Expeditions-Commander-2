@@ -41,21 +41,21 @@ const NAV_ITEMS = [
 // Fallback auf hauptbild.png (siehe usePageBackground() unten) - noch nicht jede Seite hat schon
 // ein eigenes Bild, wird nach und nach ergaenzt, sobald neue Bilder geliefert werden.
 const PAGE_BACKGROUNDS: Record<string, string> = {
-  '/': 'werft.png',
-  '/verteidigung': 'werft.png',
-  '/sektor': 'sektor.png',
-  '/forschung': 'forschung.png',
-  '/flotte': 'flotte.png',
-  '/haendler': 'haendler.png',
-  '/multiplayer': 'multiplayer.png',
-  '/galaxie': 'galaxie.png',
+  '/': 'werft.jpg',
+  '/verteidigung': 'werft.jpg',
+  '/sektor': 'sektor.jpg',
+  '/forschung': 'forschung.jpg',
+  '/flotte': 'flotte.jpg',
+  '/haendler': 'haendler.jpg',
+  '/multiplayer': 'multiplayer.jpg',
+  '/galaxie': 'galaxie.jpg',
   // Shop, Nachrichten, Inventar, Statistik, Updates: noch KEIN eigenes Bild geliefert - bewusst
-  // NICHT eingetragen, damit der Fallback auf hauptbild.png unten tatsaechlich greift. Waere
+  // NICHT eingetragen, damit der Fallback auf hauptbild.jpg unten tatsaechlich greift. Waere
   // hier trotzdem ein Dateiname eingetragen, wuerde der Browser eine nicht existierende Datei
   // anfragen (404) UND der Fallback wuerde NICHT greifen (er wirkt nur, wenn die Route komplett
   // fehlt, nicht wenn die verlinkte Datei fehlt) - genau das ist vorher passiert.
 };
-const DEFAULT_BACKGROUND = 'hauptbild.png';
+const DEFAULT_BACKGROUND = 'hauptbild.jpg';
 
 // Merkt sich, welche Hintergrundbild-URLs bereits erfolgreich geladen wurden (Modul-Ebene, nicht
 // Komponenten-State - bleibt ueber die gesamte Sitzung/alle Seitenwechsel hinweg erhalten).

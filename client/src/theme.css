@@ -27,7 +27,7 @@
     font-family: 'Segoe UI', Arial, sans-serif;
     /* --page-bg wird von App.tsx per Route gesetzt (siehe PAGE_BACKGROUNDS) - jede Seite kann so
        ihr eigenes thematisches Hintergrundbild bekommen (Werft -> Werft-Bild, Forschung ->
-       Forschungslabor-Bild, usw.), Fallback ist hauptbild.png, falls fuer eine Route noch kein
+       Forschungslabor-Bild, usw.), Fallback ist hauptbild.jpg, falls fuer eine Route noch kein
        eigenes Bild hinterlegt ist. Der Wechsel passiert hart (kein Ueberblenden) - CSS kann
        zwischen zwei background-image-URLs nicht weich interpolieren.
        Der radiale Verlauf hier ist bewusst nur noch ein SEHR leichter Farbstich/Vignette (vorher
@@ -38,7 +38,7 @@
        Verlauf hier ist nur noch ein dezenter Rotstich, kein zusaetzlicher Verdunkelungs-Layer. */
     background:
       radial-gradient(circle at 50% 0%, rgba(61,15,18,0.18), rgba(10,3,4,0.28) 70%),
-      var(--page-bg, url('/background/hauptbild.png'));
+      var(--page-bg, url('/background/hauptbild.jpg'));
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
