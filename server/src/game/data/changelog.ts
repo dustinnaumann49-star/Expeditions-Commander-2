@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Neu: Gebäude-Module',
+    changes: [
+      'Gebäude bekommen jetzt Module, ähnlich wie der Forschungsbaum - jedes Modul verbessert einen bestimmten Aspekt seines Gebäudes zusätzlich (z.B. mehr Ertrag, weniger Energieverbrauch, kürzere Bauzeit).',
+      'Module schalten sich erst frei, wenn das jeweilige Gebäude eine bestimmte Mindeststufe erreicht hat (Minen/Solarkraftwerk Stufe 20, Roboterfabrik Stufe 10, Nanitenfabrik Stufe 5).',
+      'Wirken zusätzlich zur bestehenden Forschung, nicht als Ersatz.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Fehlerbehebung: falsche Schiffsnamen in Auswahllisten',
     changes: [
       'In einigen Flottenauswahl-Listen (Sektor, Notruf, Kampfbericht) stand die interne Schiffsbezeichnung (z.B. "schwer") statt des richtigen Namens ("Schwerer Jäger") - jetzt überall korrekt.',
