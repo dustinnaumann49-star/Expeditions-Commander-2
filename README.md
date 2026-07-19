@@ -1571,17 +1571,21 @@ zweigen davon ab und verbessern jeweils EINEN bestimmten Aspekt des Gebaeudes zu
 2. **UI-Stil:** derselbe grafische Baum mit Verbindungslinien wie beim Forschungsbaum (Punkt 65),
    nicht die einfachere Listen-/Popup-Darstellung.
 
+**Bereits geklaert (siehe Ruecksprache):**
+- **Maximale Modul-Stufe: 10**, wie ueberall sonst im Spiel - kein eigenes Limit fuer Module.
+- **Prozentwerte pro Modul-Stufe: aehnlich wie bei vergleichbaren Forschungen** - grobe
+  Orientierung an bestehenden `effectPerLevel`-Werten aus `research.ts` (z.B. Mining-Boost-Zweige
+  aktuell 5%/Stufe, Bauzeit-Zweige 3%/Stufe) - exakte Werte pro Modul folgen bei der eigentlichen
+  Umsetzung, aber die Groessenordnung ist damit vorgegeben.
+- **Bilder: KEINE neuen Bilder noetig** - jedes Modul nutzt einfach dasselbe Bild wie sein
+  Basis-Gebaeude (z.B. alle drei Metallmine-Module zeigen `metallmine.jpg`). Spart die zuvor
+  befuerchteten bis zu 16 neuen Bilder komplett ein.
+
 **Noch offene Fragen fuer die eigentliche Umsetzung (noch NICHT entschieden):**
 - Voraussetzungs-Stufen fuer die Module (analog zum Forschungsbaum vermutlich ein einheitlicher
   Wert wie Stufe X der jeweiligen Gebaeude-Basis, aber noch nicht festgelegt).
-- Exakte Prozentwerte pro Modul-Stufe (noch keine konkreten Zahlen wie effectPerLevel besprochen).
-- Maximale Modul-Stufe (bleibt es bei 10 wie ueberall sonst, oder eigenes Limit fuer Module?).
 - Kosten/Bauzeit-Formeln fuer Module (eigene baseCost/costGrowth, oder an die jeweilige
   Gebaeude-Basis gekoppelt?).
-- Benoetigte neue Bilder: bei 6 Gebaeuden x bis zu 3 Modulen waeren das bis zu 16 neue Module
-  insgesamt (3 pro Mine x 3 Minen = 9, 2 fuer Solarkraftwerk, 2 fuer Roboterfabrik, 2 fuer
-  Nanitenfabrik) - noch nicht besprochen, ob jedes Modul ein eigenes Bild braucht (wie bei der
-  Forschung) oder ob Module bildlos/mit generischem Icon auskommen sollen.
 
 ### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
