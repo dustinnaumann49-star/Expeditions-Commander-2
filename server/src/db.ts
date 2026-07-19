@@ -139,7 +139,7 @@ export function listBotUserIds(): number[] {
 // PERFORMANCE-NOTMASSNAHME (siehe Nutzerentscheidung nach Server-Absturz auf dem Starter-Tarif):
 // entfernt bestehende KI-Spieler-Accounts wieder vollstaendig (Nutzer + Spielstand) - nicht nur
 // die Bot-LOGIK abschalten, sondern die Accounts selbst loeschen, damit sie auch nicht mehr in
-// den Heartbeat-/Raid-/Notruf-Schleifen fuer ALLE Nutzer mitverarbeitet werden (jeder zusaetzliche
+// den Heartbeat-/Raid-Schleifen fuer ALLE Nutzer mitverarbeitet werden (jeder zusaetzliche
 // Account bedeutet zusaetzliche Verarbeitung pro Tick). Wird einmalig beim Serverstart aufgerufen
 // (idempotent - loescht nur, wenn noch Bot-Accounts vorhanden sind).
 export function removeBotUsers(): number {
