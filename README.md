@@ -1313,6 +1313,16 @@ client/
       auf `.jpg` umgestellt. Kuenftig gelieferte Hintergrundbilder (Shop/Nachrichten/Inventar/
       Statistik/Updates) sollten gleich als komprimiertes `.jpg` eingebunden werden, nicht mehr
       als unkomprimiertes `.png` wie urspruenglich.
+    - **ZURUECKGEBAUT (nach wiederholtem Live-Test):** trotz Vorlade-Fix und Komprimierung blieb
+      das Problem beim Nutzer bestehen (Ursache nicht abschliessend geklaert). Entscheidung:
+      das komplette per-Route-Hintergrundbild-System wieder entfernt (`PAGE_BACKGROUNDS`,
+      `usePageBackground()`, `usePreloadAllBackgrounds()` komplett aus `App.tsx` geloescht) -
+      zurueck zu EINEM einzigen, festen Hintergrundbild fuer die gesamte App
+      (`client/public/background/werft.jpg`, direkt in `theme.css` fest verdrahtet, keine
+      CSS-Variable/JavaScript-Logik mehr dafuer noetig). Die anderen 6 gelieferten Seiten-Bilder
+      (sektor/forschung/flotte/haendler/multiplayer/galaxie.jpg) bleiben als Dateien liegen,
+      werden aber aktuell nirgends mehr referenziert - koennten bei Bedarf spaeter wieder
+      reaktiviert werden, aktuell nicht im Einsatz.
 
 65. **Neu: Forschungsbaum (Tech-Tree) - loest die vorherigen 13 unabhaengigen Einzelforschungen
     ab.** Was vorher unter "Geplante Erweiterungen" grob skizziert war, ist jetzt vollstaendig
