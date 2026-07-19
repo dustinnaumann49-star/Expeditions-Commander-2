@@ -394,15 +394,27 @@ client/
     allgemeinen Forschung, ersetzen sie nicht. Teilen sich den einen Bau-Slot mit normalem
     Gebäudeausbau.
 
+42. **Zeit-Gutscheine (Shop-Kauf + Container-Belohnung) sind pro Bereich getrennt**: Schiffe,
+    Verteidigung, Gebäude, Forschung - vier eigene `type`-Werte
+    (`zeitgutschein_bau_schiffe`/`_verteidigung`/`_gebaeude`/`zeitgutschein_forschung`,
+    `applyReward()` in `inventory.ts`). Schiffe/Verteidigung wirken auf ALLE aktuell belegten
+    Lanes ihrer Warteschlange (`MAX_BUILD_SLOTS`/`MAX_DEFENSE_SLOTS = 3`), Gebäude auf den einen
+    möglichen Bauslot (`MAX_BUILDING_SLOTS = 1`) - identisches Muster zum bestehenden
+    Forschungs-Gutschein (wirkt auf alle `MAX_RESEARCH_SLOTS`). Legacy-Fallback: der alte,
+    unaufgeteilte Typ `zeitgutschein_bau` (vor dieser Änderung vergeben) wird in `applyReward()`/
+    `redeemRewardItem()` weiterhin als "Schiffe" behandelt, falls ein Spieler noch ein solches
+    Exemplar im Inventar hat. Bei jedem neuen Bau-Bereich (falls je ein weiterer hinzukommt)
+    diesen Vierer-Split entsprechend erweitern.
+
 ### Galaxie & Multiplayer
 
-42. **50 Systeme x 9 Positionen** (`galaxyConstants.ts`). Distanz-/Flugzeitformel an OGame
+43. **50 Systeme x 9 Positionen** (`galaxyConstants.ts`). Distanz-/Flugzeitformel an OGame
     angelehnt, aber gestaucht (Galaxie-Querung 20-60 Min. statt Stunden). Jede Flugbewegung
     (Sektor-Missionen, Halten, Raid-Anflug, Elite-Bollwerk-Rendezvous) nutzt dieselbe
     `galaxyDistance()`/`galaxyDurationMs()`-Formel. Wessen Forschung (Antriebstechnik) zählt, ist
     immer die des ABSENDERS der jeweiligen Flugbewegung.
 
-43. **"Halten" ist der einzige Weg, einem anderen Spieler bei Piratenraids zu helfen.** Eine
+44. **"Halten" ist der einzige Weg, einem anderen Spieler bei Piratenraids zu helfen.** Eine
     Flotte fliegt zu einem Zielspieler und bleibt dort unbegrenzt stationiert (kein Kampf, kein
     PvP), bis sie zurückgerufen wird - verteidigt automatisch bei JEDEM künftigen Raid dieses
     Spielers (`getHoldingDeploymentsTargeting()` in `galaxy.ts`, eingebunden in
@@ -410,17 +422,17 @@ client/
     Ort, fliegen nicht automatisch heim. Halter bekommen dieselbe volle Belohnung wie der
     Verteidiger (Punkt 5).
 
-44. **Piraten-Raids starten von einer von 12 festen Piratenbasen** (`PIRATE_BASES`) mit echter,
+45. **Piraten-Raids starten von einer von 12 festen Piratenbasen** (`PIRATE_BASES`) mit echter,
     distanzabhängiger Flugzeit: Trigger (feste Checkpoints) → 60 Min. Vorbereitungszeit → echte
     Flugzeit von der gewürfelten Basis zur Zielposition (`PIRATE_FLEET_SPEED = 7000` als
     repräsentative Geschwindigkeit).
 
-45. **Elite-Bollwerk-Rendezvous:** eingeladene Teilnehmer fliegen nach Annahme zuerst zum
+46. **Elite-Bollwerk-Rendezvous:** eingeladene Teilnehmer fliegen nach Annahme zuerst zum
     ERSTELLER, nicht direkt zum Ziel. Der Start ist blockiert, bis alle angenommenen Teilnehmer
     eingetroffen sind. Danach fliegt die vereinte Flotte gemeinsam weiter (Geschwindigkeit =
     langsamstes Schiff über alle kombinierten Flotten, Distanz ab Ersteller-Position).
 
-46. **Distanz-/Flugzeit-Vorschau ist auf alle Flugziele verallgemeinert** (`POST
+47. **Distanz-/Flugzeit-Vorschau ist auf alle Flugziele verallgemeinert** (`POST
     /game/galaxy/preview` akzeptiert `targetUserId` ODER eine feste `targetPosition`,
     `useGalaxyPreview()`-Hook clientseitig wiederverwendet). Ein Hook-Aufruf in einer
     `.map()`-Schleife ist nur sicher, wenn die Array-Länge über ALLE möglichen Zustände der
@@ -429,7 +441,7 @@ client/
 
 ### KI-Spieler
 
-47. **Zwei Bot-Accounts** ("KI-Vega", "KI-Nyx", `BOT_USERNAMES`) - technisch normale Nutzer,
+48. **Zwei Bot-Accounts** ("KI-Vega", "KI-Nyx", `BOT_USERNAMES`) - technisch normale Nutzer,
     unterscheiden sich nur durch das `is_bot`-Flag. Nutzen exakt dieselben Aktionsfunktionen wie
     die UI (keine Sonderkonditionen bei Kosten/Bauzeiten/Flugzeiten). `runBotTurn()` läuft im
     globalen Heartbeat nach der normalen Zeit-Verarbeitung, feste Prioritäten: Energie/Minen →
@@ -439,29 +451,29 @@ client/
 
 ### Frontend-Konventionen
 
-48. **`InfoTable`/`InfoModal`-Zeilen nutzen `.info-list`/`.info-list-row`** statt roher Tabellen -
+49. **`InfoTable`/`InfoModal`-Zeilen nutzen `.info-list`/`.info-list-row`** statt roher Tabellen -
     Label links gedimmt, Wert rechtsbündig.
 
-49. **Händler/Schrotthändler nutzen `ship-grid`/`ship-card` mit Bildern**, nicht die schlichteren
+50. **Händler/Schrotthändler nutzen `ship-grid`/`ship-card` mit Bildern**, nicht die schlichteren
     `queue-box`-Listenzeilen. Ressourcentausch über anklickbare Icon-Chips statt `<select>`.
 
-50. **Rohe interne IDs/Enums nie direkt anzeigen** - Schiffs-IDs über `shipName()`
+51. **Rohe interne IDs/Enums nie direkt anzeigen** - Schiffs-IDs über `shipName()`
     (`combatInfo.ts`), Sektor-IDs über `gameData.sektoren`-Lookup, Status-Enums über eigene
     Label-Maps in lesbaren Text übersetzen.
 
-51. **Baubarkeit und Einsetzbarkeit in Missionen sind zwei getrennte Schalter** - bei jedem neuen
+52. **Baubarkeit und Einsetzbarkeit in Missionen sind zwei getrennte Schalter** - bei jedem neuen
     Kampfschiff müssen BEIDE gesetzt werden (`ships.ts` fürs Bauen, `COMBAT_SHIP_IDS` in
     `data/economy.ts` UND alle Client-Kopien in `Sektor.tsx`/`Multiplayer.tsx`/`RaidHilfe.tsx`
     fürs Einsetzen).
 
-52. **Ein einziges, festes Hintergrundbild für die gesamte App**
+53. **Ein einziges, festes Hintergrundbild für die gesamte App**
     (`client/public/background/werft.jpg`, fest in `theme.css` verdrahtet). Ein
     per-Route-Hintergrundbild-System wurde gebaut und nach wiederholten Ladeproblemen wieder
     komplett zurückgebaut - kein neuer Anlauf ohne vorherige Absprache.
 
 ### Bilder
 
-53. Neue Schiffs-/Gebäude-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px Breite,
+54. Neue Schiffs-/Gebäude-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px Breite,
     Qualität ~78%, Ziel ~60-80 KB statt mehrerer MB) - wichtig für Mobil-Ladezeiten.
 
 ## Kurz-Changelog
@@ -520,3 +532,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   vollständig aus dem Code entfernt.
 - Sektor P10 - Piratenadmiral eingeführt (zweiter Multiplayer-Sektor, Boss-Gefecht mit
   Extraktions-Entscheidung statt Massenwellen).
+- Zeit-Gutscheine für Bauzeit auf Schiffe/Verteidigung/Gebäude aufgeteilt (vorher nur Schiffe);
+  Schiffe/Verteidigung wirken jetzt auf alle parallelen Bauplätze, nicht mehr nur den ersten.
