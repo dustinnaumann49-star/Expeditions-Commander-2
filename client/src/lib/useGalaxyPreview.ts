@@ -8,7 +8,7 @@ export interface GalaxyPreview {
   fuelCost: number;
 }
 
-// Debouncte Flugzeit-/Distanz-Vorschau zu einer FESTEN Zielposition (Sektor, Notruf,
+// Debouncte Flugzeit-/Distanz-Vorschau zu einer FESTEN Zielposition (Sektor,
 // Elite-Bollwerk, Rendezvous-Ziel) - fuer Halten-Fluege zu einem anderen SPIELER siehe die
 // targetUserId-Variante direkt in Galaxie.tsx (dort bereits vorhanden, nicht ueber diesen Hook).
 export function useGalaxyPreview(ships: Record<string, number>, target: GalaxyPosition | null | undefined) {
