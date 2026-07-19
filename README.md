@@ -1700,72 +1700,65 @@ client/
     - Getestet: Server UND Client kompilieren/bauen nach der kompletten Entfernung fehlerfrei,
       voller HTTP-Regressionstest (Registrierung, Kampfsimulator, Gebaeude-Module) erfolgreich.
 
+77. **Neu: Sektor P10 - Piratenadmiral (Boss-Gefecht), zweiter Multiplayer-Sektor neben dem
+    Elite-Bollwerk.** Bewusst eine ANDERE Art Herausforderung: ein einzelner starker Boss +
+    kleine Eskorte statt Massen-Feindwellen, mit einer wiederkehrenden Rueckzugs-
+    ("Extraction")-Entscheidung statt eines simplen Durchhalte-Checks.
+    - **Ablauf:** bis zu 6 Kaempfe im 10-Minuten-Abstand (max. 1 Stunde Gesamtdauer). Nach jedem
+      GEWONNENEN Kampf (die eigene Flotte musste sich nicht zurueckziehen, siehe RETREAT_THRESHOLD
+      Punkt 18): Beute sichern und abziehen (sicher, moderat mit der Check-Anzahl wachsend, KEIN
+      Verdopplungs-Modus wie beim Bollwerk), oder weitermachen fuer mehr, aber der Admiral wird
+      dabei mit jedem Check +15% staerker ("Eskalierende Wut"). Bei einer Niederlage danach geht
+      NUR die noch ungesicherte Beute dieses Durchlaufs verloren, NICHT die Flotte.
+    - **Zugangsvoraussetzung:** nur Kreuzer-Klasse und groessere Schiffe erlaubt
+      (`ADMIRAL_ALLOWED_SHIP_IDS`, combatConstants.ts) - macht "wenige grosse Schiffe" mechanisch
+      zur Pflicht, wird bei Erstellung UND Beitritt serverseitig geprueft.
+    - **WICHTIGE KORREKTUR nach Funktionstest:** urspruenglich mit FESTEN Statwerten geplant -
+      Nutzer wies zu Recht darauf hin, dass das mit wachsenden Flotten schnell trivial wuerde.
+      Fix: `generateAdmiralEncounter()` (combat.ts) berechnet Admiral+Eskorte jetzt DYNAMISCH
+      anhand der eingesetzten Flottenstaerke (110-150% Basis-Skalierung wie beim Bollwerk, nur
+      haerter als dessen 105-135%, `ADMIRAL_MULTIPLIER_ROLL`) - Admiral bekommt 55% der Zielstaerke
+      als eigene Werte, Eskorte (Schlachtschiff/Schlachtkreuzer/Zerstoerer/Reaper, "elitekader"-
+      Profil bevorzugt wenige starke statt viele schwache) den Rest.
+    - **Zweite Korrektur nach weiterem Funktionstest:** die erste Stat-Verteilung (aehnlich dem
+      Imperator, ~98% Panzerung) machte den Admiral zu einem reinen Tank OHNE Gegenwehr - da ein
+      einzelner Kampf bis zu 100 Runden dauern kann, wurde er dadurch bei JEDER getesteten
+      Flottengroesse einfach leergeschossen, unabhaengig von der Staerke. Fix: ausgewogenere
+      Verteilung (14% Waffen/5% Schild/81% Panzerung, `ADMIRAL_STAT_RATIO`) - genug Offensive,
+      damit eine unzureichende Flotte tatsaechlich zum Rueckzug gezwungen wird.
+    - **Neuer Mechanismus fuer dynamische NPC-Werte:** `CombatWorkerRequest.sideBStatsOverride`
+      (combatRunner.ts) - ueberschreibt fuer einzelne Seite-B-Einheiten (den Admiral) die
+      normalen statischen `baseStats()`-Werte, `combat.worker.ts`s `statsFnBFor()` nutzt den
+      Override falls vorhanden, faellt sonst auf die normalen Schiffswerte zurueck (fuer die
+      Eskorte). Erstmaliger Anwendungsfall dieses Musters im Projekt.
+    - **RapidFire-Waechter gegen Jaeger-Klasse:** starkes RapidFire des Admirals speziell gegen
+      Leichten/Schweren Jaeger (`RAPIDFIRE.piratenadmiral`, combatConstants.ts) - nutzt die
+      bestehende RapidFire-Mechanik, keine Sonderregel noetig.
+    - **Eigenstaendiger Ablauf in `groupOps.ts`** (`tickAdminEncounter()`/`runAdminCheck()`/
+      `respondAdminEncounter()`/`finalizeAdminEncounter()`), NICHT das arriveTime/endTime/
+      returnTime-Zeitfenster-Modell des Elite-Bollwerks wiederverwendet - neue Felder auf
+      `GroupOperation`: `adminChecksElapsed`, `adminNextCheckTime`, `adminAwaitingDecision`.
+      Neue Route `/game/party/admiral-decide`.
+    - **Belohnung:** additive Sofort-Ausschuettung bei Abzug (20 Mio. Metall/12 Mio. Kristall/
+      6 Mio. Deuterium Basis + 6/3,5/2 Mio. pro weiterem Check), einmalige Siegpraemie (300 Mio./
+      200 Mio./100 Mio.) + 200 Dunkle Materie exklusiv nur beim echten Sieg.
+    - **UI:** `Multiplayer.tsx` um einen Sektor-Umschalter (Elite-Bollwerk/Piratenadmiral)
+      erweitert, inkl. eigener Flottenbeschraenkung, Check-Fortschrittsanzeige und
+      Entscheidungs-Buttons ("Beute sichern" / "Weitermachen") direkt bei der laufenden
+      Operation. Eigene Info-Box in `SektorInfoBox` (Sektor.tsx) statt der generischen
+      Piraten-Info, da Mechanik zu unterschiedlich ist.
+    - Getestet: Kreuzer-Klasse-Beschraenkung (Jaeger korrekt abgelehnt); 5 Flottengroessen nach
+      der zweiten Balance-Korrektur zeigten die gewuenschte Bandbreite (schwache Flotte verliert
+      klar, mittlere gewinnen mit Verlusten bei ueberlebendem Admiral, nur eine sehr starke/gut
+      erforschte Flotte besiegt ihn direkt); mehrfaches Weitermachen ueber mehrere Checks inkl.
+      Eskalation; Extraktions-Belohnung nach Check 1 exakt bestaetigt (20 Mio./12 Mio./6 Mio.);
+      voller Server+Client-Build sowie HTTP-Test (Sektor-Daten, Galaxie-Position) erfolgreich.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
 nicht implementiert, nicht getestet. Dient als Gedaechtnisstuetze/Ausgangspunkt fuer eine
 spaetere Umsetzung, nicht als Spezifikation.
-
-### Neuer Multiplayer-Sektor: Boss-Gefecht (Piratenadmiral) - vollstaendig durchgeplant, bereit
-### zur Umsetzung
-
-Zweiter Multiplayer-Sektor NEBEN dem bestehenden Elite-Bollwerk (P9) - bewusst eine ANDERE Art
-Herausforderung, kein reines "mehr Zahlen"-Duplikat. Kernidee: statt Masse an Schiffen ein
-einzelner starker Boss-Gegner + wenige grosse Schiffe, plus eine wiederkehrende Rueckzugs-
-Entscheidung ("Extraction") statt eines simplen Durchhalte-Checks.
-
-**Ablauf:**
-- Gesamtdauer der eigentlichen Aktion: **1 Stunde** ab Ankunft der Flotte (reine Hinflugzeit,
-  abhaengig von Position/Flottengeschwindigkeit wie beim Bollwerk, zaehlt NICHT zu dieser Stunde
-  dazu - die Stunde beginnt erst mit dem ersten Check).
-- **Check alle 10 Minuten -> 6 Entscheidungspunkte** innerhalb der Stunde.
-- Nach JEDEM gewonnenen Check: echte Risiko/Ertrag-Entscheidung - mit der bisher gesammelten
-  Beute abziehen (sicher), oder weitermachen fuer mehr, aber mit steigendem Risiko (siehe
-  "Eskalierende Wut" unten). Bei einer Niederlage NACH einem Weitermachen-Entschluss ist die
-  gesamte bisher UNGESICHERTE Beute dieser Runde verloren (NICHT die Flotte selbst - nur die
-  Beute dieses Durchlaufs).
-- KEIN festes Zeitfenster, das alle Teilnehmer exakt einhalten muessen (wie beim urspruenglich
-  erwogenen, dann verworfenen Zeitfenster-Konzept) - bewusst verworfen, da nicht jeder
-  Mitspieler gleich gut mit engen Zeitfenstern zurechtkommt.
-
-**Boss-Fähigkeiten (nutzen bewusst bestehende Spielmechanik kreativ, keine komplett neuen
-Systeme noetig):**
-1. **Eskalierende Wut:** wird der Boss NICHT besiegt (oder es wird "weitergemacht" statt
-   abgezogen), werden seine Werte (Waffen/Schild/Panzerung) mit jedem weiteren Check staerker
-   (Vorschlag als Ausgangswert: +15%/Check, EXAKTER Wert noch nicht final - Tuning-Parameter fuer
-   die eigentliche Umsetzung). Verzahnt sich direkt mit der Rueckzugs-Entscheidung: je laenger
-   gezoegert wird, desto riskanter wird "noch einmal versuchen".
-2. **RapidFire-Waechter gegen Jaeger-Klasse:** starkes RapidFire speziell gegen kleine Schiffe
-   (analog zum bestehenden Schere-Stein-Papier-System zwischen Kapitalschiffen, siehe Punkt 32) -
-   bestraft Masse an kleinen Schiffen ganz natuerlich ueber die bestehende Kampfmechanik, ohne
-   eine kuenstliche Sonderregel noetig zu machen.
-3. **Gepanzerte Schwachstelle:** extrem hohe Basis-Panzerung, die ohne ausreichend investierte
-   Durchschlag-Forschung (Waffensysteme-Zweig, siehe Punkt 65) grossteils wirkungslos abprallt -
-   bindet die Forschungs-Entscheidungen der Teilnehmer mit ein, nicht nur die Flottenzusammen-
-   stellung.
-
-**Zugangsvoraussetzung (macht "wenige grosse Schiffe" auch MECHANISCH zur Pflicht, nicht nur zur
-Empfehlung):** nur Kreuzer-Klasse und aufwaerts erlaubt - Jaeger-Klasse und Versorgungsschiffe
-koennen fuer diesen Sektor gar nicht erst in die Flottenauswahl aufgenommen werden.
-
-**Belohnungsstruktur (Grundidee steht, exakte Zahlen noch NICHT final):**
-- Sicherer Sofort-Ertrag bei Abzug nach einem gewonnenen Check, moderat mit der Anzahl
-  ueberstandener Checks wachsend (KEIN Verdopplungs-Modus wie beim Elite-Bollwerk - bewusst
-  anders, sonst zu aehnliches Gefuehl).
-- Deutlich groesserer Ertrag beim tatsaechlichen Sieg ueber den Boss (Vorschlag: vergleichbar
-  zum aktuellen Bollwerk-Gesamtertrag, aber als EINMALIGE Ausschuettung statt ueber mehrere
-  Checks verteilt - "Trophaeen"-Charakter statt wiederholbarem Farmen).
-- Exklusive Zusatzbelohnung nur beim echten Sieg denkbar (z.B. seltener Bauplan fuer ein neues
-  Spezialschiff, oder eine groessere Menge Dunkle Materie) - Idee erwaehnt, noch NICHT
-  spezifiziert.
-
-**Noch offene, aber NICHT blockierende Detailfragen fuer die eigentliche Umsetzung:**
-- Exakter Eskalations-Prozentsatz pro Check (Vorschlag 15%, nicht final bestaetigt).
-- Exakte Ressourcen-/Bonuswerte fuer sicheren Abzug vs. Sieg-Trophaee.
-- Ob/welche exklusive Sieg-Zusatzbelohnung konkret umgesetzt wird.
-- Genauer Sektor-Name/ID (Platzhalter bisher: "Piratenadmiral"), Position in der Galaxie.
-- Exakte Boss-Statwerte (Waffen/Schild/Panzerung-Basiswerte, RapidFire-Tabelle gegen welche
-  Jaeger-Typen genau).
 
 ### Schiffs- UND Verteidigungs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
