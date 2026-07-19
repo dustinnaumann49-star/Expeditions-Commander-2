@@ -79,6 +79,7 @@ function OpEntry({
   now,
   onCancel,
   onStart,
+  onAdminDecide,
 }: {
   op: GroupOperation;
   gameData: GameData;
@@ -86,6 +87,7 @@ function OpEntry({
   now: number;
   onCancel: (opId: string) => void;
   onStart: (opId: string) => void;
+  onAdminDecide: (opId: string, action: 'extract' | 'continue') => void;
 }) {
   const isCreator = op.creatorId === myUserId;
   const acceptedCount = op.participants.filter((p) => p.status === 'accepted').length;
@@ -111,11 +113,38 @@ function OpEntry({
           })
           .join(' · ')}
       </p>
-      {op.status === 'departed' && op.processedHours !== undefined && (
+      {op.sektorId !== 'piraten_admiral' && op.status === 'departed' && op.processedHours !== undefined && (
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Fortschritt: {op.processedHours}/4 Stunden ·{' '}
           {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
         </p>
+      )}
+      {op.sektorId === 'piraten_admiral' && op.status === 'departed' && (
+        <>
+          <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            Check {op.adminChecksElapsed || 0}/6 überstanden
+            {!op.adminAwaitingDecision && op.adminNextCheckTime && now < op.adminNextCheckTime && op.arriveTime && now >= op.arriveTime
+              ? ` · nächster Check in ${formatTime(op.adminNextCheckTime - now)}`
+              : ''}
+            {op.arriveTime && now < op.arriveTime ? ` · Anflug: ${formatTime(op.arriveTime - now)}` : ''}
+          </p>
+          {isCreator && op.adminAwaitingDecision && (
+            <div className="queue-box" style={{ borderColor: 'var(--accent-kristall)', marginTop: 6, marginBottom: 6 }}>
+              <p style={{ fontSize: 13, marginBottom: 8 }}>
+                ⚠ Check {op.adminChecksElapsed}/6 überstanden - der Admiral kämpft weiter. Beute sichern und abziehen, oder weitermachen (wird
+                stärker)?
+              </p>
+              <div className="build-row">
+                <button className="qty-btn" onClick={() => onAdminDecide(op.id, 'extract')}>
+                  Beute sichern &amp; abziehen
+                </button>
+                <button className="build-btn" onClick={() => onAdminDecide(op.id, 'continue')}>
+                  Weitermachen (riskanter)
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {isCreator && op.status === 'inviting' && (
         <div className="build-row">
@@ -187,15 +216,15 @@ function PendingInviteCard({
 }
 
 function ExpeditionEventsView() {
-  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, sektorPositions, error } = useGame();
-  const [sektorId] = useState('piraten_elite');
-  const [showEliteInfo, setShowEliteInfo] = useState(false);
+  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, respondAdminEncounter, sektorPositions, error } = useGame();
+  const [sektorId, setSektorId] = useState<'piraten_elite' | 'piraten_admiral'>('piraten_elite');
+  const [showSektorInfo, setShowSektorInfo] = useState(false);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
   const [, forceTick] = useState(0);
-  const elitePosition = sektorPositions.find((p) => p.sektorId === 'piraten_elite') || null;
-  const eliteTravelPreview = useGalaxyPreview(selection, elitePosition);
+  const targetPosition = sektorPositions.find((p) => p.sektorId === sektorId) || null;
+  const travelPreview = useGalaxyPreview(selection, targetPosition);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -205,6 +234,10 @@ function ExpeditionEventsView() {
   if (!gameData || !state) return <p>Lade...</p>;
   const now = serverNow();
   const myUserId = state.userId;
+  const sektor = gameData.sektoren.find((s) => s.id === sektorId)!;
+  // Boss-Gefecht (Sektor P10): nur Kreuzer-Klasse und aufwaerts erlaubt (siehe README Punkt 76) -
+  // Elite-Bollwerk bleibt bei allen Kampfschiffen+Imperator wie bisher.
+  const pickableShipIds = sektorId === 'piraten_admiral' ? gameData.admiralAllowedShipIds : [...COMBAT_SHIP_IDS, 'imperator'];
 
   const pendingForMe = parties.filter((op) => op.status === 'inviting' && op.participants.some((p) => p.userId === myUserId && p.status === 'pending'));
   const myOwn = parties.filter((op) => op.creatorId === myUserId || op.participants.some((p) => p.userId === myUserId && p.status !== 'pending'));
@@ -213,6 +246,15 @@ function ExpeditionEventsView() {
     <div>
       <h2 style={{ marginBottom: 16 }}>Multiplayer – Gemeinsame Expeditionen</h2>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
+
+      <div className="build-row" style={{ marginBottom: 16 }}>
+        <button className={sektorId === 'piraten_elite' ? 'build-btn' : 'qty-btn'} onClick={() => setSektorId('piraten_elite')}>
+          Sektor P9 – Elite-Bollwerk
+        </button>
+        <button className={sektorId === 'piraten_admiral' ? 'build-btn' : 'qty-btn'} onClick={() => setSektorId('piraten_admiral')}>
+          Sektor P10 – Piratenadmiral
+        </button>
+      </div>
 
       {pendingForMe.length > 0 && (
         <div className="queue-box" style={{ marginBottom: 20, borderColor: 'var(--accent-kristall)' }}>
@@ -243,7 +285,16 @@ function ExpeditionEventsView() {
                 <>
                   <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 6 }}>{OP_STATUS_LABELS.inviting}</p>
                   {waiting.map((op) => (
-                    <OpEntry op={op} gameData={gameData} myUserId={myUserId} now={now} onCancel={cancelParty} onStart={startParty} key={op.id} />
+                    <OpEntry
+                      op={op}
+                      gameData={gameData}
+                      myUserId={myUserId}
+                      now={now}
+                      onCancel={cancelParty}
+                      onStart={startParty}
+                      onAdminDecide={respondAdminEncounter}
+                      key={op.id}
+                    />
                   ))}
                 </>
               )}
@@ -253,7 +304,16 @@ function ExpeditionEventsView() {
                     {OP_STATUS_LABELS.departed}
                   </p>
                   {active.map((op) => (
-                    <OpEntry op={op} gameData={gameData} myUserId={myUserId} now={now} onCancel={cancelParty} onStart={startParty} key={op.id} />
+                    <OpEntry
+                      op={op}
+                      gameData={gameData}
+                      myUserId={myUserId}
+                      now={now}
+                      onCancel={cancelParty}
+                      onStart={startParty}
+                      onAdminDecide={respondAdminEncounter}
+                      key={op.id}
+                    />
                   ))}
                 </>
               )}
@@ -263,46 +323,46 @@ function ExpeditionEventsView() {
 
       <div>
         <div className="ship-grid" style={{ marginBottom: 16 }}>
-          {(() => {
-            const eliteSektor = gameData.sektoren.find((s) => s.id === 'piraten_elite')!;
-            return (
-              <div className="ship-card">
-                <img
-                  className="ship-img"
-                  src={`/${eliteSektor.img}`}
-                  alt={eliteSektor.name}
-                  onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-                />
-                <div className="ship-info">
-                  <h3>{eliteSektor.name}</h3>
-                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                    Typ: {eliteSektor.typ} · {eliteSektor.zweck}
-                  </p>
-                  {elitePosition && (
-                    <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                      📍 Position 1:{elitePosition.system}:{elitePosition.position}
-                    </p>
-                  )}
-                  <div className="ship-stats">
-                    <span className="level-gruen">Aktivität: {eliteSektor.aktivitaet}</span>
-                    <span>Gefahrenstufe: {eliteSektor.gefahr}</span>
-                  </div>
-                  <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowEliteInfo(true)}>
-                    ℹ️ Info
-                  </button>
-                </div>
+          <div className="ship-card">
+            <img
+              className="ship-img"
+              src={`/${sektor.img}`}
+              alt={sektor.name}
+              onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+            />
+            <div className="ship-info">
+              <h3>{sektor.name}</h3>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                Typ: {sektor.typ} · {sektor.zweck}
+              </p>
+              {targetPosition && (
+                <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                  📍 Position 1:{targetPosition.system}:{targetPosition.position}
+                </p>
+              )}
+              <div className="ship-stats">
+                <span className="level-gruen">Aktivität: {sektor.aktivitaet}</span>
+                <span>Gefahrenstufe: {sektor.gefahr}</span>
               </div>
-            );
-          })()}
+              <button className="qty-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowSektorInfo(true)}>
+                ℹ️ Info
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="queue-box">
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
           <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
             Eingeladene Spieler fliegen mit ihrer gewählten Flotte zuerst zu dir - erst wenn alle bei dir eingetroffen sind, kannst du gemeinsam
-            zum Elite-Bollwerk weiterstarten.
+            {sektorId === 'piraten_admiral' ? ' zum Piratenadmiral weiterstarten.' : ' zum Elite-Bollwerk weiterstarten.'}
           </p>
-          <FleetPicker gameData={gameData} availableIds={[...COMBAT_SHIP_IDS, 'imperator']} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+          {sektorId === 'piraten_admiral' && (
+            <p style={{ fontSize: 12, color: 'var(--accent-kristall)', marginBottom: 8 }}>
+              Nur Kreuzer-Klasse und größere Schiffe erlaubt - keine Jäger, keine Versorgungsschiffe.
+            </p>
+          )}
+          <FleetPicker gameData={gameData} availableIds={pickableShipIds} fleet={state.fleet} selection={selection} setSelection={setSelection} />
 
           <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
           {users
@@ -323,10 +383,8 @@ function ExpeditionEventsView() {
 
           <div className="build-row">
             <span>
-              {eliteTravelPreview.loading && 'Berechne Flugroute...'}
-              {eliteTravelPreview.preview &&
-                !eliteTravelPreview.loading &&
-                `Weiterflug ab dir zum Bollwerk: ~${formatTime(eliteTravelPreview.preview.durationMs)}`}
+              {travelPreview.loading && 'Berechne Flugroute...'}
+              {travelPreview.preview && !travelPreview.loading && `Weiterflug ab dir zum Ziel: ~${formatTime(travelPreview.preview.durationMs)}`}
             </span>
             <button
               className="build-btn"
@@ -342,9 +400,9 @@ function ExpeditionEventsView() {
         </div>
       </div>
 
-      {showEliteInfo && (
-        <InfoModal title="Sektor P9 – Elite-Bollwerk" onClose={() => setShowEliteInfo(false)}>
-          <SektorInfoBox sektorId="piraten_elite" gameData={gameData} />
+      {showSektorInfo && (
+        <InfoModal title={sektor.name} onClose={() => setShowSektorInfo(false)}>
+          <SektorInfoBox sektorId={sektorId} gameData={gameData} />
         </InfoModal>
       )}
     </div>

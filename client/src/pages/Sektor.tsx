@@ -184,6 +184,62 @@ function availableFleetForSektor(sektorId: string, sektorConfig: Record<string, 
 export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameData: GameData }) {
   const cfg = gameData.sektorConfig[sektorId];
 
+  if (sektorId === 'piraten_admiral') {
+    return (
+      <div className="sektor-info-box">
+        <div className="info-row">
+          <span className="info-label">👑 Gegner</span>
+          <span className="info-value">
+            Ein einzelner, extrem zäher <strong style={{ color: 'var(--danger-bright)' }}>Piratenadmiral</strong> + kleine Elite-Eskorte (wenige
+            große Schiffe statt vieler kleiner) - beide skalieren mit eurer eingesetzten Flottenstärke, ähnlich wie beim Elite-Bollwerk, aber
+            deutlich härter (110-150% statt 105-135%).
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">🚢 Zugangsvoraussetzung</span>
+          <span className="info-value">
+            Nur <strong style={{ color: 'var(--accent-kristall)' }}>Kreuzer-Klasse und größere Schiffe</strong> erlaubt - keine Jäger, keine
+            Versorgungsschiffe.
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">⏱️ Ablauf</span>
+          <span className="info-value">
+            Bis zu <strong style={{ color: 'var(--accent-deut)' }}>6 Kämpfe</strong> im Abstand von je{' '}
+            <strong style={{ color: 'var(--accent-deut)' }}>10 Minuten</strong> (max. 1 Stunde Gesamtdauer)
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">🔥 Eskalierende Wut</span>
+          <span className="info-value">
+            Der Admiral wird mit jedem weiteren Kampf <strong style={{ color: 'var(--danger-bright)' }}>+15% stärker</strong> (Waffen/Schild/
+            Panzerung), solange er nicht besiegt wurde
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">🤔 Entscheidung nach jedem gewonnenen Kampf</span>
+          <span className="info-value">
+            Beute <strong style={{ color: 'var(--accent-deut)' }}>sichern und abziehen</strong> (sicher), oder{' '}
+            <strong style={{ color: 'var(--danger-bright)' }}>weitermachen</strong> für mehr - bei einer Niederlage danach geht nur die noch
+            ungesicherte Beute verloren, NICHT die Flotte
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">💰 Beute bei Abzug</span>
+          <span className="info-value">
+            Moderat mit der Anzahl überstandener Kämpfe wachsend (kein Verdopplungs-Modus wie beim Elite-Bollwerk)
+          </span>
+        </div>
+        <div className="info-row">
+          <span className="info-label">🏆 Beute bei echtem Sieg</span>
+          <span className="info-value">
+            Große Einmal-Prämie + exklusiver Dunkle-Materie-Bonus, den es sonst nirgends gibt
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (sektorId.startsWith('piraten_')) {
     const shipTags = gameData.ships.filter((s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff');
     const rollTable = gameData.piratenMultiplierRoll[sektorId] || [];
