@@ -289,16 +289,6 @@ export interface RaidState {
   resolved: boolean;
 }
 
-export interface EventState {
-  id: string;
-  name: string;
-  spawnedAt: number;
-  deadline: number;
-  started: boolean;
-  ships: Record<string, number>;
-  arriveTime: number;
-}
-
 export interface FleetPreset {
   id: string;
   name: string;
@@ -313,7 +303,6 @@ export interface PlayerStats {
   eliteBollwerkChecks: number;
   raidsRepelledFull: number;
   raidsRepelledPartial: number;
-  notrufCompleted: number;
   captainsDefeated: number;
   enemiesDestroyed: number;
   ownShipsLost: number;
@@ -352,8 +341,6 @@ export interface PlayerState {
   presets: FleetPreset[];
   raid: RaidState | null;
   nextRaidCheck: number;
-  event: EventState | null;
-  nextEventCheck: number;
   lastUpdate: number;
   serverTime?: number;
   energyProduced?: number;
@@ -491,9 +478,8 @@ export interface GroupOperationParticipant {
 
 export interface GroupOperation {
   id: string;
-  kind: 'expedition' | 'event';
+  kind: 'expedition';
   sektorId?: string;
-  eventName?: string;
   creatorId: number;
   creatorPosition: GalaxyPosition | null;
   status: 'inviting' | 'departed' | 'resolved' | 'cancelled';
