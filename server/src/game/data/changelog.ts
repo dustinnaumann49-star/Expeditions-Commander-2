@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Fehlerbehebung: falsche Schiffsnamen in Auswahllisten',
+    changes: [
+      'In einigen Flottenauswahl-Listen (Sektor, Notruf, Kampfbericht) stand die interne Schiffsbezeichnung (z.B. "schwer") statt des richtigen Namens ("Schwerer Jäger") - jetzt überall korrekt.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Kampf-Engine deutlich beschleunigt',
     changes: [
       'Kampfberechnungen laufen jetzt ca. 2-2,5x schneller, besonders spürbar bei großen Flotten - hilft gegen Server-Überlastung, wenn eure Flotten weiter wachsen.',
