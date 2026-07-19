@@ -12,6 +12,7 @@ import {
   RAID_WAVE_COUNT,
   RAID_ASSAULT_DURATION_MS,
   RAID_WAVE_JITTER_FACTOR,
+  RAID_WAVE_FACTORS,
 } from './data/economy.js';
 import { PIRATE_BASES, PIRATE_FLEET_SPEED, RAID_PREP_MS } from './data/galaxyConstants.js';
 import {
@@ -21,12 +22,11 @@ import {
   generateFallbackFleet,
   computeDomeSharedPool,
   pickWaveProfile,
-  rollMultiplierWithOutlier,
   rollBattleModifier,
 } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
-import { DEFENSE_REPAIR_PERCENT, RAID_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
+import { DEFENSE_REPAIR_PERCENT, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getHoldingDeploymentsTargeting, persistHeldDeployment, galaxyDistance, galaxyDurationMs } from './galaxy.js';
@@ -261,12 +261,14 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   homeShipIds.forEach((id) => (defenderShips[id] = state.fleet[id]));
   homeDefIds.forEach((id) => (defenderShips[id] = state.defense[id]));
 
-  // Feindstaerke-Basis nutzt bewusst NUR die Flotte, NICHT die Verteidigungsanlagen (siehe README
-  // zur Entkopplung) - domePoolReal wird trotzdem berechnet und wirkt im tatsaechlichen Kampf voll.
-  let homePower = 0;
-  homeShipIds.forEach((id) => {
+  // Feindstaerke skaliert jetzt bewusst auf der VERTEIDIGUNGSANLAGEN-Staerke (Nutzerentscheidung,
+  // siehe RAID_WAVE_FACTORS in economy.ts) statt wie sonst im Spiel ueblich auf der Flotte (siehe
+  // README Punkt 22 zur generellen Entkopplungs-Regel, die fuer Raids hiermit bewusst durchbrochen
+  // wird). domePoolReal wird weiterhin separat berechnet und wirkt im tatsaechlichen Kampf voll.
+  let defensePower = 0;
+  homeDefIds.forEach((id) => {
     const base = baseStats(id);
-    homePower += state.fleet[id] * (base.waffen + base.schild + base.panzerung);
+    defensePower += state.defense[id] * (base.waffen + base.schild + base.panzerung);
   });
   const domePoolReal = computeDomeSharedPool(state.defense, state.research);
 
@@ -278,25 +280,11 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   }));
   const heldStates = getHoldingDeploymentsTargeting(state.userId, currentUserId, currentUserState);
 
-  let reinforcementPower = 0;
-  reinforcerStates.forEach(({ r }) => {
-    Object.entries(r.ships).forEach(([id, count]) => {
-      const base = baseStats(id);
-      reinforcementPower += count * (base.waffen + base.schild + base.panzerung);
-    });
-  });
-  heldStates.forEach(({ deployment }) => {
-    Object.entries(deployment.ships).forEach(([id, count]) => {
-      const base = baseStats(id);
-      reinforcementPower += count * (base.waffen + base.schild + base.panzerung);
-    });
-  });
-
-  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(RAID_MULTIPLIER_ROLL, 'raid');
-  const waveTargetPower = Math.max(
-    ((homePower + reinforcementPower) / RAID_WAVE_COUNT) * rolledMultiplier,
-    RAID_MIN_TARGET_POWER / RAID_WAVE_COUNT
-  );
+  // RAID_MIN_TARGET_POWER wirkt hier als Untergrenze fuer die Verteidigungsanlagen-Basis SELBST
+  // (nicht mehr pro Welle geteilt, siehe economy.ts) - schuetzt Accounts mit reiner Flotte ohne
+  // nennenswerte Verteidigungsanlagen davor, quasi wirkungslose Raids zu bekommen.
+  const waveFactor = RAID_WAVE_FACTORS[Math.min(raid.wavesProcessed, RAID_WAVE_FACTORS.length - 1)];
+  const waveTargetPower = Math.max(defensePower, RAID_MIN_TARGET_POWER) * waveFactor;
   const profile = pickWaveProfile('raid');
   const battleModifier = rollBattleModifier('raid');
   const npcShips = generateFallbackFleet(waveTargetPower, profile);
@@ -389,7 +377,6 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   state.stats.enemiesDestroyed += destroyedThisWave;
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
-  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   const outcome = waveWon ? `Welle ${waveNumber}/${RAID_WAVE_COUNT} abgewehrt – Angreifer vernichtet` : `Welle ${waveNumber}/${RAID_WAVE_COUNT} – Angreifer teilweise durchgekommen`;
   const detail = {
@@ -403,7 +390,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   pushMessage(
     state,
     'kampf',
-    `${outcome}${waveText} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert.${modifierText}`,
+    `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert.${modifierText}`,
     detail
   );
 
@@ -527,6 +514,18 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     heldStates.forEach(({ ownerState }) => grantContainers(ownerState));
   }
 
+  // Zusaetzlicher Elite-Container bei einer PERFEKTEN Verteidigung (alle Wellen abgewehrt) - on
+  // top der bereits vergebenen Gold-Container, nicht als Ersatz (Nutzerentscheidung). Gleiche
+  // Container-Stufe wie sonst nur ueber den Piratenkapitaen im Elite-Bollwerk erreichbar.
+  const grantEliteContainer = (target: PlayerState) => {
+    target.inventory.push({ id: 'container_' + Date.now() + '_elite_' + Math.random().toString(36).slice(2, 8), tier: 'elite', receivedAt: Date.now() });
+  };
+  if (perfectDefense) {
+    grantEliteContainer(state);
+    reinforcerStates.forEach(({ playerState }) => grantEliteContainer(playerState));
+    heldStates.forEach(({ ownerState }) => grantEliteContainer(ownerState));
+  }
+
   // "Raid abgewehrt"-Statistik zaehlt genau EINMAL fuer den gesamten Raid (nicht pro Welle) - eine
   // perfekte Verteidigung (5/5) zaehlt als voller Erfolg, alles andere als Teilerfolg, analog zur
   // bisherigen Einzel-Kampf-Logik.
@@ -542,7 +541,8 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   });
 
   const salvageText = salvageDm > 0 ? ` Bergung aus den zerstörten Flotten: ${salvageDm} Dunkle Materie.` : '';
-  const containerText = containerCount > 0 ? ` Belohnung: ${containerCount}x ${containerTier === 'gold' ? 'Gold' : 'Silber'}-Container.` : ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
+  const eliteText = perfectDefense ? ' Zusätzlich: 1x Elite-Container für die perfekte Verteidigung!' : '';
+  const containerText = containerCount > 0 ? ` Belohnung: ${containerCount}x ${containerTier === 'gold' ? 'Gold' : 'Silber'}-Container.${eliteText}` : ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
   const stolenText = stolen
     ? ` Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`
     : ' Ressourcen vollständig sicher.';
