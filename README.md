@@ -1679,24 +1679,35 @@ koennen fuer diesen Sektor gar nicht erst in die Flottenauswahl aufgenommen werd
 - Exakte Boss-Statwerte (Waffen/Schild/Panzerung-Basiswerte, RapidFire-Tabelle gegen welche
   Jaeger-Typen genau).
 
-### Schiffs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
+### Schiffs- UND Verteidigungs-Skalierung als zusaetzliche Performance-Massnahme (zurueckgestellt)
 
 Nutzer-Vorschlag im Anschluss an die Kampf-Engine-Optimierung (Punkt 69): Waffen/Schild/
 Panzerung UND Baukosten aller Schiffe pauschal **5x** anheben. Da die Rechenlast im Kampf mit
 der STUECKZAHL simulierter Einheiten skaliert (nicht mit deren Staerke, siehe Punkt 69), wuerde
 dieselbe Gesamt-Flottenstaerke dann mit 5x WENIGER Schiffs-Objekten pro Kampf auskommen.
+**Update: Verteidigungsanlagen gelten explizit GENAUSO** (dieselbe Begruendung - jede Anlage wird
+im Kampf ebenso als eigenes Einzel-Objekt simuliert wie ein Schiff, siehe Punkt 69) - Werte UND
+Kosten der Verteidigungsanlagen ebenfalls 5x, nicht nur bei Schiffen.
 
 **Explizite Nutzer-Vorgabe, falls umgesetzt:** sowohl Werte ALS AUCH Kosten 5x, nicht nur eines
-von beiden - Werte hoch, weil weniger Schiffe fuer dieselbe Staerke noetig sind; Kosten hoch,
-damit sich erneut anwachsende Massenflotten in absehbarer Zeit gar nicht erst wieder aufbauen
-lassen ("bis so eine Masse wieder an Grenzen stoesst, dauert lange").
+von beiden - Werte hoch, weil weniger Schiffe/Anlagen fuer dieselbe Staerke noetig sind; Kosten
+hoch, damit sich erneut anwachsende Massenflotten/-verteidigung in absehbarer Zeit gar nicht
+erst wieder aufbauen lassen ("bis so eine Masse wieder an Grenzen stoesst, dauert lange").
 
-**Status: bewusst zurueckgestellt.** Erst beobachten, ob die Engine-Optimierung (Punkt 69) allein
-schon ausreicht, bevor an der Balance gedreht wird. Zwei wichtige Einschraenkungen dazu
-besprochen:
-- **Wirkt nur auf NEU gebaute Schiffe, nicht rueckwirkend** - bereits bestehende grosse Flotten
-  bleiben unveraendert viele Einzel-Objekte im Kampf, keine sofortige Entlastung fuer JETZT schon
-  vorhandene Massenflotten.
+**Geplanter Uebergang bei bestehenden Massenflotten/-verteidigung (loest die "wirkt nicht
+rueckwirkend"-Einschraenkung unten aktiv, statt sie einfach hinzunehmen):** Nutzer plant, nach
+der Umsetzung die eigene bestehende Flotte UND Verteidigung komplett zu verschrotten
+(Schrotthaendler, siehe Punkt 11/Dateibaum `Schrotthaendler.tsx`) und neu mit den dann 5x
+staerkeren/teureren Einheiten aufzubauen - die Ehefrau (SchnelleRatte) soll dasselbe tun, um
+weitere Server-Konflikte zu vermeiden. Damit waere die Einschraenkung "wirkt nur auf neu gebaute
+Einheiten" kein echtes Problem mehr, da beide Spieler bewusst bei Null neu anfangen wuerden.
+
+**Status: bewusst zurueckgestellt.** Erst beobachten, ob die Engine-/Worker-Pool-Optimierung
+(Punkt 69/72) allein schon ausreicht, bevor an der Balance gedreht wird. Eine wichtige
+Einschraenkung dazu besprochen:
+- **Wirkt nur auf NEU gebaute Einheiten, nicht rueckwirkend** - wird durch den oben
+  beschriebenen geplanten Verschrottungs-Uebergang aktiv aufgeloest, sobald es zur Umsetzung
+  kommt, statt einfach hingenommen zu werden.
 - **Jaeger-Klassen komplett entfernen** (urspruenglich mit vorgeschlagen, um "viele kleine
   Schiffe" grundsaetzlich zu vermeiden) wurde als zu tiefer Eingriff eingestuft - Jaeger sind
   bewusster Teil des Schere-Stein-Papier-Kampfsystems (RapidFire-Konter gegen Zerstoerer/Reaper,
@@ -1708,4 +1719,13 @@ Werte-Anstieg zu Kosten-Anstieg wurde angesprochen (1:1 skalieren = wirtschaftli
 Werte staerker als Kosten steigen lassen = zusaetzlicher Bonus fuers Umsteigen), aber noch NICHT
 final entschieden - Nutzer wollte das erst nach einer Beobachtungsphase der Server-Last
 klaeren.
+
+**Zwischenzeitlich (parallel besprochen, ebenfalls zurueckgestellt):** Nutzer erwaegt einen
+Umzug von Render (Starter-Tarif, 0,5 CPU/512MB) zu einem eigenen Hetzner-Server (CX33: 4 vCPU/
+8GB RAM, ~10€/Monat) mit Coolify als Verwaltungsoberflaeche (aehnliches Dashboard-Gefuehl wie
+Render, nur auf eigener, deutlich staerkerer Hardware). Aktuell noch nicht umsetzbar (kein
+Zugriff auf PC/Terminal fuer SSH-Key-Erzeugung und Ersteinrichtung) - wird auf spaeter verschoben,
+bis PC verfuegbar ist. Falls umgesetzt: unbedingt auf persistenten Speicher fuer die SQLite-
+Datenbank achten (Coolify-Volume), sonst derselbe Datenverlust-Fehler wie urspruenglich bei
+Render ohne Disk (siehe Punkt 59).
 
