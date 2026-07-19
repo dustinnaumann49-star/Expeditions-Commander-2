@@ -1303,6 +1303,16 @@ client/
       (`preloadedBackgrounds`) gemerkt, damit nicht bei jedem Routenwechsel erneut ueber ein
       neues `Image()`-Objekt nachgeprueft werden muss (der Browser haelt das Bild ohnehin im
       HTTP-Cache, das Set spart nur den kleinen Umweg).
+    - **BUGFIX 2: Bilder verkleinert/komprimiert** - trotz Vorlade-Fix war das Aufblitzen noch
+      spuerbar, da die Bilder mit ~1,8-2MB pro Stueck (unkomprimiertes PNG, 1408px Breite)
+      schlicht zu gross zum schnellen Nachladen waren, besonders mobil. Alle 8 Hintergrundbilder
+      (7 Seiten + `hauptbild`) auf 1280px Breite verkleinert und von PNG auf JPEG umgestellt
+      (Qualitaet 78%, analog zum Vorgehen bei den Schiffsbildern in Punkt 24) - Ergebnis:
+      im Schnitt von ~1,8MB auf ~180KB pro Bild, ca. 10x kleiner. Alle Code-Referenzen
+      (`App.tsx` `PAGE_BACKGROUNDS`/`DEFAULT_BACKGROUND`, `theme.css` Fallback-URL) von `.png`
+      auf `.jpg` umgestellt. Kuenftig gelieferte Hintergrundbilder (Shop/Nachrichten/Inventar/
+      Statistik/Updates) sollten gleich als komprimiertes `.jpg` eingebunden werden, nicht mehr
+      als unkomprimiertes `.png` wie urspruenglich.
 
 65. **Neu: Forschungsbaum (Tech-Tree) - loest die vorherigen 13 unabhaengigen Einzelforschungen
     ab.** Was vorher unter "Geplante Erweiterungen" grob skizziert war, ist jetzt vollstaendig
