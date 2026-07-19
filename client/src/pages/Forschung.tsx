@@ -27,12 +27,17 @@ const MAIN_BRANCHES: { id: ResearchDefinition['mainBranch']; name: string }[] = 
   { id: 'wirtschaft', name: 'Wirtschaft & Logistik' },
 ];
 
+// Verbindungslinie: ein duenner Strich, komplett per Inline-Style - keine Abhaengigkeit von
+// externen CSS-Klassen/Dateien (robust gegen Cache-/Deploy-Probleme).
+function VLine({ height = 16 }: { height?: number }) {
+  return <div style={{ width: 1, height, background: 'var(--border-bright)' }} />;
+}
+
 function ResearchNode({
   tech,
   gameData,
   state,
   now,
-  forschungszeitMult,
   busy,
   onOpenInfo,
   onStart,
@@ -41,7 +46,6 @@ function ResearchNode({
   gameData: GameData;
   state: PlayerState;
   now: number;
-  forschungszeitMult: number;
   busy: boolean;
   onOpenInfo: (tech: ResearchDefinition) => void;
   onStart: (techId: string) => void;
@@ -60,15 +64,37 @@ function ResearchNode({
   const affordable =
     cost && state.resources.metall >= cost.metall && state.resources.kristall >= cost.kristall && state.resources.deuterium >= cost.deuterium;
 
+  const boxSize = isBasis ? 76 : 54;
+  const boxWidth = isBasis ? 140 : 104;
+
   return (
-    <li>
-      <div className={`research-node ${isBasis ? 'basis' : 'zweig'}${locked ? ' locked' : ''}`}>
-        <img src={`/${tech.img}`} alt={tech.name} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-        <span className="research-name">{tech.name}</span>
-        <span className="research-level">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div
+        style={{
+          width: boxWidth,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: 10,
+          background: 'rgba(36,38,43,0.4)',
+          opacity: locked ? 0.5 : 1,
+          filter: locked ? 'grayscale(0.7)' : 'none',
+        }}
+      >
+        <img
+          src={`/${tech.img}`}
+          alt={tech.name}
+          onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+          style={{ width: boxSize, height: boxSize, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+        />
+        <span style={{ fontSize: isBasis ? 13 : 11, fontWeight: 600, textAlign: 'center', lineHeight: 1.25 }}>{tech.name}</span>
+        <span style={{ fontSize: 11, color: 'var(--accent-kristall)' }}>
           Stufe {level}/{gameData.maxResearchLevel}
         </span>
-        <div className="research-btn-row">
+        <div style={{ display: 'flex', gap: 4 }}>
           <button className="qty-btn" style={{ fontSize: 11, padding: '2px 7px' }} onClick={() => onOpenInfo(tech)}>
             ℹ️
           </button>
@@ -87,24 +113,33 @@ function ResearchNode({
           )}
         </div>
       </div>
+
       {children.length > 0 && (
-        <ul>
-          {children.map((child) => (
-            <ResearchNode
-              key={child.id}
-              tech={child}
-              gameData={gameData}
-              state={state}
-              now={now}
-              forschungszeitMult={forschungszeitMult}
-              busy={busy}
-              onOpenInfo={onOpenInfo}
-              onStart={onStart}
-            />
-          ))}
-        </ul>
+        <>
+          <VLine />
+          <div style={{ display: 'flex', position: 'relative' }}>
+            {children.length > 1 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: boxWidth / 2 + 8,
+                  right: boxWidth / 2 + 8,
+                  height: 1,
+                  background: 'var(--border-bright)',
+                }}
+              />
+            )}
+            {children.map((child) => (
+              <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px' }}>
+                <VLine />
+                <ResearchNode tech={child} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={onOpenInfo} onStart={onStart} />
+              </div>
+            ))}
+          </div>
+        </>
       )}
-    </li>
+    </div>
   );
 }
 
@@ -113,7 +148,6 @@ function ResearchForest({
   gameData,
   state,
   now,
-  forschungszeitMult,
   busy,
   onOpenInfo,
   onStart,
@@ -122,20 +156,15 @@ function ResearchForest({
   gameData: GameData;
   state: PlayerState;
   now: number;
-  forschungszeitMult: number;
   busy: boolean;
   onOpenInfo: (tech: ResearchDefinition) => void;
   onStart: (techId: string) => void;
 }) {
   const roots = gameData.research.filter((t) => t.mainBranch === mainBranch && !t.parentId);
   return (
-    <div className="research-forest">
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48, justifyContent: 'center', overflowX: 'auto', padding: '4px 0' }}>
       {roots.map((root) => (
-        <div className="research-tree" key={root.id}>
-          <ul>
-            <ResearchNode tech={root} gameData={gameData} state={state} now={now} forschungszeitMult={forschungszeitMult} busy={busy} onOpenInfo={onOpenInfo} onStart={onStart} />
-          </ul>
-        </div>
+        <ResearchNode key={root.id} tech={root} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={onOpenInfo} onStart={onStart} />
       ))}
     </div>
   );
@@ -163,9 +192,6 @@ function ResearchInfoContent({ tech, gameData, state, forschungszeitMult }: { te
   if (timeMs) rows.push([`Forschungszeit Stufe ${nextLevel}`, formatTime(timeMs)]);
   if (maxed) rows.push(['Status', 'Maximalstufe erreicht']);
 
-  // Antriebsklassen zeigen zusaetzlich, welche Schiffe konkret von diesem Zweig profitieren -
-  // dynamisch aus gameData.ships ermittelt (kein hartcodierter Text, bleibt automatisch aktuell,
-  // falls sich die driveType-Zuordnung der Schiffe je aendert).
   const benefitingShips = tech.driveType ? gameData.ships.filter((s) => s.driveType === tech.driveType) : [];
 
   return (
@@ -208,18 +234,9 @@ function ForschungTreeView() {
       </p>
 
       {MAIN_BRANCHES.map((branch) => (
-        <div className="queue-box" key={branch.id} style={{ marginBottom: 24, overflowX: 'auto' }}>
+        <div className="queue-box" key={branch.id} style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 15, marginBottom: 16 }}>{branch.name}</h3>
-          <ResearchForest
-            mainBranch={branch.id}
-            gameData={gameData}
-            state={state}
-            now={now}
-            forschungszeitMult={forschungszeitMult}
-            busy={busy}
-            onOpenInfo={setInfoTech}
-            onStart={startResearch}
-          />
+          <ResearchForest mainBranch={branch.id} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={setInfoTech} onStart={startResearch} />
         </div>
       ))}
 
