@@ -298,9 +298,10 @@ export const WAVE_PROFILE_WEIGHTS: Record<string, Partial<Record<WaveProfile, nu
   raid: { schwarm: 0.5, kampfgruppe: 0.4, elitekader: 0.1 },
 };
 
-// Basis-Wellentabelle fuer Kontexte OHNE eigene Sektor-Tabelle (Raid lief vorher exakt
-// auf 100% ohne jede Schwankung) - ersetzt durch eine leichte Grund-Varianz, siehe
-// rollMultiplierWithOutlier() in combat.ts.
+// Basis-Wellentabelle fuer Kontexte OHNE eigene Sektor-Tabelle. Fuer Raids seit der
+// Verteidigungsanlagen-Staerke-Kopplung NICHT MEHR verwendet (siehe RAID_WAVE_FACTORS in
+// economy.ts, ersetzt diese Zufalls-Varianz durch eine feste Eskalation 70%-110%) - Konstante
+// bleibt stehen, falls andere Kontexte sie spaeter nutzen wollen.
 export const RAID_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
 
 // Chance pro Kampf auf einen Wellen-AUSREISSER (deutlich schwaecher/staerker als die normale

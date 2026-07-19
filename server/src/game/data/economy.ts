@@ -333,3 +333,10 @@ export const RAID_ASSAULT_DURATION_MS = 60 * 60 * 1000; // 1 Stunde
 // Abstaende "ungefaehr" gleich statt exakt im Metronom-Takt, ohne dass sich Wellen ueberholen oder
 // das Gesamtfenster gesprengt wird (letzte Welle wird dort hart auf das Fensterende gekappt).
 export const RAID_WAVE_JITTER_FACTOR = 0.25;
+// Feindstaerke pro Welle (Nutzerentscheidung, ersetzt die vorherige zufaellige Grund-Varianz
+// RAID_MULTIPLIER_ROLL fuer Raids): steigt fest von 70% auf 110% ueber die RAID_WAVE_COUNT
+// Wellen, MULTIPLIZIERT mit der aktuellen VERTEIDIGUNGSANLAGEN-Staerke (nicht mehr Flotte/
+// Verstaerkung, siehe waveDefensePower() in raids.ts) - bewusste Abkehr von der sonstigen
+// Entkopplungs-Regel (siehe README Punkt 22/45): hier soll eine staerkere Verteidigung den
+// Angriff gezielt mitwachsen lassen. Laenge MUSS RAID_WAVE_COUNT entsprechen.
+export const RAID_WAVE_FACTORS = [0.7, 0.8, 0.9, 1.0, 1.1];
