@@ -417,22 +417,58 @@ client/
 44. **"Halten" ist der einzige Weg, einem anderen Spieler bei Piratenraids zu helfen.** Eine
     Flotte fliegt zu einem Zielspieler und bleibt dort unbegrenzt stationiert (kein Kampf, kein
     PvP), bis sie zurückgerufen wird - verteidigt automatisch bei JEDEM künftigen Raid dieses
-    Spielers (`getHoldingDeploymentsTargeting()` in `galaxy.ts`, eingebunden in
-    `resolveRaid()`). Überlebende haltender Flotten bleiben nach einem Raid reduziert weiter vor
+    Spielers (`getHoldingDeploymentsTargeting()` in `galaxy.ts`, eingebunden in `resolveOneWave()`
+    in `raids.ts`). Überlebende haltender Flotten bleiben nach einer Welle reduziert weiter vor
     Ort, fliegen nicht automatisch heim. Halter bekommen dieselbe volle Belohnung wie der
     Verteidiger (Punkt 5).
 
-45. **Piraten-Raids starten von einer von 12 festen Piratenbasen** (`PIRATE_BASES`) mit echter,
+45. **Ein Raid ist kein einzelner Kampf mehr, sondern `RAID_WAVE_COUNT` (5) Angriffswellen über
+    `RAID_ASSAULT_DURATION_MS` (1 Stunde) NACH der Ankunft** (`economy.ts`/`raids.ts`,
+    Nutzerentscheidung). Vorbereitungszeit + distanzabhängige Flugzeit (siehe Punkt 46) bleiben
+    unverändert - die Stunde gilt ausschließlich für die Wellen-Phase danach, nicht für den
+    Anflug. `planRaidWaveTimes()` plant bei Ankunft-Berechnung (`spawnRaidAt()`) einmalig
+    `RAID_WAVE_COUNT` Zeitpunkte: erste Welle sofort bei Ankunft, weitere ungefähr im
+    `RAID_ASSAULT_DURATION_MS/(RAID_WAVE_COUNT-1)`-Takt (15 Min.) mit Zufalls-Streuung
+    (`RAID_WAVE_JITTER_FACTOR`), letzte Welle hart auf das Fensterende gekappt - "muss innerhalb
+    der Stunde abgeschlossen sein" gilt dadurch garantiert.
+    - **Jede Welle ist ein vollständiger, unabhängiger Kampf** gegen eine frisch gewürfelte
+      Feindflotte, deren Stärke `1/RAID_WAVE_COUNT` der Gesamt-Feindstärke trägt
+      (`waveTargetPower` in `resolveOneWave()`) - Gesamtstärke über alle Wellen bleibt damit
+      gleich zu einem früheren Einzel-Raid, nicht 5x so hart. Verteidiger-Flotte/-Verteidigung
+      tragen Verluste vorheriger Wellen weiter (kein Reset zwischen Wellen, `DEFENSE_REPAIR_PERCENT`
+      greift weiterhin pro Welle).
+    - **Ist nichts mehr zu verteidigen** (von Anfang an oder durch vorherige Wellen aufgerieben,
+      `hasAnyDefense()`), werden die restlichen Wellen ohne Kampf übersprungen statt einzeln
+      sinnlos simuliert - eine einzige Sammel-Nachricht statt mehrfacher Leer-Wellen-Spam.
+    - **Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung** nach der
+      letzten Welle (`finalizeRaidWaves()`): ein Container pro gewonnener Welle (Silber), bei
+      einer PERFEKTEN Verteidigung (alle `RAID_WAVE_COUNT` Wellen gewonnen) werden alle zu Gold
+      aufgewertet. Bergungs-DM und Ressourcen-Diebstahl (nur falls nicht perfekt verteidigt)
+      greifen ebenfalls nur EINMAL am Ende, basierend auf der Summe/dem Endstand über alle Wellen
+      (`raid.accumulatedDestroyed`), nicht pro Welle.
+    - **Statistik-Unterscheidung:** `raidsRepelledFull`/`raidsRepelledPartial` zählen genau EINMAL
+      pro GESAMTEM Raid (sonst würde ein Raid bis zu 5x in die Bestenliste einzahlen),
+      `enemiesDestroyed`/`ownShipsLost` dagegen live PRO Welle, sobald sie geschlagen ist.
+    - **Cross-User-Sweep (`processOverdueRaidsForOtherUsers`) arbeitet bei jedem Tick ALLE gerade
+      fälligen Wellen ab**, nicht nur die nächste - kann bei längerer Abwesenheit mehr als eine
+      auf einmal sein. Dadurch gilt "muss innerhalb der Stunde abgeschlossen sein" unabhängig
+      davon, ob der Verteidiger zwischenzeitlich online war (Punkt 4/25 zum Live-State-Muster gilt
+      unverändert für jede einzelne Welle).
+    - **Migration:** alte, vor dem Wellensystem gespawnte Raids ohne `waveTimes`-Feld werden beim
+      nächsten `loadPlayerState()` sicherheitshalber verworfen (`state.ts`, analog zur
+      `pirateBase`-Migration aus Punkt 46).
+
+46. **Piraten-Raids starten von einer von 12 festen Piratenbasen** (`PIRATE_BASES`) mit echter,
     distanzabhängiger Flugzeit: Trigger (feste Checkpoints) → 60 Min. Vorbereitungszeit → echte
     Flugzeit von der gewürfelten Basis zur Zielposition (`PIRATE_FLEET_SPEED = 7000` als
-    repräsentative Geschwindigkeit).
+    repräsentative Geschwindigkeit) → Ankunft, ab der die Wellen-Phase (Punkt 45) beginnt.
 
-46. **Elite-Bollwerk-Rendezvous:** eingeladene Teilnehmer fliegen nach Annahme zuerst zum
+47. **Elite-Bollwerk-Rendezvous:** eingeladene Teilnehmer fliegen nach Annahme zuerst zum
     ERSTELLER, nicht direkt zum Ziel. Der Start ist blockiert, bis alle angenommenen Teilnehmer
     eingetroffen sind. Danach fliegt die vereinte Flotte gemeinsam weiter (Geschwindigkeit =
     langsamstes Schiff über alle kombinierten Flotten, Distanz ab Ersteller-Position).
 
-47. **Distanz-/Flugzeit-Vorschau ist auf alle Flugziele verallgemeinert** (`POST
+48. **Distanz-/Flugzeit-Vorschau ist auf alle Flugziele verallgemeinert** (`POST
     /game/galaxy/preview` akzeptiert `targetUserId` ODER eine feste `targetPosition`,
     `useGalaxyPreview()`-Hook clientseitig wiederverwendet). Ein Hook-Aufruf in einer
     `.map()`-Schleife ist nur sicher, wenn die Array-Länge über ALLE möglichen Zustände der
@@ -441,7 +477,7 @@ client/
 
 ### KI-Spieler
 
-48. **Zwei Bot-Accounts** ("KI-Vega", "KI-Nyx", `BOT_USERNAMES`) - technisch normale Nutzer,
+49. **Zwei Bot-Accounts** ("KI-Vega", "KI-Nyx", `BOT_USERNAMES`) - technisch normale Nutzer,
     unterscheiden sich nur durch das `is_bot`-Flag. Nutzen exakt dieselben Aktionsfunktionen wie
     die UI (keine Sonderkonditionen bei Kosten/Bauzeiten/Flugzeiten). `runBotTurn()` läuft im
     globalen Heartbeat nach der normalen Zeit-Verarbeitung, feste Prioritäten: Energie/Minen →
@@ -451,29 +487,29 @@ client/
 
 ### Frontend-Konventionen
 
-49. **`InfoTable`/`InfoModal`-Zeilen nutzen `.info-list`/`.info-list-row`** statt roher Tabellen -
+50. **`InfoTable`/`InfoModal`-Zeilen nutzen `.info-list`/`.info-list-row`** statt roher Tabellen -
     Label links gedimmt, Wert rechtsbündig.
 
-50. **Händler/Schrotthändler nutzen `ship-grid`/`ship-card` mit Bildern**, nicht die schlichteren
+51. **Händler/Schrotthändler nutzen `ship-grid`/`ship-card` mit Bildern**, nicht die schlichteren
     `queue-box`-Listenzeilen. Ressourcentausch über anklickbare Icon-Chips statt `<select>`.
 
-51. **Rohe interne IDs/Enums nie direkt anzeigen** - Schiffs-IDs über `shipName()`
+52. **Rohe interne IDs/Enums nie direkt anzeigen** - Schiffs-IDs über `shipName()`
     (`combatInfo.ts`), Sektor-IDs über `gameData.sektoren`-Lookup, Status-Enums über eigene
     Label-Maps in lesbaren Text übersetzen.
 
-52. **Baubarkeit und Einsetzbarkeit in Missionen sind zwei getrennte Schalter** - bei jedem neuen
+53. **Baubarkeit und Einsetzbarkeit in Missionen sind zwei getrennte Schalter** - bei jedem neuen
     Kampfschiff müssen BEIDE gesetzt werden (`ships.ts` fürs Bauen, `COMBAT_SHIP_IDS` in
     `data/economy.ts` UND alle Client-Kopien in `Sektor.tsx`/`Multiplayer.tsx`/`RaidHilfe.tsx`
     fürs Einsetzen).
 
-53. **Ein einziges, festes Hintergrundbild für die gesamte App**
+54. **Ein einziges, festes Hintergrundbild für die gesamte App**
     (`client/public/background/werft.jpg`, fest in `theme.css` verdrahtet). Ein
     per-Route-Hintergrundbild-System wurde gebaut und nach wiederholten Ladeproblemen wieder
     komplett zurückgebaut - kein neuer Anlauf ohne vorherige Absprache.
 
 ### Bilder
 
-54. Neue Schiffs-/Gebäude-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px Breite,
+55. Neue Schiffs-/Gebäude-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px Breite,
     Qualität ~78%, Ziel ~60-80 KB statt mehrerer MB) - wichtig für Mobil-Ladezeiten.
 
 ## Kurz-Changelog
@@ -534,3 +570,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Extraktions-Entscheidung statt Massenwellen).
 - Zeit-Gutscheine für Bauzeit auf Schiffe/Verteidigung/Gebäude aufgeteilt (vorher nur Schiffe);
   Schiffe/Verteidigung wirken jetzt auf alle parallelen Bauplätze, nicht mehr nur den ersten.
+- Raids laufen jetzt in 5 Wellen über 1 Stunde nach Ankunft statt als einzelner Kampf; Gesamt-
+  Feindstärke bleibt gleich, Belohnung gibt es erst als Abschluss-Bonus nach der letzten Welle.
