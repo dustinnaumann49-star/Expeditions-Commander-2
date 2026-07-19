@@ -725,6 +725,17 @@ function finalizeGroupExpedition(
 ): void {
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
 
+  // ABSCHLUSS-BONUS (siehe Nutzerentscheidung): seit die 4 Stunden-Checks garantiert stattfinden
+  // (kein 50%-Wuerfeln mehr, siehe checkChance in sectors.ts), verdoppelt eine PERFEKTE Serie -
+  // alle 4 Checks gewonnen, KEIN einziger Rueckschlag dazwischen (op.streakWins wird bei jedem
+  // Check ohne vernichteten Gegner auf 0 zurueckgesetzt, siehe runGroupHourlyCheck) - die GESAMTE
+  // ueber die Expedition angesammelte Ressourcen-Ausbeute (NICHT Teile/DM) nochmal komplett.
+  // Belohnung dafuer, die volle, sehr harte 4-Stunden-Expedition ohne einen einzigen Rueckschlag
+  // durchzustehen - on top der bereits eingebauten Verdopplung PRO Sieg (REWARD_ESCALATION
+  // "double"-Modus), die schon bis zu 750 Mio. Ressourcen bei einer perfekten Serie ergibt (siehe
+  // README) - mit diesem Bonus also bis zu 1,5 Milliarden.
+  const perfectRun = (op.streakWins || 0) >= 4;
+
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
 
@@ -733,9 +744,10 @@ function finalizeGroupExpedition(
     });
 
     const farmed = p.farmed || { metall: 0, kristall: 0, deuterium: 0 };
-    const gainedMetall = Math.floor(farmed.metall);
-    const gainedKristall = Math.floor(farmed.kristall);
-    const gainedDeut = Math.floor(farmed.deuterium);
+    const completionMultiplier = perfectRun ? 2 : 1;
+    const gainedMetall = Math.floor(farmed.metall * completionMultiplier);
+    const gainedKristall = Math.floor(farmed.kristall * completionMultiplier);
+    const gainedDeut = Math.floor(farmed.deuterium * completionMultiplier);
     pState.resources.metall += gainedMetall;
     pState.resources.kristall += gainedKristall;
     pState.resources.deuterium += gainedDeut;
@@ -752,7 +764,9 @@ function finalizeGroupExpedition(
     pushMessage(
       pState,
       'farm',
-      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt.`,
+      `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt.${
+        perfectRun ? ' 🏆 Perfekte Serie - alle 4 Kämpfe gewonnen! Gesamte Ressourcen-Ausbeute nochmal verdoppelt.' : ''
+      }`,
       {
         sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
         resources: { metall: gainedMetall, kristall: gainedKristall, deuterium: gainedDeut },
