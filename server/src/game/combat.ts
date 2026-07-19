@@ -26,6 +26,7 @@ import {
   MULTI_TARGET_POWER_CORRECTION,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
+import { NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS } from './data/combatConstants.js';
 import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
 import type { CombatStats, CombatReplay } from './types.js';
 
@@ -62,6 +63,16 @@ export function getMaxCountFor(id: string): number {
   const d = findDefense(id);
   if (d?.maxCount) return d.maxCount;
   return Infinity;
+}
+
+// PERFORMANCE-NOTMASSNAHME: wie getMaxCountFor(), aber zusaetzlich mit der NPC-only-Obergrenze
+// fuer Jaeger-Klasse (siehe NPC_JAEGER_MAX_COUNT, combatConstants.ts) - wird NUR bei der
+// Piraten-/Notruf-/Verteidigungs-Flottengenerierung verwendet (generateCappedFleet()), NIEMALS
+// fuer Spieler-eigene Baulimits (dort bleibt getMaxCountFor() unveraendert im Einsatz).
+function getNpcMaxCountFor(id: string): number {
+  const base = getMaxCountFor(id);
+  if (NPC_JAEGER_CAPPED_IDS.includes(id)) return Math.min(base, NPC_JAEGER_MAX_COUNT);
+  return base;
 }
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN ==========
@@ -269,7 +280,7 @@ export function generateCappedFleet(
       const unitPower = shipPowerBase(id);
       if (unitPower <= 0) return;
       let count = Math.round(powerForType / unitPower);
-      const cap = getMaxCountFor(id);
+      const cap = getNpcMaxCountFor(id);
       const room = cap === Infinity ? Infinity : cap - result[id];
       if (count > room) count = Math.max(0, room);
       if (count > 0) {
