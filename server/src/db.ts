@@ -136,6 +136,21 @@ export function listBotUserIds(): number[] {
   return (db.prepare('SELECT id FROM users WHERE is_bot = 1').all() as { id: number }[]).map((r) => r.id);
 }
 
+// PERFORMANCE-NOTMASSNAHME (siehe Nutzerentscheidung nach Server-Absturz auf dem Starter-Tarif):
+// entfernt bestehende KI-Spieler-Accounts wieder vollstaendig (Nutzer + Spielstand) - nicht nur
+// die Bot-LOGIK abschalten, sondern die Accounts selbst loeschen, damit sie auch nicht mehr in
+// den Heartbeat-/Raid-/Notruf-Schleifen fuer ALLE Nutzer mitverarbeitet werden (jeder zusaetzliche
+// Account bedeutet zusaetzliche Verarbeitung pro Tick). Wird einmalig beim Serverstart aufgerufen
+// (idempotent - loescht nur, wenn noch Bot-Accounts vorhanden sind).
+export function removeBotUsers(): number {
+  const botIds = listBotUserIds();
+  for (const id of botIds) {
+    db.prepare('DELETE FROM game_states WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  }
+  return botIds.length;
+}
+
 export function loadGameStateJson(userId: number): string | undefined {
   const row = db.prepare('SELECT state_json FROM game_states WHERE user_id = ?').get(userId) as
     | { state_json: string }
