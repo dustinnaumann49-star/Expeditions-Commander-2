@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Piratenflotten: Jäger-Massen begrenzt',
+    changes: [
+      'Piraten-/Notruf-Flotten können nicht mehr unbegrenzt viele Leichte/Schwere Jäger stellen (max. 500 pro Typ) - der Rest ihrer Stärke verteilt sich stattdessen auf größere Schiffe. Sollte weitere Server-Überlastungen bei besonders starken Angriffswellen verhindern. Betrifft nicht eure eigenen Flotten, die bleiben unverändert unbegrenzt.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Weitere Server-Performance-Verbesserung',
     changes: [
       'Kampfberechnungen laufen jetzt über wiederverwendete Hintergrund-Prozesse statt für jeden Kampf neue zu erzeugen - sollte kurzzeitige Speicher-/CPU-Spitzen weiter reduzieren, besonders bei einzelnen Kämpfen.',

@@ -236,6 +236,21 @@ export const MAX_BUILDING_SLOTS = 1;
 // im selben Piraten-Sektor) genug Platz haben.
 export const MAX_PLAYER_SHIPS = 100000;
 
+// PERFORMANCE-NOTMASSNAHME (siehe README): Piraten-/Notruf-Flotten wurden bislang OHNE
+// Obergrenze mit Jaeger-Klasse (leicht/schwer) aufgefuellt, sobald deren Gewichtung in der
+// Wellen-Kurve hoch war ("schwarm"-Profil bevorzugt guenstige, kleine Schiffe) - bei einem sehr
+// starken Ziel-Gegner konnte das zu zehntausenden generierten Jaeger-Einheiten fuehren (real
+// beobachtet: 6828 Leichter Jaeger + 1703 Schwerer Jaeger in einem einzigen Raid), was die
+// Kampf-Engine trotz der Optimierungen in Punkt 69/72 an ihre Grenzen brachte. NICHT identisch
+// mit dem Spieler-Baulimit (`ShipDefinition.maxCount`, siehe Punkt 8 - bewusst weiterhin
+// unbegrenzt fuer SPIELER-Flotten) - gilt NUR fuer NPC-generierte Piraten-/Notruf-/
+// Verteidigungs-Wellen (siehe generateCappedFleet() in combat.ts). Sobald eine Jaeger-Klasse
+// diese Grenze erreicht, weicht die Flottengenerierung automatisch auf andere Schiffstypen aus,
+// um die restliche Ziel-Staerke zu erreichen (weniger, aber groessere Gegner statt endloser
+// Jaeger-Massen).
+export const NPC_JAEGER_MAX_COUNT = 500;
+export const NPC_JAEGER_CAPPED_IDS = ['leicht', 'schwer'];
+
 // Spezialschiffe mit "Mehrfachziel-Salve": statt bei erfolgreicher Zielerfassung nur EIN
 // RF-anfaelliges Ziel zu treffen, feuern sie auf JEDEN anfaelligen SCHIFFSTYP einmal (nicht auf
 // jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).
