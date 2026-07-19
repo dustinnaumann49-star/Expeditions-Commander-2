@@ -419,6 +419,7 @@ export interface GameData {
   buildings: BuildingDefinition[];
   buildingModules: BuildingModuleDefinition[];
   maxBuildingSlots: number;
+  admiralAllowedShipIds: string[];
   galaxySystems: number;
   galaxyPositions: number;
   sektoren: SektorDefinition[];
@@ -493,6 +494,9 @@ export interface GroupOperation {
   lastTick?: number | null;
   resultMessage?: string;
   resultDetail?: CombatDetail;
+  adminChecksElapsed?: number;
+  adminNextCheckTime?: number;
+  adminAwaitingDecision?: boolean;
 }
 
 export interface SimulationResult {
