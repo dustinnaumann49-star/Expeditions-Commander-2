@@ -4,7 +4,7 @@ import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance } from '../lib/combatInfo';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, shipName, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance, driveTypeLabel } from '../lib/combatInfo';
 import { getBauzeitMultiplier } from '../lib/multipliers';
 import type { PlayerState } from '../types/game';
 
@@ -149,6 +149,7 @@ export function WerftPage() {
           const evasion = getEvasionChance(gameData, state.research, infoShip.id);
           const critChance = getCritChance(gameData, state.research, infoShip.id);
           const rows: [string, React.ReactNode][] = [
+            ['🚀 Geschwindigkeit', `${infoShip.speed.toLocaleString('de-DE')} (${driveTypeLabel(infoShip.driveType)})`],
             ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
             ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),
             ...(isVolleyShip

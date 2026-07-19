@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance } from '../lib/combatInfo';
+import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance, driveTypeLabel } from '../lib/combatInfo';
 
 export function SpezialteilePage() {
   const { gameData, state, buildImperator, error } = useGame();
@@ -87,6 +87,7 @@ export function SpezialteilePage() {
         <InfoModal title={ship.name} onClose={() => setShowInfo(false)}>
           <InfoTable
             rows={[
+              ['🚀 Geschwindigkeit', `${ship.speed.toLocaleString('de-DE')} (${driveTypeLabel(ship.driveType)})`],
               ['RapidFire', rfDisplay || 'Kein RapidFire'],
               ...(accuracy > 0
                 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][])
