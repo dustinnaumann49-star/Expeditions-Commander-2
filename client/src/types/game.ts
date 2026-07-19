@@ -255,7 +255,7 @@ export interface Container {
 }
 
 export interface ContainerReward {
-  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau' | 'zeitgutschein_forschung' | 'freischiff';
+  type: 'resources' | 'dm' | 'teile' | 'zeitgutschein_bau_schiffe' | 'zeitgutschein_bau_verteidigung' | 'zeitgutschein_bau_gebaeude' | 'zeitgutschein_forschung' | 'freischiff';
   label: string;
   metall?: number;
   kristall?: number;
@@ -391,7 +391,7 @@ export interface VoucherDefinition {
   id: string;
   label: string;
   img: string;
-  type: 'zeitgutschein_bau' | 'zeitgutschein_forschung';
+  type: 'zeitgutschein_bau_schiffe' | 'zeitgutschein_bau_verteidigung' | 'zeitgutschein_bau_gebaeude' | 'zeitgutschein_forschung';
   percent: number;
   cost: number;
   desc: string;
