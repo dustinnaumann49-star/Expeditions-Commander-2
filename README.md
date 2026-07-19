@@ -520,3 +520,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   vollständig aus dem Code entfernt.
 - Sektor P10 - Piratenadmiral eingeführt (zweiter Multiplayer-Sektor, Boss-Gefecht mit
   Extraktions-Entscheidung statt Massenwellen).
+
+test
