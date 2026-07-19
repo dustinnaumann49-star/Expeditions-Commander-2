@@ -1437,3 +1437,11 @@ client/
       Einschraenkungen - aktuelle Entscheidung war aber bewusst, bei "Starter" zu bleiben und
       stattdessen die Spielmechanik anzupassen.
 
+67. **Geschwindigkeit + Antriebsklasse im Schiffs-Info-Popup ergaenzt** (Werft.tsx,
+    Spezialteile.tsx) - fehlte bisher komplett, weder auf der Karte noch im Popup war der
+    Speed-Wert einsehbar. Neue `driveTypeLabel()`-Hilfsfunktion (`combatInfo.ts`) uebersetzt
+    `driveType` in eine lesbare Bezeichnung (Raketen-/Impuls-/Hyperraumantrieb). Bewusst NICHT
+    auf der Hauptkarte ergaenzt (Punkt 14 gilt weiterhin: Karten zeigen nur Kernwerte, Speed ist
+    kein staendig relevanter Wert wie Waffen/Schild/Panzerung), sondern als erste Zeile im
+    Info-Popup, direkt vor den Kampfwerten.
+
