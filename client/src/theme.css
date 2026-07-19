@@ -25,11 +25,10 @@
   #root{ display:flex; flex-direction:column; }
   body{
     font-family: 'Segoe UI', Arial, sans-serif;
-    /* --page-bg wird von App.tsx per Route gesetzt (siehe PAGE_BACKGROUNDS) - jede Seite kann so
-       ihr eigenes thematisches Hintergrundbild bekommen (Werft -> Werft-Bild, Forschung ->
-       Forschungslabor-Bild, usw.), Fallback ist hauptbild.jpg, falls fuer eine Route noch kein
-       eigenes Bild hinterlegt ist. Der Wechsel passiert hart (kein Ueberblenden) - CSS kann
-       zwischen zwei background-image-URLs nicht weich interpolieren.
+    /* EIN einziges, festes Hintergrundbild fuer die gesamte App (zurueckgestuft von der
+       vorherigen per-Route-Loesung, siehe README - blieb trotz Vorlade-Fix und Komprimierung
+       fehleranfaellig). Wird vom Browser einmal geladen und danach nie wieder gewechselt - kein
+       Aufblitzen, keine Route-abhaengige Logik mehr.
        Der radiale Verlauf hier ist bewusst nur noch ein SEHR leichter Farbstich/Vignette (vorher
        bis zu 88% dunkel!) - der wurde eingefuehrt, BEVOR die Panels selbst transparent waren,
        und hat sich mit deren eigener Abdunkelung (45%, siehe #resourcebar/#sidebar/#mainbar)
@@ -38,7 +37,7 @@
        Verlauf hier ist nur noch ein dezenter Rotstich, kein zusaetzlicher Verdunkelungs-Layer. */
     background:
       radial-gradient(circle at 50% 0%, rgba(61,15,18,0.18), rgba(10,3,4,0.28) 70%),
-      var(--page-bg, url('/background/hauptbild.jpg'));
+      url('/background/werft.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

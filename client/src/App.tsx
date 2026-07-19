@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { GameProvider } from './context/GameContext';
@@ -35,81 +34,12 @@ const NAV_ITEMS = [
   { to: '/updates', label: 'Updates' },
 ];
 
-// Seitenspezifisches Hintergrundbild pro Route (siehe theme.css `--page-bg`) - jede Seite kann so
-// ihr eigenes thematisches Bild bekommen (Werft -> Werft-Halle, Forschung -> Labor, usw.), statt
-// ueberall dasselbe Hauptbild zu zeigen. Fehlt fuer eine Route ein eigener Eintrag, greift der
-// Fallback auf hauptbild.png (siehe usePageBackground() unten) - noch nicht jede Seite hat schon
-// ein eigenes Bild, wird nach und nach ergaenzt, sobald neue Bilder geliefert werden.
-const PAGE_BACKGROUNDS: Record<string, string> = {
-  '/': 'werft.jpg',
-  '/verteidigung': 'werft.jpg',
-  '/sektor': 'sektor.jpg',
-  '/forschung': 'forschung.jpg',
-  '/flotte': 'flotte.jpg',
-  '/haendler': 'haendler.jpg',
-  '/multiplayer': 'multiplayer.jpg',
-  '/galaxie': 'galaxie.jpg',
-  // Shop, Nachrichten, Inventar, Statistik, Updates: noch KEIN eigenes Bild geliefert - bewusst
-  // NICHT eingetragen, damit der Fallback auf hauptbild.jpg unten tatsaechlich greift. Waere
-  // hier trotzdem ein Dateiname eingetragen, wuerde der Browser eine nicht existierende Datei
-  // anfragen (404) UND der Fallback wuerde NICHT greifen (er wirkt nur, wenn die Route komplett
-  // fehlt, nicht wenn die verlinkte Datei fehlt) - genau das ist vorher passiert.
-};
-const DEFAULT_BACKGROUND = 'hauptbild.jpg';
-
-// Merkt sich, welche Hintergrundbild-URLs bereits erfolgreich geladen wurden (Modul-Ebene, nicht
-// Komponenten-State - bleibt ueber die gesamte Sitzung/alle Seitenwechsel hinweg erhalten).
-const preloadedBackgrounds = new Set<string>();
-
-// Setzt die CSS-Variable --page-bg auf body, sobald sich die Route aendert. WICHTIG: schaltet
-// NICHT sofort auf das neue Bild um, sondern laedt es erst im Hintergrund vor (per unsichtbarem
-// Image()-Objekt) - das ALTE Bild bleibt waehrenddessen sichtbar. Ohne das wuerde bei jedem
-// Seitenwechsel kurz eine weisse/leere Flaeche aufblitzen, bis das neue Bild ueber's Netz
-// nachgeladen ist (besonders auf mobilen Verbindungen spuerbar). Bereits geladene Bilder werden
-// gemerkt (siehe preloadedBackgrounds) und beim naechsten Besuch derselben Seite sofort ohne
-// erneutes Nachladen angezeigt - der Browser haelt das Bild ohnehin im HTTP-Cache, `preloadedBackgrounds`
-// spart nur den kurzen Umweg ueber ein neues Image()-Objekt.
-function usePageBackground(pathname: string) {
-  useEffect(() => {
-    const file = PAGE_BACKGROUNDS[pathname] || DEFAULT_BACKGROUND;
-    const url = `/background/${file}`;
-    const apply = () => document.body.style.setProperty('--page-bg', `url('${url}')`);
-
-    if (preloadedBackgrounds.has(url)) {
-      apply();
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      preloadedBackgrounds.add(url);
-      apply();
-    };
-    img.onerror = () => {
-      // Bild fehlt/fehlerhaft - trotzdem als "erledigt" markieren, damit nicht bei jedem
-      // Routenwechsel erneut (erfolglos) nachgeladen wird.
-      preloadedBackgrounds.add(url);
-      apply();
-    };
-    img.src = url;
-  }, [pathname]);
-}
-
-// Laedt beim allerersten App-Start ALLE bekannten Hintergrundbilder einmal im Hintergrund vor
-// (unabhaengig davon, welche Seite gerade aktiv ist) - dadurch ist nach kurzer Zeit jeder
-// Seitenwechsel sofort ohne Nachladen, auch beim ALLERERSTEN Besuch einer Seite.
-function usePreloadAllBackgrounds() {
-  useEffect(() => {
-    const files = new Set([DEFAULT_BACKGROUND, ...Object.values(PAGE_BACKGROUNDS)]);
-    files.forEach((file) => {
-      const url = `/background/${file}`;
-      if (preloadedBackgrounds.has(url)) return;
-      const img = new Image();
-      img.onload = () => preloadedBackgrounds.add(url);
-      img.onerror = () => preloadedBackgrounds.add(url);
-      img.src = url;
-    });
-  }, []);
-}
+// Zurueckgestuft auf EIN einziges, festes Hintergrundbild fuer die gesamte App (siehe README) -
+// die vorherige Loesung mit unterschiedlichen Bildern pro Seite (per Route gewechselt) blieb
+// trotz Vorlade-Fix und Komprimierung fehleranfaellig/inkonsistent. Deutlich simpler und
+// robuster: das Bild wird EINMAL vom Browser geladen und danach nie wieder gewechselt, kein
+// Aufblitzen, keine Route-abhaengige Logik mehr noetig. Wird direkt in theme.css gesetzt, kein
+// JavaScript/CSS-Variable mehr dafuer erforderlich.
 
 function Sidebar() {
   const location = useLocation();
@@ -125,9 +55,6 @@ function Sidebar() {
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  usePreloadAllBackgrounds();
-  usePageBackground(location.pathname);
   return (
     <>
       <ResourceBar />
