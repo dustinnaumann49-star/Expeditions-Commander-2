@@ -3,9 +3,9 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
-import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, EVENT_CHECK_HOURS_LOCAL } from './data/economy.js';
+import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, EVENT_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
-import { loadGameStateJson, saveGameStateJson, listAllUsers } from '../db.js';
+import { loadGameStateJson, saveGameStateJson, listAllUsers, getUserById } from '../db.js';
 
 // Zufaellige, freie Galaxie-Position vergeben (siehe README). Scannt dafuer die bereits
 // gespeicherten Zustaende ALLER anderen Spieler direkt ueber loadGameStateJson (NICHT ueber
@@ -37,6 +37,14 @@ function assignRandomGalaxyPosition(excludeUserId?: number): GalaxyPosition {
     return { system: 1, position: 1 };
   }
   return free[Math.floor(Math.random() * free.length)];
+}
+
+// PERFORMANCE-NOTMASSNAHME (siehe README): einzelne Spieler bekommen per Nutzername einen fest
+// zugewiesenen Raid-Rhythmus, damit nie zwei Kampfaufloesungen gleichzeitig laufen (siehe
+// RAID_SCHEDULE_BY_USERNAME in economy.ts, ausfuehrlich dort kommentiert).
+function raidHoursForUser(userId: number): number[] {
+  const user = getUserById(userId);
+  return (user && RAID_SCHEDULE_BY_USERNAME[user.username]) || RAID_CHECK_HOURS_LOCAL;
 }
 
 export function defaultPlayerState(userId: number): PlayerState {
@@ -73,7 +81,8 @@ export function defaultPlayerState(userId: number): PlayerState {
     inventory: [],
     presets: [],
     raid: null,
-    nextRaidCheck: nextFixedCheckpoint(Date.now(), RAID_CHECK_HOURS_LOCAL),
+    nextRaidCheck: nextFixedCheckpoint(Date.now(), raidHoursForUser(userId)),
+    raidScheduleMigrated: true,
     event: null,
     nextEventCheck: nextFixedCheckpoint(Date.now(), EVENT_CHECK_HOURS_LOCAL),
     lastUpdate: Date.now(),
@@ -127,6 +136,19 @@ export function loadPlayerState(userId: number): PlayerState {
   BUILDINGS.forEach((b) => {
     if (parsed.buildings[b.id] === undefined) parsed.buildings[b.id] = 0;
   });
+  // PERFORMANCE-NOTMASSNAHME (siehe README): bestehende Spielstaende hatten ihren
+  // `nextRaidCheck` noch nach dem alten, gemeinsamen 0/6/12/18-Uhr-Rhythmus berechnet - EINMALIG
+  // (per `raidScheduleMigrated`-Flag, NICHT bei jedem Laden - sonst wuerde der Checkpoint nie
+  // faellig werden, exakt der Bug aus Punkt 55) auf den personalisierten Rhythmus umstellen,
+  // falls der Nutzername einen fest zugewiesenen hat. Verhindert einen letzten "Uebergangs-
+  // Konflikt", bei dem beide Spieler durch den noch alten, gemeinsamen Zeitstempel doch noch
+  // einmal gleichzeitig raiden wuerden.
+  if (!parsed.raidScheduleMigrated) {
+    parsed.raidScheduleMigrated = true;
+    if (!parsed.raid) {
+      parsed.nextRaidCheck = nextFixedCheckpoint(Date.now(), raidHoursForUser(userId));
+    }
+  }
   if (!parsed.buildingQueue) parsed.buildingQueue = [];
   // Galaxie-Position nachruesten (existierte vor Einfuehrung dieses Systems nicht) - betrifft
   // ALLE bereits registrierten Spieler, bekommen beim naechsten Laden eine zufaellige freie

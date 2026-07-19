@@ -400,6 +400,7 @@ export interface PlayerState {
   presets: FleetPreset[];
   raid: RaidState | null;
   nextRaidCheck: number;
+  raidScheduleMigrated?: boolean; // Einmal-Migrationsflag, siehe state.ts loadPlayerState()
   event: EventState | null;
   nextEventCheck: number;
   lastUpdate: number;

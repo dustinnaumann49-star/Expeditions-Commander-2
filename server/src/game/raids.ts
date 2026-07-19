@@ -1,5 +1,5 @@
 import { DEFENSES } from './data/defenses.js';
-import { RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_CHECK_HOURS_LOCAL, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_MIN_TARGET_POWER } from './data/economy.js';
+import { RAID_SPAWN_CHANCE, RAID_LOOT_PERCENT, COMBAT_SHIP_IDS, rollFixedCheckpoints, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME, RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_MIN_TARGET_POWER } from './data/economy.js';
 import { PIRATE_BASES, PIRATE_FLEET_SPEED, RAID_PREP_MS } from './data/galaxyConstants.js';
 import {
   getEffectiveStats,
@@ -66,6 +66,17 @@ function notifyRaidLaunchIfDue(state: PlayerState): void {
   );
 }
 
+// Ermittelt fuer einen Nutzer, ob er einen fest zugewiesenen, GARANTIERTEN Raid-Rhythmus hat
+// (siehe RAID_SCHEDULE_BY_USERNAME, Performance-Notmassnahme) - Chance 1.0 (immer) statt der
+// normalen RAID_SPAWN_CHANCE, und die individuell zugewiesenen Stunden statt des gemeinsamen
+// RAID_CHECK_HOURS_LOCAL-Rhythmus. Unbekannte Nutzernamen fallen auf das alte Verhalten zurueck.
+function getRaidSchedule(userId: number): { hours: number[]; chance: number } {
+  const user = getUserById(userId);
+  const fixedHours = user ? RAID_SCHEDULE_BY_USERNAME[user.username] : undefined;
+  if (fixedHours) return { hours: fixedHours, chance: 1 };
+  return { hours: RAID_CHECK_HOURS_LOCAL, chance: RAID_SPAWN_CHANCE };
+}
+
 export async function processRaidTimer(state: PlayerState) {
   const now = Date.now();
 
@@ -83,7 +94,8 @@ export async function processRaidTimer(state: PlayerState) {
   if (state.raid) return;
   if (now < state.nextRaidCheck) return;
 
-  state.nextRaidCheck = rollFixedCheckpoints(state.nextRaidCheck, now, RAID_SPAWN_CHANCE, (checkpointTime) => spawnRaidAt(state, checkpointTime), RAID_CHECK_HOURS_LOCAL);
+  const schedule = getRaidSchedule(state.userId);
+  state.nextRaidCheck = rollFixedCheckpoints(state.nextRaidCheck, now, schedule.chance, (checkpointTime) => spawnRaidAt(state, checkpointTime), schedule.hours);
 }
 
 /**
@@ -136,12 +148,13 @@ export async function processOverdueRaidSpawnsForOtherUsers(currentState: Player
       const otherState = loadPlayerState(u.id);
       if (otherState.raid) continue; // bereits ein Raid aktiv - nichts zu tun
       if (now < otherState.nextRaidCheck) continue;
+      const schedule = getRaidSchedule(u.id);
       otherState.nextRaidCheck = rollFixedCheckpoints(
         otherState.nextRaidCheck,
         now,
-        RAID_SPAWN_CHANCE,
+        schedule.chance,
         (checkpointTime) => spawnRaidAt(otherState, checkpointTime),
-        RAID_CHECK_HOURS_LOCAL
+        schedule.hours
       );
       savePlayerState(otherState);
     } catch (err) {

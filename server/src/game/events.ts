@@ -51,6 +51,13 @@ function spawnEventAt(state: PlayerState, checkpointTime: number): void {
   );
 }
 
+// PERFORMANCE-NOTMASSNAHME (siehe Nutzerentscheidung nach Server-Absturz auf dem Starter-Tarif):
+// Notruf-Events spawnen vorerst NICHT mehr neu - jede zusaetzliche gleichzeitig laufende
+// Kampfaufloesung (Worker-Thread, siehe combatRunner.ts) erhoeht das Risiko eines erneuten
+// Absturzes bei begrenztem CPU/RAM. Bereits aktive/laufende Events werden weiterhin normal zu
+// Ende gefuehrt (kein hartes Abbrechen mitten im Flug) - es werden nur KEINE NEUEN mehr erzeugt.
+const EVENTS_ENABLED = false;
+
 export async function processEventTimer(state: PlayerState) {
   const now = Date.now();
   if (state.event && !state.event.started && now > state.event.deadline) {
@@ -61,6 +68,7 @@ export async function processEventTimer(state: PlayerState) {
   }
   if (now < state.nextEventCheck) return;
   if (state.event) return;
+  if (!EVENTS_ENABLED) return;
   state.nextEventCheck = rollFixedCheckpoints(state.nextEventCheck, now, EVENT_SPAWN_CHANCE, (checkpointTime) => spawnEventAt(state, checkpointTime), EVENT_CHECK_HOURS_LOCAL);
 }
 
@@ -85,7 +93,7 @@ export async function processOverdueEventsForOtherUsers(currentState: PlayerStat
         await resolveEventCombat(otherState);
         changed = true;
       }
-      if (!otherState.event && now >= otherState.nextEventCheck) {
+      if (EVENTS_ENABLED && !otherState.event && now >= otherState.nextEventCheck) {
         otherState.nextEventCheck = rollFixedCheckpoints(
           otherState.nextEventCheck,
           now,
