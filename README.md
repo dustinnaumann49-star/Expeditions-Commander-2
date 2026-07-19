@@ -1639,6 +1639,67 @@ client/
       generierten Einheiten nur noch 1448 statt vorher vermutlich 10.000+. Spieler-Baulimits
       fuer `leicht`/`schwer` per `getMaxCountFor()` weiterhin korrekt `Infinity` (unveraendert).
 
+74. **Server-Umzug erfolgreich abgeschlossen: Render -> Hetzner (CX33, 4 vCPU/8GB RAM) + Coolify.**
+    Grund war die wiederholte Server-Ueberlastung bei grossen Kaempfen trotz Punkt 69/72/73 -
+    8x mehr CPU und 16x mehr RAM sollten die Engpaesse strukturell loesen, unabhaengig von
+    weiteren Software-Optimierungen.
+    - **Ablauf:** Hetzner-Server bestellt (SSH-Key ueber Termux auf dem Handy erzeugt, kein PC
+      noetig), Coolify automatisch bei der Server-Erstellung mitinstalliert. Server (`/server`
+      als Base Directory, Nixpacks) UND Client (`/client`, als statische Seite mit "Is it a
+      SPA?"-Haken fuer React-Router-Unterstuetzung) als zwei getrennte Ressourcen in Coolify
+      angelegt.
+    - **Ein Bugfix war noetig, um ueberhaupt zu deployen:** `server/package-lock.json` war nicht
+      mehr exakt synchron zur `package.json` - fiel bei Render nicht auf (nutzt das lockerere
+      `npm install`), brach aber bei Coolify/Nixpacks' strengerem `npm ci` sofort ab ("Missing: X
+      from lock file" fuer dutzende Pakete). Fix: Lock-Datei frisch regeneriert
+      (`npm install --package-lock-only`), mit `npm ci` gegengetestet - lief danach fehlerfrei.
+    - **Umgebungsvariablen wie bei Render:** `JWT_SECRET`, `PORT=4000`, `CLIENT_ORIGIN` (auf die
+      tatsaechliche Coolify-Client-URL gesetzt, nicht mehr die alte Render-URL - ohne diese
+      Anpassung schlug der erste Login-Versuch mit "Failed to fetch"/CORS-Blockade fehl).
+    - **Persistenter Speicher fuer die SQLite-Datenbank eingerichtet** (Coolify Volume Mount,
+      Destination Path `/app/data`) - getestet: Server-Redeploy ausgefuehrt, Spielstand blieb
+      vollstaendig erhalten.
+    - **Datenverlust beim Umzug selbst war ausdruecklich vom Nutzer akzeptiert** (frische, neu
+      angelegte Datenbank statt Migration von Render) - kein Show-Stopper, wie vorher besprochen.
+    - Voller End-to-End-Test erfolgreich: Registrierung, Login, Spielen, Redeploy-Persistenz-Test.
+    - Render bleibt vorerst PARALLEL bestehen (noch nicht gekuendigt) - erst nach einer
+      Beobachtungsphase (insbesondere: haelt der naechste grosse Kampf jetzt stand) und nachdem
+      auch die Ehefrau (SchnelleRatte) sich auf der neuen Umgebung registriert hat, soll der
+      Render-Service geloescht werden.
+
+75. **Nach dem erfolgreichen Server-Umzug: temporaere Performance-Notmassnahmen zurueckgenommen,
+    Notruf-Feature komplett aus dem Code entfernt (Nutzerentscheidung).**
+    - **Jaeger-Deckelung fuer Piraten (Punkt 73) deaktiviert** - nicht geloescht, sondern per
+      neuem Schalter `NPC_JAEGER_CAP_ENABLED = false` (`combatConstants.ts`) abschaltbar/
+      wieder aktivierbar gehalten, falls die Serverlast doch nochmal zum Problem wird. Getestet:
+      Piraten generieren wieder unbegrenzt Jaeger-Klasse wie vor Punkt 73.
+    - **KI-Spieler (Punkt 66) reaktiviert** - `ensureBotUsers()` beim Serverstart (`index.ts`)
+      und `runBotTurn()` im globalen Heartbeat (`heartbeat.ts`) wieder eingebunden (vorher durch
+      `removeBotUsers()` ersetzt gewesen). Getestet: beide KI-Spieler ("KI-Vega", "KI-Nyx")
+      werden beim Serverstart korrekt neu angelegt.
+    - **Notruf-Feature vollstaendig aus dem Code entfernt** (nicht nur deaktiviert wie zuvor) -
+      auf ausdruecklichen Nutzerwunsch, nachdem die eigentliche Notruf-Engine (`events.ts`)
+      bereits zuvor entfernt worden war. Aufgeraeumt wurden alle verbliebenen toten Ueberreste:
+      - Tote `resolveGroupEvent()`-Funktion in `groupOps.ts` entfernt (war laengst unerreichbar,
+        da die Erstellung eines Multiplayer-Notrufs schon vorher serverseitig blockiert wurde).
+      - `GroupOperation.kind` server- und clientseitig auf nur noch `'expedition'` verengt,
+        `eventName`-Feld entfernt, `/party/create`-Route lehnt `kind: 'event'` konsequent ab.
+      - `notrufCompleted`-Statistik komplett aus Typen, Punkteberechnung (`stats.ts`) und
+        Initialisierung entfernt (server- und clientseitig).
+      - `ALLY_STATS`/`useAllyStats` (nur fuer Notruf-Verbuendete gedacht, seit der Entfernung
+        nie mehr auf `true` gesetzt) komplett aus `combat.ts`, `combat.worker.ts` und
+        `combatRunner.ts` entfernt.
+      - Tote Daten-Konstanten bereinigt: `notruf`-Eintraege in `WAVE_PROFILE_WEIGHTS`,
+        `WAVE_OUTLIER_CHANCE`, `BATTLE_MODIFIER_CHANCE` (combatConstants.ts), `EVENT_*`-
+        Konstanten und `NOTRUF_POSITION` (economy.ts/galaxyConstants.ts).
+      - Client-UI vollstaendig entfernt: `EventState`-Typ, `event`/`nextEventCheck`-Felder auf
+        `PlayerState`, Notruf-Badge in der Kopfleiste (`ResourceBar.tsx`), Notruf-Positionsmarker
+        und Countdown-Anzeige in der Galaxie-Karte (`Galaxie.tsx`), komplette Notruf-
+        Flottenauswahl-UI in beiden Zustaenden aktiv/wartend (`Sektor.tsx`), `joinEvent`-Aufruf
+        (`api/client.ts`/`GameContext.tsx`).
+    - Getestet: Server UND Client kompilieren/bauen nach der kompletten Entfernung fehlerfrei,
+      voller HTTP-Regressionstest (Registrierung, Kampfsimulator, Gebaeude-Module) erfolgreich.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
@@ -1746,52 +1807,4 @@ Werte-Anstieg zu Kosten-Anstieg wurde angesprochen (1:1 skalieren = wirtschaftli
 Werte staerker als Kosten steigen lassen = zusaetzlicher Bonus fuers Umsteigen), aber noch NICHT
 final entschieden - Nutzer wollte das erst nach einer Beobachtungsphase der Server-Last
 klaeren.
-
-### Geplanter Server-Umzug: Render -> Hetzner + Coolify (WICHTIG fuer einen kuenftigen neuen Chat)
-
-**Status: pausiert, wartet auf PC-Zugriff des Nutzers - kein technischer Blocker im Code, rein
-eine Verfuegbarkeits-Frage beim Nutzer.** Dieser Abschnitt ist bewusst ausfuehrlich gehalten,
-damit ein KUENFTIGER neuer Chat (falls dieser hier zu voll wird, um weiterzumachen) sofort
-versteht, worum es geht, ohne die gesamte bisherige Unterhaltung nachlesen zu muessen.
-
-**Worum es geht:** Nutzer moechte vom aktuellen Render-Starter-Tarif (0,5 CPU / 512MB RAM) zu
-einem eigenen Hetzner-VPS wechseln - Typ **CX33** (4 vCPU / 8GB RAM / 80GB SSD, Standort
-Helsinki, ~10€/Monat), verwaltet ueber **Coolify** (Self-Hosted-Deployment-Plattform mit
-Docker-Unterbau, bietet ein Render-aehnliches Dashboard-Erlebnis: Deploys, Logs, Umgebungs-
-variablen, Neustarts alles per Browser-Oberflaeche statt roher Kommandozeile).
-
-**Warum:** urspruenglich als Reaktion auf wiederholte Server-Abstuerze bei grossen Kaempfen
-(siehe Punkte 66/69/72) - 8x mehr CPU-Leistung und 16x mehr RAM sollten die bisherigen Engpaesse
-mit hoher Wahrscheinlichkeit vollstaendig loesen, selbst OHNE weitere Software-Optimierungen.
-Bonus-Perspektive, falls der Umzug stattfindet: mit so viel mehr Leistung koennten die aktuell
-deaktivierten KI-Spieler (Punkt 66) und Notruf-Events (Punkt 66) eventuell wieder reaktiviert
-werden - noch keine feste Entscheidung, nur als Option festgehalten.
-
-**Warum es aktuell noch nicht passiert:** Nutzer hat aktuell KEINEN Zugriff auf einen PC/
-Terminal (nur Handy ueber Samsung DEX an einem Monitor, siehe fruehere Diagnose-Sitzung zum
-weissen Bildschirm) - SSH-Key-Erzeugung und die Hetzner-Ersteinrichtung erfordern das. Wird
-verschoben, bis ein PC verfuegbar ist. Nutzer hat bereits ein Hetzner-Projekt ("Expedition-
-Commander") angelegt und die Server-Konfiguration im Bestell-Dialog vorbereitet (CX33, Helsinki,
-Coolify-Image), aber noch NICHT kostenpflichtig bestellt.
-
-**Was zu tun ist, sobald der Nutzer wieder anfaengt (fuer den dann aktiven Chat):**
-1. Nutzer bestellt/richtet den Hetzner-Server ein (Claude kann dabei unterstuetzen, hat aber
-   **keine tiefe Coolify-Erfahrung wie bei Render** - auf Screenshots/Fehlermeldungen angewiesen,
-   genau wie das bisherige Vorgehen bei Render-Problemen in diesem Projekt).
-2. **Umgebungsvariablen aus der bestehenden `server/.env.example`/Render-Konfiguration
-   uebertragen:** `JWT_SECRET`, `PORT`, `CLIENT_ORIGIN` (Client-URL wird sich aendern, sobald der
-   Client ebenfalls umzieht oder weiterhin auf Render bleibt - noch nicht entschieden, ob NUR der
-   Server umzieht oder auch der Client).
-3. **UNBEDINGT auf persistenten Speicher fuer die SQLite-Datenbank achten** (Coolify-Volume fuer
-   das `data`-Verzeichnis) - sonst wiederholt sich der urspruengliche Datenverlust-Fehler von
-   Render (Punkt 59, fehlendes Verzeichnis bei jedem Redeploy) auf der neuen Plattform.
-4. **Datenverlust BEIM Umzug selbst ist ausdruecklich vom Nutzer AKZEPTIERT** - eine frische,
-   neu angelegte Datenbank auf dem neuen Server (statt einer muehsamen Daten-Migration von Render
-   herueber) ist voellig in Ordnung, kein Show-Stopper. Wichtig ist nur, dass es DANACH (also ab
-   dem produktiven Betrieb auf dem neuen Server) nicht wieder zu wiederholtem Datenverlust kommt
-   (siehe Punkt 3 oben).
-5. Nach erfolgreichem Umzug: pruefen, ob die Schiffs-/Verteidigungs-Skalierung (siehe Abschnitt
-   direkt oberhalb) ueberhaupt noch noetig ist, oder ob die reine Hardware-Verbesserung schon
-   ausreicht - war der urspruengliche Grund fuer beide Massnahmen (Server-Abstuerze bei grossen
-   Kaempfen).
 
