@@ -83,3 +83,9 @@ export function computeDomeSharedPool(gameData: GameData, defense: Record<string
   });
   return total * schildMultiplier(gameData, research);
 }
+
+// Lesbare deutsche Bezeichnung fuer die Antriebsklasse eines Schiffs (siehe driveType in
+// types/game.ts) - fuer die Geschwindigkeits-Anzeige im Schiffs-Info-Popup.
+export function driveTypeLabel(driveType: 'rakete' | 'impuls' | 'hyperraum'): string {
+  return { rakete: 'Raketenantrieb', impuls: 'Impulsantrieb', hyperraum: 'Hyperraumantrieb' }[driveType];
+}
