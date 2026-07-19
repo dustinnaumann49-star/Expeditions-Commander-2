@@ -432,20 +432,29 @@ client/
     (`RAID_WAVE_JITTER_FACTOR`), letzte Welle hart auf das Fensterende gekappt - "muss innerhalb
     der Stunde abgeschlossen sein" gilt dadurch garantiert.
     - **Jede Welle ist ein vollständiger, unabhängiger Kampf** gegen eine frisch gewürfelte
-      Feindflotte, deren Stärke `1/RAID_WAVE_COUNT` der Gesamt-Feindstärke trägt
-      (`waveTargetPower` in `resolveOneWave()`) - Gesamtstärke über alle Wellen bleibt damit
-      gleich zu einem früheren Einzel-Raid, nicht 5x so hart. Verteidiger-Flotte/-Verteidigung
-      tragen Verluste vorheriger Wellen weiter (kein Reset zwischen Wellen, `DEFENSE_REPAIR_PERCENT`
-      greift weiterhin pro Welle).
+      Feindflotte. Deren Stärke skaliert bewusst NICHT wie sonst im Spiel üblich auf der Flotte,
+      sondern auf der aktuellen VERTEIDIGUNGSANLAGEN-Stärke (`defensePower` in
+      `resolveOneWave()`, Summe aus `waffen+schild+panzerung` aller Verteidigungsanlagen,
+      Nutzerentscheidung - durchbricht bewusst die sonst geltende Entkopplungs-Regel, siehe Punkt
+      22), MULTIPLIZIERT mit einer festen Eskalationstabelle über die 5 Wellen: 70% / 80% / 90% /
+      100% / 110% (`RAID_WAVE_FACTORS` in `economy.ts`, ersetzt die vorherige zufällige
+      Grund-Varianz `RAID_MULTIPLIER_ROLL`, die für Raids nicht mehr verwendet wird). Verteidiger-
+      Flotte/-Verteidigung tragen Verluste vorheriger Wellen weiter (kein Reset zwischen Wellen,
+      `DEFENSE_REPAIR_PERCENT` greift weiterhin pro Welle). `RAID_MIN_TARGET_POWER` wirkt als
+      Untergrenze für die Verteidigungsanlagen-Basis selbst (nicht mehr pro Welle geteilt) -
+      schützt reine Flotten-Accounts ohne nennenswerte Verteidigungsanlagen vor einem quasi
+      wirkungslosen Raid.
     - **Ist nichts mehr zu verteidigen** (von Anfang an oder durch vorherige Wellen aufgerieben,
       `hasAnyDefense()`), werden die restlichen Wellen ohne Kampf übersprungen statt einzeln
       sinnlos simuliert - eine einzige Sammel-Nachricht statt mehrfacher Leer-Wellen-Spam.
     - **Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung** nach der
       letzten Welle (`finalizeRaidWaves()`): ein Container pro gewonnener Welle (Silber), bei
       einer PERFEKTEN Verteidigung (alle `RAID_WAVE_COUNT` Wellen gewonnen) werden alle zu Gold
-      aufgewertet. Bergungs-DM und Ressourcen-Diebstahl (nur falls nicht perfekt verteidigt)
-      greifen ebenfalls nur EINMAL am Ende, basierend auf der Summe/dem Endstand über alle Wellen
-      (`raid.accumulatedDestroyed`), nicht pro Welle.
+      aufgewertet UND zusätzlich (on top, nicht als Ersatz) ein Elite-Container vergeben - sonst
+      nur über den Piratenkapitän im Elite-Bollwerk erreichbar. Bergungs-DM und Ressourcen-
+      Diebstahl (nur falls nicht perfekt verteidigt) greifen ebenfalls nur EINMAL am Ende,
+      basierend auf der Summe/dem Endstand über alle Wellen (`raid.accumulatedDestroyed`), nicht
+      pro Welle.
     - **Statistik-Unterscheidung:** `raidsRepelledFull`/`raidsRepelledPartial` zählen genau EINMAL
       pro GESAMTEM Raid (sonst würde ein Raid bis zu 5x in die Bestenliste einzahlen),
       `enemiesDestroyed`/`ownShipsLost` dagegen live PRO Welle, sobald sie geschlagen ist.
@@ -570,5 +579,6 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Extraktions-Entscheidung statt Massenwellen).
 - Zeit-Gutscheine für Bauzeit auf Schiffe/Verteidigung/Gebäude aufgeteilt (vorher nur Schiffe);
   Schiffe/Verteidigung wirken jetzt auf alle parallelen Bauplätze, nicht mehr nur den ersten.
-- Raids laufen jetzt in 5 Wellen über 1 Stunde nach Ankunft statt als einzelner Kampf; Gesamt-
-  Feindstärke bleibt gleich, Belohnung gibt es erst als Abschluss-Bonus nach der letzten Welle.
+- Raids laufen jetzt in 5 Wellen über 1 Stunde nach Ankunft statt als einzelner Kampf; Feindstärke
+  skaliert auf der Verteidigungsanlagen-Stärke (70%→110% über die Wellen), Belohnung gibt es erst
+  als Abschluss-Bonus nach der letzten Welle (plus Elite-Container bei perfekter Verteidigung).
