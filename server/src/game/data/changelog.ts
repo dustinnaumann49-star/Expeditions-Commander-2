@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '19.07.2026',
+    title: 'Zeit-Gutscheine für Bauzeit aufgeteilt: Schiffe, Verteidigung, Gebäude',
+    changes: [
+      'Der bisherige "Zeit-Gutschein Bau" wirkte nur auf Schiffe. Jetzt gibt es ihn getrennt für Schiffe, Verteidigung und Gebäude - im Shop und als Container-Belohnung.',
+      'Gutscheine für Schiffe und Verteidigung wirken jetzt auf ALLE gerade laufenden Bauaufträge dieser Kategorie gleichzeitig (bis zu 3 parallele Bauplätze), nicht mehr nur auf den ersten - genau wie es beim Forschungs-Gutschein schon war.',
+      'Gebäude haben ohnehin nur einen Bauplatz, dort ändert sich an der Wirkung nichts, nur die Auswahl im Shop/Inventar ist jetzt eindeutig.',
+      'Bereits vorhandene alte "Zeit-Gutschein Bau"-Exemplare in eurem Inventar bleiben gültig und wirken weiterhin auf Schiffe.',
+    ],
+  },
+  {
+    date: '19.07.2026',
     title: 'Neu: Sektor P10 – Piratenadmiral (Boss-Gefecht)',
     changes: [
       'Zweiter Multiplayer-Sektor: ein einzelner, extrem zäher Piratenadmiral + kleine Elite-Eskorte statt vieler Gegner - nur Kreuzer-Klasse und größere Schiffe erlaubt.',
