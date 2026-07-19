@@ -24,7 +24,6 @@ export function ResourceBar() {
   const now = serverNow();
 
   const ownRaid = state.raid && !state.raid.resolved ? state.raid : null;
-  const ownEvent = state.event && !state.event.started ? state.event : null;
   const otherRaidsCount = activeRaids.length;
 
   const energyProduced = state.energyProduced ?? (gameData ? getEnergyProduced(gameData, state) : 0);
@@ -60,16 +59,11 @@ export function ResourceBar() {
         </span>
       </div>
 
-      {(ownRaid || ownEvent || otherRaidsCount > 0) && (
+      {(ownRaid || otherRaidsCount > 0) && (
         <div className="res-group" style={{ gap: 8 }}>
           {ownRaid && (
             <button className="alert-badge" onClick={() => navigate('/sektor')}>
               ⚠ Raid im Anflug · {formatTime(ownRaid.arrivalTime - now)}
-            </button>
-          )}
-          {ownEvent && (
-            <button className="alert-badge" onClick={() => navigate('/sektor')}>
-              📡 Notruf aktiv
             </button>
           )}
           {otherRaidsCount > 0 && (
