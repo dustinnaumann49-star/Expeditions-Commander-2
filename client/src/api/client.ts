@@ -61,8 +61,6 @@ export const api = {
     request<PlayerState>('/game/mission/send', { method: 'POST', body: JSON.stringify({ sektorId, selection }) }),
   recallMission: (missionId: string) =>
     request<PlayerState>('/game/mission/recall', { method: 'POST', body: JSON.stringify({ missionId }) }),
-  joinEvent: (selection: Record<string, number>) =>
-    request<PlayerState>('/game/event/join', { method: 'POST', body: JSON.stringify({ selection }) }),
   openContainer: (containerId: string) =>
     request<PlayerState>('/game/inventory/open', { method: 'POST', body: JSON.stringify({ containerId }) }),
   redeemRewardItem: (itemId: string) =>
@@ -85,7 +83,7 @@ export const api = {
     request<PlayerState>('/game/messages/clear', { method: 'POST', body: JSON.stringify({ type }) }),
   listUsers: () => request<{ users: AppUser[] }>('/game/users'),
   listMyParties: () => request<{ operations: GroupOperation[] }>('/game/party/list'),
-  createParty: (kind: 'expedition' | 'event', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) =>
+  createParty: (kind: 'expedition', sektorId: string | undefined, ships: Record<string, number>, inviteUserIds: number[]) =>
     request<PlayerState>('/game/party/create', { method: 'POST', body: JSON.stringify({ kind, sektorId, ships, inviteUserIds }) }),
   respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) =>
     request<PlayerState>('/game/party/respond', { method: 'POST', body: JSON.stringify({ opId, accept, ships }) }),
@@ -101,7 +99,6 @@ export const api = {
       occupants: GalaxyOccupant[];
       pirateBases: GalaxyPosition[];
       sektorPositions: SektorGalaxyPosition[];
-      notrufPosition: GalaxyPosition;
       incomingDeployments: IncomingDeployment[];
       galaxySystems: number;
       galaxyPositions: number;
