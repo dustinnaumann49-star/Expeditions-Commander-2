@@ -481,7 +481,7 @@ async function resolveRaid(state: PlayerState, currentUserId?: number, currentUs
   });
 
   // Bei vollstaendig abgewehrtem Angriff (echter "Sieg") 1-3 Container zufaellig, sonst weiterhin
-  // genau 1 (analog zu Notruf-Events, siehe events.ts) - Verteidiger UND alle Verstaerker
+  // genau 1 - Verteidiger UND alle Verstaerker
   // bekommen dieselbe Anzahl/Stufe (gemeinsamer Ausgang, keine Aufteilung, siehe Punkt 5).
   const containerCount = piratesRepelled ? 1 + Math.floor(Math.random() * 3) : 1;
   const containerReward: 'silber' | 'gold' = piratesRepelled ? 'gold' : 'silber';

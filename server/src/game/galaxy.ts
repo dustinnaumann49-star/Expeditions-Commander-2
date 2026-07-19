@@ -200,8 +200,7 @@ export function processGalaxyDeployments(state: PlayerState): void {
 // ========== RAID-INTEGRATION ==========
 // Fuer resolveRaid() (raids.ts): alle aktuell BEI target haltenden (angekommen, nicht
 // zurueckgerufen) Fremdflotten anderer Spieler - die nehmen automatisch an der Verteidigung
-// gegen den Piraten-Raid teil (kein PvP, nur diese eine Interaktion). Notruf-Events sind bewusst
-// NICHT eingebunden (siehe README - eigenes System, kommt spaeter).
+// gegen den Piraten-Raid teil (kein PvP, nur diese eine Interaktion).
 export interface HoldingDeployment {
   deployment: GalaxyDeployment;
   ownerState: PlayerState;

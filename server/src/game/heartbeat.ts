@@ -1,9 +1,9 @@
 import { listAllUsers } from '../db.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { processMissions } from './missions.js';
-import { processEventTimer } from './events.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
+import { runBotTurn } from './bot.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu tick()
@@ -11,7 +11,7 @@ import { processAllDepartedGroupOperations } from './groupOps.js';
  * JEDEN registrierten Nutzer nacheinander, unabhaengig davon, ob und wann er zuletzt online war.
  *
  * Grund fuer diese zweite Verarbeitungs-Schiene: Ohne sie haengt JEDE Spielmechanik mit festen
- * Zeitpunkten (Raid-/Notruf-Checkpoints, Missions-Ankunft, Multiplayer-Expeditions-Fortschritt)
+ * Zeitpunkten (Raid-Checkpoints, Missions-Ankunft, Multiplayer-Expeditions-Fortschritt)
  * daran, dass IRGENDEIN Spieler zufaellig gerade online ist und eine Anfrage stellt - bei null
  * aktiven Spielern (z.B. nachts) passiert schlicht gar nichts, komplett unabhaengig von den in
  * economy.ts festgelegten Checkpoints. Gedacht zum Aufruf durch einen externen Taktgeber (Render
@@ -28,17 +28,19 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     // Heartbeat-Aufruf (alle 2 Minuten, dauerhaft) niemals verarbeitet, komplett unsichtbar (der
     // Heartbeat laeuft unabhaengig von jedem Spieler-Request, ein Fehler hier zeigt sich nirgends
     // in der UI). Genau dieses Muster wurde als Verdacht bestaetigt, nachdem trotz aktivem
-    // Heartbeat ueber mehrere Checkpoints hinweg bei KEINEM von zwei Spielern ein Raid/Notruf
+    // Heartbeat ueber mehrere Checkpoints hinweg bei KEINEM von zwei Spielern ein Raid
     // ausgeloest wurde - bei nur 2 Nutzern haette ein Fehler beim ersten in der Liste ausgereicht,
     // um den zweiten (und alle Checkpoints danach) fuer immer stillzulegen.
     try {
       const state = loadPlayerState(u.id);
       await processMissions(state);
-      await processEventTimer(state);
       await processRaidTimer(state);
-      // KI-Spieler-Feature wieder zurueckgezogen (Performance-Notmassnahme, siehe README) -
-      // removeBotUsers() in index.ts entfernt bestehende Bot-Accounts beim Serverstart, dieser
-      // Aufruf hier ist bewusst nicht mehr vorhanden.
+      // KI-Spieler-Feature nach dem Server-Umzug (Hetzner, siehe README) wieder REAKTIVIERT -
+      // laeuft NACH der normalen Zeit-Verarbeitung, damit z.B. gerade fertiggestellte Gebaeude/
+      // Forschung schon beruecksichtigt sind, bevor der naechste Schritt geplant wird.
+      if (u.isBot) {
+        await runBotTurn(state, users);
+      }
       state.lastUpdate = Date.now();
       savePlayerState(state);
     } catch (err) {

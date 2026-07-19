@@ -1,6 +1,5 @@
 import { parentPort } from 'node:worker_threads';
 import { resolveCombat, resolveCombatMultiOwner, getEffectiveStats, baseStats } from './combat.js';
-import { ALLY_STATS } from './data/economy.js';
 import type { CombatWorkerRequest } from './combatRunner.js';
 
 // PERFORMANCE (siehe README): dieser Worker wird jetzt aus einem kleinen, WIEDERVERWENDETEN Pool
@@ -11,10 +10,7 @@ import type { CombatWorkerRequest } from './combatRunner.js';
 // Dafuer wird hier auf WIEDERHOLTE `postMessage`-Anfragen gelauscht, statt (wie vorher) einmalig
 // `workerData` beim Start zu lesen.
 function statsFnFor(request: CombatWorkerRequest) {
-  return (id: string) => {
-    if (request.useAllyStats && id === 'verbuendete') return ALLY_STATS;
-    return getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive);
-  };
+  return (id: string) => getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive);
 }
 
 parentPort?.on('message', (request: CombatWorkerRequest) => {

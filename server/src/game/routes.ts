@@ -5,7 +5,6 @@ import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
-import { startEventMission } from './events.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
@@ -20,7 +19,7 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
-import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, NOTRUF_POSITION } from './data/galaxyConstants.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER } from './data/combatConstants.js';
@@ -162,7 +161,6 @@ gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
       occupants: listGalaxyOccupants(),
       pirateBases: PIRATE_BASES,
       sektorPositions,
-      notrufPosition: NOTRUF_POSITION,
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
       galaxySystems: GALAXY_SYSTEMS,
       galaxyPositions: GALAXY_POSITIONS,
@@ -176,7 +174,7 @@ gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
 // Vorschau (Distanz/Flugzeit/Treibstoff) VOR dem tatsächlichen Losschicken - rein lesend, verändert
 // nichts, damit der Client vor der Bestätigung genaue Werte anzeigen kann. Verallgemeinert: Ziel
 // entweder ein anderer SPIELER (targetUserId, fuer Halten-Fluege) ODER eine beliebige feste
-// Position (targetPosition, fuer Sektor-Missionen/Notruf/Elite-Bollwerk-Rendezvous) - genau eines
+// Position (targetPosition, fuer Sektor-Missionen/Elite-Bollwerk-Rendezvous) - genau eines
 // von beiden muss angegeben werden.
 gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
   try {
@@ -239,16 +237,6 @@ gameRouter.post('/mission/recall', (req: AuthedRequest, res) => {
   const { missionId } = req.body ?? {};
   if (typeof missionId !== 'string') return res.status(400).json({ error: 'missionId erforderlich.' });
   handleAction(req, res, (state) => recallMission(state, missionId));
-});
-
-// ---- Notruf-Event ----
-
-gameRouter.post('/event/join', (req: AuthedRequest, res) => {
-  const { selection } = req.body ?? {};
-  if (typeof selection !== 'object' || selection === null) {
-    return res.status(400).json({ error: 'selection erforderlich.' });
-  }
-  handleAction(req, res, (state) => startEventMission(state, selection));
 });
 
 // ---- Inventar / Container ----
@@ -368,7 +356,7 @@ gameRouter.get('/leaderboard', (_req: AuthedRequest, res) => {
   }
 });
 
-// ---- Gemeinsame Expeditionen / Notruf-Events (Einladung per Name, Ersteller startet manuell) ----
+// ---- Gemeinsame Expeditionen (Elite-Bollwerk, Einladung per Name, Ersteller startet manuell) ----
 
 gameRouter.get('/party/list', (req: AuthedRequest, res) => {
   try {
@@ -381,7 +369,7 @@ gameRouter.get('/party/list', (req: AuthedRequest, res) => {
 
 gameRouter.post('/party/create', (req: AuthedRequest, res) => {
   const { kind, sektorId, ships, inviteUserIds } = req.body ?? {};
-  if ((kind !== 'expedition' && kind !== 'event') || typeof ships !== 'object' || ships === null || !Array.isArray(inviteUserIds)) {
+  if (kind !== 'expedition' || typeof ships !== 'object' || ships === null || !Array.isArray(inviteUserIds)) {
     return res.status(400).json({ error: 'kind, ships und inviteUserIds erforderlich.' });
   }
   handleAction(req, res, (state) => createGroupOperation(state, kind, sektorId, ships, inviteUserIds));

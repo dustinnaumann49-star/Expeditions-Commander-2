@@ -13,7 +13,6 @@ export const POINT_WEIGHTS = {
   eliteBollwerkCheck: 150,
   raidRepelledFull: 40,
   raidRepelledPartial: 15,
-  notrufCompleted: 30,
   captainDefeated: 20,
   perEnemyDestroyed: 1,
 };
@@ -26,7 +25,6 @@ export function calculatePoints(stats: PlayerStats): number {
     stats.eliteBollwerkChecks * POINT_WEIGHTS.eliteBollwerkCheck +
     stats.raidsRepelledFull * POINT_WEIGHTS.raidRepelledFull +
     stats.raidsRepelledPartial * POINT_WEIGHTS.raidRepelledPartial +
-    stats.notrufCompleted * POINT_WEIGHTS.notrufCompleted +
     stats.captainsDefeated * POINT_WEIGHTS.captainDefeated +
     stats.enemiesDestroyed * POINT_WEIGHTS.perEnemyDestroyed
   );

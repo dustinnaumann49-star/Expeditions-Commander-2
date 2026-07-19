@@ -4,7 +4,7 @@ import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
-import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, EVENT_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
+import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson, listAllUsers, getUserById } from '../db.js';
 
@@ -87,8 +87,6 @@ export function defaultPlayerState(userId: number): PlayerState {
     raid: null,
     nextRaidCheck: nextFixedCheckpoint(Date.now(), raidHoursForUser(userId)),
     raidScheduleMigrated: true,
-    event: null,
-    nextEventCheck: nextFixedCheckpoint(Date.now(), EVENT_CHECK_HOURS_LOCAL),
     lastUpdate: Date.now(),
     stats: defaultPlayerStats(),
   };
@@ -103,7 +101,6 @@ export function defaultPlayerStats() {
     eliteBollwerkChecks: 0,
     raidsRepelledFull: 0,
     raidsRepelledPartial: 0,
-    notrufCompleted: 0,
     captainsDefeated: 0,
     enemiesDestroyed: 0,
     ownShipsLost: 0,
@@ -170,10 +167,9 @@ export function loadPlayerState(userId: number): PlayerState {
   if (parsed.raid && (parsed.raid as any).pirateBase === undefined) {
     parsed.raid = null;
   }
-  // Analog: altes Notruf-Format ohne ships/arriveTime (vor der Galaxie-Flugzeit-Erweiterung).
-  if (parsed.event && (parsed.event as any).arriveTime === undefined) {
-    parsed.event = null;
-  }
+  // Notruf-Events komplett entfernt (siehe README) - falls ein alter Spielstand noch die
+  // Felder event/nextEventCheck enthaelt, werden sie beim Speichern einfach ignoriert (kein
+  // Loeschen noetig, sie sind schlicht nicht mehr Teil des PlayerState-Typs).
   if (!parsed.stats) parsed.stats = defaultPlayerStats();
   const statsDefaults = defaultPlayerStats();
   (Object.keys(statsDefaults) as (keyof typeof statsDefaults)[]).forEach((key) => {

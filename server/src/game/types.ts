@@ -306,16 +306,6 @@ export interface RaidState {
   reinforcements: RaidReinforcement[];
 }
 
-export interface EventState {
-  id: string;
-  name: string;
-  spawnedAt: number;
-  deadline: number; // Frist zum Losschicken (nicht zur Ankunft/Ausloesung)
-  started: boolean; // Flotte losgeschickt, unterwegs zur Notruf-Position?
-  ships: Record<string, number>; // welche Flotte losgeschickt wurde (erst ab started gesetzt)
-  arriveTime: number; // wann die Flotte ankommt und der Kampf ausgeloest wird (erst ab started gueltig)
-}
-
 export interface FleetPreset {
   id: string;
   name: string;
@@ -342,9 +332,8 @@ export interface GroupOperationParticipant {
 
 export interface GroupOperation {
   id: string;
-  kind: 'expedition' | 'event';
+  kind: 'expedition'; // 'event' (Notruf) komplett entfernt - Multiplayer-Notruf war nie erreichbar (siehe groupOps.ts)
   sektorId?: string;
-  eventName?: string;
   creatorId: number;
   // Position des Erstellers zum Zeitpunkt der Erstellung - Einladungsempfaenger nutzen das fuer
   // die Rendezvous-Flugzeit-Vorschau (siehe /game/galaxy/preview), bevor sie ihre Flotte
@@ -386,7 +375,6 @@ export interface PlayerStats {
   eliteBollwerkChecks: number; // erfolgreiche Stunden-Checks (nicht ganze Expeditionen)
   raidsRepelledFull: number;
   raidsRepelledPartial: number;
-  notrufCompleted: number;
   captainsDefeated: number;
   enemiesDestroyed: number;
   ownShipsLost: number;
@@ -422,8 +410,6 @@ export interface PlayerState {
   raid: RaidState | null;
   nextRaidCheck: number;
   raidScheduleMigrated?: boolean; // Einmal-Migrationsflag, siehe state.ts loadPlayerState()
-  event: EventState | null;
-  nextEventCheck: number;
   lastUpdate: number;
   stats: PlayerStats;
 }

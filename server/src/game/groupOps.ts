@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { ALLY_STATS, MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
+import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -19,7 +19,7 @@ import { pushMessage } from './messages.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import type { ActionResult } from './actions.js';
-import { NOTRUF_MULTIPLIER_ROLL, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
+import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import type { CombatUnitResult, CombatDetail, ContainerTier, FarmDetail, GroupOperation, GroupOperationParticipant, PlayerState } from './types.js';
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -44,20 +44,13 @@ function addContainerToState(state: PlayerState, tier: ContainerTier) {
 
 export function createGroupOperation(
   state: PlayerState,
-  kind: 'expedition' | 'event',
+  kind: 'expedition',
   sektorId: string | undefined,
   ships: Record<string, number>,
   inviteUserIds: number[]
 ): ActionResult {
-  if (kind === 'expedition') {
-    if (sektorId !== 'piraten_elite') {
-      return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk möglich.' };
-    }
-  }
-  if (kind === 'event') {
-    // Notruf ist seit Einfuehrung der Galaxie-Positionen NUR NOCH SOLO moeglich (echte Flugzeit
-    // zur festen Notruf-Position, siehe events.ts) - das gemeinsame Multiplayer-Pendant entfaellt.
-    return { ok: false, error: 'Notruf-Events sind jetzt nur noch solo möglich (siehe Sektor-Tab), nicht mehr über gemeinsame Operationen.' };
+  if (sektorId !== 'piraten_elite') {
+    return { ok: false, error: 'Gemeinsame Expeditionen sind nur im Sektor P9 – Elite-Bollwerk möglich.' };
   }
   const totalShips = Object.values(ships).reduce((a, b) => a + (b || 0), 0);
   if (totalShips === 0) return { ok: false, error: 'Keine Schiffe ausgewählt.' };
@@ -88,10 +81,7 @@ export function createGroupOperation(
   const op: GroupOperation = {
     id: newId('groupop'),
     kind,
-    sektorId: kind === 'expedition' ? sektorId : undefined,
-    // 'event' wird oben bereits abgelehnt - kind ist ab hier immer 'expedition', eventName bleibt
-    // ungesetzt (Feld existiert im Typ nur noch fuer alte, bereits gespeicherte Datensaetze).
-    eventName: undefined,
+    sektorId,
     creatorId: state.userId,
     creatorPosition: state.galaxyPosition,
     status: 'inviting',
@@ -218,10 +208,6 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
     p.dmFound = 0;
   });
 
-  if (op.kind === 'event') {
-    return await resolveGroupEvent(op, accepted, participantStates, state);
-  }
-
   // Gemeinsamer Weiterflug vom ERSTELLER aus (alle Flotten sind ja jetzt dort vereint) zum
   // eigentlichen Ziel - echte, distanzabhaengige Flugzeit wie bei Solo-Sektor-Missionen, mit der
   // Geschwindigkeit des langsamsten Schiffs UEBER ALLE vereinten Flotten hinweg.
@@ -256,170 +242,6 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
       savePlayerState(pState);
     }
   });
-  return { ok: true };
-}
-
-// ========== NOTRUF-EVENT (loest sofort auf, kein Zeitplan noetig) ==========
-
-async function resolveGroupEvent(
-  op: GroupOperation,
-  accepted: GroupOperationParticipant[],
-  participantStates: Map<number, PlayerState>,
-  requesterState: PlayerState
-): Promise<ActionResult> {
-  const totalSentPower = accepted.reduce((sum, p) => sum + (p.contributedPower || 0), 0);
-  const allyCount = Math.max(8, Math.round(totalSentPower / 18000));
-
-  // Feindstaerke war frueher exakt 100% der eingesetzten Flotten-Power ohne jede Schwankung - jetzt
-  // mit leichter Grund-Varianz (NOTRUF_MULTIPLIER_ROLL) plus seltenem Ausreisser und gewuerfeltem
-  // Zusammensetzungs-Profil, siehe combatConstants.ts.
-  const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(NOTRUF_MULTIPLIER_ROLL, 'notruf');
-  const targetPower = totalSentPower * rolledMultiplier;
-  const profile = pickWaveProfile('notruf');
-  const battleModifier = rollBattleModifier('notruf');
-  const npcShips = generateFallbackFleet(targetPower, profile);
-  const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
-
-  const contributions: OwnedFleetContribution[] = contributionsFromParticipants(op, participantStates);
-  contributions.push({ ownerKey: 'verbuendete', ships: { verbuendete: allyCount }, useAllyStats: true });
-
-  const research = participantStates.get(op.creatorId)!.research;
-  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research, battleModifier });
-
-  const playerResults: CombatUnitResult[] = [];
-  accepted.forEach((p) => {
-    const pState = participantStates.get(p.userId)!;
-    Object.entries(p.ships).forEach(([id, sent]) => {
-      const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
-      const lost = sent - survived;
-      pState.fleet[id] = (pState.fleet[id] || 0) + survived;
-      const eff = getEffectiveStats(id, pState.research);
-      const statKey = `${p.userId}:${id}`;
-      playerResults.push({
-        id,
-        name: shipName(id),
-        ownerUsername: p.username,
-        sent,
-        survived,
-        lost,
-        waffen: Math.round(eff.waffen),
-        schild: Math.round(eff.schild),
-        panzerung: Math.round(eff.panzerung),
-        dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
-        dmgDealt: Math.round(result.shotsA.dmgDealt[statKey] || 0),
-        shotsFired: result.shotsA.shotsFired[statKey] || 0,
-        hits: result.shotsA.hits[statKey] || 0,
-        rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
-        shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
-        shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
-      });
-    });
-  });
-
-  const allySurvived = result.survivorsByOwner['verbuendete']?.verbuendete || 0;
-  const allyResult: CombatUnitResult = {
-    id: 'verbuendete',
-    name: 'Verbündete Flotte',
-    sent: allyCount,
-    survived: allySurvived,
-    lost: allyCount - allySurvived,
-    waffen: Math.round(ALLY_STATS.waffen),
-    schild: Math.round(ALLY_STATS.schild),
-    panzerung: Math.round(ALLY_STATS.panzerung),
-    dmgTaken: Math.round(result.dmgTakenA['verbuendete'] || 0),
-    dmgDealt: Math.round(result.shotsA.dmgDealt['verbuendete'] || 0),
-    shotsFired: result.shotsA.shotsFired['verbuendete'] || 0,
-    hits: result.shotsA.hits['verbuendete'] || 0,
-    rapidFireTriggers: result.shotsA.rapidFireTriggers['verbuendete'] || 0,
-    shieldDmgTaken: Math.round(result.shieldDmgTakenA['verbuendete'] || 0),
-    shieldRegen: Math.round(result.shieldRegenA['verbuendete'] || 0),
-  };
-
-  const npcResults: CombatUnitResult[] = npcIds.map((id) => {
-    const base = baseStats(id);
-    const sent = npcShips[id];
-    const survivedCount = result.survivorsB[id] || 0;
-    return {
-      id,
-      name: shipName(id),
-      count: sent,
-      waffen: Math.round(base.waffen),
-      schild: Math.round(base.schild),
-      panzerung: Math.round(base.panzerung),
-      dmgTaken: Math.round(result.dmgTakenB[id] || 0),
-      dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
-      destroyedCount: sent - survivedCount,
-      survivedCount,
-      destroyed: survivedCount <= 0,
-      shotsFired: result.shotsB.shotsFired[id] || 0,
-      hits: result.shotsB.hits[id] || 0,
-      rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
-      shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
-      shieldRegen: Math.round(result.shieldRegenB[id] || 0),
-    };
-  });
-
-  const npcFullyDestroyed = npcIds.every((id) => result.survivorsB[id] <= 0);
-  const playerWiped = accepted.every((p) => Object.keys(p.ships).every((id) => (result.survivorsByOwner[String(p.userId)]?.[id] || 0) <= 0));
-  const anyPlayerLoss = playerResults.some((r) => (r.lost || 0) > 0);
-  const outcome = result.retreated
-    ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
-    : playerWiped || !npcFullyDestroyed
-    ? 'Rückzug – Notruf gescheitert'
-    : 'Notruf erfolgreich – Gemeinsam geholfen';
-
-  // Statistik (siehe stats.ts) - jeder Teilnehmer bekommt denselben Ausgang gutgeschrieben.
-  const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
-  accepted.forEach((p) => {
-    const pState = participantStates.get(p.userId)!;
-    pState.stats.enemiesDestroyed += destroyedEnemyCount;
-    if (!playerWiped && npcFullyDestroyed) pState.stats.notrufCompleted++;
-  });
-
-  // Belohnung gibt es NUR noch bei echtem Sieg, wie beim Solo-Pendant in events.ts (Punkt 35) -
-  // 1-3 Container zufaellig, jeder Teilnehmer bekommt dieselbe Anzahl (Mehrspieler-Belohnungen
-  // werden nie geteilt/unterschiedlich verteilt, siehe README "Wichtige Punkte" Punkt 5).
-  let containerCount = 0;
-  let containerTier: 'silber' | 'gold' | null = null;
-  if (!playerWiped && npcFullyDestroyed) {
-    containerTier = anyPlayerLoss ? 'silber' : 'gold';
-    containerCount = 1 + Math.floor(Math.random() * 3); // 1-3
-    accepted.forEach((p) => {
-      for (let i = 0; i < containerCount; i++) addContainerToState(participantStates.get(p.userId)!, containerTier!);
-    });
-  }
-  const rewardText = containerTier
-    ? containerTier === 'gold'
-      ? `🏆 Jeder Teilnehmer erhält ${containerCount}x Gold-Container`
-      : `📦 Jeder Teilnehmer erhält ${containerCount}x Silber-Container`
-    : '';
-  const teilnehmerListe = accepted.map((p) => p.username).join(', ');
-  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Gegenwehr]' : outlier === 'schwach' ? ' [Auffällig schwache Gegenwehr]' : '';
-  const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-
-  const detail: CombatDetail = {
-    sektorName: `${op.eventName} (gemeinsam: ${teilnehmerListe})`,
-    outcome,
-    roundsFought: result.roundsFought,
-    npcResults,
-    playerResults,
-    allyResult,
-    replay: result.replay,
-    rewards: containerTier ? { containerTier } : undefined,
-  };
-  const messageText = `${op.eventName}${waveText} (gemeinsam mit ${teilnehmerListe}): ${outcome} (${result.roundsFought} Runden). ${rewardText}${modifierText}`;
-
-  accepted.forEach((p) => {
-    const pState = participantStates.get(p.userId)!;
-    pushMessage(pState, 'kampf', messageText, detail);
-    if (p.userId !== requesterState.userId) savePlayerState(pState);
-  });
-
-  op.status = 'resolved';
-  op.resultMessage = messageText;
-  op.resultDetail = detail;
-  saveOp(op);
-
   return { ok: true };
 }
 

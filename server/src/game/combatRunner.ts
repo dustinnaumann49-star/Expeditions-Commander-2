@@ -24,7 +24,6 @@ export interface CombatWorkerRequest {
   research: Record<string, number>;
   defenseCounts?: Record<string, number>;
   kampfBoostActive?: boolean;
-  useAllyStats?: boolean;
   sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
   // Ob Seite A sich bei 50% Verlusten zurueckziehen kann (Standard: ja). Bei der Heimatverteidigung
   // (Raids) MUSS das auf false stehen - man kann sich nicht aus der Verteidigung der eigenen Basis
@@ -147,7 +146,7 @@ export function runCombatInWorker(request: CombatWorkerRequest): Promise<CombatR
 
 /**
  * Wie runCombatInWorker, aber fuer Kaempfe mit mehreren Beitragenden (Gruppen-Expeditionen,
- * gemeinsame Notruf-Events, Raid-Verstaerkung) - `request.contributions` statt `sideAShips`.
+ * Raid-Verstaerkung) - `request.contributions` statt `sideAShips`.
  */
 export function runMultiOwnerCombatInWorker(request: CombatWorkerRequest): Promise<MultiOwnerCombatResult> {
   return runWorker<MultiOwnerCombatResult>(request);

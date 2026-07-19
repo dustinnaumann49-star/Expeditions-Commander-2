@@ -154,7 +154,7 @@ function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
 
 /**
  * Ein "Zug" eines KI-Spielers - wird im globalen Heartbeat (heartbeat.ts) fuer jeden
- * Bot-Account nach der normalen Zeit-Verarbeitung (Missionen/Raids/Notruf) aufgerufen. Jeder
+ * Bot-Account nach der normalen Zeit-Verarbeitung (Missionen/Raids) aufgerufen. Jeder
  * Baustein benutzt dieselben Aktionsfunktionen wie ein Mensch ueber die UI - keine Sonderregeln,
  * keine abweichenden Kosten/Zeiten (siehe README).
  */

@@ -26,8 +26,8 @@ import {
   MULTI_TARGET_POWER_CORRECTION,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
-import { NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS } from './data/combatConstants.js';
-import { NPC_SPECIALS, ALLY_STATS } from './data/economy.js';
+import { NPC_JAEGER_CAP_ENABLED, NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS } from './data/combatConstants.js';
+import { NPC_SPECIALS } from './data/economy.js';
 import type { CombatStats, CombatReplay } from './types.js';
 
 // ========== GRUNDLAGEN ==========
@@ -67,11 +67,11 @@ export function getMaxCountFor(id: string): number {
 
 // PERFORMANCE-NOTMASSNAHME: wie getMaxCountFor(), aber zusaetzlich mit der NPC-only-Obergrenze
 // fuer Jaeger-Klasse (siehe NPC_JAEGER_MAX_COUNT, combatConstants.ts) - wird NUR bei der
-// Piraten-/Notruf-/Verteidigungs-Flottengenerierung verwendet (generateCappedFleet()), NIEMALS
+// Piraten-/Verteidigungs-Flottengenerierung verwendet (generateCappedFleet()), NIEMALS
 // fuer Spieler-eigene Baulimits (dort bleibt getMaxCountFor() unveraendert im Einsatz).
 function getNpcMaxCountFor(id: string): number {
   const base = getMaxCountFor(id);
-  if (NPC_JAEGER_CAPPED_IDS.includes(id)) return Math.min(base, NPC_JAEGER_MAX_COUNT);
+  if (NPC_JAEGER_CAP_ENABLED && NPC_JAEGER_CAPPED_IDS.includes(id)) return Math.min(base, NPC_JAEGER_MAX_COUNT);
   return base;
 }
 
@@ -227,7 +227,7 @@ export function combatFleetPower(
 // combatFleetPower()) aus den FORSCHUNGS-ANGEREICHERTEN Werten berechnet, machte jede Stufe
 // Waffen-/Schild-/Panzerungtechnik automatisch auch die Piraten staerker - die Forschung brachte
 // dadurch keinen echten Vorteil, nur eine gleichzeitig staerkere Gegenseite. Piraten/NPC-Angreifer
-// (Piraten-Sektoren, Notruf-Events, Raids, Elite-Bollwerk, Asteroiden-Eskorte) skalieren jetzt
+// (Piraten-Sektoren, Raids, Elite-Bollwerk, Asteroiden-Eskorte) skalieren jetzt
 // ausschliesslich auf Basis dieser Funktion - Forschung wirkt sich weiterhin auf die EIGENEN
 // Kampfwerte aus (ueber getEffectiveStats() bei der eigentlichen Kampfberechnung), aber nicht mehr
 // auf die Staerke des Gegners.
@@ -420,7 +420,6 @@ export interface OwnedFleetContribution {
   ships: Record<string, number>;
   research?: Record<string, number>; // eigene Forschung des Beitragenden - faellt sonst auf die Forschung von Seite A zurueck
   defenseCounts?: Record<string, number>; // fuer Schildkuppel-Bonus, falls relevant (z.B. Heimatverteidiger bei Raid)
-  useAllyStats?: boolean; // true = feste ALLY_STATS-Werte statt Forschungs-basierter Berechnung (Notruf-Verbuendete)
 }
 
 function buildUnitsMultiOwner(
@@ -428,11 +427,8 @@ function buildUnitsMultiOwner(
   fallbackStatsFn: (id: string) => CombatStats
 ): CombatUnit[] {
   const units: CombatUnit[] = [];
-  contributions.forEach(({ ownerKey, ships, research, defenseCounts, useAllyStats }) => {
-    const fn = (id: string) => {
-      if (useAllyStats) return ALLY_STATS;
-      return research ? getEffectiveStats(id, research, defenseCounts || {}) : fallbackStatsFn(id);
-    };
+  contributions.forEach(({ ownerKey, ships, research, defenseCounts }) => {
+    const fn = (id: string) => (research ? getEffectiveStats(id, research, defenseCounts || {}) : fallbackStatsFn(id));
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);
@@ -999,7 +995,7 @@ export interface MultiOwnerCombatResult extends CombatResult {
 
 /**
  * Wie resolveCombat, aber Seite A besteht aus mehreren Beitraegen unterschiedlicher Spieler
- * (Gruppen-Expeditionen, gemeinsame Notruf-Events, Raid-Verstaerkung). Jede Einheit wird intern mit
+ * (Gruppen-Expeditionen, Raid-Verstaerkung). Jede Einheit wird intern mit
  * ihrem Besitzer markiert, damit am Ende jeder Spieler exakt seine eigenen ueberlebenden Schiffe
  * zurueckbekommt (basierend auf dem tatsaechlichen Simulationsergebnis, nicht auf einer Schaetzung).
  */
