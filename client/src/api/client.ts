@@ -89,6 +89,8 @@ export const api = {
     request<PlayerState>('/game/party/respond', { method: 'POST', body: JSON.stringify({ opId, accept, ships }) }),
   cancelParty: (opId: string) => request<PlayerState>('/game/party/cancel', { method: 'POST', body: JSON.stringify({ opId }) }),
   startParty: (opId: string) => request<PlayerState>('/game/party/start', { method: 'POST', body: JSON.stringify({ opId }) }),
+  respondAdminEncounter: (opId: string, action: 'extract' | 'continue') =>
+    request<PlayerState>('/game/party/admiral-decide', { method: 'POST', body: JSON.stringify({ opId, action }) }),
   listActiveRaids: () => request<{ raids: ActiveRaidInfo[] }>('/game/raids/active'),
   getLeaderboard: () => request<{ leaderboard: LeaderboardEntry[] }>('/game/leaderboard'),
   simulateCombat: (sektorId: string, selection: Record<string, number>) =>
