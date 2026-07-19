@@ -1368,3 +1368,49 @@ client/
       TSX steht statt sauber in der CSS-Datei getrennt. Die nun ungenutzten CSS-Klassen wurden
       wieder aus `theme.css` entfernt.
 
+66. **PERFORMANCE-NOTMASSNAHME: Server brach auf dem Render-Starter-Tarif (0,5 CPU / 512MB RAM)
+    zusammen, als zwei Kampfaufloesungen (Raids bei beiden Spielern) exakt zur selben Zeit
+    (0:00 Uhr, gemeinsamer Checkpoint) liefen.** Jede Kampfaufloesung laeuft in einem eigenen
+    Worker-Thread (siehe Punkt 2/`combatRunner.ts`) - zwei davon gleichzeitig auf einer derart
+    knapp bemessenen Instanz hat den Server ueberlastet ("Instance failed" im Render-Log).
+    Drei Gegenmassnahmen, alle umgesetzt und getestet:
+    - **KI-Spieler-Feature wieder komplett zurueckgezogen** (war erst kurz zuvor eingefuehrt,
+      Punkt 58) - jeder zusaetzliche Account bedeutet zusaetzliche Verarbeitung (Bauen/Forschen/
+      Fliegen/Halten) bei JEDEM Heartbeat-Tick, zusaetzlich zum eigentlichen Auslastungsproblem.
+      `ensureBotUsers()`-Aufruf in `index.ts` durch neue `removeBotUsers()` (`db.ts`) ersetzt -
+      loescht bestehende Bot-Accounts (Nutzer + Spielstand) beim naechsten Serverstart komplett,
+      nicht nur die Bot-LOGIK abschalten (sonst wuerden sie weiterhin bei JEDEM Tick mit-
+      verarbeitet, inkl. eigener Raid-/Notruf-Checks). `runBotTurn()`-Aufruf aus `heartbeat.ts`
+      entfernt. `bot.ts` selbst bleibt unveraendert im Repo liegen (dormant, nicht mehr
+      importiert) - kann bei Bedarf spaeter reaktiviert werden, wenn mehr Serverleistung
+      verfuegbar ist.
+    - **Notruf-Events deaktiviert** (`EVENTS_ENABLED = false` in `events.ts`) - spawnen vorerst
+      NICHT mehr neu, jede zusaetzliche gleichzeitig laufende Kampfaufloesung erhoeht das
+      Absturzrisiko. Bewusst nur die SPAWN-Aufrufe deaktiviert (in `processEventTimer()` und
+      `processOverdueEventsForOtherUsers()`), nicht der komplette Code entfernt - bereits aktive/
+      unterwegs befindliche Notrufe werden weiterhin normal zu Ende gefuehrt (kein hartes
+      Abbrechen mitten im Flug), es entstehen nur keine NEUEN mehr. Getestet: 20 `tick()`-
+      Durchlaeufe mit kuenstlich faelligem Checkpoint erzeugten korrekt kein einziges Event.
+    - **Raids: kein Wuerfeln mehr, garantiert + individuell versetzte Zeiten pro Spieler.**
+      Neue `RAID_SCHEDULE_BY_USERNAME`-Zuordnung (`economy.ts`): "ShadowEagle" bekommt einen
+      GARANTIERTEN Raid (Chance 100% statt der bisherigen `RAID_SPAWN_CHANCE`) um 0/6/12/18 Uhr
+      deutscher Zeit, "SchnelleRatte" ebenso garantiert, aber um 3/9/15/21 Uhr versetzt - beide
+      koennen dadurch nie wieder gleichzeitig auftreten. Unbekannte/zukuenftige Nutzernamen
+      fallen auf das alte Verhalten zurueck (gemeinsamer 0/6/12/18-Rhythmus MIT Wuerfeln,
+      `getRaidSchedule()` in `raids.ts`).
+      - **Migration bestehender Spielstaende:** neues `raidScheduleMigrated`-Flag (einmalig, NICHT
+        bei jedem Laden - sonst waere derselbe Bug wie in Punkt 55 wieder eingefuehrt worden, da
+        der Checkpoint dann nie faellig wuerde) in `loadPlayerState()` (`state.ts`) - stellt den
+        `nextRaidCheck` fuer bestehende Spielstaende einmalig auf den neuen personalisierten
+        Rhythmus um, statt erst graduell ueber mehrere Zyklen nachzuziehen (sonst haette der
+        naechste, noch gemeinsame Checkpoint beide Spieler ein letztes Mal gleichzeitig
+        getroffen).
+      - Getestet: frisch angelegte Accounts "ShadowEagle"/"SchnelleRatte" bekamen korrekt
+        unterschiedliche `nextRaidCheck`-Zeitpunkte (06:00 bzw. 03:00 deutscher Zeit); 200
+        Durchlaeufe mit Chance 1.0 ergaben 200/200 Treffer (kein Wuerfeln mehr, vorher waere
+        das bei `RAID_SPAWN_CHANCE=0.6` nur ~60% gewesen).
+    - **Nicht umgesetzt, aber als Option im Hinterkopf:** eine dauerhafte Loesung waere ein
+      hoeherer Render-Tarif (z.B. "Standard", 1 CPU/2GB, $25/Monat) statt struktureller
+      Einschraenkungen - aktuelle Entscheidung war aber bewusst, bei "Starter" zu bleiben und
+      stattdessen die Spielmechanik anzupassen.
+
