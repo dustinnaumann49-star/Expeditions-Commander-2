@@ -143,6 +143,19 @@ export const ALLY_STATS = { waffen: 4000, schild: 2000, panzerung: 30000 };
 // versetzt, damit nie beide zur gleichen Zeit ausgeloest werden koennen, sondern sich im
 // 3-Stunden-Rhythmus abwechseln (00/06/12/18 Uhr Raid, 03/09/15/21 Uhr Notruf).
 export const RAID_CHECK_HOURS_LOCAL = [0, 6, 12, 18];
+
+// WICHTIG (Performance-Notmassnahme, siehe Nutzerentscheidung nach Server-Absturz): auf dem
+// Starter-Tarif (0,5 CPU / 512MB) hat der Server zusammengebrochen, als zwei Kampfaufloesungen
+// (Raids bei beiden Spielern) exakt zur selben Zeit (0:00 Uhr) liefen. Fix: JEDER der beiden
+// echten Spieler bekommt jetzt einen FEST ZUGEWIESENEN, GARANTIERTEN Raid-Rhythmus (kein Wuerfeln
+// mehr, siehe RAID_SPAWN_CHANCE unten - wird fuer diese beiden Namen auf 100% gesetzt) zu
+// UNTERSCHIEDLICHEN Uhrzeiten, damit nie wieder zwei Kampfaufloesungen gleichzeitig laufen.
+// Faellt ein Nutzername NICHT in dieser Liste (z.B. ein zukuenftiger dritter Spieler), gilt der
+// normale RAID_CHECK_HOURS_LOCAL-Rhythmus MIT Wuerfeln als Fallback (siehe raids.ts).
+export const RAID_SCHEDULE_BY_USERNAME: Record<string, number[]> = {
+  ShadowEagle: [0, 6, 12, 18],
+  SchnelleRatte: [3, 9, 15, 21],
+};
 export const EVENT_CHECK_HOURS_LOCAL = [3, 9, 15, 21];
 
 const BERLIN_TZ = 'Europe/Berlin';

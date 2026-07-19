@@ -9,6 +9,15 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '19.07.2026',
+    title: 'Server-Stabilität: Maßnahmen gegen Abstürze',
+    changes: [
+      'Die KI-Mitspieler sind vorerst wieder entfernt - der Server war auf dem aktuellen Tarif nicht dafür ausgelegt.',
+      'Notruf-Events pausiert - lösen vorerst nicht mehr neu aus (bereits laufende Notrufe werden aber normal zu Ende geführt).',
+      'Raids laufen jetzt garantiert statt zufällig, dafür für beide Spieler zu unterschiedlichen, festen Uhrzeiten (0 Uhr bzw. 3 Uhr, danach im 6-Stunden-Takt) - damit nie wieder zwei Kämpfe gleichzeitig ablaufen.',
+    ],
+  },
+  {
     date: '18.07.2026',
     title: 'Neu: Forschungsbaum',
     changes: [
