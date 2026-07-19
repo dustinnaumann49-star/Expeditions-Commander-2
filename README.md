@@ -1522,6 +1522,24 @@ client/
       wirklich extremen Flottengroessen bleibt Kampf grundsaetzlich rechenintensiv. Diese eine
       Zeile war aber nachweislich der groesste Einzelposten.
 
+70. **BUGFIX: rohe interne Schiffs-IDs statt richtiger Namen in mehreren Flottenauswahl-
+    Listen** (z.B. "schwer" statt "Schwerer Jäger", durchgehend klein geschrieben) - fiel beim
+    Senden einer Flotte im Sektor-Tab auf, betraf aber mehrere Stellen: die normale Sektor-
+    Flottenauswahl UND die Notruf-Flottenauswahl (beide in `Sektor.tsx`) sowie die
+    "Zurückgekehrte Flotte"-Tabelle im Kampfbericht-Popup (`Nachrichten.tsx`). Ursache: an
+    diesen drei Stellen wurde die interne `id` direkt ausgegeben, statt sie ueber die bereits
+    im Projekt vorhandene `shipName(gameData, id)`-Hilfsfunktion (`combatInfo.ts`) in den
+    richtigen Anzeigenamen umzuwandeln - dieselbe Funktion wird an anderer Stelle (z.B.
+    Multiplayer.tsx) schon korrekt genutzt, hier schlicht vergessen.
+    - `SektorCard` (Sektor.tsx) bekam dafuer `gameData` als neue Prop.
+    - `DetailModal` (Nachrichten.tsx) ruft jetzt selbst `useGame()` auf, um an `gameData` zu
+      kommen (vorher nur `msg`/`onClose` als Props) - mit Fallback auf die rohe ID, falls
+      `gameData` ausnahmsweise noch nicht geladen ist (verhindert einen Absturz waehrend des
+      allerersten Ladevorgangs).
+    - Gezielt nach dem exakt gleichen Muster an allen anderen Stellen im Client gesucht (`grep`
+      nach `{id}`-Ausgaben in JSX) - keine weiteren Fundstellen, Multiplayer.tsx nutzte
+      `shipName()` bereits korrekt.
+
 ## Geplante Erweiterungen (noch NICHT umgesetzt)
 
 Dieser Abschnitt ist bewusst von der obigen Liste getrennt: alles hier ist erst besprochen,
