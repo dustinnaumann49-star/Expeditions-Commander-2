@@ -36,7 +36,6 @@ export function GalaxiePage() {
     ownGalaxyPosition,
     pirateBases,
     sektorPositions,
-    notrufPosition,
     incomingDeployments,
     parties,
     refreshGalaxy,
@@ -107,7 +106,6 @@ export function GalaxiePage() {
   const occupantsInSystem = galaxyOccupants.filter((o) => o.system === system);
   const pirateBasesInSystem = pirateBases.filter((b) => b.system === system);
   const sektorenInSystem = sektorPositions.filter((s) => s.system === system);
-  const isNotrufInSystem = notrufPosition && notrufPosition.system === system;
   const targetOccupant = targetUserId !== null ? galaxyOccupants.find((o) => o.userId === targetUserId) : null;
   const ownedShips = gameData.ships.filter((s) => (state.fleet[s.id] || 0) > 0);
 
@@ -149,7 +147,6 @@ export function GalaxiePage() {
             const occ = occupantsInSystem.find((o) => o.position === pos);
             const isPirateBase = pirateBasesInSystem.some((b) => b.position === pos);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
-            const isNotruf = isNotrufInSystem && notrufPosition!.position === pos;
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
             return (
               <div className="ship-card" key={pos} style={{ padding: 12 }}>
@@ -174,8 +171,6 @@ export function GalaxiePage() {
                   </>
                 ) : sektor ? (
                   <p style={{ color: 'var(--accent-deut)', fontWeight: 600 }}>🛰️ {sektor.name}</p>
-                ) : isNotruf ? (
-                  <p style={{ color: 'var(--accent-kristall)', fontWeight: 600 }}>🆘 Notruf-Position</p>
                 ) : isPirateBase ? (
                   <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>
                 ) : (
@@ -259,7 +254,6 @@ export function GalaxiePage() {
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Flottenbewegungen</h3>
         {state.galaxyDeployments.length === 0 &&
         state.missions.length === 0 &&
-        !(state.event && state.event.started) &&
         parties.filter((op) => op.status === 'departed').length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine eigenen Flotten unterwegs, haltend oder im Einsatz.</p>
         ) : (
@@ -294,19 +288,6 @@ export function GalaxiePage() {
                   </div>
                 );
               })}
-            {state.event && state.event.started && (
-              <div className="queue-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                <div className="progress-row">
-                  <span>
-                    Notruf: {state.event.name} · Von deiner Basis
-                    {ownGalaxyPosition && ` (1:${ownGalaxyPosition.system}:${ownGalaxyPosition.position})`} zu 1:{notrufPosition?.system}:
-                    {notrufPosition?.position}{' '}
-                    <span style={{ color: 'var(--accent-kristall)', fontWeight: 600 }}>[unterwegs]</span>
-                  </span>
-                </div>
-                <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Ankunft in {formatTime(state.event.arriveTime - now)}</span>
-              </div>
-            )}
             {state.missions.map((m) => {
               const status = missionStatus(m, now);
               const sektorName = gameData.sektoren.find((s) => s.id === m.sektorId)?.name || m.sektorId;

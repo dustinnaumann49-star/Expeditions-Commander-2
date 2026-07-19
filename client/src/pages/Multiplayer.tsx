@@ -24,12 +24,9 @@ const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
   declined: 'Abgelehnt',
 };
 
-function opKindLabel(op: { kind: 'expedition' | 'event'; sektorId?: string; eventName?: string }, gameData: GameData): string {
-  if (op.kind === 'expedition') {
-    const sektor = gameData.sektoren.find((s) => s.id === op.sektorId);
-    return `🛡️ Expedition: ${sektor?.name || op.sektorId}`;
-  }
-  return `📡 Notruf-Event: "${op.eventName}"`;
+function opKindLabel(op: { sektorId?: string }, gameData: GameData): string {
+  const sektor = gameData.sektoren.find((s) => s.id === op.sektorId);
+  return `🛡️ Expedition: ${sektor?.name || op.sektorId}`;
 }
 
 function FleetPicker({
@@ -215,9 +212,6 @@ function ExpeditionEventsView() {
   return (
     <div>
       <h2 style={{ marginBottom: 16 }}>Multiplayer – Gemeinsame Expeditionen</h2>
-      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 12 }}>
-        Notruf-Events sind jetzt nur noch solo möglich (siehe Sektor-Tab) - hier geht es nur noch um gemeinsame Elite-Bollwerk-Expeditionen.
-      </p>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       {pendingForMe.length > 0 && (

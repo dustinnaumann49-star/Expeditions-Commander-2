@@ -428,12 +428,10 @@ function MissionStatus({ mission, now, onShowFleet }: { mission: Mission; now: n
 }
 
 export function SektorPage() {
-  const { gameData, state, sendMission, recallMission, joinEvent, savePreset, deletePreset, sektorPositions, notrufPosition, error } = useGame();
+  const { gameData, state, sendMission, recallMission, savePreset, deletePreset, sektorPositions, error } = useGame();
   const [tab, setTab] = useState('asteroid');
   const [selectedSektor, setSelectedSektor] = useState<string | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
-  const [eventSelection, setEventSelection] = useState<Record<string, number>>({});
-  const notrufPreview = useGalaxyPreview(eventSelection, notrufPosition);
   const [presetName, setPresetName] = useState('');
   const [infoSektorId, setInfoSektorId] = useState<string | null>(null);
   const [fleetMissionId, setFleetMissionId] = useState<string | null>(null);
@@ -460,64 +458,6 @@ export function SektorPage() {
           <p style={{ fontSize: 13, marginTop: 4 }}>
             Ankunft in {formatTime(state.raid.arrivalTime - now)}. Verstärke deine Verteidigung oder rufe deine Flotte zurück.
           </p>
-        </div>
-      )}
-
-      {state.event && state.event.started && (
-        <div className="queue-box" style={{ borderColor: 'var(--accent-kristall)', marginBottom: 16 }}>
-          <strong style={{ color: 'var(--accent-kristall)' }}>⚠ {state.event.name}</strong>
-          <p style={{ fontSize: 13, marginTop: 4 }}>
-            Deine Flotte ist unterwegs zur Notruf-Position - Ankunft in {formatTime(state.event.arriveTime - now)}.
-          </p>
-        </div>
-      )}
-
-      {state.event && !state.event.started && (
-        <div className="queue-box" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
-          <strong style={{ color: 'var(--danger)' }}>⚠ {state.event.name}</strong>
-          {notrufPosition && (
-            <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>📍 Position 1:{notrufPosition.system}:{notrufPosition.position}</p>
-          )}
-          <p style={{ fontSize: 13, marginTop: 4, marginBottom: 8 }}>Noch {formatTime(state.event.deadline - now)} Zeit zum Losschicken.</p>
-          {COMBAT_SHIP_IDS.map((id) => {
-            const avail = state.fleet[id] || 0;
-            if (avail === 0) return null;
-            const qty = eventSelection[id] || 0;
-            return (
-              <div className="queue-item" key={id}>
-                <span>
-                  {shipName(gameData, id)} (verfügbar: {avail})
-                </span>
-                <span className="qty-row">
-                  <button className="qty-btn" onClick={() => setEventSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-                    -10
-                  </button>
-                  <span style={{ padding: '0 6px' }}>{qty}</span>
-                  <button className="qty-btn" onClick={() => setEventSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>
-                    +10
-                  </button>
-                  <button className="qty-btn" onClick={() => setEventSelection((p) => ({ ...p, [id]: avail }))}>
-                    Alle
-                  </button>
-                </span>
-              </div>
-            );
-          })}
-          <div className="build-row">
-            <span>
-              {notrufPreview.loading && 'Berechne Flugroute...'}
-              {notrufPreview.preview && !notrufPreview.loading && `Anflugzeit: ${formatTime(notrufPreview.preview.durationMs)}`}
-            </span>
-            <button
-              className="build-btn"
-              onClick={() => {
-                joinEvent(eventSelection);
-                setEventSelection({});
-              }}
-            >
-              Zu Hilfe eilen
-            </button>
-          </div>
         </div>
       )}
 
