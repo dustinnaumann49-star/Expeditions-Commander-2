@@ -10,6 +10,26 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Imperator: deutlich stärker, kämpft jetzt auch bei Raids mit',
+    changes: [
+      'Waffen, Schild und Panzerung des Imperators liegen jetzt alle im Millionen-Bereich (vorher war nur die Panzerung so hoch, Waffen/Schild lagen kaum über normalen Kampfschiffen).',
+      'Bug behoben: der Imperator hat bei Raids (Verteidigung eurer Heimatbasis) bisher nie mitgekämpft, egal wie viele ihr besessen habt. Bei Piraten-Sektoren, Elite-Bollwerk und Piratenadmiral war er dagegen schon immer einsetzbar - jetzt auch bei Raids.',
+      'Baulimit (2 Stück) und Spezialteile-Kosten bleiben unverändert.',
+    ],
+  },
+  {
+    date: '21.07.2026',
+    title: 'Werft: Spezialschiffe-Tab und Schiffs-Module',
+    changes: [
+      'Neuer Werft-Untertab "Spezialschiffe": die drei Salvenschiffe und der Imperator sind jetzt hier gebündelt statt verstreut in den normalen Klassen-Listen bzw. im Shop.',
+      'Der Imperator wird ab sofort nur noch in der Werft gebaut (Shop > Spezialteile ist entfallen) - Spezialteile-Inventar und Baubutton sind mit umgezogen.',
+      'Jedes Kampfschiff (und der Imperator) kann jetzt eigene Waffen-, Schild-, Panzerung- und Antriebs-Module bis Stufe 10 ausbauen - direkt unter der jeweiligen Schiffskarte, egal ob in der normalen Werft-Liste oder bei den Spezialschiffen. Wirkt nur auf diesen einen Schiffstyp, stapelt sich mit Forschung, Klassen-Bonus und Kampf-Booster.',
+      'Waffen/Schild/Panzerung geben +3% pro Stufe (max. +30%), Antrieb +2% pro Stufe (max. +20%). Alle Schiffs-Module teilen sich einen gemeinsamen Bauplatz, unabhängig von den 3 normalen Schiffs-Bauplätzen.',
+      'Mining-Schiff und Begleitschiff bekommen keine Module.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Klassensystem: Kanonier, Bollwerk, Kommandant',
     changes: [
       'Neuer Tab "Klasse": Jeder Spieler wählt einmalig kostenlos eine von drei reinen Kampf-Klassen. Ohne Wahl geht es nicht weiter - das betrifft auch alle Bestandsspieler.',
