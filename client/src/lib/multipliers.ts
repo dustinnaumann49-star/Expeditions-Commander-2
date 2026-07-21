@@ -1,6 +1,26 @@
 import { serverNow } from './serverTime';
 import type { GameData, PlayerState } from '../types/game';
 
+// Spiegelt server/src/game/data/classes.ts 1:1 - Werte muessen bei Aenderung dort synchron
+// gehalten werden, sonst zeigt die UI falsche Kosten an (README Punkt 1 gilt analog auch fuer
+// Klassen-Multiplikatoren, nicht nur Zeit-Anzeigen). Getrennt nach Schiffen und Verteidigung:
+// Kanonier rabattiert nur Schiffe, Bollwerk nur Verteidigung, Kommandant beides.
+const CLASS_KANONIER_SHIP_COST_MULTIPLIER = 0.9;
+const CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER = 0.75;
+const CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER = 0.9;
+
+export function getShipCostMultiplier(state: PlayerState): number {
+  if (state.playerClass === 'kanonier') return CLASS_KANONIER_SHIP_COST_MULTIPLIER;
+  if (state.playerClass === 'kommandant') return CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER;
+  return 1;
+}
+
+export function getDefenseCostMultiplier(state: PlayerState): number {
+  if (state.playerClass === 'bollwerk') return CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER;
+  if (state.playerClass === 'kommandant') return CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER;
+  return 1;
+}
+
 export function isBoosterActive(state: PlayerState, boosterId: string): boolean {
   const expiry = state.activeBoosters[boosterId];
   return !!expiry && expiry > serverNow();
