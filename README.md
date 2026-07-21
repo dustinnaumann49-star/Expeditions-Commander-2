@@ -782,6 +782,41 @@ client/
     Betrifft alle Einheiten mit `maxCount`/`unique`: Sandronator, Imperator, die drei
     Salvenschiffe, alle drei Schildkuppeln, Sentinel-/Ultimate-Kanone.
 
+72. **Piraten/NPCs bekommen jetzt `PIRATE_RESEARCH_SHARE` (50%) der relevanten Forschung**
+    (`data/combatConstants.ts`, Nutzerentscheidung nach Feedback "Piraten wirken mittlerweile zu
+    leicht") - vorher bekamen sie GAR KEINE Forschung, jede Kampf-Berechnung für Seite B lief auf
+    reinem Basiswert. Betrifft ALLE Forschungs-Effekte gleichermaßen (Waffen-/Schild-/
+    Panzerungtechnik-Multiplikatoren, Präzision, Ausweichen, Kritische Treffer, Zielerfassung,
+    Schild-Regeneration, Durchschlag) - bewusst NUR Forschung, NIE Klassen-Bonus/Schiffs-/
+    Verteidigungs-Module/Kampf-Booster (die bleiben exklusiv beim Spieler).
+    - **`computePirateResearch()`** (`combat.ts`) liefert das skalierte Forschungs-Objekt: bei
+      Mehrspieler-Kämpfen (Elite-Bollwerk, Raid mit Verstärkung/haltenden Flotten) der
+      DURCHSCHNITT aller Beteiligten (Nutzerentscheidung), sonst einfach die Forschung des einen
+      Spielers, jeweils × 0,5.
+    - **Kein zweiter Durchreichungs-Pfad nötig**: die research-lesenden Funktionen
+      (`getPrecisionChance()`, `getCritChance()`, `getEvasionChance()`, `getZielerfassungAccuracy()`,
+      `getShieldRegenRate()`, `getDurchschlagFraction()`) lasen research schon immer generisch aus
+      dem übergebenen Objekt - der interne "bei NPC einfach überspringen"-Zweig wurde entfernt,
+      Piraten bekommen jetzt einfach das bereits vorskalierte Objekt zum Auslesen übergeben. Der
+      Parameter `applyPlayerResearch` bleibt aus Aufrufer-Kompatibilität in den Signaturen stehen,
+      wird intern aber nicht mehr zur Forschungs-Unterscheidung gebraucht.
+    - **Dabei ein subtiler Bug korrigiert:** `fireShots()`/`rollHit()` nutzten für Schütze UND Ziel
+      bisher dasselbe `research`-Objekt (das war irrelevant, solange Piraten ohnehin 0% bekamen) -
+      jetzt braucht `rollHit()` zwingend die Forschung der ZIEL-Seite für dessen Ausweichchance,
+      nicht die des Schützen. `fireShots()` bekommt daher jetzt `researchShooter` UND
+      `researchTarget` getrennt übergeben (bei "Spieler schießt auf Piraten":
+      researchShooter=Spielerforschung, researchTarget=Piraten-Forschung; umgekehrt vertauscht).
+    - **NPC-Kampfwerte (Waffen/Schild/Panzerung)** liefen bisher über `baseStats()` (`combat.
+      worker.ts`s `statsFnBFor`), jetzt über `getEffectiveStats(id, pirateResearch, {}, false, null,
+      {})` - Klassen-Bonus/Booster/Module bleiben dabei bewusst `null`/`{}`/`false`. Der
+      Piratenadmiral selbst (`ADMIRAL_BOSS_ID`) bleibt über seinen eigenen, unabhängigen
+      Macht-Skalierungs-Override komplett unbeeinflusst von jeder Forschung (siehe
+      `generateAdmiralEncounter()`) - nur seine Eskorte profitiert wie jeder andere NPC.
+    - Gilt automatisch für ALLE Kampf-Aufrufer (Missionen, Raids, Elite-Bollwerk, Piratenadmiral,
+      Kampfsimulator), da `resolveCombat()`/`resolveCombatMultiOwner()` `pirateResearch` zentral
+      selbst berechnen - keine Änderung an den Aufrufern in `missions.ts`/`raids.ts`/`groupOps.ts`/
+      `simulator.ts` nötig.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -867,3 +902,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   irreführend anklickbar (Gruppen-Expeditionen bei Schiffen nicht mitgezählt, Imperator-Karte
   zählte nur state.fleet, Verteidigung zählte die eigene Bauwarteschlange nicht mit) - der Server
   hätte den Bau zwar ohnehin korrekt abgelehnt, jetzt stimmt auch die Anzeige.
+- Piraten/NPCs bekommen jetzt 50% der relevanten Forschung (vorher 0%) - betrifft Waffen-/Schild-/
+  Panzerungtechnik, Präzision, Ausweichen, Kritische Treffer, Zielerfassung, Schild-Regeneration,
+  Durchschlag; bei Mehrspieler-Kämpfen zählt der Durchschnitt aller Beteiligten. Klassen-Bonus/
+  Module/Kampf-Booster bleiben exklusiv beim Spieler. Dabei einen Bug korrigiert: Ausweichen nutzte
+  Schützen- statt Ziel-Forschung (war vorher folgenlos, da Piraten ohnehin 0% Forschung hatten).
