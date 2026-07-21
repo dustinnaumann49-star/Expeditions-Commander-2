@@ -131,6 +131,23 @@ export interface ShipModuleDefinition {
   timeGrowth: number;
 }
 
+export type DefenseModuleKind = 'waffen' | 'schild' | 'panzerung';
+
+export interface DefenseModuleDefinition {
+  id: string;
+  name: string;
+  defenseId: string;
+  moduleKind: DefenseModuleKind;
+  img: string;
+  lore: string;
+  effectPerLevel: number;
+  maxLevel: number;
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -356,6 +373,7 @@ export interface PlayerState {
   buildingQueue: BuildJob[];
   shipModules: Record<string, number>;
   shipModuleQueue: BuildJob[];
+  defenseModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[];
   activeBoosters: Record<string, number>;
@@ -444,8 +462,10 @@ export interface GameData {
   buildings: BuildingDefinition[];
   buildingModules: BuildingModuleDefinition[];
   shipModules: ShipModuleDefinition[];
+  defenseModules: DefenseModuleDefinition[];
   maxBuildingSlots: number;
   maxShipModuleSlots: number;
+  maxDefenseModuleSlots: number;
   admiralAllowedShipIds: string[];
   galaxySystems: number;
   galaxyPositions: number;
