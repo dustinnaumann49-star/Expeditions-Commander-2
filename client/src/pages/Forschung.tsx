@@ -64,8 +64,8 @@ function ResearchNode({
   const affordable =
     cost && state.resources.metall >= cost.metall && state.resources.kristall >= cost.kristall && state.resources.deuterium >= cost.deuterium;
 
-  const boxSize = isBasis ? 76 : 54;
-  const boxWidth = isBasis ? 140 : 104;
+  const boxSize = isBasis ? 76 : 48;
+  const boxWidth = isBasis ? 140 : 92;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -117,21 +117,21 @@ function ResearchNode({
       {children.length > 0 && (
         <>
           <VLine />
-          <div style={{ display: 'flex', position: 'relative' }}>
+          <div style={{ display: 'flex', position: 'relative', maxWidth: '100vw', overflowX: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 2px 4px' }}>
             {children.length > 1 && (
               <div
                 style={{
                   position: 'absolute',
                   top: 0,
-                  left: boxWidth / 2 + 8,
-                  right: boxWidth / 2 + 8,
+                  left: boxWidth / 2 + 4,
+                  right: boxWidth / 2 + 4,
                   height: 1,
                   background: 'var(--border-bright)',
                 }}
               />
             )}
             {children.map((child) => (
-              <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px' }}>
+              <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 8px', flex: '0 0 auto' }}>
                 <VLine />
                 <ResearchNode tech={child} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={onOpenInfo} onStart={onStart} />
               </div>
