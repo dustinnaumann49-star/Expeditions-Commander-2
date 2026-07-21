@@ -733,7 +733,12 @@ client/
     Ultimate-Kanone in generierten Piraten-/Raid-Verteidigungen aufgetaucht). Dritte Schildkuppel
     "Gigant-Schildkuppel" kommt trotz "Spezial"-Charakter bewusst in den normalen Schild-Tab
     (Nutzerentscheidung), nicht zur Spezialverteidigung - gleiches Prinzip wie die anderen beiden
-    Kuppeln (gemeinsamer Pool, `maxCount:1`), nur deutlich stärker.
+    Kuppeln (gemeinsamer Pool, `maxCount:1`), nur deutlich stärker. Trotzdem explizit (per Id, nicht
+    über `MULTI_TARGET_VOLLEY_SHIPS`, da sie keine Salve-Fähigkeit hat) aus `generateDefenseFleet()`
+    ausgeschlossen (Nutzerentscheidung: alle "besonderen"/neuen Anlagen sollen bei Piraten generell
+    nicht auftauchen) - wäre technisch ohnehin fast wirkungslos gewesen, da NPC-Kämpfe keinen
+    eigenen Kuppel-Pool nutzen (`computeDomeSharedPool()` gilt nur für den Heimatverteidiger bei
+    Raids), hätte aber sinnlos Würfel-Gewicht von den eigentlichen NPC-Einheiten abgezogen.
 
 69. **Verteidigungs-Modulsystem: Waffen/Schild/Panzerung (KEIN Antrieb - Verteidigung bewegt sich
     nicht) für ALLE 11 Verteidigungsanlagen** (`data/defenseModules.ts`, generiert wie
@@ -758,6 +763,24 @@ client/
     dieselben Parameter (`kampfBoostActive`, `playerClass`, `shipModules`) wie `getEffectiveStats()`
     und wendet sie genauso an - betrifft nur den EINEN Aufrufer in `raids.ts` (Verteidigungsanlagen
     kämpfen ausschließlich bei Raids, nie bei Missionen/Elite-Bollwerk/Piratenadmiral).
+
+71. **Client-seitige Bestandszählung für limitierte Einheiten (`maxCount`/`unique`) war an
+    mehreren Stellen unvollständig - Bauen-Button blieb dadurch teils irreführend anklickbar,
+    obwohl der Server den Bau ohnehin korrekt abgelehnt hätte** (serverseitige
+    `countShipEverywhere()`/`countDefenseEverywhere()` in `actions.ts` waren bereits vollständig,
+    siehe deren eigene Bugfix-Kommentare dort):
+    - `components/ShipBuildCard.tsx`s eigene `countShipEverywhere()` zählte Flotte + Bauwarteschlange
+      + Missionen + Galaxie-Halten, aber NICHT laufende Gruppen-Expeditionen (Elite-Bollwerk/
+      Piratenadmiral) - jetzt ergänzt (`parties`-Parameter, aus `useGame()` bezogen).
+    - Die Imperator-Karte in `Spezialschiffe.tsx` hatte ihre EIGENE, noch einfachere
+      Bestandsermittlung (`state.fleet.imperator` allein, nicht mal die Bauwarteschlange) -
+      auf die gemeinsame `countShipEverywhere()` umgestellt.
+    - `components/DefenseBuildCard.tsx` zählte nur `state.defense` (bereits fertig gebaut), nicht
+      die eigene Bau-Warteschlange (`defenseQueue`) - neue lokale `countDefenseEverywhere()`
+      ergänzt (Verteidigungsanlagen bewegen sich nie, daher genügen hier defense + defenseQueue,
+      kein Pendant zu Missionen/Galaxie-Halten/Gruppen-Expeditionen nötig).
+    Betrifft alle Einheiten mit `maxCount`/`unique`: Sandronator, Imperator, die drei
+    Salvenschiffe, alle drei Schildkuppeln, Sentinel-/Ultimate-Kanone.
 
 ## Kurz-Changelog
 
@@ -837,5 +860,10 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Verteidigung nach Klassen unterteilt (Leichte/Schwere/Schild/Spezialverteidigung). Zwei neue
   Verteidigungsanlagen mit Mehrfachziel-Salve (Sentinel-/Ultimate-Kanone), dritte Schildkuppel
   (Gigant-Schildkuppel). Neues Verteidigungs-Modulsystem (Waffen/Schild/Panzerung, kein Antrieb).
-  Dabei zwei Bugs behoben: generateDefenseFleet() schloss neue Spezialverteidigung nicht aus; der
-  gemeinsame Schildkuppel-Pool ignorierte bisher Klassen-Bonus/Kampf-Booster komplett.
+  Dabei drei Bugs behoben: generateDefenseFleet() schloss neue Spezialverteidigung UND die neue
+  Gigant-Schildkuppel nicht aus; der gemeinsame Schildkuppel-Pool ignorierte bisher Klassen-Bonus/
+  Kampf-Booster komplett.
+- Bau-Button für limitierte Einheiten (maxCount/unique) blieb an mehreren Stellen client-seitig
+  irreführend anklickbar (Gruppen-Expeditionen bei Schiffen nicht mitgezählt, Imperator-Karte
+  zählte nur state.fleet, Verteidigung zählte die eigene Bauwarteschlange nicht mit) - der Server
+  hätte den Bau zwar ohnehin korrekt abgelehnt, jetzt stimmt auch die Anzeige.
