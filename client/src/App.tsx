@@ -17,6 +17,8 @@ import { MultiplayerPage } from './pages/Multiplayer';
 import { GalaxiePage } from './pages/Galaxie';
 import { UpdatesPage } from './pages/Updates';
 import { StatistikPage } from './pages/Statistik';
+import { KlassePage } from './pages/Klasse';
+import { useGame } from './context/GameContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Schiffswerft' },
@@ -30,6 +32,7 @@ const NAV_ITEMS = [
   { to: '/galaxie', label: 'Galaxie' },
   { to: '/nachrichten', label: 'Nachrichten' },
   { to: '/inventar', label: 'Inventar' },
+  { to: '/klasse', label: 'Klasse' },
   { to: '/statistik', label: 'Statistik' },
   { to: '/updates', label: 'Updates' },
 ];
@@ -67,6 +70,20 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function GameHome() {
+  const { state } = useGame();
+
+  // Blockierende Erstwahl: solange keine Klasse gewaehlt ist (neu registrierte Spieler direkt
+  // nach dem ersten Login, oder Bestandsspieler nach der Einfuehrung des Klassensystems - siehe
+  // Migration in state.ts), ist der Rest des Spiels nicht erreichbar. Bewusst OHNE Sidebar/
+  // ResourceBar, damit keine anderen Aktionen moeglich sind, bevor die Wahl getroffen wurde.
+  if (state && state.playerClass === null) {
+    return (
+      <div style={{ maxWidth: 900, margin: '40px auto', padding: '0 16px' }}>
+        <KlassePage mandatory />
+      </div>
+    );
+  }
+
   return (
     <Layout>
       <Routes>
@@ -81,6 +98,7 @@ function GameHome() {
         <Route path="/galaxie" element={<GalaxiePage />} />
         <Route path="/nachrichten" element={<NachrichtenPage />} />
         <Route path="/inventar" element={<InventarPage />} />
+        <Route path="/klasse" element={<KlassePage />} />
         <Route path="/statistik" element={<StatistikPage />} />
         <Route path="/updates" element={<UpdatesPage />} />
       </Routes>
