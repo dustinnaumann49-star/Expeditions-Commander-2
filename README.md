@@ -67,6 +67,10 @@ server/
 
   src/game/inventory.ts              Container öffnen, Belohnungen einlösen
   src/game/economyActions.ts         Händler-Tausch, Schrotthändler, Shop (Booster/Gutscheine)
+  src/game/classActions.ts           Klassenwahl/-wechsel (setPlayerClass)
+  src/game/boosterUtil.ts            isBoosterActive() - eigene abhängigkeitsfreie Datei, damit
+                                      missions.ts/raids.ts/groupOps.ts/simulator.ts sie nutzen
+                                      können, ohne einen Zirkelbezug zu actions.ts zu erzeugen
   src/game/presets.ts                Flotten-Vorlagen speichern/löschen
   src/game/simulator.ts              Kampfsimulator: rechnet mehrere Durchläufe gegen einen
                                       Sektor durch, OHNE den Spielstand zu verändern
@@ -88,6 +92,8 @@ server/
                                       Solarkraftwerk, Roboter-/Nanitenfabrik)
   src/game/data/buildingModules.ts   Gebäude-Module (je Gebäude 2-3 Zusatzausbauten)
   src/game/data/changelog.ts         Spielerlesbare Update-Historie für die Im-Spiel-Updates-Seite
+  src/game/data/classes.ts           Klassendefinitionen (Kanonier/Bollwerk/Kommandant) inkl.
+                                      aller Bonus-Konstanten und Anzeigetexte
 
 client/
   vite.config.ts                     Dev-Proxy: /api → localhost:4000
@@ -142,6 +148,10 @@ client/
                                       Multiplayer) - Klick springt zur Position in der Galaxie
   src/pages/Nachrichten.tsx          Kampf-/Farmberichte mit aufklappbarer Detailansicht
   src/pages/Inventar.tsx             Container öffnen, Belohnungen einlösen
+  src/pages/Klasse.tsx               Klassenwahl (Erstwahl kostenlos) + Klassenwechsel (500 DM,
+                                      via classChangeCostDm) - dieselbe Komponente wird auch als
+                                      blockierende Pflicht-Ansicht in App.tsx eingebunden, solange
+                                      state.playerClass === null ist
   src/pages/Updates.tsx              Spielerlesbare Update-Historie (aus gameData.changelog)
   src/pages/Statistik.tsx            Eigene Statistik-Aufschlüsselung + Bestenliste
 ```
@@ -518,8 +528,82 @@ client/
 
 ### Bilder
 
-55. Neue Schiffs-/Gebäude-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px Breite,
-    Qualität ~78%, Ziel ~60-80 KB statt mehrerer MB) - wichtig für Mobil-Ladezeiten.
+55. Neue Schiffs-/Gebäude-/Klassen-Bilder werden vor dem Einchecken komprimiert (JPEG, ~700px
+    Breite, Qualität ~78%, Ziel ~60-80 KB statt mehrerer MB) - wichtig für Mobil-Ladezeiten.
+    Klassenbilder liegen unter `client/public/classes/` (`kanonier.jpg`/`bollwerk.jpg`/
+    `kommandant.jpg`), Pfad im `img`-Feld von `ClassDefinition` (`data/classes.ts`).
+
+### Klassensystem
+
+56. **Jeder Spieler wählt einmalig eine von drei reinen Kampf-Klassen** (`data/classes.ts`):
+    Kanonier, Bollwerk, Kommandant - bewusst KEINE Wirtschafts-/Effizienz-Klassen (eine frühere
+    Variante mit Wächter/Extraktor/Pfadfinder wurde vor dem Einbau verworfen, siehe Punkt 57 zur
+    Begründung). Erstwahl ist kostenlos (`state.playerClass` startet bei `null`), jeder weitere
+    Wechsel kostet `CLASS_CHANGE_COST_DM` (500 DM, `setPlayerClass()` in `classActions.ts`).
+    Bestandsspieler von vor Einführung des Systems werden per Migration auf `null` gesetzt
+    (`state.ts`), NICHT auf eine geratene Standardklasse. Solange `playerClass === null` ist,
+    blockiert `App.tsx` (`GameHome`) den kompletten übrigen Zugang und zeigt stattdessen
+    ausschließlich die Klassenwahl (`Klasse.tsx` mit `mandatory`-Prop) - keine Sidebar, keine
+    Ressourcenleiste, keine andere Route erreichbar.
+
+57. **Alle drei Klassen teilen sich ein festes "Gesamtbudget" von ~100 Prozentpunkten Kampfbonus,
+    nur unterschiedlich auf Waffen/Schild/Panzerung verteilt** (Nutzerentscheidung nach Ruecksprache
+    zur Balance):
+    - **Kanonier**: +100% NUR Waffenschaden (Schild/Panzerung bleiben Basis) - tötet am
+      schnellsten, hält am wenigsten aus.
+    - **Bollwerk**: +50% Schild UND +50% Panzerung (Waffenschaden bleibt Basis) - haelt am
+      laengsten durch, braucht aber laenger fuer den Sieg.
+    - **Kommandant**: +33,33% auf Waffen UND Schild UND Panzerung gleichermaßen
+      (`CLASS_KOMMANDANT_COMBAT_MULTIPLIER = 4/3`) - Allrounder ohne Schwaeche, aber auch ohne
+      Glanzpunkt, klar schwaecher pro Einzelwert als die beiden Spezialisten.
+    Ergibt echtes Schere-Stein-Papier zwischen den Klassen statt einer einzelnen "objektiv
+    staerksten" Wahl (eine fruehere Variante mit EINER reinen Kampf-Klasse plus zwei reinen
+    Wirtschafts-/Effizienz-Klassen wurde verworfen, weil Kampfkraft in JEDEM Spielmodus zaehlt,
+    Wirtschaft/Effizienz aber nur in ihrer jeweiligen Nische - die Kampf-Klasse waere ohne echten
+    Gegenspieler immer die beste Wahl gewesen).
+
+58. **Die Pro-Wert-Aufteilung ist zentral in `getEffectiveStats()` verankert** (`combat.ts`,
+    `classCombatMultipliers()`) - wie der 24h-Kampf-Booster und Forschung auch - und muss daher an
+    JEDEM Kampf-Aufrufer explizit durchgereicht werden: `missions.ts`, `raids.ts` (Einzel- UND
+    Mehrspieler-Pfad, `OwnedFleetContribution.playerClass` PRO Beitragendem, da mehrere Teilnehmer
+    unterschiedliche Klassen haben können), `groupOps.ts` (Elite-Bollwerk/Piratenadmiral teilen
+    sich `contributionsFromParticipants()`), `simulator.ts`. Fließt bewusst NICHT in die
+    Feindstärke-Berechnung ein (`combatFleetPowerBase()`/Raid-Verteidigungsanlagen-Power nutzen
+    weiterhin `baseStats()`, nicht `getEffectiveStats()`) - die Klasse macht staerker, ohne
+    automatisch haertere Gegner heraufzubeschwoeren. Bei jedem NEUEN Kampf-Aufrufer künftig genauso
+    verfahren wie bei Forschung/Kampf-Booster auch.
+
+59. **Zweiter Bonus je Klasse: getrennte Baukosten-Rabatte statt eines gemeinsamen Faktors**
+    (`shipCostMultiplier()`/`defenseCostMultiplier()` in `actions.ts`, NEUES Muster - Baukosten
+    liefen vorher unverändert direkt aus den Schiffs-/Verteidigungsdaten): Kanonier -10% NUR
+    Schiffe, Bollwerk -25% NUR Verteidigungsanlagen, Kommandant -10% BEIDES. Angewendet in
+    `startBuild()`/`startDefenseBuild()` - `canAfford()`-Prüfung läuft dabei gegen den BEREITS
+    RABATTIERTEN Preis, sonst würde ein Spieler mit exakt ausreichend Ressourcen für den
+    Rabattpreis fälschlich abgelehnt. Client: identische Spiegel-Funktionen in
+    `lib/multipliers.ts`, eingebunden in `Werft.tsx`/`Verteidigung.tsx` (Punkt 1 gilt hier analog:
+    jede Kosten-ANZEIGE muss diese Werte spiegeln, sonst zeigt die UI falsche Preise). Gebäude
+    (inkl. Minen) sind von KEINER Klasse betroffen - reine Kampf-Klassen greifen nicht in die
+    Wirtschaft ein.
+
+60. **Dritter Bonus je Klasse, jeweils zum Kampfstil passend:** Kanonier +25% Flottengeschwindigkeit
+    (`galaxyFleetSpeed()` in `galaxy.ts`, reiht sich neben Antriebstechnik-Forschung ein - wirkt auf
+    ALLE Flugbewegungen, nicht nur Missionen). Bollwerk repariert Verteidigungsanlagen nach einem
+    Raid-Kampf zu 90% statt der sonst üblichen 70% (`CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT` in
+    `data/classes.ts`, `defenseRepairPercentFor()` in `raids.ts` - nur bei Raids relevant, da
+    Verteidigungsanlagen nur dort kämpfen). Kommandant +15% Flottengeschwindigkeit (schwächer als
+    Kanoniers +25%, passend zum Allrounder-Charakter).
+
+61. **Der 24h-Kampf-Booster (`kampfBoostActive`, +20% Waffen/Schild/Panzerung) war seit seiner
+    Einführung wirkungslos** - er wurde gekauft und als Ablaufzeit in `state.activeBoosters`
+    gespeichert, aber NIRGENDS an einen tatsächlichen Kampf-Aufruf übergeben (`kampfBoostActive`
+    blieb überall implizit `false`). Im Zuge der Klassen-Kampfbonus-Verdrahtung (Punkt 58)
+    mitbehoben, da beide denselben Verdrahtungs-Bedarf an denselben Stellen hatten:
+    `isBoosterActive(state, 'kampf')` wird jetzt an JEDEM Kampf-Aufrufer übergeben, inklusive PRO
+    Beitragendem bei Mehrspieler-Kämpfen (`OwnedFleetContribution.kampfBoostActive`, vorher dort
+    fest auf `false` verdrahtet). `isBoosterActive()` wohnt bewusst in einer eigenen,
+    abhängigkeitsfreien Datei (`boosterUtil.ts`) statt weiterhin in `actions.ts` - ein Import aus
+    `actions.ts` heraus hätte in `missions.ts`/`raids.ts`/`groupOps.ts`/`simulator.ts` einen
+    Zirkelbezug erzeugt (`actions.ts` importiert bereits von allen vieren).
 
 ## Kurz-Changelog
 
@@ -582,3 +666,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
 - Raids laufen jetzt in 5 Wellen über 1 Stunde nach Ankunft statt als einzelner Kampf; Feindstärke
   skaliert auf der Verteidigungsanlagen-Stärke (70%→110% über die Wellen), Belohnung gibt es erst
   als Abschluss-Bonus nach der letzten Welle (plus Elite-Container bei perfekter Verteidigung).
+- Klassensystem eingeführt: drei reine Kampf-Archetypen (Kanonier: Waffenschaden, Bollwerk:
+  Schild/Panzerung, Kommandant: Allrounder) - Erstwahl kostenlos und verpflichtend, Wechsel
+  jederzeit gegen 500 DM.
+- Bug behoben: der 24h-Kampf-Booster (+20%) war seit Einführung wirkungslos, da nie tatsächlich an
+  einen Kampf übergeben - jetzt überall korrekt verdrahtet.
