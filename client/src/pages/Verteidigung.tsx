@@ -5,7 +5,7 @@ import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { formatTime } from '../lib/format';
 import { getRapidFireDisplay, computeDomeSharedPool, shipName, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy, getCritChance } from '../lib/combatInfo';
-import { getDefenseBauzeitMultiplier } from '../lib/multipliers';
+import { getDefenseBauzeitMultiplier, getDefenseCostMultiplier } from '../lib/multipliers';
 
 export function VerteidigungPage() {
   const { gameData, state, buildDefense, error } = useGame();
@@ -17,6 +17,7 @@ export function VerteidigungPage() {
 
   const domePool = computeDomeSharedPool(gameData, state.defense, state.research);
   const bauzeitMult = getDefenseBauzeitMultiplier(gameData, state);
+  const costMult = getDefenseCostMultiplier(state);
   const infoDef = infoDefId ? gameData.defenses.find((d) => d.id === infoDefId) : null;
 
   return (
@@ -37,7 +38,11 @@ export function VerteidigungPage() {
           const frei = def.maxCount ? def.maxCount - bestand : Infinity;
           const qty = qtyById[def.id] ?? 10;
           const capQty = Math.max(0, Math.min(qty, frei));
-          const totalCost = { metall: def.cost.metall * capQty, kristall: def.cost.kristall * capQty, deuterium: def.cost.deuterium * capQty };
+          const totalCost = {
+            metall: def.cost.metall * costMult * capQty,
+            kristall: def.cost.kristall * costMult * capQty,
+            deuterium: def.cost.deuterium * costMult * capQty,
+          };
           const affordable =
             state.resources.metall >= totalCost.metall &&
             state.resources.kristall >= totalCost.kristall &&
@@ -68,8 +73,9 @@ export function VerteidigungPage() {
                 </div>
 
                 <div className="ship-cost">
-                  Kosten je Stück: {def.cost.metall.toLocaleString('de-DE')} Metall, {def.cost.kristall.toLocaleString('de-DE')} Kristall,{' '}
-                  {def.cost.deuterium.toLocaleString('de-DE')} Deuterium
+                  Kosten je Stück: {(def.cost.metall * costMult).toLocaleString('de-DE')} Metall,{' '}
+                  {(def.cost.kristall * costMult).toLocaleString('de-DE')} Kristall, {(def.cost.deuterium * costMult).toLocaleString('de-DE')} Deuterium
+                  {costMult !== 1 && ' (Klassen-Rabatt bereits eingerechnet)'}
                 </div>
                 <div className="ship-cost" style={{ color: affordable ? 'var(--accent-deut)' : 'var(--danger)', fontWeight: 600 }}>
                   Gesamtkosten für {capQty} Stück: {totalCost.metall.toLocaleString('de-DE')} Metall, {totalCost.kristall.toLocaleString('de-DE')}{' '}

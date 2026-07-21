@@ -1,0 +1,75 @@
+import { useGame } from '../context/GameContext';
+
+// Wird an zwei Stellen eingebunden: als normaler Nav-Tab (Wechsel gegen DM) UND als blockierende
+// Erstwahl-Ansicht in App.tsx (siehe GameHome dort), wenn state.playerClass noch null ist -
+// dieselbe Komponente deckt beide Faelle ab (mandatory steuert nur Layout-Feinheiten/Text).
+export function KlassePage({ mandatory = false }: { mandatory?: boolean }) {
+  const { gameData, state, setPlayerClass, error } = useGame();
+  if (!gameData || !state) return <p>Lade...</p>;
+
+  const current = state.playerClass;
+  const cost = gameData.classChangeCostDm;
+
+  return (
+    <div>
+      {mandatory ? (
+        <>
+          <h2 style={{ marginBottom: 8 }}>Willkommen, Kommandant</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 20 }}>
+            Bevor es losgeht, wähle eine Klasse. Sie prägt deinen weiteren Weg spürbar - kann aber jederzeit später
+            gegen {cost} Dunkle Materie gewechselt werden, falls sich dein Spielstil ändert.
+          </p>
+        </>
+      ) : (
+        <h2 style={{ marginBottom: 16 }}>Klasse</h2>
+      )}
+      {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
+
+      <div className="ship-grid">
+        {gameData.playerClasses.map((cls) => {
+          const isCurrent = current === cls.id;
+          const canAfford = state.resources.dm >= cost;
+          return (
+            <div className="ship-card" key={cls.id} style={isCurrent ? { borderColor: 'var(--accent-deut)' } : undefined}>
+              <img
+                className="ship-img"
+                src={`/${cls.img}`}
+                alt={cls.name}
+                onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+              />
+              <div className="ship-info">
+                <h3>
+                  {cls.name}
+                  {isCurrent && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent-deut)', fontWeight: 600 }}>AKTUELLE KLASSE</span>
+                  )}
+                </h3>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>{cls.tagline}</p>
+                <ul style={{ fontSize: 12, paddingLeft: 18, marginBottom: 12 }}>
+                  {cls.bonuses.map((b, i) => (
+                    <li key={i} style={{ marginBottom: 2 }}>
+                      {b.label}
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent ? null : current === null ? (
+                  <button className="build-btn" onClick={() => setPlayerClass(cls.id)}>
+                    Kostenlos wählen
+                  </button>
+                ) : (
+                  <div className="build-row">
+                    <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Wechsel-Kosten: {cost} DM</span>
+                    <button className="build-btn" disabled={!canAfford} onClick={() => setPlayerClass(cls.id)}>
+                      Wechseln
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
