@@ -4,7 +4,7 @@ import type { AuthedRequest } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
-import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
+import { sendFleet, recallMission } from './missions.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
@@ -13,7 +13,7 @@ import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, c
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listAllUsers } from '../db.js';
-import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
+import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass } from './classActions.js';
 import { PLAYER_CLASSES, CLASS_CHANGE_COST_DM } from './data/classes.js';
 import { SHIPS } from './data/ships.js';
@@ -244,10 +244,6 @@ gameRouter.post('/galaxy/recall', (req: AuthedRequest, res) => {
 
 // ---- Sektor / Missionen ----
 
-gameRouter.get('/sektor/available/:sektorId', (req: AuthedRequest, res) => {
-  res.json({ ids: availableFleetForSektor(req.params.sektorId) });
-});
-
 gameRouter.post('/mission/send', (req: AuthedRequest, res) => {
   const { sektorId, selection } = req.body ?? {};
   if (typeof sektorId !== 'string' || typeof selection !== 'object' || selection === null) {
@@ -277,13 +273,6 @@ gameRouter.post('/inventory/redeem', (req: AuthedRequest, res) => {
 });
 
 // ---- Haendler ----
-
-gameRouter.get('/trade/preview', (req: AuthedRequest, res) => {
-  const amount = Number(req.query.amount) || 0;
-  const from = String(req.query.from || '');
-  const to = String(req.query.to || '');
-  res.json({ received: computeTradeReceive(amount, from, to) });
-});
 
 gameRouter.post('/trade/execute', (req: AuthedRequest, res) => {
   const { amount, from, to } = req.body ?? {};

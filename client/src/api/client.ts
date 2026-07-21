@@ -2,8 +2,8 @@ import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, Si
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
-// Auf Render.com in den Umgebungsvariablen der Client-Seite auf die Server-URL setzen
-// (siehe render.yaml, VITE_API_BASE), da Client und Server dort auf unterschiedlichen Domains laufen.
+// In Coolify (Hetzner) in den Umgebungsvariablen der Client-Seite auf die Server-URL setzen
+// (VITE_API_BASE), da Client und Server dort auf unterschiedlichen Domains laufen.
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export function getToken(): string | null {

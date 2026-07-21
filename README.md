@@ -17,8 +17,6 @@ Reparieren).
 ## Dateistruktur
 
 ```
-render.yaml                          Legacy-Blueprint aus der Render.com-Zeit, nicht mehr genutzt
-
 server/
   .env.example                       Vorlage für lokale .env (JWT_SECRET, PORT, CLIENT_ORIGIN)
   package.json                       "dev" startet tsc --watch + tsx watch parallel (siehe unten)
@@ -139,9 +137,6 @@ client/
                                       haengt per Verbindungslinie direkt UNTER deren
                                       DefenseBuildCard - analog zu ShipModuleRow.tsx, kein
                                       Antriebs-Modul
-  src/components/CombatReplayView.tsx  UNGENUTZT - Canvas-Kampfvisualisierung wurde aus dem
-                                      Frontend entfernt, Datei bleibt für eine mögliche
-                                      Reaktivierung bestehen
   src/components/ErrorBoundary.tsx   Fängt Render-Fehler ab, zeigt sie sichtbar statt stiller App-
                                       Absturz (ergänzt durch errorOverlay.ts für Fehler außerhalb
                                       des React-Render-Zyklus)
@@ -349,15 +344,9 @@ client/
     - Info-Popups kündigen nur an, dass Überraschungen vorkommen können, nennen nie die genauen
       Werte/Chancen vorab - der tatsächliche Ausgang wird erst im Kampfbericht sichtbar.
 
-29. **`generatePiratenFleet()`/`generateCappedFleet()` deckeln NPC-Jäger-Wellen auf 500 Stück je
-    Klasse** (`NPC_JAEGER_MAX_COUNT`, `NPC_JAEGER_CAPPED_IDS`), aktuell über
-    `NPC_JAEGER_CAP_ENABLED = false` in `combatConstants.ts` **deaktiviert** (war eine
-    Render-Notmaßnahme, seit dem Hetzner-Umzug nicht mehr nötig). Spieler-eigene Baulimits sind
-    davon nie betroffen. Bei erneuten Server-Lastproblemen: Schalter zurück auf `true`.
-
-30. **Kampfbericht-Rundendaten (`CombatReplay`) werden weiterhin serverseitig aufgezeichnet, aber
-    NICHT mehr im Frontend angezeigt** (Canvas-Visualisierung auf Wunsch entfernt,
-    `CombatReplayView.tsx` bleibt ungenutzt liegen, falls sie später wieder gewünscht wird).
+29. **Kampfbericht-Rundendaten (`CombatReplay`) werden weiterhin serverseitig aufgezeichnet, aber
+    NICHT mehr im Frontend angezeigt** (Canvas-Visualisierung auf Wunsch entfernt, die zugehörige
+    `CombatReplayView.tsx` wurde als toter Code gelöscht).
 
 31. **Kampfsimulator (`simulator.ts`, Route `/game/simulate`) darf NIEMALS den Spielstand
     verändern** - eigene Route statt `handleAction()`, lädt nur lesend. Nutzt exakt dieselbe
