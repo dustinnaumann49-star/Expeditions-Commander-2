@@ -91,6 +91,9 @@ server/
   src/game/data/buildings.ts         Alle Gebäudedaten (Metall-/Kristall-/Deuteriummine,
                                       Solarkraftwerk, Roboter-/Nanitenfabrik)
   src/game/data/buildingModules.ts   Gebäude-Module (je Gebäude 2-3 Zusatzausbauten)
+  src/game/data/shipModules.ts       Schiffs-Module (Waffen/Schild/Panzerung/Antrieb je Schiff) -
+                                      alle 52 Definitionen per Generator-Funktion erzeugt statt
+                                      Handarbeit (13 Schiffe x 4 Module)
   src/game/data/changelog.ts         Spielerlesbare Update-Historie für die Im-Spiel-Updates-Seite
   src/game/data/classes.ts           Klassendefinitionen (Kanonier/Bollwerk/Kommandant) inkl.
                                       aller Bonus-Konstanten und Anzeigetexte
@@ -118,6 +121,13 @@ client/
   src/components/BuildQueue.tsx      Fortschrittsbalken für Bau-Warteschlangen (Lane-basiert)
   src/components/LoreModal.tsx       Popup bei Klick auf Schiffs-/Verteidigungs-/Forschungsnamen
   src/components/InfoModal.tsx       Popup mit vollem Detailwissen (RapidFire, Präzision, usw.)
+  src/components/ShipBuildCard.tsx   Wiederverwendbare Schiffs-Baukarte (normale, ressourcen-
+                                      finanzierte Schiffe) - gemeinsam genutzt von Werft.tsx
+                                      (Hauptliste) und Spezialschiffe.tsx (Salvenschiffe)
+  src/components/ShipModuleRow.tsx   Waffen-/Schild-/Panzerung-/Antriebs-Module EINES Schiffs,
+                                      haengt per Verbindungslinie direkt UNTER dessen ShipBuildCard
+                                      (Werft-Hauptliste UND Spezialschiffe) - bewusst KEIN eigener
+                                      Tab (Nutzerentscheidung, siehe README-Punkt)
   src/components/CombatReplayView.tsx  UNGENUTZT - Canvas-Kampfvisualisierung wurde aus dem
                                       Frontend entfernt, Datei bleibt für eine mögliche
                                       Reaktivierung bestehen
@@ -127,7 +137,10 @@ client/
   src/components/ProtectedRoute.tsx  Leitet zu /login um, falls nicht angemeldet
 
   src/pages/Login.tsx                Login/Registrierung
-  src/pages/Werft.tsx                Schiffe bauen
+  src/pages/Werft.tsx                Schiffe bauen + Untertab "Spezialschiffe" (rendert
+                                      Spezialschiffe.tsx) - Schiffs-Module (siehe unten) hängen
+                                      direkt unter jeder Schiffskarte, kein eigener Untertab
+
   src/pages/Verteidigung.tsx         Verteidigungsanlagen bauen
   src/pages/Forschung.tsx            Forschungsbaum + Untertab "Gebäude" (rendert Gebaeude.tsx)
   src/pages/Gebaeude.tsx             Gebäude ausbauen + Module (Untertab von Forschung)
@@ -137,8 +150,11 @@ client/
   src/pages/Flotte.tsx               Flotten-Bestandsübersicht
   src/pages/Haendler.tsx             Ressourcentausch + Untertab "Schrotthändler"
   src/pages/Schrotthaendler.tsx      Schiffe/Verteidigung verschrotten (Untertab von Händler)
-  src/pages/Shop.tsx                 Booster/Zeit-Gutscheine + Untertab "Spezialteile"
-  src/pages/Spezialteile.tsx         Imperator bauen (Untertab von Shop)
+  src/pages/Shop.tsx                 Booster/Zeit-Gutscheine (Spezialteile/Imperator seit dem
+                                      Spezialschiffe-Umzug nicht mehr hier, siehe Werft.tsx)
+  src/pages/Spezialschiffe.tsx       Salvenschiffe (normale Ressourcen) + Imperator (Spezialteile) -
+                                      Untertab von Werft, übernimmt die Funktion des entfernten
+                                      Shop-Untertabs Spezialteile
   src/pages/Multiplayer.tsx          Elite-Bollwerk + Piratenadmiral-Expeditionen, Untertabs
                                       "Raid-Hilfe" und "Spieler" (Online/Offline-Liste)
   src/pages/Galaxie.tsx              Galaxie-Ansicht: System-Browser, Positionsraster,
@@ -605,6 +621,75 @@ client/
     `actions.ts` heraus hätte in `missions.ts`/`raids.ts`/`groupOps.ts`/`simulator.ts` einen
     Zirkelbezug erzeugt (`actions.ts` importiert bereits von allen vieren).
 
+62. **Werft bekommt einen neuen Untertab "Spezialschiffe".** Die drei Salvenschiffe (vorher Teil
+    der normalen Jäger-/Kreuzer-/Elite-Klassen-Listen) und der Imperator (vorher Untertab
+    "Spezialteile" von Shop) sind in einen gemeinsamen Untertab umgezogen (`Spezialschiffe.tsx`) -
+    der Imperator ist NICHT mehr an zwei Stellen gleichzeitig baubar. Salvenschiffe bauen dabei
+    weiterhin ganz normal über `buildShip()`/die 3 Bau-Slots (nur ihre Anzeige-Gruppierung hat
+    sich geändert), der Imperator unverändert über die separate Spezialteile-Aktion
+    (`buildImperator()`). Die gemeinsame Schiffs-Baukarten-Logik (Kosten/Bauzeit/Bestand/
+    Info-Popup) wurde dafür aus `Werft.tsx` in eine wiederverwendbare Komponente
+    (`components/ShipBuildCard.tsx`) extrahiert, damit Hauptliste und Spezialschiffe-Tab nicht
+    denselben Code duplizieren.
+
+63. **Schiffs-Modulsystem: jedes der 12 `COMBAT_SHIP_IDS`-Kampfschiffe plus Imperator bekommt
+    eigene Waffen-/Schild-/Panzerung-/Antriebs-Module** (Nutzerentscheidung - bewusst PRO SCHIFF,
+    nicht global über die ganze Flotte, analog zum Gebäude-Modulsystem aber ohne dessen
+    Freischalt-Schwelle, da Schiffe keine "Stufe" haben, an der man eine Mindestvoraussetzung
+    festmachen könnte). Mining-Schiff und Begleitschiff bleiben bewusst ohne Module (reine
+    Nicht-Kampf-/Hilfsschiffe). Alle 52 Modul-Definitionen (13 Schiffe × 4 Module) werden in
+    `data/shipModules.ts` per Generator-Funktion aus den jeweiligen Schiffsdaten erzeugt statt von
+    Hand geschrieben - Kosten/Bauzeit leiten sich von den Stückkosten/der Basis-Bauzeit des
+    jeweiligen Schiffs ab (Imperator hat keine `cost`, nur `teileCost` - eigene, seinem mythischen
+    Status entsprechend extrem hohe Fixkosten statt einer Ableitung). Bilder werden bewusst NICHT
+    neu erstellt, sondern von der jeweils passenden Forschung wiederverwendet
+    (Waffentechnik/Schildtechnik/Panzerungtechnik bzw. dem zum tatsächlichen `driveType` des
+    Schiffs passenden Antriebs-Forschungsbild).
+    - **Stufenlimit 10** (Nutzerentscheidung), Effekt +3%/Stufe bei Waffen/Schild/Panzerung
+      (max. +30%), +2%/Stufe bei Antrieb (max. +20%, gleiche Größenordnung wie die bestehende
+      Antriebstechnik-Forschung) - bewusst deutlich kleiner als der Klassen-Bonus, als
+      zusätzliche Spätspiel-Feinabstimmung gedacht, nicht als Ersatz.
+    - **Eigener, globaler Bau-Slot** (`MAX_SHIP_MODULE_SLOTS = 1`, `state.shipModuleQueue`),
+      unabhängig von den 3 normalen Schiffs-Bauplätzen (`buildQueue`) - konkurriert nicht mit dem
+      eigentlichen Schiffbau, analog zum einen gemeinsamen Gebäude-Bauslot.
+    - **Kampf-Anbindung läuft über denselben Mechanismus wie Klassen-Bonus/Kampf-Booster**
+      (`getEffectiveStats()` in `combat.ts`, jetzt mit `shipModules`-Parameter) und muss daher an
+      denselben Stellen durchgereicht werden: `missions.ts`, `raids.ts` (`OwnedFleetContribution.
+      shipModules` PRO Beitragendem bei Mehrspieler-Kämpfen), `groupOps.ts`, `simulator.ts`. Gilt
+      NUR für Schiffe, nie für Verteidigungsanlagen (die haben keine eigenen Module).
+    - **Antriebs-Modul wirkt in `galaxyFleetSpeed()`** ausschließlich auf den Schiffstyp, der
+      gerade das langsamste Schiff der jeweiligen Flotte ist (exakt wie die bestehende
+      Antriebsklassen-Forschung auch nur dort ansetzt) - an allen 7 Aufrufern von
+      `galaxyFleetSpeed()` durchgereicht.
+    - **UI hängt bewusst OHNE eigenen Tab direkt an der Baustelle** (Nutzerentscheidung, nach
+      Rücksprache über eine ursprünglich geplante separate Tab-Lösung verworfen): jedes Schiff
+      bekommt seine Module per Verbindungslinie (`components/ShipModuleRow.tsx`, gleiches VLine-
+      Muster wie der Gebäude-Modulbaum in `Gebaeude.tsx`) direkt UNTER seiner eigenen
+      `ShipBuildCard` angehängt - in der Werft-Hauptliste (Jäger-/Kreuzer-/Elite-Klasse) UND im
+      Spezialschiffe-Tab (Salvenschiffe, Imperator). Modul-Bau/-Info geschieht damit exakt dort,
+      wo auch das Schiff selbst gebaut wird, statt an einer separaten Stelle.
+
+64. **Imperator-Kampfwerte nochmals deutlich angehoben** (Nutzerentscheidung: Waffen/Schild
+    lagen trotz Baulimit 2 und 1.000 Spezialteile/Kategorie Aufwand kaum über gewöhnlichen
+    Kampfschiffen - Waffen 50.400/Schild 12.600/Panzerung 2.520.000 → **Waffen 5.000.000/Schild
+    2.500.000/Panzerung 12.000.000** (`ships.ts`). Bewusst NICHT proportional zum alten
+    Verhältnis hochskaliert (das hätte Panzerung auf ~126 Mio. getrieben) - alle drei Werte
+    eigenständig auf ein zum seltensten/teuersten Schiff im Spiel passendes Niveau gesetzt.
+    Baulimit (2) und Spezialteile-Kosten (1.000/Kategorie) bleiben unverändert.
+
+65. **Dabei entdeckt und behoben: der Imperator wirkte bei Raids (Heimatverteidigung) bislang NIE
+    mit**, unabhängig von seinen Werten - ein von den Werten unabhängiger, eigener Bug. Ursache:
+    `raids.ts` ermittelte die verteidigende Flotte über das rohe `COMBAT_SHIP_IDS`
+    (`homeShipIds`/`hasAnyDefense()`), das den Imperator bewusst NICHT enthält (das steuert nur
+    die Einsetzbarkeit in SOLO-Missionen außerhalb der Heimatbasis, siehe Punkt 51). Bei
+    Piraten-Sektor-Missionen, Elite-Bollwerk und Piratenadmiral war der Imperator dagegen schon
+    immer explizit zugelassen (`availableFleetForSektor()` in `missions.ts`,
+    `ADMIRAL_ALLOWED_SHIP_IDS`) - Raids waren die einzige übersehene Ausnahme. Fix: neue
+    `HOME_DEFENSE_SHIP_IDS`-Konstante (`COMBAT_SHIP_IDS` + `'imperator'`) in `raids.ts`, ersetzt
+    das rohe `COMBAT_SHIP_IDS` an beiden Stellen. Die Einsetzbarkeit in SOLO-Missionen bleibt
+    davon unberührt (weiterhin über `availableFleetForSektor()`/das clientseitige Pendant
+    gesteuert, nicht über diese neue Konstante).
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -671,3 +756,10 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   jederzeit gegen 500 DM.
 - Bug behoben: der 24h-Kampf-Booster (+20%) war seit Einführung wirkungslos, da nie tatsächlich an
   einen Kampf übergeben - jetzt überall korrekt verdrahtet.
+- Werft: Salvenschiffe + Imperator in neuen Untertab "Spezialschiffe" umgezogen (Shop > Spezialteile
+  entfällt dafür). Jedes Kampfschiff + Imperator bekommt eigene Waffen-/Schild-/Panzerung-/
+  Antriebs-Module (Stufe 1-10, +3%/+2% pro Stufe, eigener Bau-Slot), per Verbindungslinie direkt
+  unter der jeweiligen Schiffskarte statt in einem eigenen Tab.
+- Imperator-Kampfwerte auf Millionen-Niveau angehoben (Waffen 5 Mio., Schild 2,5 Mio., Panzerung
+  12 Mio.); dabei Bug behoben, dass der Imperator bei Raids nie mitverteidigt hat (bei Sektor-
+  Missionen/Elite-Bollwerk/Piratenadmiral war er schon immer zugelassen).
