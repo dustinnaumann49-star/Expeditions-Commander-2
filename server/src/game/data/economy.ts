@@ -64,70 +64,99 @@ export interface ContainerRewardDef {
   ships?: Record<string, number>;
 }
 
+// Container-Kategorie mit eigener, unabhaengiger Dropchance (Nutzerentscheidung, ersetzt das
+// vorherige "wahllos N von X" Pick-System). Enthaelt eine oder mehrere Varianten (z.B. die vier
+// Zeitgutschein-Typen) - trifft die Kategorie, wird GENAU EINE Variante daraus zufaellig
+// vergeben, siehe rollContainerRewards() in inventory.ts.
+export interface ContainerCategoryDef {
+  category: 'resources' | 'dm' | 'teile' | 'zeitgutschein' | 'freischiff';
+  chance: number; // 0-1, unabhaengiger Wurf PRO Kategorie beim Oeffnen
+  rewards: ContainerRewardDef[];
+}
+
 export interface ContainerTypeDef {
   name: string;
   tier: string;
   icon: string;
   color: string;
-  pickCount: number;
-  rewards: ContainerRewardDef[];
+  categories: ContainerCategoryDef[];
 }
 
-export const CONTAINER_TYPES: Record<string, ContainerTypeDef> = 
+// Zieh-Mechanik (Nutzerentscheidung, siehe rollContainerRewards() in inventory.ts): jede Kategorie
+// wird EINZELN und UNABHAENGIG gegen ihre eigene `chance` gewuerfelt. Danach wird auf GENAU 2
+// Treffer normalisiert - mehr als 2 Treffer werden zufaellig auf 2 reduziert, weniger als 2
+// werden mit den Kategorien mit der naechsthoechsten chance aufgefuellt (deterministisch nach
+// chance sortiert, nicht nochmal gewuerfelt). Bewusst ANDERS als das strikte Punktesystem der
+// Piraten-Sektor-Belohnungs-Eskalation - hier soll sich jede Container-Oeffnung wie ein kleines
+// eigenes Wuerfelergebnis anfuehlen, nicht wie eine reine Ziehung aus einer festen Urne.
+export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
 {
   silber: {
     name: "Silber-Container",
     tier: "silber",
     icon: "📦",
     color: "#b0b0b0",
-    pickCount: 3,
-    rewards: [
-      { type:'resources', label:'Rohstoff-Fracht', metall:10000000, kristall:6000000, deuterium:3000000 },
-      { type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 },
-      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (40%)', percent:0.40 },
-      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (40%)', percent:0.40 },
-      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (40%)', percent:0.40 },
-      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (40%)', percent:0.40 },
-      { type:'freischiff', label:'Geschenkte Flotte', ships:{ leicht:25, schwer:25, kreuzer:15, schlachtschiff:15, bomber:15, schlachtkreuzer:8, zerstoerer:8, reaper:8 } }
-    ]
+    categories: [
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Rohstoff-Fracht', metall:10000000, kristall:6000000, deuterium:3000000 }] },
+      { category: 'teile', chance: 0.80, rewards: [{ type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 }] },
+      { category: 'zeitgutschein', chance: 0.20, rewards: [
+        { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (40%)', percent:0.40 },
+        { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (40%)', percent:0.40 },
+        { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (40%)', percent:0.40 },
+        { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (40%)', percent:0.40 },
+      ] },
+      { category: 'freischiff', chance: 0.20, rewards: [
+        { type:'freischiff', label:'Geschenkte Flotte', ships:{ leicht:25, schwer:25, kreuzer:15, schlachtschiff:15, bomber:15, schlachtkreuzer:8, zerstoerer:8, reaper:8 } },
+      ] },
+    ],
   },
   gold: {
     name: "Gold-Container",
     tier: "gold",
     icon: "🏆",
     color: "#ffd700",
-    pickCount: 4,
-    rewards: [
-      { type:'resources', label:'Große Rohstoff-Fracht', metall:25000000, kristall:20000000, deuterium:17000000 },
-      { type:'dm', label:'Dunkle Materie', amount:25 },
-      { type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 },
-      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (75%)', percent:0.75 },
-      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (75%)', percent:0.75 },
-      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (75%)', percent:0.75 },
-      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (75%)', percent:0.75 },
-      { type:'freischiff', label:'Geschenkte Großflotte', ships:{ leicht:50, schwer:50, kreuzer:35, schlachtschiff:35, bomber:35, schlachtkreuzer:18, zerstoerer:18, reaper:18 } }
-    ]
+    categories: [
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Große Rohstoff-Fracht', metall:25000000, kristall:20000000, deuterium:17000000 }] },
+      { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Dunkle Materie', amount:25 }] },
+      { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 }] },
+      { category: 'zeitgutschein', chance: 0.15, rewards: [
+        { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (75%)', percent:0.75 },
+        { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (75%)', percent:0.75 },
+        { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (75%)', percent:0.75 },
+        { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (75%)', percent:0.75 },
+      ] },
+      { category: 'freischiff', chance: 0.15, rewards: [
+        { type:'freischiff', label:'Geschenkte Großflotte', ships:{ leicht:50, schwer:50, kreuzer:35, schlachtschiff:35, bomber:35, schlachtkreuzer:18, zerstoerer:18, reaper:18 } },
+      ] },
+    ],
   },
-  // Neue Top-Stufe UEBER Gold - exklusiv fuer Elite-Bollwerk-Abschluss (Multiplayer, Punkt 39) und
-  // Piratenkapitaen-Kills im Elite-Bollwerk selbst (sectors.ts, captainContainerTier:"elite").
-  // Bewusst NICHT ueber normale Piraten-Sektoren/Raids erreichbar - siehe README.
+  // Neue Top-Stufe UEBER Gold - exklusiv fuer Elite-Bollwerk-Abschluss (Multiplayer, Punkt 39),
+  // Piratenkapitaen-Kills im Elite-Bollwerk selbst (sectors.ts, captainContainerTier:"elite") und
+  // die kleine Zusatz-Chance bei perfekt abgewehrten Raids (siehe raids.ts). Bewusst NICHT ueber
+  // normale Piraten-Sektoren/normale Raid-Wellen erreichbar - Elite bleibt ueberall reine
+  // Glueckssache (Nutzerentscheidung).
   elite: {
     name: "Elite-Container",
     tier: "elite",
     icon: "💎",
     color: "#c99bff",
-    pickCount: 5,
-    rewards: [
-      { type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:45000000, kristall:38000000, deuterium:32000000 },
-      { type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 },
-      { type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 },
-      { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (100%)', percent:1.0 },
-      { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (100%)', percent:1.0 },
-      { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (100%)', percent:1.0 },
-      { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (100%)', percent:1.0 },
-      { type:'freischiff', label:'Geschenkte Elite-Flotte', ships:{ leicht:80, schwer:80, kreuzer:60, schlachtschiff:60, bomber:60, schlachtkreuzer:30, zerstoerer:30, reaper:30, salvenkreuzer:2 } }
-    ]
-  }
+    categories: [
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:45000000, kristall:38000000, deuterium:32000000 }] },
+      { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 }] },
+      { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 }] },
+      { category: 'zeitgutschein', chance: 0.10, rewards: [
+        { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (100%)', percent:1.0 },
+        { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (100%)', percent:1.0 },
+        { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (100%)', percent:1.0 },
+        { type:'zeitgutschein_forschung', label:'Zeit-Gutschein Forschung (100%)', percent:1.0 },
+      ] },
+      // Salvenkreuzer entfernt (Nutzerentscheidung) - Geschenkte Elite-Flotte besteht jetzt nur
+      // noch aus regulaeren Kampfschiffen.
+      { category: 'freischiff', chance: 0.10, rewards: [
+        { type:'freischiff', label:'Geschenkte Elite-Flotte', ships:{ leicht:80, schwer:80, kreuzer:60, schlachtschiff:60, bomber:60, schlachtkreuzer:30, zerstoerer:30, reaper:30 } },
+      ] },
+    ],
+  },
 };
 
 // ===== Jackpot-Mechanik =====
@@ -139,7 +168,7 @@ export const JACKPOT_CHANCE = 0.05; // 5% Chance pro Container-Oeffnung
 export const JACKPOT_REWARDS: Record<string, ContainerRewardDef> = {
   silber: { type:'resources', label:'🎰 Jackpot! Rohstoff-Ladung', metall:30000000, kristall:22000000, deuterium:11000000 },
   gold:   { type:'dm', label:'🎰 Jackpot! Dunkle-Materie-Fund', amount:120 },
-  elite:  { type:'freischiff', label:'🎰 Jackpot! Flaggschiff-Geschenk', ships:{ schlachtkreuzer:20, zerstoerer:15, reaper:15, salvenkreuzer:5 } }
+  elite:  { type:'freischiff', label:'🎰 Jackpot! Flaggschiff-Geschenk', ships:{ schlachtkreuzer:20, zerstoerer:15, reaper:15 } }
 };
 
 export interface NpcSpecialDef {
@@ -174,9 +203,12 @@ export const RAID_CHECK_HOURS_LOCAL = [0, 6, 12, 18];
 // UNTERSCHIEDLICHEN Uhrzeiten, damit nie wieder zwei Kampfaufloesungen gleichzeitig laufen.
 // Faellt ein Nutzername NICHT in dieser Liste (z.B. ein zukuenftiger dritter Spieler), gilt der
 // normale RAID_CHECK_HOURS_LOCAL-Rhythmus MIT Wuerfeln als Fallback (siehe raids.ts).
+// Nutzerentscheidung: Raids kommen nur noch alle 12h statt alle 6h (haelt die Container-/Belohnungs-
+// Flut in Grenzen) - ShadowEagle und SchnelleRatte weiterhin gegeneinander versetzt, damit nie
+// beide gleichzeitig getroffen werden.
 export const RAID_SCHEDULE_BY_USERNAME: Record<string, number[]> = {
-  ShadowEagle: [0, 6, 12, 18],
-  SchnelleRatte: [3, 9, 15, 21],
+  ShadowEagle: [0, 12],
+  SchnelleRatte: [6, 18],
 };
 
 const BERLIN_TZ = 'Europe/Berlin';
@@ -319,6 +351,11 @@ export const RAID_SALVAGE_DM_MAX = 20;
 // triviale/leere Gegnerwelle zusammenschrumpft, nur weil Verteidigung nicht mehr in die
 // Feindstaerke einfliesst (siehe README "Wichtige Punkte" zur Entkopplung).
 export const RAID_MIN_TARGET_POWER = 200000;
+
+// Chance auf 1 zusaetzlichen Elite-Container PRO TEILNEHMER bei perfekter Raid-Verteidigung (5/5
+// Wellen) - Nutzerentscheidung: Elite bleibt ueberall reine Glueckssache, auch hier nur eine
+// Chance, kein garantierter Zusatz.
+export const RAID_PERFECT_ELITE_CHANCE = 0.15;
 
 // Raid-Wellensystem (Nutzerentscheidung): ein Raid ist nicht mehr EIN Kampf bei Ankunft, sondern
 // RAID_WAVE_COUNT einzelne Angriffswellen innerhalb eines RAID_ASSAULT_DURATION_MS-Fensters NACH

@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Container-Überarbeitung: weniger Flut, klarere Chancen',
+    changes: [
+      'Container stapeln sich jetzt im Inventar (z.B. "Silber-Container × 3") statt als viele Einzelkarten aufzutauchen.',
+      'Neue Zieh-Mechanik: jede Belohnungskategorie (Rohstoffe, Dunkle Materie, Ausrüstungs-Teile, Zeit-Gutschein, Geschenkte Schiffe) hat jetzt eine eigene, unabhängige Chance - ihr bekommt aber immer genau 2 Belohnungen pro Öffnung.',
+      'Raids finden nur noch alle 12 Stunden statt (vorher alle 6 Stunden).',
+      'Belohnung bei perfekt abgewehrtem Raid (5/5 Wellen) geändert: fest 4 Silber- + 1 Gold-Container, plus 15% Chance auf zusätzlich 1 Elite-Container. Elite-Container sind jetzt überall reine Glückssache.',
+      'Die Geschenkte Elite-Flotte und der Elite-Jackpot enthalten keine Salvenkreuzer mehr.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Piraten werden zäher: 50% eurer Forschung',
     changes: [
       'Piraten und andere NPC-Gegner (Sektor-Missionen, Raids, Elite-Bollwerk, Piratenadmiral) profitieren jetzt von 50% eurer Forschung - vorher hatten sie überhaupt keine.',
