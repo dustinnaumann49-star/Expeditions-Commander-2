@@ -903,6 +903,20 @@ client/
     immer bei `playerClass: null` (kein Klassenbonus) hängen geblieben, was nicht dem Anspruch
     entspricht, sich wie ein echter Mitspieler zu verhalten.
 
+79. **Forschungsbaum-Kinderzeile war auf schmalen Mobilgeräten am Bildschirmrand abgeschnitten
+    statt scrollbar zu sein** (Nutzer-Screenshot: dritter Kind-Knoten bei 3 Geschwistern nicht
+    mehr sichtbar/anklickbar). Ursache: die Kinderzeile in `ResearchNode` (`Forschung.tsx`) hatte
+    kein eigenes `overflowX` - bei zu vielen/zu breiten Geschwister-Knoten lief die Zeile über die
+    Bildschirmbreite hinaus, ohne selbst scrollbar zu sein. Fix: Kind-Knoten verkleinert (Bildgröße
+    54→48px, Boxbreite 104→92px), Innenabstand pro Kind reduziert (16px→8px je Seite), und die
+    Kinderzeile bekommt jetzt `overflowX: 'auto'` + `WebkitOverflowScrolling: 'touch'` mit
+    `maxWidth: '100vw'` - bei zu vielen Geschwistern lässt sich die Zeile jetzt gezielt seitlich
+    wegwischen, statt den Rest der Seite zu verzerren oder Knoten unsichtbar/unklickbar zu machen.
+    Andere Modul-Zeilen (Schiffs-/Verteidigungs-/Gebäude-Module in `ShipModuleRow.tsx`/
+    `DefenseModuleRow.tsx`/`Gebaeude.tsx`) nutzen bereits `flexWrap: 'wrap'` statt einer starren
+    Baum-Zeile und waren davon nicht betroffen - nur der Forschungsbaum braucht eine starre
+    Horizontal-Anordnung, weil die Eltern-Kind-Verbindungslinien sonst nicht mehr stimmen würden.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -1007,3 +1021,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Verteidigung, keine Halte-Flotten, keine Elite-Bollwerk-Teilnahme). Betraf nebenbei auch
   menschliche Spieler (bis zu 2 Min. Produktionsverlust pro Heartbeat-Takt). KI-Spieler wählen
   jetzt außerdem beim ersten Zug eine zufällige Klasse.
+- Forschungsbaum: Kind-Knoten verkleinert, Kinderzeile bekommt eigenes horizontales Scrollen -
+  war auf schmalen Mobilgeräten am Bildschirmrand abgeschnitten statt scrollbar zu sein.
