@@ -864,6 +864,16 @@ client/
       der tatsächliche Elite-Gewinner den Bonus angekündigt bekommt, nicht alle Teilnehmer
       pauschal.
 
+76. **Forschung nach den vier Hauptbereichen in eigene Untertabs aufgeteilt** (Nutzerentscheidung:
+    "mehr Platz falls mal mehr Forschungen dazu kommen") - `ResearchDefinition.mainBranch`
+    ('waffen'/'verteidigung'/'antrieb'/'wirtschaft') gab es dafür schon seit Einführung des
+    Forschungsbaums (siehe Punkt 40), bisher wurden aber einfach alle vier Bäume untereinander auf
+    einer einzigen Seite gerendert. `ForschungTreeView` (`Forschung.tsx`) hat jetzt einen eigenen
+    Untertab-Schalter (Waffensysteme/Verteidigungssysteme/Antriebstechnik/Wirtschaft & Logistik,
+    lokaler `branchId`-State) und zeigt immer nur den gerade gewählten Baum - dieselbe
+    `ResearchForest`-Komponente wie vorher, nur nicht mehr alle vier gleichzeitig gemappt. "Gebäude"
+    bleibt als fünfter, gleichrangiger Untertab von `ForschungPage` unverändert bestehen.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -959,3 +969,7 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Kategorie umgestellt (immer genau 2 Treffer). Raid-Zeitplan von 4×/Tag auf 2×/Tag reduziert.
   Raid-Container bei perfekter Verteidigung: fest 4 Silber + 1 Gold statt 5 Gold, Elite nur noch
   als 15%-Zusatzchance. Salvenkreuzer aus Elite-Container/-Jackpot entfernt.
+- Inventar: einlösbare Belohnungen jetzt nach Kategorie gruppiert (Rohstoffe, Dunkle Materie,
+  Ausrüstungs-Teile, Zeit-Gutscheine, Geschenkte Schiffe) statt einer flachen Liste.
+- Forschung: die vier Hauptbereiche (Waffensysteme/Verteidigungssysteme/Antriebstechnik/
+  Wirtschaft & Logistik) sind jetzt eigene Untertabs statt untereinander auf einer Seite.
