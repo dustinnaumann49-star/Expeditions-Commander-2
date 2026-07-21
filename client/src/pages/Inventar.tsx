@@ -1,12 +1,21 @@
 import { useGame } from '../context/GameContext';
 import type { Container, RewardItem } from '../types/game';
 
+const CATEGORY_LABELS: Record<string, string> = {
+  resources: 'Rohstoffe',
+  dm: 'Dunkle Materie',
+  teile: 'Ausrüstungs-Teile',
+  zeitgutschein: 'Zeit-Gutschein',
+  freischiff: 'Geschenkte Schiffe',
+};
+
 export function InventarPage() {
   const { gameData, state, openContainer, redeemRewardItem, error } = useGame();
   if (!gameData || !state) return <p>Lade...</p>;
 
   const containers = state.inventory.filter((i): i is Container => 'tier' in i);
   const rewardItems = state.inventory.filter((i): i is RewardItem => 'type' in i && i.type === 'rewardItem');
+  const totalContainers = containers.reduce((sum, c) => sum + c.count, 0);
 
   return (
     <div>
@@ -19,21 +28,22 @@ export function InventarPage() {
         <>
           {containers.length > 0 && (
             <div className="queue-box" style={{ marginBottom: 20 }}>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>Ungeöffnete Container ({containers.length})</h3>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>Ungeöffnete Container ({totalContainers})</h3>
               {containers.map((c) => {
                 const config = gameData.containerTypes[c.tier];
                 return (
                   <div className="queue-item" key={c.id} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                     <strong>
-                      {config.icon} {config.name}
+                      {config.icon} {config.name} × {c.count}
                     </strong>
                     <span className="detail-sub">
-                      Mögliche Inhalte ({config.pickCount} werden gewählt): {config.rewards.map((r) => r.label).join(', ')}
+                      Mögliche Inhalte (2 pro Öffnung, unabhängige Chance je Kategorie):{' '}
+                      {config.categories.map((cat) => `${CATEGORY_LABELS[cat.category] || cat.category} (${Math.round(cat.chance * 100)}%)`).join(', ')}
                     </span>
                     <div className="build-row">
                       <span></span>
                       <button className="build-btn" onClick={() => openContainer(c.id)}>
-                        🗝️ Container öffnen
+                        🗝️ Einen öffnen
                       </button>
                     </div>
                   </div>
