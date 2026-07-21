@@ -17,6 +17,7 @@ import {
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
+import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
@@ -50,9 +51,8 @@ function saveOp(op: GroupOperation) {
   saveGroupOperationJson(op.id, op.creatorId, op.status, JSON.stringify(op));
 }
 
-function addContainerToState(state: PlayerState, tier: ContainerTier) {
-  state.inventory.push({ id: newId('container'), tier, receivedAt: Date.now() });
-}
+// (siehe addContainers() in inventory.ts - Container stapeln sich jetzt statt einen neuen
+// Einzeleintrag pro Stueck anzulegen)
 
 // ========== ERSTELLEN / EINLADEN ==========
 
@@ -723,7 +723,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   let captainText = '';
   if (captainResult) {
     if (captainResult.destroyed) {
-      accepted.forEach((p) => addContainerToState(participantStates.get(p.userId)!, cfg.captainContainerTier!));
+      accepted.forEach((p) => addContainers(participantStates.get(p.userId)!, cfg.captainContainerTier!));
       accepted.forEach((p) => {
         if (p.dmFound !== undefined) p.dmFound += cfg.captainDm || 0;
         participantStates.get(p.userId)!.stats.captainsDefeated++;

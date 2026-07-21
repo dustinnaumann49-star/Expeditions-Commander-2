@@ -308,6 +308,7 @@ export interface GameMessage {
 export interface Container {
   id: string;
   tier: ContainerTier;
+  count: number; // Anzahl ungeoeffneter Container dieser Stufe (Stapel statt Einzeleintraege)
   receivedAt: number;
 }
 

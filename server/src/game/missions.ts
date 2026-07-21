@@ -27,6 +27,7 @@ import {
   rollBattleModifier,
 } from './combat.js';
 import { pushMessage } from './messages.js';
+import { addContainers } from './inventory.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
 import type { BattleModifierType } from './data/combatConstants.js';
@@ -502,7 +503,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   let captainDmGained = 0;
   if (captainResult) {
     if (captainResult.destroyed) {
-      addContainerToState(state, cfg.captainContainerTier!);
+      addContainers(state, cfg.captainContainerTier!);
       mission.dmFound += cfg.captainDm || 0;
       state.stats.captainsDefeated++;
       const tierLabel = cfg.captainContainerTier === 'elite' ? 'Elite-Container' : cfg.captainContainerTier === 'gold' ? 'Gold-Container' : 'Silber-Container';
@@ -547,15 +548,9 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   );
 }
 
-// Kleine, lokal gehaltene Hilfsfunktion, um einen Kreisimport mit inventory.ts zu vermeiden
-// (Piratenkapitän-Belohnung fuegt einen Container direkt hinzu).
-function addContainerToState(state: PlayerState, tier: ContainerTier) {
-  state.inventory.push({
-    id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    tier,
-    receivedAt: Date.now(),
-  });
-}
+// (siehe addContainers() in inventory.ts - Container stapeln sich jetzt statt einen neuen
+// Einzeleintrag pro Stueck anzulegen; kein Kreisimport-Risiko, da inventory.ts von actions.ts nur
+// TYPEN importiert, die beim Kompilieren vollstaendig entfernt werden)
 
 function abortMissionDestroyed(state: PlayerState, mission: Mission) {
   mission.finalized = true;

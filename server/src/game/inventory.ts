@@ -1,15 +1,54 @@
 import { CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS } from './data/economy.js';
+import type { ContainerCategoryDef, ContainerRewardDef } from './data/economy.js';
 import { pushMessage } from './messages.js';
 import type { ActionResult } from './actions.js';
 import type { Container, ContainerReward, ContainerTier, PlayerState, RewardItem } from './types.js';
 
-export function addContainer(state: PlayerState, tier: ContainerTier) {
-  const container: Container = {
-    id: 'container_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    tier,
-    receivedAt: Date.now(),
-  };
-  state.inventory.push(container);
+// Container stapeln sich jetzt (Nutzerentscheidung: "wir werden mit Containern ueberflutet") -
+// EIN Inventar-Eintrag pro Stufe (id ist deterministisch `container_<tier>`, kein Zufalls-Suffix
+// mehr noetig, da nie mehr als ein Eintrag pro Stufe existiert), Anzahl steckt in `count`.
+export function addContainers(state: PlayerState, tier: ContainerTier, count = 1): void {
+  if (count <= 0) return;
+  const existing = state.inventory.find((i) => 'tier' in i && (i as Container).tier === tier) as Container | undefined;
+  if (existing) {
+    existing.count += count;
+    existing.receivedAt = Date.now();
+  } else {
+    state.inventory.push({ id: `container_${tier}`, tier, count, receivedAt: Date.now() });
+  }
+}
+
+function pickRandomSubset<T>(arr: T[], n: number): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+// Zieh-Mechanik (Nutzerentscheidung, siehe Kommentar bei ContainerCategoryDef in economy.ts):
+// jede Kategorie wird EINZELN und UNABHAENGIG gegen ihre eigene `chance` gewuerfelt, danach auf
+// GENAU 2 Treffer normalisiert (mehr -> zufaellig auf 2 reduziert, weniger -> mit den Kategorien
+// mit der naechsthoechsten chance aufgefuellt, deterministisch sortiert statt nochmal gewuerfelt).
+// Trifft eine Kategorie mit mehreren Varianten (z.B. die vier Zeitgutschein-Typen), wird GENAU
+// EINE Variante daraus zufaellig vergeben.
+function rollContainerCategories(categories: ContainerCategoryDef[]): ContainerRewardDef[] {
+  const hits: ContainerCategoryDef[] = [];
+  const misses: ContainerCategoryDef[] = [];
+  categories.forEach((c) => (Math.random() < c.chance ? hits : misses).push(c));
+
+  let chosen: ContainerCategoryDef[];
+  if (hits.length > 2) {
+    chosen = pickRandomSubset(hits, 2);
+  } else if (hits.length < 2) {
+    const need = 2 - hits.length;
+    const sortedMisses = [...misses].sort((a, b) => b.chance - a.chance);
+    chosen = [...hits, ...sortedMisses.slice(0, need)];
+  } else {
+    chosen = hits;
+  }
+  return chosen.map((c) => c.rewards[Math.floor(Math.random() * c.rewards.length)]);
 }
 
 export function openContainer(state: PlayerState, containerId: string): ActionResult {
@@ -18,13 +57,12 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
   const container = state.inventory[idx] as Container;
   const config = CONTAINER_TYPES[container.tier];
   if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
+  if (container.count <= 0) return { ok: false, error: 'Kein Container dieser Art mehr vorhanden.' };
   if (container.tier === 'silber' || container.tier === 'gold' || container.tier === 'elite') {
     state.stats.containersOpened[container.tier]++;
   }
 
-  const shuffled = [...config.rewards].sort(() => Math.random() - 0.5);
-  const count = config.pickCount || 2;
-  const selected = shuffled.slice(0, count);
+  const selected = rollContainerCategories(config.categories);
 
   // Jackpot: zusaetzlich zu den normalen Picks, mit kleiner Chance (siehe JACKPOT_CHANCE in
   // economy.ts) - ein Bonus obendrauf, kein Ersatz fuer einen der gewuerfelten Picks.
@@ -55,7 +93,8 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
     labels.push(reward.label);
   });
 
-  state.inventory.splice(idx, 1);
+  container.count -= 1;
+  if (container.count <= 0) state.inventory.splice(idx, 1);
   const jackpotText = jackpotHit ? ' 🎰 JACKPOT! Eine zusätzliche Belohnung wartet im Inventar!' : '';
   pushMessage(state, 'farm', `📦 ${config.name} geöffnet! Ins Inventar gelegt: ${labels.join(', ')}. Du kannst sie jederzeit einzeln einlösen.${jackpotText}`);
   return { ok: true };

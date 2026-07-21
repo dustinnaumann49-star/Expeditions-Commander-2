@@ -13,6 +13,7 @@ import {
   RAID_ASSAULT_DURATION_MS,
   RAID_WAVE_JITTER_FACTOR,
   RAID_WAVE_FACTORS,
+  RAID_PERFECT_ELITE_CHANCE,
 } from './data/economy.js';
 import { PIRATE_BASES, PIRATE_FLEET_SPEED, RAID_PREP_MS } from './data/galaxyConstants.js';
 import {
@@ -29,6 +30,7 @@ import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.j
 import { DEFENSE_REPAIR_PERCENT, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
 import { pushMessage } from './messages.js';
+import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getHoldingDeploymentsTargeting, persistHeldDeployment, galaxyDistance, galaxyDurationMs } from './galaxy.js';
@@ -544,30 +546,40 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   // EIN Container pro gewonnener Welle (0-RAID_WAVE_COUNT), bei perfekter Verteidigung alle als
   // Gold statt Silber - Verteidiger UND alle Verstaerker/Halter bekommen dieselbe Menge/Stufe
   // (gemeinsamer Ausgang, keine Aufteilung, Punkt 5).
-  const containerCount = raid.wavesWon;
-  const containerTier: 'silber' | 'gold' = perfectDefense ? 'gold' : 'silber';
+  // Gold statt Silber - Verteidiger UND alle Verstaerker/Halter bekommen dieselbe Menge/Stufe
+  // (gemeinsamer Ausgang, keine Aufteilung, Punkt 5). Nutzerentscheidung (Container-Ueberflutung):
+  // bei NICHT perfekter Verteidigung 1 Silber-Container PRO gewonnener Welle (wie bisher, aber nie
+  // Gold). Bei PERFEKTER Verteidigung (5/5) NICHT mehr alle 5 zu Gold aufgewertet, sondern fest
+  // 4 Silber + 1 Gold, PLUS eine kleine Zusatzchance auf 1 Elite-Container (Elite bleibt ueberall
+  // reine Glueckssache, siehe data/economy.ts).
   const grantContainers = (target: PlayerState) => {
-    for (let i = 0; i < containerCount; i++) {
-      target.inventory.push({ id: 'container_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8), tier: containerTier, receivedAt: Date.now() });
+    if (perfectDefense) {
+      addContainers(target, 'silber', 4);
+      addContainers(target, 'gold', 1);
+    } else if (raid.wavesWon > 0) {
+      addContainers(target, 'silber', raid.wavesWon);
     }
   };
-  if (containerCount > 0) {
-    grantContainers(state);
-    reinforcerStates.forEach(({ playerState }) => grantContainers(playerState));
-    heldStates.forEach(({ ownerState }) => grantContainers(ownerState));
-  }
+  grantContainers(state);
+  reinforcerStates.forEach(({ playerState }) => grantContainers(playerState));
+  heldStates.forEach(({ ownerState }) => grantContainers(ownerState));
 
-  // Zusaetzlicher Elite-Container bei einer PERFEKTEN Verteidigung (alle Wellen abgewehrt) - on
-  // top der bereits vergebenen Gold-Container, nicht als Ersatz (Nutzerentscheidung). Gleiche
-  // Container-Stufe wie sonst nur ueber den Piratenkapitaen im Elite-Bollwerk erreichbar.
-  const grantEliteContainer = (target: PlayerState) => {
-    target.inventory.push({ id: 'container_' + Date.now() + '_elite_' + Math.random().toString(36).slice(2, 8), tier: 'elite', receivedAt: Date.now() });
-  };
-  if (perfectDefense) {
-    grantEliteContainer(state);
-    reinforcerStates.forEach(({ playerState }) => grantEliteContainer(playerState));
-    heldStates.forEach(({ ownerState }) => grantEliteContainer(ownerState));
-  }
+  // Elite-Zusatzchance NUR bei perfekter Verteidigung (Nutzerentscheidung) - unabhaengig gewuerfelt
+  // PRO Teilnehmer (kein gemeinsamer Wurf fuer alle, jeder hat seine eigene Chance) - Ergebnis pro
+  // Empfaenger gemerkt, damit die Abschluss-Nachricht nur dem tatsaechlichen Gewinner den
+  // Elite-Container ankuendigt.
+  const ownerEliteHit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
+  if (ownerEliteHit) addContainers(state, 'elite', 1);
+  const reinforcerEliteHits = reinforcerStates.map(({ playerState }) => {
+    const hit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
+    if (hit) addContainers(playerState, 'elite', 1);
+    return hit;
+  });
+  const heldEliteHits = heldStates.map(({ ownerState }) => {
+    const hit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
+    if (hit) addContainers(ownerState, 'elite', 1);
+    return hit;
+  });
 
   // "Raid abgewehrt"-Statistik zaehlt genau EINMAL fuer den gesamten Raid (nicht pro Welle) - eine
   // perfekte Verteidigung (5/5) zaehlt als voller Erfolg, alles andere als Teilerfolg, analog zur
@@ -584,8 +596,14 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   });
 
   const salvageText = salvageDm > 0 ? ` Bergung aus den zerstörten Flotten: ${salvageDm} Dunkle Materie.` : '';
-  const eliteText = perfectDefense ? ' Zusätzlich: 1x Elite-Container für die perfekte Verteidigung!' : '';
-  const containerText = containerCount > 0 ? ` Belohnung: ${containerCount}x ${containerTier === 'gold' ? 'Gold' : 'Silber'}-Container.${eliteText}` : ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
+  // Belohnungstext ist jetzt PRO EMPFAENGER unterschiedlich (Elite-Bonus ist ein individueller
+  // Wurf, siehe oben), daher eine kleine Hilfsfunktion statt eines einzelnen gemeinsamen Strings.
+  const containerTextFor = (eliteHit: boolean) => {
+    const eliteText = eliteHit ? ' Zusätzlich: 1x Elite-Container (Glückstreffer)!' : '';
+    if (perfectDefense) return ` Belohnung: 4x Silber-, 1x Gold-Container.${eliteText}`;
+    if (raid.wavesWon > 0) return ` Belohnung: ${raid.wavesWon}x Silber-Container.`;
+    return ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
+  };
   const stolenText = stolen
     ? ` Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`
     : ' Ressourcen vollständig sicher.';
@@ -593,20 +611,26 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     ? `Piratenüberfall abgewehrt – alle ${RAID_WAVE_COUNT} Wellen zurückgeschlagen! 🏆`
     : `Piratenüberfall beendet – ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt`;
 
-  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerText}${salvageText}`, { sektorName: 'Heimatbasis', outcome, roundsFought: 0, npcResults: [], playerResults: [] });
-  reinforcerStates.forEach(({ r, playerState }) => {
+  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerTextFor(ownerEliteHit)}${salvageText}`, {
+    sektorName: 'Heimatbasis',
+    outcome,
+    roundsFought: 0,
+    npcResults: [],
+    playerResults: [],
+  });
+  reinforcerStates.forEach(({ r, playerState }, i) => {
     pushMessage(
       playerState,
       'kampf',
-      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}`
+      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(reinforcerEliteHits[i])}${salvageText}`
     );
     if (r.userId !== currentUserId) savePlayerState(playerState);
   });
-  heldStates.forEach(({ ownerState, ownerUsername: holderUsername }) => {
+  heldStates.forEach(({ ownerState, ownerUsername: holderUsername }, i) => {
     pushMessage(
       ownerState,
       'kampf',
-      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}`
+      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(heldEliteHits[i])}${salvageText}`
     );
     if (ownerState.userId !== currentUserId) savePlayerState(ownerState);
   });
