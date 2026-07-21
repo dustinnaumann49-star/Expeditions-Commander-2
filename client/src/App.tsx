@@ -5,7 +5,6 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { ResourceBar } from './components/ResourceBar';
 import { LoginPage } from './pages/Login';
 import { WerftPage } from './pages/Werft';
-import { VerteidigungPage } from './pages/Verteidigung';
 import { SektorPage } from './pages/Sektor';
 import { ForschungPage } from './pages/Forschung';
 import { FlottePage } from './pages/Flotte';
@@ -22,7 +21,6 @@ import { useGame } from './context/GameContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Schiffswerft' },
-  { to: '/verteidigung', label: 'Verteidigung' },
   { to: '/sektor', label: 'Sektor' },
   { to: '/forschung', label: 'Forschung' },
   { to: '/flotte', label: 'Flotte (Bestand)' },
@@ -88,7 +86,6 @@ function GameHome() {
     <Layout>
       <Routes>
         <Route path="/" element={<WerftPage />} />
-        <Route path="/verteidigung" element={<VerteidigungPage />} />
         <Route path="/sektor" element={<SektorPage />} />
         <Route path="/forschung" element={<ForschungPage />} />
         <Route path="/flotte" element={<FlottePage />} />
