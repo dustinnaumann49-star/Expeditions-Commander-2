@@ -1,4 +1,17 @@
-import type { GameData } from '../types/game';
+import type { GameData, PlayerState, PlayerClass } from '../types/game';
+import { isBoosterActive } from './multipliers';
+
+// Spiegelt server/src/game/data/classes.ts's CLASS_*_SCHILD_MULTIPLIER 1:1, nur fuer die
+// Schild-Seite (fuer computeDomeSharedPool() unten gebraucht) - Kanonier hat keinen Schild-Bonus.
+function getClassSchildMultiplier(playerClass: PlayerClass | null): number {
+  if (playerClass === 'bollwerk') return 1.5;
+  if (playerClass === 'kommandant') return 4 / 3;
+  return 1;
+}
+
+// Spiegelt SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL aus server/src/game/data/shipModules.ts (gilt
+// auch fuer Verteidigungs-Module, siehe data/defenseModules.ts).
+const SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL = 0.03;
 
 export function shipName(gameData: GameData, id: string): string {
   return gameData.ships.find((s) => s.id === id)?.name || gameData.defenses.find((d) => d.id === id)?.name || id;
@@ -69,19 +82,26 @@ export function schildMultiplier(gameData: GameData, research: Record<string, nu
   return 1 + (research.schild || 0) * (tech ? tech.effectPerLevel : 0.1);
 }
 
-// Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gleichmaessig verteilt auf alle Nicht-Kuppel-Anlagen.
-// Spiegelt server/src/game/combat.ts's computeDomeSharedPool() 1:1 - Kuppeln geben ihren
-// kompletten Schildwert an einen GEMEINSAMEN Pool ab, der die gesamte Verteidigung schuetzt
-// (faengt Schaden ab, bevor eine einzelne Anlage getroffen wird), statt ihn pro Anlage zu verteilen.
-export function computeDomeSharedPool(gameData: GameData, defense: Record<string, number>, research: Record<string, number>): number {
+// Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gemeinsamer Pool statt Pro-Anlage-Verteilung.
+// Spiegelt server/src/game/combat.ts's computeDomeSharedPool() 1:1 - inkl. Klassen-Bonus (z.B.
+// Bollwerks +50% Schild), 24h-Kampf-Booster und Schild-Modulen (Kuppeln melden in
+// getEffectiveStats() IMMER schild=0, ihr gesamter Beitrag laeuft ausschliesslich hier durch).
+export function computeDomeSharedPool(
+  gameData: GameData,
+  state: PlayerState,
+): number {
+  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const classSchildMult = getClassSchildMultiplier(state.playerClass);
   let total = 0;
   gameData.defenses.forEach((d) => {
     if (!d.isDome) return;
-    const count = defense[d.id] || 0;
+    const count = state.defense[d.id] || 0;
     if (count <= 0) return;
-    total += count * d.stats.schild;
+    const moduleLevel = state.shipModules[`${d.id}_schild`] || 0;
+    const moduleMult = 1 + moduleLevel * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    total += count * d.stats.schild * kampfBoost * classSchildMult * moduleMult;
   });
-  return total * schildMultiplier(gameData, research);
+  return total * schildMultiplier(gameData, state.research);
 }
 
 // Lesbare deutsche Bezeichnung fuer die Antriebsklasse eines Schiffs (siehe driveType in
