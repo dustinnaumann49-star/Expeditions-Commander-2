@@ -24,6 +24,7 @@ interface GameContextValue {
   scrapDefense: (defId: string, qty: number) => Promise<void>;
   buyBooster: (boosterId: string) => Promise<void>;
   buyVoucher: (voucherId: string) => Promise<void>;
+  setPlayerClass: (classId: string) => Promise<void>;
   savePreset: (name: string, ships: Record<string, number>) => Promise<void>;
   deletePreset: (presetId: string) => Promise<void>;
   clearMessages: (type?: 'kampf' | 'farm') => Promise<void>;
@@ -191,6 +192,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     scrapDefense: (defId, qty) => run(() => api.scrapDefense(defId, qty)),
     buyBooster: (boosterId) => run(() => api.buyBooster(boosterId)),
     buyVoucher: (voucherId) => run(() => api.buyVoucher(voucherId)),
+    setPlayerClass: (classId) => run(() => api.setClass(classId)),
     savePreset: (name, ships) => run(() => api.savePreset(name, ships)),
     deletePreset: (presetId) => run(() => api.deletePreset(presetId)),
     clearMessages: (type) => run(() => api.clearMessages(type)),
