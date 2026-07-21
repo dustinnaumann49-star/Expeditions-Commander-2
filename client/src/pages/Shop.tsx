@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
-import { SpezialteilePage } from './Spezialteile';
 
 function ShopBoosterView() {
   const { gameData, state, buyBooster, buyVoucher, error } = useGame();
@@ -59,27 +57,11 @@ function ShopBoosterView() {
   );
 }
 
-const SHOP_TABS = [
-  { id: 'booster', name: 'Booster & Gutscheine' },
-  { id: 'spezialteile', name: 'Spezialteile' },
-];
-
 export function ShopPage() {
-  const [tab, setTab] = useState<'booster' | 'spezialteile'>('booster');
-
   return (
     <div>
       <h2 style={{ marginBottom: 16 }}>Shop</h2>
-      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-        {SHOP_TABS.map((t) => (
-          <button key={t.id} className={`nav-btn${tab === t.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(t.id as any)}>
-            {t.name}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'booster' && <ShopBoosterView />}
-      {tab === 'spezialteile' && <SpezialteilePage />}
+      <ShopBoosterView />
     </div>
   );
 }
