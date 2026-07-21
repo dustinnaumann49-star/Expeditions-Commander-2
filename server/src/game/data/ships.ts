@@ -34,13 +34,14 @@ export const SHIPS: ShipDefinition[] =
     cost:{metall:15000, kristall:6000, deuterium:2000}, stats:{waffen:350, schild:60, panzerung:8500}, speed:12000, fuelConsumption:4, driveType:"rakete" },
   { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:2,
     specialOnly:true, teileCost:{waffen:1000, schild:1000, panzerung:1000},
-    // Werte auf Millionen-Niveau angehoben (vorher 50.400/12.600/2.520.000 - Waffen/Schild lagen
-    // trotz Baulimit 2 und 1.000 Teile/Kategorie Aufwand kaum ueber gewoehnlichen Kampfschiffen,
-    // der Imperator wirkte dadurch im Kampf praktisch nicht mit). Verhaeltnis Waffen:Schild:
-    // Panzerung bewusst NICHT proportional zu vorher hochskaliert (das haette Panzerung auf
-    // absurde ~126 Mio. getrieben) - alle drei Werte eigenstaendig auf ein Niveau gesetzt, das zum
-    // seltensten/teuersten Schiff im Spiel passt.
-    stats:{waffen:5000000, schild:2500000, panzerung:12000000}, speed:100, fuelConsumption:40, driveType:"hyperraum" },
+    // Werte deutlich gesenkt (Nutzerentscheidung: die vorherigen 5.000.000/2.500.000/12.000.000
+    // Waffen/Schild/Panzerung waren zu dominant - der Imperator teilte allein in 4 Runden ueber
+    // 2 Milliarden Schaden aus und beendete Kaempfe, ohne dass andere Schiffe noch etwas beitragen
+    // mussten). Bewusst weiterhin sehr panzerungslastig statt gleichmaessig herunterskaliert -
+    // soll ein zaeher, schwer zu toetender Brocken bleiben (Panzerung ~3,6x mehr als der Reaper),
+    // aber sein Waffenschaden liegt jetzt nur noch bei etwa dem 10-fachen des Salvendreadnought
+    // statt dem ~100-fachen zuvor - andere Schiffe muessen wieder mitkaempfen.
+    stats:{waffen:500000, schild:400000, panzerung:3000000}, speed:100, fuelConsumption:40, driveType:"hyperraum" },
   { id:"salvenjaeger", name:"Salvenjäger", img:"ships/salvenjaeger.jpg", lore:"Der Salvenjäger trägt ein experimentelles Zielerfassungs-Array, das mehrere schwache Ziele gleichzeitig erfasst, statt sie nacheinander abzuarbeiten. Gegen Schwärme aus Jägern verwandelt sich ein einzelner Treffer in ein ganzes Salvenfeuer.", tier:2.5, buildTime:30, maxCount:60,
     cost:{metall:1600000, kristall:1000000, deuterium:400000}, stats:{waffen:9000, schild:250, panzerung:70000}, speed:12500, fuelConsumption:10, driveType:"rakete" },
   { id:"salvenkreuzer", name:"Salvenkreuzer", img:"ships/salvenkreuzer.jpg", lore:"Der Salvenkreuzer ist die Weiterentwicklung des Salvenjägers für schwerere Ziele. Seine Feuerleitzentrale kann mehrere Kreuzer-Klasse-Schiffe zeitgleich anvisieren und abfeuern, was ganze Formationen binnen Sekunden auseinanderreißt.", tier:3.5, buildTime:60, maxCount:30,

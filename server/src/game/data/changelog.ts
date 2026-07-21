@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Imperator abgeschwächt',
+    changes: [
+      'Der Imperator war zu stark - er hat allein in 4 Runden über 2 Milliarden Schaden ausgeteilt und Kämpfe beendet, ohne dass andere Schiffe noch etwas beitragen mussten.',
+      'Neue Werte: Waffen 500.000 (vorher 5.000.000), Schild 400.000 (vorher 2.500.000), Panzerung 3.000.000 (vorher 12.000.000).',
+      'Er bleibt bewusst sehr widerstandsfähig (deutlich mehr Panzerung als jedes andere Schiff), sein Waffenschaden ist aber jetzt deutlich moderater.',
+      'Baulimit (2 Stück) und Spezialteile-Kosten bleiben unverändert.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Forschungsbaum: Mobil-Fix',
     changes: [
       'Bei Forschungen mit mehreren Zweigen (z.B. Schiffbau-Reduktion, Antriebstechnik) wurde der letzte Zweig auf schmalen Handy-Bildschirmen manchmal am Rand abgeschnitten statt scrollbar zu sein - jetzt lässt sich die Zeile gezielt seitlich wegwischen.',
