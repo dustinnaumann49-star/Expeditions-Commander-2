@@ -1,5 +1,5 @@
 import { parentPort } from 'node:worker_threads';
-import { resolveCombat, resolveCombatMultiOwner, getEffectiveStats, baseStats } from './combat.js';
+import { resolveCombat, resolveCombatMultiOwner, getEffectiveStats, computePirateResearch } from './combat.js';
 import type { CombatWorkerRequest } from './combatRunner.js';
 
 // PERFORMANCE (siehe README): dieser Worker wird jetzt aus einem kleinen, WIEDERVERWENDETEN Pool
@@ -14,13 +14,18 @@ function statsFnFor(request: CombatWorkerRequest) {
     getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive, request.playerClass || null, request.shipModules || {});
 }
 
-// Boss-Gefecht (Punkt 76): Seite B nutzt normalerweise die statischen baseStats() - fuer einzelne
-// dynamisch berechnete Einheiten (z.B. den Piratenadmiral) wird stattdessen der mitgelieferte
-// Override-Wert genutzt, siehe sideBStatsOverride in combatRunner.ts.
+// Boss-Gefecht (Punkt 76): Seite B nutzt normalerweise die Piraten-Werte (Basiswerte + anteilige
+// Forschung, siehe PIRATE_RESEARCH_SHARE/computePirateResearch() in combat.ts) - fuer einzelne
+// dynamisch berechnete Einheiten (z.B. den Piratenadmiral selbst) wird stattdessen der
+// mitgelieferte Override-Wert genutzt (bleibt bewusst UNBEEINFLUSST von Forschung - eigene,
+// unabhaengige Macht-Skalierungsformel, siehe generateAdmiralEncounter()), siehe
+// sideBStatsOverride in combatRunner.ts.
 function statsFnBFor(request: CombatWorkerRequest) {
   const override = request.sideBStatsOverride;
-  if (!override) return baseStats;
-  return (id: string) => override[id] || baseStats(id);
+  const pirateResearch = computePirateResearch(request.research, request.contributions);
+  const pirateStats = (id: string) => getEffectiveStats(id, pirateResearch, {}, false, null, {});
+  if (!override) return pirateStats;
+  return (id: string) => override[id] || pirateStats(id);
 }
 
 parentPort?.on('message', (request: CombatWorkerRequest) => {

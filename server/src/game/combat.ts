@@ -17,6 +17,7 @@ import {
   CRIT_CHANCE_BASE,
   CRIT_CHANCE_MAX,
   CRIT_DAMAGE_MULTIPLIER,
+  PIRATE_RESEARCH_SHARE,
   WAVE_PROFILE_WEIGHTS,
   WAVE_OUTLIER_CHANCE,
   WAVE_OUTLIER_LOW_FACTOR,
@@ -126,9 +127,13 @@ export function getShieldRegenRate(research: Record<string, number>, typeId?: st
 
 // Praezision ist jetzt einheitsabhaengig: kleine, wendige Schiffe kaempfen nah am Feind und treffen
 // zuverlaessiger als schwerfaellige Kapitalschiffe, die aus Distanz feuern (PRECISION_MODIFIER).
+// `applyPlayerResearch` hiess frueher so, weil Piraten GAR KEINE Forschung bekamen (das
+// research-Objekt wurde dann ignoriert, siehe PIRATE_RESEARCH_SHARE weiter unten) - Piraten
+// bekommen jetzt stattdessen ein bereits VORSKALIERTES research-Objekt uebergeben
+// (computePirateResearch()), das hier ganz normal ausgelesen wird. Der Parameter bleibt aus
+// Aufrufer-/Client-Spiegel-Kompatibilitaet bestehen, wird intern aber nicht mehr gebraucht.
 export function getPrecisionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId?: string): number {
   const sizeMod = typeId ? PRECISION_MODIFIER[typeId] || 0 : 0;
-  if (!applyPlayerResearch) return Math.max(0.05, PRECISION_BASE + sizeMod);
   const level = research.praezision || 0;
   const tech = RESEARCH.find((r) => r.id === 'praezision');
   const bonus = level * (tech ? tech.effectPerLevel : 0.02);
@@ -137,10 +142,10 @@ export function getPrecisionChance(research: Record<string, number>, applyPlayer
 
 // Ausweichchance des ZIELS: Gegenstueck zur Praezision des Schuetzen. Kleine Schiffe entziehen sich
 // haeufiger einem Treffer; unbewegliche Verteidigungsanlagen koennen das grundsaetzlich nicht.
+// Siehe getPrecisionChance oben zur `applyPlayerResearch`-Namensgeschichte.
 export function getEvasionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string): number {
   const base = EVASION_BASE[typeId] || 0;
   if (base <= 0) return 0; // Verteidigungsanlagen & Kapitalschiffe ohne Basis-Ausweichen
-  if (!applyPlayerResearch) return Math.min(EVASION_MAX, base);
   const level = research.ausweichen || 0;
   const tech = RESEARCH.find((r) => r.id === 'ausweichen');
   const bonus = level * (tech ? tech.effectPerLevel : 0.015);
@@ -148,10 +153,10 @@ export function getEvasionChance(research: Record<string, number>, applyPlayerRe
 }
 
 // Chance des SCHUETZEN auf einen kritischen Treffer (doppelter Schaden). Grosse Schiffe treffen
-// seltener, richten dafuer aber oefter verheerenden Schaden an.
+// seltener, richten dafuer aber oefter verheerenden Schaden an. Siehe getPrecisionChance oben zur
+// `applyPlayerResearch`-Namensgeschichte.
 export function getCritChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string): number {
   const base = CRIT_CHANCE_BASE[typeId] || 0;
-  if (!applyPlayerResearch) return Math.min(CRIT_CHANCE_MAX, base);
   const level = research.kritischetreffer || 0;
   const tech = RESEARCH.find((r) => r.id === 'kritischetreffer');
   const bonus = level * (tech ? tech.effectPerLevel : 0.015);
@@ -530,6 +535,31 @@ export interface OwnedFleetContribution {
   shipModules?: Record<string, number>; // eigene Schiffs-Module des Beitragenden, siehe data/shipModules.ts
 }
 
+// Liefert das "Piraten-Forschungsobjekt": PIRATE_RESEARCH_SHARE (50%) des relevanten
+// Forschungsstands, NIE Klassen-Bonus/Module/Kampf-Booster (die betreffen nur getEffectiveStats(),
+// nicht dieses research-Objekt). Bei mehreren Beitragenden (contributions, z.B. Elite-Bollwerk
+// oder Raid mit Verstaerkung/haltenden Flotten) zaehlt der DURCHSCHNITT aller Beteiligten
+// (Nutzerentscheidung) - fehlt einer Contribution die eigene research (sollte praktisch nie
+// vorkommen), faellt sie auf die uebergebene Basis-`research` zurueck, analog zu
+// buildUnitsMultiOwner() oben.
+export function computePirateResearch(research: Record<string, number>, contributions?: OwnedFleetContribution[]): Record<string, number> {
+  let source = research;
+  if (contributions && contributions.length > 0) {
+    const researches = contributions.map((c) => c.research || research);
+    const keys = new Set<string>();
+    researches.forEach((r) => Object.keys(r).forEach((k) => keys.add(k)));
+    const avg: Record<string, number> = {};
+    keys.forEach((k) => {
+      const sum = researches.reduce((acc, r) => acc + (r[k] || 0), 0);
+      avg[k] = sum / researches.length;
+    });
+    source = avg;
+  }
+  const scaled: Record<string, number> = {};
+  Object.keys(source).forEach((k) => (scaled[k] = (source[k] || 0) * PIRATE_RESEARCH_SHARE));
+  return scaled;
+}
+
 function buildUnitsMultiOwner(
   contributions: OwnedFleetContribution[],
   fallbackStatsFn: (id: string) => CombatStats
@@ -710,19 +740,19 @@ function applyHitToTarget(
 // Ermittelt, ob ein Schuss tatsaechlich trifft. Zwei Huerden nacheinander:
 // 1. Praezision des SCHUETZEN (trifft er ueberhaupt?)
 // 2. Ausweichen des ZIELS (kann es sich noch entziehen?)
-// Wichtig zur Forschungs-Zuordnung: `applyPlayerResearch` bezieht sich auf den SCHUETZEN. Ist der
-// Schuetze ein NPC (false), dann ist das Ziel zwangslaeufig eine Spieler-Einheit - deren
-// Ausweich-Forschung muss also genau dann angewendet werden.
+// Wichtig: `researchTarget` muss IMMER die Forschung der ZIEL-Seite sein (Spieler-Forschung, wenn
+// das Ziel ein Spieler ist; das bereits vorskalierte Piraten-research, wenn das Ziel ein NPC ist)
+// - NICHT die Forschung des Schuetzen. Seit PIRATE_RESEARCH_SHARE ist das nicht mehr automatisch
+// dasselbe Objekt wie beim Schuetzen (siehe fireShots()-Aufrufe in runRounds()).
 function rollHit(
   target: CombatUnit,
   precision: number,
-  research: Record<string, number>,
-  applyPlayerResearch: boolean,
+  researchTarget: Record<string, number>,
+  targetIsPlayerUnit: boolean,
   battleModifier: BattleModifierType | null = null
 ): boolean {
   if (Math.random() >= precision) return false;
-  const targetIsPlayerUnit = !applyPlayerResearch;
-  let evasion = getEvasionChance(research, targetIsPlayerUnit, target.typeId);
+  let evasion = getEvasionChance(researchTarget, targetIsPlayerUnit, target.typeId);
   // Truemmerfeld schwaecht gezielt das Ausweichen des SPIELERS, nicht das der NPCs.
   if (battleModifier === 'truemmerfeld' && targetIsPlayerUnit) evasion *= 0.85;
   if (evasion > 0 && Math.random() < evasion) return false;
@@ -735,14 +765,15 @@ function fireShots(
   dmgTakenTarget: Record<string, number>,
   shieldDmgTakenTarget: Record<string, number>,
   applyPlayerResearch: boolean,
-  research: Record<string, number>,
+  researchShooter: Record<string, number>,
+  researchTarget: Record<string, number>,
   shooterStats: ShotStats,
   targetsSharedShieldPool?: { remaining: number },
   battleModifier: BattleModifierType | null = null
 ) {
   if (targets.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
-  const overkillFraction = applyPlayerResearch ? getDurchschlagFraction(research) : 0;
+  const overkillFraction = getDurchschlagFraction(researchShooter);
   // Einmal pro fireShots()-Aufruf aufgebaut (nicht pro Schuss!) - siehe AliveTargetPool/
   // AliveTargetsByType oben. Nur bei Durchschlag-Forschung > 0 lohnt sich der zusaetzliche
   // Aufwand fuer die typisierte Pool ueberhaupt (Kaskaden treten sonst nie auf).
@@ -758,15 +789,11 @@ function fireShots(
     let fired = 0;
     // Praezision und Krit-Chance haengen vom SCHIFFSTYP des Schuetzen ab (kleine Schiffe treffen
     // besser, grosse richten oefter kritischen Schaden an) - daher pro Schuetze berechnet.
-    let precision = getPrecisionChance(research, applyPlayerResearch, shooter.typeId);
-    let critChance = getCritChance(research, applyPlayerResearch, shooter.typeId);
+    let precision = getPrecisionChance(researchShooter, applyPlayerResearch, shooter.typeId);
+    let critChance = getCritChance(researchShooter, applyPlayerResearch, shooter.typeId);
     const rfMap = RAPIDFIRE[shooter.typeId] || {};
     const hasRFPotential = Object.keys(rfMap).length > 0;
-    let accuracy = hasRFPotential
-      ? applyPlayerResearch
-        ? getZielerfassungAccuracy(research, shooter.typeId)
-        : ZIELERFASSUNG_BASE[shooter.typeId] || 0
-      : 0;
+    let accuracy = hasRFPotential ? getZielerfassungAccuracy(researchShooter, shooter.typeId) : 0;
 
     // Kampf-Modifikatoren (siehe BATTLE_MODIFIER_LABELS, combatConstants.ts) - Nebel/
     // Sensorstoerung schwaechen gezielt den SPIELER als Schuetzen, Strahlungssturm verstaerkt
@@ -812,7 +839,7 @@ function fireShots(
         // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
         let anyHit = false;
         volleyTargets.forEach((vt) => {
-          if (!rollHit(vt, precision, research, applyPlayerResearch, battleModifier)) {
+          if (!rollHit(vt, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
             const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
             if (missRfChance > 0 && Math.random() < missRfChance) {
               shots++;
@@ -836,7 +863,7 @@ function fireShots(
         continue;
       }
 
-      if (!rollHit(target, precision, research, applyPlayerResearch, battleModifier)) {
+      if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;
@@ -883,6 +910,7 @@ function runRounds(
   unitsAIn: CombatUnit[],
   unitsBIn: CombatUnit[],
   research: Record<string, number>,
+  pirateResearch: Record<string, number>,
   sharedShieldPoolA = 0,
   allowRetreat = true,
   battleModifier: BattleModifierType | null = null
@@ -940,10 +968,10 @@ function runRounds(
     const cache = isPlayerSide ? regenCacheA : regenCacheB;
     let v = cache.get(typeId);
     if (v === undefined) {
-      // NPCs profitieren nicht von der Spieler-Forschung, aber sehr wohl von der Groessen-Logik
-      v = isPlayerSide
-        ? getShieldRegenRate(research, typeId)
-        : Math.max(0, Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + (SHIELD_REGEN_MODIFIER[typeId] || 0)));
+      // Piraten bekommen jetzt PIRATE_RESEARCH_SHARE der Forschung (siehe computePirateResearch())
+      // statt komplett uebersprungen zu werden - getShieldRegenRate() liest das schon vorskalierte
+      // pirateResearch-Objekt hier ganz normal aus, keine Sonderformel mehr noetig.
+      v = getShieldRegenRate(isPlayerSide ? research : pirateResearch, typeId);
       // Ionensturm schwaecht gezielt die Schild-Regeneration des SPIELERS, nicht die der NPCs.
       if (battleModifier === 'ionensturm' && isPlayerSide) v *= 0.8;
       cache.set(typeId, v);
@@ -962,8 +990,8 @@ function runRounds(
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     if (unitsA.length === 0 || unitsB.length === 0) break;
     roundsFought = round;
-    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, shotsA, undefined, battleModifier);
-    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, research, shotsB, poolA, battleModifier);
+    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, pirateResearch, shotsA, undefined, battleModifier);
+    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, pirateResearch, research, shotsB, poolA, battleModifier);
     unitsA = unitsA.filter((u) => u.hpCur > 0);
     unitsB = unitsB.filter((u) => u.hpCur > 0);
     unitsA.forEach((u) => {
@@ -1048,8 +1076,8 @@ export interface CombatResult {
 
 /**
  * Loest einen Kampf zwischen zwei Seiten auf. Seite A ist konventionsgemaess immer die
- * "Spieler-Seite" (erhaelt Zielerfassung/Durchschlag/Praezisions-Forschungsbonus + Schild-Regen-Forschung),
- * Seite B die NPC-Seite (Basiswerte ohne Forschungsbonus).
+ * "Spieler-Seite" (volle Forschung), Seite B die NPC-Seite (bekommt seit PIRATE_RESEARCH_SHARE
+ * einen Teil der Forschung, siehe computePirateResearch() - NIE Klassen-Bonus/Module/Booster).
  *
  * `statsFnA`/`statsFnB` liefern die effektiven Kampfwerte je Einheiten-Id (siehe getEffectiveStats/baseStats).
  */
@@ -1065,7 +1093,8 @@ export function resolveCombat(
 ): CombatResult {
   const unitsA0 = buildUnits(sideAShips, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat, battleModifier);
+  const pirateResearch = computePirateResearch(research);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
@@ -1120,7 +1149,8 @@ export function resolveCombatMultiOwner(
 ): MultiOwnerCombatResult {
   const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
   const unitsB0 = buildUnits(sideBShips, statsFnB);
-  const r = runRounds(unitsA0, unitsB0, research, sharedShieldPoolA, allowRetreat, battleModifier);
+  const pirateResearch = computePirateResearch(research, contributions);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};
