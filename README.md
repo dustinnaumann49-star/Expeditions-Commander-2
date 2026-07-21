@@ -817,6 +817,48 @@ client/
       selbst berechnen - keine Änderung an den Aufrufern in `missions.ts`/`raids.ts`/`groupOps.ts`/
       `simulator.ts` nötig.
 
+73. **Container stapeln sich jetzt** (Nutzerentscheidung nach Feedback "wir werden mit Containern
+    überflutet"): `Container` bekommt ein `count`-Feld, `addContainers(state, tier, count)` in
+    `inventory.ts` sucht einen bestehenden Eintrag DIESER Stufe und erhöht dessen `count`, statt
+    für jedes Stück einen neuen Einzeleintrag mit Zufalls-Id anzulegen - die Container-Id ist
+    dadurch deterministisch (`container_<tier>`), es gibt nie mehr als 3 Container-Einträge im
+    Inventar (einen pro Stufe). Ersetzt zwei lokal duplizierte "Container hinzufügen"-Hilfsfunktionen
+    in `missions.ts`/`groupOps.ts` (dort ursprünglich bewusst dupliziert, um einen vermeintlichen
+    Kreisimport mit `inventory.ts` zu vermeiden - der besteht aber gar nicht, da `inventory.ts` von
+    `actions.ts` nur TYPEN importiert, die beim Kompilieren vollständig entfernt werden, siehe
+    Kommentar dort). Ausgepackte Belohnungen (`RewardItem`) stapelten sich bereits vorher korrekt
+    getrennt nach Herkunfts-Stufe (der `stackKey` enthält das Label, und Silber/Gold/Elite haben
+    für dieselbe Belohnungsart unterschiedliche Labels, z.B. "Rohstoff-Fracht" vs. "Große
+    Rohstoff-Fracht") - hier war keine Änderung nötig.
+
+74. **Container-Zieh-Mechanik komplett neu: Kategorien mit unabhängiger Dropchance statt "N von X
+    zufällig wählen"** (Nutzerentscheidung, `data/economy.ts`s `ContainerCategoryDef`/
+    `ContainerTypeDef`, `rollContainerCategories()` in `inventory.ts`). Jede Kategorie
+    (Rohstoffe/Dunkle Materie/Ausrüstungs-Teile/Zeit-Gutschein/Geschenkte Schiffe) wird EINZELN
+    und UNABHÄNGIG gegen ihre eigene `chance` gewürfelt, danach auf GENAU 2 Treffer normalisiert:
+    mehr als 2 Treffer werden zufällig auf 2 reduziert, weniger als 2 werden mit den Kategorien mit
+    der nächsthöchsten `chance` aufgefüllt (deterministisch sortiert, nicht nochmal gewürfelt).
+    Kategorien mit mehreren Varianten (Zeit-Gutschein hat 4, je eine pro Bau-/Forschungsbereich)
+    liefern bei Treffer GENAU EINE zufällige Variante daraus. Per Simulation verifiziert (100.000
+    Container-Öffnungen): liefert immer exakt 2 Treffer, Häufigkeiten je Kategorie liegen nah an
+    den vorgegebenen Prozentsätzen (leichte Verschiebung durch die Auffüll-/Kappungsregel ist
+    erwartungsgemäß). Salvenkreuzer aus der Elite-"Geschenkte Elite-Flotte" UND dem Elite-Jackpot
+    entfernt (Nutzerentscheidung).
+
+75. **Raid-Zeitplan und Raid-Container-Vergabe überarbeitet** (Nutzerentscheidung, Teil derselben
+    "Container-Überflutung"-Anpassung):
+    - `RAID_SCHEDULE_BY_USERNAME` (`data/economy.ts`) von 4×/Tag auf 2×/Tag reduziert: ShadowEagle
+      0/12 Uhr, SchnelleRatte 6/18 Uhr - weiterhin nie gleichzeitig.
+    - Container-Vergabe bei Raids (`raids.ts`) geändert: bei NICHT perfekter Verteidigung weiterhin
+      1 Silber-Container PRO gewonnener Welle (nie Gold). Bei PERFEKTER Verteidigung (5/5) NICHT
+      mehr alle 5 zu Gold aufgewertet, sondern fest 4 Silber + 1 Gold, PLUS eine unabhängig PRO
+      TEILNEHMER gewürfelte Chance (`RAID_PERFECT_ELITE_CHANCE = 15%`) auf zusätzlich 1
+      Elite-Container - Elite bleibt damit überall im Spiel reine Glückssache
+      (Nutzerentscheidung), nie ein garantierter Bestandteil einer Belohnung. Die
+      Abschluss-Nachricht ist jetzt PRO EMPFÄNGER unterschiedlich (`containerTextFor()`), damit nur
+      der tatsächliche Elite-Gewinner den Bonus angekündigt bekommt, nicht alle Teilnehmer
+      pauschal.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -907,3 +949,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Durchschlag; bei Mehrspieler-Kämpfen zählt der Durchschnitt aller Beteiligten. Klassen-Bonus/
   Module/Kampf-Booster bleiben exklusiv beim Spieler. Dabei einen Bug korrigiert: Ausweichen nutzte
   Schützen- statt Ziel-Forschung (war vorher folgenlos, da Piraten ohnehin 0% Forschung hatten).
+- Container-Überflutung behoben: Container stapeln sich jetzt (max. 1 Eintrag pro Stufe statt
+  vieler Einzelkarten). Zieh-Mechanik von "N aus Pool wählen" auf unabhängige Dropchance pro
+  Kategorie umgestellt (immer genau 2 Treffer). Raid-Zeitplan von 4×/Tag auf 2×/Tag reduziert.
+  Raid-Container bei perfekter Verteidigung: fest 4 Silber + 1 Gold statt 5 Gold, Elite nur noch
+  als 15%-Zusatzchance. Salvenkreuzer aus Elite-Container/-Jackpot entfernt.
