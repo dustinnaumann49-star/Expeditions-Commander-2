@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Forschungsbaum: Mobil-Fix',
+    changes: [
+      'Bei Forschungen mit mehreren Zweigen (z.B. Schiffbau-Reduktion, Antriebstechnik) wurde der letzte Zweig auf schmalen Handy-Bildschirmen manchmal am Rand abgeschnitten statt scrollbar zu sein - jetzt lässt sich die Zeile gezielt seitlich wegwischen.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'KI-Mitspieler repariert: bauen, forschen, verteidigen jetzt wirklich',
     changes: [
       'Großer Bugfix: KI-Vega und KI-Nyx haben bisher praktisch nichts produziert - ihre Ressourcen standen immer still, Bau- und Forschungsaufträge sind nie fertig geworden.',
