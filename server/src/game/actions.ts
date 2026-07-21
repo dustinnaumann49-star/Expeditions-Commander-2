@@ -10,7 +10,7 @@ import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
-import { processAllDepartedGroupOperations } from './groupOps.js';
+import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
 import { isBoosterActive } from './boosterUtil.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
@@ -162,10 +162,28 @@ export function totalOwnedShips(state: PlayerState): number {
   return total;
 }
 
+// Bugfix: zaehlte bisher NUR state.fleet (zuhause) + buildQueue (im Bau) - Schiffe, die gerade
+// auf einer Sektor-Mission unterwegs sind, bei einem anderen Spieler "halten" oder Teil einer
+// laufenden Elite-Bollwerk-/Piratenadmiral-Expedition sind, wurden NICHT mitgezaehlt. Dadurch
+// liess sich das Bau-Limit (maxCount, z.B. Salvenschiffe) und sogar "unique" (Sandronator)
+// umgehen: einfach die vorhandenen Einheiten wegschicken, dann zeigte der Bestand weniger als das
+// Limit und der Bauen-Button liess sich wieder klicken, obwohl inklusive der unterwegs
+// befindlichen Schiffe das Limit laengst erreicht war.
 export function countShipEverywhere(state: PlayerState, shipId: string): number {
   let total = state.fleet[shipId] || 0;
   state.buildQueue.forEach((job) => {
     if (job.shipId === shipId) total += job.count || 0;
+  });
+  state.missions.forEach((m) => {
+    if (!m.finalized) total += m.ships[shipId] || 0;
+  });
+  state.galaxyDeployments.forEach((d) => {
+    total += d.ships[shipId] || 0;
+  });
+  listMyGroupOperations(state.userId).forEach((op) => {
+    op.participants.forEach((p) => {
+      if (p.userId === state.userId && p.status === 'accepted') total += p.ships[shipId] || 0;
+    });
   });
   return total;
 }

@@ -441,8 +441,13 @@ export function generateFallbackFleet(targetPower: number, profile: WaveProfile 
 export function generateDefenseFleet(targetPower: number, spionageLevel: number): Record<string, number> {
   // Spezialverteidigung (Sentinel-/Ultimate-Kanone) MUSS ausgeschlossen werden, sonst tauchen sie
   // als normale Piraten-/Raid-Verteidigung auf (siehe Punkt 26 - gleiches Muster wie bei den
-  // Salvenschiffen in generatePiratenFleet()/generateFallbackFleet() oben).
-  const pool = DEFENSES.filter((d) => !MULTI_TARGET_VOLLEY_SHIPS.has(d.id)).map((d) => d.id);
+  // Salvenschiffen in generatePiratenFleet()/generateFallbackFleet() oben). Gigant-Schildkuppel
+  // ebenfalls ausgeschlossen (Nutzerentscheidung: die "besonderen"/neuen Anlagen sollen bei
+  // Piraten generell nicht vorkommen) - technisch waere sie ohnehin fast wirkungslos gewesen (NPC-
+  // Kaempfe nutzen keinen eigenen Kuppel-Pool, computeDomeSharedPool() gilt nur fuer den
+  // Heimatverteidiger bei Raids), aber sie haette trotzdem sinnlos Wuerfel-Gewicht von den
+  // eigentlichen NPC-Einheiten abgezogen.
+  const pool = DEFENSES.filter((d) => !MULTI_TARGET_VOLLEY_SHIPS.has(d.id) && d.id !== 'gigantschildkuppel').map((d) => d.id);
   const smoothing = Math.min(0.5, spionageLevel * 0.05);
   const uniform = 1 / pool.length;
   const weights = pool.map(() => (1 - smoothing) * Math.random() + smoothing * uniform);
