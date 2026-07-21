@@ -125,6 +125,30 @@ export interface ShipModuleDefinition {
   timeGrowth: number;
 }
 
+// Analog zu ShipModuleDefinition, aber pro VERTEIDIGUNGSANLAGE und OHNE Antrieb (Verteidigung
+// bewegt sich nicht). Lebt bewusst in DERSELBEN Level-Map wie Schiffs-Module
+// (PlayerState.shipModules, trotz des Namens - siehe data/defenseModules.ts) statt einer eigenen
+// zweiten Map, damit die Kampf-Anbindung (getEffectiveStats() in combat.ts) nicht zwei separate
+// Parameter durch den kompletten Kampf-Pfad durchreichen muss - eigene ID-Namensraeume
+// (Schiffs-IDs vs. Verteidigungs-IDs) schliessen Kollisionen aus. Nur die Bau-Warteschlange
+// (defenseModuleQueue) ist eine eigene, von shipModuleQueue getrennte Schlange/Slot.
+export type DefenseModuleKind = 'waffen' | 'schild' | 'panzerung';
+
+export interface DefenseModuleDefinition {
+  id: string;
+  name: string;
+  defenseId: string;
+  moduleKind: DefenseModuleKind;
+  img: string;
+  lore: string;
+  effectPerLevel: number;
+  maxLevel: number;
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -449,11 +473,14 @@ export interface PlayerState {
   // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
   // Komponente, maxSlots=1) unveraendert wiederverwenden laesst.
   buildingQueue: BuildJob[];
-  shipModules: Record<string, number>; // moduleId -> Stufe (siehe ShipModuleDefinition)
+  shipModules: Record<string, number>; // moduleId -> Stufe (ShipModuleDefinition UND DefenseModuleDefinition - siehe DefenseModuleDefinition-Kommentar in types.ts)
   // Schiffs-Module teilen sich EINEN globalen Bauslot (analog zu Gebaeuden oben, unabhaengig von
   // den 3 normalen Schiffs-Bauplaetzen in buildQueue) - immer hoechstens ein Eintrag, aber als
   // Array modelliert, damit sich BuildQueue.tsx unveraendert wiederverwenden laesst.
   shipModuleQueue: BuildJob[];
+  // Verteidigungs-Module bekommen einen EIGENEN Bauslot (getrennt von shipModuleQueue) - Stufen
+  // landen aber in derselben shipModules-Map (siehe DefenseModuleDefinition-Kommentar).
+  defenseModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   activeBoosters: Record<string, number>;

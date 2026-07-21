@@ -4,6 +4,7 @@ import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
+import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
 import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
@@ -60,6 +61,7 @@ export function defaultPlayerState(userId: number): PlayerState {
   BUILDING_MODULES.forEach((m) => (buildingModules[m.id] = 0));
   const shipModules: Record<string, number> = {};
   SHIP_MODULES.forEach((m) => (shipModules[m.id] = 0));
+  DEFENSE_MODULES.forEach((m) => (shipModules[m.id] = 0));
 
   return {
     userId,
@@ -82,6 +84,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     buildingQueue: [],
     shipModules,
     shipModuleQueue: [],
+    defenseModuleQueue: [],
     galaxyPosition: assignRandomGalaxyPosition(userId),
     galaxyDeployments: [],
     activeBoosters: {},
@@ -154,6 +157,12 @@ export function loadPlayerState(userId: number): PlayerState {
     if (parsed.shipModules[m.id] === undefined) parsed.shipModules[m.id] = 0;
   });
   if (!parsed.shipModuleQueue) parsed.shipModuleQueue = [];
+  // Verteidigungs-Module nachruesten - leben in DERSELBEN shipModules-Map (siehe
+  // DefenseModuleDefinition-Kommentar in types.ts), bekommen aber eine eigene Bauschlange.
+  DEFENSE_MODULES.forEach((m) => {
+    if (parsed.shipModules[m.id] === undefined) parsed.shipModules[m.id] = 0;
+  });
+  if (!parsed.defenseModuleQueue) parsed.defenseModuleQueue = [];
   // PERFORMANCE-NOTMASSNAHME (siehe README): bestehende Spielstaende hatten ihren
   // `nextRaidCheck` noch nach dem alten, gemeinsamen 0/6/12/18-Uhr-Rhythmus berechnet - EINMALIG
   // (per `raidScheduleMigrated`-Flag, NICHT bei jedem Laden - sonst wuerde der Checkpoint nie

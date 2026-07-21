@@ -164,13 +164,28 @@ export function getCritChance(research: Record<string, number>, applyPlayerResea
 // Wird NICHT mehr pro Einheit verteilt, sondern als ein einziger, gemeinsamer Puffer behandelt, der
 // Schaden fuer die GESAMTE Seite abfaengt, bevor eine einzelne Anlage getroffen wird (siehe
 // runRounds/fireShots). Kuppeln sind auf jeweils 1 Exemplar begrenzt (siehe defenses.ts).
-export function computeDomeSharedPool(defenseCounts: Record<string, number>, research: Record<string, number>): number {
+// Kuppel-Pool wendete bisher NUR die Forschung an (schildMultiplier) - Klassen-Bonus (z.B.
+// Bollwerks +50% Schild), 24h-Kampf-Booster und Schild-Module wirkten bislang NICHT auf den
+// gemeinsamen Pool, obwohl sie ueber getEffectiveStats() bei allen anderen Verteidigungsanlagen
+// laengst greifen (Bugfix, aufgefallen beim Anbinden der neuen Verteidigungs-Module - Kuppeln
+// melden in getEffectiveStats() IMMER ownSchild=0, ihr gesamter Schildbeitrag laeuft
+// ausschliesslich hier durch, nicht durch getEffectiveStats()).
+export function computeDomeSharedPool(
+  defenseCounts: Record<string, number>,
+  research: Record<string, number>,
+  kampfBoostActive = false,
+  playerClass: PlayerClass | null = null,
+  shipModules: Record<string, number> = {}
+): number {
+  const kampfBoost = kampfBoostActive ? 1.2 : 1;
+  const classSchildMult = classCombatMultipliers(playerClass).schild;
   let total = 0;
   DEFENSES.forEach((d) => {
     if (!d.isDome) return;
     const count = defenseCounts[d.id] || 0;
     if (count <= 0) return;
-    total += count * d.stats.schild;
+    const moduleMult = 1 + (shipModules[`${d.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    total += count * d.stats.schild * kampfBoost * classSchildMult * moduleMult;
   });
   return total * schildMultiplier(research);
 }
@@ -226,10 +241,17 @@ export function getEffectiveStats(
     // Kuppeln geben ihren kompletten Schildwert an den gemeinsamen Pool ab (siehe
     // computeDomeSharedPool/runRounds) statt ihn selbst zu tragen oder pro Einheit zu verteilen.
     const ownSchild = def.isDome ? 0 : def.stats.schild;
+    // Verteidigungs-Module (nur Waffen/Schild/Panzerung, KEIN Antrieb - Verteidigungsanlagen
+    // bewegen sich nicht) leben in DERSELBEN shipModules-Map wie die Schiffs-Module (siehe
+    // data/defenseModules.ts) - gleiches Id-Schema (`${defId}_waffen` usw.), keine eigene
+    // Kampf-Durchreichung noetig, da shipModules ohnehin schon ueberall ankommt.
+    const waffenModule = 1 + (shipModules[`${id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    const schildModule = 1 + (shipModules[`${id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    const panzerungModule = 1 + (shipModules[`${id}_panzerung`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
     return {
-      waffen: def.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen,
-      schild: ownSchild * schildMultiplier(research) * kampfBoost * classMult.schild,
-      panzerung: def.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung,
+      waffen: def.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen * waffenModule,
+      schild: ownSchild * schildMultiplier(research) * kampfBoost * classMult.schild * schildModule,
+      panzerung: def.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung * panzerungModule,
     };
   }
   return { waffen: 0, schild: 0, panzerung: 0 };
@@ -417,7 +439,10 @@ export function generateFallbackFleet(targetPower: number, profile: WaveProfile 
 }
 
 export function generateDefenseFleet(targetPower: number, spionageLevel: number): Record<string, number> {
-  const pool = DEFENSES.map((d) => d.id);
+  // Spezialverteidigung (Sentinel-/Ultimate-Kanone) MUSS ausgeschlossen werden, sonst tauchen sie
+  // als normale Piraten-/Raid-Verteidigung auf (siehe Punkt 26 - gleiches Muster wie bei den
+  // Salvenschiffen in generatePiratenFleet()/generateFallbackFleet() oben).
+  const pool = DEFENSES.filter((d) => !MULTI_TARGET_VOLLEY_SHIPS.has(d.id)).map((d) => d.id);
   const smoothing = Math.min(0.5, spionageLevel * 0.05);
   const uniform = 1 / pool.length;
   const weights = pool.map(() => (1 - smoothing) * Math.random() + smoothing * uniform);

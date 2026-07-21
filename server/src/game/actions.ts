@@ -4,7 +4,8 @@ import { RESEARCH } from './data/research.js';
 import { BUILDINGS, findBuilding } from './data/buildings.js';
 import { BUILDING_MODULES, findBuildingModule } from './data/buildingModules.js';
 import { SHIP_MODULES, findShipModule } from './data/shipModules.js';
-import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
+import { DEFENSE_MODULES, findDefenseModule } from './data/defenseModules.js';
+import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
@@ -296,6 +297,17 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   });
   state.shipModuleQueue = stillBuildingShipModules;
 
+  // Verteidigungsmodul-Warteschlange abarbeiten (eigener Slot, siehe MAX_DEFENSE_MODULE_SLOTS) -
+  // Stufe landet in DERSELBEN state.shipModules-Map wie Schiffs-Module (siehe Kommentar dort).
+  const stillBuildingDefenseModules = state.defenseModuleQueue.filter((job) => {
+    if (job.endTime <= now && job.moduleId) {
+      state.shipModules[job.moduleId] = (state.shipModules[job.moduleId] || 0) + job.count;
+      return false;
+    }
+    return true;
+  });
+  state.defenseModuleQueue = stillBuildingDefenseModules;
+
   // Bau-Warteschlange abarbeiten
   const stillBuilding = state.buildQueue.filter((job) => {
     if (job.endTime <= now && job.shipId) {
@@ -548,6 +560,51 @@ export function startShipModuleUpgrade(state: PlayerState, moduleId: string): Ac
   const now = Date.now();
   const duration = shipModuleTimeForLevel(state, mod, nextLevel);
   state.shipModuleQueue.push({ moduleId, count: 1, startTime: now, endTime: now + duration });
+  return { ok: true };
+}
+
+// ========== VERTEIDIGUNGS-MODULE (Waffen/Schild/Panzerung pro Anlage, siehe data/defenseModules.ts) ==========
+// Stufen landen in DERSELBEN state.shipModules-Map wie Schiffs-Module (siehe
+// DefenseModuleDefinition-Kommentar in types.ts) - nur die Bauschlange/der Slot ist eigenstaendig.
+
+function defenseModuleCostForLevel(mod: (typeof DEFENSE_MODULES)[number], level: number): ResourceCost {
+  const f = Math.pow(mod.costGrowth, level - 1);
+  return {
+    metall: Math.round(mod.baseCost.metall * f),
+    kristall: Math.round(mod.baseCost.kristall * f),
+    deuterium: Math.round(mod.baseCost.deuterium * f),
+  };
+}
+
+function defenseModuleTimeForLevel(state: PlayerState, mod: (typeof DEFENSE_MODULES)[number], level: number): number {
+  // Nutzt dieselbe Bauzeit-Multiplikator-Kette wie normale Verteidigungsanlagen
+  // (defenseBauzeitMultiplier), analog zu shipModuleTimeForLevel oben.
+  return mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000 * defenseBauzeitMultiplier(state);
+}
+
+export function startDefenseModuleUpgrade(state: PlayerState, moduleId: string): ActionResult {
+  const mod = findDefenseModule(moduleId);
+  if (!mod) return { ok: false, error: 'Unbekanntes Modul.' };
+  const level = state.shipModules[moduleId] || 0;
+  if (level >= mod.maxLevel) return { ok: false, error: 'Maximalstufe erreicht.' };
+  // Verteidigungs-Module teilen sich EINEN globalen Bauslot (MAX_DEFENSE_MODULE_SLOTS=1),
+  // eigenstaendig getrennt von der Schiffsmodul-Warteschlange und den 3 normalen
+  // Verteidigungs-Bauplaetzen (defenseQueue).
+  if (state.defenseModuleQueue.length >= MAX_DEFENSE_MODULE_SLOTS) {
+    return { ok: false, error: 'Es kann immer nur ein Verteidigungsmodul gleichzeitig gebaut werden.' };
+  }
+
+  const nextLevel = level + 1;
+  const cost = defenseModuleCostForLevel(mod, nextLevel);
+  if (!canAfford(state, cost, 1)) return { ok: false, error: 'Nicht genug Ressourcen.' };
+
+  state.resources.metall -= cost.metall;
+  state.resources.kristall -= cost.kristall;
+  state.resources.deuterium -= cost.deuterium;
+
+  const now = Date.now();
+  const duration = defenseModuleTimeForLevel(state, mod, nextLevel);
+  state.defenseModuleQueue.push({ moduleId, count: 1, startTime: now, endTime: now + duration });
   return { ok: true };
 }
 

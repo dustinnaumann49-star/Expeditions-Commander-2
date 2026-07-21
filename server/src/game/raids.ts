@@ -288,7 +288,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     const base = baseStats(id);
     defensePower += state.defense[id] * (base.waffen + base.schild + base.panzerung);
   });
-  const domePoolReal = computeDomeSharedPool(state.defense, state.research);
+  const domePoolReal = computeDomeSharedPool(state.defense, state.research, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules);
 
   const now = Date.now();
   const arrivedReinforcements = (raid.reinforcements || []).filter((r) => r.arrivalTime <= now);
