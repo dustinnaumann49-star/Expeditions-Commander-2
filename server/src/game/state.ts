@@ -3,6 +3,7 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
+import { SHIP_MODULES } from './data/shipModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
 import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
@@ -57,6 +58,8 @@ export function defaultPlayerState(userId: number): PlayerState {
   BUILDINGS.forEach((b) => (buildings[b.id] = 0));
   const buildingModules: Record<string, number> = {};
   BUILDING_MODULES.forEach((m) => (buildingModules[m.id] = 0));
+  const shipModules: Record<string, number> = {};
+  SHIP_MODULES.forEach((m) => (shipModules[m.id] = 0));
 
   return {
     userId,
@@ -77,6 +80,8 @@ export function defaultPlayerState(userId: number): PlayerState {
     buildings,
     buildingModules,
     buildingQueue: [],
+    shipModules,
+    shipModuleQueue: [],
     galaxyPosition: assignRandomGalaxyPosition(userId),
     galaxyDeployments: [],
     activeBoosters: {},
@@ -143,6 +148,12 @@ export function loadPlayerState(userId: number): PlayerState {
   BUILDING_MODULES.forEach((m) => {
     if (parsed.buildingModules[m.id] === undefined) parsed.buildingModules[m.id] = 0;
   });
+  // Schiffs-Module nachruesten (gleiches Migrationsmuster wie oben) + eigene Bauschlange.
+  if (!parsed.shipModules) parsed.shipModules = {} as Record<string, number>;
+  SHIP_MODULES.forEach((m) => {
+    if (parsed.shipModules[m.id] === undefined) parsed.shipModules[m.id] = 0;
+  });
+  if (!parsed.shipModuleQueue) parsed.shipModuleQueue = [];
   // PERFORMANCE-NOTMASSNAHME (siehe README): bestehende Spielstaende hatten ihren
   // `nextRaidCheck` noch nach dem alten, gemeinsamen 0/6/12/18-Uhr-Rhythmus berechnet - EINMALIG
   // (per `raidScheduleMigrated`-Flag, NICHT bei jedem Laden - sonst wuerde der Checkpoint nie

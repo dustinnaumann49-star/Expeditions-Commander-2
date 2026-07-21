@@ -10,6 +10,7 @@ import {
 } from './data/galaxyConstants.js';
 import { findShip } from './combat.js';
 import { CLASS_KANONIER_FLEET_SPEED_MULTIPLIER, CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER } from './data/classes.js';
+import { SHIP_MODULE_DRIVE_EFFECT_PER_LEVEL } from './data/shipModules.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { listAllUsers, getUserById } from '../db.js';
 import type { PlayerState, GalaxyPosition, GalaxyDeployment, PlayerClass } from './types.js';
@@ -40,7 +41,12 @@ const DRIVE_TYPE_TO_RESEARCH: Record<string, string> = {
   hyperraum: 'hyperraumantrieb',
 };
 
-export function galaxyFleetSpeed(ships: Record<string, number>, research?: Record<string, number>, playerClass?: PlayerClass | null): number {
+export function galaxyFleetSpeed(
+  ships: Record<string, number>,
+  research?: Record<string, number>,
+  playerClass?: PlayerClass | null,
+  shipModules?: Record<string, number>
+): number {
   let slowest = Infinity;
   let slowestShipId: string | null = null;
   Object.entries(ships).forEach(([id, count]) => {
@@ -63,6 +69,14 @@ export function galaxyFleetSpeed(ships: Record<string, number>, research?: Recor
       const driveLevel = research[driveTechId] || 0;
       multiplier *= 1 + driveLevel * 0.02;
     }
+  }
+
+  // Antriebs-Modul des langsamsten Schiffs (siehe data/shipModules.ts) - wirkt NUR auf dessen
+  // eigenen Schiffstyp, exakt wie die Antriebsklassen-Forschung oben auch nur auf den Antriebstyp
+  // des langsamsten Schiffs wirkt.
+  if (slowestShipId && shipModules) {
+    const moduleLevel = shipModules[`${slowestShipId}_antrieb`] || 0;
+    multiplier *= 1 + moduleLevel * SHIP_MODULE_DRIVE_EFFECT_PER_LEVEL;
   }
 
   if (playerClass === 'kanonier') multiplier *= CLASS_KANONIER_FLEET_SPEED_MULTIPLIER;
@@ -130,7 +144,7 @@ export function startHoldDeployment(state: PlayerState, targetUserId: number, sh
   const targetState = loadPlayerState(targetUserId);
   if (!targetUser || !targetState.galaxyPosition) return { ok: false, error: 'Zielspieler nicht gefunden.' };
 
-  const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
+  const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
   const distance = galaxyDistance(state.galaxyPosition, targetState.galaxyPosition);
   const durationMs = galaxyDurationMs(distance, speed);
@@ -173,7 +187,7 @@ export function recallHoldDeployment(state: PlayerState, deploymentId: string): 
 
   const targetPos: GalaxyPosition = { system: deployment.targetSystem, position: deployment.targetPosition };
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const speed = galaxyFleetSpeed(deployment.ships, state.research, state.playerClass);
+  const speed = galaxyFleetSpeed(deployment.ships, state.research, state.playerClass, state.shipModules);
   const durationMs = galaxyDurationMs(distance, speed);
   const fuelCost = galaxyFuelCost(deployment.ships, distance);
   if (state.resources.deuterium < fuelCost) {

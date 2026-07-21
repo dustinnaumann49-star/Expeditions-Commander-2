@@ -135,8 +135,17 @@ function getRaidSchedule(userId: number): { hours: number[]; chance: number } {
   return { hours: RAID_CHECK_HOURS_LOCAL, chance: RAID_SPAWN_CHANCE };
 }
 
+// Heimatverteidigung (Raids) MUSS zusaetzlich zu COMBAT_SHIP_IDS auch den Imperator einschliessen -
+// der ist zwar bewusst NICHT Teil von COMBAT_SHIP_IDS (das steuert nur die Einsetzbarkeit in
+// SOLO-Missionen ausserhalb der Heimatbasis), darf aber die eigene Basis genauso verteidigen wie
+// jedes andere Schiff auch. Piraten-Sektor-Missionen, Elite-Bollwerk und Piratenadmiral erlauben
+// den Imperator bereits explizit (siehe availableFleetForSektor() in missions.ts,
+// ADMIRAL_ALLOWED_SHIP_IDS) - Raids waren hier bislang die einzige Ausnahme, der Imperator
+// wirkte dadurch bei Raids nie mit, obwohl er gebaut und zuhause war (Bugfix).
+const HOME_DEFENSE_SHIP_IDS = [...COMBAT_SHIP_IDS, 'imperator'];
+
 function hasAnyDefense(state: PlayerState): boolean {
-  return COMBAT_SHIP_IDS.some((id) => (state.fleet[id] || 0) > 0) || DEFENSES.some((d) => (state.defense[d.id] || 0) > 0);
+  return HOME_DEFENSE_SHIP_IDS.some((id) => (state.fleet[id] || 0) > 0) || DEFENSES.some((d) => (state.defense[d.id] || 0) > 0);
 }
 
 // Bollwerk repariert Verteidigungsanlagen nach einem Kampf zu einem hoeheren Anteil
@@ -263,7 +272,7 @@ async function processRaidWaves(state: PlayerState, currentUserId?: number, curr
 // state.defense werden hier direkt weiterverwendet, nicht zurueckgesetzt).
 async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId?: number, currentUserState?: PlayerState): Promise<void> {
   const waveNumber = raid.wavesProcessed + 1;
-  const homeShipIds = COMBAT_SHIP_IDS.filter((id) => (state.fleet[id] || 0) > 0);
+  const homeShipIds = HOME_DEFENSE_SHIP_IDS.filter((id) => (state.fleet[id] || 0) > 0);
   const homeDefIds = DEFENSES.map((d) => d.id).filter((id) => (state.defense[id] || 0) > 0);
 
   const defenderShips: Record<string, number> = {};
@@ -309,13 +318,14 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   }
 
   const contributions: OwnedFleetContribution[] = [
-    { ownerKey: 'owner', ships: defenderShips, research: state.research, defenseCounts: state.defense, playerClass: state.playerClass, kampfBoostActive: isBoosterActive(state, 'kampf') },
+    { ownerKey: 'owner', ships: defenderShips, research: state.research, defenseCounts: state.defense, playerClass: state.playerClass, kampfBoostActive: isBoosterActive(state, 'kampf'), shipModules: state.shipModules },
     ...reinforcerStates.map(({ r, playerState }) => ({
       ownerKey: String(r.userId),
       ships: r.ships,
       research: playerState.research,
       playerClass: playerState.playerClass,
       kampfBoostActive: isBoosterActive(playerState, 'kampf'),
+      shipModules: playerState.shipModules,
     })),
     ...heldStates.map(({ deployment, ownerState }) => ({
       ownerKey: `held:${deployment.id}`,
@@ -323,6 +333,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
       research: ownerState.research,
       playerClass: ownerState.playerClass,
       kampfBoostActive: isBoosterActive(ownerState, 'kampf'),
+      shipModules: ownerState.shipModules,
     })),
   ];
   const hasSupport = reinforcerStates.length > 0 || heldStates.length > 0;
@@ -338,6 +349,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
         battleModifier,
         playerClass: state.playerClass,
         kampfBoostActive: isBoosterActive(state, 'kampf'),
+        shipModules: state.shipModules,
       });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
@@ -346,7 +358,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   const playerResults: CombatUnitResult[] = [];
 
   homeShipIds.forEach((id) => {
-    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass);
+    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules);
     const sent = state.fleet[id] || 0;
     const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const lost = sent - survived;
@@ -364,7 +376,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   });
 
   homeDefIds.forEach((id) => {
-    const eff = getEffectiveStats(id, state.research, state.defense, isBoosterActive(state, 'kampf'), state.playerClass);
+    const eff = getEffectiveStats(id, state.research, state.defense, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules);
     const sent = state.defense[id] || 0;
     const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const destroyed = sent - survived;
@@ -431,7 +443,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     Object.entries(r.ships).forEach(([id, sentCount]) => {
       const survived = ownerSurvivors[id] || 0;
       reinforcerState.fleet[id] = (reinforcerState.fleet[id] || 0) + survived;
-      const eff = getEffectiveStats(id, reinforcerState.research, {}, isBoosterActive(reinforcerState, 'kampf'), reinforcerState.playerClass);
+      const eff = getEffectiveStats(id, reinforcerState.research, {}, isBoosterActive(reinforcerState, 'kampf'), reinforcerState.playerClass, reinforcerState.shipModules);
       const statKey = `${ownerKey}:${id}`;
       playerResults.push({
         id, name: shipName(id), ownerUsername: r.username, sent: sentCount, survived, lost: sentCount - survived,
@@ -459,7 +471,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     Object.entries(deployment.ships).forEach(([id, sentCount]) => {
       const survived = ownerSurvivors[id] || 0;
       deployment.ships[id] = survived;
-      const eff = getEffectiveStats(id, ownerState.research, {}, isBoosterActive(ownerState, 'kampf'), ownerState.playerClass);
+      const eff = getEffectiveStats(id, ownerState.research, {}, isBoosterActive(ownerState, 'kampf'), ownerState.playerClass, ownerState.shipModules);
       const statKey = `${ownerKey}:${id}`;
       playerResults.push({
         id, name: shipName(id), ownerUsername: `${holderUsername} (haltende Flotte)`, sent: sentCount, survived, lost: sentCount - survived,

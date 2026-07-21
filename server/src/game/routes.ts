@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import type { AuthedRequest } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
-import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
+import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, startShipModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { sendFleet, recallMission, availableFleetForSektor } from './missions.js';
 import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
@@ -21,10 +21,11 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
+import { SHIP_MODULES } from './data/shipModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
-import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
+import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
 import { getLeaderboard } from './stats.js';
 import type { ActionResult } from './actions.js';
@@ -42,7 +43,9 @@ gameRouter.get('/data', (_req, res) => {
     research: RESEARCH,
     buildings: BUILDINGS,
     buildingModules: BUILDING_MODULES,
+    shipModules: SHIP_MODULES,
     maxBuildingSlots: MAX_BUILDING_SLOTS,
+    maxShipModuleSlots: MAX_SHIP_MODULE_SLOTS,
     admiralAllowedShipIds: ADMIRAL_ALLOWED_SHIP_IDS,
     galaxySystems: GALAXY_SYSTEMS,
     galaxyPositions: GALAXY_POSITIONS,
@@ -151,6 +154,12 @@ gameRouter.post('/build/module', (req: AuthedRequest, res) => {
   handleAction(req, res, (state) => startModuleUpgrade(state, moduleId));
 });
 
+gameRouter.post('/build/shipmodule', (req: AuthedRequest, res) => {
+  const { moduleId } = req.body ?? {};
+  if (typeof moduleId !== 'string') return res.status(400).json({ error: 'moduleId erforderlich.' });
+  handleAction(req, res, (state) => startShipModuleUpgrade(state, moduleId));
+});
+
 // ---- Galaxie ----
 
 gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
@@ -200,7 +209,7 @@ gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
     if (!target) return res.status(400).json({ error: 'Zielposition nicht verfügbar.' });
 
     const distance = galaxyDistance(state.galaxyPosition, target);
-    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
     const durationMs = galaxyDurationMs(distance, speed);
     const fuelCost = galaxyFuelCost(ships, distance);
     res.json({ distance, durationMs, fuelCost });

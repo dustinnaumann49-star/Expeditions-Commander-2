@@ -166,7 +166,7 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   const creatorState = op.creatorId === state.userId ? state : loadPlayerState(op.creatorId);
   if (creatorState.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, creatorState.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
     const travelMs = galaxyDurationMs(distance, speed);
     me.rendezvousArrivalTime = Date.now() + (Number.isFinite(travelMs) ? travelMs : 0);
   } else {
@@ -205,7 +205,14 @@ function contributionsFromParticipants(op: GroupOperation, participantStates: Ma
     .filter((p) => p.status === 'accepted')
     .map((p) => {
       const pState = participantStates.get(p.userId)!;
-      return { ownerKey: String(p.userId), ships: p.ships, research: pState.research, playerClass: pState.playerClass, kampfBoostActive: isBoosterActive(pState, 'kampf') };
+      return {
+        ownerKey: String(p.userId),
+        ships: p.ships,
+        research: pState.research,
+        playerClass: pState.playerClass,
+        kampfBoostActive: isBoosterActive(pState, 'kampf'),
+        shipModules: pState.shipModules,
+      };
     });
 }
 
@@ -249,7 +256,7 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg?.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(combinedShips, state.research, state.playerClass);
+    const speed = galaxyFleetSpeed(combinedShips, state.research, state.playerClass, state.shipModules);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }
@@ -639,7 +646,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     Object.entries(p.ships).forEach(([id, sent]) => {
       if (sent <= 0) return;
       const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
-      const eff = getEffectiveStats(id, pState.research, {}, isBoosterActive(pState, 'kampf'), pState.playerClass);
+      const eff = getEffectiveStats(id, pState.research, {}, isBoosterActive(pState, 'kampf'), pState.playerClass, pState.shipModules);
       const statKey = `${p.userId}:${id}`;
       playerResults.push({
         id,

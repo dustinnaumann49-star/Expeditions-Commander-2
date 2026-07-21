@@ -105,6 +105,7 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
       battleModifier,
       playerClass: state.playerClass,
       kampfBoostActive: isBoosterActive(state, 'kampf'),
+      shipModules: state.shipModules,
     });
 
     runs++;

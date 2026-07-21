@@ -101,6 +101,30 @@ export interface BuildingModuleDefinition {
   timeGrowth: number;
 }
 
+// Schiffs-Modulsystem (analog zum Gebaeude-Modulsystem oben, aber pro SCHIFF statt pro Gebaeude -
+// jedes der 12 COMBAT_SHIP_IDS-Schiffe plus Imperator bekommt eigene Waffen-/Schild-/Panzerung-/
+// Antriebs-Module). Bilder werden von der jeweils passenden Forschung wiederverwendet
+// (waffentechnik/schildtechnik/panzerungtechnik/<antriebsart>), kein eigenes Bild noetig. Anders
+// als Gebaeude-Module (Mindeststufe des Basis-Gebaeudes) gibt es KEINE Freischalt-Schwelle - die
+// hohen Kosten allein wirken als Spaetspiel-Bremse, da Schiffe (anders als Gebaeude) keine
+// "Stufe" haben, an der man eine Schwelle festmachen koennte.
+export type ShipModuleKind = 'waffen' | 'schild' | 'panzerung' | 'antrieb';
+
+export interface ShipModuleDefinition {
+  id: string;
+  name: string;
+  shipId: string; // welches Basis-Schiff (Bild-Wiederverwendung ueber die passende Forschung + Anzeige-Gruppierung)
+  moduleKind: ShipModuleKind;
+  img: string; // Forschungs-Bild (siehe data/shipModules.ts fuer die genaue Zuordnung)
+  lore: string;
+  effectPerLevel: number;
+  maxLevel: number;
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -425,6 +449,11 @@ export interface PlayerState {
   // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
   // Komponente, maxSlots=1) unveraendert wiederverwenden laesst.
   buildingQueue: BuildJob[];
+  shipModules: Record<string, number>; // moduleId -> Stufe (siehe ShipModuleDefinition)
+  // Schiffs-Module teilen sich EINEN globalen Bauslot (analog zu Gebaeuden oben, unabhaengig von
+  // den 3 normalen Schiffs-Bauplaetzen in buildQueue) - immer hoechstens ein Eintrag, aber als
+  // Array modelliert, damit sich BuildQueue.tsx unveraendert wiederverwenden laesst.
+  shipModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   activeBoosters: Record<string, number>;

@@ -87,7 +87,7 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }
@@ -195,6 +195,7 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
     research: state.research,
     playerClass: state.playerClass,
     kampfBoostActive: isBoosterActive(state, 'kampf'),
+    shipModules: state.shipModules,
   });
 
   const survivedEscorts = result.survivorsA.begleitschiff || 0;
@@ -356,6 +357,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     battleModifier,
     playerClass: state.playerClass,
     kampfBoostActive: isBoosterActive(state, 'kampf'),
+    shipModules: state.shipModules,
   });
 
   let anyNpcDestroyed = false;
@@ -394,7 +396,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   let anyPlayerLoss = false;
   const losses: Record<string, number> = {};
   const playerResults: CombatUnitResult[] = playerIds.map((id) => {
-    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass);
+    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules);
     const sent = mission.ships[id];
     const survived = result.survivorsA[id];
     const lost = sent - survived;

@@ -3,7 +3,8 @@ import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDINGS, findBuilding } from './data/buildings.js';
 import { BUILDING_MODULES, findBuildingModule } from './data/buildingModules.js';
-import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
+import { SHIP_MODULES, findShipModule } from './data/shipModules.js';
+import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_PLAYER_SHIPS, PARENT_UNLOCK_LEVEL } from './data/combatConstants.js';
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
@@ -284,6 +285,17 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   });
   state.buildingQueue = stillBuildingBuildings;
 
+  // Schiffsmodul-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_SHIP_MODULE_SLOTS) -
+  // eigener Slot, unabhaengig von der normalen Schiffs-Bauschlange (buildQueue).
+  const stillBuildingShipModules = state.shipModuleQueue.filter((job) => {
+    if (job.endTime <= now && job.moduleId) {
+      state.shipModules[job.moduleId] = (state.shipModules[job.moduleId] || 0) + job.count;
+      return false;
+    }
+    return true;
+  });
+  state.shipModuleQueue = stillBuildingShipModules;
+
   // Bau-Warteschlange abarbeiten
   const stillBuilding = state.buildQueue.filter((job) => {
     if (job.endTime <= now && job.shipId) {
@@ -493,6 +505,49 @@ export function startModuleUpgrade(state: PlayerState, moduleId: string): Action
   const now = Date.now();
   const duration = moduleTimeForLevel(state, mod, nextLevel);
   state.buildingQueue.push({ moduleId, count: 1, startTime: now, endTime: now + duration });
+  return { ok: true };
+}
+
+// ========== SCHIFFS-MODULE (Waffen/Schild/Panzerung/Antrieb pro Schiff, siehe data/shipModules.ts) ==========
+
+function shipModuleCostForLevel(mod: (typeof SHIP_MODULES)[number], level: number): ResourceCost {
+  const f = Math.pow(mod.costGrowth, level - 1);
+  return {
+    metall: Math.round(mod.baseCost.metall * f),
+    kristall: Math.round(mod.baseCost.kristall * f),
+    deuterium: Math.round(mod.baseCost.deuterium * f),
+  };
+}
+
+function shipModuleTimeForLevel(state: PlayerState, mod: (typeof SHIP_MODULES)[number], level: number): number {
+  // Nutzt dieselbe Bauzeit-Multiplikator-Kette wie normale Schiffe (bauzeitMultiplier) - ein
+  // Schiffs-Modul ist schliesslich eine Werft-Ausbaumassnahme wie der Schiffbau selbst.
+  return mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000 * bauzeitMultiplier(state);
+}
+
+export function startShipModuleUpgrade(state: PlayerState, moduleId: string): ActionResult {
+  const mod = findShipModule(moduleId);
+  if (!mod) return { ok: false, error: 'Unbekanntes Modul.' };
+  const level = state.shipModules[moduleId] || 0;
+  if (level >= mod.maxLevel) return { ok: false, error: 'Maximalstufe erreicht.' };
+  // Schiffs-Module teilen sich EINEN globalen Bauslot (MAX_SHIP_MODULE_SLOTS=1), unabhaengig von
+  // den 3 normalen Schiffs-Bauplaetzen (buildQueue) - konkurriert nicht mit dem eigentlichen
+  // Schiffbau.
+  if (state.shipModuleQueue.length >= MAX_SHIP_MODULE_SLOTS) {
+    return { ok: false, error: 'Es kann immer nur ein Schiffsmodul gleichzeitig gebaut werden.' };
+  }
+
+  const nextLevel = level + 1;
+  const cost = shipModuleCostForLevel(mod, nextLevel);
+  if (!canAfford(state, cost, 1)) return { ok: false, error: 'Nicht genug Ressourcen.' };
+
+  state.resources.metall -= cost.metall;
+  state.resources.kristall -= cost.kristall;
+  state.resources.deuterium -= cost.deuterium;
+
+  const now = Date.now();
+  const duration = shipModuleTimeForLevel(state, mod, nextLevel);
+  state.shipModuleQueue.push({ moduleId, count: 1, startTime: now, endTime: now + duration });
   return { ok: true };
 }
 

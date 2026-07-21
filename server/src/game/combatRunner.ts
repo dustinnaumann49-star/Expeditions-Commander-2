@@ -29,6 +29,9 @@ export interface CombatWorkerRequest {
   // in combat.ts). Bei Mehrspieler-Kaempfen traegt stattdessen JEDE einzelne OwnedFleetContribution
   // ihre eigene playerClass, da mehrere Beitragende unterschiedliche Klassen haben koennen.
   playerClass?: PlayerClass | null;
+  // Eigene Schiffs-Module von Seite A im Einzelspieler-Fall (siehe data/shipModules.ts) - analog
+  // zu playerClass gilt bei Mehrspieler-Kaempfen stattdessen shipModules PRO Contribution.
+  shipModules?: Record<string, number>;
   sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
   // Ob Seite A sich bei 50% Verlusten zurueckziehen kann (Standard: ja). Bei der Heimatverteidigung
   // (Raids) MUSS das auf false stehen - man kann sich nicht aus der Verteidigung der eigenen Basis

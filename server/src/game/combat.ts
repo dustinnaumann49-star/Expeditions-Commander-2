@@ -37,6 +37,7 @@ import {
   CLASS_BOLLWERK_PANZERUNG_MULTIPLIER,
   CLASS_KOMMANDANT_COMBAT_MULTIPLIER,
 } from './data/classes.js';
+import { SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL } from './data/shipModules.js';
 import type { CombatStats, CombatReplay, PlayerClass } from './types.js';
 
 // ========== GRUNDLAGEN ==========
@@ -195,23 +196,29 @@ function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: numb
  * Effektive Kampfwerte eines Schiffs/einer Verteidigungsanlage unter Beruecksichtigung von Forschung
  * und (nur bei Verteidigung) Schildkuppel-Bonus. `kampfBoostActive` entspricht dem 24h-Kampf-Booster (+20%).
  * `playerClass` wendet den jeweiligen Klassenbonus an (siehe classCombatMultipliers() oben) - NIE
- * fuer NPC/Piraten (die haben keine playerClass, siehe alle Aufrufer).
+ * fuer NPC/Piraten (die haben keine playerClass, siehe alle Aufrufer). `shipModules` wendet die
+ * pro-Schiff-Module (Waffen/Schild/Panzerung, siehe data/shipModules.ts) an - gilt NUR fuer Schiffe,
+ * NIE fuer Verteidigungsanlagen (die haben keine eigenen Module).
  */
 export function getEffectiveStats(
   id: string,
   research: Record<string, number>,
   defenseCounts: Record<string, number> = {},
   kampfBoostActive = false,
-  playerClass: PlayerClass | null = null
+  playerClass: PlayerClass | null = null,
+  shipModules: Record<string, number> = {}
 ): CombatStats {
   const kampfBoost = kampfBoostActive ? 1.2 : 1;
   const classMult = classCombatMultipliers(playerClass);
   const ship = findShip(id);
   if (ship) {
+    const waffenModule = 1 + (shipModules[`${id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    const schildModule = 1 + (shipModules[`${id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    const panzerungModule = 1 + (shipModules[`${id}_panzerung`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
     return {
-      waffen: ship.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen,
-      schild: ship.stats.schild * schildMultiplier(research) * kampfBoost * classMult.schild,
-      panzerung: ship.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung,
+      waffen: ship.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen * waffenModule,
+      schild: ship.stats.schild * schildMultiplier(research) * kampfBoost * classMult.schild * schildModule,
+      panzerung: ship.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung * panzerungModule,
     };
   }
   const def = findDefense(id);
@@ -490,6 +497,7 @@ export interface OwnedFleetContribution {
   defenseCounts?: Record<string, number>; // fuer Schildkuppel-Bonus, falls relevant (z.B. Heimatverteidiger bei Raid)
   playerClass?: PlayerClass | null; // eigene Klasse des Beitragenden (Kampfbonus je Klasse), siehe getEffectiveStats()
   kampfBoostActive?: boolean; // eigener aktiver 24h-Kampf-Booster des Beitragenden (+20%), siehe isBoosterActive() in actions.ts
+  shipModules?: Record<string, number>; // eigene Schiffs-Module des Beitragenden, siehe data/shipModules.ts
 }
 
 function buildUnitsMultiOwner(
@@ -497,9 +505,9 @@ function buildUnitsMultiOwner(
   fallbackStatsFn: (id: string) => CombatStats
 ): CombatUnit[] {
   const units: CombatUnit[] = [];
-  contributions.forEach(({ ownerKey, ships, research, defenseCounts, playerClass, kampfBoostActive }) => {
+  contributions.forEach(({ ownerKey, ships, research, defenseCounts, playerClass, kampfBoostActive, shipModules }) => {
     const fn = (id: string) =>
-      research ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null) : fallbackStatsFn(id);
+      research ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null, shipModules || {}) : fallbackStatsFn(id);
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);
