@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'KI-Mitspieler repariert: bauen, forschen, verteidigen jetzt wirklich',
+    changes: [
+      'Großer Bugfix: KI-Vega und KI-Nyx haben bisher praktisch nichts produziert - ihre Ressourcen standen immer still, Bau- und Forschungsaufträge sind nie fertig geworden.',
+      'Dadurch hatten sie auch nie eine nennenswerte Flotte oder Verteidigung, kamen euch nie mit haltenden Flotten zu Hilfe und konnten nie an Elite-Bollwerk-Expeditionen teilnehmen.',
+      'Ist jetzt behoben - KI-Spieler bauen, forschen, verteidigen sich und schließen sich Expeditionen an wie ein echter Mitspieler.',
+      'Sie wählen jetzt außerdem beim ersten Zug eine zufällige Klasse, statt für immer ohne Klassen-Bonus dazustehen.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Forschung: eigene Tabs für jeden Bereich',
     changes: [
       'Die vier Forschungsbereiche (Waffensysteme, Verteidigungssysteme, Antriebstechnik, Wirtschaft & Logistik) sind jetzt eigene Untertabs statt alle untereinander auf einer Seite - übersichtlicher, und es ist Platz für künftige neue Forschungen.',
