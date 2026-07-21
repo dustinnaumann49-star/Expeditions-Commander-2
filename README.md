@@ -79,7 +79,11 @@ server/
                                       calculatePoints()) und Bestenliste (getLeaderboard())
 
   src/game/data/ships.ts             Alle Schiffsdaten (Werte, Kosten, Bauzeit, Speed, Lore)
-  src/game/data/defenses.ts          Alle Verteidigungsanlagen-Daten
+  src/game/data/defenses.ts          Alle Verteidigungsanlagen-Daten (inkl. Sentinel-/Ultimate-
+                                      Kanone mit Mehrfachziel-Salve, Gigant-Schildkuppel)
+  src/game/data/defenseModules.ts    Verteidigungs-Module (Waffen/Schild/Panzerung, kein Antrieb) -
+                                      Stufen leben in DERSELBEN Map wie Schiffs-Module
+                                      (state.shipModules), nur eigene Bauschlange
   src/game/data/research.ts          Alle Forschungen (Forschungsbaum, Effekt/Stufe, Kosten, Zeit)
   src/game/data/sectors.ts           SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL
                                       (inkl. piraten_elite/piraten_admiral = Multiplayer-Sektoren)
@@ -128,6 +132,13 @@ client/
                                       haengt per Verbindungslinie direkt UNTER dessen ShipBuildCard
                                       (Werft-Hauptliste UND Spezialschiffe) - bewusst KEIN eigener
                                       Tab (Nutzerentscheidung, siehe README-Punkt)
+  src/components/DefenseBuildCard.tsx Wiederverwendbare Verteidigungs-Baukarte, analog zu
+                                      ShipBuildCard.tsx - genutzt von allen 4 Werft > Verteidigung
+                                      Untertabs
+  src/components/DefenseModuleRow.tsx Waffen-/Schild-/Panzerung-Module EINER Verteidigungsanlage,
+                                      haengt per Verbindungslinie direkt UNTER deren
+                                      DefenseBuildCard - analog zu ShipModuleRow.tsx, kein
+                                      Antriebs-Modul
   src/components/CombatReplayView.tsx  UNGENUTZT - Canvas-Kampfvisualisierung wurde aus dem
                                       Frontend entfernt, Datei bleibt für eine mögliche
                                       Reaktivierung bestehen
@@ -137,11 +148,15 @@ client/
   src/components/ProtectedRoute.tsx  Leitet zu /login um, falls nicht angemeldet
 
   src/pages/Login.tsx                Login/Registrierung
-  src/pages/Werft.tsx                Schiffe bauen + Untertab "Spezialschiffe" (rendert
-                                      Spezialschiffe.tsx) - Schiffs-Module (siehe unten) hängen
-                                      direkt unter jeder Schiffskarte, kein eigener Untertab
+  src/pages/Werft.tsx                Zwei Haupttabs "Schiffe"/"Verteidigung" (ersetzt die
+                                      eigenstaendige Verteidigung.tsx-Seite komplett, siehe unten).
+                                      "Schiffe": Klassen-Untertabs Jäger/Kreuzer/Elite/Versorgung
+                                      PLUS "Spezialschiffe" (rendert Spezialschiffe.tsx) als
+                                      gleichrangiger Klassen-Tab. "Verteidigung": Klassen-Untertabs
+                                      Leichte/Schwere/Schild/Spezialverteidigung. Schiffs-/
+                                      Verteidigungs-Module haengen direkt unter jeder Karte, kein
+                                      eigener Untertab.
 
-  src/pages/Verteidigung.tsx         Verteidigungsanlagen bauen
   src/pages/Forschung.tsx            Forschungsbaum + Untertab "Gebäude" (rendert Gebaeude.tsx)
   src/pages/Gebaeude.tsx             Gebäude ausbauen + Module (Untertab von Forschung)
   src/pages/Sektor.tsx               Solo-Missionen + Untertab "Kampfsimulator"
@@ -152,9 +167,9 @@ client/
   src/pages/Schrotthaendler.tsx      Schiffe/Verteidigung verschrotten (Untertab von Händler)
   src/pages/Shop.tsx                 Booster/Zeit-Gutscheine (Spezialteile/Imperator seit dem
                                       Spezialschiffe-Umzug nicht mehr hier, siehe Werft.tsx)
-  src/pages/Spezialschiffe.tsx       Salvenschiffe (normale Ressourcen) + Imperator (Spezialteile) -
-                                      Untertab von Werft, übernimmt die Funktion des entfernten
-                                      Shop-Untertabs Spezialteile
+  src/pages/Spezialschiffe.tsx       Salvenschiffe (normale Ressourcen) + Imperator (Spezialteile,
+                                      Bestand jetzt im Info-Popup statt eigener Box) - Klassen-Tab
+                                      von Werft > Schiffe
   src/pages/Multiplayer.tsx          Elite-Bollwerk + Piratenadmiral-Expeditionen, Untertabs
                                       "Raid-Hilfe" und "Spieler" (Online/Offline-Liste)
   src/pages/Galaxie.tsx              Galaxie-Ansicht: System-Browser, Positionsraster,
@@ -690,6 +705,60 @@ client/
     davon unberührt (weiterhin über `availableFleetForSektor()`/das clientseitige Pendant
     gesteuert, nicht über diese neue Konstante).
 
+66. **Werft wird zur zentralen Bau-Seite für alles Militärische: 2 Haupttabs "Schiffe" und
+    "Verteidigung" statt einer eigenständigen Verteidigung-Seite** (Nutzerentscheidung, Sidebar
+    dadurch schlanker - `Verteidigung.tsx` komplett entfernt, kompletter Inhalt in `Werft.tsx`
+    aufgegangen). "Schiffe" behält seine bisherigen Klassen-Untertabs (Jäger/Kreuzer/Elite/
+    Versorgung), "Spezialschiffe" ist jetzt ein GLEICHRANGIGER Klassen-Tab statt eines eigenen
+    Werft-Haupttabs. "Verteidigung" bekommt eine analoge Klassen-Struktur (siehe Punkt 67).
+
+67. **Verteidigung nach Klassen unterteilt, analog zu Schiffen** (Nutzerentscheidung):
+    - **Leichte Verteidigung**: Raketenwerfer, Leichtes Lasergeschütz, Schweres Lasergeschütz
+    - **Schwere Verteidigung**: Gauß-Kanone, Ionengeschütz, Plasmawerfer
+    - **Schild**: alle drei Schildkuppeln (Kleine/Große/neu Gigant, siehe Punkt 68)
+    - **Spezialverteidigung**: die zwei neuen Mehrfachziel-Salve-Anlagen (siehe Punkt 68)
+    Anders als bei Schiffen (Imperator braucht wegen der Spezialteile-Mechanik eine eigene
+    Komponente) sind bei Verteidigung ALLE vier Klassen-Tabs strukturell identisch - eine einzige
+    generische `VerteidigungTab`-Komponente in `Werft.tsx` reicht, kein Spezialfall nötig.
+
+68. **Zwei neue Verteidigungsanlagen mit Mehrfachziel-Salve** (`data/defenses.ts`,
+    Nutzerentscheidung): Sentinel-Kanone (deckt Jäger-Klasse ab, wie Salvenjäger) und
+    Ultimate-Kanone (deckt Kreuzer- UND Elite-Klasse zusammen ab - stärker als jedes einzelne
+    Salvenschiff, entsprechend teurer/seltener). Nutzen dieselbe `MULTI_TARGET_VOLLEY_SHIPS`-Menge
+    wie die Salvenschiffe (Name historisch gewachsen, `combat.ts`s Salve-Logik prüft nur generisch
+    den `typeId`-String, unabhängig ob Schiff oder Verteidigungsanlage) - MUSSTEN deshalb auch aus
+    `generateDefenseFleet()` ausgeschlossen werden (Bugfix nebenbei: diese Funktion hatte bislang
+    GAR KEINEN Ausschluss-Filter, anders als die längst bestehenden Pendants für Schiffe,
+    `generatePiratenFleet()`/`generateFallbackFleet()` - ohne den Fix wären Sentinel-/
+    Ultimate-Kanone in generierten Piraten-/Raid-Verteidigungen aufgetaucht). Dritte Schildkuppel
+    "Gigant-Schildkuppel" kommt trotz "Spezial"-Charakter bewusst in den normalen Schild-Tab
+    (Nutzerentscheidung), nicht zur Spezialverteidigung - gleiches Prinzip wie die anderen beiden
+    Kuppeln (gemeinsamer Pool, `maxCount:1`), nur deutlich stärker.
+
+69. **Verteidigungs-Modulsystem: Waffen/Schild/Panzerung (KEIN Antrieb - Verteidigung bewegt sich
+    nicht) für ALLE 11 Verteidigungsanlagen** (`data/defenseModules.ts`, generiert wie
+    `shipModules.ts`, 30 Definitionen). Kuppeln bekommen bewusst KEIN Waffen-Modul (0 Basis-
+    Waffenschaden, ein Prozent-Bonus darauf wäre wirkungslos - gleiche Logik wie der Ausschluss
+    von Mining-Schiff/Begleitschiff bei Schiffs-Modulen). Bewusste Vereinfachung: Verteidigungs-
+    Modul-STUFEN leben in DERSELBEN `state.shipModules`-Map wie Schiffs-Module (Id-Schema
+    `${defenseId}_waffen` usw. kollidiert nicht mit Schiffs-Ids) - dadurch war KEINE zusätzliche
+    Durchreichung durch den kompletten Kampf-Pfad nötig, `getEffectiveStats()` bekommt den
+    `shipModules`-Parameter ja ohnehin schon überall. Nur die Bau-Warteschlange
+    (`state.defenseModuleQueue`, `MAX_DEFENSE_MODULE_SLOTS=1`) ist eigenständig, unabhängig von
+    Schiffs-Modulen UND den 3 normalen Verteidigungs-Bauplätzen.
+
+70. **Dabei aufgedeckt und behoben: der gemeinsame Schildkuppel-Pool (`computeDomeSharedPool()`)
+    wendete bislang NUR die Forschung an - Klassen-Bonus (z.B. Bollwerks +50% Schild), der 24h-
+    Kampf-Booster und (jetzt neu) Schild-Module wirkten NIE auf den Pool**, obwohl sie bei jeder
+    anderen Verteidigungsanlage über `getEffectiveStats()` längst greifen. Ursache: Kuppeln melden
+    in `getEffectiveStats()` IMMER `schild: 0` (ihr echter Schildwert fließt ausschließlich in den
+    separaten Pool, nicht in ihre eigenen Kampfwerte) - der Pool wurde aber komplett getrennt von
+    `getEffectiveStats()` berechnet und hatte dadurch nie an den späteren Erweiterungen
+    (Klassensystem, Kampf-Booster) teilgenommen. Fix: `computeDomeSharedPool()` bekommt jetzt
+    dieselben Parameter (`kampfBoostActive`, `playerClass`, `shipModules`) wie `getEffectiveStats()`
+    und wendet sie genauso an - betrifft nur den EINEN Aufrufer in `raids.ts` (Verteidigungsanlagen
+    kämpfen ausschließlich bei Raids, nie bei Missionen/Elite-Bollwerk/Piratenadmiral).
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -763,3 +832,10 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
 - Imperator-Kampfwerte auf Millionen-Niveau angehoben (Waffen 5 Mio., Schild 2,5 Mio., Panzerung
   12 Mio.); dabei Bug behoben, dass der Imperator bei Raids nie mitverteidigt hat (bei Sektor-
   Missionen/Elite-Bollwerk/Piratenadmiral war er schon immer zugelassen).
+- Werft komplett neu strukturiert: 2 Haupttabs Schiffe/Verteidigung, Spezialschiffe jetzt
+  gleichrangiger Klassen-Tab statt eigener Haupttab, eigenständige Verteidigung-Seite entfernt.
+  Verteidigung nach Klassen unterteilt (Leichte/Schwere/Schild/Spezialverteidigung). Zwei neue
+  Verteidigungsanlagen mit Mehrfachziel-Salve (Sentinel-/Ultimate-Kanone), dritte Schildkuppel
+  (Gigant-Schildkuppel). Neues Verteidigungs-Modulsystem (Waffen/Schild/Panzerung, kein Antrieb).
+  Dabei zwei Bugs behoben: generateDefenseFleet() schloss neue Spezialverteidigung nicht aus; der
+  gemeinsame Schildkuppel-Pool ignorierte bisher Klassen-Bonus/Kampf-Booster komplett.
