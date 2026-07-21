@@ -5,9 +5,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   resources: 'Rohstoffe',
   dm: 'Dunkle Materie',
   teile: 'Ausrüstungs-Teile',
-  zeitgutschein: 'Zeit-Gutschein',
+  zeitgutschein: 'Zeit-Gutscheine',
   freischiff: 'Geschenkte Schiffe',
 };
+const CATEGORY_ORDER = ['resources', 'dm', 'teile', 'zeitgutschein', 'freischiff'];
+
+function categoryForRewardType(type: string): string {
+  if (type.startsWith('zeitgutschein')) return 'zeitgutschein';
+  if (CATEGORY_LABELS[type]) return type;
+  return 'sonstiges';
+}
 
 export function InventarPage() {
   const { gameData, state, openContainer, redeemRewardItem, error } = useGame();
@@ -55,17 +62,26 @@ export function InventarPage() {
           {rewardItems.length > 0 && (
             <div className="queue-box">
               <h3 style={{ fontSize: 14, marginBottom: 8 }}>Einlösbare Belohnungen ({rewardItems.length})</h3>
-              {rewardItems.map((item) => (
-                <div className="queue-item" key={item.id}>
-                  <span>
-                    {item.count > 1 ? `${item.count}x ` : ''}
-                    {item.reward.label}
-                  </span>
-                  <button className="qty-btn" onClick={() => redeemRewardItem(item.id)}>
-                    ✅ Einlösen
-                  </button>
-                </div>
-              ))}
+              {CATEGORY_ORDER.map((cat) => {
+                const itemsInCat = rewardItems.filter((item) => categoryForRewardType(item.reward.type) === cat);
+                if (itemsInCat.length === 0) return null;
+                return (
+                  <div key={cat} style={{ marginBottom: 14 }}>
+                    <h4 style={{ fontSize: 13, color: 'var(--accent-kristall)', marginBottom: 6 }}>{CATEGORY_LABELS[cat]}</h4>
+                    {itemsInCat.map((item) => (
+                      <div className="queue-item" key={item.id}>
+                        <span>
+                          {item.count > 1 ? `${item.count}x ` : ''}
+                          {item.reward.label}
+                        </span>
+                        <button className="qty-btn" onClick={() => redeemRewardItem(item.id)}>
+                          ✅ Einlösen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
