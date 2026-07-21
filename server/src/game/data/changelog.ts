@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'KI-Mitspieler: gemischte Flotte und Verteidigung',
+    changes: [
+      'KI-Vega und KI-Nyx haben bisher dauerhaft nur den billigsten Jäger-Typ als Flotte und ausschließlich Raketenwerfer als Verteidigung gebaut, egal wie lange sie schon spielten.',
+      'Sie bauen jetzt gemischt: immer der Schiffs-/Verteidigungstyp, von dem sie aktuell am wenigsten besitzen, kommt zuerst dran - dadurch entsteht mit der Zeit eine echte, durchmischte Flotte samt gestaffelter Verteidigung (bis hin zu Schildkuppeln und Spezialkanonen bei ausreichend Ressourcen).',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Piraten-Sektoren: Balance-Anpassung',
     changes: [
       'Solo-Piraten-Missionen (Niedrig/Mittel/Hoch) fühlten sich zu einfach an - Gegner blieben immer bei maximal eurer eigenen Flottenstärke, und die Hälfte der Stunden-Checks brachte gar keinen Feindkontakt.',

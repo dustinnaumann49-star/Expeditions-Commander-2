@@ -16,6 +16,10 @@ import type { PlayerState } from './types.js';
 const BOT_USERNAMES = ['KI-Vega', 'KI-Nyx'];
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
+const DEFENSE_IDS = [
+  'raketenwerfer', 'leichteslaser', 'schwereslaser', 'gausskanone', 'ionengeschuetz', 'plasmawerfer',
+  'kleineschildkuppel', 'grosseschildkuppel', 'gigantschildkuppel', 'sentinelkanone', 'ultimatekanone',
+];
 const MINE_IDS = ['metallmine', 'kristallmine', 'deuteriummine'];
 
 /**
@@ -72,20 +76,40 @@ function maybeStartResearch(state: PlayerState): void {
   }
 }
 
+function countInFleetOrQueue(state: PlayerState, shipId: string): number {
+  return (state.fleet[shipId] || 0) + state.buildQueue.filter((j) => j.shipId === shipId).reduce((a, j) => a + j.count, 0);
+}
+
 function maybeBuildShips(state: PlayerState): void {
   if (state.buildQueue.length >= MAX_BUILD_SLOTS) return;
-  const miningInFleetOrQueue = (state.fleet.mining || 0) + state.buildQueue.filter((j) => j.shipId === 'mining').reduce((a, j) => a + j.count, 0);
+  const miningInFleetOrQueue = countInFleetOrQueue(state, 'mining');
   // Wirtschaft zuerst - genug Mining-Schiffe fuer eigenstaendiges Wachstum?
   if (miningInFleetOrQueue < 50 && startBuild(state, 'mining', 10).ok) return;
-  // Danach etwas Kampfkraft, vom guenstigsten Typ aufwaerts.
-  for (const id of COMBAT_SHIP_IDS) {
+  // Kampfschiffe gemischt aufbauen statt immer denselben (guenstigsten) Typ zuerst zu versuchen -
+  // der Typ mit dem aktuell geringsten Bestand (Flotte + Warteschlange) kommt zuerst dran. Das
+  // ergibt von selbst eine durchmischte Flotte statt einer reinen Masse des billigsten Schiffs;
+  // teurere Typen werden trotzdem seltener gebaut, weil ein Versuch bei fehlenden Ressourcen
+  // einfach fehlschlaegt (ok:false) und der naechstguenstigere Typ in der sortierten Liste drankommt.
+  const sortedCombatIds = [...COMBAT_SHIP_IDS].sort((a, b) => countInFleetOrQueue(state, a) - countInFleetOrQueue(state, b));
+  for (const id of sortedCombatIds) {
     if (startBuild(state, id, 5).ok) return;
   }
 }
 
+function countDefenseInStockOrQueue(state: PlayerState, defId: string): number {
+  return (state.defense[defId] || 0) + state.defenseQueue.filter((j) => j.defId === defId).reduce((a, j) => a + j.count, 0);
+}
+
 function maybeBuildDefense(state: PlayerState): void {
   if (state.defenseQueue.length >= MAX_DEFENSE_SLOTS) return;
-  startDefenseBuild(state, 'raketenwerfer', 10);
+  // Gemischte Verteidigung statt nur Raketenwerfer (Nutzerentscheidung, Juli 2026): dieselbe
+  // "geringster Bestand zuerst"-Sortierung wie bei maybeBuildShips. Schildkuppeln (maxCount:1) und
+  // Sentinel-/Ultimate-Kanone (maxCount:40/20) fallen automatisch aus der Rotation, sobald ihr
+  // Limit erreicht ist - startDefenseBuild() liefert dann ok:false, naechster Typ wird versucht.
+  const sortedDefenseIds = [...DEFENSE_IDS].sort((a, b) => countDefenseInStockOrQueue(state, a) - countDefenseInStockOrQueue(state, b));
+  for (const id of sortedDefenseIds) {
+    if (startDefenseBuild(state, id, 10).ok) return;
+  }
 }
 
 function maybeSendMiningFleet(state: PlayerState): void {
