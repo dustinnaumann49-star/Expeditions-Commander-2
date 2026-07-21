@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
@@ -179,7 +180,7 @@ export function GebaeudePage() {
     return () => clearInterval(i);
   }, []);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const now = Date.now();
   const busy = state.buildingQueue.length >= gameData.maxBuildingSlots;

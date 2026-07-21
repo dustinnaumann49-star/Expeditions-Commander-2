@@ -1,11 +1,12 @@
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 // Wird an zwei Stellen eingebunden: als normaler Nav-Tab (Wechsel gegen DM) UND als blockierende
 // Erstwahl-Ansicht in App.tsx (siehe GameHome dort), wenn state.playerClass noch null ist -
 // dieselbe Komponente deckt beide Faelle ab (mandatory steuert nur Layout-Feinheiten/Text).
 export function KlassePage({ mandatory = false }: { mandatory?: boolean }) {
   const { gameData, state, setPlayerClass, error } = useGame();
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const current = state.playerClass;
   const cost = gameData.classChangeCostDm;
@@ -25,25 +26,28 @@ export function KlassePage({ mandatory = false }: { mandatory?: boolean }) {
       )}
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
-      <div className="ship-grid">
+      <div className="ship-grid class-grid">
         {gameData.playerClasses.map((cls) => {
           const isCurrent = current === cls.id;
           const canAfford = state.resources.dm >= cost;
           return (
-            <div className="ship-card" key={cls.id} style={isCurrent ? { borderColor: 'var(--accent-deut)' } : undefined}>
-              <img
-                className="ship-img"
-                src={`/${cls.img}`}
-                alt={cls.name}
-                onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-              />
+            <div
+              className={`ship-card class-card${isCurrent ? ' class-card-current' : ''}`}
+              key={cls.id}
+              style={isCurrent ? { borderColor: 'var(--accent-deut)' } : undefined}
+            >
+              <div className="class-card-img-wrap">
+                <img
+                  className="ship-img class-card-img"
+                  src={`/${cls.img}`}
+                  alt={cls.name}
+                  onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                />
+                <div className="class-card-img-fade" />
+                {isCurrent && <span className="class-current-badge">Aktuelle Klasse</span>}
+              </div>
               <div className="ship-info">
-                <h3>
-                  {cls.name}
-                  {isCurrent && (
-                    <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent-deut)', fontWeight: 600 }}>AKTUELLE KLASSE</span>
-                  )}
-                </h3>
+                <h3>{cls.name}</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>{cls.tagline}</p>
                 <ul style={{ fontSize: 12, paddingLeft: 18, marginBottom: 12 }}>
                   {cls.bonuses.map((b, i) => (

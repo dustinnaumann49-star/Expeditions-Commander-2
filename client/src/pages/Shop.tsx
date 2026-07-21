@@ -1,10 +1,11 @@
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 
 function ShopBoosterView() {
   const { gameData, state, buyBooster, buyVoucher, error } = useGame();
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   return (
     <div>

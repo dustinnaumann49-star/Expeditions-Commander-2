@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { api } from '../api/client';
 import type { LeaderboardEntry } from '../types/game';
 
@@ -32,9 +33,9 @@ export function StatistikPage() {
     };
   }, []);
 
-  if (!state) return <p>Lade...</p>;
+  if (!state) return <PageSkeleton />;
   if (error) return <p style={{ color: 'var(--danger)' }}>{error}</p>;
-  if (!leaderboard) return <p>Lade...</p>;
+  if (!leaderboard) return <PageSkeleton />;
 
   const me = leaderboard.find((e) => e.userId === state.userId);
 

@@ -1,4 +1,5 @@
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import type { Container, RewardItem } from '../types/game';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -18,7 +19,7 @@ function categoryForRewardType(type: string): string {
 
 export function InventarPage() {
   const { gameData, state, openContainer, redeemRewardItem, error } = useGame();
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const containers = state.inventory.filter((i): i is Container => 'tier' in i);
   const rewardItems = state.inventory.filter((i): i is RewardItem => 'type' in i && i.type === 'rewardItem');

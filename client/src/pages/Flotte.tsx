@@ -1,4 +1,5 @@
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 // Dieselbe Klassen-Einteilung wie in Werft.tsx (WERFT_KLASSEN) - fuer einen konsistenten,
 // wiedererkennbaren Ueberblick. "spezial" faengt alles auf, was in keiner der Werft-Klassen baubar
@@ -13,7 +14,7 @@ const FLOTTE_KLASSEN = [
 
 export function FlottePage() {
   const { gameData, state } = useGame();
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const totalOwned = Object.values(state.fleet).reduce((a, b) => a + (b || 0), 0);
 

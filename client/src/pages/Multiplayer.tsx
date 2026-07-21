@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { shipName } from '../lib/combatInfo';
@@ -231,7 +232,7 @@ function ExpeditionEventsView() {
     return () => clearInterval(i);
   }, []);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
   const now = serverNow();
   const myUserId = state.userId;
   const sektor = gameData.sektoren.find((s) => s.id === sektorId)!;
@@ -411,7 +412,7 @@ function ExpeditionEventsView() {
 
 function PlayerListView() {
   const { users, state } = useGame();
-  if (!state) return <p>Lade...</p>;
+  if (!state) return <PageSkeleton />;
 
   return (
     <div>

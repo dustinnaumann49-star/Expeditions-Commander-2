@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 export function SchrotthaendlerPage() {
   const { gameData, state, scrapShip, scrapDefense, error } = useGame();
   const [qtyShip, setQtyShip] = useState<Record<string, number>>({});
   const [qtyDef, setQtyDef] = useState<Record<string, number>>({});
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
   const rate = gameData.scrapRefundRate;
 
   const ownedShips = gameData.ships.filter((s) => !s.specialOnly && (state.fleet[s.id] || 0) > 0);

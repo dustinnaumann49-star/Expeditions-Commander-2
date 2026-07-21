@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { LoreModal } from '../components/LoreModal';
 import { ShipBuildCard, shipInfoRows, countShipEverywhere } from '../components/ShipBuildCard';
@@ -19,7 +20,7 @@ export function SpezialschiffePage() {
   const [infoShipId, setInfoShipId] = useState<string | null>(null);
   const [showImperatorInfo, setShowImperatorInfo] = useState(false);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const imperator = gameData.ships.find((s) => s.id === 'imperator');
   const salvenShips = gameData.ships.filter((s) => SALVEN_SHIP_IDS.includes(s.id));

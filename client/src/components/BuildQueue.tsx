@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 
@@ -8,6 +8,12 @@ interface QueueJob {
   endTime: number;
 }
 
+interface CompletedFlash {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export function BuildQueue<T extends QueueJob>({ queue, maxSlots, nameFor }: { queue: T[]; maxSlots: number; nameFor: (job: T) => string }) {
   const [, forceTick] = useState(0);
   useEffect(() => {
@@ -15,8 +21,50 @@ export function BuildQueue<T extends QueueJob>({ queue, maxSlots, nameFor }: { q
     return () => clearInterval(i);
   }, []);
 
+  // Erkennt fertiggestellte Auftraege: ein Job, der beim vorherigen Render noch da war (mit
+  // bereits abgelaufener endTime), aber jetzt aus der vom Server gelieferten Warteschlange
+  // verschwunden ist, wurde fertig (nicht abgebrochen - siehe Zeitpruefung unten) -> kurzer
+  // Erfolgs-Flash statt stillschweigendem Verschwinden.
+  const prevJobsRef = useRef<Map<string, T>>(new Map());
+  const [flashes, setFlashes] = useState<CompletedFlash[]>([]);
+  useEffect(() => {
+    const now = serverNow();
+    const currentKeys = new Set(queue.map((j) => `${nameFor(j)}|${j.startTime}|${j.endTime}|${j.count}`));
+    const justCompleted: CompletedFlash[] = [];
+    prevJobsRef.current.forEach((job, key) => {
+      if (!currentKeys.has(key) && job.endTime <= now + 1500) {
+        justCompleted.push({ key: `${key}-${now}`, label: nameFor(job), count: job.count });
+      }
+    });
+    if (justCompleted.length > 0) {
+      setFlashes((f) => [...f, ...justCompleted]);
+      justCompleted.forEach((jc) => {
+        setTimeout(() => setFlashes((f) => f.filter((x) => x.key !== jc.key)), 2200);
+      });
+    }
+    const nextMap = new Map<string, T>();
+    queue.forEach((j) => nextMap.set(`${nameFor(j)}|${j.startTime}|${j.endTime}|${j.count}`, j));
+    prevJobsRef.current = nextMap;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue]);
+
+  const flashList = flashes.length > 0 && (
+    <>
+      {flashes.map((f) => (
+        <div className="build-complete-flash" key={f.key}>
+          ✓ {f.label} x{f.count} fertiggestellt
+        </div>
+      ))}
+    </>
+  );
+
   if (queue.length === 0) {
-    return <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine aktive Produktion.</p>;
+    return (
+      <>
+        {flashList}
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine aktive Produktion.</p>
+      </>
+    );
   }
 
   const now = serverNow();
@@ -25,6 +73,7 @@ export function BuildQueue<T extends QueueJob>({ queue, maxSlots, nameFor }: { q
 
   return (
     <>
+      {flashList}
       {lanes.map((laneJobs, laneIdx) => {
         if (laneJobs.length === 0) {
           return (

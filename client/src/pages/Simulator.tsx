@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { api } from '../api/client';
 import type { SimulationResult } from '../types/game';
 
@@ -27,7 +28,7 @@ export function SimulatorView() {
   const [running, setRunning] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const piratenSektoren = gameData.sektoren.filter((s) => s.id.startsWith('piraten_'));
   const availableShips = gameData.ships.filter((s) => COMBAT_SHIP_IDS.includes(s.id));

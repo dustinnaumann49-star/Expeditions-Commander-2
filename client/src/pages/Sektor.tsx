@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
@@ -498,7 +499,7 @@ export function SektorPage() {
     return () => clearInterval(i);
   }, []);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
   const now = serverNow();
   const activeKlasse = SEKTOR_KLASSEN.find((k) => k.id === tab)!;
   const sektorenInTab = gameData.sektoren.filter((s) => activeKlasse.match(s.id) && !gameData.sektorConfig[s.id]?.multiplayerOnly);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { SchrotthaendlerPage } from './Schrotthaendler';
 
 const RESOURCE_LABELS: Record<string, string> = { metall: 'Metall', kristall: 'Kristall', deuterium: 'Deuterium' };
@@ -32,7 +33,7 @@ function TradeView() {
   const [to, setTo] = useState('deuterium');
   const [amount, setAmount] = useState(0);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const fromStock = Math.floor((state.resources as any)[from]);
   const received = from === to || amount <= 0 ? 0 : ((amount * gameData.tradeValue[from]) / gameData.tradeValue[to]) * (1 - gameData.tradeFee);

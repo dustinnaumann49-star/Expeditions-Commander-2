@@ -5,6 +5,21 @@ import { useAuth } from '../context/AuthContext';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { getEnergyProduced, getEnergyConsumed } from '../lib/multipliers';
+import { useCountUp } from '../lib/useCountUp';
+
+// Einzelner Ressourcen-Eintrag als eigene Komponente, damit useCountUp() sein eigenes
+// "vorheriger Wert"-Gedaechtnis pro Ressource hat (ein gemeinsamer Hook auf Elternebene wuerde
+// beim Aendern EINER Ressource alle gleichzeitig neu pulsen lassen).
+function ResourceItem({ icon, alt, label, value }: { icon: string; alt: string; label: string; value: number }) {
+  const { display, pulse } = useCountUp(value);
+  const fmt = (n: number) => Math.round(n).toLocaleString('de-DE');
+  return (
+    <span className={`res-item${pulse ? ` res-pulse-${pulse}` : ''}`}>
+      <img className="res-icon" src={icon} alt={alt} onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+      {label}: {fmt(display)}
+    </span>
+  );
+}
 
 export function ResourceBar() {
   const { state, gameData, activeRaids } = useGame();
@@ -33,27 +48,10 @@ export function ResourceBar() {
   return (
     <div id="resourcebar">
       <div className="res-group">
-        <span className="res-item">
-          <img className="res-icon" src="/resources/metall.png" alt="Metall" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-          Metall: {fmt(state.resources.metall)}
-        </span>
-        <span className="res-item">
-          <img className="res-icon" src="/resources/kristall.png" alt="Kristall" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-          Kristall: {fmt(state.resources.kristall)}
-        </span>
-        <span className="res-item">
-          <img className="res-icon" src="/resources/deuterium.png" alt="Deuterium" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
-          Deuterium: {fmt(state.resources.deuterium)}
-        </span>
-        <span className="res-item">
-          <img
-            className="res-icon"
-            src="/resources/dunkle_materie.png"
-            alt="Dunkle Materie"
-            onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-          />
-          Dunkle Materie: {fmt(state.resources.dm)}
-        </span>
+        <ResourceItem icon="/resources/metall.png" alt="Metall" label="Metall" value={state.resources.metall} />
+        <ResourceItem icon="/resources/kristall.png" alt="Kristall" label="Kristall" value={state.resources.kristall} />
+        <ResourceItem icon="/resources/deuterium.png" alt="Deuterium" label="Deuterium" value={state.resources.deuterium} />
+        <ResourceItem icon="/resources/dunkle_materie.png" alt="Dunkle Materie" label="Dunkle Materie" value={state.resources.dm} />
         <span className="res-item" style={energyDeficit ? { color: 'var(--danger)' } : undefined} title="Energie: Erzeugt/Verbraucht">
           ⚡ {fmt(energyProduced)}/{fmt(energyConsumed)}
         </span>

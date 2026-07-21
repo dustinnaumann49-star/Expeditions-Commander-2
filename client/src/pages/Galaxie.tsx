@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { api } from '../api/client';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
@@ -98,7 +99,7 @@ export function GalaxiePage() {
     return () => clearTimeout(t);
   }, [targetUserId, selection]);
 
-  if (!gameData || !state || system === null) return <p>Lade...</p>;
+  if (!gameData || !state || system === null) return <PageSkeleton />;
 
   const now = serverNow();
   const shipName = (id: string) => gameData.ships.find((s) => s.id === id)?.name || id;

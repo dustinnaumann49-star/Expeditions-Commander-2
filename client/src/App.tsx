@@ -56,12 +56,17 @@ function Sidebar() {
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   return (
     <>
       <ResourceBar />
       <div id="layout">
         <Sidebar />
-        <div id="mainbar">{children}</div>
+        <div id="mainbar">
+          <div key={location.pathname} className="page-transition">
+            {children}
+          </div>
+        </div>
       </div>
     </>
   );

@@ -62,6 +62,93 @@
     0%,100%{ box-shadow: 0 0 6px rgba(224,50,60,0.3); }
     50%{ box-shadow: 0 0 16px rgba(224,50,60,0.6); }
   }
+  @keyframes pageIn{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @keyframes valuePulseUp{
+    0%{ text-shadow: 0 0 0 rgba(82,240,122,0); }
+    30%{ text-shadow: 0 0 10px rgba(82,240,122,0.85); color: var(--accent-deut); }
+    100%{ text-shadow: 0 0 0 rgba(82,240,122,0); }
+  }
+  @keyframes valuePulseDown{
+    0%{ text-shadow: 0 0 0 rgba(224,50,60,0); }
+    30%{ text-shadow: 0 0 10px rgba(224,50,60,0.85); color: var(--danger-bright); }
+    100%{ text-shadow: 0 0 0 rgba(224,50,60,0); }
+  }
+  @keyframes sparkBurst{
+    0%{ opacity:0; transform: scale(0.85); }
+    15%{ opacity:1; transform: scale(1.02); }
+    80%{ opacity:1; transform: scale(1); }
+    100%{ opacity:0; transform: scale(1); }
+  }
+
+  /* ===== Seitenuebergang (App.tsx: Wrapper um die geroutete Seite, key=pathname) ===== */
+  .page-transition{ animation: pageIn .28s ease both; }
+
+  /* ===== Wert-Aenderung in der ResourceBar kurz farblich hervorheben (Countup-Feedback) ===== */
+  .res-pulse-up{ animation: valuePulseUp 1s ease; }
+  .res-pulse-down{ animation: valuePulseDown 1s ease; }
+
+  /* ===== Bau-Fertigstellung: kurzer Hinweis-Flash oberhalb der Warteschlange ===== */
+  .build-complete-flash{
+    display:flex; align-items:center; gap:8px;
+    background: rgba(82,240,122,0.10);
+    border: 1px solid var(--accent-deut);
+    color: var(--accent-deut);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    box-shadow: 0 0 14px rgba(82,240,122,0.25);
+    animation: sparkBurst 2.2s ease both;
+  }
+
+  /* ===== Skeleton-Loader (ersetzt "Lade..."-Text waehrend Erstladung) ===== */
+  .skeleton-block{
+    background: linear-gradient(90deg, var(--carbon-light) 25%, var(--carbon-hover) 50%, var(--carbon-light) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* ===== Klassenwahl: groessere, atmosphaerische Portraits statt schlichter ship-card ===== */
+  .class-grid{ grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .class-card{ transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
+  .class-card:hover{ transform: translateY(-6px) scale(1.01); }
+  .class-card-current{ box-shadow: 0 0 22px rgba(82,240,122,0.25); }
+  .class-card-img-wrap{ position:relative; overflow:hidden; }
+  .class-card-img{ height: 220px !important; transition: transform .5s ease; }
+  .class-card:hover .class-card-img{ transform: scale(1.08); }
+  .class-card-img-fade{
+    position:absolute; left:0; right:0; bottom:0; height:60%;
+    background: linear-gradient(to top, rgba(16,16,18,0.92), rgba(16,16,18,0));
+    pointer-events:none;
+  }
+  .class-current-badge{
+    position:absolute; top:10px; right:10px;
+    background: rgba(16,16,18,0.55);
+    border: 1px solid var(--accent-deut);
+    color: var(--accent-deut);
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    box-shadow: var(--glow-deut);
+    backdrop-filter: blur(2px);
+  }
+
+  /* ===== Kampfbericht: einfache CSS-Balken fuer Schaden ausgeteilt/erlitten ===== */
+  .combat-bar-row{ display:flex; flex-direction:column; gap:2px; margin-bottom:8px; }
+  .combat-bar-label{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); }
+  .combat-bar-track{
+    width:100%; height:8px; background:var(--carbon); border-radius:4px; overflow:hidden; border:1px solid var(--border);
+    display:flex;
+  }
+  .combat-bar-fill{ height:100%; transition: width .6s ease; }
+  .combat-bar-fill.dealt{ background: linear-gradient(90deg, var(--accent-deut), var(--accent-kristall)); }
+  .combat-bar-fill.taken{ background: linear-gradient(90deg, var(--danger-bright), var(--danger)); }
 
   #resourcebar{
     background: rgba(16,16,18,0.30);

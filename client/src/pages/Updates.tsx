@@ -1,8 +1,9 @@
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 export function UpdatesPage() {
   const { gameData } = useGame();
-  if (!gameData) return <p>Lade...</p>;
+  if (!gameData) return <PageSkeleton />;
 
   return (
     <div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { BuildQueue } from '../components/BuildQueue';
 import { LoreModal } from '../components/LoreModal';
 import { InfoModal, InfoTable } from '../components/InfoModal';
@@ -34,7 +35,7 @@ function SchiffeTab() {
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
   const [infoShipId, setInfoShipId] = useState<string | null>(null);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const activeKlasse = SCHIFFE_KLASSEN.find((k) => k.id === klasse)!;
   const ships = gameData.ships.filter((s) => activeKlasse.ids.includes(s.id));
@@ -108,7 +109,7 @@ function VerteidigungTab() {
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
   const [infoDefId, setInfoDefId] = useState<string | null>(null);
 
-  if (!gameData || !state) return <p>Lade...</p>;
+  if (!gameData || !state) return <PageSkeleton />;
 
   const activeKlasse = VERTEIDIGUNG_KLASSEN.find((k) => k.id === klasse)!;
   const defenses = gameData.defenses.filter((d) => activeKlasse.ids.includes(d.id));

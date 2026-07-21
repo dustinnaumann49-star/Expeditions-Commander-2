@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { shipName } from '../lib/combatInfo';
 import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage } from '../types/game';
 
@@ -59,6 +60,87 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function sumUnits(units: CombatUnitResult[]) {
+  return units.reduce(
+    (acc, u) => {
+      acc.dealt += u.dmgDealt || 0;
+      acc.sent += u.sent ?? u.count ?? 0;
+      acc.lost += u.lost ?? u.destroyedCount ?? 0;
+      return acc;
+    },
+    { dealt: 0, sent: 0, lost: 0 }
+  );
+}
+
+// Visuelle Kampf-Zusammenfassung auf einen Blick, oberhalb der detaillierten Einheiten-Tabellen -
+// ersetzt keine Zahlen, fasst nur zusammen, wer wie viel ausgeteilt hat und wie hoch die Verluste
+// je Seite ausfielen. Gruen = gut fuer den Betrachter (eigener Schaden/gegnerische Verluste),
+// Rot = schlecht (eigene Verluste/gegnerischer Schaden) - konsistent mit den bestehenden
+// level-gruen/level-rot-Farben in den Tabellen.
+function CombatSummaryBars({
+  npcResults,
+  playerResults,
+  allyResult,
+}: {
+  npcResults: CombatUnitResult[];
+  playerResults: CombatUnitResult[];
+  allyResult?: CombatUnitResult;
+}) {
+  const ownUnits = [...playerResults, ...(allyResult ? [allyResult] : [])];
+  const own = sumUnits(ownUnits);
+  const npc = sumUnits(npcResults);
+  const maxDmg = Math.max(own.dealt, npc.dealt, 1);
+  const ownLossPct = own.sent > 0 ? (own.lost / own.sent) * 100 : 0;
+  const npcLossPct = npc.sent > 0 ? (npc.lost / npc.sent) * 100 : 0;
+  const fmt = (n: number) => Math.round(n).toLocaleString('de-DE');
+
+  return (
+    <div className="queue-box" style={{ marginBottom: 16 }}>
+      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Kampf-Zusammenfassung</p>
+      <div className="combat-bar-row">
+        <div className="combat-bar-label">
+          <span>Schaden ausgeteilt — Deine Flotte</span>
+          <span>{fmt(own.dealt)}</span>
+        </div>
+        <div className="combat-bar-track">
+          <div className="combat-bar-fill dealt" style={{ width: `${(own.dealt / maxDmg) * 100}%` }} />
+        </div>
+      </div>
+      <div className="combat-bar-row">
+        <div className="combat-bar-label">
+          <span>Schaden ausgeteilt — Gegner</span>
+          <span>{fmt(npc.dealt)}</span>
+        </div>
+        <div className="combat-bar-track">
+          <div className="combat-bar-fill taken" style={{ width: `${(npc.dealt / maxDmg) * 100}%` }} />
+        </div>
+      </div>
+      <div className="combat-bar-row">
+        <div className="combat-bar-label">
+          <span>Verluste — Deine Flotte</span>
+          <span>
+            {own.lost}/{own.sent} ({ownLossPct.toFixed(0)}%)
+          </span>
+        </div>
+        <div className="combat-bar-track">
+          <div className="combat-bar-fill taken" style={{ width: `${ownLossPct}%` }} />
+        </div>
+      </div>
+      <div className="combat-bar-row" style={{ marginBottom: 0 }}>
+        <div className="combat-bar-label">
+          <span>Verluste — Gegner</span>
+          <span>
+            {npc.lost}/{npc.sent} ({npcLossPct.toFixed(0)}%)
+          </span>
+        </div>
+        <div className="combat-bar-track">
+          <div className="combat-bar-fill dealt" style={{ width: `${npcLossPct}%` }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -167,6 +249,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                     <p style={{ fontSize: 13, marginBottom: 6 }}>
                       <strong>Stunde {sk.hour}</strong> – {sk.outcome}
                     </p>
+                    <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
                     <RewardTable rows={combatRewardRows(sk.rewards)} />
                     <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
                     <UnitTable title="Eigene Eskorte" units={sk.playerResults} />
@@ -183,6 +266,11 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
             <p className="detail-sub" style={{ marginBottom: 12 }}>
               {new Date(msg.time).toLocaleString('de-DE')} · {msg.detail.roundsFought} Runde(n)
             </p>
+            <CombatSummaryBars
+              npcResults={msg.detail.npcResults}
+              playerResults={msg.detail.playerResults}
+              allyResult={msg.detail.allyResult}
+            />
             <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
             <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
             {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
@@ -229,7 +317,7 @@ function MessageTable({ messages, onOpen }: { messages: GameMessage[]; onOpen: (
 export function NachrichtenPage() {
   const { state, clearMessages } = useGame();
   const [openId, setOpenId] = useState<string | null>(null);
-  if (!state) return <p>Lade...</p>;
+  if (!state) return <PageSkeleton />;
 
   const kampf = state.messages.filter((m) => m.type === 'kampf');
   const farm = state.messages.filter((m) => m.type === 'farm');
