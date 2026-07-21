@@ -285,6 +285,7 @@ export interface GameMessage {
 export interface Container {
   id: string;
   tier: 'silber' | 'gold' | 'elite';
+  count: number;
   receivedAt: number;
 }
 
@@ -440,13 +441,18 @@ export interface VoucherDefinition {
   desc: string;
 }
 
+export interface ContainerCategoryDef {
+  category: 'resources' | 'dm' | 'teile' | 'zeitgutschein' | 'freischiff';
+  chance: number;
+  rewards: ContainerReward[];
+}
+
 export interface ContainerTypeDef {
   name: string;
   tier: string;
   icon: string;
   color: string;
-  pickCount: number;
-  rewards: ContainerReward[];
+  categories: ContainerCategoryDef[];
 }
 
 export interface ChangelogEntry {
