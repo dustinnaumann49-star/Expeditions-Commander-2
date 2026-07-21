@@ -242,6 +242,17 @@ export const CRIT_CHANCE_BASE: Record<string, number> = {
 export const CRIT_CHANCE_MAX = 0.35;
 export const CRIT_DAMAGE_MULTIPLIER = 2;
 
+// Piraten/NPCs bekamen bisher GAR KEINE Forschung (Praezision/Ausweichen/Kritische Treffer/
+// Zielerfassung/Schild-Regeneration/Durchschlag sowie die Waffen-/Schild-/Panzerung-Multiplikatoren
+// liefen fuer sie immer auf reinem Basiswert). Nutzerentscheidung nach Feedback ("Piraten wirken
+// mittlerweile zu leicht"): Piraten bekommen jetzt PIRATE_RESEARCH_SHARE (50%) des relevanten
+// Forschungsstands - bewusst NUR Forschung, NICHT Klassen-Bonus/Schiffs-/Verteidigungs-Module/
+// Kampf-Booster (die bleiben exklusiv beim Spieler). Bei Mehrspieler-Kaempfen (Elite-Bollwerk,
+// Raid mit Verstaerkung/haltenden Flotten) zaehlt der DURCHSCHNITT aller Beteiligten
+// (Nutzerentscheidung), siehe computePirateResearch() in combat.ts. Bewusst als eigene, leicht
+// auffindbare Konstante - falls sich 50% als zu viel/wenig herausstellt, reicht eine Zahl hier.
+export const PIRATE_RESEARCH_SHARE = 0.5;
+
 export const MAX_RESEARCH_LEVEL = 10;
 // Forschungsbaum: einheitliche Voraussetzungs-Schwelle fuer JEDE Eltern->Kind-Verbindung (siehe
 // ResearchDefinition.parentId in types.ts) - bewusst ein einziger globaler Wert statt individuell

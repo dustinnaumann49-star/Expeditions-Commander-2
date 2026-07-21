@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Piraten werden zäher: 50% eurer Forschung',
+    changes: [
+      'Piraten und andere NPC-Gegner (Sektor-Missionen, Raids, Elite-Bollwerk, Piratenadmiral) profitieren jetzt von 50% eurer Forschung - vorher hatten sie überhaupt keine.',
+      'Betrifft alle Forschungs-Effekte: Waffen-/Schild-/Panzerungtechnik, Präzision, Ausweichen, Kritische Treffer, Zielerfassung, Schild-Regeneration, Durchschlag.',
+      'Klassen-Bonus, Schiffs-/Verteidigungs-Module und der Kampf-Booster bleiben davon unberührt - die bringen weiterhin nur euch etwas.',
+      'Bei gemeinsamen Kämpfen mit mehreren Teilnehmern (Elite-Bollwerk, Raid-Verstärkung/haltende Flotten) zählt der Durchschnitt der Forschung aller Beteiligten.',
+      'Der Kampfsimulator berücksichtigt das automatisch mit, eure Vorhersagen bleiben also weiterhin zuverlässig.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Werft-Umbau: Verteidigung integriert, neue Anlagen, Verteidigungs-Module',
     changes: [
       'Die Werft hat jetzt zwei Haupttabs: "Schiffe" und "Verteidigung". Die eigenständige Verteidigung-Seite ist damit weg, alles läuft jetzt über die Werft.',
