@@ -917,6 +917,19 @@ client/
     Baum-Zeile und waren davon nicht betroffen - nur der Forschungsbaum braucht eine starre
     Horizontal-Anordnung, weil die Eltern-Kind-Verbindungslinien sonst nicht mehr stimmen würden.
 
+80. **Zweiter Mobil-Fix (Nutzer-Screenshot Statistik-Seite): lange Zeilen-Labels quetschten den
+    Wert auf ein Wort pro Zeile zusammen** (z.B. "Container geöffnet (Silber/Gold/Elite): 4 / 59 /
+    12" - jede Zahl auf einer eigenen Zeile). Ursache lag NICHT in `Statistik.tsx` selbst, sondern
+    im gemeinsam genutzten CSS (`theme.css`s `.info-list-label`/`.info-list-value`, auch von
+    `InfoModal.tsx`s `InfoTable`-Komponente genutzt - Ship-/Verteidigungs-/Forschungs-/Modul-Info-
+    Popups betroffen): das Label hatte `white-space: nowrap; flex-shrink: 0` gesetzt, wodurch es bei
+    langen Texten nahezu die GESAMTE Zeilenbreite beanspruchte und dem Wert kaum noch Platz ließ -
+    der Wert brach dadurch bei jedem Leerzeichen um, statt normal zu umbrechen. Fix: beide Seiten
+    bekommen jetzt `flex: 1 1 auto; min-width: 0` (teilen sich die Breite fair, dürfen beide bei
+    Bedarf normal an Wortgrenzen umbrechen) - bewusst KEIN erzwungenes `white-space: nowrap` auf dem
+    Wert (wäre bei den oft längeren Info-Popup-Werten wie Kosten-Strings riskant gewesen und hätte
+    das Problem nur auf die andere Seite verlagert).
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -1023,3 +1036,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   jetzt außerdem beim ersten Zug eine zufällige Klasse.
 - Forschungsbaum: Kind-Knoten verkleinert, Kinderzeile bekommt eigenes horizontales Scrollen -
   war auf schmalen Mobilgeräten am Bildschirmrand abgeschnitten statt scrollbar zu sein.
+- Statistik/Info-Popups: lange Zeilen-Labels quetschten den Wert auf ein Wort pro Zeile zusammen
+  (theme.css .info-list-label/.info-list-value) - beide Seiten teilen sich jetzt die Breite fair.
