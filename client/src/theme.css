@@ -348,10 +348,10 @@
   .info-list-row:last-child{ border-bottom: none; }
   .info-list-row:hover{ background: rgba(76,227,238,0.05); }
   .info-list-label{
-    color: var(--text-dim); font-size: 12px; white-space: nowrap; flex-shrink: 0;
+    color: var(--text-dim); font-size: 12px; flex: 1 1 auto; min-width: 0;
   }
   .info-list-value{
-    color: var(--text); font-size: 13px; text-align: right; line-height: 1.5;
+    color: var(--text); font-size: 13px; text-align: right; line-height: 1.5; flex: 1 1 auto; min-width: 0;
   }
   .combat-table{ width:100%; border-collapse:collapse; font-size:13px; }
   .combat-table th{
