@@ -9,6 +9,18 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '21.07.2026',
+    title: 'Klassensystem: Kanonier, Bollwerk, Kommandant',
+    changes: [
+      'Neuer Tab "Klasse": Jeder Spieler wählt einmalig kostenlos eine von drei reinen Kampf-Klassen. Ohne Wahl geht es nicht weiter - das betrifft auch alle Bestandsspieler.',
+      'Kanonier: +100% Waffenschaden (Schild/Panzerung unverändert), +25% Flottengeschwindigkeit, 10% günstigere Schiffs-Baukosten. Tötet am schnellsten, hält am wenigsten aus.',
+      'Bollwerk: +50% Schild UND +50% Panzerung (Waffenschaden unverändert), 25% günstigere Verteidigungsanlagen-Baukosten, Verteidigung repariert sich nach Kämpfen zu 90% statt 70%. Hält am längsten durch, braucht aber länger für den Sieg.',
+      'Kommandant: +33% auf Waffen/Schild/Panzerung gleichermaßen, 10% günstigere Schiffs- UND Verteidigungs-Baukosten, +15% Flottengeschwindigkeit. Der Allrounder ohne Schwäche, aber auch ohne Glanzpunkt.',
+      'Die Klasse kann jederzeit gegen 500 Dunkle Materie gewechselt werden - kein Cooldown, aber bewusst teuer.',
+      'Nebenbei behoben: der 24h-Kampf-Booster aus dem Shop (+20% Waffen/Schild/Panzerung) hatte bisher gar keine Wirkung. Ist jetzt in jedem Kampf aktiv, wenn er läuft.',
+    ],
+  },
+  {
     date: '19.07.2026',
     title: 'Raids kommen jetzt in 5 Wellen',
     changes: [
