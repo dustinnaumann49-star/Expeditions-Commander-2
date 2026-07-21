@@ -874,6 +874,35 @@ client/
     `ResearchForest`-Komponente wie vorher, nur nicht mehr alle vier gleichzeitig gemappt. "Gebäude"
     bleibt als fünfter, gleichrangiger Untertab von `ForschungPage` unverändert bestehen.
 
+77. **KI-Spieler (KI-Vega/KI-Nyx) waren praktisch komplett funktionsunfähig - Kernursache:
+    `tick()` (Ressourcenproduktion, Bau-/Forschungs-/Verteidigungs-/Modul-Warteschlangen,
+    Galaxie-Rückkehr) wurde im globalen Heartbeat (`heartbeat.ts`) NIE aufgerufen.** Bei jedem
+    ECHTEN Spieler-Request passiert das automatisch (`handleAction()` in `routes.ts` ruft `tick()`
+    IMMER vor der eigentlichen Aktion auf) - ein KI-Spieler stellt aber nie einen Request, die
+    einzige Stelle, an der sein Zustand überhaupt verarbeitet wird, ist der Heartbeat. Ohne `tick()`
+    dort produzierten KI-Spieler NIE Ressourcen und ihre über `runBotTurn()` gestarteten
+    Bau-/Forschungs-Aufträge wurden NIE fertig (sie blieben für immer in der jeweiligen
+    Warteschlange stehen, ohne je in `state.fleet`/`state.buildings`/`state.research`/
+    `state.defense` überzugehen) - erklärt alle beobachteten Symptome auf einen Schlag: keine
+    Verteidigung bei eigenen Raids (Flotte/Verteidigung blieben bei praktisch Null), keine
+    Halte-Flotten bei Menschen (`maybeHoldAtHumans()` prüft `state.fleet[id] > 0`), keine
+    Elite-Bollwerk-Teilnahme (`maybeHandleGroupOps()` braucht Schiffe zum Beitreten, die es nie
+    gab). Fix: `heartbeat.ts` ruft jetzt `await tick(state)` für JEDEN Nutzer auf, bevor
+    `processMissions()`/`processRaidTimer()`/(bei Bots) `runBotTurn()` folgen. Per Simulation
+    verifiziert: ein frischer KI-Spieler-Zustand produzierte über 2 simulierte Stunden hinweg
+    korrekt ~48 Mio. Metall/~25 Mio. Kristall/~10 Mio. Deuterium (vorher: dauerhaft exakt Null).
+    Nebenbei behoben: die Zeile `state.lastUpdate = Date.now()` wurde bisher OHNE vorherigen
+    `tick()`-Aufruf gesetzt - betraf auch MENSCHLICHE Spieler und kostete bis zu
+    `HEARTBEAT_INTERVAL_MS` (2 Minuten) Produktionszeit pro Heartbeat-Takt, sobald ein Spieler
+    länger offline war (tick() berechnet die vergangene Zeit ja anhand von `state.lastUpdate`) -
+    durch den `tick()`-Aufruf jetzt ebenfalls korrekt.
+
+78. **Dabei zusätzlich ergänzt: KI-Spieler wählen jetzt beim ersten Zug einmalig zufällig eine
+    Klasse** (`maybeChooseClass()` in `bot.ts`, `setPlayerClass()`) - ein echter Spieler MUSS das
+    UI-Gate durchlaufen (siehe `App.tsx`), ein KI-Spieler umgeht das vollständig und wäre sonst für
+    immer bei `playerClass: null` (kein Klassenbonus) hängen geblieben, was nicht dem Anspruch
+    entspricht, sich wie ein echter Mitspieler zu verhalten.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -973,3 +1002,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   Ausrüstungs-Teile, Zeit-Gutscheine, Geschenkte Schiffe) statt einer flachen Liste.
 - Forschung: die vier Hauptbereiche (Waffensysteme/Verteidigungssysteme/Antriebstechnik/
   Wirtschaft & Logistik) sind jetzt eigene Untertabs statt untereinander auf einer Seite.
+- KI-Spieler-Kernbugfix: tick() lief im Heartbeat nie, dadurch produzierten KI-Spieler nie
+  Ressourcen und ihre Bau-/Forschungsaufträge wurden nie fertig - erklärt alle Symptome (keine
+  Verteidigung, keine Halte-Flotten, keine Elite-Bollwerk-Teilnahme). Betraf nebenbei auch
+  menschliche Spieler (bis zu 2 Min. Produktionsverlust pro Heartbeat-Takt). KI-Spieler wählen
+  jetzt außerdem beim ersten Zug eine zufällige Klasse.
