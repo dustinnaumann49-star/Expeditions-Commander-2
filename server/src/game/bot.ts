@@ -7,6 +7,7 @@ import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SL
 import { sendFleet } from './missions.js';
 import { listMyGroupOperations, respondToGroupOperation, startGroupOperation, createGroupOperation } from './groupOps.js';
 import { startHoldDeployment } from './galaxy.js';
+import { setPlayerClass } from './classActions.js';
 import type { PlayerState } from './types.js';
 
 // Namen der KI-Mitspieler - bei Bedarf hier anpassen/erweitern, bevor der Server das erste Mal
@@ -38,6 +39,16 @@ export async function ensureBotUsers(): Promise<void> {
 // UI - keine Sonderkonditionen, keine abweichenden Kosten/Bauzeiten/Flugzeiten. Ein Aufruf
 // schlaegt einfach fehl (ok:false), wenn nicht genug Ressourcen da sind oder ein Slot belegt ist -
 // das genuegt als Vorpruefung, eigene Kostenformeln muessen hier nicht dupliziert werden.
+
+// Ein echter Spieler MUSS vor jedem anderen Zugriff eine Klasse waehlen (siehe App.tsx-Gate) -
+// Bots durchlaufen dieses UI-Gate nie, wuerden aber ohne diesen Baustein fuer immer bei
+// playerClass:null bleiben und dadurch nie von Klassen-Boni profitieren. Einmalige, zufaellige
+// Wahl beim ersten Zug (kein Wechsel danach - genau wie ein Spieler es i.d.R. auch nicht taeglich tut).
+function maybeChooseClass(state: PlayerState): void {
+  if (state.playerClass) return;
+  const options = ['kanonier', 'bollwerk', 'kommandant'];
+  setPlayerClass(state, options[Math.floor(Math.random() * options.length)]);
+}
 
 function maybeBuildBuilding(state: PlayerState): void {
   if (state.buildingQueue.length > 0) return;
@@ -161,6 +172,7 @@ function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
 export async function runBotTurn(state: PlayerState, allUsers: { id: number; username: string; isBot: boolean }[]): Promise<void> {
   const humanUserIds = allUsers.filter((u) => !u.isBot && u.id !== state.userId).map((u) => u.id);
 
+  maybeChooseClass(state);
   maybeBuildBuilding(state);
   maybeStartResearch(state);
   maybeBuildShips(state);

@@ -1,14 +1,18 @@
 import { listAllUsers } from '../db.js';
 import { loadPlayerState, savePlayerState } from './state.js';
+import { tick } from './actions.js';
 import { processMissions } from './missions.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { runBotTurn } from './bot.js';
 
 /**
- * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu tick()
- * (das immer den Zustand EINES aktiven Spielers als Ausgangspunkt braucht) verarbeitet das hier
- * JEDEN registrierten Nutzer nacheinander, unabhaengig davon, ob und wann er zuletzt online war.
+ * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
+ * durch einen Request ausgeloesten tick()-Aufruf (der immer den Zustand EINES aktiven Spielers
+ * als Ausgangspunkt braucht) verarbeitet das hier JEDEN registrierten Nutzer nacheinander,
+ * unabhaengig davon, ob und wann er zuletzt online war - UND ruft dabei selbst tick() auf (siehe
+ * Bugfix-Kommentar weiter unten: frueher lief hier gar kein tick(), wodurch KI-Spieler nie
+ * Ressourcen produziert oder Warteschlangen abgeschlossen haben).
  *
  * Grund fuer diese zweite Verarbeitungs-Schiene: Ohne sie haengt JEDE Spielmechanik mit festen
  * Zeitpunkten (Raid-Checkpoints, Missions-Ankunft, Multiplayer-Expeditions-Fortschritt)
@@ -16,8 +20,7 @@ import { runBotTurn } from './bot.js';
  * aktiven Spielern (z.B. nachts) passiert schlicht gar nichts, komplett unabhaengig von den in
  * economy.ts festgelegten Checkpoints. Gedacht zum Aufruf durch einen externen Taktgeber (Render
  * Cron Job, oder ein kostenloser externer Uptime-Pinger wie cron-job.org/UptimeRobot), der diesen
- * Endpunkt alle paar Minuten aufruft - siehe /api/heartbeat in index.ts. Rein additiv: laeuft
- * neben der normalen tick()-Verarbeitung her, ersetzt sie nicht.
+ * Endpunkt alle paar Minuten aufruft - siehe /api/heartbeat in index.ts.
  */
 export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; errors: number }> {
   const users = listAllUsers();
@@ -33,6 +36,19 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     // um den zweiten (und alle Checkpoints danach) fuer immer stillzulegen.
     try {
       const state = loadPlayerState(u.id);
+      // KERN-BUGFIX: tick() (Ressourcenproduktion, Bau-/Forschungs-/Verteidigungs-/Modul-
+      // Warteschlangen, Galaxie-Rueckkehr) wurde hier bisher NIE aufgerufen - bei jedem echten
+      // Spieler-Request passiert das automatisch (siehe handleAction() in routes.ts), bei einem
+      // rein Server-seitig gesteuerten KI-Spieler, der NIE einen Request stellt, jedoch nirgends
+      // sonst. Ergebnis: KI-Spieler haben nie Ressourcen produziert und ihre Bau-/Forschungs-
+      // Warteschlangen sind nie fertig geworden - obwohl runBotTurn() unten scheinbar erfolgreich
+      // neue Auftraege einreihte, blieben Flotte/Gebaeude/Forschung dauerhaft bei praktisch Null.
+      // Betrifft nebenbei auch MENSCHLICHE Spieler: die Zeile `state.lastUpdate = Date.now()`
+      // weiter unten wurde bisher OHNE vorherigen tick()-Aufruf gesetzt, wodurch bis zu
+      // HEARTBEAT_INTERVAL_MS (2 Minuten) Produktionszeit pro Takt verloren gingen, sobald ein
+      // Spieler laenger offline war (tick() berechnet die vergangene Zeit ja anhand von
+      // state.lastUpdate) - durch den tick()-Aufruf hier jetzt ebenfalls behoben.
+      await tick(state);
       await processMissions(state);
       await processRaidTimer(state);
       // KI-Spieler-Feature nach dem Server-Umzug (Hetzner, siehe README) wieder REAKTIVIERT -
@@ -41,7 +57,6 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       if (u.isBot) {
         await runBotTurn(state, users);
       }
-      state.lastUpdate = Date.now();
       savePlayerState(state);
     } catch (err) {
       errors++;
