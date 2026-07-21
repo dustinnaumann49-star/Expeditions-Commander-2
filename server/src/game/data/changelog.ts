@@ -13,6 +13,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Forschungsbaum: Mobil-Fix',
     changes: [
       'Bei Forschungen mit mehreren Zweigen (z.B. Schiffbau-Reduktion, Antriebstechnik) wurde der letzte Zweig auf schmalen Handy-Bildschirmen manchmal am Rand abgeschnitten statt scrollbar zu sein - jetzt lässt sich die Zeile gezielt seitlich wegwischen.',
+      'Statistik-Seite und Info-Popups: bei langen Zeilen-Bezeichnungen wurde der Wert daneben teils in einzelne Wörter zerrissen (z.B. "4 / 59 / 12" jeweils auf eigener Zeile) - jetzt teilen sich Bezeichnung und Wert die verfügbare Breite fair.',
     ],
   },
   {
