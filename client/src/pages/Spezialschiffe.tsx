@@ -38,33 +38,11 @@ export function SpezialschiffePage() {
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
         Seltene Sonderschiffe: die drei Salvenschiffe (normale Ressourcen, normale Bau-Slots) und der Imperator (nur aus geborgenen Spezialteilen,
-        siehe Inventar).
+        Bestand siehe Info-Popup).
       </p>
 
       {imperator && teileCost && (
         <>
-          <div className="queue-box" style={{ marginBottom: 20, maxWidth: 480 }}>
-            <h3 style={{ fontSize: 14, marginBottom: 8 }}>Spezialteile-Inventar</h3>
-            <div className="queue-item">
-              <span>Waffen-Teile</span>
-              <span>
-                {Math.floor(state.teile.waffen)} / {teileCost.waffen} ({pct(state.teile.waffen, teileCost.waffen)}%)
-              </span>
-            </div>
-            <div className="queue-item">
-              <span>Schild-Teile</span>
-              <span>
-                {Math.floor(state.teile.schild)} / {teileCost.schild} ({pct(state.teile.schild, teileCost.schild)}%)
-              </span>
-            </div>
-            <div className="queue-item">
-              <span>Panzerungs-Teile</span>
-              <span>
-                {Math.floor(state.teile.panzerung)} / {teileCost.panzerung} ({pct(state.teile.panzerung, teileCost.panzerung)}%)
-              </span>
-            </div>
-          </div>
-
           <div className="ship-grid" style={{ marginBottom: 24 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div className="ship-card">
@@ -135,6 +113,12 @@ export function SpezialschiffePage() {
         <InfoModal title={imperator.name} onClose={() => setShowImperatorInfo(false)}>
           <InfoTable
             rows={[
+              ['Waffen-Teile (vorhanden)', `${Math.floor(state.teile.waffen)} / ${teileCost!.waffen} (${pct(state.teile.waffen, teileCost!.waffen)}%)`],
+              ['Schild-Teile (vorhanden)', `${Math.floor(state.teile.schild)} / ${teileCost!.schild} (${pct(state.teile.schild, teileCost!.schild)}%)`],
+              [
+                'Panzerungs-Teile (vorhanden)',
+                `${Math.floor(state.teile.panzerung)} / ${teileCost!.panzerung} (${pct(state.teile.panzerung, teileCost!.panzerung)}%)`,
+              ],
               ['🚀 Geschwindigkeit', `${imperator.speed.toLocaleString('de-DE')} (${driveTypeLabel(imperator.driveType)})`],
               ['RapidFire', getRapidFireDisplay(gameData, imperator.id) || 'Kein RapidFire'],
               ...(getZielerfassungAccuracy(gameData, state.research, imperator.id) > 0
