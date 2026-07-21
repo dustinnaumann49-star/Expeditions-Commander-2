@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Forschung: eigene Tabs für jeden Bereich',
+    changes: [
+      'Die vier Forschungsbereiche (Waffensysteme, Verteidigungssysteme, Antriebstechnik, Wirtschaft & Logistik) sind jetzt eigene Untertabs statt alle untereinander auf einer Seite - übersichtlicher, und es ist Platz für künftige neue Forschungen.',
+      'Gebäude bleibt unverändert als eigener Untertab daneben bestehen.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Container-Überarbeitung: weniger Flut, klarere Chancen',
     changes: [
       'Container stapeln sich jetzt im Inventar (z.B. "Silber-Container × 3") statt als viele Einzelkarten aufzutauchen.',
