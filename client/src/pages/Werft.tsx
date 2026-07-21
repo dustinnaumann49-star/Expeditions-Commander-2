@@ -29,7 +29,7 @@ const VERTEIDIGUNG_KLASSEN = [
 ];
 
 function SchiffeTab() {
-  const { gameData, state, buildShip, error } = useGame();
+  const { gameData, state, buildShip, parties, error } = useGame();
   const [klasse, setKlasse] = useState('jaeger');
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
   const [infoShipId, setInfoShipId] = useState<string | null>(null);
@@ -92,7 +92,7 @@ function SchiffeTab() {
 
           {infoShip && (
             <InfoModal title={infoShip.name} onClose={() => setInfoShipId(null)}>
-              <InfoTable rows={shipInfoRows(gameData, state, infoShip)} />
+              <InfoTable rows={shipInfoRows(gameData, state, infoShip, parties)} />
             </InfoModal>
           )}
           <LoreModal target={loreTarget} gameData={gameData} onClose={() => setLoreTarget(null)} />

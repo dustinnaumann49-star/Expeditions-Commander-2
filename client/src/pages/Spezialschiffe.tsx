@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { LoreModal } from '../components/LoreModal';
-import { ShipBuildCard, shipInfoRows } from '../components/ShipBuildCard';
+import { ShipBuildCard, shipInfoRows, countShipEverywhere } from '../components/ShipBuildCard';
 import { ShipModuleRow } from '../components/ShipModuleRow';
 import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance, driveTypeLabel } from '../lib/combatInfo';
 
@@ -14,7 +14,7 @@ import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, g
 const SALVEN_SHIP_IDS = ['salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
 export function SpezialschiffePage() {
-  const { gameData, state, buildShip, buildImperator, error } = useGame();
+  const { gameData, state, buildShip, buildImperator, parties, error } = useGame();
   const [loreTarget, setLoreTarget] = useState<{ kind: 'ship' | 'defense' | 'research'; id: string } | null>(null);
   const [infoShipId, setInfoShipId] = useState<string | null>(null);
   const [showImperatorInfo, setShowImperatorInfo] = useState(false);
@@ -26,7 +26,7 @@ export function SpezialschiffePage() {
   const infoShip = infoShipId ? gameData.ships.find((s) => s.id === infoShipId) : null;
 
   const teileCost = imperator?.teileCost;
-  const imperatorBestand = state.fleet.imperator || 0;
+  const imperatorBestand = countShipEverywhere(state, 'imperator', parties);
   const imperatorBuilding = state.buildQueue.some((j) => j.shipId === 'imperator');
   const imperatorCanBuild =
     !!teileCost && state.teile.waffen >= teileCost.waffen && state.teile.schild >= teileCost.schild && state.teile.panzerung >= teileCost.panzerung;
@@ -105,7 +105,7 @@ export function SpezialschiffePage() {
 
       {infoShip && (
         <InfoModal title={infoShip.name} onClose={() => setInfoShipId(null)}>
-          <InfoTable rows={shipInfoRows(gameData, state, infoShip)} />
+          <InfoTable rows={shipInfoRows(gameData, state, infoShip, parties)} />
         </InfoModal>
       )}
 
