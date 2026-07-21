@@ -19,7 +19,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Neue, deutlich stärkere dritte Schildkuppel: die Gigant-Schildkuppel (im Schild-Tab).',
       'Jede Verteidigungsanlage kann jetzt eigene Waffen-, Schild- und Panzerung-Module ausbauen (kein Antrieb, Verteidigung bewegt sich ja nicht) - genau wie bei Schiffen, direkt unter der jeweiligen Karte.',
       'Der Imperator zeigt seinen Spezialteile-Bestand jetzt im Info-Popup an statt in einer eigenen Box.',
-      'Nebenbei zwei Bugs behoben: die neuen Spezial-Verteidigungsanlagen wären sonst in generierten Piraten-/Raid-Verteidigungen aufgetaucht; der gemeinsame Schildkuppel-Pool hat bisher weder vom Klassen-Bonus noch vom Kampf-Booster profitiert.',
+      'Nebenbei drei Bugs behoben: die neuen Spezial-Verteidigungsanlagen UND die neue Gigant-Schildkuppel wären sonst in generierten Piraten-/Raid-Verteidigungen aufgetaucht; der gemeinsame Schildkuppel-Pool hat bisher weder vom Klassen-Bonus noch vom Kampf-Booster profitiert.',
+      'Außerdem: der Bauen-Button für limitierte Schiffe/Anlagen (z.B. Imperator, Salvenschiffe, Sentinel-/Ultimate-Kanone, Schildkuppeln) blieb teils anklickbar, obwohl das Limit inklusive unterwegs befindlicher oder in der Warteschlange stehender Einheiten schon erreicht war - jetzt korrekt gesperrt.',
     ],
   },
   {
