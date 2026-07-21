@@ -829,7 +829,12 @@ client/
     Kommentar dort). Ausgepackte Belohnungen (`RewardItem`) stapelten sich bereits vorher korrekt
     getrennt nach Herkunfts-Stufe (der `stackKey` enthält das Label, und Silber/Gold/Elite haben
     für dieselbe Belohnungsart unterschiedliche Labels, z.B. "Rohstoff-Fracht" vs. "Große
-    Rohstoff-Fracht") - hier war keine Änderung nötig.
+    Rohstoff-Fracht") - hier war keine Änderung nötig. Zusätzlich (Nutzer-Klarstellung nach
+    Rückfrage - "Trennung" war als optische GRUPPIERUNG im Inventar gemeint, nicht als
+    Datenmodell-Änderung): `Inventar.tsx` zeigt einlösbare Belohnungen jetzt unter Kategorie-
+    Überschriften (Rohstoffe/Dunkle Materie/Ausrüstungs-Teile/Zeit-Gutscheine/Geschenkte Schiffe,
+    `categoryForRewardType()`) statt als eine einzige flache Liste - damit lässt sich gezielt die
+    gesuchte Kategorie überfliegen, statt jede Zeile einzeln lesen zu müssen.
 
 74. **Container-Zieh-Mechanik komplett neu: Kategorien mit unabhängiger Dropchance statt "N von X
     zufällig wählen"** (Nutzerentscheidung, `data/economy.ts`s `ContainerCategoryDef`/
