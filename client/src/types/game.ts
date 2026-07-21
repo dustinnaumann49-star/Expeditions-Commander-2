@@ -322,8 +322,11 @@ export interface LeaderboardEntry {
   stats: PlayerStats;
 }
 
+export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
+
 export interface PlayerState {
   userId: number;
+  playerClass: PlayerClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
   fleet: Record<string, number>;
   defense: Record<string, number>;
@@ -458,6 +461,16 @@ export interface GameData {
   asteroidEscortPowerMax: number;
   asteroidEscortKillReward: { metall: number; kristall: number; deuterium: number };
   changelog: ChangelogEntry[];
+  playerClasses: ClassDefinition[];
+  classChangeCostDm: number;
+}
+
+export interface ClassDefinition {
+  id: PlayerClass;
+  name: string;
+  tagline: string;
+  img: string;
+  bonuses: { label: string }[];
 }
 
 export interface AppUser {
