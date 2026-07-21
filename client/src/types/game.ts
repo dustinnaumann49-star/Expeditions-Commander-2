@@ -114,6 +114,23 @@ export interface BuildingModuleDefinition {
   timeGrowth: number;
 }
 
+export type ShipModuleKind = 'waffen' | 'schild' | 'panzerung' | 'antrieb';
+
+export interface ShipModuleDefinition {
+  id: string;
+  name: string;
+  shipId: string;
+  moduleKind: ShipModuleKind;
+  img: string;
+  lore: string;
+  effectPerLevel: number;
+  maxLevel: number;
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+}
+
 export interface ResearchDefinition {
   id: string;
   name: string;
@@ -337,6 +354,8 @@ export interface PlayerState {
   buildings: Record<string, number>;
   buildingModules: Record<string, number>;
   buildingQueue: BuildJob[];
+  shipModules: Record<string, number>;
+  shipModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[];
   activeBoosters: Record<string, number>;
@@ -424,7 +443,9 @@ export interface GameData {
   research: ResearchDefinition[];
   buildings: BuildingDefinition[];
   buildingModules: BuildingModuleDefinition[];
+  shipModules: ShipModuleDefinition[];
   maxBuildingSlots: number;
+  maxShipModuleSlots: number;
   admiralAllowedShipIds: string[];
   galaxySystems: number;
   galaxyPositions: number;
