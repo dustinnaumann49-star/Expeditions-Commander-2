@@ -930,6 +930,16 @@ client/
     Wert (wäre bei den oft längeren Info-Popup-Werten wie Kosten-Strings riskant gewesen und hätte
     das Problem nur auf die andere Seite verlagert).
 
+81. **Imperator-Kampfwerte wieder deutlich gesenkt** (Nutzerentscheidung, korrigiert Punkt 64: die
+    dortige Anhebung auf 5.000.000/2.500.000/12.000.000 Waffen/Schild/Panzerung erwies sich als zu
+    dominant - der Imperator teilte allein in 4 Runden über 2 Milliarden Schaden aus und beendete
+    Kämpfe, ohne dass andere Schiffe noch etwas beitragen mussten). Neue Werte:
+    **Waffen 500.000, Schild 400.000, Panzerung 3.000.000** (`ships.ts`). Bewusst NICHT
+    gleichmäßig herunterskaliert, sondern weiterhin panzerungslastig gehalten (Panzerung ca. 3,6x
+    mehr als der Reaper) - der Imperator soll ein zäher, schwer zu tötender Brocken bleiben, sein
+    Waffenschaden liegt aber jetzt nur noch beim ~10-fachen des Salvendreadnought statt zuvor dem
+    ~100-fachen. Baulimit (2) und Spezialteile-Kosten (1.000/Kategorie) bleiben unverändert.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -1038,3 +1048,5 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   war auf schmalen Mobilgeräten am Bildschirmrand abgeschnitten statt scrollbar zu sein.
 - Statistik/Info-Popups: lange Zeilen-Labels quetschten den Wert auf ein Wort pro Zeile zusammen
   (theme.css .info-list-label/.info-list-value) - beide Seiten teilen sich jetzt die Breite fair.
+- Imperator-Kampfwerte wieder deutlich gesenkt: Waffen 5 Mio.→500k, Schild 2,5 Mio.→400k,
+  Panzerung 12 Mio.→3 Mio. - war zu dominant und beendete Kämpfe im Alleingang.
