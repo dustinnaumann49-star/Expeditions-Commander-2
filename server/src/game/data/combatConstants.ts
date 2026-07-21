@@ -87,6 +87,21 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     schlachtkreuzer: 5,
     zerstoerer: 5,
     reaper: 4
+  },
+  // Spezialverteidigung mit Mehrfachziel-Salve (siehe MULTI_TARGET_VOLLEY_SHIPS) - Sentinel-Kanone
+  // deckt die Jaeger-Klasse ab (wie Salvenjaeger), Ultimate-Kanone deckt Kreuzer- UND Elite-Klasse
+  // zusammen ab (staerker als je ein einzelnes Salvenschiff, entsprechend teurer/seltener).
+  sentinelkanone: {
+    leicht: 6,
+    schwer: 5
+  },
+  ultimatekanone: {
+    kreuzer: 6,
+    schlachtschiff: 5,
+    bomber: 5,
+    schlachtkreuzer: 5,
+    zerstoerer: 5,
+    reaper: 4
   }
 };
 
@@ -111,7 +126,9 @@ export const ZIELERFASSUNG_BASE: Record<string, number> =
   plasmawerfer: 0.35,
   salvenjaeger: 0.35,
   salvenkreuzer: 0.35,
-  salvendreadnought: 0.35
+  salvendreadnought: 0.35,
+  sentinelkanone: 0.35,
+  ultimatekanone: 0.35
 };
 
 // ===== Groessenabhaengige Kampf-Modifikatoren =====
@@ -144,6 +161,8 @@ export const PRECISION_MODIFIER: Record<string, number> = {
   ionengeschuetz: 0.0,
   gausskanone: -0.05,
   plasmawerfer: -0.08,
+  sentinelkanone: 0.05,
+  ultimatekanone: -0.12,
 };
 
 // Aufschlag auf die Basis-Schild-Regeneration (SHIELD_REGEN_BASE). Positiv = laedt schneller auf.
@@ -169,6 +188,8 @@ export const SHIELD_REGEN_MODIFIER: Record<string, number> = {
   ionengeschuetz: 0.25,
   gausskanone: 0.25,
   plasmawerfer: 0.25,
+  sentinelkanone: 0.25,
+  ultimatekanone: 0.25,
 };
 
 // Basis-Ausweichchance: Wahrscheinlichkeit, einem Treffer komplett zu entgehen. Spiegelbild zur
@@ -215,6 +236,8 @@ export const CRIT_CHANCE_BASE: Record<string, number> = {
   ionengeschuetz: 0.10,
   gausskanone: 0.12,
   plasmawerfer: 0.15,
+  sentinelkanone: 0.06,
+  ultimatekanone: 0.18,
 };
 export const CRIT_CHANCE_MAX = 0.35;
 export const CRIT_DAMAGE_MULTIPLIER = 2;
@@ -237,6 +260,7 @@ export const MAX_RESEARCH_SLOTS = 4;
 // Schiffen/Verteidigung/Forschung.
 export const MAX_BUILDING_SLOTS = 1;
 export const MAX_SHIP_MODULE_SLOTS = 1;
+export const MAX_DEFENSE_MODULE_SLOTS = 1;
 // Reines Sicherheitsnetz gegen unbegrenztes Wachstum (kein Performance-Limit mehr, da die
 // Kampfberechnung jetzt in einem separaten Worker-Thread laeuft, siehe combatRunner.ts).
 // Grosszuegig bemessen, damit auch gemeinsame Multiplayer-Flotten (mehrere Spieler kombiniert
@@ -268,7 +292,11 @@ export const NPC_JAEGER_CAPPED_IDS = ['leicht', 'schwer'];
 // Spezialschiffe mit "Mehrfachziel-Salve": statt bei erfolgreicher Zielerfassung nur EIN
 // RF-anfaelliges Ziel zu treffen, feuern sie auf JEDEN anfaelligen SCHIFFSTYP einmal (nicht auf
 // jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).
-export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer', 'salvendreadnought']);
+// Trotz des Namens (historisch gewachsen, urspruenglich nur fuer Schiffe) inzwischen auch fuer
+// zwei Spezialverteidigungsanlagen genutzt (Sentinel-/Ultimate-Kanone) - die Mehrfachziel-Salve-
+// Logik in combat.ts prueft nur generisch den typeId-String, unabhaengig davon ob Schiff oder
+// Verteidigungsanlage.
+export const MULTI_TARGET_VOLLEY_SHIPS = new Set(['salvenjaeger', 'salvenkreuzer', 'salvendreadnought', 'sentinelkanone', 'ultimatekanone']);
 
 // Korrekturfaktor fuer die Feindstaerke-Berechnung (combatFleetPower()/combatFleetPowerBase() in
 // combat.ts): Salvenschiffe haben bewusst extrem hohe Waffenwerte bei sehr geringem Schild/

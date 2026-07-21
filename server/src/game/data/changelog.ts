@@ -10,6 +10,20 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '21.07.2026',
+    title: 'Werft-Umbau: Verteidigung integriert, neue Anlagen, Verteidigungs-Module',
+    changes: [
+      'Die Werft hat jetzt zwei Haupttabs: "Schiffe" und "Verteidigung". Die eigenständige Verteidigung-Seite ist damit weg, alles läuft jetzt über die Werft.',
+      '"Spezialschiffe" (Salvenschiffe + Imperator) ist jetzt ein gleichrangiger Klassen-Tab neben Jäger-/Kreuzer-/Elite-Klasse, kein eigener Haupttab mehr.',
+      'Verteidigung ist jetzt genau wie Schiffe nach Klassen unterteilt: Leichte Verteidigung (Raketenwerfer, Leichtes/Schweres Lasergeschütz), Schwere Verteidigung (Gauß-Kanone, Ionengeschütz, Plasmawerfer), Schild (alle drei Kuppeln) und Spezialverteidigung.',
+      'Zwei neue Verteidigungsanlagen: Sentinel-Kanone und Ultimate-Kanone - beide mit Mehrfachziel-Salve wie die Salvenschiffe, treffen bei Zielerfassung gleich mehrere Gegnertypen auf einmal.',
+      'Neue, deutlich stärkere dritte Schildkuppel: die Gigant-Schildkuppel (im Schild-Tab).',
+      'Jede Verteidigungsanlage kann jetzt eigene Waffen-, Schild- und Panzerung-Module ausbauen (kein Antrieb, Verteidigung bewegt sich ja nicht) - genau wie bei Schiffen, direkt unter der jeweiligen Karte.',
+      'Der Imperator zeigt seinen Spezialteile-Bestand jetzt im Info-Popup an statt in einer eigenen Box.',
+      'Nebenbei zwei Bugs behoben: die neuen Spezial-Verteidigungsanlagen wären sonst in generierten Piraten-/Raid-Verteidigungen aufgetaucht; der gemeinsame Schildkuppel-Pool hat bisher weder vom Klassen-Bonus noch vom Kampf-Booster profitiert.',
+    ],
+  },
+  {
+    date: '21.07.2026',
     title: 'Imperator: deutlich stärker, kämpft jetzt auch bei Raids mit',
     changes: [
       'Waffen, Schild und Panzerung des Imperators liegen jetzt alle im Millionen-Bereich (vorher war nur die Panzerung so hoch, Waffen/Schild lagen kaum über normalen Kampfschiffen).',
