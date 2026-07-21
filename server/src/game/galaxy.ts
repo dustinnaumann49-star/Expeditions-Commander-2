@@ -9,9 +9,10 @@ import {
   GALAXY_DIFF_SYSTEM_FACTOR,
 } from './data/galaxyConstants.js';
 import { findShip } from './combat.js';
+import { CLASS_KANONIER_FLEET_SPEED_MULTIPLIER, CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER } from './data/classes.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { listAllUsers, getUserById } from '../db.js';
-import type { PlayerState, GalaxyPosition, GalaxyDeployment } from './types.js';
+import type { PlayerState, GalaxyPosition, GalaxyDeployment, PlayerClass } from './types.js';
 import type { ActionResult } from './actions.js';
 
 // ========== DISTANZ / FLUGZEIT / TREIBSTOFF ==========
@@ -39,7 +40,7 @@ const DRIVE_TYPE_TO_RESEARCH: Record<string, string> = {
   hyperraum: 'hyperraumantrieb',
 };
 
-export function galaxyFleetSpeed(ships: Record<string, number>, research?: Record<string, number>): number {
+export function galaxyFleetSpeed(ships: Record<string, number>, research?: Record<string, number>, playerClass?: PlayerClass | null): number {
   let slowest = Infinity;
   let slowestShipId: string | null = null;
   Object.entries(ships).forEach(([id, count]) => {
@@ -63,6 +64,9 @@ export function galaxyFleetSpeed(ships: Record<string, number>, research?: Recor
       multiplier *= 1 + driveLevel * 0.02;
     }
   }
+
+  if (playerClass === 'kanonier') multiplier *= CLASS_KANONIER_FLEET_SPEED_MULTIPLIER;
+  if (playerClass === 'kommandant') multiplier *= CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER;
 
   return slowest * multiplier;
 }
@@ -126,7 +130,7 @@ export function startHoldDeployment(state: PlayerState, targetUserId: number, sh
   const targetState = loadPlayerState(targetUserId);
   if (!targetUser || !targetState.galaxyPosition) return { ok: false, error: 'Zielspieler nicht gefunden.' };
 
-  const speed = galaxyFleetSpeed(ships, state.research);
+  const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
   const distance = galaxyDistance(state.galaxyPosition, targetState.galaxyPosition);
   const durationMs = galaxyDurationMs(distance, speed);
@@ -169,7 +173,7 @@ export function recallHoldDeployment(state: PlayerState, deploymentId: string): 
 
   const targetPos: GalaxyPosition = { system: deployment.targetSystem, position: deployment.targetPosition };
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const speed = galaxyFleetSpeed(deployment.ships, state.research);
+  const speed = galaxyFleetSpeed(deployment.ships, state.research, state.playerClass);
   const durationMs = galaxyDurationMs(distance, speed);
   const fuelCost = galaxyFuelCost(deployment.ships, distance);
   if (state.resources.deuterium < fuelCost) {

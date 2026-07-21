@@ -9,6 +9,7 @@ import {
   rollBattleModifier,
 } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
+import { isBoosterActive } from './boosterUtil.js';
 import type { PlayerState } from './types.js';
 import type { ActionResult } from './actions.js';
 
@@ -102,6 +103,8 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
       sideBShips: npcCombined,
       research: state.research,
       battleModifier,
+      playerClass: state.playerClass,
+      kampfBoostActive: isBoosterActive(state, 'kampf'),
     });
 
     runs++;

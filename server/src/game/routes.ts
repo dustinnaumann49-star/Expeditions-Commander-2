@@ -14,6 +14,8 @@ import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listAllUsers } from '../db.js';
 import { computeTradeReceive, executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
+import { setPlayerClass } from './classActions.js';
+import { PLAYER_CLASSES, CLASS_CHANGE_COST_DM } from './data/classes.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
@@ -77,6 +79,8 @@ gameRouter.get('/data', (_req, res) => {
     asteroidEscortKillReward: ASTEROID_ESCORT_KILL_REWARD,
     changelog: CHANGELOG,
     scrapRefundRate: SCRAP_REFUND_RATE,
+    playerClasses: PLAYER_CLASSES,
+    classChangeCostDm: CLASS_CHANGE_COST_DM,
   });
 });
 
@@ -196,7 +200,7 @@ gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
     if (!target) return res.status(400).json({ error: 'Zielposition nicht verfügbar.' });
 
     const distance = galaxyDistance(state.galaxyPosition, target);
-    const speed = galaxyFleetSpeed(ships, state.research);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
     const durationMs = galaxyDurationMs(distance, speed);
     const fuelCost = galaxyFuelCost(ships, distance);
     res.json({ distance, durationMs, fuelCost });
@@ -301,6 +305,14 @@ gameRouter.post('/shop/voucher', (req: AuthedRequest, res) => {
   const { voucherId } = req.body ?? {};
   if (typeof voucherId !== 'string') return res.status(400).json({ error: 'voucherId erforderlich.' });
   handleAction(req, res, (state) => buyVoucher(state, voucherId));
+});
+
+// Erstwahl kostenlos (state.playerClass === null), jeder weitere Wechsel kostet CLASS_CHANGE_COST_DM
+// (siehe classActions.ts).
+gameRouter.post('/class', (req: AuthedRequest, res) => {
+  const { classId } = req.body ?? {};
+  if (typeof classId !== 'string') return res.status(400).json({ error: 'classId erforderlich.' });
+  handleAction(req, res, (state) => setPlayerClass(state, classId));
 });
 
 // ---- Flotten-Vorlagen (Presets) ----

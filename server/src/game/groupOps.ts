@@ -17,6 +17,7 @@ import {
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
+import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import {
@@ -165,7 +166,7 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   const creatorState = op.creatorId === state.userId ? state : loadPlayerState(op.creatorId);
   if (creatorState.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, creatorState.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships, state.research);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
     const travelMs = galaxyDurationMs(distance, speed);
     me.rendezvousArrivalTime = Date.now() + (Number.isFinite(travelMs) ? travelMs : 0);
   } else {
@@ -204,7 +205,7 @@ function contributionsFromParticipants(op: GroupOperation, participantStates: Ma
     .filter((p) => p.status === 'accepted')
     .map((p) => {
       const pState = participantStates.get(p.userId)!;
-      return { ownerKey: String(p.userId), ships: p.ships, research: pState.research };
+      return { ownerKey: String(p.userId), ships: p.ships, research: pState.research, playerClass: pState.playerClass, kampfBoostActive: isBoosterActive(pState, 'kampf') };
     });
 }
 
@@ -248,7 +249,7 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg?.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(combinedShips, state.research);
+    const speed = galaxyFleetSpeed(combinedShips, state.research, state.playerClass);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }
@@ -638,7 +639,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     Object.entries(p.ships).forEach(([id, sent]) => {
       if (sent <= 0) return;
       const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
-      const eff = getEffectiveStats(id, pState.research);
+      const eff = getEffectiveStats(id, pState.research, {}, isBoosterActive(pState, 'kampf'), pState.playerClass);
       const statKey = `${p.userId}:${id}`;
       playerResults.push({
         id,

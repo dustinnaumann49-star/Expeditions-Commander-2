@@ -28,7 +28,16 @@ import {
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { NPC_JAEGER_CAP_ENABLED, NPC_JAEGER_MAX_COUNT, NPC_JAEGER_CAPPED_IDS, ADMIRAL_BOSS_ID } from './data/combatConstants.js';
 import { NPC_SPECIALS } from './data/economy.js';
-import type { CombatStats, CombatReplay } from './types.js';
+import {
+  CLASS_KANONIER_WAFFEN_MULTIPLIER,
+  CLASS_KANONIER_SCHILD_MULTIPLIER,
+  CLASS_KANONIER_PANZERUNG_MULTIPLIER,
+  CLASS_BOLLWERK_WAFFEN_MULTIPLIER,
+  CLASS_BOLLWERK_SCHILD_MULTIPLIER,
+  CLASS_BOLLWERK_PANZERUNG_MULTIPLIER,
+  CLASS_KOMMANDANT_COMBAT_MULTIPLIER,
+} from './data/classes.js';
+import type { CombatStats, CombatReplay, PlayerClass } from './types.js';
 
 // ========== GRUNDLAGEN ==========
 
@@ -165,23 +174,44 @@ export function computeDomeSharedPool(defenseCounts: Record<string, number>, res
   return total * schildMultiplier(research);
 }
 
+// Pro-Wert-Multiplikatoren je Klasse (statt eines einzelnen Faktors auf alle drei Werte) -
+// Kanonier boostet NUR Waffen, Bollwerk NUR Schild+Panzerung, Kommandant alle drei gleichmaessig
+// aber schwaecher pro Wert. Gleiches "Gesamtbudget" (~100 Prozentpunkte) bei allen drei Klassen,
+// nur unterschiedlich verteilt - siehe data/classes.ts fuer die genauen Werte/Begruendung.
+function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: number; schild: number; panzerung: number } {
+  switch (playerClass) {
+    case 'kanonier':
+      return { waffen: CLASS_KANONIER_WAFFEN_MULTIPLIER, schild: CLASS_KANONIER_SCHILD_MULTIPLIER, panzerung: CLASS_KANONIER_PANZERUNG_MULTIPLIER };
+    case 'bollwerk':
+      return { waffen: CLASS_BOLLWERK_WAFFEN_MULTIPLIER, schild: CLASS_BOLLWERK_SCHILD_MULTIPLIER, panzerung: CLASS_BOLLWERK_PANZERUNG_MULTIPLIER };
+    case 'kommandant':
+      return { waffen: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, schild: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, panzerung: CLASS_KOMMANDANT_COMBAT_MULTIPLIER };
+    default:
+      return { waffen: 1, schild: 1, panzerung: 1 };
+  }
+}
+
 /**
  * Effektive Kampfwerte eines Schiffs/einer Verteidigungsanlage unter Beruecksichtigung von Forschung
  * und (nur bei Verteidigung) Schildkuppel-Bonus. `kampfBoostActive` entspricht dem 24h-Kampf-Booster (+20%).
+ * `playerClass` wendet den jeweiligen Klassenbonus an (siehe classCombatMultipliers() oben) - NIE
+ * fuer NPC/Piraten (die haben keine playerClass, siehe alle Aufrufer).
  */
 export function getEffectiveStats(
   id: string,
   research: Record<string, number>,
   defenseCounts: Record<string, number> = {},
-  kampfBoostActive = false
+  kampfBoostActive = false,
+  playerClass: PlayerClass | null = null
 ): CombatStats {
   const kampfBoost = kampfBoostActive ? 1.2 : 1;
+  const classMult = classCombatMultipliers(playerClass);
   const ship = findShip(id);
   if (ship) {
     return {
-      waffen: ship.stats.waffen * waffenMultiplier(research) * kampfBoost,
-      schild: ship.stats.schild * schildMultiplier(research) * kampfBoost,
-      panzerung: ship.stats.panzerung * panzerungMultiplier(research) * kampfBoost,
+      waffen: ship.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen,
+      schild: ship.stats.schild * schildMultiplier(research) * kampfBoost * classMult.schild,
+      panzerung: ship.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung,
     };
   }
   const def = findDefense(id);
@@ -190,9 +220,9 @@ export function getEffectiveStats(
     // computeDomeSharedPool/runRounds) statt ihn selbst zu tragen oder pro Einheit zu verteilen.
     const ownSchild = def.isDome ? 0 : def.stats.schild;
     return {
-      waffen: def.stats.waffen * waffenMultiplier(research) * kampfBoost,
-      schild: ownSchild * schildMultiplier(research) * kampfBoost,
-      panzerung: def.stats.panzerung * panzerungMultiplier(research) * kampfBoost,
+      waffen: def.stats.waffen * waffenMultiplier(research) * kampfBoost * classMult.waffen,
+      schild: ownSchild * schildMultiplier(research) * kampfBoost * classMult.schild,
+      panzerung: def.stats.panzerung * panzerungMultiplier(research) * kampfBoost * classMult.panzerung,
     };
   }
   return { waffen: 0, schild: 0, panzerung: 0 };
@@ -458,6 +488,8 @@ export interface OwnedFleetContribution {
   ships: Record<string, number>;
   research?: Record<string, number>; // eigene Forschung des Beitragenden - faellt sonst auf die Forschung von Seite A zurueck
   defenseCounts?: Record<string, number>; // fuer Schildkuppel-Bonus, falls relevant (z.B. Heimatverteidiger bei Raid)
+  playerClass?: PlayerClass | null; // eigene Klasse des Beitragenden (Kampfbonus je Klasse), siehe getEffectiveStats()
+  kampfBoostActive?: boolean; // eigener aktiver 24h-Kampf-Booster des Beitragenden (+20%), siehe isBoosterActive() in actions.ts
 }
 
 function buildUnitsMultiOwner(
@@ -465,8 +497,9 @@ function buildUnitsMultiOwner(
   fallbackStatsFn: (id: string) => CombatStats
 ): CombatUnit[] {
   const units: CombatUnit[] = [];
-  contributions.forEach(({ ownerKey, ships, research, defenseCounts }) => {
-    const fn = (id: string) => (research ? getEffectiveStats(id, research, defenseCounts || {}) : fallbackStatsFn(id));
+  contributions.forEach(({ ownerKey, ships, research, defenseCounts, playerClass, kampfBoostActive }) => {
+    const fn = (id: string) =>
+      research ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null) : fallbackStatsFn(id);
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);

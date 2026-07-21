@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { CombatResult, MultiOwnerCombatResult, OwnedFleetContribution } from './combat.js';
 import type { BattleModifierType } from './data/combatConstants.js';
-import type { CombatStats } from './types.js';
+import type { CombatStats, PlayerClass } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +25,10 @@ export interface CombatWorkerRequest {
   research: Record<string, number>;
   defenseCounts?: Record<string, number>;
   kampfBoostActive?: boolean;
+  // Klassenbonus von Seite A im Einzelspieler-Fall (Kampfbonus je Klasse, siehe getEffectiveStats()
+  // in combat.ts). Bei Mehrspieler-Kaempfen traegt stattdessen JEDE einzelne OwnedFleetContribution
+  // ihre eigene playerClass, da mehrere Beitragende unterschiedliche Klassen haben koennen.
+  playerClass?: PlayerClass | null;
   sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
   // Ob Seite A sich bei 50% Verlusten zurueckziehen kann (Standard: ja). Bei der Heimatverteidigung
   // (Raids) MUSS das auf false stehen - man kann sich nicht aus der Verteidigung der eigenen Basis

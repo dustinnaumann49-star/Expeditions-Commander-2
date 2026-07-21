@@ -9,6 +9,8 @@ import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
+import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
+import { isBoosterActive } from './boosterUtil.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN (Bauzeit/Forschungszeit) ==========
@@ -123,9 +125,22 @@ export function researchTimeMultiplier(state: PlayerState): number {
   return isBoosterActive(state, 'forschungstempo') ? 0.5 : 1;
 }
 
-export function isBoosterActive(state: PlayerState, id: string): boolean {
-  const expiry = state.activeBoosters[id];
-  return !!expiry && expiry > Date.now();
+// ========== KLASSEN-KOSTENMULTIPLIKATOREN (Kanonier/Bollwerk/Kommandant) ==========
+// Jede Kosten-ANZEIGE im Frontend MUSS ebenfalls diese Werte spiegeln (siehe
+// client/src/lib/multipliers.ts), analog zu README Punkt 1 fuer Zeit-Anzeigen - sonst zeigt die
+// UI falsche Kosten an, sobald eine Klasse gewaehlt ist. Bewusst GETRENNT nach Schiffen und
+// Verteidigung (nicht wie zuvor ein gemeinsamer Faktor): Kanonier rabattiert nur Schiffe,
+// Bollwerk nur Verteidigung, Kommandant beides.
+export function shipCostMultiplier(state: PlayerState): number {
+  if (state.playerClass === 'kanonier') return CLASS_KANONIER_SHIP_COST_MULTIPLIER;
+  if (state.playerClass === 'kommandant') return CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER;
+  return 1;
+}
+
+export function defenseCostMultiplier(state: PlayerState): number {
+  if (state.playerClass === 'bollwerk') return CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER;
+  if (state.playerClass === 'kommandant') return CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER;
+  return 1;
 }
 
 // ========== RESSOURCEN ==========
@@ -346,15 +361,21 @@ export function startBuild(state: PlayerState, shipId: string, qty: number): Act
     if (frei <= 0) return { ok: false, error: `${ship.name} ist limitiert - maximal ${ship.maxCount} Stueck moeglich.` };
     if (effectiveQty > frei) return { ok: false, error: `Nur noch ${frei} ${ship.name} bis zum Limit moeglich.` };
   }
-  if (!ship.cost || !canAfford(state, ship.cost, effectiveQty)) {
+  const costMultiplier = shipCostMultiplier(state);
+  const effectiveCost: ResourceCost = {
+    metall: ship.cost ? ship.cost.metall * costMultiplier : 0,
+    kristall: ship.cost ? ship.cost.kristall * costMultiplier : 0,
+    deuterium: ship.cost ? ship.cost.deuterium * costMultiplier : 0,
+  };
+  if (!ship.cost || !canAfford(state, effectiveCost, effectiveQty)) {
     return { ok: false, error: 'Nicht genug Ressourcen.' };
   }
   const frei = MAX_PLAYER_SHIPS - totalOwnedShips(state);
   if (effectiveQty > frei) return { ok: false, error: `Nur noch ${frei} Schiff(e) bis zum Flottenlimit moeglich.` };
 
-  state.resources.metall -= ship.cost.metall * effectiveQty;
-  state.resources.kristall -= ship.cost.kristall * effectiveQty;
-  state.resources.deuterium -= ship.cost.deuterium * effectiveQty;
+  state.resources.metall -= effectiveCost.metall * effectiveQty;
+  state.resources.kristall -= effectiveCost.kristall * effectiveQty;
+  state.resources.deuterium -= effectiveCost.deuterium * effectiveQty;
 
   const now = Date.now();
   let startTime = now;
@@ -380,11 +401,17 @@ export function startDefenseBuild(state: PlayerState, defId: string, qty: number
   if (state.defenseQueue.length >= MAX_DEFENSE_SLOTS) {
     return { ok: false, error: `Alle ${MAX_DEFENSE_SLOTS} Bau-Slots sind belegt.` };
   }
-  if (!canAfford(state, def.cost, qty)) return { ok: false, error: 'Nicht genug Ressourcen.' };
+  const costMultiplier = defenseCostMultiplier(state);
+  const effectiveCost: ResourceCost = {
+    metall: def.cost.metall * costMultiplier,
+    kristall: def.cost.kristall * costMultiplier,
+    deuterium: def.cost.deuterium * costMultiplier,
+  };
+  if (!canAfford(state, effectiveCost, qty)) return { ok: false, error: 'Nicht genug Ressourcen.' };
 
-  state.resources.metall -= def.cost.metall * qty;
-  state.resources.kristall -= def.cost.kristall * qty;
-  state.resources.deuterium -= def.cost.deuterium * qty;
+  state.resources.metall -= effectiveCost.metall * qty;
+  state.resources.kristall -= effectiveCost.kristall * qty;
+  state.resources.deuterium -= effectiveCost.deuterium * qty;
 
   const now = Date.now();
   let startTime = now;

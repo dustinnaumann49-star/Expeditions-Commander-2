@@ -10,7 +10,7 @@ import type { CombatWorkerRequest } from './combatRunner.js';
 // Dafuer wird hier auf WIEDERHOLTE `postMessage`-Anfragen gelauscht, statt (wie vorher) einmalig
 // `workerData` beim Start zu lesen.
 function statsFnFor(request: CombatWorkerRequest) {
-  return (id: string) => getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive);
+  return (id: string) => getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive, request.playerClass || null);
 }
 
 // Boss-Gefecht (Punkt 76): Seite B nutzt normalerweise die statischen baseStats() - fuer einzelne

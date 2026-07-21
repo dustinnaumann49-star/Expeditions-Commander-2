@@ -60,6 +60,7 @@ export function defaultPlayerState(userId: number): PlayerState {
 
   return {
     userId,
+    playerClass: null,
     // Bewusst grosszuegig bemessen: reicht fuer eine komplette Mining-Flotte (700) + Begleitschutz (1500)
     // plus etwas Reserve fuer einen fruehen Raid - siehe Chat-Verlauf/README fuer die genaue Herleitung.
     resources: { metall: 50_000_000, kristall: 25_000_000, deuterium: 10_000_000, dm: 500 },
@@ -172,6 +173,12 @@ export function loadPlayerState(userId: number): PlayerState {
   // der naechste Checkpoint spawnt ganz regulaer einen neuen (siehe raids.ts spawnRaidAt()).
   if (parsed.raid && (parsed.raid as any).waveTimes === undefined) {
     parsed.raid = null;
+  }
+  // Bestandsspieler ohne playerClass-Feld (vor Einfuehrung des Klassensystems) MUESSEN aktiv
+  // waehlen - hier bewusst NICHT auf eine Standardklasse geraten, siehe App.tsx fuer die
+  // blockierende Auswahl-Ansicht.
+  if ((parsed as any).playerClass === undefined) {
+    (parsed as any).playerClass = null;
   }
   // Notruf-Events komplett entfernt (siehe README) - falls ein alter Spielstand noch die
   // Felder event/nextEventCheck enthaelt, werden sie beim Speichern einfach ignoriert (kein

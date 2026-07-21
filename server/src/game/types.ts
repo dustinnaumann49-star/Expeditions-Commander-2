@@ -401,8 +401,17 @@ export interface PlayerStats {
   shipsBuilt: number;
 }
 
+// Klassensystem: jeder Spieler waehlt einmalig eine Klasse (kostenlos), kann sie danach jederzeit
+// gegen CLASS_CHANGE_COST_DM wechseln (siehe data/classes.ts, classActions.ts). null = noch keine
+// Wahl getroffen - Client blockiert in diesem Fall den normalen Spielzugang (siehe App.tsx) und
+// zeigt stattdessen die Klassenwahl, bis eine Klasse gesetzt ist. Gilt auch fuer Bestandsspieler
+// (Migration in state.ts setzt fehlende playerClass-Felder auf null statt auf eine Standardklasse
+// zu raten).
+export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
+
 export interface PlayerState {
   userId: number;
+  playerClass: PlayerClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
   fleet: Record<string, number>;
   defense: Record<string, number>;

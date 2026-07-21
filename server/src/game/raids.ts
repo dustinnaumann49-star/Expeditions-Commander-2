@@ -27,11 +27,13 @@ import {
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { DEFENSE_REPAIR_PERCENT, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
+import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
 import { pushMessage } from './messages.js';
+import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getHoldingDeploymentsTargeting, persistHeldDeployment, galaxyDistance, galaxyDurationMs } from './galaxy.js';
 import { getUserById, listAllUsers } from '../db.js';
-import type { CombatUnitResult, PlayerState, RaidState } from './types.js';
+import type { CombatUnitResult, PlayerState, PlayerClass, RaidState } from './types.js';
 
 // Plant die RAID_WAVE_COUNT Angriffswellen EINMALIG bei spawnRaidAt() (nicht bei jeder Welle neu),
 // damit die Zeitpunkte von Anfang an feststehen und z.B. in der Galaxie-/Sektor-Anzeige einsehbar
@@ -135,6 +137,13 @@ function getRaidSchedule(userId: number): { hours: number[]; chance: number } {
 
 function hasAnyDefense(state: PlayerState): boolean {
   return COMBAT_SHIP_IDS.some((id) => (state.fleet[id] || 0) > 0) || DEFENSES.some((d) => (state.defense[d.id] || 0) > 0);
+}
+
+// Bollwerk repariert Verteidigungsanlagen nach einem Kampf zu einem hoeheren Anteil
+// (CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT, 90% statt der sonst ueblichen 70%) - einer von drei
+// Bollwerk-spezifischen Boni, siehe data/classes.ts.
+function defenseRepairPercentFor(playerClass: PlayerClass | null): number {
+  return playerClass === 'bollwerk' ? CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT : DEFENSE_REPAIR_PERCENT;
 }
 
 export async function processRaidTimer(state: PlayerState) {
@@ -300,14 +309,36 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   }
 
   const contributions: OwnedFleetContribution[] = [
-    { ownerKey: 'owner', ships: defenderShips, research: state.research, defenseCounts: state.defense },
-    ...reinforcerStates.map(({ r, playerState }) => ({ ownerKey: String(r.userId), ships: r.ships, research: playerState.research })),
-    ...heldStates.map(({ deployment, ownerState }) => ({ ownerKey: `held:${deployment.id}`, ships: deployment.ships, research: ownerState.research })),
+    { ownerKey: 'owner', ships: defenderShips, research: state.research, defenseCounts: state.defense, playerClass: state.playerClass, kampfBoostActive: isBoosterActive(state, 'kampf') },
+    ...reinforcerStates.map(({ r, playerState }) => ({
+      ownerKey: String(r.userId),
+      ships: r.ships,
+      research: playerState.research,
+      playerClass: playerState.playerClass,
+      kampfBoostActive: isBoosterActive(playerState, 'kampf'),
+    })),
+    ...heldStates.map(({ deployment, ownerState }) => ({
+      ownerKey: `held:${deployment.id}`,
+      ships: deployment.ships,
+      research: ownerState.research,
+      playerClass: ownerState.playerClass,
+      kampfBoostActive: isBoosterActive(ownerState, 'kampf'),
+    })),
   ];
   const hasSupport = reinforcerStates.length > 0 || heldStates.length > 0;
   const result = hasSupport
     ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier })
-    : await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, battleModifier });
+    : await runCombatInWorker({
+        sideAShips: defenderShips,
+        sideBShips: npcShips,
+        research: state.research,
+        defenseCounts: state.defense,
+        sharedShieldPoolA: domePoolReal,
+        allowRetreat: false,
+        battleModifier,
+        playerClass: state.playerClass,
+        kampfBoostActive: isBoosterActive(state, 'kampf'),
+      });
   const survivorsByOwner: Record<string, Record<string, number>> | undefined =
     'survivorsByOwner' in result ? (result as { survivorsByOwner: Record<string, Record<string, number>> }).survivorsByOwner : undefined;
 
@@ -315,7 +346,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   const playerResults: CombatUnitResult[] = [];
 
   homeShipIds.forEach((id) => {
-    const eff = getEffectiveStats(id, state.research);
+    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass);
     const sent = state.fleet[id] || 0;
     const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const lost = sent - survived;
@@ -333,12 +364,12 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   });
 
   homeDefIds.forEach((id) => {
-    const eff = getEffectiveStats(id, state.research, state.defense);
+    const eff = getEffectiveStats(id, state.research, state.defense, isBoosterActive(state, 'kampf'), state.playerClass);
     const sent = state.defense[id] || 0;
     const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
     const destroyed = sent - survived;
     losses[id] = destroyed;
-    const repaired = Math.floor(destroyed * DEFENSE_REPAIR_PERCENT);
+    const repaired = Math.floor(destroyed * defenseRepairPercentFor(state.playerClass));
     state.defense[id] = survived + repaired;
     const statKey = survivorsByOwner ? `owner:${id}` : id;
     playerResults.push({
@@ -390,7 +421,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   pushMessage(
     state,
     'kampf',
-    `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(DEFENSE_REPAIR_PERCENT * 100)}% repariert.${modifierText}`,
+    `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(defenseRepairPercentFor(state.playerClass) * 100)}% repariert.${modifierText}`,
     detail
   );
 
@@ -400,7 +431,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     Object.entries(r.ships).forEach(([id, sentCount]) => {
       const survived = ownerSurvivors[id] || 0;
       reinforcerState.fleet[id] = (reinforcerState.fleet[id] || 0) + survived;
-      const eff = getEffectiveStats(id, reinforcerState.research);
+      const eff = getEffectiveStats(id, reinforcerState.research, {}, isBoosterActive(reinforcerState, 'kampf'), reinforcerState.playerClass);
       const statKey = `${ownerKey}:${id}`;
       playerResults.push({
         id, name: shipName(id), ownerUsername: r.username, sent: sentCount, survived, lost: sentCount - survived,
@@ -428,7 +459,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     Object.entries(deployment.ships).forEach(([id, sentCount]) => {
       const survived = ownerSurvivors[id] || 0;
       deployment.ships[id] = survived;
-      const eff = getEffectiveStats(id, ownerState.research);
+      const eff = getEffectiveStats(id, ownerState.research, {}, isBoosterActive(ownerState, 'kampf'), ownerState.playerClass);
       const statKey = `${ownerKey}:${id}`;
       playerResults.push({
         id, name: shipName(id), ownerUsername: `${holderUsername} (haltende Flotte)`, sent: sentCount, survived, lost: sentCount - survived,

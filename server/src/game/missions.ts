@@ -2,6 +2,7 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
+import { isBoosterActive } from './boosterUtil.js';
 import {
   MISSION_TRAVEL_MS,
   MISSION_DURATION_MS,
@@ -86,10 +87,11 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const speed = galaxyFleetSpeed(ships, state.research);
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }
+
   const durationMs = cfg.type === 'asteroid' ? ASTEROID_MISSION_DURATION_MS : MISSION_DURATION_MS;
   const mission: Mission = {
     id: 'mission_' + now + '_' + sektorId,
@@ -143,6 +145,9 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
       mission.farmed.kristall += total * 0.3;
       mission.farmed.deuterium += total * 0.2;
       if (cfg.dmCap && mission.dmFound < cfg.dmCap) {
+        // Rate leitet sich aus der TATSAECHLICHEN Missionsdauer ab (nicht der globalen Konstante)
+        // - deckt sich normalerweise mit ASTEROID_MISSION_DURATION_MS, ist aber robust gegen
+        // kuenftige Sonderfaelle mit abweichender Missionsdauer.
         const durationMs = mission.endTime - mission.arriveTime;
         const rate = cfg.dmCap / (durationMs / 1000);
         mission.dmFound = Math.min(cfg.dmCap, mission.dmFound + rate * deltaSec);
@@ -153,7 +158,11 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
   if (cfg.type === 'piraten' && cfg.teileCap) {
     (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
       if (mission.teile[part] < cfg.teileCap!) {
-        const rate = (cfg.teileCap! / (MISSION_DURATION_MS / 1000)) * sandronatorBonus;
+        // Rate leitet sich aus der TATSAECHLICHEN Missionsdauer ab (nicht der globalen
+        // MISSION_DURATION_MS-Konstante wie urspruenglich) - Bugfix: vorher haette eine von der
+        // Standarddauer abweichende Mission das Teile-Cap nie korrekt erreicht.
+        const durationMs = mission.endTime - mission.arriveTime;
+        const rate = (cfg.teileCap! / (durationMs / 1000)) * sandronatorBonus;
         mission.teile[part] = Math.min(cfg.teileCap!, mission.teile[part] + rate * deltaSec);
       }
     });
@@ -180,7 +189,13 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   }
 
   const defenderShips = { begleitschiff: escortCount };
-  const result = await runCombatInWorker({ sideAShips: defenderShips, sideBShips: npcShips, research: state.research });
+  const result = await runCombatInWorker({
+    sideAShips: defenderShips,
+    sideBShips: npcShips,
+    research: state.research,
+    playerClass: state.playerClass,
+    kampfBoostActive: isBoosterActive(state, 'kampf'),
+  });
 
   const survivedEscorts = result.survivorsA.begleitschiff || 0;
   const lostEscorts = escortCount - survivedEscorts;
@@ -334,7 +349,14 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     return;
   }
 
-  const result = await runCombatInWorker({ sideAShips: mission.ships, sideBShips: npcCombined, research: state.research, battleModifier });
+  const result = await runCombatInWorker({
+    sideAShips: mission.ships,
+    sideBShips: npcCombined,
+    research: state.research,
+    battleModifier,
+    playerClass: state.playerClass,
+    kampfBoostActive: isBoosterActive(state, 'kampf'),
+  });
 
   let anyNpcDestroyed = false;
   const npcLosses: Record<string, number> = {};
@@ -372,7 +394,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   let anyPlayerLoss = false;
   const losses: Record<string, number> = {};
   const playerResults: CombatUnitResult[] = playerIds.map((id) => {
-    const eff = getEffectiveStats(id, state.research);
+    const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass);
     const sent = mission.ships[id];
     const survived = result.survivorsA[id];
     const lost = sent - survived;
