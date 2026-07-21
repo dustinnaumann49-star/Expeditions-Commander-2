@@ -212,6 +212,7 @@ function ForschungTreeView() {
   const { gameData, state, startResearch, error } = useGame();
   const [, forceTick] = useState(0);
   const [infoTech, setInfoTech] = useState<ResearchDefinition | null>(null);
+  const [branchId, setBranchId] = useState<ResearchDefinition['mainBranch']>('waffen');
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 500);
@@ -223,6 +224,7 @@ function ForschungTreeView() {
   const busy = state.researchQueue.length >= gameData.maxResearchSlots;
   const now = serverNow();
   const forschungszeitMult = getForschungszeitMultiplier(state);
+  const activeBranch = MAIN_BRANCHES.find((b) => b.id === branchId)!;
 
   return (
     <div>
@@ -233,12 +235,23 @@ function ForschungTreeView() {
         sobald die jeweilige Basis- bzw. Vorgänger-Forschung Stufe {gameData.parentUnlockLevel} erreicht hat.
       </p>
 
-      {MAIN_BRANCHES.map((branch) => (
-        <div className="queue-box" key={branch.id} style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 15, marginBottom: 16 }}>{branch.name}</h3>
-          <ResearchForest mainBranch={branch.id} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={setInfoTech} onStart={startResearch} />
-        </div>
-      ))}
+      <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {MAIN_BRANCHES.map((branch) => (
+          <button
+            key={branch.id}
+            className={`nav-btn${branchId === branch.id ? ' active' : ''}`}
+            style={{ flex: '0 0 auto' }}
+            onClick={() => setBranchId(branch.id)}
+          >
+            {branch.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="queue-box" style={{ marginBottom: 24 }}>
+        <h3 style={{ fontSize: 15, marginBottom: 16 }}>{activeBranch.name}</h3>
+        <ResearchForest mainBranch={activeBranch.id} gameData={gameData} state={state} now={now} busy={busy} onOpenInfo={setInfoTech} onStart={startResearch} />
+      </div>
 
       {infoTech && (
         <InfoModal title={infoTech.name} onClose={() => setInfoTech(null)}>
