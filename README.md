@@ -267,8 +267,8 @@ client/
     (`RAID_SCHEDULE_BY_USERNAME` in `economy.ts`): "ShadowEagle" garantiert (Chance 1.0) um
     0/6/12/18 Uhr, "SchnelleRatte" garantiert um 3/9/15/21 Uhr - beide können nie gleichzeitig
     getroffen werden. Unbekannte/zukünftige Nutzernamen fallen auf den allgemeinen
-    0/6/12/18-Uhr-Rhythmus mit `RAID_SPAWN_CHANCE` (60%) zurück (`getRaidSchedule()` in
-    `raids.ts`).
+    0/6/12/18-Uhr-Rhythmus mit `RAID_SPAWN_CHANCE` (70%, seit der Balance-Anpassung Juli 2026)
+    zurück (`getRaidSchedule()` in `raids.ts`).
 
 18. **Globale Warn-Hinweise für laufende Raids sitzen in `ResourceBar.tsx`** (auf jeder Seite
     sichtbar, `.alert-badge` mit `pulseGlow`-Animation). Klick führt per Query-Parameter
@@ -466,9 +466,10 @@ client/
       sondern auf der aktuellen VERTEIDIGUNGSANLAGEN-Stärke (`defensePower` in
       `resolveOneWave()`, Summe aus `waffen+schild+panzerung` aller Verteidigungsanlagen,
       Nutzerentscheidung - durchbricht bewusst die sonst geltende Entkopplungs-Regel, siehe Punkt
-      22), MULTIPLIZIERT mit einer festen Eskalationstabelle über die 5 Wellen: 70% / 80% / 90% /
-      100% / 110% (`RAID_WAVE_FACTORS` in `economy.ts`, ersetzt die vorherige zufällige
-      Grund-Varianz `RAID_MULTIPLIER_ROLL`, die für Raids nicht mehr verwendet wird). Verteidiger-
+      22), MULTIPLIZIERT mit einer festen Eskalationstabelle über die 5 Wellen: 80% / 90% / 100% /
+      115% / 130% (`RAID_WAVE_FACTORS` in `economy.ts`, seit der Balance-Anpassung Juli 2026 - vorher
+      70/80/90/100/110%; ersetzt die noch frühere zufällige Grund-Varianz `RAID_MULTIPLIER_ROLL`,
+      die für Raids nicht mehr verwendet wird). Verteidiger-
       Flotte/-Verteidigung tragen Verluste vorheriger Wellen weiter (kein Reset zwischen Wellen,
       `DEFENSE_REPAIR_PERCENT` greift weiterhin pro Welle). `RAID_MIN_TARGET_POWER` wirkt als
       Untergrenze für die Verteidigungsanlagen-Basis selbst (nicht mehr pro Welle geteilt) -

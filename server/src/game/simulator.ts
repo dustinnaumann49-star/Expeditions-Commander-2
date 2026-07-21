@@ -64,8 +64,8 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
 
   let defenseFactor = 0;
   if (sektorId === 'piraten_niedrig') defenseFactor = 0.05;
-  else if (sektorId === 'piraten_mittel') defenseFactor = 0.1;
-  else if (sektorId === 'piraten_hoch') defenseFactor = 0.15;
+  else if (sektorId === 'piraten_mittel') defenseFactor = 0.12;
+  else if (sektorId === 'piraten_hoch') defenseFactor = 0.20;
   else if (sektorId === 'piraten_elite') defenseFactor = 0.2;
 
   const startedAt = Date.now();

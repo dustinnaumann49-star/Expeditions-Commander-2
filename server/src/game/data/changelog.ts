@@ -9,6 +9,18 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '22.07.2026',
+    title: 'Piraten-Sektoren: Balance-Anpassung',
+    changes: [
+      'Solo-Piraten-Missionen (Niedrig/Mittel/Hoch) fühlten sich zu einfach an - Gegner blieben immer bei maximal eurer eigenen Flottenstärke, und die Hälfte der Stunden-Checks brachte gar keinen Feindkontakt.',
+      'Angepasst, gestaffelt nach Stufe: Niedrig bleibt bewusst die sanfteste Einstiegsstufe (nur etwas häufiger Feindkontakt). Mittel wird spürbar fordernder. Hoch kann jetzt auch mal stärker sein als die eigene Flotte - die höchste Solo-Stufe soll sich nach echtem Risiko anfühlen.',
+      'Kampf-Ausreißer und Sonder-Ereignisse (Nebel, Ionensturm, Trümmerfeld, ...) kommen auf Mittel/Hoch jetzt häufiger vor - mehr Abwechslung von Kampf zu Kampf.',
+      'Belohnungen dafür angehoben: mehr Beute pro Sieg, höhere Sieg-Serien-Boni auf Mittel/Hoch, mehr Ressourcen in Silber-/Gold-/Elite-Containern, mehr Belohnung für abgewehrte Piraten bei der Asteroiden-Eskorte.',
+      'Elite-Bollwerk (Multiplayer) leicht nachgezogen, damit der Abstand zur neuen Hoch-Stufe erhalten bleibt - bleibt weiterhin gut zu zweit/mehreren spielbar, keine große Extra-Härte.',
+      'Raids (automatische Heimatverteidigung) etwas häufiger und die Wellen etwas stärker, passend zum neuen Schwierigkeitsniveau.',
+    ],
+  },
+  {
     date: '21.07.2026',
     title: 'Imperator abgeschwächt',
     changes: [

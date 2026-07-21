@@ -329,10 +329,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     // statt state.research.spionage, damit der Effekt neutralisiert ist, der Mechanismus in
     // combat.ts aber unveraendert bereitsteht, falls Spionage spaeter reaktiviert wird.
     npcShips = generatePiratenFleet(targetPower, 0, profile);
+    // Balance-Anpassung (Juli 2026): mittel/hoch angehoben, damit die Verteidigungsanlagen der
+    // NPCs auf den schwereren Stufen spuerbar mehr Gegenwehr leisten (siehe simulator.ts fuer den
+    // exakt gespiegelten Wert, MUSS synchron bleiben, siehe README).
     let defenseFactor = 0;
     if (mission.sektorId === 'piraten_niedrig') defenseFactor = 0.05;
-    else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.1;
-    else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.15;
+    else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.12;
+    else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.20;
     npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
   } else {
     npcShips = generatePiratenFleet(targetPower, 0, profile) || generateFallbackFleet(targetPower, profile);

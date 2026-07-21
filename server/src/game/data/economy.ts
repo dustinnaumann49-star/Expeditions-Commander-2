@@ -97,7 +97,7 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     icon: "📦",
     color: "#b0b0b0",
     categories: [
-      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Rohstoff-Fracht', metall:10000000, kristall:6000000, deuterium:3000000 }] },
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Rohstoff-Fracht', metall:12000000, kristall:7000000, deuterium:3500000 }] },
       { category: 'teile', chance: 0.80, rewards: [{ type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 }] },
       { category: 'zeitgutschein', chance: 0.20, rewards: [
         { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (40%)', percent:0.40 },
@@ -116,7 +116,7 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     icon: "🏆",
     color: "#ffd700",
     categories: [
-      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Große Rohstoff-Fracht', metall:25000000, kristall:20000000, deuterium:17000000 }] },
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Große Rohstoff-Fracht', metall:29000000, kristall:23000000, deuterium:19000000 }] },
       { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Dunkle Materie', amount:25 }] },
       { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 }] },
       { category: 'zeitgutschein', chance: 0.15, rewards: [
@@ -141,7 +141,7 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     icon: "💎",
     color: "#c99bff",
     categories: [
-      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:45000000, kristall:38000000, deuterium:32000000 }] },
+      { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:52000000, kristall:44000000, deuterium:37000000 }] },
       { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 }] },
       { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 }] },
       { category: 'zeitgutschein', chance: 0.10, rewards: [
@@ -166,7 +166,7 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
 // ein Jackpot soll sich immer wie ein reiner Bonus anfuehlen, nie wie ein verpasster Normal-Pick.
 export const JACKPOT_CHANCE = 0.05; // 5% Chance pro Container-Oeffnung
 export const JACKPOT_REWARDS: Record<string, ContainerRewardDef> = {
-  silber: { type:'resources', label:'🎰 Jackpot! Rohstoff-Ladung', metall:30000000, kristall:22000000, deuterium:11000000 },
+  silber: { type:'resources', label:'🎰 Jackpot! Rohstoff-Ladung', metall:36000000, kristall:26000000, deuterium:13000000 },
   gold:   { type:'dm', label:'🎰 Jackpot! Dunkle-Materie-Fund', amount:120 },
   elite:  { type:'freischiff', label:'🎰 Jackpot! Flaggschiff-Geschenk', ships:{ schlachtkreuzer:20, zerstoerer:15, reaper:15 } }
 };
@@ -229,12 +229,14 @@ function berlinOffsetHours(utcMs: number): number {
 // RAID_WARNING_MS wurde durch RAID_PREP_MS (galaxyConstants.ts) ersetzt - Raids haben jetzt eine
 // echte, distanzabhaengige Flugzeit von einer zufaelligen Piratenbasis statt einer festen
 // Vorwarnzeit, siehe raids.ts.
-export const RAID_SPAWN_CHANCE = 0.6; // 60% Chance bei jedem der vier Checks
+// Balance-Anpassung (Juli 2026): von 60% auf 70% angehoben, analog zur Missions-Balance -
+// Heimatverteidigung soll dem neuen Schwierigkeitsniveau der Piraten-Sektoren entsprechen.
+export const RAID_SPAWN_CHANCE = 0.7; // 70% Chance bei jedem der vier Checks
 export const RAID_LOOT_PERCENT = 0.25;
 
 export const ASTEROID_ESCORT_POWER_MIN = 0.08;
 export const ASTEROID_ESCORT_POWER_MAX = 0.16;
-export const ASTEROID_ESCORT_KILL_REWARD = { metall: 750000, kristall: 600000, deuterium: 500000 };
+export const ASTEROID_ESCORT_KILL_REWARD = { metall: 900000, kristall: 720000, deuterium: 600000 };
 
 export const MISSION_TRAVEL_MS = 60 * 1000;
 export const MISSION_DURATION_MS = 4 * 3600 * 1000;
@@ -326,10 +328,13 @@ export function rollFixedCheckpoints(
 // jedem Check ohne vernichteten Gegner auf 0 zurueck (Mission.streakWins/GroupOperation.streakWins).
 export type EscalationConfig = { mode: 'additive'; step: number; max: number } | { mode: 'double' };
 
+// Balance-Anpassung (Juli 2026): Obergrenzen fuer mittel/hoch angehoben, damit sich eine lange
+// Sieg-Serie auf den schwereren Stufen deutlich staerker lohnt (direkte Beute, nicht ueber
+// Container) - Stufen-Abstand zu niedrig wird dadurch klarer spuerbar.
 export const REWARD_ESCALATION: Record<string, EscalationConfig> = {
   piraten_niedrig: { mode: 'additive', step: 0.10, max: 1.30 },
-  piraten_mittel: { mode: 'additive', step: 0.20, max: 1.60 },
-  piraten_hoch: { mode: 'additive', step: 0.35, max: 2.05 },
+  piraten_mittel: { mode: 'additive', step: 0.20, max: 1.80 },
+  piraten_hoch: { mode: 'additive', step: 0.35, max: 2.40 },
   piraten_elite: { mode: 'double' },
 };
 
@@ -376,4 +381,6 @@ export const RAID_WAVE_JITTER_FACTOR = 0.25;
 // Verstaerkung, siehe waveDefensePower() in raids.ts) - bewusste Abkehr von der sonstigen
 // Entkopplungs-Regel (siehe README Punkt 22/45): hier soll eine staerkere Verteidigung den
 // Angriff gezielt mitwachsen lassen. Laenge MUSS RAID_WAVE_COUNT entsprechen.
-export const RAID_WAVE_FACTORS = [0.7, 0.8, 0.9, 1.0, 1.1];
+// Balance-Anpassung (Juli 2026): Kurve von 70-110% auf 80-130% anheben, passend zur allgemeinen
+// Missions-/Raid-Balance-Anpassung.
+export const RAID_WAVE_FACTORS = [0.8, 0.9, 1.0, 1.15, 1.3];

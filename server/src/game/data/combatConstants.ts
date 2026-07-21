@@ -326,10 +326,12 @@ export const RAID_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
 // Tabelle), je Kontext-Schluessel. Beim Elite-Bollwerk gilt zusaetzlich eine Kappung auf maximal
 // 1x pro GESAMTER Expedition (nicht pro Einzel-Check) - sonst wuerde sich das Risiko ueber die 4
 // Stunden-Checks unfair aufsummieren, siehe `eliteSurpriseUsed` in groupOps.ts.
+// Balance-Anpassung (Juli 2026): Ausreisser-Chancen fuer niedrig/mittel/hoch angehoben - mehr
+// spuerbare Abwechslung von Kampf zu Kampf, nicht nur eine flache Erwartungswert-Rechnung.
 export const WAVE_OUTLIER_CHANCE: Record<string, number> = {
-  piraten_niedrig: 0.05,
-  piraten_mittel: 0.08,
-  piraten_hoch: 0.15,
+  piraten_niedrig: 0.06,
+  piraten_mittel: 0.12,
+  piraten_hoch: 0.20,
   piraten_elite: 0.10,
   raid: 0.06,
 };
@@ -353,10 +355,13 @@ export const BATTLE_MODIFIER_LABELS: Record<BattleModifierType, string> = {
 
 // Chance pro Kampf auf EINEN der obigen Modifikatoren, je Kontext-Schluessel. Beim Elite-Bollwerk
 // gilt dieselbe Kappung auf 1x pro gesamter Expedition wie bei WAVE_OUTLIER_CHANCE.
+// Balance-Anpassung (Juli 2026): dieselbe Idee wie bei WAVE_OUTLIER_CHANCE - mehr Haeufigkeit von
+// Kampf-Modifikatoren macht Kaempfe abwechslungsreicher, gerade auf niedrig/mittel wo bisher kaum
+// mal einer vorkam.
 export const BATTLE_MODIFIER_CHANCE: Record<string, number> = {
-  piraten_niedrig: 0.05,
-  piraten_mittel: 0.10,
-  piraten_hoch: 0.18,
+  piraten_niedrig: 0.08,
+  piraten_mittel: 0.14,
+  piraten_hoch: 0.24,
   piraten_elite: 0.15,
   raid: 0.06,
 };
