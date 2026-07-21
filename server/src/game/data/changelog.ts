@@ -13,6 +13,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Container-Überarbeitung: weniger Flut, klarere Chancen',
     changes: [
       'Container stapeln sich jetzt im Inventar (z.B. "Silber-Container × 3") statt als viele Einzelkarten aufzutauchen.',
+      'Einlösbare Belohnungen sind im Inventar jetzt nach Kategorie gruppiert (Rohstoffe, Dunkle Materie, Ausrüstungs-Teile, Zeit-Gutscheine, Geschenkte Schiffe) statt einer einzigen langen Liste.',
       'Neue Zieh-Mechanik: jede Belohnungskategorie (Rohstoffe, Dunkle Materie, Ausrüstungs-Teile, Zeit-Gutschein, Geschenkte Schiffe) hat jetzt eine eigene, unabhängige Chance - ihr bekommt aber immer genau 2 Belohnungen pro Öffnung.',
       'Raids finden nur noch alle 12 Stunden statt (vorher alle 6 Stunden).',
       'Belohnung bei perfekt abgewehrtem Raid (5/5 Wellen) geändert: fest 4 Silber- + 1 Gold-Container, plus 15% Chance auf zusätzlich 1 Elite-Container. Elite-Container sind jetzt überall reine Glückssache.',
