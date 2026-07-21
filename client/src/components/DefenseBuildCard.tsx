@@ -4,6 +4,22 @@ import { getDefenseBauzeitMultiplier, getDefenseCostMultiplier } from '../lib/mu
 import { getRapidFireDisplay, computeDomeSharedPool, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy, getCritChance } from '../lib/combatInfo';
 import type { DefenseDefinition, GameData, PlayerState } from '../types/game';
 
+// Bugfix: zaehlte bisher nur state.defense (bereits fertig gebaut), nicht die eigene
+// Bau-Warteschlange (defenseQueue) - bei limitierten Anlagen (maxCount, z.B. Kuppeln/Sentinel-/
+// Ultimate-Kanone) blieb der Bauen-Button dadurch anklickbar, obwohl inklusive bereits laufender
+// Bauauftraege das Limit schon erreicht war (der Server haette den Bau trotzdem korrekt
+// abgelehnt, siehe countDefenseEverywhere() in server/src/game/actions.ts, aber die UI zeigte
+// einen irrefuehrend aktiven Button an). Verteidigungsanlagen bewegen sich nie (keine Missionen/
+// Galaxie-Halten/Gruppen-Expeditionen wie bei Schiffen) - defense + defenseQueue ist hier bereits
+// vollstaendig.
+function countDefenseEverywhere(state: PlayerState, defId: string): number {
+  let total = state.defense[defId] || 0;
+  state.defenseQueue.forEach((job) => {
+    if (job.defId === defId) total += job.count || 0;
+  });
+  return total;
+}
+
 // Normale, ressourcen-finanzierte Verteidigungs-Baukarte - genutzt in allen Verteidigungs-
 // Untertabs (Werft.tsx). Gleiches Muster wie ShipBuildCard.tsx, nur ohne Antrieb/Speed (bewegt
 // sich nicht) und mit der Kuppel-Sonderbehandlung aus der vorherigen eigenstaendigen
@@ -27,7 +43,7 @@ export function DefenseBuildCard({
   const bauzeitMult = getDefenseBauzeitMultiplier(gameData, state);
   const costMult = getDefenseCostMultiplier(state);
 
-  const bestand = state.defense[def.id] || 0;
+  const bestand = countDefenseEverywhere(state, def.id);
   const frei = def.maxCount ? def.maxCount - bestand : Infinity;
   const capQty = Math.max(0, Math.min(qty, frei));
   const totalCost = {
@@ -96,7 +112,7 @@ export function DefenseBuildCard({
 }
 
 export function defenseInfoRows(gameData: GameData, state: PlayerState, def: DefenseDefinition): [string, React.ReactNode][] {
-  const bestand = state.defense[def.id] || 0;
+  const bestand = countDefenseEverywhere(state, def.id);
   const domePool = computeDomeSharedPool(gameData, state);
   const rfDisplay = getRapidFireDisplay(gameData, def.id);
   const defAccuracy = getZielerfassungAccuracy(gameData, state.research, def.id);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useGame } from '../context/GameContext';
 import { formatTime } from '../lib/format';
 import { getBauzeitMultiplier, getShipCostMultiplier } from '../lib/multipliers';
 import {
@@ -12,12 +13,30 @@ import {
   getCritChance,
   driveTypeLabel,
 } from '../lib/combatInfo';
-import type { GameData, PlayerState, ShipDefinition } from '../types/game';
+import type { GameData, PlayerState, ShipDefinition, GroupOperation } from '../types/game';
 
-export function countShipEverywhere(state: PlayerState, shipId: string): number {
+// Bugfix: zaehlte bisher NUR state.fleet (zuhause) + buildQueue (im Bau) + Missionen +
+// Galaxie-Halten - laufende Gruppen-Expeditionen (Elite-Bollwerk/Piratenadmiral) fehlten hier
+// noch (bewusste Aufwands-Abkuerzung beim ersten Fix, jetzt nachgezogen). Ohne diese blieb der
+// Bauen-Button bei limitierten Schiffen (maxCount/unique) faelschlich anklickbar, wenn Einheiten
+// gerade Teil einer laufenden Gruppen-Expedition waren - der Server haette den Bau trotzdem
+// korrekt abgelehnt (siehe server/src/game/actions.ts, dort war das schon vollstaendig), aber die
+// UI zeigte einen irrefuehrend aktiven Button an.
+export function countShipEverywhere(state: PlayerState, shipId: string, parties: GroupOperation[] = []): number {
   let total = state.fleet[shipId] || 0;
   state.buildQueue.forEach((job) => {
     if (job.shipId === shipId) total += job.count || 0;
+  });
+  state.missions.forEach((m) => {
+    if (!m.finalized) total += m.ships[shipId] || 0;
+  });
+  state.galaxyDeployments.forEach((d) => {
+    total += d.ships[shipId] || 0;
+  });
+  parties.forEach((op) => {
+    op.participants.forEach((p) => {
+      if (p.userId === state.userId && p.status === 'accepted') total += p.ships[shipId] || 0;
+    });
   });
   return total;
 }
@@ -41,10 +60,11 @@ export function ShipBuildCard({
   onOpenInfo: () => void;
 }) {
   const [qty, setQty] = useState(10);
+  const { parties } = useGame();
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
   const costMult = getShipCostMultiplier(state);
 
-  const bestand = countShipEverywhere(state, ship.id);
+  const bestand = countShipEverywhere(state, ship.id, parties);
   const frei = ship.maxCount ? ship.maxCount - bestand : Infinity;
   const capQty = ship.unique ? 1 : ship.maxCount ? Math.max(0, Math.min(qty, frei)) : qty;
   const alreadyExists = ship.unique && bestand >= 1;
@@ -123,8 +143,8 @@ export function ShipBuildCard({
   );
 }
 
-export function shipInfoRows(gameData: GameData, state: PlayerState, ship: ShipDefinition) {
-  const bestand = countShipEverywhere(state, ship.id);
+export function shipInfoRows(gameData: GameData, state: PlayerState, ship: ShipDefinition, parties: GroupOperation[] = []) {
+  const bestand = countShipEverywhere(state, ship.id, parties);
   const rfDisplay = getRapidFireDisplay(gameData, ship.id);
   const accuracy = getZielerfassungAccuracy(gameData, state.research, ship.id);
   const targeted = isTargetedByRapidFire(gameData, ship.id);
