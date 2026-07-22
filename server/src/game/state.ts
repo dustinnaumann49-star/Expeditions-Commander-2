@@ -116,6 +116,7 @@ export function defaultPlayerStats() {
     raidsRepelledPartial: 0,
     captainsDefeated: 0,
     enemiesDestroyed: 0,
+    enemiesDestroyedByType: {} as Record<string, number>,
     ownShipsLost: 0,
     resourcesLooted: 0,
     containersOpened: { silber: 0, gold: 0, elite: 0 },

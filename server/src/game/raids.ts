@@ -40,6 +40,7 @@ const RAID_FLEET_POWER_WEIGHT = 0.7;
 const RAID_DEFENSE_POWER_WEIGHT = 0.3;
 import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
 import { pushMessage } from './messages.js';
+import { recordEnemyKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -446,13 +447,14 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
 
   const waveWon = npcIds.every((id) => (result.survivorsB[id] || 0) <= 0);
   const destroyedThisWave = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  const npcLossesById: Record<string, number> = Object.fromEntries(npcResults.map((r) => [r.id, r.destroyedCount || 0]));
   const lossText = Object.entries(losses).filter(([, v]) => v > 0).map(([id, v]) => `${shipName(id)} x${v}`).join(', ') || 'keine';
 
   // Verstaerkungen/haltende Flotten: Ueberlebende je Beitrag zurueckschreiben + eigene Detail-
   // Zeilen (Punkt 6 README - Mehrspieler-Kampfbericht muss aufklappbar sein). Statistik
   // (enemiesDestroyed) zaehlt SOFORT pro Welle, "raidsRepelledFull/Partial" dagegen erst am Ende
   // in finalizeRaidWaves() - sonst wuerde ein einzelner Raid bis zu 5x in die Bestenliste einzahlen.
-  state.stats.enemiesDestroyed += destroyedThisWave;
+  recordEnemyKills(state.stats, npcLossesById);
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
@@ -488,7 +490,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
         shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0), shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
     });
-    reinforcerState.stats.enemiesDestroyed += destroyedThisWave;
+    recordEnemyKills(reinforcerState.stats, npcLossesById);
     if (r.userId !== currentUserId) savePlayerState(reinforcerState);
   });
 
@@ -510,7 +512,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
         shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0), shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
     });
-    ownerState.stats.enemiesDestroyed += destroyedThisWave;
+    recordEnemyKills(ownerState.stats, npcLossesById);
     persistHeldDeployment(holding, currentUserId);
   });
 

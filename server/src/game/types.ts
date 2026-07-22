@@ -594,6 +594,14 @@ export interface PlayerStats {
   raidsRepelledPartial: number;
   captainsDefeated: number;
   enemiesDestroyed: number;
+  // Aufschluesselung von enemiesDestroyed nach Schiffs-/Verteidigungs-/Boss-Id (Nutzerentscheidung
+  // Juli 2026: Punkte sollen nach Wert des vernichteten Gegners gestaffelt sein statt pauschal 1
+  // Punkt pro Einheit) - `enemiesDestroyed` selbst bleibt als reiner Rohzaehler unveraendert
+  // (Statistik-Anzeige "Feinde vernichtet"), die Gewichtung passiert erst in stats.ts
+  // calculatePoints() ueber getEnemyPointValue() - so bleibt das Prinzip "Punkte nie direkt
+  // speichern, nur aus Rohwerten berechnen" gewahrt und spaetere Wertanpassungen wirken
+  // rueckwirkend auf bestehende Spielstaende.
+  enemiesDestroyedByType: Record<string, number>;
   ownShipsLost: number;
   resourcesLooted: number; // Summe aus Metall+Kristall+Deuterium ueber alle Quellen
   containersOpened: { silber: number; gold: number; elite: number };

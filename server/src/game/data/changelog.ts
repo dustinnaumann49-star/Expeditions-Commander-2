@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Balance: Punkte für vernichtete Gegner jetzt nach Wert gestaffelt',
+    changes: [
+      'Bisher gab jeder vernichtete Gegner genau 1 Punkt für die Bestenliste - egal ob Leichter Jäger oder Reaper.',
+      'Jetzt richtet sich die Punktzahl nach dem Wert des Gegners (grob an dessen Baukosten angelehnt): ein Leichter Jäger bringt weiterhin 1 Punkt, ein Reaper zum Beispiel 10, der seltene Piratenkapitän 25.',
+      'Wichtig: bereits vernichtete Gegner aus der Vergangenheit wurden nie nach Schiffstyp aufgezeichnet, nur als Gesamtsumme - sie tragen deshalb rückwirkend nicht mehr zur Punktzahl bei. Das führt einmalig zu einem Punkte-Rückgang in der Bestenliste, ab jetzt zählen aber alle neuen Siege korrekt gestaffelt.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Fix: Piraten-Spionage-Nachricht jetzt mit Sprung zur Position',
     changes: [
       'Wenn Piraten eure Basis ausspionieren, stand die Basis-Position bisher nur als reiner Text in der Nachricht - man musste sich die Koordinaten merken und selbst in der Galaxie-Ansicht suchen.',

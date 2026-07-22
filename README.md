@@ -80,7 +80,8 @@ server/
                                       Sektor durch, OHNE den Spielstand zu verändern
   src/game/messages.ts               pushMessage()/clearMessages() - Nachrichten-Verlauf
   src/game/stats.ts                  PlayerStats-Punkteberechnung (POINT_WEIGHTS,
-                                      calculatePoints()) und Bestenliste (getLeaderboard())
+                                      calculatePoints(), recordEnemyKills()) und Bestenliste
+                                      (getLeaderboard())
 
   src/game/data/ships.ts             Alle Schiffsdaten (Werte, Kosten, Bauzeit, Speed, Lore)
   src/game/data/defenses.ts          Alle Verteidigungsanlagen-Daten (inkl. Sentinel-/Ultimate-
@@ -1061,6 +1062,23 @@ client/
     (Solo-Piraten-Sektoren), `groupOps.ts` (Elite-Bollwerk) UND `simulator.ts` (Kampfsimulator
     MUSS dieselbe Engine nutzen, siehe Punkt 31 - sonst würde die Vorhersage bei aktivem
     Kapitän-Spawn systematisch danebenliegen).
+
+85. **"Feinde vernichtet" fließt gestaffelt nach Gegnerwert in die Punktzahl ein statt pauschal 1
+    Punkt pro Einheit** (Nutzerentscheidung Juli 2026, `getEnemyPointValue()` in `combat.ts`,
+    `POINT_WEIGHTS.perEnemyDestroyed` entfernt): Punktwert leitet sich aus den Baukosten her
+    (Metall+Kristall+Deuterium summiert, `ENEMY_POINT_COST_SCALE = 100000` - ein Leichter Jäger
+    ergibt so genau 1 Punkt), damit bei neuen Schiffen/Verteidigungsanlagen nichts manuell
+    nachgepflegt werden muss. Salvenschiffe/Imperator/Sentinel-/Ultimate-Kanone/Gigant-
+    Schildkuppel brauchen keinen Eintrag (tauchen nie als Gegner auf, siehe Punkt 24/26).
+    Piratenkapitän (25) und Piratenadmiral (500) haben keine Baukosten und bekommen daher feste
+    Werte in `SPECIAL_ENEMY_POINTS`. `PlayerStats.enemiesDestroyed` bleibt als reiner Rohzähler für
+    die Statistik-Anzeige unverändert; neu ist `enemiesDestroyedByType: Record<string, number>`,
+    das `recordEnemyKills()` (`stats.ts`, zentral genutzt von `missions.ts`/`raids.ts`
+    x3/`groupOps.ts` statt der vorherigen 5 einzelnen `+=`-Stellen) parallel befüllt - die
+    Punkteberechnung selbst liest nur noch `enemiesDestroyedByType`. **Wichtig:** bestehende
+    Spielstände hatten Kills nie nach Typ aufgeschlüsselt, nur als Summe - ihre BISHERIGEN Kills
+    tragen dadurch rückwirkend NICHT mehr zur Punktzahl bei (nur neue Kills ab diesem Update),
+    was zu einem einmaligen Punkte-Rückgang in der Bestenliste führt.
 
 ## Kurz-Changelog
 

@@ -30,6 +30,7 @@ import {
   fleetSizeRewardMultiplier,
 } from './combat.js';
 import { pushMessage } from './messages.js';
+import { recordEnemyKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
@@ -468,7 +469,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     else if (mission.sektorId === 'piraten_mittel') state.stats.missionsMittel++;
     else if (mission.sektorId === 'piraten_hoch') state.stats.missionsHoch++;
   }
-  state.stats.enemiesDestroyed += Object.values(npcLosses).reduce((a, b) => a + b, 0);
+  recordEnemyKills(state.stats, npcLosses);
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
   const outcome = result.retreated && !npcFullyDestroyed

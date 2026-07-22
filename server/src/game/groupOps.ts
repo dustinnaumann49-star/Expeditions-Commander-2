@@ -19,6 +19,7 @@ import {
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
+import { recordEnemyKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -686,10 +687,10 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   });
 
   // Statistik (siehe stats.ts) - jeder Teilnehmer bekommt denselben Ausgang gutgeschrieben.
-  const destroyedEnemyCount = npcResults.reduce((sum, r) => sum + (r.destroyedCount || 0), 0);
+  const npcLossesById: Record<string, number> = Object.fromEntries(npcResults.map((r) => [r.id, r.destroyedCount || 0]));
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
-    pState.stats.enemiesDestroyed += destroyedEnemyCount;
+    recordEnemyKills(pState.stats, npcLossesById);
     if (anyNpcDestroyed) pState.stats.eliteBollwerkChecks++;
     const ownLost = playerResults.filter((r) => r.ownerUsername === p.username).reduce((sum, r) => sum + (r.lost || 0), 0);
     pState.stats.ownShipsLost += ownLost;
