@@ -446,7 +446,7 @@ export function fleetSizeRewardMultiplier(sentPower: number, referencePower: num
 export function generatePiratenFleet(targetPower: number, spionageLevel: number, profile: WaveProfile = 'schwarm'): Record<string, number> {
   const smoothing = Math.min(0.5, spionageLevel * 0.05);
   const pool = SHIPS.filter(
-    (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
+    (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && s.id !== 'spionagesonde' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
   ).map((s) => s.id);
   const baseWeights = weightsForProfile(profile, pool.length);
   const uniform = 1 / pool.length;
@@ -456,7 +456,7 @@ export function generatePiratenFleet(targetPower: number, spionageLevel: number,
 
 export function generateFallbackFleet(targetPower: number, profile: WaveProfile = 'schwarm'): Record<string, number> {
   const pool = SHIPS.filter(
-    (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
+    (s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff' && s.id !== 'spionagesonde' && !MULTI_TARGET_VOLLEY_SHIPS.has(s.id)
   ).map((s) => s.id);
   const weights = weightsForProfile(profile, pool.length);
   return generateCappedFleet(targetPower, pool, weights);

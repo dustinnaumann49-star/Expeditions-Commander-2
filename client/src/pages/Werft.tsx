@@ -18,7 +18,7 @@ const SCHIFFE_KLASSEN = [
   { id: 'jaeger', name: 'Jäger-Klasse', ids: ['leicht', 'schwer'] },
   { id: 'kreuzer', name: 'Kreuzer-Klasse', ids: ['kreuzer', 'schlachtschiff', 'bomber'] },
   { id: 'elite', name: 'Elite-Klasse', ids: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
-  { id: 'versorgung', name: 'Versorgungsschiffe', ids: ['mining', 'begleitschiff'] },
+  { id: 'versorgung', name: 'Versorgungsschiffe', ids: ['mining', 'begleitschiff', 'spionagesonde'] },
   { id: 'spezial', name: 'Spezialschiffe', ids: [] },
 ];
 

@@ -5,7 +5,7 @@ import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
-import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_SPY_CHECK_INTERVAL_MS } from './data/galaxyConstants.js';
 import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson, listAllUsers, getUserById } from '../db.js';
@@ -89,6 +89,8 @@ export function defaultPlayerState(userId: number): PlayerState {
     galaxyDeployments: [],
     eventTrips: [],
     pirateAttacks: [],
+    spyMissions: [],
+    nextPirateSpyCheck: Date.now() + PIRATE_SPY_CHECK_INTERVAL_MS,
     activeBoosters: {},
     teile: { waffen: 0, schild: 0, panzerung: 0 },
     missions: [],
@@ -186,6 +188,8 @@ export function loadPlayerState(userId: number): PlayerState {
   if (!parsed.galaxyDeployments) parsed.galaxyDeployments = [];
   if (!parsed.eventTrips) parsed.eventTrips = [];
   if (!parsed.pirateAttacks) parsed.pirateAttacks = [];
+  if (!parsed.spyMissions) parsed.spyMissions = [];
+  if (!parsed.nextPirateSpyCheck) parsed.nextPirateSpyCheck = Date.now() + PIRATE_SPY_CHECK_INTERVAL_MS;
   // Alte, vor der Piratenbasen-Erweiterung gespawnte Raids haben kein pirateBase/launchTime-Feld -
   // sicherheitshalber verwerfen statt mit kaputten Werten weiterzurechnen, der naechste
   // Checkpoint spawnt ganz regulaer einen neuen (siehe raids.ts spawnRaidAt()).

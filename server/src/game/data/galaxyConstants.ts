@@ -59,3 +59,20 @@ export const PIRATE_FLEET_SPEED = 7000;
 // vorherige feste 30-Minuten-Vorwarnzeit) - danach kommt zusaetzlich die echte, distanzabhaengige
 // Flugzeit (siehe raids.ts spawnRaidAt()).
 export const RAID_PREP_MS = 60 * 60 * 1000;
+
+// ========== SPIONAGE (Nutzerentscheidung Juli 2026, siehe spyMissions.ts) ==========
+// Spionagesonden ignorieren die normale Distanz-Formel bewusst - IMMER 5 Minuten je Richtung,
+// egal wie weit die Zielbasis entfernt liegt (10 Minuten Gesamtflugzeit hin und zurueck).
+export const SPY_PROBE_TRAVEL_MS = 5 * 60 * 1000;
+// Flacher Treibstoffpreis PRO SONDE (ebenfalls distanzunabhaengig, passend zum Flugzeit-Prinzip)
+// statt der ueblichen distanzbasierten galaxyFuelCost()-Formel.
+export const SPY_PROBE_FUEL_COST_PER_PROBE = 50;
+
+// Piraten spionieren umgekehrt auch Spieler aus (Nutzerentscheidung: "Piraten und KI bots
+// spionieren auch") - bewusst leichtgewichtig als periodischer Hintergrund-Check (kein eigenes
+// Flug-/Ankunfts-Modell wie bei Spieler-Sonden, siehe maybeGeneratePirateSpyReport() in
+// spyMissions.ts), analog zum Raid-Checkpoint-Muster. Deckt NUR auf, DASS und VON WO aus spioniert
+// wurde, nicht was die Piraten gesehen haben - Spieler haben schliesslich keine eigene "Spionage-
+// Abwehr"-Forschung, die einen Detailgrad festlegen koennte.
+export const PIRATE_SPY_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
+export const PIRATE_SPY_CHANCE = 0.25;

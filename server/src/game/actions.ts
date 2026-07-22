@@ -10,6 +10,7 @@ import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
 import { processPirateAttacks } from './pirateBaseState.js';
+import { processSpyMissions, maybeGeneratePirateSpyReport } from './spyMissions.js';
 import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
@@ -374,6 +375,10 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   // Angriffsfluege gegen Piratenbasen (siehe pirateBaseState.ts) - komplett unabhaengig vom
   // normalen Raid-System, das weiterhin unveraendert oben in processRaidTimer laeuft.
   await processPirateAttacks(state);
+  // Spionagefluege gegen Piratenbasen UND der umgekehrte periodische Check "wurde ich gerade von
+  // Piraten ausspioniert" (siehe spyMissions.ts) - beide komplett unabhaengig von Raids/Angriffen.
+  await processSpyMissions(state);
+  maybeGeneratePirateSpyReport(state);
   // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
   // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
   // damit Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene
@@ -652,16 +657,11 @@ function researchTimeForLevel(state: PlayerState, tech: (typeof RESEARCH)[number
 export function startResearch(state: PlayerState, techId: string): ActionResult {
   const tech = RESEARCH.find((r) => r.id === techId);
   if (!tech) return { ok: false, error: 'Unbekannte Forschung.' };
-  // Spionage ist vorerst als Platzhalter gesperrt - ihr bisheriger Effekt (Glaettung der
-  // Gegner-Zusammensetzung) wurde durch die Wellen-Profile (siehe combat.ts) weitgehend
-  // ueberschattet und kaum noch spuerbar. Bleibt sichtbar im Forschungsbaum und im Code
-  // (generatePiratenFleet()/generateDefenseFleet() nehmen weiterhin einen spionageLevel-Parameter
-  // entgegen, bekommen aktuell aber ueberall fest 0 uebergeben - siehe missions.ts/groupOps.ts/
-  // simulator.ts), damit sie spaeter bei weiterem Spielausbau wieder aktiviert werden kann, ohne
-  // den Mechanismus neu bauen zu muessen.
-  if (techId === 'spionage') {
-    return { ok: false, error: 'Spionage ist aktuell gesperrt (Platzhalter für zukünftige Erweiterungen).' };
-  }
+  // Spionage wieder freigeschaltet (Nutzerentscheidung Juli 2026) - ihr NEUER Zweck ist der
+  // Detailgrad von Spionageflug-Berichten gegen Piratenbasen (siehe spyMissions.ts), nicht mehr die
+  // alte, kaum spuerbare Gegner-Glaettung (generatePiratenFleet()/generateDefenseFleet() bekommen
+  // weiterhin ueberall fest 0 fuer spionageLevel uebergeben - bewusst UNVERAENDERT belassen, siehe
+  // missions.ts/groupOps.ts/simulator.ts, da der neue Zweck damit nichts zu tun hat).
   // Forschungsbaum: Voraussetzung pruefen (siehe ResearchDefinition.parentId, types.ts) - die
   // Elternforschung muss PARENT_UNLOCK_LEVEL (einheitlich Stufe 3) erreicht haben, bevor dieser
   // Zweig ueberhaupt gestartet werden kann.

@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Spionage-Forschung reaktiviert + Spionagesonden',
+    changes: [
+      'Die Spionage-Forschung war lange als wirkungslos gesperrt - ist jetzt wieder freigeschaltet und hat einen echten Zweck: sie bestimmt, wie viele Details ihr über eine ausspionierte Piratenbasis erfahrt.',
+      'Neues Schiff in der Werft (Versorgungsschiffe): die Spionagesonde. Unbewaffnet, wird nie zerstört, und fliegt IMMER genau 5 Minuten zum Ziel - egal wie weit die Piratenbasis entfernt liegt.',
+      'In der Galaxie-Ansicht gibt es bei jeder angreifbaren Piratenbasis jetzt einen "Ausspionieren"-Button neben "Angreifen". Der Bericht landet danach bei den Farm-/Beuteberichten in euren Nachrichten.',
+      'Detailgrad nach Spionage-Stufe: Stufe 0 zeigt nur die Ressourcen der Basis. Ab Stufe 1 kommt eine grobe Schätzung zu Flotte/Verteidigung dazu, die mit jeder weiteren Stufe genauer wird - Stufe 10 zeigt alles exakt.',
+      'Umgekehrt spionieren euch auch die Piraten gelegentlich aus - ihr bekommt dann eine Nachricht, von welcher Piratenbasis-Position aus das passiert ist (aber nicht, was sie gesehen haben).',
+      'KI-Vega und KI-Nyx bauen sich ebenfalls Spionagesonden und schicken sie gelegentlich los.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Angreifbare Piratenbasen',
     changes: [
       'Piratenbasen sind ab sofort mehr als nur Startpunkte für Raids - 4 der 12 Basen in der Galaxie haben jetzt eine echte, dauerhafte Flotte, Verteidigung und Ressourcen, ganz wie ein Mitspieler.',

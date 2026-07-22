@@ -6,7 +6,7 @@ import { api } from '../api/client';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip, PirateBaseSummary, PirateAttackDeployment } from '../types/game';
+import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip, PirateBaseSummary, PirateAttackDeployment, SpyMissionDeployment } from '../types/game';
 
 function deploymentStatus(d: GalaxyDeployment, now: number): { label: string; color: string } {
   if (d.recalled) {
@@ -48,6 +48,7 @@ export function GalaxiePage() {
     relocateBase,
     claimGalaxyEvent,
     attackPirateBase,
+    spyOnPirateBase,
     error,
   } = useGame();
   const [, forceTick] = useState(0);
@@ -56,6 +57,7 @@ export function GalaxiePage() {
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
   const [targetEvent, setTargetEvent] = useState<GalaxyEvent | null>(null);
   const [targetPirateBase, setTargetPirateBase] = useState<PirateBaseSummary | null>(null);
+  const [targetSpyBase, setTargetSpyBase] = useState<PirateBaseSummary | null>(null);
   const [relocateTarget, setRelocateTarget] = useState<{ system: number; position: number } | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [preview, setPreview] = useState<{ distance: number; durationMs: number; fuelCost: number } | null>(null);
@@ -65,6 +67,7 @@ export function GalaxiePage() {
   const [detailIncoming, setDetailIncoming] = useState<IncomingDeployment | null>(null);
   const [detailEventTrip, setDetailEventTrip] = useState<GalaxyEventTrip | null>(null);
   const [detailPirateAttack, setDetailPirateAttack] = useState<PirateAttackDeployment | null>(null);
+  const [detailSpyMission, setDetailSpyMission] = useState<SpyMissionDeployment | null>(null);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -89,6 +92,13 @@ export function GalaxiePage() {
   }, [ownGalaxyPosition, system]);
 
   useEffect(() => {
+    // Spionagefluege haben eine FESTE Flugzeit/Treibstoffkosten (siehe gameData.spyProbeTravelMs/
+    // -FuelCostPerProbe), unabhaengig von der Entfernung - keine Vorschau-API-Anfrage noetig, wird
+    // weiter unten direkt im Panel berechnet.
+    if (targetSpyBase) {
+      setPreview(null);
+      return;
+    }
     if (targetUserId === null && !targetEvent && !targetPirateBase) {
       setPreview(null);
       return;
@@ -127,11 +137,15 @@ export function GalaxiePage() {
   const ownedShips = gameData.ships.filter((s) => (state.fleet[s.id] || 0) > 0);
 
   const totalSelected = Object.values(selection).reduce((a, b) => a + (b || 0), 0);
-  const canSend =
-    (targetUserId !== null || !!targetEvent || !!targetPirateBase) &&
-    totalSelected > 0 &&
-    !!preview &&
-    preview.fuelCost <= state.resources.deuterium;
+  const probeQty = selection.spionagesonde || 0;
+  const spyFuelCost = probeQty * gameData.spyProbeFuelCostPerProbe;
+  const canSendSpy = !!targetSpyBase && probeQty > 0 && spyFuelCost <= state.resources.deuterium;
+  const canSend = targetSpyBase
+    ? canSendSpy
+    : (targetUserId !== null || !!targetEvent || !!targetPirateBase) &&
+      totalSelected > 0 &&
+      !!preview &&
+      preview.fuelCost <= state.resources.deuterium;
   const canRelocate = !!relocateTarget && state.resources.dm >= gameData.relocateBaseCostDm;
 
   return (
@@ -171,6 +185,7 @@ export function GalaxiePage() {
             const isPirateBase = pirateBasesInSystem.some((b) => b.position === pos);
             const pirateBaseSummary = pirateBaseSummaries.find((b) => b.system === system && b.position === pos);
             const alreadyAttackingBase = pirateBaseSummary && state.pirateAttacks.some((a) => a.baseId === pirateBaseSummary.id);
+            const alreadySpyingBase = pirateBaseSummary && state.spyMissions.some((m) => m.baseId === pirateBaseSummary.id);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
             const event = eventsInSystem.find((e) => e.position === pos);
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
@@ -210,22 +225,42 @@ export function GalaxiePage() {
                         <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
                           Machtwert: {pirateBaseSummary.power.toLocaleString('de-DE')}
                         </p>
-                        {alreadyAttackingBase ? (
-                          <p style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Flotte bereits unterwegs</p>
-                        ) : (
-                          <button
-                            className="qty-btn"
-                            onClick={() => {
-                              setTargetPirateBase(pirateBaseSummary);
-                              setTargetUserId(null);
-                              setTargetEvent(null);
-                              setRelocateTarget(null);
-                              setSelection({});
-                            }}
-                          >
-                            Angreifen
-                          </button>
-                        )}
+                        <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {alreadyAttackingBase ? (
+                            <span style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Angriff unterwegs</span>
+                          ) : (
+                            <button
+                              className="qty-btn"
+                              onClick={() => {
+                                setTargetPirateBase(pirateBaseSummary);
+                                setTargetSpyBase(null);
+                                setTargetUserId(null);
+                                setTargetEvent(null);
+                                setRelocateTarget(null);
+                                setSelection({});
+                              }}
+                            >
+                              Angreifen
+                            </button>
+                          )}
+                          {alreadySpyingBase ? (
+                            <span style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Sonde unterwegs</span>
+                          ) : (
+                            <button
+                              className="qty-btn"
+                              onClick={() => {
+                                setTargetSpyBase(pirateBaseSummary);
+                                setTargetPirateBase(null);
+                                setTargetUserId(null);
+                                setTargetEvent(null);
+                                setRelocateTarget(null);
+                                setSelection({});
+                              }}
+                            >
+                              Ausspionieren
+                            </button>
+                          )}
+                        </span>
                       </>
                     ) : (
                       <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Nicht angreifbar</p>
@@ -308,16 +343,41 @@ export function GalaxiePage() {
         </div>
       )}
 
-      {((targetUserId !== null && targetOccupant) || targetEvent || targetPirateBase) && (
+      {((targetUserId !== null && targetOccupant) || targetEvent || targetPirateBase || targetSpyBase) && (
         <div className="queue-box" style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>
             {targetEvent
               ? `Bergungsflotte zu ${gameData.galaxyEventTypes[targetEvent.type]?.label || targetEvent.type} (1:${targetEvent.system}:${targetEvent.position}) schicken`
               : targetPirateBase
               ? `Angriffsflotte zur Piratenbasis (1:${targetPirateBase.system}:${targetPirateBase.position}, Machtwert ${targetPirateBase.power.toLocaleString('de-DE')}) schicken`
+              : targetSpyBase
+              ? `Spionagesonde(n) zur Piratenbasis (1:${targetSpyBase.system}:${targetSpyBase.position}) schicken`
               : `Flotte zu ${targetOccupant!.username} (1:${targetOccupant!.system}:${targetOccupant!.position}) schicken`}
           </h3>
-          {ownedShips.length === 0 ? (
+          {targetSpyBase ? (
+            (state.fleet.spionagesonde || 0) === 0 ? (
+              <p style={{ color: 'var(--text-dim)' }}>Keine Spionagesonden verfügbar - erst in der Werft (Versorgungsschiffe) bauen.</p>
+            ) : (
+              <div className="queue-item">
+                <span>Spionagesonde (verfügbar: {state.fleet.spionagesonde})</span>
+                <span className="qty-row">
+                  <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, spionagesonde: Math.max(0, (p.spionagesonde || 0) - 1) }))}>
+                    -1
+                  </button>
+                  <span style={{ padding: '0 6px' }}>{probeQty}</span>
+                  <button
+                    className="qty-btn"
+                    onClick={() => setSelection((p) => ({ ...p, spionagesonde: Math.min(state.fleet.spionagesonde || 0, (p.spionagesonde || 0) + 1) }))}
+                  >
+                    +1
+                  </button>
+                  <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, spionagesonde: state.fleet.spionagesonde || 0 }))}>
+                    Alle
+                  </button>
+                </span>
+              </div>
+            )
+          ) : ownedShips.length === 0 ? (
             <p style={{ color: 'var(--text-dim)' }}>Keine eigenen Schiffe verfügbar.</p>
           ) : (
             ownedShips.map((s) => {
@@ -345,14 +405,25 @@ export function GalaxiePage() {
             })
           )}
 
-          {previewLoading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
-          {preview && !previewLoading && (
+          {targetSpyBase ? (
             <p style={{ fontSize: 13, marginTop: 8 }}>
-              Distanz: {preview.distance.toLocaleString('de-DE')} · Flugzeit: {formatTime(preview.durationMs)} · Treibstoff:{' '}
-              <span style={{ color: preview.fuelCost > state.resources.deuterium ? 'var(--danger)' : 'var(--accent-deut)' }}>
-                {preview.fuelCost.toLocaleString('de-DE')} Deuterium
+              Flugzeit: {formatTime(gameData.spyProbeTravelMs)} (fest, unabhängig von der Entfernung) · Treibstoff:{' '}
+              <span style={{ color: spyFuelCost > state.resources.deuterium ? 'var(--danger)' : 'var(--accent-deut)' }}>
+                {spyFuelCost.toLocaleString('de-DE')} Deuterium
               </span>
             </p>
+          ) : (
+            <>
+              {previewLoading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
+              {preview && !previewLoading && (
+                <p style={{ fontSize: 13, marginTop: 8 }}>
+                  Distanz: {preview.distance.toLocaleString('de-DE')} · Flugzeit: {formatTime(preview.durationMs)} · Treibstoff:{' '}
+                  <span style={{ color: preview.fuelCost > state.resources.deuterium ? 'var(--danger)' : 'var(--accent-deut)' }}>
+                    {preview.fuelCost.toLocaleString('de-DE')} Deuterium
+                  </span>
+                </p>
+              )}
+            </>
           )}
 
           <div className="build-row">
@@ -362,6 +433,7 @@ export function GalaxiePage() {
                 setTargetUserId(null);
                 setTargetEvent(null);
                 setTargetPirateBase(null);
+                setTargetSpyBase(null);
                 setSelection({});
               }}
             >
@@ -377,6 +449,9 @@ export function GalaxiePage() {
                 } else if (targetPirateBase) {
                   attackPirateBase(targetPirateBase.id, selection).then(refreshGalaxy);
                   setTargetPirateBase(null);
+                } else if (targetSpyBase) {
+                  spyOnPirateBase(targetSpyBase.id, probeQty).then(refreshGalaxy);
+                  setTargetSpyBase(null);
                 } else {
                   holdFleet(targetUserId!, selection).then(refreshGalaxy);
                   setTargetUserId(null);
@@ -384,7 +459,13 @@ export function GalaxiePage() {
                 setSelection({});
               }}
             >
-              {targetEvent ? 'Flotte losschicken (Bergung, kehrt automatisch zurück)' : targetPirateBase ? 'Angriff starten (kehrt automatisch zurück)' : 'Flotte losschicken (Halten)'}
+              {targetEvent
+                ? 'Flotte losschicken (Bergung, kehrt automatisch zurück)'
+                : targetPirateBase
+                ? 'Angriff starten (kehrt automatisch zurück)'
+                : targetSpyBase
+                ? 'Sonde(n) losschicken (kehrt automatisch zurück)'
+                : 'Flotte losschicken (Halten)'}
             </button>
           </div>
         </div>
@@ -395,6 +476,7 @@ export function GalaxiePage() {
         {state.galaxyDeployments.length === 0 &&
         state.eventTrips.length === 0 &&
         state.pirateAttacks.length === 0 &&
+        state.spyMissions.length === 0 &&
         state.missions.length === 0 &&
         parties.filter((op) => op.status === 'departed').length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine eigenen Flotten unterwegs, haltend oder im Einsatz.</p>
@@ -518,6 +600,24 @@ export function GalaxiePage() {
                 </div>
               );
             })}
+            {state.spyMissions.map((m) => {
+              const label = !m.resolved ? 'unterwegs' : 'Rückflug';
+              const color = !m.resolved ? 'var(--accent-kristall)' : 'var(--text-dim)';
+              const timeText = !m.resolved ? `Ankunft in ${formatTime(m.arriveTime - now)}` : `Zu Hause in ${formatTime(m.returnTime - now)}`;
+              return (
+                <div className="queue-item" key={m.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                  <div className="progress-row">
+                    <span>
+                      <span className="lore-title" onClick={() => setDetailSpyMission(m)}>
+                        Spionageflug zur Piratenbasis (1:{m.targetSystem}:{m.targetPosition}) · Von 1:{m.originSystem}:{m.originPosition}
+                      </span>{' '}
+                      <span style={{ color, fontWeight: 600 }}>[{label}]</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{timeText}</span>
+                </div>
+              );
+            })}
           </>
         )}
       </div>
@@ -591,6 +691,15 @@ export function GalaxiePage() {
           <ShipList ships={detailPirateAttack.ships} shipName={shipName} />
           <p style={{ fontSize: 13, marginTop: 8 }}>
             {detailPirateAttack.resolved ? 'Kampf bereits ausgetragen - Details siehe Kampfbericht in den Nachrichten.' : 'Noch im Anflug.'}
+          </p>
+        </InfoModal>
+      )}
+
+      {detailSpyMission && (
+        <InfoModal title={`Spionageflug: Piratenbasis 1:${detailSpyMission.targetSystem}:${detailSpyMission.targetPosition}`} onClose={() => setDetailSpyMission(null)}>
+          <ShipList ships={detailSpyMission.ships} shipName={shipName} />
+          <p style={{ fontSize: 13, marginTop: 8 }}>
+            {detailSpyMission.resolved ? 'Bericht bereits eingetroffen - siehe Farm-/Beuteberichte in den Nachrichten.' : 'Noch im Anflug.'}
           </p>
         </InfoModal>
       )}

@@ -125,4 +125,6 @@ export const api = {
     request<PlayerState>('/game/galaxy/event/claim', { method: 'POST', body: JSON.stringify({ eventId, ships }) }),
   attackPirateBase: (baseId: string, ships: Record<string, number>) =>
     request<PlayerState>('/game/galaxy/pirate-base/attack', { method: 'POST', body: JSON.stringify({ baseId, ships }) }),
+  spyOnPirateBase: (baseId: string, qty: number) =>
+    request<PlayerState>('/game/galaxy/pirate-base/spy', { method: 'POST', body: JSON.stringify({ baseId, qty }) }),
 };

@@ -57,6 +57,7 @@ interface GameContextValue {
   relocateBase: (system: number, position: number) => Promise<void>;
   claimGalaxyEvent: (eventId: string, ships: Record<string, number>) => Promise<void>;
   attackPirateBase: (baseId: string, ships: Record<string, number>) => Promise<void>;
+  spyOnPirateBase: (baseId: string, qty: number) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -234,6 +235,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     relocateBase: (system, position) => run(() => api.relocateBase(system, position)),
     claimGalaxyEvent: (eventId, ships) => run(() => api.claimGalaxyEvent(eventId, ships)),
     attackPirateBase: (baseId, ships) => run(() => api.attackPirateBase(baseId, ships)),
+    spyOnPirateBase: (baseId, qty) => run(() => api.spyOnPirateBase(baseId, qty)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

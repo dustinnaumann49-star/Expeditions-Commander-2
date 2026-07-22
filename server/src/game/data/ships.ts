@@ -38,6 +38,14 @@ export const SHIPS: ShipDefinition[] =
     cost:{metall:8500, kristall:5000, deuterium:1500}, stats:{waffen:0, schild:2200, panzerung:50500}, speed:7500, fuelConsumption:6, driveType:"rakete" },
   { id:"begleitschiff", name:"Begleitschiff", img:"ships/begleitschiff.png", lore:"Das Begleitschiff wurde entwickelt, um Mining-Flotten auf ihren Routen zu eskortieren, nachdem Piratenüberfälle auf unbewaffnete Erntetrupps zur Regel wurden. Es kämpft selten allein, sondern immer im Schatten der Schiffe, die es beschützt.", tier:0.5, buildTime:6.67,
     cost:{metall:15000, kristall:6000, deuterium:2000}, stats:{waffen:350, schild:60, panzerung:8500}, speed:12000, fuelConsumption:4, driveType:"rakete" },
+  // Spionagesonde (Nutzerentscheidung Juli 2026): reine Aufklaerungseinheit, KEIN Kampfschiff -
+  // fliegt Spionagefluege gegen Piratenbasen (siehe spyMissions.ts) mit einer FESTEN Flugzeit
+  // (SPY_PROBE_TRAVEL_MS, 5 Minuten je Richtung), unabhaengig von Entfernung/speed/driveType - die
+  // hier angegebenen speed/fuelConsumption-Werte sind daher nur Platzhalter (falls die Sonde je
+  // ausversehen in eine normale Flotte gemischt und auf eine Distanz-Mission geschickt wird),
+  // fuer echte Spionagefluege irrelevant. Wird nie zerstoert (keine Gegenwehr durch die Basis).
+  { id:"spionagesonde", name:"Spionagesonde", img:"ships/spionagesonde.png", lore:"Die Spionagesonde ist unbewaffnet und für den Kampf denkbar ungeeignet - dafür tastet sie mit passiven Sensoren jede Basis ab, ohne selbst entdeckt zu werden. Je besser die Auswertungstechnik, desto mehr verrät ein einziger Vorbeiflug.", tier:0.25, buildTime:5,
+    cost:{metall:5000, kristall:8000, deuterium:2000}, stats:{waffen:0, schild:10, panzerung:500}, speed:100000, fuelConsumption:1, driveType:"impuls" },
   { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:6,
     specialOnly:true, teileCost:{waffen:1000, schild:1000, panzerung:1000},
     // Werte deutlich gesenkt (Nutzerentscheidung: die vorherigen 5.000.000/2.500.000/12.000.000

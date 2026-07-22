@@ -144,6 +144,24 @@ export interface PirateAttackDeployment {
   resolved: boolean;
 }
 
+// Spionageflug (siehe spyMissions.ts) - strukturell identisch zu PirateAttackDeployment, aber statt
+// Kampf wird bei Ankunft nur ein Bericht erzeugt (Detailgrad nach state.research.spionage), die
+// Sonde selbst nimmt nie Schaden. arriveTime/returnTime nutzen IMMER SPY_PROBE_TRAVEL_MS statt der
+// normalen distanzbasierten Flugzeit (siehe galaxyConstants.ts).
+export interface SpyMissionDeployment {
+  id: string;
+  baseId: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  resolved: boolean;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -582,6 +600,8 @@ export interface PlayerState {
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   eventTrips: GalaxyEventTrip[]; // eigene, laufend zu Galaxie-Ereignissen unterwegs befindliche Flotten
   pirateAttacks: PirateAttackDeployment[]; // eigene, laufend gegen Piratenbasen unterwegs befindliche Angriffsfluege
+  spyMissions: SpyMissionDeployment[]; // eigene, laufend gegen Piratenbasen unterwegs befindliche Spionagefluege
+  nextPirateSpyCheck: number; // naechster faelliger Checkpoint fuer "Piraten spionieren mich aus" (siehe spyMissions.ts)
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

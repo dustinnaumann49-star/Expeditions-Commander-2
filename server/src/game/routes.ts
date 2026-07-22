@@ -14,6 +14,7 @@ import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
 import { listActivePirateBaseSummaries, startPirateBaseAttack } from './pirateBaseState.js';
+import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass } from './classActions.js';
@@ -25,7 +26,7 @@ import { BUILDINGS } from './data/buildings.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
-import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, SPY_PROBE_TRAVEL_MS, SPY_PROBE_FUEL_COST_PER_PROBE } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
@@ -91,6 +92,8 @@ gameRouter.get('/data', (_req, res) => {
     classChangeCostDm: CLASS_CHANGE_COST_DM,
     galaxyEventTypes: GALAXY_EVENT_TYPES,
     relocateBaseCostDm: RELOCATE_BASE_COST_DM,
+    spyProbeTravelMs: SPY_PROBE_TRAVEL_MS,
+    spyProbeFuelCostPerProbe: SPY_PROBE_FUEL_COST_PER_PROBE,
   });
 });
 
@@ -275,6 +278,14 @@ gameRouter.post('/galaxy/pirate-base/attack', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'baseId und ships erforderlich.' });
   }
   handleAction(req, res, (state) => startPirateBaseAttack(state, baseId, ships));
+});
+
+gameRouter.post('/galaxy/pirate-base/spy', (req: AuthedRequest, res) => {
+  const { baseId, qty } = req.body ?? {};
+  if (typeof baseId !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'baseId und qty (Zahl) erforderlich.' });
+  }
+  handleAction(req, res, (state) => startSpyProbe(state, baseId, qty));
 });
 
 // ---- Sektor / Missionen ----

@@ -9,6 +9,7 @@ import { listMyGroupOperations, respondToGroupOperation, startGroupOperation, cr
 import { startHoldDeployment } from './galaxy.js';
 import { setPlayerClass } from './classActions.js';
 import { startPirateBaseAttack } from './pirateBaseState.js';
+import { startSpyProbe } from './spyMissions.js';
 import { ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import type { PlayerState } from './types.js';
 
@@ -212,6 +213,22 @@ function maybeAttackPirateBase(state: PlayerState): void {
   }
 }
 
+// KI-Bots spionieren ebenfalls Piratenbasen aus (Nutzerentscheidung: "Piraten und KI bots
+// spionieren auch") - bauen bei Bedarf ein paar Sonden nach (unabhaengig vom normalen
+// Kampfschiff-Bauslot-Rennen in maybeBuildShips) und schicken gelegentlich eine los.
+function maybeSpyOnPirateBase(state: PlayerState): void {
+  if ((state.fleet.spionagesonde || 0) < 2 && state.buildQueue.length < MAX_BUILD_SLOTS) {
+    startBuild(state, 'spionagesonde', 2);
+  }
+  for (const baseId of ACTIVE_PIRATE_BASE_IDS) {
+    const alreadySpying = state.spyMissions.some((m) => m.baseId === baseId);
+    if (alreadySpying) continue;
+    if (Math.random() > 0.1) continue;
+    if ((state.fleet.spionagesonde || 0) < 1) continue;
+    startSpyProbe(state, baseId, 1);
+  }
+}
+
 /**
  * Ein "Zug" eines KI-Spielers - wird im globalen Heartbeat (heartbeat.ts) fuer jeden
  * Bot-Account nach der normalen Zeit-Verarbeitung (Missionen/Raids) aufgerufen. Jeder
@@ -230,6 +247,7 @@ export async function runBotTurn(state: PlayerState, allUsers: { id: number; use
   await maybeHandleGroupOps(state, humanUserIds);
   maybeHoldAtHumans(state, humanUserIds);
   maybeAttackPirateBase(state);
+  maybeSpyOnPirateBase(state);
 }
 
 export function isBotUserId(userId: number): boolean {

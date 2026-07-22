@@ -54,10 +54,9 @@ function ResearchNode({
   const children = gameData.research.filter((t) => t.parentId === tech.id);
   const level = state.research[tech.id] || 0;
   const maxed = level >= gameData.maxResearchLevel;
-  const isSpionage = tech.id === 'spionage';
   const parentLevel = tech.parentId ? state.research[tech.parentId] || 0 : Infinity;
   const parentTech = tech.parentId ? gameData.research.find((t) => t.id === tech.parentId) : null;
-  const locked = isSpionage || (!!tech.parentId && parentLevel < gameData.parentUnlockLevel);
+  const locked = !!tech.parentId && parentLevel < gameData.parentUnlockLevel;
   const activeJob = state.researchQueue.find((j) => j.techId === tech.id);
   const isBasis = !tech.parentId;
   const nextLevel = level + 1;

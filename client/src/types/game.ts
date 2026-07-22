@@ -147,6 +147,20 @@ export interface PirateAttackDeployment {
   resolved: boolean;
 }
 
+export interface SpyMissionDeployment {
+  id: string;
+  baseId: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  resolved: boolean;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -443,6 +457,7 @@ export interface PlayerState {
   galaxyDeployments: GalaxyDeployment[];
   eventTrips: GalaxyEventTrip[];
   pirateAttacks: PirateAttackDeployment[];
+  spyMissions: SpyMissionDeployment[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];
@@ -578,6 +593,8 @@ export interface GameData {
   classChangeCostDm: number;
   galaxyEventTypes: Record<string, GalaxyEventTypeDef>;
   relocateBaseCostDm: number;
+  spyProbeTravelMs: number;
+  spyProbeFuelCostPerProbe: number;
 }
 
 export interface ClassDefinition {

@@ -1193,3 +1193,52 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     verifiziert (5.889.510 = Summe aus `combatFleetPowerBase()` über die Seed-Flotte/-Verteidigung),
     Angriffsflug inkl. Distanz/Flugzeit/Treibstoff-Vorschau, Kampfauflösung (korrekter Kampfbericht
     mit allen 4 NPC-Einheitstypen), "bereits angreifend"-Sperre und Rückflug funktionieren.
+- Neu: Spionage reaktiviert + Spionagesonden gegen Piratenbasen (Nutzerentscheidung). Die
+  Spionage-Forschung war seit Juli 2026 als Platzhalter gesperrt (ihr alter Effekt, Glättung der
+  Gegner-Zusammensetzung, war kaum spürbar) - bekommt jetzt einen komplett NEUEN, echten Zweck:
+  Detailgrad von Spionageflug-Berichten gegen die 4 `ACTIVE_PIRATE_BASE_IDS`-Basen.
+  - **`startResearch()` (`actions.ts`)**: der `techId === 'spionage'`-Block entfernt. Client-seitige
+    Sperre ebenfalls entfernt (`Forschung.tsx`, `isSpionage`-Sonderfall aus der `locked`-Berechnung
+    raus). Der ALTE Glättungsmechanismus (`generatePiratenFleet()`/`generateDefenseFleet()` in
+    `combat.ts`, `spionageLevel`-Parameter) bleibt bewusst UNVERÄNDERT auf fest 0 (siehe
+    missions.ts/groupOps.ts/simulator.ts) - hat mit dem neuen Zweck nichts zu tun, keine
+    Vermischung der beiden Konzepte.
+  - **Neues Schiff `spionagesonde`** (`data/ships.ts`, Tab "Versorgungsschiffe" in `Werft.tsx`):
+    unbewaffnet (waffen:0), aus allen Piraten-NPC-Pools ausgeschlossen (`combat.ts`, gleiches Muster
+    wie `mining`/`begleitschiff`). `speed`/`fuelConsumption`/`driveType` sind reine Platzhalter -
+    fuer echte Spionagefluege irrelevant, siehe naechster Punkt.
+  - **Neue Datei `game/spyMissions.ts`**: `startSpyProbe()`/`processSpyMissions()` (analog zu
+    `pirateBaseState.ts`s Angriffsfluegen, aber ohne Kampf - Sonde wird nie zerstoert). Flugzeit
+    IMMER `SPY_PROBE_TRAVEL_MS` (5 Minuten je Richtung, `galaxyConstants.ts`) statt der normalen
+    distanzbasierten Formel - bewusste Abkopplung von `galaxyDurationMs()`. Treibstoff ebenfalls
+    FLACH (`SPY_PROBE_FUEL_COST_PER_PROBE=50`/Sonde), nicht distanzbasiert, passend zum
+    Flugzeit-Prinzip. Neuer Typ `SpyMissionDeployment` (`types.ts`, strukturell wie
+    `PirateAttackDeployment` aber mit `resolved` statt Kampf-Flag), neues `PlayerState.spyMissions`-
+    Array.
+  - **Detailgrad-Formel** (`buildSpyReportText()`): Stufe 0 zeigt NUR Ressourcen (exakt), keinerlei
+    Flotten-/Verteidigungsdaten. Ab Stufe 1 kommt ein BEREICH dazu (`formatRange()`,
+    `fuzz=(10-level)/10`, z.B. Stufe 3 → ±70% Streuung), der mit steigender Stufe schrumpft, bis
+    Stufe 10 exakt ist (`fuzz=0`). Bericht landet als reiner Text (`pushMessage(..., 'farm', ...)`,
+    kein strukturiertes `Detail`-Objekt noetig) unter "Farm-/Beuteberichte".
+  - **Piraten spionieren umgekehrt Spieler aus** ("Piraten und KI bots spionieren auch" -
+    Nutzerentscheidung): `maybeGeneratePirateSpyReport()` in `spyMissions.ts`, bewusst
+    LEICHTGEWICHTIG als periodischer Checkpoint (`PIRATE_SPY_CHECK_INTERVAL_MS`=3h,
+    `PIRATE_SPY_CHANCE`=25%, neues `PlayerState.nextPirateSpyCheck`-Feld) statt eines vollen
+    Flug-/Ankunfts-Modells wie bei Spieler-Sonden - deckt nur auf, DASS und VON WELCHER
+    Piratenbasis-Position aus spioniert wurde, nicht was gesehen wurde (Spieler haben keine eigene
+    "Spionage-Abwehr"-Forschung, die einen Detailgrad festlegen koennte). Aufgerufen aus `tick()`
+    (`actions.ts`), zusammen mit `processSpyMissions()`.
+  - **KI-Bots spionieren ebenfalls**: `maybeSpyOnPirateBase()` in `bot.ts` (baut bei Bedarf 2
+    Sonden nach, schickt dann gelegentlich eine los), exakt nach dem `maybeAttackPirateBase()`-
+    Muster.
+  - **Client**: "Ausspionieren"-Button neben "Angreifen" auf jeder angreifbaren Basis-Kachel
+    (`Galaxie.tsx`), eigener `targetSpyBase`-Zielzustand parallel zu `targetPirateBase` - Panel
+    zeigt bei Spionage-Zielen eine FESTE Flugzeit/Treibstoff-Anzeige statt der normalen
+    `galaxyPreview()`-API-Anfrage (nicht noetig, da distanzunabhaengig). Neuer Endpunkt
+    `POST /galaxy/pirate-base/spy`, `spyProbeTravelMs`/`spyProbeFuelCostPerProbe` neu im
+    `/data`-Bundle.
+  - Manuell End-to-End getestet (gleicher Testaccount): Forschung Spionage sichtbar entsperrt,
+    Spionagesonde baubar, Sondenflug inkl. fixer 5-Minuten-Anzeige und 50-Deuterium-Abzug pro Sonde,
+    Bericht bei Stufe 0 (nur Ressourcen, kein Flotten-/Verteidigungshinweis) UND bei Stufe 3 (Bereich
+    exakt nach Formel: 20 Leichte Jäger bei 70% Fuzz → "6-34", rechnerisch exakt bestätigt) beide
+    verifiziert, Rückflug/erneuter Versand nach Rückkehr funktioniert.
