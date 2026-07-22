@@ -308,8 +308,8 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   });
   state.buildingQueue = stillBuildingBuildings;
 
-  // Schiffsmodul-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_SHIP_MODULE_SLOTS) -
-  // eigener Slot, unabhaengig von der normalen Schiffs-Bauschlange (buildQueue).
+  // Schiffsmodul-Warteschlange abarbeiten (bis zu MAX_SHIP_MODULE_SLOTS parallele Eintraege) -
+  // eigene Slots, unabhaengig von der normalen Schiffs-Bauschlange (buildQueue).
   const stillBuildingShipModules = state.shipModuleQueue.filter((job) => {
     if (job.endTime <= now && job.moduleId) {
       state.shipModules[job.moduleId] = (state.shipModules[job.moduleId] || 0) + job.count;
@@ -564,11 +564,11 @@ export function startShipModuleUpgrade(state: PlayerState, moduleId: string): Ac
   if (!mod) return { ok: false, error: 'Unbekanntes Modul.' };
   const level = state.shipModules[moduleId] || 0;
   if (level >= mod.maxLevel) return { ok: false, error: 'Maximalstufe erreicht.' };
-  // Schiffs-Module teilen sich EINEN globalen Bauslot (MAX_SHIP_MODULE_SLOTS=1), unabhaengig von
+  // Schiffs-Module teilen sich MAX_SHIP_MODULE_SLOTS globale Bauplaetze, unabhaengig von
   // den 3 normalen Schiffs-Bauplaetzen (buildQueue) - konkurriert nicht mit dem eigentlichen
   // Schiffbau.
   if (state.shipModuleQueue.length >= MAX_SHIP_MODULE_SLOTS) {
-    return { ok: false, error: 'Es kann immer nur ein Schiffsmodul gleichzeitig gebaut werden.' };
+    return { ok: false, error: `Es können maximal ${MAX_SHIP_MODULE_SLOTS} Schiffsmodule gleichzeitig gebaut werden.` };
   }
 
   const nextLevel = level + 1;
@@ -609,11 +609,11 @@ export function startDefenseModuleUpgrade(state: PlayerState, moduleId: string):
   if (!mod) return { ok: false, error: 'Unbekanntes Modul.' };
   const level = state.shipModules[moduleId] || 0;
   if (level >= mod.maxLevel) return { ok: false, error: 'Maximalstufe erreicht.' };
-  // Verteidigungs-Module teilen sich EINEN globalen Bauslot (MAX_DEFENSE_MODULE_SLOTS=1),
+  // Verteidigungs-Module teilen sich MAX_DEFENSE_MODULE_SLOTS globale Bauplaetze,
   // eigenstaendig getrennt von der Schiffsmodul-Warteschlange und den 3 normalen
   // Verteidigungs-Bauplaetzen (defenseQueue).
   if (state.defenseModuleQueue.length >= MAX_DEFENSE_MODULE_SLOTS) {
-    return { ok: false, error: 'Es kann immer nur ein Verteidigungsmodul gleichzeitig gebaut werden.' };
+    return { ok: false, error: `Es können maximal ${MAX_DEFENSE_MODULE_SLOTS} Verteidigungsmodule gleichzeitig gebaut werden.` };
   }
 
   const nextLevel = level + 1;

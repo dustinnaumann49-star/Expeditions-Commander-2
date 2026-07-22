@@ -1110,3 +1110,9 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   25x→8x, Zeit-Multiplikator 300x→80x, Kosten-Wachstum pro Stufe 1.55→1.35, Zeit-Wachstum 1.4→1.25.
   Imperator-Modul-Fixkosten (hatte keine ableitbare `cost`) von 500/400/250 Mio. auf 50/40/25 Mio.
   gesenkt, Basis-Bauzeit von 7 auf 2 Tage.
+- Schiffs-/Verteidigungs-Modul-Bauplätze von je 1 auf je 3 erhöht (`MAX_SHIP_MODULE_SLOTS`/
+  `MAX_DEFENSE_MODULE_SLOTS` in `combatConstants.ts`) - passend zu den gesenkten Modul-Kosten/
+  -Bauzeiten, analog zu den 3 normalen Schiffs-/Verteidigungs-Bauplätzen. Fehlermeldungen in
+  `actions.ts` (`startShipModuleUpgrade`/`startDefenseModuleUpgrade`) nutzen jetzt die Konstante
+  statt eines hartkodierten "immer nur eins" - Client liest die Anzahl ohnehin dynamisch aus
+  `gameData.maxShipModuleSlots`/`maxDefenseModuleSlots`, keine UI-Anpassung nötig.

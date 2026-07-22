@@ -270,8 +270,11 @@ export const MAX_RESEARCH_SLOTS = 4;
 // Gebaeude teilen sich bewusst nur EINEN globalen Slot (siehe README) - kein Lane-System wie bei
 // Schiffen/Verteidigung/Forschung.
 export const MAX_BUILDING_SLOTS = 1;
-export const MAX_SHIP_MODULE_SLOTS = 1;
-export const MAX_DEFENSE_MODULE_SLOTS = 1;
+// Von 1 auf 3 angehoben (Nutzerentscheidung), damit mehrere Schiffs-/Verteidigungs-Module
+// gleichzeitig statt strikt nacheinander gebaut werden koennen - passend zu den gesenkten
+// Modul-Kosten/-Bauzeiten, analog zu den 3 normalen Bauplaetzen (MAX_BUILD_SLOTS/MAX_DEFENSE_SLOTS).
+export const MAX_SHIP_MODULE_SLOTS = 3;
+export const MAX_DEFENSE_MODULE_SLOTS = 3;
 // Reines Sicherheitsnetz gegen unbegrenztes Wachstum (kein Performance-Limit mehr, da die
 // Kampfberechnung jetzt in einem separaten Worker-Thread laeuft, siehe combatRunner.ts).
 // Grosszuegig bemessen, damit auch gemeinsame Multiplayer-Flotten (mehrere Spieler kombiniert
