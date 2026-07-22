@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
@@ -429,6 +430,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
 }
 
 function MessageTable({ messages, onOpen }: { messages: GameMessage[]; onOpen: (id: string) => void }) {
+  const navigate = useNavigate();
   if (messages.length === 0) {
     return <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine Einträge.</p>;
   }
@@ -441,17 +443,25 @@ function MessageTable({ messages, onOpen }: { messages: GameMessage[]; onOpen: (
         </tr>
       </thead>
       <tbody>
-        {messages.map((m) => (
-          <tr key={m.id} style={{ cursor: m.detail ? 'pointer' : 'default' }} onClick={() => m.detail && onOpen(m.id)}>
-            <td style={{ textAlign: 'left', fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-              {new Date(m.time).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-            </td>
-            <td style={{ textAlign: 'left' }}>
-              {m.text.length > 90 ? m.text.slice(0, 90) + '…' : m.text}
-              {m.detail && <span style={{ color: 'var(--accent-kristall)', fontSize: 11 }}> (Details)</span>}
-            </td>
-          </tr>
-        ))}
+        {messages.map((m) => {
+          const clickable = !!m.detail || !!m.galaxyLink;
+          const handleClick = () => {
+            if (m.detail) onOpen(m.id);
+            else if (m.galaxyLink) navigate(`/galaxie?system=${m.galaxyLink.system}`);
+          };
+          return (
+            <tr key={m.id} style={{ cursor: clickable ? 'pointer' : 'default' }} onClick={clickable ? handleClick : undefined}>
+              <td style={{ textAlign: 'left', fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                {new Date(m.time).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </td>
+              <td style={{ textAlign: 'left' }}>
+                {m.text.length > 90 ? m.text.slice(0, 90) + '…' : m.text}
+                {m.detail && <span style={{ color: 'var(--accent-kristall)', fontSize: 11 }}> (Details)</span>}
+                {!m.detail && m.galaxyLink && <span style={{ color: 'var(--accent-kristall)', fontSize: 11 }}> (Zur Position →)</span>}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

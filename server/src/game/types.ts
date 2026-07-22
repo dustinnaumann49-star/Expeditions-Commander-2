@@ -439,6 +439,10 @@ export interface GameMessage {
   time: number;
   text: string;
   detail: CombatDetail | FarmDetail | SpyReportDetail | null;
+  // Optionaler Direktsprung zu einer Galaxie-Position (z.B. "Piraten haben dich ausspioniert von
+  // Basis X" - siehe pushMessage() in messages.ts) - unabhaengig von `detail`, da nicht jede
+  // Nachricht mit Koordinatenbezug in eines der bestehenden Detail-Formate passt.
+  galaxyLink?: { system: number; position: number };
 }
 
 export interface Container {

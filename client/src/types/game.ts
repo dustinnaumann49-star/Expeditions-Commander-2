@@ -381,6 +381,7 @@ export interface GameMessage {
   time: number;
   text: string;
   detail: CombatDetail | FarmDetail | SpyReportDetail | null;
+  galaxyLink?: { system: number; position: number };
 }
 
 export interface Container {

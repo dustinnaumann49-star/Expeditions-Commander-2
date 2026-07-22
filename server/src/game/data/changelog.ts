@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Fix: Piraten-Spionage-Nachricht jetzt mit Sprung zur Position',
+    changes: [
+      'Wenn Piraten eure Basis ausspionieren, stand die Basis-Position bisher nur als reiner Text in der Nachricht - man musste sich die Koordinaten merken und selbst in der Galaxie-Ansicht suchen.',
+      'Die Nachricht ist jetzt anklickbar ("Zur Position →") und springt direkt zum passenden System in der Galaxie-Ansicht.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Balance: Durchschlag-Forschung (Overkill) abgeschwächt',
     changes: [
       'Bei voller Ausbaustufe (10) konnte Überschussschaden bisher zu 100% auf das nächste gleichartige Schiff überschwappen - kombiniert mit der Kaskaden-Reichweite von 5 Schiffen konnte ein einzelner starker Treffer so bis zu 5 Schiffe auf einen Schlag vernichten.',

@@ -5,7 +5,8 @@ export function pushMessage(
   state: PlayerState,
   type: 'kampf' | 'farm',
   text: string,
-  detail: CombatDetail | FarmDetail | SpyReportDetail | null = null
+  detail: CombatDetail | FarmDetail | SpyReportDetail | null = null,
+  galaxyLink?: { system: number; position: number }
 ) {
   state.messages.unshift({
     id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -13,6 +14,7 @@ export function pushMessage(
     time: Date.now(),
     text,
     detail,
+    galaxyLink,
   });
   // Nachrichtenliste nicht unbegrenzt wachsen lassen
   if (state.messages.length > 200) state.messages.length = 200;

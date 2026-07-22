@@ -1295,6 +1295,14 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     Piratenbasis-Position aus spioniert wurde, nicht was gesehen wurde (Spieler haben keine eigene
     "Spionage-Abwehr"-Forschung, die einen Detailgrad festlegen koennte). Aufgerufen aus `tick()`
     (`actions.ts`), zusammen mit `processSpyMissions()`.
+    **Bugfix (Juli 2026):** die Koordinaten in dieser Nachricht waren reiner Text, ohne Sprung zur
+    Galaxie-Position. `GameMessage` hat jetzt ein optionales `galaxyLink?: { system, position }`-
+    Feld (unabhaengig von `detail`, da nicht jede Nachricht mit Koordinatenbezug in eines der
+    bestehenden Detail-Formate passt) - `pushMessage()` in `messages.ts` nimmt es als 5. Parameter
+    entgegen. Die Nachrichten-Tabelle (`MessageTable` in `Nachrichten.tsx`) macht die Zeile
+    klickbar (`(Zur Position →)`-Hinweis statt `(Details)`) und navigiert per `useNavigate()` zu
+    `/galaxie?system=X`, exakt nach demselben Muster wie der "Zur Position in der Galaxie"-Button
+    in `RaidHilfe.tsx`.
   - **KI-Bots spionieren ebenfalls**: `maybeSpyOnPirateBase()` in `bot.ts` (baut bei Bedarf 2
     Sonden nach, schickt dann gelegentlich eine los), exakt nach dem `maybeAttackPirateBase()`-
     Muster.

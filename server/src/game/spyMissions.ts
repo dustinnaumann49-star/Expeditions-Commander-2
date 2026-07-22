@@ -128,6 +128,8 @@ export function maybeGeneratePirateSpyReport(state: PlayerState): void {
   pushMessage(
     state,
     'farm',
-    `⚠ Deine Basis wurde von einer Piratenbasis bei 1:${pos.system}:${pos.position} ausspioniert. Unbekannt, was dabei entdeckt wurde.`
+    `⚠ Deine Basis wurde von einer Piratenbasis bei 1:${pos.system}:${pos.position} ausspioniert. Unbekannt, was dabei entdeckt wurde.`,
+    null,
+    { system: pos.system, position: pos.position }
   );
 }
