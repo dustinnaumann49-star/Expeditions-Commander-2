@@ -387,6 +387,12 @@ client/
     "Kampfberichte", nicht "Farm-/Beuteberichte"). Elite-Bollwerk und Piratenadmiral nutzen dieses
     Muster BEWUSST NICHT (Nutzerentscheidung) - deren Multiplayer-Kampfberichte bleiben wie
     bisher pro Stunden-/10-Minuten-Check einzeln.
+    **Bugfix (Juli 2026):** `SkirmishList` in Nachrichten.tsx rendert `sk.playerResults` PRO
+    Welle jetzt durch `groupByOwner()` (dieselbe Funktion, die der unbatchte CombatDetail-Zweig
+    schon nutzt) - direkt nach der Umstellung auf Wellen-Sammelberichte landeten Verteidiger-,
+    Verstärker- und haltende Flotten bei Raids sonst alle in einer einzigen Tabelle "Eigene
+    Flotte" statt getrennt nach Besitzer (Name kommt aus `CombatUnitResult.ownerUsername`, siehe
+    homeShipIds/reinforcerStates/heldStates in raids.ts).
 
 34a. **Asteroiden-Felder: "reicher Fund"-Chance pro Stunden-Check** (`ASTEROID_RICH_FIND_CHANCE`
     in `economy.ts`, `runAsteroidRichFindCheck()` in `missions.ts`, Nutzerentscheidung Juli 2026)

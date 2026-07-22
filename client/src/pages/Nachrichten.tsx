@@ -293,7 +293,9 @@ function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSu
           <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
           <RewardTable rows={combatRewardRows(sk.rewards)} />
           <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
-          <UnitTable title="Eigene Flotte" units={sk.playerResults} />
+          {groupByOwner(sk.playerResults).map(([owner, units]) => (
+            <UnitTable key={owner} title={owner} units={units} />
+          ))}
         </div>
       ))}
     </div>

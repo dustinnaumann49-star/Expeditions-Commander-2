@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Fix: Raid-Wellenberichte zeigten alle Spieler-Flotten in einem Topf',
+    changes: [
+      'Seit der Umstellung auf gesammelte Wellen-Berichte (ein Bericht am Ende statt einer Nachricht pro Welle) landeten Verteidiger-, Verstärker- und haltende Flotten fälschlich alle zusammen in einer einzigen Tabelle "Eigene Flotte" - man konnte nicht mehr erkennen, wessen Schiffe was geleistet haben.',
+      'Jede Welle im Bericht zeigt jetzt wieder eine eigene Tabelle pro beteiligtem Spieler (mit Namen), plus haltende Flotten weiterhin mit "(haltende Flotte)"-Kennzeichnung - genau wie vor der Umstellung.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Reiche Asteroidenfunde in den Asteroiden-Feldern',
     changes: [
       'Bei jedem stündlichen Check während einer laufenden Mining-Mission besteht jetzt eine 8%-Chance auf einen "reichen Fund" - dabei verdoppelt sich der bis dahin gesammelte Ertrag (Metall/Kristall/Deuterium) der Mission.',
