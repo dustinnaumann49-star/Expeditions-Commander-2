@@ -1152,3 +1152,44 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   zählt mit - Verstärker-/Halte-Flotten anderer Spieler bleiben bewusst außen vor (würden sonst die
   eigene Unterstützung gegen einen selbst verschärfen), tragen im tatsächlichen Kampf aber weiterhin
   voll bei.
+- Neu: angreifbare Piratenbasen (Nutzerentscheidung) - komplett unabhängig vom Raid-System (das
+  generiert seine Gegnerflotte weiterhin frisch bei Wellen-Ankunft, siehe raids.ts, keine
+  Berührungspunkte). Piratenbasen bekommen einen eigenen, PERSISTENTEN Zustand (Flotte/
+  Verteidigung/Ressourcen wie ein Mini-KI-Spieler) statt zufällig generierter Gegner - Verluste UND
+  Beute wirken sich dauerhaft auf die Basis aus. Können NICHT zerstört werden, wachsen aber langsam
+  von selbst nach (Nutzerentscheidung).
+  - **Neue Datei `game/pirateBaseState.ts`**: gesamte Logik (Seeding, Wachstum, Angriff starten/
+    verarbeiten). Neuer Typ `PirateBaseState` (`types.ts`) - global, nicht an einen Nutzer gebunden,
+    eigene DB-Tabelle `pirate_bases` (`db.ts`, gleiches simples id/data_json-Muster wie
+    `galaxy_events`, aber ohne `delete` - Basen werden nie gelöscht).
+  - **`PIRATE_BASE_IDS`/`ACTIVE_PIRATE_BASE_IDS`** (`galaxyConstants.ts`): stabile Index-Ids für die
+    12 `PIRATE_BASES`-Koordinaten, aber bewusst nur die ERSTEN 4 aktiv/angreifbar ("erstmal mit 4
+    anfangen und schauen wie es läuft" - bei nur 2 Spielern + 2 KI-Bots wären 12 gleichzeitig zu
+    viel).
+  - **Wachstum** (`applyGrowth()`, lazy bei jedem `loadPirateBase()`): Ressourcen wachsen stündlich
+    linear, gedeckelt auf 24h Vorrat. Flotte/Verteidigung bekommen alle 3h einen kleinen Schub auf
+    einen rotierenden Typ (deterministisch nach ABSOLUTER Zeit via `Math.floor(now / INTERVAL)`,
+    nicht nach zuletzt verarbeitetem Zeitpunkt - eine lange nicht geladene Basis holt beim nächsten
+    Laden nicht alle verpassten Schübe auf einmal nach), gedeckelt pro Typ.
+  - **Angriff = Ein-Weg-Flug mit echtem Kampf bei Ankunft** (`PirateAttackDeployment`, neues
+    `PlayerState.pirateAttacks`-Array, strukturell wie `GalaxyEventTrip` aber mit `resolved` statt
+    `collected`): `startPirateBaseAttack()` deduziert Flotte/Treibstoff sofort (analog
+    `startHoldDeployment()`), `processPirateAttacks()` (aufgerufen aus `tick()` in `actions.ts`,
+    NACH `processRaidTimer()`) löst bei Ankunft den Kampf über `runCombatInWorker()` aus (identisches
+    Request-Format wie `missions.ts` `runHourlyCheck()`) und schreibt Überlebende zurück in
+    `PirateBaseState.fleet`/`.defense` - PERSISTENT, anders als bei normalen Sektor-Missionen, wo
+    NPC-Verluste nie gespeichert werden. Beute: `PIRATE_BASE_LOOT_PERCENT` (35%) der AKTUELL
+    gelagerten Basis-Ressourcen bei jedem erfolgreichen Angriff (auch wenn die Basis leer
+    vorgefunden wird - dann kampflos direkter Loot).
+  - **KI-Bots greifen automatisch an** (Nutzerentscheidung): `maybeAttackPirateBase()` in `bot.ts`,
+    exakt nach dem `maybeHoldAtHumans()`-Muster (kleine Zufallschance/Heartbeat, Fleet-Anteil,
+    Mindestgröße).
+  - **Client**: neue Kachel-UI in `Galaxie.tsx` (Machtwert-Anzeige aus `pirateBaseSummaries`,
+    "Angreifen"-Button, eigener `targetPirateBase`-Zielzustand parallel zu `targetUserId`/
+    `targetEvent`, gleiche Fleet-Auswahl-UI wiederverwendet). Neuer Endpunkt
+    `POST /galaxy/pirate-base/attack`, `GET /galaxy` liefert zusätzlich `pirateBaseSummaries`
+    (nur grobe Machtzahl, keine exakten Bestandszahlen - die gibt's erst im Kampfbericht).
+  - Manuell End-to-End getestet (lokaler Dev-Server, Testaccount): Basis-Machtwert-Berechnung exakt
+    verifiziert (5.889.510 = Summe aus `combatFleetPowerBase()` über die Seed-Flotte/-Verteidigung),
+    Angriffsflug inkl. Distanz/Flugzeit/Treibstoff-Vorschau, Kampfauflösung (korrekter Kampfbericht
+    mit allen 4 NPC-Einheitstypen), "bereits angreifend"-Sperre und Rückflug funktionieren.

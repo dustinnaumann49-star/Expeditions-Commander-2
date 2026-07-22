@@ -126,6 +126,27 @@ export interface GalaxyEventTrip {
   reward: GalaxyEventReward | null;
 }
 
+export interface PirateBaseSummary {
+  id: string;
+  system: number;
+  position: number;
+  power: number;
+}
+
+export interface PirateAttackDeployment {
+  id: string;
+  baseId: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  resolved: boolean;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -421,6 +442,7 @@ export interface PlayerState {
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[];
   eventTrips: GalaxyEventTrip[];
+  pirateAttacks: PirateAttackDeployment[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

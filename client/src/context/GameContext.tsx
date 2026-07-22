@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { updateServerTimeOffset } from '../lib/serverTime';
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary } from '../types/game';
 
 interface GameContextValue {
   gameData: GameData | null;
@@ -47,6 +47,7 @@ interface GameContextValue {
   galaxyOccupants: GalaxyOccupant[];
   ownGalaxyPosition: GalaxyPosition | null;
   pirateBases: GalaxyPosition[];
+  pirateBaseSummaries: PirateBaseSummary[];
   sektorPositions: SektorGalaxyPosition[];
   incomingDeployments: IncomingDeployment[];
   galaxyEvents: GalaxyEvent[];
@@ -55,6 +56,7 @@ interface GameContextValue {
   recallHold: (deploymentId: string) => Promise<void>;
   relocateBase: (system: number, position: number) => Promise<void>;
   claimGalaxyEvent: (eventId: string, ships: Record<string, number>) => Promise<void>;
+  attackPirateBase: (baseId: string, ships: Record<string, number>) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -70,6 +72,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [galaxyOccupants, setGalaxyOccupants] = useState<GalaxyOccupant[]>([]);
   const [ownGalaxyPosition, setOwnGalaxyPosition] = useState<GalaxyPosition | null>(null);
   const [pirateBases, setPirateBases] = useState<GalaxyPosition[]>([]);
+  const [pirateBaseSummaries, setPirateBaseSummaries] = useState<PirateBaseSummary[]>([]);
   const [sektorPositions, setSektorPositions] = useState<SektorGalaxyPosition[]>([]);
   const [incomingDeployments, setIncomingDeployments] = useState<IncomingDeployment[]>([]);
   const [galaxyEvents, setGalaxyEvents] = useState<GalaxyEvent[]>([]);
@@ -110,6 +113,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setGalaxyOccupants(res.occupants);
       setOwnGalaxyPosition(res.ownPosition);
       setPirateBases(res.pirateBases);
+      setPirateBaseSummaries(res.pirateBaseSummaries);
       setSektorPositions(res.sektorPositions);
       setIncomingDeployments(res.incomingDeployments);
       setGalaxyEvents(res.events);
@@ -220,6 +224,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     galaxyOccupants,
     ownGalaxyPosition,
     pirateBases,
+    pirateBaseSummaries,
     sektorPositions,
     incomingDeployments,
     galaxyEvents,
@@ -228,6 +233,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     recallHold: (deploymentId) => run(() => api.recallHold(deploymentId)),
     relocateBase: (system, position) => run(() => api.relocateBase(system, position)),
     claimGalaxyEvent: (eventId, ships) => run(() => api.claimGalaxyEvent(eventId, ships)),
+    attackPirateBase: (baseId, ships) => run(() => api.attackPirateBase(baseId, ships)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

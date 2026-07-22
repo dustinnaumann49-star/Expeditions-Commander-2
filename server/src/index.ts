@@ -5,6 +5,7 @@ import { authRouter } from './auth/routes.js';
 import { gameRouter } from './game/routes.js';
 import { runGlobalHeartbeat } from './game/heartbeat.js';
 import { ensureBotUsers } from './game/bot.js';
+import { ensurePirateBases } from './game/pirateBaseState.js';
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -43,6 +44,12 @@ app.listen(PORT, () => {
   // die urspruengliche Performance-Notmassnahme (Bots entfernt) ist mit der neuen Hardware
   // nicht mehr noetig.
   ensureBotUsers().catch((err) => console.error('ensureBotUsers-Fehler:', err));
+  // Angreifbare Piratenbasen einmalig anlegen, falls noch nicht vorhanden (siehe game/pirateBaseState.ts).
+  try {
+    ensurePirateBases();
+  } catch (err) {
+    console.error('ensurePirateBases-Fehler:', err);
+  }
 
   // Interner Taktgeber: laeuft direkt im Node-Prozess, sobald der Server steht - keine externe
   // Abhaengigkeit noetig. Setzt voraus, dass der Prozess durchgehend laeuft (Render Starter-Tarif+),

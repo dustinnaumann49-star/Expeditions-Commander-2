@@ -6,7 +6,7 @@ import { api } from '../api/client';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip } from '../types/game';
+import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip, PirateBaseSummary, PirateAttackDeployment } from '../types/game';
 
 function deploymentStatus(d: GalaxyDeployment, now: number): { label: string; color: string } {
   if (d.recalled) {
@@ -36,6 +36,7 @@ export function GalaxiePage() {
     galaxyOccupants,
     ownGalaxyPosition,
     pirateBases,
+    pirateBaseSummaries,
     sektorPositions,
     incomingDeployments,
     galaxyEvents,
@@ -46,6 +47,7 @@ export function GalaxiePage() {
     recallMission,
     relocateBase,
     claimGalaxyEvent,
+    attackPirateBase,
     error,
   } = useGame();
   const [, forceTick] = useState(0);
@@ -53,6 +55,7 @@ export function GalaxiePage() {
   const [system, setSystem] = useState<number | null>(null);
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
   const [targetEvent, setTargetEvent] = useState<GalaxyEvent | null>(null);
+  const [targetPirateBase, setTargetPirateBase] = useState<PirateBaseSummary | null>(null);
   const [relocateTarget, setRelocateTarget] = useState<{ system: number; position: number } | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [preview, setPreview] = useState<{ distance: number; durationMs: number; fuelCost: number } | null>(null);
@@ -61,6 +64,7 @@ export function GalaxiePage() {
   const [detailMission, setDetailMission] = useState<Mission | null>(null);
   const [detailIncoming, setDetailIncoming] = useState<IncomingDeployment | null>(null);
   const [detailEventTrip, setDetailEventTrip] = useState<GalaxyEventTrip | null>(null);
+  const [detailPirateAttack, setDetailPirateAttack] = useState<PirateAttackDeployment | null>(null);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -85,7 +89,7 @@ export function GalaxiePage() {
   }, [ownGalaxyPosition, system]);
 
   useEffect(() => {
-    if (targetUserId === null && !targetEvent) {
+    if (targetUserId === null && !targetEvent && !targetPirateBase) {
       setPreview(null);
       return;
     }
@@ -96,7 +100,11 @@ export function GalaxiePage() {
     }
     setPreviewLoading(true);
     const t = setTimeout(() => {
-      const target = targetEvent ? { targetPosition: { system: targetEvent.system, position: targetEvent.position } } : { targetUserId: targetUserId! };
+      const target = targetEvent
+        ? { targetPosition: { system: targetEvent.system, position: targetEvent.position } }
+        : targetPirateBase
+        ? { targetPosition: { system: targetPirateBase.system, position: targetPirateBase.position } }
+        : { targetUserId: targetUserId! };
       api
         .galaxyPreview(selection, target)
         .then(setPreview)
@@ -104,7 +112,7 @@ export function GalaxiePage() {
         .finally(() => setPreviewLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [targetUserId, targetEvent, selection]);
+  }, [targetUserId, targetEvent, targetPirateBase, selection]);
 
   if (!gameData || !state || system === null) return <PageSkeleton />;
 
@@ -119,7 +127,11 @@ export function GalaxiePage() {
   const ownedShips = gameData.ships.filter((s) => (state.fleet[s.id] || 0) > 0);
 
   const totalSelected = Object.values(selection).reduce((a, b) => a + (b || 0), 0);
-  const canSend = (targetUserId !== null || !!targetEvent) && totalSelected > 0 && !!preview && preview.fuelCost <= state.resources.deuterium;
+  const canSend =
+    (targetUserId !== null || !!targetEvent || !!targetPirateBase) &&
+    totalSelected > 0 &&
+    !!preview &&
+    preview.fuelCost <= state.resources.deuterium;
   const canRelocate = !!relocateTarget && state.resources.dm >= gameData.relocateBaseCostDm;
 
   return (
@@ -157,6 +169,8 @@ export function GalaxiePage() {
           {positions.map((pos) => {
             const occ = occupantsInSystem.find((o) => o.position === pos);
             const isPirateBase = pirateBasesInSystem.some((b) => b.position === pos);
+            const pirateBaseSummary = pirateBaseSummaries.find((b) => b.system === system && b.position === pos);
+            const alreadyAttackingBase = pirateBaseSummary && state.pirateAttacks.some((a) => a.baseId === pirateBaseSummary.id);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
             const event = eventsInSystem.find((e) => e.position === pos);
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
@@ -189,7 +203,34 @@ export function GalaxiePage() {
                 ) : sektor ? (
                   <p style={{ color: 'var(--accent-deut)', fontWeight: 600 }}>🛰️ {sektor.name}</p>
                 ) : isPirateBase ? (
-                  <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>
+                  <>
+                    <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>
+                    {pirateBaseSummary ? (
+                      <>
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
+                          Machtwert: {pirateBaseSummary.power.toLocaleString('de-DE')}
+                        </p>
+                        {alreadyAttackingBase ? (
+                          <p style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Flotte bereits unterwegs</p>
+                        ) : (
+                          <button
+                            className="qty-btn"
+                            onClick={() => {
+                              setTargetPirateBase(pirateBaseSummary);
+                              setTargetUserId(null);
+                              setTargetEvent(null);
+                              setRelocateTarget(null);
+                              setSelection({});
+                            }}
+                          >
+                            Angreifen
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Nicht angreifbar</p>
+                    )}
+                  </>
                 ) : event ? (
                   <>
                     <p style={{ fontWeight: 600, color: 'var(--rf-gold)' }}>
@@ -267,11 +308,13 @@ export function GalaxiePage() {
         </div>
       )}
 
-      {((targetUserId !== null && targetOccupant) || targetEvent) && (
+      {((targetUserId !== null && targetOccupant) || targetEvent || targetPirateBase) && (
         <div className="queue-box" style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>
             {targetEvent
               ? `Bergungsflotte zu ${gameData.galaxyEventTypes[targetEvent.type]?.label || targetEvent.type} (1:${targetEvent.system}:${targetEvent.position}) schicken`
+              : targetPirateBase
+              ? `Angriffsflotte zur Piratenbasis (1:${targetPirateBase.system}:${targetPirateBase.position}, Machtwert ${targetPirateBase.power.toLocaleString('de-DE')}) schicken`
               : `Flotte zu ${targetOccupant!.username} (1:${targetOccupant!.system}:${targetOccupant!.position}) schicken`}
           </h3>
           {ownedShips.length === 0 ? (
@@ -318,6 +361,7 @@ export function GalaxiePage() {
               onClick={() => {
                 setTargetUserId(null);
                 setTargetEvent(null);
+                setTargetPirateBase(null);
                 setSelection({});
               }}
             >
@@ -330,6 +374,9 @@ export function GalaxiePage() {
                 if (targetEvent) {
                   claimGalaxyEvent(targetEvent.id, selection).then(refreshGalaxy);
                   setTargetEvent(null);
+                } else if (targetPirateBase) {
+                  attackPirateBase(targetPirateBase.id, selection).then(refreshGalaxy);
+                  setTargetPirateBase(null);
                 } else {
                   holdFleet(targetUserId!, selection).then(refreshGalaxy);
                   setTargetUserId(null);
@@ -337,7 +384,7 @@ export function GalaxiePage() {
                 setSelection({});
               }}
             >
-              {targetEvent ? 'Flotte losschicken (Bergung, kehrt automatisch zurück)' : 'Flotte losschicken (Halten)'}
+              {targetEvent ? 'Flotte losschicken (Bergung, kehrt automatisch zurück)' : targetPirateBase ? 'Angriff starten (kehrt automatisch zurück)' : 'Flotte losschicken (Halten)'}
             </button>
           </div>
         </div>
@@ -347,6 +394,7 @@ export function GalaxiePage() {
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Flottenbewegungen</h3>
         {state.galaxyDeployments.length === 0 &&
         state.eventTrips.length === 0 &&
+        state.pirateAttacks.length === 0 &&
         state.missions.length === 0 &&
         parties.filter((op) => op.status === 'departed').length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine eigenen Flotten unterwegs, haltend oder im Einsatz.</p>
@@ -452,6 +500,24 @@ export function GalaxiePage() {
                 </div>
               );
             })}
+            {state.pirateAttacks.map((a) => {
+              const label = !a.resolved ? 'unterwegs' : 'Rückflug';
+              const color = !a.resolved ? 'var(--accent-kristall)' : 'var(--text-dim)';
+              const timeText = !a.resolved ? `Ankunft in ${formatTime(a.arriveTime - now)}` : `Zu Hause in ${formatTime(a.returnTime - now)}`;
+              return (
+                <div className="queue-item" key={a.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                  <div className="progress-row">
+                    <span>
+                      <span className="lore-title" onClick={() => setDetailPirateAttack(a)}>
+                        Angriffsflug zur Piratenbasis (1:{a.targetSystem}:{a.targetPosition}) · Von 1:{a.originSystem}:{a.originPosition}
+                      </span>{' '}
+                      <span style={{ color, fontWeight: 600 }}>[{label}]</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{timeText}</span>
+                </div>
+              );
+            })}
           </>
         )}
       </div>
@@ -517,6 +583,15 @@ export function GalaxiePage() {
       {detailIncoming && (
         <InfoModal title={`Flotte von ${detailIncoming.ownerUsername}`} onClose={() => setDetailIncoming(null)}>
           <ShipList ships={detailIncoming.ships} shipName={shipName} />
+        </InfoModal>
+      )}
+
+      {detailPirateAttack && (
+        <InfoModal title={`Angriffsflug: Piratenbasis 1:${detailPirateAttack.targetSystem}:${detailPirateAttack.targetPosition}`} onClose={() => setDetailPirateAttack(null)}>
+          <ShipList ships={detailPirateAttack.ships} shipName={shipName} />
+          <p style={{ fontSize: 13, marginTop: 8 }}>
+            {detailPirateAttack.resolved ? 'Kampf bereits ausgetragen - Details siehe Kampfbericht in den Nachrichten.' : 'Noch im Anflug.'}
+          </p>
         </InfoModal>
       )}
 

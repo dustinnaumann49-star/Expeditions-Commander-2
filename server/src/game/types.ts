@@ -107,6 +107,43 @@ export interface GalaxyEventTrip {
   reward: GalaxyEventReward | null; // null, falls beim Eintreffen bereits vergriffen
 }
 
+// ===== Piratenbasen (angreifbar) =====
+// Global, nicht an einen Nutzer gebunden (eigene DB-Tabelle pirate_bases, siehe db.ts/
+// pirateBaseState.ts) - ein Mini-Pendant zu einem KI-Spieler-PlayerState, aber ohne Gebaeude/
+// Forschung/Warteschlangen: nur Flotte, Verteidigung und Ressourcen, die man erobern/pluendern
+// kann. Kann NICHT zerstoert werden (Nutzerentscheidung) - waechst stattdessen langsam von selbst
+// nach (siehe growPirateBase() in pirateBaseState.ts), `lastGrowthAt` traegt den Zeitpunkt der
+// zuletzt angewendeten Wachstums-Hochrechnung (analog zu PlayerState.lastUpdate).
+export interface PirateBaseState {
+  id: string; // Index-Id aus PIRATE_BASE_IDS (galaxyConstants.ts)
+  system: number;
+  position: number;
+  fleet: Record<string, number>;
+  defense: Record<string, number>;
+  resources: { metall: number; kristall: number; deuterium: number };
+  lastGrowthAt: number;
+}
+
+// Ein-Weg-Angriffsflug (Hin, EIN Kampf bei Ankunft, automatischer Rueckflug) gegen eine
+// PirateBaseState - strukturell wie GalaxyEventTrip oben, aber mit echtem Kampf statt reiner
+// Beute-Abholung. `resolved` wird bei Ankunft gesetzt (Kampf ist dann bereits verarbeitet und im
+// Nachrichtenverlauf verschickt), unabhaengig vom Rueckflug - Ueberlebende kehren erst bei
+// `returnTime` tatsaechlich in state.fleet zurueck (siehe processPirateAttacks() in
+// pirateBaseState.ts).
+export interface PirateAttackDeployment {
+  id: string;
+  baseId: string;
+  ships: Record<string, number>; // wird bei Ankunft auf die Ueberlebenden reduziert
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  resolved: boolean;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -544,6 +581,7 @@ export interface PlayerState {
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   eventTrips: GalaxyEventTrip[]; // eigene, laufend zu Galaxie-Ereignissen unterwegs befindliche Flotten
+  pirateAttacks: PirateAttackDeployment[]; // eigene, laufend gegen Piratenbasen unterwegs befindliche Angriffsfluege
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

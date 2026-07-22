@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -104,6 +104,7 @@ export const api = {
       ownPosition: GalaxyPosition | null;
       occupants: GalaxyOccupant[];
       pirateBases: GalaxyPosition[];
+      pirateBaseSummaries: PirateBaseSummary[];
       sektorPositions: SektorGalaxyPosition[];
       incomingDeployments: IncomingDeployment[];
       events: GalaxyEvent[];
@@ -122,4 +123,6 @@ export const api = {
     request<PlayerState>('/game/galaxy/relocate', { method: 'POST', body: JSON.stringify({ system, position }) }),
   claimGalaxyEvent: (eventId: string, ships: Record<string, number>) =>
     request<PlayerState>('/game/galaxy/event/claim', { method: 'POST', body: JSON.stringify({ eventId, ships }) }),
+  attackPirateBase: (baseId: string, ships: Record<string, number>) =>
+    request<PlayerState>('/game/galaxy/pirate-base/attack', { method: 'POST', body: JSON.stringify({ baseId, ships }) }),
 };

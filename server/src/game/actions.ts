@@ -9,6 +9,7 @@ import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SL
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
+import { processPirateAttacks } from './pirateBaseState.js';
 import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
@@ -370,6 +371,9 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   // Missionen (Farmen/Kampf) und Basis-Raids nachholen
   await processMissions(state);
   await processRaidTimer(state);
+  // Angriffsfluege gegen Piratenbasen (siehe pirateBaseState.ts) - komplett unabhaengig vom
+  // normalen Raid-System, das weiterhin unveraendert oben in processRaidTimer laeuft.
+  await processPirateAttacks(state);
   // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
   // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
   // damit Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene

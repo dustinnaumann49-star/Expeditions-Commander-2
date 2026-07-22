@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Angreifbare Piratenbasen',
+    changes: [
+      'Piratenbasen sind ab sofort mehr als nur Startpunkte für Raids - 4 der 12 Basen in der Galaxie haben jetzt eine echte, dauerhafte Flotte, Verteidigung und Ressourcen, ganz wie ein Mitspieler.',
+      'In der Galaxie-Ansicht zeigt jede angreifbare Basis einen Machtwert an - schickt eine Flotte hin (genau wie beim "Halten"), sie kämpft bei Ankunft gegen die echte Basis-Besatzung und kehrt danach automatisch zurück.',
+      'Bei einem erfolgreichen Angriff gibt es Beute (ein Teil der aktuell gelagerten Ressourcen der Basis) UND die Verluste bei Flotte/Verteidigung der Basis bleiben dauerhaft bestehen - ihr schwächt die Basis wirklich.',
+      'Die Basen können nicht endgültig zerstört werden, wachsen aber von selbst langsam nach (Ressourcen und ab und zu neue Schiffe/Verteidigung) - lohnt sich also, hin und wieder vorbeizuschauen.',
+      'KI-Vega und KI-Nyx greifen die Basen ebenfalls gelegentlich von selbst an.',
+      'Ganz unabhängig von den normalen Piratenraids auf eure Heimatbasis - die laufen exakt wie bisher weiter.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Belohnungs-Bonus für große Flotten + Raid-Balance korrigiert',
     changes: [
       'Bisher hing die Beute bei Missionen komplett von Sektor-Stufe/Sieges-Serie/Zufall ab - wie viele Schiffe ihr tatsächlich losgeschickt habt, machte für die Belohnung selbst keinen Unterschied (nur für die Gegnerstärke).',

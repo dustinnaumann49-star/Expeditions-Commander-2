@@ -37,6 +37,18 @@ export const PIRATE_BASES: GalaxyPosition[] = [
   { system: 49, position: 6 },
 ];
 
+// Stabile Ids fuer PIRATE_BASES per Index (fuer PirateBaseState-Persistenz, siehe
+// pirateBaseState.ts) - rein positionsbasiert, KEINE eigene Nutzer-/DB-Identitaet.
+export const PIRATE_BASE_IDS: string[] = PIRATE_BASES.map((_, i) => `pb_${i}`);
+
+// Nutzerentscheidung (Juli 2026): Piratenbasen bekommen einen eigenen, angreifbaren Zustand
+// (Flotte/Verteidigung/Ressourcen wie ein Mini-KI-Spieler, siehe pirateBaseState.ts) - koennen
+// nicht zerstoert werden, wachsen aber langsam nach. Bewusst nur eine TEILMENGE der 12 Positionen
+// aktiv/angreifbar ("erstmal mit 4 anfangen und schauen wie es laeuft" - bei nur 2 Spielern + 2
+// KI-Bots waeren 12 gleichzeitig zu viel). Die uebrigen Positionen bleiben reine Raid-Ursprungs-
+// Koordinaten ohne eigenen Zustand, genau wie bisher.
+export const ACTIVE_PIRATE_BASE_IDS: string[] = PIRATE_BASE_IDS.slice(0, 4);
+
 // Repraesentative Flottengeschwindigkeit fuer die Flugzeit-Berechnung eines Raids - die
 // tatsaechliche Schiffszusammensetzung wird erst beim Eintreffen gewuerfelt (siehe combat.ts
 // generateFallbackFleet), daher ein fester Mittelwert statt der "langsamstes Schiff"-Regel, die

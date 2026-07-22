@@ -13,6 +13,7 @@ import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, c
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
+import { listActivePirateBaseSummaries, startPirateBaseAttack } from './pirateBaseState.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass } from './classActions.js';
@@ -186,6 +187,9 @@ gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
       ownPosition: state.galaxyPosition,
       occupants: listGalaxyOccupants(),
       pirateBases: PIRATE_BASES,
+      // Angreifbare Piratenbasen (siehe pirateBaseState.ts) - nur eine grobe Machtzahl, keine
+      // exakten Bestandszahlen (die bekommt man erst per Kampfbericht nach einem Angriff zu sehen).
+      pirateBaseSummaries: listActivePirateBaseSummaries(),
       sektorPositions,
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
       events: listActiveGalaxyEvents(),
@@ -263,6 +267,14 @@ gameRouter.post('/galaxy/event/claim', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'eventId und ships erforderlich.' });
   }
   handleAction(req, res, (state) => startEventClaim(state, eventId, ships));
+});
+
+gameRouter.post('/galaxy/pirate-base/attack', (req: AuthedRequest, res) => {
+  const { baseId, ships } = req.body ?? {};
+  if (typeof baseId !== 'string' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'baseId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => startPirateBaseAttack(state, baseId, ships));
 });
 
 // ---- Sektor / Missionen ----

@@ -8,6 +8,8 @@ import { sendFleet } from './missions.js';
 import { listMyGroupOperations, respondToGroupOperation, startGroupOperation, createGroupOperation } from './groupOps.js';
 import { startHoldDeployment } from './galaxy.js';
 import { setPlayerClass } from './classActions.js';
+import { startPirateBaseAttack } from './pirateBaseState.js';
+import { ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import type { PlayerState } from './types.js';
 
 // Namen der KI-Mitspieler - bei Bedarf hier anpassen/erweitern, bevor der Server das erste Mal
@@ -187,6 +189,29 @@ function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
   }
 }
 
+// Piratenbasen greifen laut Nutzerentscheidung auch die KI-Bots automatisch an (siehe
+// pirateBaseState.ts) - dieselbe "kleine Zufallschance pro Heartbeat, nur falls dort nicht schon
+// eine eigene Flotte unterwegs ist"-Logik wie maybeHoldAtHumans oben, nur mit einem echten
+// Angriffsflug statt einer haltenden Verstaerkung.
+function maybeAttackPirateBase(state: PlayerState): void {
+  for (const baseId of ACTIVE_PIRATE_BASE_IDS) {
+    const alreadyAttacking = state.pirateAttacks.some((a) => a.baseId === baseId);
+    if (alreadyAttacking) continue;
+    if (Math.random() > 0.1) continue;
+
+    const selection: Record<string, number> = {};
+    let total = 0;
+    for (const id of ['leicht', 'schwer', 'kreuzer']) {
+      const take = Math.floor((state.fleet[id] || 0) * 0.15);
+      if (take > 0) {
+        selection[id] = take;
+        total += take;
+      }
+    }
+    if (total >= 5) startPirateBaseAttack(state, baseId, selection);
+  }
+}
+
 /**
  * Ein "Zug" eines KI-Spielers - wird im globalen Heartbeat (heartbeat.ts) fuer jeden
  * Bot-Account nach der normalen Zeit-Verarbeitung (Missionen/Raids) aufgerufen. Jeder
@@ -204,6 +229,7 @@ export async function runBotTurn(state: PlayerState, allUsers: { id: number; use
   maybeSendMiningFleet(state);
   await maybeHandleGroupOps(state, humanUserIds);
   maybeHoldAtHumans(state, humanUserIds);
+  maybeAttackPirateBase(state);
 }
 
 export function isBotUserId(userId: number): boolean {
