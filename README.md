@@ -1116,3 +1116,9 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   `actions.ts` (`startShipModuleUpgrade`/`startDefenseModuleUpgrade`) nutzen jetzt die Konstante
   statt eines hartkodierten "immer nur eins" - Client liest die Anzahl ohnehin dynamisch aus
   `gameData.maxShipModuleSlots`/`maxDefenseModuleSlots`, keine UI-Anpassung nötig.
+- Baulimits (`maxCount`) der Spezialschiffe angehoben (Nutzerwunsch, explizit als finale, harte
+  Obergrenze gedacht - siehe Kommentar in `ships.ts`): Imperator 2→6, Salvenjäger 60→150,
+  Salvenkreuzer 30→90, Salvendreadnought 16→30. Pirat/NPC-Generierung bewusst NICHT angefasst -
+  die schließt diese Schiffe ohnehin unabhängig vom `maxCount` über `specialOnly`/`unique`/
+  `MULTI_TARGET_VOLLEY_SHIPS` aus (`combat.ts` `generatePiratenFleet`/`generateFallbackFleet`),
+  das war eine bewusste, separate Designentscheidung und bleibt unverändert.

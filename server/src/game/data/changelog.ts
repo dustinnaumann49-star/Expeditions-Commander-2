@@ -17,6 +17,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Der Imperator als teuerstes Modul im Spiel ist besonders stark betroffen: Stufe 1 kostete bisher 500 Mio. Metall / 400 Mio. Kristall / 250 Mio. Deuterium bei 7 Tagen Basis-Bauzeit - jetzt 50 Mio. / 40 Mio. / 25 Mio. bei 2 Tagen Basis-Bauzeit.',
       'Gebäude-Module (im Forschungsbereich) sind von dieser Anpassung nicht betroffen, nur Schiffe/Verteidigung in der Werft.',
       'Zusätzlich: Bauplätze für Schiffs- und Verteidigungs-Module von je 1 auf je 3 erhöht - es können jetzt bis zu drei Module gleichzeitig gebaut werden, statt strikt nacheinander warten zu müssen.',
+      'Baulimits der Spezialschiffe angehoben: Imperator 2→6, Salvenjäger 60→150, Salvenkreuzer 30→90, Salvendreadnought 16→30.',
     ],
   },
   {

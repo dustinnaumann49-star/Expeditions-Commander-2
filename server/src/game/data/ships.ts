@@ -8,7 +8,13 @@ import type { ShipDefinition } from '../types.js';
 // Eigene Schiffe ohne OGame-Vorbild (Sandronator, Mining-Schiff, Begleitschiff, Imperator,
 // Salvenschiffe) wurden sinngemaess an die naechstliegende OGame-Klasse angepasst (z.B.
 // Mining-Schiff wie ein Grosser Transporter, Imperator so extrem langsam wie der Todesstern).
-export const SHIPS: ShipDefinition[] = 
+//
+// maxCount von Imperator/Salvenschiffen (Nutzerentscheidung, explizit als HARTE Grenze gewuenscht):
+// Imperator 6, Salvenjaeger 150, Salvenkreuzer 90, Salvendreadnought 30. Diese Zahlen sind
+// bewusst final festgelegt - NICHT ohne erneute, ausdrueckliche Nutzer-Zustimmung weiter erhoehen,
+// da die Mehrfachziel-Salve-Mechanik (MULTI_TARGET_POWER_CORRECTION in combat.ts) auf diese
+// Obergrenzen kalibriert ist.
+export const SHIPS: ShipDefinition[] =
 [
   { id:"leicht", name:"Leichter Jäger", img:"ships/leichter_jaeger.png", lore:"Der Leichte Jäger war das erste Schiff, das die Werften am Fließband produzierten – schnell gebaut, schnell verschlissen. Piloten nennen ihn respektlos die 'Blechdose', doch in Schwärmen zu Hunderten wird aus der Blechdose eine Wand aus Stahl.", tier:1, buildTime:4,
     cost:{metall:90000, kristall:30000, deuterium:0}, stats:{waffen:1500, schild:300, panzerung:120000}, speed:12500, fuelConsumption:3, driveType:"rakete" },
@@ -32,7 +38,7 @@ export const SHIPS: ShipDefinition[] =
     cost:{metall:8500, kristall:5000, deuterium:1500}, stats:{waffen:0, schild:2200, panzerung:50500}, speed:7500, fuelConsumption:6, driveType:"rakete" },
   { id:"begleitschiff", name:"Begleitschiff", img:"ships/begleitschiff.png", lore:"Das Begleitschiff wurde entwickelt, um Mining-Flotten auf ihren Routen zu eskortieren, nachdem Piratenüberfälle auf unbewaffnete Erntetrupps zur Regel wurden. Es kämpft selten allein, sondern immer im Schatten der Schiffe, die es beschützt.", tier:0.5, buildTime:6.67,
     cost:{metall:15000, kristall:6000, deuterium:2000}, stats:{waffen:350, schild:60, panzerung:8500}, speed:12000, fuelConsumption:4, driveType:"rakete" },
-  { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:2,
+  { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:6,
     specialOnly:true, teileCost:{waffen:1000, schild:1000, panzerung:1000},
     // Werte deutlich gesenkt (Nutzerentscheidung: die vorherigen 5.000.000/2.500.000/12.000.000
     // Waffen/Schild/Panzerung waren zu dominant - der Imperator teilte allein in 4 Runden ueber
@@ -42,10 +48,10 @@ export const SHIPS: ShipDefinition[] =
     // aber sein Waffenschaden liegt jetzt nur noch bei etwa dem 10-fachen des Salvendreadnought
     // statt dem ~100-fachen zuvor - andere Schiffe muessen wieder mitkaempfen.
     stats:{waffen:500000, schild:400000, panzerung:3000000}, speed:100, fuelConsumption:40, driveType:"hyperraum" },
-  { id:"salvenjaeger", name:"Salvenjäger", img:"ships/salvenjaeger.jpg", lore:"Der Salvenjäger trägt ein experimentelles Zielerfassungs-Array, das mehrere schwache Ziele gleichzeitig erfasst, statt sie nacheinander abzuarbeiten. Gegen Schwärme aus Jägern verwandelt sich ein einzelner Treffer in ein ganzes Salvenfeuer.", tier:2.5, buildTime:30, maxCount:60,
+  { id:"salvenjaeger", name:"Salvenjäger", img:"ships/salvenjaeger.jpg", lore:"Der Salvenjäger trägt ein experimentelles Zielerfassungs-Array, das mehrere schwache Ziele gleichzeitig erfasst, statt sie nacheinander abzuarbeiten. Gegen Schwärme aus Jägern verwandelt sich ein einzelner Treffer in ein ganzes Salvenfeuer.", tier:2.5, buildTime:30, maxCount:150,
     cost:{metall:1600000, kristall:1000000, deuterium:400000}, stats:{waffen:9000, schild:250, panzerung:70000}, speed:12500, fuelConsumption:10, driveType:"rakete" },
-  { id:"salvenkreuzer", name:"Salvenkreuzer", img:"ships/salvenkreuzer.jpg", lore:"Der Salvenkreuzer ist die Weiterentwicklung des Salvenjägers für schwerere Ziele. Seine Feuerleitzentrale kann mehrere Kreuzer-Klasse-Schiffe zeitgleich anvisieren und abfeuern, was ganze Formationen binnen Sekunden auseinanderreißt.", tier:3.5, buildTime:60, maxCount:30,
+  { id:"salvenkreuzer", name:"Salvenkreuzer", img:"ships/salvenkreuzer.jpg", lore:"Der Salvenkreuzer ist die Weiterentwicklung des Salvenjägers für schwerere Ziele. Seine Feuerleitzentrale kann mehrere Kreuzer-Klasse-Schiffe zeitgleich anvisieren und abfeuern, was ganze Formationen binnen Sekunden auseinanderreißt.", tier:3.5, buildTime:60, maxCount:90,
     cost:{metall:4000000, kristall:3000000, deuterium:1400000}, stats:{waffen:32000, schild:1200, panzerung:250000}, speed:10000, fuelConsumption:18, driveType:"impuls" },
-  { id:"salvendreadnought", name:"Salvendreadnought", img:"ships/salvendreadnought.jpg", lore:"Der Salvendreadnought gilt als teuerster und seltenster je gebauter Schiffstyp. Seine Existenz wird von den meisten Werften bestritten, doch wer ihn im Gefecht gesehen hat, berichtet, wie er halbe Elite-Flotten in einer einzigen koordinierten Salve zerlegt.", tier:5.5, buildTime:120, maxCount:16,
+  { id:"salvendreadnought", name:"Salvendreadnought", img:"ships/salvendreadnought.jpg", lore:"Der Salvendreadnought gilt als teuerster und seltenster je gebauter Schiffstyp. Seine Existenz wird von den meisten Werften bestritten, doch wer ihn im Gefecht gesehen hat, berichtet, wie er halbe Elite-Flotten in einer einzigen koordinierten Salve zerlegt.", tier:5.5, buildTime:120, maxCount:30,
     cost:{metall:9000000, kristall:7600000, deuterium:4000000}, stats:{waffen:52000, schild:2200, panzerung:500000}, speed:6000, fuelConsumption:25, driveType:"hyperraum" }
 ];
