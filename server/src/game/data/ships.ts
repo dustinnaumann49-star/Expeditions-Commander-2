@@ -44,7 +44,7 @@ export const SHIPS: ShipDefinition[] =
   // hier angegebenen speed/fuelConsumption-Werte sind daher nur Platzhalter (falls die Sonde je
   // ausversehen in eine normale Flotte gemischt und auf eine Distanz-Mission geschickt wird),
   // fuer echte Spionagefluege irrelevant. Wird nie zerstoert (keine Gegenwehr durch die Basis).
-  { id:"spionagesonde", name:"Spionagesonde", img:"ships/spionagesonde.png", lore:"Die Spionagesonde ist unbewaffnet und für den Kampf denkbar ungeeignet - dafür tastet sie mit passiven Sensoren jede Basis ab, ohne selbst entdeckt zu werden. Je besser die Auswertungstechnik, desto mehr verrät ein einziger Vorbeiflug.", tier:0.25, buildTime:5,
+  { id:"spionagesonde", name:"Spionagesonde", img:"ships/spionagesonde.jpg", lore:"Die Spionagesonde ist unbewaffnet und für den Kampf denkbar ungeeignet - dafür tastet sie mit passiven Sensoren jede Basis ab, ohne selbst entdeckt zu werden. Je besser die Auswertungstechnik, desto mehr verrät ein einziger Vorbeiflug.", tier:0.25, buildTime:5,
     cost:{metall:5000, kristall:8000, deuterium:2000}, stats:{waffen:0, schild:10, panzerung:500}, speed:100000, fuelConsumption:1, driveType:"impuls" },
   { id:"imperator", name:"Imperator", img:"ships/imperator.jpg", lore:"Der Imperator ist keine Werftproduktion, sondern ein Mythos, der nur aus geborgenen Spezialteilen zusammengesetzt werden kann. Gerüchten zufolge stammen die Baupläne von einer Zivilisation, die es längst nicht mehr gibt.", tier:99, buildTime:86400, maxCount:6,
     specialOnly:true, teileCost:{waffen:1000, schild:1000, panzerung:1000},
