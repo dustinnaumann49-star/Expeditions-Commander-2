@@ -4,6 +4,7 @@ import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from 
 import {
   getEffectiveStats,
   baseStats,
+  captainStatsForSektor,
   shipName,
   combatFleetPowerBase,
   generatePiratenFleet,
@@ -605,17 +606,24 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   if (captainSpawned) {
     npcDefenses = { ...npcDefenses, piratenkapitan: 1 };
   }
+  const captainStats = captainSpawned ? captainStatsForSektor(op.sektorId!) : null;
 
   const npcCombined = { ...npcShips, ...npcDefenses };
   if (Object.keys(npcCombined).length === 0) return;
 
   const contributions = contributionsFromParticipants(op, participantStates);
   const research = participantStates.get(op.creatorId)!.research;
-  const result = await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcCombined, research, battleModifier });
+  const result = await runMultiOwnerCombatInWorker({
+    contributions,
+    sideBShips: npcCombined,
+    research,
+    battleModifier,
+    sideBStatsOverride: captainStats ? { piratenkapitan: captainStats } : undefined,
+  });
 
   let anyNpcDestroyed = false;
   const npcResults: CombatUnitResult[] = Object.keys(npcCombined).map((id) => {
-    const base = baseStats(id);
+    const base = id === 'piratenkapitan' && captainStats ? captainStats : baseStats(id);
     const sent = npcCombined[id];
     const survivedCount = result.survivorsB[id] || 0;
     if (survivedCount < sent) anyNpcDestroyed = true;

@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Piratenkapitän aufgewertet',
+    changes: [
+      'Der Piratenkapitän war viel zu schwach - er ging in einer Welle mit vielen anderen Gegnern praktisch immer sofort unter, ohne dass man ihn überhaupt bemerkt hat.',
+      'Seine Kampfwerte steigen jetzt mit der Sektorstufe: auf Niedrig/Mittel spürbar zäher als vorher, auf Hoch und im Elite-Bollwerk ist er jetzt genauso stark wie der Imperator - ein echtes Bonus-Ziel, das sich lohnt gezielt anzugreifen.',
+      'Die Extra-Belohnung beim Sieg (Container + Dunkle Materie) bleibt unverändert, ihn zu besiegen fühlt sich jetzt aber nach einer echten Leistung an.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu in der Galaxie: Ereignisse und Basis-Verlegung',
     changes: [
       'Gelegentlich taucht jetzt an einer freien Position in der Galaxie ein Ereignis auf - ein verlassenes Wrack 🛸 oder ein Handelskonvoi 🚀. Wer zuerst eine Flotte hinschickt, sichert sich die Beute (Ressourcen, beim Konvoi auch etwas Dunkle Materie).',

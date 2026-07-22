@@ -68,6 +68,19 @@ export function shipPowerBase(id: string): number {
   return s.waffen + s.schild + s.panzerung;
 }
 
+// Nutzerentscheidung (Juli 2026): der Piratenkapitaen war mit seinen statischen NPC_SPECIALS-
+// Werten (economy.ts) viel zu schwach, um in einer Welle mit vielen anderen Gegnern ueberhaupt
+// aufzufallen - er starb praktisch immer sofort, ohne die Extra-Container-/DM-Belohnung fuer den
+// Spieler spuerbar zu machen. Ersetzt die statischen Werte gestaffelt nach Sektorstufe (per
+// sideBStatsOverride an den Kampf-Worker durchgereicht, siehe missions.ts/groupOps.ts) - auf
+// Hoch/Elite-Bollwerk jetzt exakt auf Imperator-Niveau (dynamisch von dort uebernommen, bleibt
+// so automatisch synchron, falls der Imperator kuenftig nochmal angepasst wird).
+export function captainStatsForSektor(sektorId: string): CombatStats {
+  if (sektorId === 'piraten_niedrig') return { waffen: 25000, schild: 20000, panzerung: 250000 };
+  if (sektorId === 'piraten_mittel') return { waffen: 100000, schild: 80000, panzerung: 900000 };
+  return findShip('imperator')!.stats;
+}
+
 export function getMaxCountFor(id: string): number {
   const s = findShip(id);
   if (s?.maxCount) return s.maxCount;

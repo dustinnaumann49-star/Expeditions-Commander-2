@@ -962,6 +962,20 @@ client/
     unangetastet. Aktive Galaxie-Ereignisse zählen ebenfalls als belegt (vom Route-Handler als
     `extraReserved`-Set übergeben, siehe Punkt 82 zum vermiedenen Zirkelbezug).
 
+84. **Piratenkapitän-Kampfwerte gestaffelt nach Sektorstufe statt fixer `NPC_SPECIALS`-Werte**
+    (`captainStatsForSektor()` in `combat.ts`, Nutzerentscheidung: die alten statischen Werte
+    6.500/1.800/48.000 gingen in einer Welle mit vielen anderen Gegnern praktisch immer unter,
+    ohne dass die Bonus-Belohnung beim Sieg spürbar wurde). Niedrig 25.000/20.000/250.000, Mittel
+    100.000/80.000/900.000, **Hoch UND Elite-Bollwerk exakt auf Imperator-Niveau**
+    (500.000/400.000/3.000.000 - dynamisch von `ships.ts` übernommen, bleibt automatisch synchron,
+    falls der Imperator künftig nochmal angepasst wird). Wird als `sideBStatsOverride` an den
+    Kampf-Worker durchgereicht (dasselbe bereits bestehende Muster wie beim Piratenadmiral, siehe
+    `generateAdmiralEncounter()`) - bleibt dadurch bewusst UNBEEINFLUSST von `PIRATE_RESEARCH_SHARE`,
+    eigene feste Macht-Stufe statt forschungsabhängiger Skalierung. Betrifft `missions.ts`
+    (Solo-Piraten-Sektoren), `groupOps.ts` (Elite-Bollwerk) UND `simulator.ts` (Kampfsimulator
+    MUSS dieselbe Engine nutzen, siehe Punkt 31 - sonst würde die Vorhersage bei aktivem
+    Kapitän-Spawn systematisch danebenliegen).
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

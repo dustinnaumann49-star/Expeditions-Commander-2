@@ -3,6 +3,7 @@ import {
   combatFleetPowerBase,
   generatePiratenFleet,
   generateDefenseFleet,
+  captainStatsForSektor,
   shipName,
   pickWaveProfile,
   rollMultiplierWithOutlier,
@@ -91,8 +92,10 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
     // damit die Vorhersage der echten Formel entspricht.
     const npcShips = generatePiratenFleet(targetPower, 0, profile);
     let npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
+    let captainStats = null;
     if (cfg.captainChance && Math.random() < cfg.captainChance) {
       npcDefenses = { ...npcDefenses, piratenkapitan: 1 };
+      captainStats = captainStatsForSektor(sektorId);
     }
     const npcCombined = { ...npcShips, ...npcDefenses };
     if (Object.keys(npcCombined).length === 0) continue;
@@ -106,6 +109,7 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
       playerClass: state.playerClass,
       kampfBoostActive: isBoosterActive(state, 'kampf'),
       shipModules: state.shipModules,
+      sideBStatsOverride: captainStats ? { piratenkapitan: captainStats } : undefined,
     });
 
     runs++;

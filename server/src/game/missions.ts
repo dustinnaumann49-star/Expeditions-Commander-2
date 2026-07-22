@@ -16,6 +16,7 @@ import {
 import {
   getEffectiveStats,
   baseStats,
+  captainStatsForSektor,
   shipName,
   combatFleetPowerBase,
   generatePiratenFleet,
@@ -354,6 +355,8 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     return;
   }
 
+  const captainStats = captainSpawned ? captainStatsForSektor(mission.sektorId) : null;
+
   const result = await runCombatInWorker({
     sideAShips: mission.ships,
     sideBShips: npcCombined,
@@ -362,12 +365,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     playerClass: state.playerClass,
     kampfBoostActive: isBoosterActive(state, 'kampf'),
     shipModules: state.shipModules,
+    sideBStatsOverride: captainStats ? { piratenkapitan: captainStats } : undefined,
   });
 
   let anyNpcDestroyed = false;
   const npcLosses: Record<string, number> = {};
   const npcResults: CombatUnitResult[] = npcIds.map((id) => {
-    const base = baseStats(id);
+    const base = id === 'piratenkapitan' && captainStats ? captainStats : baseStats(id);
     const sent = npcCombined[id];
     const survivedCount = result.survivorsB[id];
     const destroyedCount = sent - survivedCount;
