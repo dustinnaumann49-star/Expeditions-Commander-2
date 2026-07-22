@@ -14,16 +14,7 @@ import {
   driveTypeLabel,
   getEffectiveShipStats,
 } from '../lib/combatInfo';
-
-// Zeigt den Basiswert, und falls Forschung/Klasse/Schiffs-Module/Kampf-Booster den tatsaechlichen
-// Kampfwert veraendern, zusaetzlich den Effektivwert in Klammern (Nutzerentscheidung) - z.B.
-// "1.500 (2.700)". Bei exakter Uebereinstimmung (kein Unterschied) bleibt nur der Basiswert stehen,
-// um die Karten nicht unnoetig zuzumuellen.
-function statDisplay(base: number, effective: number): string {
-  const rounded = Math.round(effective);
-  if (rounded === base) return base.toLocaleString('de-DE');
-  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
-}
+import { StatValue } from './StatValue';
 import type { GameData, PlayerState, ShipDefinition, GroupOperation } from '../types/game';
 
 // Bugfix: zaehlte bisher NUR state.fleet (zuhause) + buildQueue (im Bau) + Missionen +
@@ -112,9 +103,9 @@ export function ShipBuildCard({
           {ship.maxCount ? `/${ship.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {ship.stats.waffen > 0 && <span>Waffen: {statDisplay(ship.stats.waffen, effStats.waffen)}</span>}
-          <span>Schild: {statDisplay(ship.stats.schild, effStats.schild)}</span>
-          <span>Panzerung: {statDisplay(ship.stats.panzerung, effStats.panzerung)}</span>
+          {ship.stats.waffen > 0 && <StatValue label="Waffen" icon="⚔️" base={ship.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />}
+          <StatValue label="Schild" icon="🛡️" base={ship.stats.schild} effective={effStats.schild} colorClass="stat-schild" />
+          <StatValue label="Panzerung" icon="🧱" base={ship.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />
         </div>
 
         {ship.cost && (
@@ -166,7 +157,16 @@ export function shipInfoRows(gameData: GameData, state: PlayerState, ship: ShipD
   const shieldRegen = getShieldRegenRate(gameData, state.research, ship.id);
   const evasion = getEvasionChance(gameData, state.research, ship.id);
   const critChance = getCritChance(gameData, state.research, ship.id);
+  const effStats = getEffectiveShipStats(gameData, state, ship);
   const rows: [string, React.ReactNode][] = [
+    ...(ship.stats.waffen > 0
+      ? ([['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={ship.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />]] as [
+          string,
+          React.ReactNode
+        ][])
+      : []),
+    ['Schild', <StatValue key="schild" label="" icon="🛡️" base={ship.stats.schild} effective={effStats.schild} colorClass="stat-schild" />],
+    ['Panzerung', <StatValue key="panzerung" label="" icon="🧱" base={ship.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />],
     ['🚀 Geschwindigkeit', `${ship.speed.toLocaleString('de-DE')} (${driveTypeLabel(ship.driveType)})`],
     ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
     ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),

@@ -1281,3 +1281,23 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     `ShipBuildCard` gerendert), daher ein separates `statDisplay()` dort ergänzt. Salvenschiffe
     waren bereits erfasst (nutzen ganz normal `ShipBuildCard`). Verifiziert: "Waffen: 500.000
     (1.000.000)" bei Kanonier-Klasse.
+- Neu: Farbliche Kampfwert-Kennzeichnung + Effektivwerte auch in den Info-Popups (Nutzerentscheidung
+  - "Popups und Karten allgemein schöner gestalten, aktuelle Werte hervorheben").
+  - **Neue Komponente `components/StatValue.tsx`** ersetzt das vorher an drei Stellen (ShipBuildCard/
+    DefenseBuildCard/Spezialschiffe) fast identisch duplizierte `statDisplay()` - ein Icon
+    (⚔️/🛡️/🧱) + Basiswert in Typ-Farbe, Effektivwert (falls abweichend) zusätzlich in Grün mit
+    Leucht-Effekt (`--accent-deut`, dieselbe "positiv verstärkt"-Farbe wie überall sonst im Spiel:
+    Ressourcen-Countup, Bau-Fertigstellungs-Flash).
+  - **Neue CSS-Klassen** (`theme.css`): `.stat-waffen` (`--danger-bright`, rot), `.stat-schild`
+    (`--accent-kristall`, cyan), `.stat-panzerung` (`--accent-metall`, blaugrau), `.stat-effective`
+    (grün, fett, Leucht-Schatten). Label bleibt bewusst gedämpft (`text-dim`) - nur die ZAHL ist
+    eingefärbt, damit eine Karte nicht wie ein Warnhinweis wirkt.
+  - **Info-Popups bekommen jetzt ebenfalls Waffen/Schild/Panzerung-Zeilen** (`shipInfoRows()`/
+    `defenseInfoRows()`/Imperator-Popup in `Spezialschiffe.tsx`) - vorher waren die Kampfwerte NUR
+    auf der Karte selbst sichtbar, nicht im Popup.
+  - **`modal-title`** bekommt dieselbe rote Akzentlinie wie `#mainbar h2` (konsistente visuelle
+    Sprache zwischen Seiten-Überschriften und Popup-Titeln statt schlichtem Fettdruck).
+  - Manuell verifiziert (computed styles via `javascript_tool`): `.stat-waffen` → `rgb(255,77,87)`,
+    `.stat-schild` → `rgb(76,227,238)`, `.stat-panzerung` → `rgb(185,207,230)`, `.stat-effective` →
+    `rgb(82,240,122)`, alle `font-weight:700` - exakt wie in der CSS hinterlegt. Info-Popup zeigt
+    Waffen/Schild/Panzerung inkl. Effektivwert-Hervorhebung korrekt an.

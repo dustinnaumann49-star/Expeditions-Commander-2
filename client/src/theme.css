@@ -389,9 +389,23 @@
     text-shadow: 0 0 10px rgba(76,227,238,0.6);
     filter: brightness(1.2);
   }
-  .ship-stats{ display:flex; gap:12px; font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
+  .ship-stats{ display:flex; gap:14px; font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
   .stat-mining{ color: var(--accent-deut); font-weight:600; }
   .stat-cargo{ color: var(--accent-kristall); font-weight:600; }
+  /* Kampfwert-Farbcodierung (Nutzerentscheidung): Waffen/Schild/Panzerung bekommen je eine eigene
+     Akzentfarbe (Label bleibt bewusst gedaempft/text-dim, nur die Zahl selbst ist eingefaerbt,
+     damit Karten nicht wie ein Warnhinweis wirken), der Effektivwert (falls abweichend vom
+     Basiswert durch Forschung/Klasse/Module/Booster) sticht zusaetzlich mit Gruen+Leuchten hervor -
+     dieselbe "positiv verstaerkt"-Farbe wie ueberall sonst im Spiel (res-pulse-up, build-complete-
+     flash). */
+  .stat-waffen{ color: var(--danger-bright); font-weight:700; }
+  .stat-schild{ color: var(--accent-kristall); font-weight:700; }
+  .stat-panzerung{ color: var(--accent-metall); font-weight:700; }
+  .stat-effective{
+    color: var(--accent-deut);
+    font-weight:700;
+    text-shadow: 0 0 8px rgba(82,240,122,0.5);
+  }
   .ship-matchup{ display:flex; flex-direction:column; gap:2px; font-size:12px; }
   .matchup-strong{ color: var(--rf-gold); }
   .matchup-weak{ color: var(--text-dim); }
@@ -422,6 +436,11 @@
   .modal-title{
     margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
     font-size: 18px; letter-spacing: 0.2px;
+    /* Gleiche Akzentlinie wie #mainbar h2 - konsistente visuelle Sprache zwischen Seiten-
+       Ueberschriften und Popup-Titeln statt schlichtem Fettdruck. */
+    border-left: 3px solid var(--danger);
+    padding-left: 10px;
+    box-shadow: -3px 0 10px -3px var(--danger);
   }
   .info-list{
     background: var(--carbon); border: 1px solid var(--border); border-radius: 6px;

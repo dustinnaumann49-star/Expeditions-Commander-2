@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Optik: Kampfwerte jetzt farbig + auch in den Info-Popups sichtbar',
+    changes: [
+      'Waffen-, Schild- und Panzerungswerte auf Schiffs-/Verteidigungs-Karten sind jetzt farblich unterschieden (Waffen rot, Schild cyan, Panzerung blaugrau) und mit passendem Symbol versehen (⚔️🛡️🧱) - auf einen Blick leichter zu erfassen.',
+      'Der Effektivwert in Klammern (siehe letztes Update) leuchtet jetzt zusätzlich grün, damit er sofort ins Auge fällt.',
+      'Die Info-Popups (ℹ️-Button) zeigten bisher gar keine Kampfwerte, nur Zusatzinfos wie Präzision oder RapidFire - jetzt stehen Waffen/Schild/Panzerung dort ebenfalls ganz oben, inklusive Effektivwert.',
+      'Popup-Titel haben jetzt dieselbe rote Akzentlinie wie die Seitenüberschriften - einheitlicheres Erscheinungsbild.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Effektivwerte auf Bau-Karten sichtbar',
     changes: [
       'Schiffs- und Verteidigungs-Karten in der Werft zeigten bisher immer nur die reinen Basiswerte - auch wenn Forschung, Klasse, Module oder der Kampf-Booster den tatsächlichen Kampfwert längst verändert hatten.',

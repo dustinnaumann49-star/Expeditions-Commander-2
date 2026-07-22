@@ -10,14 +10,8 @@ import {
   getCritChance,
   getEffectiveDefenseStats,
 } from '../lib/combatInfo';
+import { StatValue } from './StatValue';
 import type { DefenseDefinition, GameData, PlayerState } from '../types/game';
-
-// Siehe ShipBuildCard.tsx - identisches Muster fuer die "Basiswert (Effektivwert)"-Anzeige.
-function statDisplay(base: number, effective: number): string {
-  const rounded = Math.round(effective);
-  if (rounded === base) return base.toLocaleString('de-DE');
-  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
-}
 
 // Bugfix: zaehlte bisher nur state.defense (bereits fertig gebaut), nicht die eigene
 // Bau-Warteschlange (defenseQueue) - bei limitierten Anlagen (maxCount, z.B. Kuppeln/Sentinel-/
@@ -91,11 +85,17 @@ export function DefenseBuildCard({
           {def.maxCount ? `/${def.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {def.stats.waffen > 0 && <span>Waffen: {statDisplay(def.stats.waffen, effStats.waffen)}</span>}
+          {def.stats.waffen > 0 && <StatValue label="Waffen" icon="⚔️" base={def.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />}
           {/* Kuppeln: Schild laeuft komplett ueber den gemeinsamen Kuppel-Pool (computeDomeSharedPool),
               der Effektivwert hier waere immer 0 und damit irrefuehrend - Basiswert bleibt stehen. */}
-          <span>Schild: {def.isDome ? def.stats.schild.toLocaleString('de-DE') : statDisplay(def.stats.schild, effStats.schild)}</span>
-          <span>Panzerung: {statDisplay(def.stats.panzerung, effStats.panzerung)}</span>
+          <StatValue
+            label="Schild"
+            icon="🛡️"
+            base={def.stats.schild}
+            effective={def.isDome ? def.stats.schild : effStats.schild}
+            colorClass="stat-schild"
+          />
+          <StatValue label="Panzerung" icon="🧱" base={def.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />
         </div>
 
         <div className="ship-cost">
@@ -136,7 +136,17 @@ export function defenseInfoRows(gameData: GameData, state: PlayerState, def: Def
   const defAccuracy = getZielerfassungAccuracy(gameData, state.research, def.id);
   const isVolleyDefense = gameData.multiTargetVolleyShips.includes(def.id);
   const volleyTargetTypes = Object.keys(gameData.rapidfire[def.id] || {});
-  const rows: [string, React.ReactNode][] = [['RapidFire', rfDisplay || 'Kein RapidFire']];
+  const effStats = getEffectiveDefenseStats(gameData, state, def);
+  const rows: [string, React.ReactNode][] = [];
+  if (def.stats.waffen > 0) {
+    rows.push(['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={def.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />]);
+  }
+  rows.push([
+    'Schild',
+    <StatValue key="schild" label="" icon="🛡️" base={def.stats.schild} effective={def.isDome ? def.stats.schild : effStats.schild} colorClass="stat-schild" />,
+  ]);
+  rows.push(['Panzerung', <StatValue key="panzerung" label="" icon="🧱" base={def.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />]);
+  rows.push(['RapidFire', rfDisplay || 'Kein RapidFire']);
   if (defAccuracy > 0) rows.push(['Zielerfassung', `${(defAccuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]);
   if (isVolleyDefense) {
     rows.push([

@@ -16,14 +16,7 @@ import {
   driveTypeLabel,
   getEffectiveShipStats,
 } from '../lib/combatInfo';
-
-// Siehe ShipBuildCard.tsx - identisches "Basiswert (Effektivwert)"-Muster, hier separat, da der
-// Imperator eine eigene Karten-Darstellung hat (Spezialteile statt normaler Ressourcen).
-function statDisplay(base: number, effective: number): string {
-  const rounded = Math.round(effective);
-  if (rounded === base) return base.toLocaleString('de-DE');
-  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
-}
+import { StatValue } from '../components/StatValue';
 
 // Salvenschiffe bauen ganz normal ueber buildShip()/die 3 Bau-Slots (siehe ShipBuildCard) - nur
 // ihre Anzeige-Gruppierung ist hierher umgezogen. Der Imperator ist strukturell anders (Spezialteile
@@ -85,9 +78,9 @@ export function SpezialschiffePage() {
                   Bestand: {imperatorBestand}/{imperator.maxCount}
                 </p>
                 <div className="ship-stats">
-                  <span>Waffen: {statDisplay(imperator.stats.waffen, imperatorEffStats!.waffen)}</span>
-                  <span>Schild: {statDisplay(imperator.stats.schild, imperatorEffStats!.schild)}</span>
-                  <span>Panzerung: {statDisplay(imperator.stats.panzerung, imperatorEffStats!.panzerung)}</span>
+                  <StatValue label="Waffen" icon="⚔️" base={imperator.stats.waffen} effective={imperatorEffStats!.waffen} colorClass="stat-waffen" />
+                  <StatValue label="Schild" icon="🛡️" base={imperator.stats.schild} effective={imperatorEffStats!.schild} colorClass="stat-schild" />
+                  <StatValue label="Panzerung" icon="🧱" base={imperator.stats.panzerung} effective={imperatorEffStats!.panzerung} colorClass="stat-panzerung" />
                 </div>
                 <div className="ship-cost">
                   Kosten: {teileCost.waffen} Waffen-Teile, {teileCost.schild} Schild-Teile, {teileCost.panzerung} Panzerungs-Teile
@@ -133,6 +126,12 @@ export function SpezialschiffePage() {
         <InfoModal title={imperator.name} onClose={() => setShowImperatorInfo(false)}>
           <InfoTable
             rows={[
+              ['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={imperator.stats.waffen} effective={imperatorEffStats!.waffen} colorClass="stat-waffen" />],
+              ['Schild', <StatValue key="schild" label="" icon="🛡️" base={imperator.stats.schild} effective={imperatorEffStats!.schild} colorClass="stat-schild" />],
+              [
+                'Panzerung',
+                <StatValue key="panzerung" label="" icon="🧱" base={imperator.stats.panzerung} effective={imperatorEffStats!.panzerung} colorClass="stat-panzerung" />,
+              ],
               ['Waffen-Teile (vorhanden)', `${Math.floor(state.teile.waffen)} / ${teileCost!.waffen} (${pct(state.teile.waffen, teileCost!.waffen)}%)`],
               ['Schild-Teile (vorhanden)', `${Math.floor(state.teile.schild)} / ${teileCost!.schild} (${pct(state.teile.schild, teileCost!.schild)}%)`],
               [
