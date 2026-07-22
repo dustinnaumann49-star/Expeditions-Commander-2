@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Wirtschafts-Klassen (Schmuggler, Ingenieur, Prospektor)',
+    changes: [
+      'Neben eurer Kampf-Klasse (Kanonier/Bollwerk/Kommandant) könnt ihr jetzt zusätzlich eine Wirtschafts-Klasse wählen - komplett unabhängig, rührt nie an Waffen/Schild/Panzerung. Zu finden im Klasse-Tab, unterhalb der Kampf-Klassen.',
+      'Schmuggler (Handel): Handelsgebühr beim Händler halbiert (20% → 10%), Schrott-Rückerstattung erhöht (30% → 45%), 15% günstigere Booster im Shop.',
+      'Ingenieur (Bau): 15% kürzere Bauzeit für Schiffe, Verteidigungsanlagen UND Gebäude - nur die Zeit, nicht die Kosten (die rabattieren schon eure Kampf-Klasse).',
+      'Prospektor (Förderung): +20% Mining-Ertrag (Schiffe und Gebäude), +30% schnellerer Dunkle-Materie-Fund im Asteroidenfeld, 10% weniger Treibstoffverbrauch bei Galaxie-Flügen.',
+      'Anders als bei der Kampf-Klasse ist hier NICHTS erzwungen - ihr könnt jederzeit wählen oder auch ganz darauf verzichten. Dafür kostet jede Wahl (auch die allererste) 1.000 Dunkle Materie, ein Wechsel ebenso.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Punktzahl spiegelt jetzt eure aktuelle Gesamtmacht wider',
     changes: [
       'Eure Punktzahl in der Bestenliste zählt jetzt zusätzlich eure AKTUELLE Flotte und Verteidigung mit - nach demselben Wert-Prinzip wie vernichtete Gegner (ein Reaper zählt mehr als ein Leichter Jäger).',

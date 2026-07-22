@@ -138,7 +138,7 @@ export function startPirateBaseAttack(state: PlayerState, baseId: string, ships:
   const speed = galaxyFleetSpeed(selected, state.research, state.playerClass, state.shipModules);
   const travelMs = galaxyDurationMs(distance, speed);
   if (!Number.isFinite(travelMs)) return { ok: false, error: 'Diese Flotte kann nicht fliegen (keine Geschwindigkeit).' };
-  const fuelCost = galaxyFuelCost(selected, distance);
+  const fuelCost = galaxyFuelCost(selected, distance, state);
   if (state.resources.deuterium < fuelCost) {
     return { ok: false, error: `Nicht genug Deuterium für Hin- und Rückflug (benötigt: ${fuelCost.toLocaleString('de-DE')}).` };
   }

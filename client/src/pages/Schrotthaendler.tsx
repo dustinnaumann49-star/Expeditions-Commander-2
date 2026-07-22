@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
+import { getEffectiveScrapRefundRate } from '../lib/multipliers';
 
 export function SchrotthaendlerPage() {
   const { gameData, state, scrapShip, scrapDefense, error } = useGame();
@@ -8,7 +9,7 @@ export function SchrotthaendlerPage() {
   const [qtyDef, setQtyDef] = useState<Record<string, number>>({});
 
   if (!gameData || !state) return <PageSkeleton />;
-  const rate = gameData.scrapRefundRate;
+  const rate = getEffectiveScrapRefundRate(gameData, state);
 
   const ownedShips = gameData.ships.filter((s) => !s.specialOnly && (state.fleet[s.id] || 0) > 0);
   const ownedDefs = gameData.defenses.filter((d) => (state.defense[d.id] || 0) > 0);

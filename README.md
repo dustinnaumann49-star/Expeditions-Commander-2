@@ -105,8 +105,11 @@ server/
                                       alle 52 Definitionen per Generator-Funktion erzeugt statt
                                       Handarbeit (13 Schiffe x 4 Module)
   src/game/data/changelog.ts         Spielerlesbare Update-Historie für die Im-Spiel-Updates-Seite
-  src/game/data/classes.ts           Klassendefinitionen (Kanonier/Bollwerk/Kommandant) inkl.
-                                      aller Bonus-Konstanten und Anzeigetexte
+  src/game/data/classes.ts           Kampf-Klassendefinitionen (Kanonier/Bollwerk/Kommandant)
+                                      inkl. aller Bonus-Konstanten und Anzeigetexte
+  src/game/data/economyClasses.ts    Wirtschafts-Klassendefinitionen (Schmuggler/Ingenieur/
+                                      Prospektor) - zweite, unabhängige Klassenwahl, siehe
+                                      README Punkt 87
 
 client/
   vite.config.ts                     Dev-Proxy: /api → localhost:4000
@@ -675,7 +678,12 @@ client/
     staerksten" Wahl (eine fruehere Variante mit EINER reinen Kampf-Klasse plus zwei reinen
     Wirtschafts-/Effizienz-Klassen wurde verworfen, weil Kampfkraft in JEDEM Spielmodus zaehlt,
     Wirtschaft/Effizienz aber nur in ihrer jeweiligen Nische - die Kampf-Klasse waere ohne echten
-    Gegenspieler immer die beste Wahl gewesen).
+    Gegenspieler immer die beste Wahl gewesen). **Update Juli 2026 (siehe Punkt 87):** Wirtschafts-
+    Klassen wurden SPAETER doch eingefuehrt, aber bewusst NICHT als Ersatz/Alternative zur
+    Kampf-Klasse (das haette exakt das hier verworfene Problem zurueckgebracht) - sondern als
+    komplett unabhaengige, rein optionale ZWEITE Klassenwahl obendrauf. Kein Zielkonflikt mehr:
+    die Kampf-Klasse bleibt Pflicht und verliert nie an Wert, die Wirtschafts-Klasse ist ein reiner
+    Zusatz.
 
 58. **Die Pro-Wert-Aufteilung ist zentral in `getEffectiveStats()` verankert** (`combat.ts`,
     `classCombatMultipliers()`) - wie der 24h-Kampf-Booster und Forschung auch - und muss daher an
@@ -1096,6 +1104,38 @@ client/
     `POINT_WEIGHTS.captainDefeated` (fixer Wert 20) - besiegte Piratenkapitaene liefen SCHON ueber
     `enemiesDestroyedByType.piratenkapitan` (Punkt 85) mit, waeren sonst doppelt gezaehlt worden.
     `stats.captainsDefeated` bleibt als reiner Rohzaehler fuer die Statistik-Anzeige bestehen.
+
+87. **Wirtschafts-Klassen als optionale ZWEITE, unabhängige Klassenwahl** (Nutzerentscheidung Juli
+    2026, `EconomyClass` in `types.ts`, `data/economyClasses.ts`) - siehe Punkt 56/57 fuer die
+    frühere Ablehnung einer Kampf-vs-Wirtschaft-Alternativwahl und warum DIESES Design (additiv,
+    nicht alternativ) das damalige Problem nicht wiederholt. Drei Klassen, strikt getrennt nach
+    Wirkungsbereich (Handel/Bau/Förderung), rühren NIE an Waffen/Schild/Panzerung:
+    - **Schmuggler** (Handel): Handelsgebühr halbiert (`ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER`,
+      20%→10%), Schrott-Rückerstattung ×1,5 (30%→45%), Shop-Booster ×0,85 DM-Kosten.
+    - **Ingenieur** (Bau): Bauzeit ×0,85 für Schiffe UND Verteidigung UND Gebäude
+      (`economyBauzeitMultiplier()` in `actions.ts`, in `bauzeitMultiplier()`/
+      `defenseBauzeitMultiplier()`/`gebaeudeBauzeitMultiplier()` eingehängt) - bewusst NUR Zeit,
+      nicht Kosten (die rabattieren schon die Kampf-Klassen, sonst Ueberschneidung).
+    - **Prospektor** (Förderung): Mining-Ertrag ×1,2 (Schiffe UND Gebäude, `miningMultiplier()`
+      in `missions.ts` + `miningBuildingMultiplier()` in `actions.ts`), Dunkle-Materie-Fundrate im
+      Asteroidenfeld ×1,3 (NUR die Rate, `dmCap` selbst bleibt unverändert), Treibstoffverbrauch
+      bei Galaxie-Flügen ×0,9 (`galaxyFuelCost()` in `galaxy.ts`, jetzt mit optionalem
+      `state`-Parameter - betrifft NUR galaxie-basierte Flüge wie Halten/Event-Bergung/
+      Piratenbasis-Angriff, NICHT die feste Spionagesonden-Flugzeit oder Sektor-Missionen ohne
+      eigene Treibstoffkosten).
+    Anders als die Kampf-Klasse (Punkt 56): `state.economyClass` startet bei `null` als
+    DAUERHAFTER Normalzustand (kein Registrierungs-Zwang), UND jede Wahl kostet
+    `ECONOMY_CLASS_CHANGE_COST_DM` (1000 DM) - AUCH die allererste, anders als die kostenlose
+    Kampf-Klassen-Erstwahl (`setEconomyClass()` in `classActions.ts`). Client-seitige Spiegel-
+    Funktionen (README Punkt 1 gilt analog) in `multipliers.ts`: `getEffectiveTradeFee()`,
+    `getEffectiveScrapRefundRate()`, `getEffectiveBoosterCost()`, `economyBauzeitMultiplier()`
+    innerhalb der bestehenden `get*BauzeitMultiplier()`-Funktionen, sowie in
+    `getMiningMultiplier()`/`getMiningBuildingMultiplier()` - genutzt von `Haendler.tsx`,
+    `Schrotthaendler.tsx`, `Shop.tsx` statt der bisherigen flachen `gameData.tradeFee`/
+    `gameData.scrapRefundRate`/`booster.cost`-Anzeigen (die bleiben als SPIELER-UNABHAENGIGE
+    Basiswerte in `gameData` bestehen, nur die tatsaechliche Anzeige/Buchung liest jetzt den
+    Wirtschafts-Klassen-Bonus mit ein). Neuer Endpoint `POST /game/economy-class` (analog zu
+    `/game/class`).
 
 ## Kurz-Changelog
 

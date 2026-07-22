@@ -15,6 +15,7 @@ import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
+import { ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER, ECONOMY_PROSPEKTOR_MINING_MULTIPLIER } from './data/economyClasses.js';
 import { isBoosterActive } from './boosterUtil.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
 
@@ -100,9 +101,16 @@ const MINE_ENERGY_MODULE: Record<string, string> = {
   deuteriummine: 'deuteriummine_energiesparmodul',
 };
 
+// Wirtschafts-Klasse "Ingenieur" (Nutzerentscheidung Juli 2026, siehe economyClasses.ts) -
+// beschleunigt ALLE drei Bauarten gleichermassen (Schiffe/Verteidigung/Gebaeude), NUR die Zeit,
+// nicht die Kosten (die rabattieren schon die Kampf-Klassen ueber shipCostMultiplier() unten).
+function economyBauzeitMultiplier(state: PlayerState): number {
+  return state.economyClass === 'ingenieur' ? ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER : 1;
+}
+
 export function bauzeitMultiplier(state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
-  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific * economyBauzeitMultiplier(state);
 }
 
 // NEU: eigener Multiplikator fuer Verteidigungsanlagen (vorher gemeinsam mit Schiffen ueber
@@ -110,7 +118,7 @@ export function bauzeitMultiplier(state: PlayerState): number {
 // Verteidigungsanlagen betreffen soll, nicht Schiffe).
 export function defenseBauzeitMultiplier(state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_verteidigung || 0, 0.03);
-  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific;
+  return baseTimeMultiplier(state) * roboterNaniteFactor(state, 'shipDefense') * specific * economyBauzeitMultiplier(state);
 }
 
 // Eigener Multiplikator fuer Gebaeude-Bauzeiten (Punkt 1 der README gilt auch hier: jede neue
@@ -120,7 +128,7 @@ export function defenseBauzeitMultiplier(state: PlayerState): number {
 // Bauzeit fuer weitere Ausbaustufen GENAU DIESES Gebaeudes, nicht auf andere.
 export function gebaeudeBauzeitMultiplier(state: PlayerState, buildingId?: string): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific;
+  let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific * economyBauzeitMultiplier(state);
   const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
   if (selfModuleId) m *= moduleReductionFactor(state, selfModuleId);
   return m;
@@ -241,7 +249,8 @@ export function energyFactor(state: PlayerState): number {
 function miningBuildingMultiplier(state: PlayerState): number {
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_minen || 0) * 0.05;
-  return base * specific;
+  const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
+  return base * specific * economy;
 }
 
 // Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor, Mining-Forschung und dem

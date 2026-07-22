@@ -36,6 +36,7 @@ import { runCombatInWorker } from './combatRunner.js';
 import type { ActionResult } from './actions.js';
 import type { BattleModifierType } from './data/combatConstants.js';
 import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
+import { ECONOMY_PROSPEKTOR_MINING_MULTIPLIER, ECONOMY_PROSPEKTOR_DM_RATE_MULTIPLIER } from './data/economyClasses.js';
 import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
 
 export function miningMultiplier(state: PlayerState): number {
@@ -45,7 +46,9 @@ export function miningMultiplier(state: PlayerState): number {
   // obendrauf.
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
-  return base * specific;
+  // Wirtschafts-Klasse "Prospektor" (Nutzerentscheidung Juli 2026, siehe economyClasses.ts).
+  const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
+  return base * specific * economy;
 }
 
 // ========== FLOTTE ENTSENDEN ==========
@@ -154,7 +157,10 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
         // - deckt sich normalerweise mit ASTEROID_MISSION_DURATION_MS, ist aber robust gegen
         // kuenftige Sonderfaelle mit abweichender Missionsdauer.
         const durationMs = mission.endTime - mission.arriveTime;
-        const rate = cfg.dmCap / (durationMs / 1000);
+        // Wirtschafts-Klasse "Prospektor" (Nutzerentscheidung Juli 2026): erreicht dmCap schneller,
+        // der Cap selbst bleibt unveraendert (kein hoeheres Gesamt-DM-Limit, nur schnellere Rate).
+        const economyDmRate = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_DM_RATE_MULTIPLIER : 1;
+        const rate = (cfg.dmCap / (durationMs / 1000)) * economyDmRate;
         mission.dmFound = Math.min(cfg.dmCap, mission.dmFound + rate * deltaSec);
       }
     }

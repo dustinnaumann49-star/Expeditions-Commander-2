@@ -21,6 +21,30 @@ export function getDefenseCostMultiplier(state: PlayerState): number {
   return 1;
 }
 
+// Spiegelt server/src/game/data/economyClasses.ts 1:1 - Wirtschafts-Klassen (Nutzerentscheidung
+// Juli 2026), zweite unabhaengige Klassenwahl neben der Kampf-Klasse oben.
+const ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER = 0.85;
+const ECONOMY_PROSPEKTOR_MINING_MULTIPLIER = 1.2;
+const ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER = 0.5;
+const ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER = 1.5;
+const ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER = 0.85;
+
+function economyBauzeitMultiplier(state: PlayerState): number {
+  return state.economyClass === 'ingenieur' ? ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER : 1;
+}
+
+export function getEffectiveTradeFee(gameData: GameData, state: PlayerState): number {
+  return state.economyClass === 'schmuggler' ? gameData.tradeFee * ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER : gameData.tradeFee;
+}
+
+export function getEffectiveScrapRefundRate(gameData: GameData, state: PlayerState): number {
+  return state.economyClass === 'schmuggler' ? gameData.scrapRefundRate * ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER : gameData.scrapRefundRate;
+}
+
+export function getEffectiveBoosterCost(baseCost: number, state: PlayerState): number {
+  return Math.round(baseCost * (state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1));
+}
+
 export function isBoosterActive(state: PlayerState, boosterId: string): boolean {
   const expiry = state.activeBoosters[boosterId];
   return !!expiry && expiry > serverNow();
@@ -59,7 +83,7 @@ function specificTimeMultiplier(level: number, effectPerLevel: number): number {
 // obendrauf).
 export function getBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_schiffe || 0, 0.03);
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific;
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific * economyBauzeitMultiplier(state);
 }
 
 // NEU: spiegelt server/src/game/actions.ts's defenseBauzeitMultiplier() 1:1 - fuer die
@@ -67,14 +91,14 @@ export function getBauzeitMultiplier(gameData: GameData, state: PlayerState): nu
 // getBauzeitMultiplier() berechnet).
 export function getDefenseBauzeitMultiplier(gameData: GameData, state: PlayerState): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_verteidigung || 0, 0.03);
-  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific;
+  return baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'shipDefense') * specific * economyBauzeitMultiplier(state);
 }
 
 // Spiegelt server/src/game/actions.ts's gebaeudeBauzeitMultiplier() 1:1 - fuer die Bauzeit-Anzeige
 // auf der Gebaeude-Seite ("Bauzeit: Gebaeude" stapelt zusaetzlich zur Basis).
 export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerState, buildingId?: string): number {
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building') * specific;
+  let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building') * specific * economyBauzeitMultiplier(state);
   const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
   if (selfModuleId) m *= moduleReductionFactor(gameData, state, selfModuleId);
   return m;
@@ -128,13 +152,15 @@ export function getMiningMultiplier(state: PlayerState): number {
   // Mining-Schiffe obendrauf (Pendant fuer Gebaeude: getMiningBuildingMultiplier()).
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
-  return base * specific;
+  const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
+  return base * specific * economy;
 }
 
 export function getMiningBuildingMultiplier(state: PlayerState): number {
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_minen || 0) * 0.05;
-  return base * specific;
+  const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
+  return base * specific * economy;
 }
 
 export function getEnergyProduced(gameData: GameData, state: PlayerState): number {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { SchrotthaendlerPage } from './Schrotthaendler';
+import { getEffectiveTradeFee } from '../lib/multipliers';
 
 const RESOURCE_LABELS: Record<string, string> = { metall: 'Metall', kristall: 'Kristall', deuterium: 'Deuterium' };
 const RESOURCE_ICONS: Record<string, string> = { metall: 'resources/metall.png', kristall: 'resources/kristall.png', deuterium: 'resources/deuterium.png' };
@@ -36,7 +37,8 @@ function TradeView() {
   if (!gameData || !state) return <PageSkeleton />;
 
   const fromStock = Math.floor((state.resources as any)[from]);
-  const received = from === to || amount <= 0 ? 0 : ((amount * gameData.tradeValue[from]) / gameData.tradeValue[to]) * (1 - gameData.tradeFee);
+  const tradeFee = getEffectiveTradeFee(gameData, state);
+  const received = from === to || amount <= 0 ? 0 : ((amount * gameData.tradeValue[from]) / gameData.tradeValue[to]) * (1 - tradeFee);
   const canTrade = amount > 0 && from !== to && amount <= fromStock;
 
   return (
@@ -49,7 +51,7 @@ function TradeView() {
           <div className="ship-info">
             <h3>Ressourcentausch</h3>
             <p className="detail-sub" style={{ marginBottom: 4 }}>
-              Handelsspanne {(gameData.tradeFee * 100).toFixed(0)}% · Kurs (Wertbasis) Metall 1 : Kristall 1,5 : Deuterium 3
+              Handelsspanne {(tradeFee * 100).toFixed(0)}% · Kurs (Wertbasis) Metall 1 : Kristall 1,5 : Deuterium 3
             </p>
 
             <div>

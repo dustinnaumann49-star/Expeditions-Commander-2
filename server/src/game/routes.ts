@@ -17,8 +17,9 @@ import { listActivePirateBaseSummaries, startPirateBaseAttack } from './pirateBa
 import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
-import { setPlayerClass } from './classActions.js';
+import { setPlayerClass, setEconomyClass } from './classActions.js';
 import { PLAYER_CLASSES, CLASS_CHANGE_COST_DM } from './data/classes.js';
+import { ECONOMY_CLASSES, ECONOMY_CLASS_CHANGE_COST_DM } from './data/economyClasses.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
@@ -90,6 +91,8 @@ gameRouter.get('/data', (_req, res) => {
     scrapRefundRate: SCRAP_REFUND_RATE,
     playerClasses: PLAYER_CLASSES,
     classChangeCostDm: CLASS_CHANGE_COST_DM,
+    economyClasses: ECONOMY_CLASSES,
+    economyClassChangeCostDm: ECONOMY_CLASS_CHANGE_COST_DM,
     galaxyEventTypes: GALAXY_EVENT_TYPES,
     relocateBaseCostDm: RELOCATE_BASE_COST_DM,
     spyProbeTravelMs: SPY_PROBE_TRAVEL_MS,
@@ -231,7 +234,7 @@ gameRouter.post('/galaxy/preview', (req: AuthedRequest, res) => {
     const distance = galaxyDistance(state.galaxyPosition, target);
     const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
     const durationMs = galaxyDurationMs(distance, speed);
-    const fuelCost = galaxyFuelCost(ships, distance);
+    const fuelCost = galaxyFuelCost(ships, distance, state);
     res.json({ distance, durationMs, fuelCost });
   } catch (err) {
     console.error(err);
@@ -366,6 +369,14 @@ gameRouter.post('/class', (req: AuthedRequest, res) => {
   const { classId } = req.body ?? {};
   if (typeof classId !== 'string') return res.status(400).json({ error: 'classId erforderlich.' });
   handleAction(req, res, (state) => setPlayerClass(state, classId));
+});
+
+// Wirtschafts-Klasse (Nutzerentscheidung Juli 2026): anders als /class kostet JEDE Wahl
+// ECONOMY_CLASS_CHANGE_COST_DM, auch die allererste (siehe setEconomyClass() in classActions.ts).
+gameRouter.post('/economy-class', (req: AuthedRequest, res) => {
+  const { classId } = req.body ?? {};
+  if (typeof classId !== 'string') return res.status(400).json({ error: 'classId erforderlich.' });
+  handleAction(req, res, (state) => setEconomyClass(state, classId));
 });
 
 // ---- Flotten-Vorlagen (Presets) ----

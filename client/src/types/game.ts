@@ -460,10 +460,12 @@ export interface LeaderboardEntry {
 }
 
 export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
+export type EconomyClass = 'schmuggler' | 'ingenieur' | 'prospektor';
 
 export interface PlayerState {
   userId: number;
   playerClass: PlayerClass | null;
+  economyClass: EconomyClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
   fleet: Record<string, number>;
   defense: Record<string, number>;
@@ -615,6 +617,8 @@ export interface GameData {
   changelog: ChangelogEntry[];
   playerClasses: ClassDefinition[];
   classChangeCostDm: number;
+  economyClasses: EconomyClassDefinition[];
+  economyClassChangeCostDm: number;
   galaxyEventTypes: Record<string, GalaxyEventTypeDef>;
   relocateBaseCostDm: number;
   spyProbeTravelMs: number;
@@ -623,6 +627,14 @@ export interface GameData {
 
 export interface ClassDefinition {
   id: PlayerClass;
+  name: string;
+  tagline: string;
+  img: string;
+  bonuses: { label: string }[];
+}
+
+export interface EconomyClassDefinition {
+  id: EconomyClass;
   name: string;
   tagline: string;
   img: string;

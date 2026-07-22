@@ -5,11 +5,13 @@ import { PageSkeleton } from '../components/PageSkeleton';
 // Erstwahl-Ansicht in App.tsx (siehe GameHome dort), wenn state.playerClass noch null ist -
 // dieselbe Komponente deckt beide Faelle ab (mandatory steuert nur Layout-Feinheiten/Text).
 export function KlassePage({ mandatory = false }: { mandatory?: boolean }) {
-  const { gameData, state, setPlayerClass, error } = useGame();
+  const { gameData, state, setPlayerClass, setEconomyClass, error } = useGame();
   if (!gameData || !state) return <PageSkeleton />;
 
   const current = state.playerClass;
   const cost = gameData.classChangeCostDm;
+  const currentEconomy = state.economyClass;
+  const economyCost = gameData.economyClassChangeCostDm;
 
   return (
     <div>
@@ -74,6 +76,60 @@ export function KlassePage({ mandatory = false }: { mandatory?: boolean }) {
           );
         })}
       </div>
+
+      {!mandatory && (
+        <>
+          <h2 style={{ margin: '28px 0 8px' }}>Wirtschafts-Klasse</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 20 }}>
+            Optionale zweite Klasse, unabhängig von deiner Kampf-Klasse - reine Wirtschafts-Boni. Jede Wahl (auch die
+            erste) kostet {economyCost} Dunkle Materie.
+          </p>
+          <div className="ship-grid class-grid">
+            {gameData.economyClasses.map((cls) => {
+              const isCurrent = currentEconomy === cls.id;
+              const canAfford = state.resources.dm >= economyCost;
+              return (
+                <div
+                  className={`ship-card class-card${isCurrent ? ' class-card-current' : ''}`}
+                  key={cls.id}
+                  style={isCurrent ? { borderColor: 'var(--accent-deut)' } : undefined}
+                >
+                  <div className="class-card-img-wrap">
+                    <img
+                      className="ship-img class-card-img"
+                      src={`/${cls.img}`}
+                      alt={cls.name}
+                      onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                    />
+                    <div className="class-card-img-fade" />
+                    {isCurrent && <span className="class-current-badge">Aktuelle Klasse</span>}
+                  </div>
+                  <div className="ship-info">
+                    <h3>{cls.name}</h3>
+                    <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>{cls.tagline}</p>
+                    <ul style={{ fontSize: 12, paddingLeft: 18, marginBottom: 12 }}>
+                      {cls.bonuses.map((b, i) => (
+                        <li key={i} style={{ marginBottom: 2 }}>
+                          {b.label}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {isCurrent ? null : (
+                      <div className="build-row">
+                        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Kosten: {economyCost} DM</span>
+                        <button className="build-btn" disabled={!canAfford} onClick={() => setEconomyClass(cls.id)}>
+                          {currentEconomy === null ? 'Wählen' : 'Wechseln'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

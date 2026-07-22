@@ -79,6 +79,8 @@ export const api = {
     request<PlayerState>('/game/shop/voucher', { method: 'POST', body: JSON.stringify({ voucherId }) }),
   setClass: (classId: string) =>
     request<PlayerState>('/game/class', { method: 'POST', body: JSON.stringify({ classId }) }),
+  setEconomyClass: (classId: string) =>
+    request<PlayerState>('/game/economy-class', { method: 'POST', body: JSON.stringify({ classId }) }),
   savePreset: (name: string, ships: Record<string, number>) =>
     request<PlayerState>('/game/preset/save', { method: 'POST', body: JSON.stringify({ name, ships }) }),
   deletePreset: (presetId: string) =>

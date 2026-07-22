@@ -10,6 +10,7 @@ import {
 } from './data/galaxyConstants.js';
 import { findShip } from './combat.js';
 import { CLASS_KANONIER_FLEET_SPEED_MULTIPLIER, CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER } from './data/classes.js';
+import { ECONOMY_PROSPEKTOR_FUEL_MULTIPLIER } from './data/economyClasses.js';
 import { SHIP_MODULE_DRIVE_EFFECT_PER_LEVEL } from './data/shipModules.js';
 import { RELOCATE_BASE_COST_DM } from './data/economy.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -93,14 +94,18 @@ export function galaxyDurationMs(distance: number, speed: number): number {
   return Math.round(seconds * 1000);
 }
 
-export function galaxyFuelCost(ships: Record<string, number>, distance: number): number {
+// `state` optional (Nutzerentscheidung Juli 2026, Wirtschafts-Klasse "Prospektor" - siehe
+// economyClasses.ts) - senkt den Treibstoffverbrauch bei Galaxie-Fluegen. Optional, damit
+// Aufrufstellen ohne Spielerkontext (falls es je welche gibt/gab) weiterhin funktionieren.
+export function galaxyFuelCost(ships: Record<string, number>, distance: number, state: PlayerState | null = null): number {
   let total = 0;
   Object.entries(ships).forEach(([id, count]) => {
     if (!count) return;
     const ship = findShip(id);
     if (ship) total += count * (ship.fuelConsumption || 0);
   });
-  return Math.ceil(total * (distance / 1000));
+  const economyFuel = state?.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_FUEL_MULTIPLIER : 1;
+  return Math.ceil(total * (distance / 1000) * economyFuel);
 }
 
 // ========== GALAXIE-UEBERSICHT ==========
@@ -150,7 +155,7 @@ export function startHoldDeployment(state: PlayerState, targetUserId: number, sh
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
   const distance = galaxyDistance(state.galaxyPosition, targetState.galaxyPosition);
   const durationMs = galaxyDurationMs(distance, speed);
-  const fuelCost = galaxyFuelCost(ships, distance);
+  const fuelCost = galaxyFuelCost(ships, distance, state);
   if (state.resources.deuterium < fuelCost) {
     return { ok: false, error: `Nicht genug Deuterium für den Flug (benötigt: ${fuelCost.toLocaleString('de-DE')}).` };
   }
@@ -191,7 +196,7 @@ export function recallHoldDeployment(state: PlayerState, deploymentId: string): 
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
   const speed = galaxyFleetSpeed(deployment.ships, state.research, state.playerClass, state.shipModules);
   const durationMs = galaxyDurationMs(distance, speed);
-  const fuelCost = galaxyFuelCost(deployment.ships, distance);
+  const fuelCost = galaxyFuelCost(deployment.ships, distance, state);
   if (state.resources.deuterium < fuelCost) {
     return { ok: false, error: `Nicht genug Deuterium für den Rückruf (benötigt: ${fuelCost.toLocaleString('de-DE')}).` };
   }

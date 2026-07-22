@@ -89,7 +89,7 @@ export function startEventClaim(state: PlayerState, eventId: string, ships: Reco
   if (speed <= 0) return { ok: false, error: 'Ungültige Flottenzusammenstellung.' };
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
   const durationMs = galaxyDurationMs(distance, speed);
-  const fuelCost = galaxyFuelCost(ships, distance);
+  const fuelCost = galaxyFuelCost(ships, distance, state);
   if (state.resources.deuterium < fuelCost) {
     return { ok: false, error: `Nicht genug Deuterium für den Flug (benötigt: ${fuelCost.toLocaleString('de-DE')}).` };
   }

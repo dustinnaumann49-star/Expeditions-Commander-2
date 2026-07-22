@@ -617,9 +617,18 @@ export interface PlayerStats {
 // zu raten).
 export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
 
+// Wirtschafts-Klasse (Nutzerentscheidung Juli 2026): eine ZWEITE, komplett unabhaengige Klassenwahl
+// neben der Kampf-Klasse (PlayerClass) - rein wirtschaftliche Boni (Handel/Bauzeit/Foerderung),
+// ruehrt NIE an Waffen/Schild/Panzerung. Anders als die Kampf-Klasse NICHT bei Registrierung
+// erzwungen (bleibt `null` bis freiwillig gewaehlt) und JEDE Wahl/jeder Wechsel kostet
+// ECONOMY_CLASS_CHANGE_COST_DM (auch die allererste Wahl, anders als bei PlayerClass wo nur der
+// Wechsel kostet) - siehe setEconomyClass() in classActions.ts.
+export type EconomyClass = 'schmuggler' | 'ingenieur' | 'prospektor';
+
 export interface PlayerState {
   userId: number;
   playerClass: PlayerClass | null;
+  economyClass: EconomyClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
   fleet: Record<string, number>;
   defense: Record<string, number>;

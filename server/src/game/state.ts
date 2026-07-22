@@ -66,6 +66,7 @@ export function defaultPlayerState(userId: number): PlayerState {
   return {
     userId,
     playerClass: null,
+    economyClass: null,
     // Bewusst grosszuegig bemessen: reicht fuer eine komplette Mining-Flotte (700) + Begleitschutz (1500)
     // plus etwas Reserve fuer einen fruehen Raid - siehe Chat-Verlauf/README fuer die genaue Herleitung.
     resources: { metall: 50_000_000, kristall: 25_000_000, deuterium: 10_000_000, dm: 500 },
@@ -208,6 +209,12 @@ export function loadPlayerState(userId: number): PlayerState {
   // blockierende Auswahl-Ansicht.
   if ((parsed as any).playerClass === undefined) {
     (parsed as any).playerClass = null;
+  }
+  // Wirtschafts-Klasse nachruesten (existierte vor Einfuehrung dieses Systems nicht) - anders als
+  // playerClass ist `null` hier der DAUERHAFTE Normalzustand (kein Zwang zur Auswahl), nicht nur
+  // eine Uebergangs-Migration.
+  if ((parsed as any).economyClass === undefined) {
+    (parsed as any).economyClass = null;
   }
   // Notruf-Events komplett entfernt (siehe README) - falls ein alter Spielstand noch die
   // Felder event/nextEventCheck enthaelt, werden sie beim Speichern einfach ignoriert (kein

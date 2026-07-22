@@ -27,6 +27,7 @@ interface GameContextValue {
   buyBooster: (boosterId: string) => Promise<void>;
   buyVoucher: (voucherId: string) => Promise<void>;
   setPlayerClass: (classId: string) => Promise<void>;
+  setEconomyClass: (classId: string) => Promise<void>;
   savePreset: (name: string, ships: Record<string, number>) => Promise<void>;
   deletePreset: (presetId: string) => Promise<void>;
   clearMessages: (type?: 'kampf' | 'farm') => Promise<void>;
@@ -207,6 +208,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     buyBooster: (boosterId) => run(() => api.buyBooster(boosterId)),
     buyVoucher: (voucherId) => run(() => api.buyVoucher(voucherId)),
     setPlayerClass: (classId) => run(() => api.setClass(classId)),
+    setEconomyClass: (classId) => run(() => api.setEconomyClass(classId)),
     savePreset: (name, ships) => run(() => api.savePreset(name, ships)),
     deletePreset: (presetId) => run(() => api.deletePreset(presetId)),
     clearMessages: (type) => run(() => api.clearMessages(type)),

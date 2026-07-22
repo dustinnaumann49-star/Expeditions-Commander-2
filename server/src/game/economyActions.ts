@@ -1,21 +1,37 @@
 import { findShip, findDefense } from './combat.js';
 import { TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, BOOSTERS, SHOP_VOUCHERS } from './data/economy.js';
+import {
+  ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER,
+  ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER,
+  ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER,
+} from './data/economyClasses.js';
 import { applyReward } from './inventory.js';
 import type { ActionResult } from './actions.js';
 import type { PlayerState } from './types.js';
 
 // ========== HAENDLER (RESSOURCENTAUSCH) ==========
 
-export function computeTradeReceive(amount: number, from: string, to: string): number {
+// Wirtschafts-Klasse "Schmuggler" (Nutzerentscheidung Juli 2026, siehe economyClasses.ts) -
+// halbiert die Handelsgebuehr. `state` optional (null), damit computeTradeReceive() weiterhin auch
+// ohne Spielerkontext (z.B. reine Vorschau-Berechnungen) aufrufbar bleibt.
+export function effectiveTradeFee(state: PlayerState | null): number {
+  return state?.economyClass === 'schmuggler' ? TRADE_FEE * ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER : TRADE_FEE;
+}
+
+export function effectiveScrapRefundRate(state: PlayerState | null): number {
+  return state?.economyClass === 'schmuggler' ? SCRAP_REFUND_RATE * ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER : SCRAP_REFUND_RATE;
+}
+
+export function computeTradeReceive(amount: number, from: string, to: string, state: PlayerState | null = null): number {
   if (from === to || amount <= 0) return 0;
   const value = amount * TRADE_VALUE[from];
-  return (value / TRADE_VALUE[to]) * (1 - TRADE_FEE);
+  return (value / TRADE_VALUE[to]) * (1 - effectiveTradeFee(state));
 }
 
 export function executeTrade(state: PlayerState, amount: number, from: 'metall' | 'kristall' | 'deuterium', to: 'metall' | 'kristall' | 'deuterium'): ActionResult {
   if (amount <= 0 || from === to) return { ok: false, error: 'Ungültiger Tausch.' };
   if (amount > state.resources[from]) return { ok: false, error: 'Nicht genug Ressourcen.' };
-  const received = computeTradeReceive(amount, from, to);
+  const received = computeTradeReceive(amount, from, to, state);
   state.resources[from] -= amount;
   state.resources[to] += received;
   return { ok: true };
@@ -30,10 +46,11 @@ export function scrapShip(state: PlayerState, shipId: string, qty: number): Acti
   if (qty <= 0) return { ok: false, error: 'Bitte eine gültige Anzahl angeben.' };
   const effectiveQty = Math.min(qty, owned);
   if (effectiveQty <= 0) return { ok: false, error: 'Keine Schiffe dieses Typs vorhanden.' };
+  const rate = effectiveScrapRefundRate(state);
   state.fleet[shipId] -= effectiveQty;
-  state.resources.metall += Math.round(ship.cost.metall * SCRAP_REFUND_RATE * effectiveQty);
-  state.resources.kristall += Math.round(ship.cost.kristall * SCRAP_REFUND_RATE * effectiveQty);
-  state.resources.deuterium += Math.round(ship.cost.deuterium * SCRAP_REFUND_RATE * effectiveQty);
+  state.resources.metall += Math.round(ship.cost.metall * rate * effectiveQty);
+  state.resources.kristall += Math.round(ship.cost.kristall * rate * effectiveQty);
+  state.resources.deuterium += Math.round(ship.cost.deuterium * rate * effectiveQty);
   return { ok: true };
 }
 
@@ -44,10 +61,11 @@ export function scrapDefense(state: PlayerState, defId: string, qty: number): Ac
   if (qty <= 0) return { ok: false, error: 'Bitte eine gültige Anzahl angeben.' };
   const effectiveQty = Math.min(qty, owned);
   if (effectiveQty <= 0) return { ok: false, error: 'Keine Anlagen dieses Typs vorhanden.' };
+  const rate = effectiveScrapRefundRate(state);
   state.defense[defId] -= effectiveQty;
-  state.resources.metall += Math.round(def.cost.metall * SCRAP_REFUND_RATE * effectiveQty);
-  state.resources.kristall += Math.round(def.cost.kristall * SCRAP_REFUND_RATE * effectiveQty);
-  state.resources.deuterium += Math.round(def.cost.deuterium * SCRAP_REFUND_RATE * effectiveQty);
+  state.resources.metall += Math.round(def.cost.metall * rate * effectiveQty);
+  state.resources.kristall += Math.round(def.cost.kristall * rate * effectiveQty);
+  state.resources.deuterium += Math.round(def.cost.deuterium * rate * effectiveQty);
   return { ok: true };
 }
 
@@ -56,8 +74,10 @@ export function scrapDefense(state: PlayerState, defId: string, qty: number): Ac
 export function buyBooster(state: PlayerState, boosterId: string): ActionResult {
   const booster = BOOSTERS.find((b) => b.id === boosterId);
   if (!booster) return { ok: false, error: 'Unbekannter Booster.' };
-  if (state.resources.dm < booster.cost) return { ok: false, error: 'Nicht genug Dunkle Materie.' };
-  state.resources.dm -= booster.cost;
+  // Wirtschafts-Klasse "Schmuggler" (Nutzerentscheidung Juli 2026) - guenstigere Booster.
+  const cost = Math.round(booster.cost * (state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1));
+  if (state.resources.dm < cost) return { ok: false, error: 'Nicht genug Dunkle Materie.' };
+  state.resources.dm -= cost;
   const now = Date.now();
   const currentExpiry = state.activeBoosters[boosterId] || now;
   const base = currentExpiry > now ? currentExpiry : now;
