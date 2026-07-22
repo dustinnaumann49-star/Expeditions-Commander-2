@@ -1258,3 +1258,21 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   - Erneut End-to-End verifiziert: Bericht in der Liste jetzt mit "(Details)"-Markierung, Modal
     zeigt bei Stufe 3 korrekt gefüllte Flotten-/Verteidigungstabellen mit Bereichsangaben (inkl.
     einer inzwischen durch Basis-Wachstum neu hinzugekommenen Kreuzer-Zeile).
+- Neu: Effektivwerte auf Schiffs-/Verteidigungs-Baukarten (Nutzerentscheidung - Karten zeigten
+  bisher IMMER nur die reinen Basiswerte aus `ships.ts`/`defenses.ts`, auch wenn Forschung/Klasse/
+  Schiffs-Module/Kampf-Booster den tatsächlichen Kampfwert längst verändert hatten). Jetzt z.B.
+  "Waffen: 1.500 (3.000)" - Basiswert, und in Klammern der Effektivwert, NUR wenn er vom Basiswert
+  abweicht (sonst bleibt nur der Basiswert stehen, um die Karten nicht zuzumüllen).
+  - **Neue Funktionen `getEffectiveShipStats()`/`getEffectiveDefenseStats()`** (`lib/combatInfo.ts`)
+    spiegeln `server/src/game/combat.ts`s `getEffectiveStats()` 1:1 client-seitig (Forschungs-
+    Multiplikatoren, Klassen-Bonus, Schiffs-/Verteidigungs-Module, 24h-Kampf-Booster) - dafür neu
+    `waffenMultiplier()`/`panzerungMultiplier()` ergänzt (`schildMultiplier()` gab es schon) und
+    `classCombatMultipliers()` (alle drei Werte, im Unterschied zum bestehenden
+    `getClassSchildMultiplier()`, der nur für den Kuppel-Pool gedacht ist).
+  - **Kuppeln sind ein Sonderfall**: ihr Schild-Beitrag läuft komplett über den gemeinsamen
+    Kuppel-Pool (`computeDomeSharedPool()`), der Effektivwert pro Einzelanlage wäre also immer 0 -
+    `ShipBuildCard.tsx`/`DefenseBuildCard.tsx` zeigen bei `def.isDome` deshalb bewusst NUR den
+    Basiswert für Schild, unabhängig vom (irreführenden) Rückgabewert der Funktion.
+  - Manuell verifiziert (Kanonier-Klasse, +100% Waffenschaden): "Waffen: 1.500 (3.000)" bzw.
+    "770 (1.540)" bei Verteidigung - exakt der erwartete 2x-Faktor, Schild/Panzerung bleiben
+    korrekt ohne Klammer-Zusatz stehen (Kanonier wirkt nur auf Waffen).

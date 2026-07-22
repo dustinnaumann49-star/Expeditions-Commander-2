@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { formatTime } from '../lib/format';
 import { getDefenseBauzeitMultiplier, getDefenseCostMultiplier } from '../lib/multipliers';
-import { getRapidFireDisplay, computeDomeSharedPool, getPrecisionChance, getShieldRegenRate, getZielerfassungAccuracy, getCritChance } from '../lib/combatInfo';
+import {
+  getRapidFireDisplay,
+  computeDomeSharedPool,
+  getPrecisionChance,
+  getShieldRegenRate,
+  getZielerfassungAccuracy,
+  getCritChance,
+  getEffectiveDefenseStats,
+} from '../lib/combatInfo';
 import type { DefenseDefinition, GameData, PlayerState } from '../types/game';
+
+// Siehe ShipBuildCard.tsx - identisches Muster fuer die "Basiswert (Effektivwert)"-Anzeige.
+function statDisplay(base: number, effective: number): string {
+  const rounded = Math.round(effective);
+  if (rounded === base) return base.toLocaleString('de-DE');
+  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
+}
 
 // Bugfix: zaehlte bisher nur state.defense (bereits fertig gebaut), nicht die eigene
 // Bau-Warteschlange (defenseQueue) - bei limitierten Anlagen (maxCount, z.B. Kuppeln/Sentinel-/
@@ -57,6 +72,7 @@ export function DefenseBuildCard({
     state.resources.deuterium >= totalCost.deuterium &&
     capQty > 0;
   const effBuildTimeMs = def.buildTime * bauzeitMult * capQty * 1000;
+  const effStats = getEffectiveDefenseStats(gameData, state, def);
 
   return (
     <div className="ship-card">
@@ -75,9 +91,11 @@ export function DefenseBuildCard({
           {def.maxCount ? `/${def.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {def.stats.waffen > 0 && <span>Waffen: {def.stats.waffen.toLocaleString('de-DE')}</span>}
-          <span>Schild: {def.stats.schild.toLocaleString('de-DE')}</span>
-          <span>Panzerung: {def.stats.panzerung.toLocaleString('de-DE')}</span>
+          {def.stats.waffen > 0 && <span>Waffen: {statDisplay(def.stats.waffen, effStats.waffen)}</span>}
+          {/* Kuppeln: Schild laeuft komplett ueber den gemeinsamen Kuppel-Pool (computeDomeSharedPool),
+              der Effektivwert hier waere immer 0 und damit irrefuehrend - Basiswert bleibt stehen. */}
+          <span>Schild: {def.isDome ? def.stats.schild.toLocaleString('de-DE') : statDisplay(def.stats.schild, effStats.schild)}</span>
+          <span>Panzerung: {statDisplay(def.stats.panzerung, effStats.panzerung)}</span>
         </div>
 
         <div className="ship-cost">

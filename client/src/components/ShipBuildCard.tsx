@@ -12,7 +12,18 @@ import {
   getEvasionChance,
   getCritChance,
   driveTypeLabel,
+  getEffectiveShipStats,
 } from '../lib/combatInfo';
+
+// Zeigt den Basiswert, und falls Forschung/Klasse/Schiffs-Module/Kampf-Booster den tatsaechlichen
+// Kampfwert veraendern, zusaetzlich den Effektivwert in Klammern (Nutzerentscheidung) - z.B.
+// "1.500 (2.700)". Bei exakter Uebereinstimmung (kein Unterschied) bleibt nur der Basiswert stehen,
+// um die Karten nicht unnoetig zuzumuellen.
+function statDisplay(base: number, effective: number): string {
+  const rounded = Math.round(effective);
+  if (rounded === base) return base.toLocaleString('de-DE');
+  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
+}
 import type { GameData, PlayerState, ShipDefinition, GroupOperation } from '../types/game';
 
 // Bugfix: zaehlte bisher NUR state.fleet (zuhause) + buildQueue (im Bau) + Missionen +
@@ -82,6 +93,7 @@ export function ShipBuildCard({
     state.resources.deuterium >= totalCost.deuterium &&
     capQty > 0;
   const effBuildTimeMs = ship.buildTime * bauzeitMult * (ship.unique ? 1 : capQty) * 1000;
+  const effStats = getEffectiveShipStats(gameData, state, ship);
 
   return (
     <div className="ship-card">
@@ -100,9 +112,9 @@ export function ShipBuildCard({
           {ship.maxCount ? `/${ship.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {ship.stats.waffen > 0 && <span>Waffen: {ship.stats.waffen.toLocaleString('de-DE')}</span>}
-          <span>Schild: {ship.stats.schild.toLocaleString('de-DE')}</span>
-          <span>Panzerung: {ship.stats.panzerung.toLocaleString('de-DE')}</span>
+          {ship.stats.waffen > 0 && <span>Waffen: {statDisplay(ship.stats.waffen, effStats.waffen)}</span>}
+          <span>Schild: {statDisplay(ship.stats.schild, effStats.schild)}</span>
+          <span>Panzerung: {statDisplay(ship.stats.panzerung, effStats.panzerung)}</span>
         </div>
 
         {ship.cost && (

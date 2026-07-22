@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, PlayerClass } from '../types/game';
+import type { GameData, PlayerState, PlayerClass, ShipDefinition, DefenseDefinition } from '../types/game';
 import { isBoosterActive } from './multipliers';
 
 // Spiegelt server/src/game/data/classes.ts's CLASS_*_SCHILD_MULTIPLIER 1:1, nur fuer die
@@ -80,6 +80,67 @@ export function getCritChance(gameData: GameData, research: Record<string, numbe
 export function schildMultiplier(gameData: GameData, research: Record<string, number>): number {
   const tech = gameData.research.find((r) => r.id === 'schild');
   return 1 + (research.schild || 0) * (tech ? tech.effectPerLevel : 0.1);
+}
+
+export function waffenMultiplier(gameData: GameData, research: Record<string, number>): number {
+  const tech = gameData.research.find((r) => r.id === 'waffen');
+  return 1 + (research.waffen || 0) * (tech ? tech.effectPerLevel : 0.1);
+}
+
+export function panzerungMultiplier(gameData: GameData, research: Record<string, number>): number {
+  const tech = gameData.research.find((r) => r.id === 'panzerung');
+  return 1 + (research.panzerung || 0) * (tech ? tech.effectPerLevel : 0.1);
+}
+
+// Spiegelt server/src/game/data/classes.ts's CLASS_*_WAFFEN/SCHILD/PANZERUNG_MULTIPLIER 1:1 - im
+// Unterschied zu getClassSchildMultiplier() oben (nur fuer den Kuppel-Pool gedacht) liefert diese
+// Funktion alle drei Werte fuer die vollstaendige Effektiv-Werte-Anzeige auf den Bau-Karten.
+function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: number; schild: number; panzerung: number } {
+  if (playerClass === 'kanonier') return { waffen: 2, schild: 1, panzerung: 1 };
+  if (playerClass === 'bollwerk') return { waffen: 1, schild: 1.5, panzerung: 1.5 };
+  if (playerClass === 'kommandant') return { waffen: 4 / 3, schild: 4 / 3, panzerung: 4 / 3 };
+  return { waffen: 1, schild: 1, panzerung: 1 };
+}
+
+// Spiegelt server/src/game/combat.ts's getEffectiveStats() 1:1 fuer den Schiffs-Zweig - fuer die
+// "Basiswert (Effektivwert)"-Anzeige auf den Bau-Karten (Nutzerentscheidung), damit sichtbar wird,
+// was Forschung/Klasse/Schiffs-Module/Kampf-Booster tatsaechlich bewirken, ohne extra in den
+// Kampfsimulator wechseln zu muessen.
+export function getEffectiveShipStats(
+  gameData: GameData,
+  state: PlayerState,
+  ship: ShipDefinition
+): { waffen: number; schild: number; panzerung: number } {
+  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const classMult = classCombatMultipliers(state.playerClass);
+  const waffenModule = 1 + (state.shipModules[`${ship.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  const schildModule = 1 + (state.shipModules[`${ship.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  const panzerungModule = 1 + (state.shipModules[`${ship.id}_panzerung`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  return {
+    waffen: ship.stats.waffen * waffenMultiplier(gameData, state.research) * kampfBoost * classMult.waffen * waffenModule,
+    schild: ship.stats.schild * schildMultiplier(gameData, state.research) * kampfBoost * classMult.schild * schildModule,
+    panzerung: ship.stats.panzerung * panzerungMultiplier(gameData, state.research) * kampfBoost * classMult.panzerung * panzerungModule,
+  };
+}
+
+// Spiegelt server/src/game/combat.ts's getEffectiveStats() 1:1 fuer den Verteidigungs-Zweig -
+// Kuppeln melden weiterhin schild=0 (ihr Beitrag laeuft komplett ueber computeDomeSharedPool()).
+export function getEffectiveDefenseStats(
+  gameData: GameData,
+  state: PlayerState,
+  def: DefenseDefinition
+): { waffen: number; schild: number; panzerung: number } {
+  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const classMult = classCombatMultipliers(state.playerClass);
+  const ownSchild = def.isDome ? 0 : def.stats.schild;
+  const waffenModule = 1 + (state.shipModules[`${def.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  const schildModule = 1 + (state.shipModules[`${def.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  const panzerungModule = 1 + (state.shipModules[`${def.id}_panzerung`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+  return {
+    waffen: def.stats.waffen * waffenMultiplier(gameData, state.research) * kampfBoost * classMult.waffen * waffenModule,
+    schild: ownSchild * schildMultiplier(gameData, state.research) * kampfBoost * classMult.schild * schildModule,
+    panzerung: def.stats.panzerung * panzerungMultiplier(gameData, state.research) * kampfBoost * classMult.panzerung * panzerungModule,
+  };
 }
 
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gemeinsamer Pool statt Pro-Anlage-Verteilung.
