@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Schiffs-/Verteidigungs-Module günstiger und schneller',
+    changes: [
+      'Feedback aufgenommen: Module für Schiffe und Verteidigungsanlagen waren gerade bei großen/teuren Typen praktisch nicht mehr machbar - je größer das Schiff, desto extremer der Kosten-/Zeitsprung.',
+      'Basiskosten und -Bauzeit pro Modul deutlich gesenkt, und auch der Anstieg von Stufe zu Stufe fällt jetzt sanfter aus - betrifft alle Schiffs- und Verteidigungs-Module gleichermaßen.',
+      'Der Imperator als teuerstes Modul im Spiel ist besonders stark betroffen: Stufe 1 kostete bisher 500 Mio. Metall / 400 Mio. Kristall / 250 Mio. Deuterium bei 7 Tagen Basis-Bauzeit - jetzt 50 Mio. / 40 Mio. / 25 Mio. bei 2 Tagen Basis-Bauzeit.',
+      'Gebäude-Module (im Forschungsbereich) sind von dieser Anpassung nicht betroffen, nur Schiffe/Verteidigung in der Werft.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Raids: EIN Sammelbericht statt bis zu 5 Einzel-Nachrichten pro Welle',
     changes: [
       'Ein Piratenraid auf die Heimatbasis (5 Wellen) hat bisher pro Welle eine eigene Kampfbericht-Nachricht verschickt - bei aktiver Verstärkung oder haltenden Flotten sogar mehrfach an mehrere Spieler gleichzeitig.',

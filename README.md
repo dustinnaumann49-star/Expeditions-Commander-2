@@ -1105,3 +1105,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   (theme.css .info-list-label/.info-list-value) - beide Seiten teilen sich jetzt die Breite fair.
 - Imperator-Kampfwerte wieder deutlich gesenkt: Waffen 5 Mio.→500k, Schild 2,5 Mio.→400k,
   Panzerung 12 Mio.→3 Mio. - war zu dominant und beendete Kämpfe im Alleingang.
+- Schiffs-/Verteidigungs-Modulkosten und -Bauzeiten deutlich gesenkt (Nutzer-Feedback: bei teuren
+  Schiffen/Anlagen nicht mehr machbar). `shipModules.ts`/`defenseModules.ts`: Kosten-Multiplikator
+  25x→8x, Zeit-Multiplikator 300x→80x, Kosten-Wachstum pro Stufe 1.55→1.35, Zeit-Wachstum 1.4→1.25.
+  Imperator-Modul-Fixkosten (hatte keine ableitbare `cost`) von 500/400/250 Mio. auf 50/40/25 Mio.
+  gesenkt, Basis-Bauzeit von 7 auf 2 Tage.
