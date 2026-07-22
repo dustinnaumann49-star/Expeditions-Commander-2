@@ -264,6 +264,17 @@ export const PRECISION_BASE = 0.40;
 export const PRECISION_MAX_PLAYER = 0.60;
 export const DEFENSE_REPAIR_PERCENT = 0.70;
 export const MAX_ROUNDS = 100;
+// Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
+// eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
+// regulaer per Schaden auf 0 HP gebracht zu werden. Vorher 0.7 mit LINEARER Chance (1 -
+// hpCur/hpMax) - das liess Flotten schon ab moderatem Schaden reihenweise "explodieren" statt
+// uebers Gefecht hinweg an HP zu verlieren, wodurch Kaempfe zu frueh kippten. Jetzt niedrigere
+// Schwelle (Einheiten muessen deutlich staerker angeschlagen sein, bevor ueberhaupt ein Risiko
+// besteht) UND quadratisch gedaempfte Chance (siehe EXPLOSION_CHANCE_EXPONENT) statt linear -
+// schwer beschaedigte Schiffe halten dadurch spuerbar laenger durch, die Chance wird erst nahe am
+// reg. Tod wirklich hoch.
+export const EXPLOSION_HP_THRESHOLD = 0.55;
+export const EXPLOSION_CHANCE_EXPONENT = 2;
 export const MAX_BUILD_SLOTS = 3;
 export const MAX_DEFENSE_SLOTS = 3;
 export const MAX_RESEARCH_SLOTS = 4;

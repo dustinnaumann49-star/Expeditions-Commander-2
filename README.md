@@ -322,6 +322,23 @@ client/
     Piraten-Jäger-Schwärmen geschwächt. Die Ziel-AUSWAHL selbst (`rfMap` in `fireShots()`, ob ein
     Schütze RF-Ziele bevorzugt anvisiert) bleibt unverändert - nur die Folgeschuss-Chance sinkt.
 
+21a. **Instant-Explosions-Mechanik gedämpft** (`EXPLOSION_HP_THRESHOLD`/`EXPLOSION_CHANCE_EXPONENT`
+    in `combatConstants.ts`, Anwendung in `applyHitToTarget()`, Nutzerentscheidung Juli 2026):
+    schwer beschädigte Einheiten können weiterhin bei einem Treffer sofort komplett ausfallen
+    (statt regulär per Schaden auf 0 HP zu kommen), aber vorher (Schwelle 0.7, LINEARE Chance
+    `1 - hpCur/hpMax`) liess Flotten schon ab moderatem Schaden reihenweise "explodieren" -
+    Kämpfe kippten dadurch oft nach wenigen Runden statt sich taktisch über viele Runden
+    hinzuziehen. Jetzt: niedrigere Schwelle (0.55 statt 0.7 - Einheiten muessen deutlich stärker
+    angeschlagen sein) UND quadratisch (statt linear) gedämpfte Chance innerhalb dieses Fensters
+    (`severity = 1 - (hpCur/hpMax)/EXPLOSION_HP_THRESHOLD`, `pExplode = severity^EXPLOSION_CHANCE_EXPONENT`) -
+    wird erst nahe am tatsächlichen Tod wirklich hoch. **Balance-Hinweis:** eine erste Version mit
+    Schwelle 0.4 senkte die Verluste zwar stark (z.B. 5000 Leichter Jäger vs. Piraten-Hoch: 18%
+    statt 63%), liess Kämpfe im Kampfsimulator aber KONSEQUENT bis `MAX_ROUNDS = 100` laufen
+    (CPU/RAM-Belastung, siehe Punkt 20) statt sich natürlich aufzulösen - `MAX_ROUNDS` selbst bleibt
+    bewusst bei 100 (harte Grenze, Nutzerentscheidung), daher wurde stattdessen die Schwelle auf
+    0.55 angehoben, bis Kämpfe im Schnitt wieder klar unter 100 Runden enden (~89-92 im Test)
+    statt das Limit routinemäßig auszureizen.
+
 22. **Verteidigungsanlagen-Waffenwerte sind an die Kosteneffizienz der Schiffe gekoppelt**
     (Zielwert ca. 65 Kosten/Waffenpunkt), Schild/Panzerung auf Ziel-Gesamteffizienz 1,4 kalibriert
     (spürbar zäher als Schiffe). Verteidigungsanlagen (inkl. Schildkuppel-Pool) zählen NICHT in

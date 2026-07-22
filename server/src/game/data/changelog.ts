@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Balance: Kämpfe ziehen sich jetzt spürbar länger und taktischer hin',
+    changes: [
+      'Bisher konnte eine bereits angeschlagene Einheit (unter 70% ihrer HP) bei jedem weiteren Treffer eine mit dem Schaden LINEAR steigende Chance haben, sofort komplett zu explodieren - das liess ganze Flotten schon ab moderatem Schaden reihenweise "explodieren" statt übers Gefecht hinweg an HP zu verlieren, wodurch Kämpfe oft nach wenigen Runden entschieden waren.',
+      'Die Schwelle liegt jetzt bei 55% HP (statt 70%) und die Chance steigt innerhalb dieses Fensters quadratisch statt linear - schwer beschädigte Schiffe halten dadurch spürbar länger durch, bevor überhaupt ein nennenswertes Explosionsrisiko besteht.',
+      'Effekt im Kampfsimulator: Gefechte dauern jetzt im Schnitt deutlich länger (rund 90 statt 50-60 Runden) und verlaufen kontinuierlicher statt abrupt zu kippen.',
+      'Das Rundenlimit selbst (100 Runden) bleibt unverändert als CPU/RAM-Schutzgrenze bestehen - die neue Balance ist so austariert, dass Kämpfe im Regelfall deutlich darunter enden.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Balance: Jäger-Klassen überleben Piraten-Begegnungen jetzt besser',
     changes: [
       'Leichter und Schwerer Jäger gingen bisher unabhängig von der eingesetzten Anzahl fast immer als erstes drauf - der Grund: so gut wie jede Piraten-Einheit hat RapidFire (Bonus-Folgeschüsse) speziell gegen diese beiden Klassen, und Piraten-Flotten bestehen selbst überwiegend aus genau diesen Schiffen.',

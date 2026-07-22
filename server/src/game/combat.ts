@@ -9,6 +9,8 @@ import {
   PRECISION_BASE,
   PRECISION_MAX_PLAYER,
   MAX_ROUNDS,
+  EXPLOSION_HP_THRESHOLD,
+  EXPLOSION_CHANCE_EXPONENT,
   MULTI_TARGET_VOLLEY_SHIPS,
   PRECISION_MODIFIER,
   SHIELD_REGEN_MODIFIER,
@@ -756,10 +758,15 @@ function applyHitToTarget(
     }
   }
 
-  // Kritischer Treffer: eine schwer beschaedigte Einheit (unter 70% HP) hat eine mit dem
-  // Schadensgrad steigende Chance, sofort komplett auszufallen ("explodiert").
-  if (currentTarget && currentTarget.hpCur > 0 && currentTarget.hpCur < 0.7 * currentTarget.hpMax) {
-    const pExplode = 1 - currentTarget.hpCur / currentTarget.hpMax;
+  // Kritischer Treffer: eine schwer beschaedigte Einheit (unter EXPLOSION_HP_THRESHOLD ihrer HP)
+  // hat eine mit dem Schadensgrad steigende Chance, sofort komplett auszufallen ("explodiert") -
+  // siehe combatConstants.ts fuer die Begruendung der Schwelle/Daempfung.
+  if (currentTarget && currentTarget.hpCur > 0 && currentTarget.hpCur < EXPLOSION_HP_THRESHOLD * currentTarget.hpMax) {
+    // Normiert auf das Fenster [0, EXPLOSION_HP_THRESHOLD]: 0 direkt beim Erreichen der Schwelle,
+    // 1 bei hpCur=0 - danach quadratisch (statt linear) gedaempft, damit die Chance erst nahe am
+    // tatsaechlichen Tod wirklich hoch wird.
+    const severity = 1 - currentTarget.hpCur / currentTarget.hpMax / EXPLOSION_HP_THRESHOLD;
+    const pExplode = Math.pow(severity, EXPLOSION_CHANCE_EXPONENT);
     if (Math.random() < pExplode) {
       currentTarget.hpCur = 0;
       onKill?.(currentTarget);
