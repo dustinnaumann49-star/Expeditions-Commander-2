@@ -343,6 +343,11 @@ export interface SkirmishSummary {
   replay?: CombatReplay;
 }
 
+export interface RichFindEntry {
+  hour: number;
+  bonus: { metall: number; kristall: number; deuterium: number };
+}
+
 export interface FarmDetail {
   sektorName: string;
   resources: { metall: number; kristall: number; deuterium: number };
@@ -350,6 +355,7 @@ export interface FarmDetail {
   teile: { waffen: number; schild: number; panzerung: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
+  richFinds?: RichFindEntry[];
 }
 
 export interface SpyReportUnitRange {

@@ -10,6 +10,7 @@ import {
   ASTEROID_ESCORT_POWER_MIN,
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
+  ASTEROID_RICH_FIND_CHANCE,
   COMBAT_SHIP_IDS,
   getEscalationMultiplier,
 } from './data/economy.js';
@@ -296,11 +297,30 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   });
 }
 
+function runAsteroidRichFindCheck(mission: Mission) {
+  const hasFarm = mission.farmed.metall > 0 || mission.farmed.kristall > 0 || mission.farmed.deuterium > 0;
+  if (!hasFarm) return;
+  if (Math.random() >= ASTEROID_RICH_FIND_CHANCE) return;
+
+  const bonus = {
+    metall: mission.farmed.metall,
+    kristall: mission.farmed.kristall,
+    deuterium: mission.farmed.deuterium,
+  };
+  mission.farmed.metall += bonus.metall;
+  mission.farmed.kristall += bonus.kristall;
+  mission.farmed.deuterium += bonus.deuterium;
+
+  if (!mission.richFindLog) mission.richFindLog = [];
+  mission.richFindLog.push({ hour: mission.processedHours, bonus });
+}
+
 async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const cfg = SEKTOR_CONFIG[mission.sektorId];
   if (!cfg) return;
 
   if (cfg.type === 'asteroid') {
+    runAsteroidRichFindCheck(mission);
     await runAsteroidEscortCheck(state, mission);
     return;
   }
@@ -615,7 +635,18 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
     },
     fleetReturned: { ...mission.ships },
     skirmishes: mission.skirmishLog,
+    richFinds: mission.richFindLog,
   };
+  let richFindText = '';
+  if (mission.richFindLog && mission.richFindLog.length > 0) {
+    const totalBonus = mission.richFindLog.reduce(
+      (sum, f) => sum + f.bonus.metall + f.bonus.kristall + f.bonus.deuterium,
+      0
+    );
+    richFindText = ` Reicher Asteroidenfund in Stunde ${mission.richFindLog
+      .map((f) => f.hour)
+      .join(', ')} (Ertrag verdoppelt, Bonus insgesamt ${Math.floor(totalBonus).toLocaleString('de-DE')} Ressourcen) - Details siehe unten.`;
+  }
   let skirmishText = '';
   if (mission.skirmishLog && mission.skirmishLog.length > 0) {
     const totalLost = mission.skirmishLog.reduce(
@@ -630,7 +661,7 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       details ? ` (${details})` : ''
     } - Details siehe unten.`;
   }
-  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${skirmishText}`, detail);
+  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${richFindText}${skirmishText}`, detail);
 }
 
 function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rueckflug' {

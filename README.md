@@ -388,6 +388,17 @@ client/
     Muster BEWUSST NICHT (Nutzerentscheidung) - deren Multiplayer-Kampfberichte bleiben wie
     bisher pro Stunden-/10-Minuten-Check einzeln.
 
+34a. **Asteroiden-Felder: "reicher Fund"-Chance pro Stunden-Check** (`ASTEROID_RICH_FIND_CHANCE`
+    in `economy.ts`, `runAsteroidRichFindCheck()` in `missions.ts`, Nutzerentscheidung Juli 2026)
+    - 8% Chance pro Stunden-Check (unabhängig von der Asteroiden-Eskorte-Chance, siehe Punkt 34),
+      den bis dahin akkumulierten `mission.farmed` (Metall/Kristall/Deuterium) zu verdoppeln.
+      Bewusst als Glücksspiel-Mechanik: früh in der 12h-Mission bringt ein Treffer wenig, spät
+      einen großen Bonus - mehrere Treffer in derselben Mission schaukeln sich sogar auf, da
+      `farmed` kumulativ verdoppelt wird. Betrifft NICHT `mission.dmFound` (bleibt an das
+      bestehende `dmCap`-System gebunden). Treffer sammeln sich in `mission.richFindLog` (analog
+      zu `skirmishLog`, Punkt 34) und werden erst im Abschlussbericht bei Rückkehr angezeigt
+      (`FarmDetail.richFinds`, eigene Tabelle in Nachrichten.tsx).
+
 35. **Belohnungs-Eskalation pro Missionsart** (`getEscalationMultiplier()`,
     `REWARD_ESCALATION` in `economy.ts`):
     - Piraten-Sektoren: Beute steigt additiv mit jedem Sieg in Folge (`Mission.streakWins`),

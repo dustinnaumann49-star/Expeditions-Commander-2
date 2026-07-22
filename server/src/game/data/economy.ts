@@ -238,6 +238,12 @@ export const ASTEROID_ESCORT_POWER_MIN = 0.08;
 export const ASTEROID_ESCORT_POWER_MAX = 0.16;
 export const ASTEROID_ESCORT_KILL_REWARD = { metall: 900000, kristall: 720000, deuterium: 600000 };
 
+// Nutzerentscheidung (Juli 2026): pro Stunden-Check im Asteroiden-Feld 8% Chance, den bis dahin
+// akkumulierten Ertrag (mission.farmed) zu verdoppeln - bewusst als Glücksspiel-Mechanik: frueh in
+// der Mission bringt ein Treffer wenig, spaet einen grossen Bonus. Trifft NICHT dmFound (bleibt an
+// das bestehende dmCap-System gebunden).
+export const ASTEROID_RICH_FIND_CHANCE = 0.08;
+
 export const MISSION_TRAVEL_MS = 60 * 1000;
 export const MISSION_DURATION_MS = 4 * 3600 * 1000;
 // Asteroiden-Felder laufen bewusst laenger als Piraten-Sektoren: weniger haeufiges Nachschauen

@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Reiche Asteroidenfunde in den Asteroiden-Feldern',
+    changes: [
+      'Bei jedem stündlichen Check während einer laufenden Mining-Mission besteht jetzt eine 8%-Chance auf einen "reichen Fund" - dabei verdoppelt sich der bis dahin gesammelte Ertrag (Metall/Kristall/Deuterium) der Mission.',
+      'Reine Glückssache: früh in der Mission bringt ein Treffer wenig, spät im 12-Stunden-Einsatz kann er richtig groß ausfallen. Mehrere Treffer in derselben Mission schaukeln sich sogar auf.',
+      'Betrifft nur die Ressourcen, nicht die Dunkle Materie - die bleibt an ihr eigenes Fund-Limit gebunden.',
+      'Der Rückkehr-Bericht zeigt jetzt eine eigene Tabelle "Reiche Asteroidenfunde" mit Stunde und Bonus je Treffer, falls es welche gab.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Optik: Kampfwerte jetzt farbig + auch in den Info-Popups sichtbar',
     changes: [
       'Waffen-, Schild- und Panzerungswerte auf Schiffs-/Verteidigungs-Karten sind jetzt farblich unterschieden (Waffen rot, Schild cyan, Panzerung blaugrau) und mit passendem Symbol versehen (⚔️🛡️🧱) - auf einen Blick leichter zu erfassen.',

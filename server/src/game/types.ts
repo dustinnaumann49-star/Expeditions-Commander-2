@@ -316,6 +316,16 @@ export interface Mission {
   // Asteroiden-Missionen die Nachrichten schnell ueberfuellen (bis zu 4 Zwischenberichte pro
   // Mission, ohne dass der Spieler zwischendurch etwas tun kann).
   skirmishLog?: SkirmishSummary[];
+  // Nur fuer Asteroiden-Felder (siehe ASTEROID_RICH_FIND_CHANCE in economy.ts): gesammelte Treffer
+  // der stuendlichen "reicher Fund"-Chance, die den bis dahin akkumulierten Ertrag verdoppelt hat.
+  // Analog zu skirmishLog erst im Abschlussbericht bei Rueckkehr zugestellt statt als
+  // Zwischen-Nachricht.
+  richFindLog?: RichFindEntry[];
+}
+
+export interface RichFindEntry {
+  hour: number;
+  bonus: { metall: number; kristall: number; deuterium: number };
 }
 
 export interface CombatUnitResult {
@@ -398,6 +408,7 @@ export interface FarmDetail {
   teile: { waffen: number; schild: number; panzerung: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
+  richFinds?: RichFindEntry[];
 }
 
 // Strukturierter Spionagebericht (siehe spyMissions.ts buildSpyReport()) - separat von FarmDetail,

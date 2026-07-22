@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { shipName } from '../lib/combatInfo';
-import type { CombatUnitResult, CombatDetail, FarmDetail, SpyReportDetail, SpyReportUnitRange, GameMessage, SkirmishSummary } from '../types/game';
+import type { CombatUnitResult, CombatDetail, FarmDetail, SpyReportDetail, SpyReportUnitRange, GameMessage, SkirmishSummary, RichFindEntry } from '../types/game';
 
 type AnyDetail = CombatDetail | FarmDetail | SpyReportDetail;
 
@@ -241,6 +241,38 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
   return rows;
 }
 
+// Anzeige der "reicher Fund"-Treffer im Asteroiden-Feld (siehe ASTEROID_RICH_FIND_CHANCE in
+// server/economy.ts) - analog zu SkirmishList, aber ohne Kampf-Details, da hier nur ein simpler
+// Ressourcen-Bonus pro Treffer anfaellt.
+function RichFindList({ finds }: { finds: RichFindEntry[] }) {
+  if (finds.length === 0) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Reiche Asteroidenfunde (Ertrag verdoppelt)</p>
+      <table className="combat-table">
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left' }}>Stunde</th>
+            <th>Metall</th>
+            <th>Kristall</th>
+            <th>Deuterium</th>
+          </tr>
+        </thead>
+        <tbody>
+          {finds.map((f, i) => (
+            <tr key={i}>
+              <td style={{ textAlign: 'left' }}>{f.hour}</td>
+              <td>{Math.floor(f.bonus.metall).toLocaleString('de-DE')}</td>
+              <td>{Math.floor(f.bonus.kristall).toLocaleString('de-DE')}</td>
+              <td>{Math.floor(f.bonus.deuterium).toLocaleString('de-DE')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // Gemeinsame Liste fuer gesammelte Einzel-Kaempfe (Stunden-Checks bei Missionen, Wellen bei
 // Raids) - wird sowohl im FarmDetail-Zweig (Missionen) als auch im CombatDetail-Zweig (Raids)
 // verwendet, siehe DetailModal. `unitLabel` haelt die Nummerierung kontextgerecht ("Stunde"
@@ -354,6 +386,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                 </table>
               </div>
             )}
+            <RichFindList finds={msg.detail.richFinds || []} />
             <SkirmishList skirmishes={msg.detail.skirmishes || []} unitLabel="Stunde" title="Piraten-Kontakte während der Mission" />
           </>
         ) : (
