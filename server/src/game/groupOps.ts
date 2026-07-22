@@ -14,6 +14,7 @@ import {
   pickWaveProfile,
   rollMultiplierWithOutlier,
   rollBattleModifier,
+  fleetSizeRewardMultiplier,
 } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
@@ -580,6 +581,10 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   if (Math.random() >= cfg.checkChance) return;
 
   const totalSentPower = accepted.reduce((sum, p) => sum + combatFleetPowerBase(p.ships), 0);
+  // Flottengroessen-Belohnungsbonus (siehe fleetSizeRewardMultiplier() in combat.ts) - gilt fuer
+  // Elite-Bollwerk (diese Funktion laeuft NIE fuer piraten_admiral, siehe runGroupOperationCheck()
+  // oben, der Admiral hat seine eigene Eskalationsmechanik).
+  const fleetBonus = fleetSizeRewardMultiplier(totalSentPower, cfg.npcFloor || 0);
 
   const table = PIRATEN_MULTIPLIER_ROLL[op.sektorId!];
   // Wellen-Ausreisser und Kampf-Modifikatoren sind hier auf 1x PRO GESAMTER EXPEDITION gedeckelt
@@ -697,9 +702,11 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   op.streakWins = anyNpcDestroyed ? streakBefore + 1 : 0;
   const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(0)}]` : '';
 
+  const fleetBonusText = fleetBonus > 1 ? ` [Großflotten-Bonus x${fleetBonus.toFixed(2)}]` : '';
+
   let teileGainText = '';
   if (anyNpcDestroyed && cfg.teileCap) {
-    const outcomeShare = 0.1 * escalationMultiplier;
+    const outcomeShare = 0.1 * escalationMultiplier * fleetBonus;
     accepted.forEach((p) => {
       if (!p.teile) return;
       (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
@@ -711,9 +718,9 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   let lootText = '';
   if (anyNpcDestroyed && cfg.lootBase) {
     const loot = {
-      metall: Math.round(cfg.lootBase.metall * escalationMultiplier),
-      kristall: Math.round(cfg.lootBase.kristall * escalationMultiplier),
-      deuterium: Math.round(cfg.lootBase.deuterium * escalationMultiplier),
+      metall: Math.round(cfg.lootBase.metall * escalationMultiplier * fleetBonus),
+      kristall: Math.round(cfg.lootBase.kristall * escalationMultiplier * fleetBonus),
+      deuterium: Math.round(cfg.lootBase.deuterium * escalationMultiplier * fleetBonus),
     };
     accepted.forEach((p) => {
       if (!p.farmed) return;
@@ -722,7 +729,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       p.farmed.deuterium += loot.deuterium;
       participantStates.get(p.userId)!.stats.resourcesLooted += loot.metall + loot.kristall + loot.deuterium;
     });
-    lootText = ` Jeder Teilnehmer erbeutet${escalationText} ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
+    lootText = ` Jeder Teilnehmer erbeutet${escalationText}${fleetBonusText} ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
   }

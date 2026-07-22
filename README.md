@@ -1125,3 +1125,30 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
 - Nachtrag: Baulimits der Spezialverteidigung ebenfalls angehoben (gleiche Nutzer-Regel wie oben,
   siehe Kommentar in `defenses.ts`): Sentinel-Kanone 40→150, Ultimate-Kanone 20→60 - bewusst höher
   als bei den Salvenschiffen, da ihre Werte im Vergleich weniger dominant sind.
+- Flottengrößen-Belohnungsbonus eingeführt (Nutzerentscheidung: bisher war die Beute bei allen
+  Missionsarten komplett unabhängig von der eingesetzten Flottenstärke - `targetPower` floss
+  ausschließlich in die Gegner-Skalierung, nie in die Belohnung). Neuer Shared-Helper
+  `fleetSizeRewardMultiplier(sentPower, referencePower)` in `combat.ts`: logarithmisch, gedeckelt
+  bei `FLEET_SIZE_BONUS_CAP=0.5` (max. +50%), Rate `FLEET_SIZE_BONUS_RATE=0.25`
+  (`combatConstants.ts`) - erst oberhalb der sektortypischen Referenzgröße (`cfg.npcFloor` bzw.
+  `RAID_MIN_TARGET_POWER`) gibt es überhaupt einen Aufschlag.
+  - Piraten-Sektoren niedrig/mittel/hoch (`missions.ts` `runHourlyCheck`): Bonus auf Beute-
+    Multiplikator UND Teile-Ertrag.
+  - Elite-Bollwerk (`groupOps.ts` `runGroupHourlyCheck`): Bonus auf Beute UND Teile, basierend auf
+    der KOMBINIERTEN Flottenstärke aller Teilnehmer (`totalSentPower`).
+  - Raid-Bergungs-DM (`raids.ts` `finalizeRaidWaves`): Bonus auf `RAID_SALVAGE_DM_PER_KILL`-Rate
+    UND `RAID_SALVAGE_DM_MAX`-Deckel gleichermaßen (sonst am Cap oft wirkungslos), basierend auf
+    einem Schnappschuss der kombinierten Macht der ERSTEN Welle (`raid.initialCombinedPower`,
+    neues Feld in `RaidState`) statt live neu berechnet - Verluste über die Wellen sollen den
+    Bonus nicht nachträglich verwässern.
+  - **Ausdrücklich NICHT für den Piratenadmiral (P10)**: der hat mit der "weitermachen"-Eskalation
+    (`ADMIRAL_EXTRACTION_GROWTH_PER_CHECK`) schon eine eigene Risiko/Belohnung-Mechanik, ein
+    zusätzlicher Flottenbonus würde sich damit überschneiden (Nutzerentscheidung).
+- Raid-Gegnerstärke-Formel korrigiert (Nutzerentscheidung, explizit als Korrektur einer früheren
+  Entscheidung benannt: "das war mal ein Fehler von mir aus"): skaliert jetzt auf einer Mischung
+  aus 70% eigener Heimatflotte + 30% Verteidigungsanlagen-Stärke (`RAID_FLEET_POWER_WEIGHT`/
+  `RAID_DEFENSE_POWER_WEIGHT` in `raids.ts`) statt wie zuvor ausschließlich auf der Verteidigung
+  (macht README Punkt 22 zur Raid-Entkopplung obsolet). Ausdrücklich NUR die eigene Heimatflotte
+  zählt mit - Verstärker-/Halte-Flotten anderer Spieler bleiben bewusst außen vor (würden sonst die
+  eigene Unterstützung gegen einen selbst verschärfen), tragen im tatsächlichen Kampf aber weiterhin
+  voll bei.

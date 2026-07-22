@@ -26,6 +26,7 @@ import {
   pickWaveProfile,
   rollMultiplierWithOutlier,
   rollBattleModifier,
+  fleetSizeRewardMultiplier,
 } from './combat.js';
 import { pushMessage } from './messages.js';
 import { addContainers } from './inventory.js';
@@ -315,6 +316,9 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (playerIds.length === 0) return;
 
   const sentPower = combatFleetPowerBase(mission.ships);
+  // Flottengroessen-Belohnungsbonus (siehe fleetSizeRewardMultiplier() in combat.ts) - wer deutlich
+  // mehr Macht als sektortypisch (cfg.npcFloor) einsetzt, bekommt mehr Beute/Teile.
+  const fleetBonus = fleetSizeRewardMultiplier(sentPower, cfg.npcFloor || 0);
   // runHourlyCheck laeuft nur fuer Piraten-Sektoren (Asteroiden-Sektoren kehren weiter oben schon
   // frueher zurueck), daher wird hier IMMER die Wuerfel-Tabelle verwendet, kein Fallback noetig.
   const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];
@@ -466,6 +470,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const escalationMultiplier = getEscalationMultiplier(mission.sektorId, streakBefore);
   mission.streakWins = anyNpcDestroyed ? streakBefore + 1 : 0;
   const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(2)}]` : '';
+  const fleetBonusText = fleetBonus > 1 ? ` [Großflotten-Bonus x${fleetBonus.toFixed(2)}]` : '';
 
   let teileText = '';
   let gainedTeile: { waffen: number; schild: number; panzerung: number } | undefined;
@@ -474,7 +479,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     const outcomeShare = anyNpcDestroyed && !anyPlayerLoss ? 0.15 : anyNpcDestroyed ? 0.08 : 0.02;
     const gained: Record<string, number> = {};
     (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-      const amount = cfg.teileCap! * outcomeShare * sandronatorBonus * escalationMultiplier;
+      const amount = cfg.teileCap! * outcomeShare * sandronatorBonus * escalationMultiplier * fleetBonus;
       const before = mission.teile[part];
       mission.teile[part] = Math.min(cfg.teileCap!, before + amount);
       gained[part] = Math.round(mission.teile[part] - before);
@@ -491,7 +496,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (anyNpcDestroyed && cfg.lootBase) {
     const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
     const bonusHit = cfg.bonusLootChance ? Math.random() < cfg.bonusLootChance : false;
-    const lootMultiplier = (bonusHit ? cfg.bonusLootMultiplier! : 1) * sandronatorBonus * escalationMultiplier;
+    const lootMultiplier = (bonusHit ? cfg.bonusLootMultiplier! : 1) * sandronatorBonus * escalationMultiplier * fleetBonus;
     const loot = {
       metall: Math.round(cfg.lootBase.metall * lootMultiplier),
       kristall: Math.round(cfg.lootBase.kristall * lootMultiplier),
@@ -501,7 +506,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     mission.farmed.kristall += loot.kristall;
     mission.farmed.deuterium += loot.deuterium;
     state.stats.resourcesLooted += loot.metall + loot.kristall + loot.deuterium;
-    lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}${escalationText}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
+    lootText = ` Beute geplündert${bonusHit ? ' (Volltreffer!)' : ''}${escalationText}${fleetBonusText}: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString(
       'de-DE'
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
     lootGained = loot;

@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Belohnungs-Bonus für große Flotten + Raid-Balance korrigiert',
+    changes: [
+      'Bisher hing die Beute bei Missionen komplett von Sektor-Stufe/Sieges-Serie/Zufall ab - wie viele Schiffe ihr tatsächlich losgeschickt habt, machte für die Belohnung selbst keinen Unterschied (nur für die Gegnerstärke).',
+      'Neu: setzt ihr deutlich mehr Flottenstärke ein, als für den Sektor üblich ist, bekommt ihr jetzt einen spürbaren, aber gedeckelten Beute-/Teile-Bonus (bis zu +50%) - gilt für Piraten-Sektoren (Niedrig/Mittel/Hoch) und Elite-Bollwerk.',
+      'Beim Piratenadmiral (P10) bleibt es bewusst unverändert - der hat mit "weitermachen für mehr" schon seine eigene Risiko/Belohnung-Mechanik.',
+      'Raids: die Gegnerstärke wird nicht mehr ausschließlich aus euren Verteidigungsanlagen berechnet, sondern jetzt aus einer Mischung von 70% eurer Heimatflotte + 30% Verteidigungsanlagen - eure Flotte spielt bei Raids damit wieder eine echte Rolle. Verstärkungs-/Halte-Flotten von Mitspielern zählen bewusst NICHT mit rein (die sollen euch nur helfen, nicht den Raid gegen euch verschärfen), kämpfen im Ernstfall aber weiterhin voll mit.',
+      'Dazu passend: die Bergungs-Dunkle-Materie am Ende eines Raids bekommt jetzt ebenfalls den Großflotten-Bonus.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Schiffs-/Verteidigungs-Module günstiger und schneller',
     changes: [
       'Feedback aufgenommen: Module für Schiffe und Verteidigungsanlagen waren gerade bei großen/teuren Typen praktisch nicht mehr machbar - je größer das Schiff, desto extremer der Kosten-/Zeitsprung.',

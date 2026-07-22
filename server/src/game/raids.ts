@@ -24,10 +24,20 @@ import {
   computeDomeSharedPool,
   pickWaveProfile,
   rollBattleModifier,
+  fleetSizeRewardMultiplier,
 } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { DEFENSE_REPAIR_PERCENT, BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
+
+// Gewichtung Flotte vs. Verteidigungsanlagen bei der Raid-Gegnerstaerke-Berechnung
+// (Nutzerentscheidung Juli 2026 - Korrektur einer frueheren Entscheidung, die Raids komplett auf
+// die Verteidigung skalieren liess: "das war mal ein Fehler von mir aus"). NUR die eigene
+// Heimatflotte des Verteidigers zaehlt hier mit, AUSDRUECKLICH NICHT Verstaerker-/Halte-Flotten
+// anderer Spieler (Nutzerentscheidung: sonst wuerde Unterstuetzung den Raid selbst verschaerfen -
+// "dann braeuchte man nicht unterstuetzen").
+const RAID_FLEET_POWER_WEIGHT = 0.7;
+const RAID_DEFENSE_POWER_WEIGHT = 0.3;
 import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
 import { pushMessage } from './messages.js';
 import { addContainers } from './inventory.js';
@@ -284,15 +294,24 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   homeShipIds.forEach((id) => (defenderShips[id] = state.fleet[id]));
   homeDefIds.forEach((id) => (defenderShips[id] = state.defense[id]));
 
-  // Feindstaerke skaliert jetzt bewusst auf der VERTEIDIGUNGSANLAGEN-Staerke (Nutzerentscheidung,
-  // siehe RAID_WAVE_FACTORS in economy.ts) statt wie sonst im Spiel ueblich auf der Flotte (siehe
-  // README Punkt 22 zur generellen Entkopplungs-Regel, die fuer Raids hiermit bewusst durchbrochen
-  // wird). domePoolReal wird weiterhin separat berechnet und wirkt im tatsaechlichen Kampf voll.
+  // Feindstaerke: Mischung aus eigener Heimatflotte (70%) und Verteidigungsanlagen-Staerke (30%,
+  // siehe RAID_FLEET_POWER_WEIGHT/-DEFENSE_POWER_WEIGHT oben). Frueher skalierte das ausschliesslich
+  // auf der Verteidigung (README Punkt 22, jetzt ueberholt) - per Nutzerentscheidung korrigiert, da
+  // reine Verteidigungs-Skalierung die eigene Flotte komplett irrelevant fuer Raids machte.
+  // AUSDRUECKLICH NUR die eigene Heimatflotte, keine Verstaerker-/Halte-Flotten (siehe Kommentar
+  // oben) - die tragen im tatsaechlichen Kampf trotzdem voll bei, blaehen nur die Gegnerstaerke
+  // nicht auf. domePoolReal wird weiterhin separat berechnet und wirkt im tatsaechlichen Kampf voll.
   let defensePower = 0;
   homeDefIds.forEach((id) => {
     const base = baseStats(id);
     defensePower += state.defense[id] * (base.waffen + base.schild + base.panzerung);
   });
+  let fleetPower = 0;
+  homeShipIds.forEach((id) => {
+    const base = baseStats(id);
+    fleetPower += state.fleet[id] * (base.waffen + base.schild + base.panzerung);
+  });
+  const combinedPower = fleetPower * RAID_FLEET_POWER_WEIGHT + defensePower * RAID_DEFENSE_POWER_WEIGHT;
   const domePoolReal = computeDomeSharedPool(state.defense, state.research, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules);
 
   const now = Date.now();
@@ -303,13 +322,18 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   }));
   const heldStates = getHoldingDeploymentsTargeting(state.userId, currentUserId, currentUserState);
 
-  // RAID_MIN_TARGET_POWER wirkt hier als Untergrenze fuer die Verteidigungsanlagen-Basis SELBST
-  // (nicht mehr pro Welle geteilt, siehe economy.ts) - schuetzt Accounts mit reiner Flotte ohne
-  // nennenswerte Verteidigungsanlagen davor, quasi wirkungslose Raids zu bekommen.
+  // RAID_MIN_TARGET_POWER wirkt hier als Untergrenze fuer die kombinierte Basis-Macht SELBST
+  // (nicht mehr pro Welle geteilt, siehe economy.ts) - schuetzt Accounts ohne nennenswerte Flotte/
+  // Verteidigung davor, quasi wirkungslose Raids zu bekommen.
   const waveFactor = RAID_WAVE_FACTORS[Math.min(raid.wavesProcessed, RAID_WAVE_FACTORS.length - 1)];
-  const waveTargetPower = Math.max(defensePower, RAID_MIN_TARGET_POWER) * waveFactor;
+  const waveTargetPower = Math.max(combinedPower, RAID_MIN_TARGET_POWER) * waveFactor;
   const profile = pickWaveProfile('raid');
   const battleModifier = rollBattleModifier('raid');
+
+  // Schnappschuss der kombinierten Macht der ERSTEN Welle - dient als stabile Referenz fuer den
+  // Flottengroessen-Belohnungsbonus in finalizeRaidWaves() (Kaempfe/Verluste ueber die Wellen
+  // hinweg sollen den Bonus nicht nachtraeglich verwaessern).
+  if (raid.wavesProcessed === 0) raid.initialCombinedPower = combinedPower;
   const npcShips = generateFallbackFleet(waveTargetPower, profile);
   const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
   const ownerUsername = getUserById(state.userId)?.username || 'Verteidiger';
@@ -517,8 +541,15 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
 
   // Bergungs-DM ("Bergung aus der zerstoerten Flotte") - skaliert mit der GESAMT-Anzahl
   // vernichteter Piratenschiffe/-anlagen ueber alle Wellen, unabhaengig vom Gesamtausgang. Jeder
-  // Beteiligte bekommt den vollen Betrag, keine Aufteilung (Punkt 5).
-  const salvageDm = Math.min(RAID_SALVAGE_DM_MAX, Math.round(raid.accumulatedDestroyed * RAID_SALVAGE_DM_PER_KILL));
+  // Beteiligte bekommt den vollen Betrag, keine Aufteilung (Punkt 5). Zusaetzlich Flottengroessen-
+  // Belohnungsbonus (siehe fleetSizeRewardMultiplier() in combat.ts) auf Basis von
+  // raid.initialCombinedPower (Schnappschuss der ersten Welle) - skaliert Rate UND Deckel gleich
+  // mit, sonst waere der Bonus am Cap oft wirkungslos.
+  const fleetBonus = fleetSizeRewardMultiplier(raid.initialCombinedPower || 0, RAID_MIN_TARGET_POWER);
+  const salvageDm = Math.min(
+    Math.round(RAID_SALVAGE_DM_MAX * fleetBonus),
+    Math.round(raid.accumulatedDestroyed * RAID_SALVAGE_DM_PER_KILL * fleetBonus)
+  );
   if (salvageDm > 0) {
     state.resources.dm += salvageDm;
     reinforcerStates.forEach(({ playerState }) => (playerState.resources.dm += salvageDm));

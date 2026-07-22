@@ -281,6 +281,18 @@ export const MAX_DEFENSE_MODULE_SLOTS = 3;
 // im selben Piraten-Sektor) genug Platz haben.
 export const MAX_PLAYER_SHIPS = 100000;
 
+// Belohnungs-Bonus fuer groesser eingesetzte Flotten (Nutzerentscheidung Juli 2026): wer deutlich
+// mehr Macht als sektortypisch noetig einsetzt, bekommt einen begrenzten Beute-/Teile-/Bergungs-
+// DM-Aufschlag. Bewusst LOGARITHMISCH und GEDECKELT (FLEET_SIZE_BONUS_CAP) statt linear, damit
+// "immer die Maximalflotte schicken" nicht die einzig sinnvolle Strategie wird - kleine, haeufige
+// Einsaetze bleiben eine gueltige Alternative (nur ohne den Bonus). Gilt fuer Piraten-Sektoren
+// (niedrig/mittel/hoch), Elite-Bollwerk und die Raid-Bergungs-DM - AUSDRUECKLICH NICHT fuer den
+// Piratenadmiral (P10), der schon seine eigene Risiko/Belohnung-Eskalation ueber "weitermachen"-
+// Checks hat (siehe groupOps.ts runAdminCheck) - ein zusaetzlicher Flottenbonus wuerde sich damit
+// ueberschneiden.
+export const FLEET_SIZE_BONUS_CAP = 0.5; // maximal +50%
+export const FLEET_SIZE_BONUS_RATE = 0.25;
+
 // Spezialschiffe mit "Mehrfachziel-Salve": statt bei erfolgreicher Zielerfassung nur EIN
 // RF-anfaelliges Ziel zu treffen, feuern sie auf JEDEN anfaelligen SCHIFFSTYP einmal (nicht auf
 // jede einzelne Einheit - siehe fireShots() in combat.ts fuer die genaue Umsetzung).

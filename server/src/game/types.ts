@@ -411,6 +411,10 @@ export interface RaidState {
   wavesProcessed: number;
   wavesWon: number;
   accumulatedDestroyed: number;
+  // Kombinierte Macht (70% Flotte/30% Verteidigung) der ERSTEN Welle - Referenz fuer den
+  // Flottengroessen-Belohnungsbonus auf die Bergungs-DM (siehe resolveOneWave()/finalizeRaidWaves()
+  // in raids.ts), bleibt ueber alle Wellen stabil statt durch Verluste zu schwanken.
+  initialCombinedPower?: number;
   // Nutzerentscheidung (Juli 2026): jede Welle wird hier gesammelt statt sofort als eigene
   // Nachricht verschickt (analog zu Mission.skirmishLog) - EIN gemeinsamer Abschlussbericht bei
   // Raid-Ende statt bis zu 5 Einzel-Nachrichten pro Beteiligtem (Verteidiger, Verstaerker,

@@ -25,6 +25,8 @@ import {
   BATTLE_MODIFIER_CHANCE,
   BATTLE_MODIFIER_LABELS,
   MULTI_TARGET_POWER_CORRECTION,
+  FLEET_SIZE_BONUS_CAP,
+  FLEET_SIZE_BONUS_RATE,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { ADMIRAL_BOSS_ID } from './data/combatConstants.js';
@@ -425,6 +427,20 @@ export function rollBattleModifier(contextKey: string): BattleModifierType | nul
   if (Math.random() >= chance) return null;
   const types = Object.keys(BATTLE_MODIFIER_LABELS) as BattleModifierType[];
   return types[Math.floor(Math.random() * types.length)];
+}
+
+/**
+ * Belohnungs-Multiplikator fuer groesser als sektortypisch eingesetzte Macht (siehe
+ * FLEET_SIZE_BONUS_CAP/-RATE in combatConstants.ts). `referencePower` ist der sektortypische
+ * Bezugswert (i.d.R. cfg.npcFloor bzw. RAID_MIN_TARGET_POWER) - erst OBERHALB davon gibt es
+ * ueberhaupt einen Aufschlag, darunter/gleich bleibt es beim normalen 1x. Logarithmisch statt
+ * linear, damit der Bonus bei realistischen Groessenordnungen (2-3x mehr Macht) bereits spuerbar
+ * ist, aber nicht ins Unermessliche waechst - siehe FLEET_SIZE_BONUS_CAP fuer die harte Grenze.
+ */
+export function fleetSizeRewardMultiplier(sentPower: number, referencePower: number): number {
+  if (referencePower <= 0 || sentPower <= referencePower) return 1;
+  const ratio = sentPower / referencePower;
+  return 1 + Math.min(FLEET_SIZE_BONUS_CAP, FLEET_SIZE_BONUS_RATE * Math.log10(ratio));
 }
 
 export function generatePiratenFleet(targetPower: number, spionageLevel: number, profile: WaveProfile = 'schwarm'): Record<string, number> {
