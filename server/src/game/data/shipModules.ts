@@ -23,15 +23,19 @@ export const SHIP_MODULE_DRIVE_EFFECT_PER_LEVEL = 0.02; // Antrieb: +2%/Stufe, m
 // des jeweiligen Schiffs ab (je teurer/aufwendiger das Schiff, desto teurer sein Modul) - ein
 // Schiffs-Modul ist eine einmalige, ship-TYP-weite Investition (wirkt auf ALLE besessenen
 // Einheiten dieses Typs), keine Stueckzahl-Produktion wie der normale Schiffbau.
-const MODULE_COST_MULTIPLIER = 25;
-const MODULE_TIME_MULTIPLIER = 300;
-const MODULE_COST_GROWTH = 1.55;
-const MODULE_TIME_GROWTH = 1.4;
+// Werte gesenkt (Nutzerentscheidung: die vorherigen 25x/300x-Multiplikatoren mit 1.55/1.4er
+// Stufen-Wachstum liessen Module bei teuren Schiffen ins Unmachbare explodieren - je groesser
+// das Schiff, desto extremer der Sprung. Kleine Schiffe blieben ueberschaubar, grosse nicht.)
+const MODULE_COST_MULTIPLIER = 8;
+const MODULE_TIME_MULTIPLIER = 80;
+const MODULE_COST_GROWTH = 1.35;
+const MODULE_TIME_GROWTH = 1.25;
 
-// Imperator hat keine `cost` (nur teileCost, specialOnly) - eigene, entsprechend seines
-// mythischen Status extrem hoch angesetzte Modul-Basiskosten statt einer Ableitung.
-const IMPERATOR_MODULE_BASE_COST: ResourceCost = { metall: 500000000, kristall: 400000000, deuterium: 250000000 };
-const IMPERATOR_MODULE_BASE_TIME_SECONDS = 7 * 86400;
+// Imperator hat keine `cost` (nur teileCost, specialOnly) - eigene Modul-Basiskosten statt einer
+// Ableitung. Weiterhin bewusst die teuerste Modul-Investition im Spiel (mythischer Status),
+// aber von vorher 500M/400M/250M bei 7 Tagen Basis-Bauzeit auf ein erreichbares Mass gesenkt.
+const IMPERATOR_MODULE_BASE_COST: ResourceCost = { metall: 50000000, kristall: 40000000, deuterium: 25000000 };
+const IMPERATOR_MODULE_BASE_TIME_SECONDS = 2 * 86400;
 
 function buildModule(shipId: string, name: string, kind: ShipModuleKind, img: string, lore: string, baseCost: ResourceCost, baseTimeSeconds: number): ShipModuleDefinition {
   return {

@@ -15,10 +15,12 @@ const KIND_LABEL: Record<DefenseModuleKind, string> = { waffen: 'Waffen-Modul', 
 
 // Basis-Kosten/-Bauzeit eines Moduls (Stufe 1) leiten sich von den Stueckkosten/der Basis-Bauzeit
 // der jeweiligen Verteidigungsanlage ab - exakt dasselbe Muster wie bei Schiffs-Modulen.
-const MODULE_COST_MULTIPLIER = 25;
-const MODULE_TIME_MULTIPLIER = 300;
-const MODULE_COST_GROWTH = 1.55;
-const MODULE_TIME_GROWTH = 1.4;
+// Werte analog shipModules.ts gesenkt (Nutzerentscheidung: 25x/300x mit 1.55/1.4er
+// Stufen-Wachstum liess Module bei teuren Anlagen ins Unmachbare explodieren).
+const MODULE_COST_MULTIPLIER = 8;
+const MODULE_TIME_MULTIPLIER = 80;
+const MODULE_COST_GROWTH = 1.35;
+const MODULE_TIME_GROWTH = 1.25;
 
 function buildModule(defenseId: string, name: string, kind: DefenseModuleKind, lore: string, baseCost: ResourceCost, baseTimeSeconds: number): DefenseModuleDefinition {
   return {
