@@ -87,6 +87,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     defenseModuleQueue: [],
     galaxyPosition: assignRandomGalaxyPosition(userId),
     galaxyDeployments: [],
+    eventTrips: [],
     activeBoosters: {},
     teile: { waffen: 0, schild: 0, panzerung: 0 },
     missions: [],
@@ -182,6 +183,7 @@ export function loadPlayerState(userId: number): PlayerState {
   // Position zugewiesen (siehe README).
   if (!parsed.galaxyPosition) parsed.galaxyPosition = assignRandomGalaxyPosition(parsed.userId);
   if (!parsed.galaxyDeployments) parsed.galaxyDeployments = [];
+  if (!parsed.eventTrips) parsed.eventTrips = [];
   // Alte, vor der Piratenbasen-Erweiterung gespawnte Raids haben kein pirateBase/launchTime-Feld -
   // sicherheitshalber verwerfen statt mit kaputten Werten weiterzurechnen, der naechste
   // Checkpoint spawnt ganz regulaer einen neuen (siehe raids.ts spawnRaidAt()).

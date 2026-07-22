@@ -43,6 +43,13 @@ db.exec(`
     data_json TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS galaxy_events (
+    id TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
 
 // Migration: last_seen-Spalte nachtraeglich ergaenzen (fuer Online/Offline-Anzeige), falls die
@@ -107,6 +114,24 @@ export function saveGroupOperationJson(id: string, creatorId: number, status: st
 
 export function deleteGroupOperation(id: string): void {
   db.prepare('DELETE FROM group_operations WHERE id = ?').run(id);
+}
+
+// Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe game/galaxyEvents.ts): dieselbe einfache
+// id/status/data_json-Struktur wie group_operations - global, nicht an einen Nutzer gebunden.
+export function listGalaxyEventsJson(): string[] {
+  const rows = db.prepare('SELECT data_json FROM galaxy_events').all() as { data_json: string }[];
+  return rows.map((r) => r.data_json);
+}
+
+export function saveGalaxyEvent(id: string, status: string, dataJson: string): void {
+  db.prepare(
+    `INSERT INTO galaxy_events (id, status, data_json, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET status = excluded.status, data_json = excluded.data_json, updated_at = excluded.updated_at`
+  ).run(id, status, dataJson, Date.now());
+}
+
+export function deleteGalaxyEvent(id: string): void {
+  db.prepare('DELETE FROM galaxy_events WHERE id = ?').run(id);
 }
 
 export interface UserRow {

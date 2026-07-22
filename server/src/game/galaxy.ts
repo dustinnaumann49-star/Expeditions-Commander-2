@@ -11,8 +11,10 @@ import {
 import { findShip } from './combat.js';
 import { CLASS_KANONIER_FLEET_SPEED_MULTIPLIER, CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER } from './data/classes.js';
 import { SHIP_MODULE_DRIVE_EFFECT_PER_LEVEL } from './data/shipModules.js';
+import { RELOCATE_BASE_COST_DM } from './data/economy.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { listAllUsers, getUserById } from '../db.js';
+import { getReservedGalaxyPositions, isGalaxyPositionFree } from './galaxyPositions.js';
 import type { PlayerState, GalaxyPosition, GalaxyDeployment, PlayerClass } from './types.js';
 import type { ActionResult } from './actions.js';
 
@@ -213,6 +215,39 @@ export function processGalaxyDeployments(state: PlayerState): void {
     }
     return true;
   });
+}
+
+// ========== HEIMATBASIS VERLEGEN ==========
+// Nutzerentscheidung (Juli 2026): gegen RELOCATE_BASE_COST_DM (economy.ts) die eigene Galaxie-
+// Position gezielt wechseln - z.B. um naeher an bestimmten Sektoren/dem Mitspieler zu sitzen.
+// `extraReserved` nimmt zusaetzlich belegte Positionen entgegen, die dieses Modul selbst nicht
+// kennt (aktive Galaxie-Ereignisse aus galaxyEvents.ts) - wird vom Route-Handler befuellt, um den
+// Zirkelbezug galaxy.ts <-> galaxyEvents.ts zu vermeiden (galaxyEvents.ts nutzt bereits
+// Funktionen aus DIESER Datei fuer die Flugzeit-Berechnung).
+export function relocateGalaxyPosition(state: PlayerState, target: GalaxyPosition, extraReserved?: Set<string>): ActionResult {
+  if (!state.galaxyPosition) return { ok: false, error: 'Dir ist noch keine Galaxie-Position zugewiesen.' };
+  if (!Number.isInteger(target.system) || target.system < 1 || target.system > GALAXY_SYSTEMS) {
+    return { ok: false, error: 'Ungültiges Zielsystem.' };
+  }
+  if (!Number.isInteger(target.position) || target.position < 1 || target.position > GALAXY_POSITIONS) {
+    return { ok: false, error: 'Ungültige Zielposition.' };
+  }
+  if (target.system === state.galaxyPosition.system && target.position === state.galaxyPosition.position) {
+    return { ok: false, error: 'Das ist bereits deine aktuelle Position.' };
+  }
+  if (state.resources.dm < RELOCATE_BASE_COST_DM) {
+    return { ok: false, error: `Nicht genug Dunkle Materie (benötigt: ${RELOCATE_BASE_COST_DM}).` };
+  }
+
+  const reserved = getReservedGalaxyPositions(state.userId);
+  if (extraReserved) extraReserved.forEach((k) => reserved.add(k));
+  if (!isGalaxyPositionFree(target, reserved)) {
+    return { ok: false, error: 'Diese Position ist bereits belegt.' };
+  }
+
+  state.resources.dm -= RELOCATE_BASE_COST_DM;
+  state.galaxyPosition = target;
+  return { ok: true };
 }
 
 // ========== RAID-INTEGRATION ==========

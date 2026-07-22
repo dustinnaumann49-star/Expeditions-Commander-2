@@ -9,6 +9,7 @@ import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SL
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
+import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
 import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
@@ -288,6 +289,9 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
 
   // Zurueckgerufene Galaxie-Flotten heimkehren lassen, sobald ihre Rueckflugzeit erreicht ist.
   processGalaxyDeployments(state);
+  // Bergungs-Fluege zu Galaxie-Ereignissen (Wrack/Handelskonvoi) verarbeiten - Ankunft/Beute
+  // sichern UND Rueckkehr, siehe galaxyEvents.ts.
+  processEventTrips(state);
 
   // Gebaeude-Warteschlange abarbeiten (immer max. 1 Eintrag, siehe MAX_BUILDING_SLOTS) - Module
   // teilen sich denselben Slot/dieselbe Warteschlange (siehe startModuleUpgrade).

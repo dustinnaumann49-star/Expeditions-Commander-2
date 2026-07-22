@@ -5,6 +5,7 @@ import { processMissions } from './missions.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { runBotTurn } from './bot.js';
+import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -62,6 +63,15 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       errors++;
       console.error(`runGlobalHeartbeat: Fehler bei Nutzer ${u.id}:`, err);
     }
+  }
+
+  // Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe galaxyEvents.ts): global, nicht an einen Nutzer
+  // gebunden - EINMAL pro Heartbeat-Durchlauf gewuerfelt, nicht pro Nutzer (siehe Kommentar dort).
+  try {
+    maybeSpawnGalaxyEvent();
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei maybeSpawnGalaxyEvent:', err);
   }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein

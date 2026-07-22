@@ -6,7 +6,7 @@ import { api } from '../api/client';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import type { GalaxyDeployment, Mission, IncomingDeployment } from '../types/game';
+import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip } from '../types/game';
 
 function deploymentStatus(d: GalaxyDeployment, now: number): { label: string; color: string } {
   if (d.recalled) {
@@ -38,23 +38,29 @@ export function GalaxiePage() {
     pirateBases,
     sektorPositions,
     incomingDeployments,
+    galaxyEvents,
     parties,
     refreshGalaxy,
     holdFleet,
     recallHold,
     recallMission,
+    relocateBase,
+    claimGalaxyEvent,
     error,
   } = useGame();
   const [, forceTick] = useState(0);
   const [searchParams] = useSearchParams();
   const [system, setSystem] = useState<number | null>(null);
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
+  const [targetEvent, setTargetEvent] = useState<GalaxyEvent | null>(null);
+  const [relocateTarget, setRelocateTarget] = useState<{ system: number; position: number } | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [preview, setPreview] = useState<{ distance: number; durationMs: number; fuelCost: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [detailDeployment, setDetailDeployment] = useState<GalaxyDeployment | null>(null);
   const [detailMission, setDetailMission] = useState<Mission | null>(null);
   const [detailIncoming, setDetailIncoming] = useState<IncomingDeployment | null>(null);
+  const [detailEventTrip, setDetailEventTrip] = useState<GalaxyEventTrip | null>(null);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -79,7 +85,7 @@ export function GalaxiePage() {
   }, [ownGalaxyPosition, system]);
 
   useEffect(() => {
-    if (targetUserId === null) {
+    if (targetUserId === null && !targetEvent) {
       setPreview(null);
       return;
     }
@@ -90,14 +96,15 @@ export function GalaxiePage() {
     }
     setPreviewLoading(true);
     const t = setTimeout(() => {
+      const target = targetEvent ? { targetPosition: { system: targetEvent.system, position: targetEvent.position } } : { targetUserId: targetUserId! };
       api
-        .galaxyPreview(selection, { targetUserId })
+        .galaxyPreview(selection, target)
         .then(setPreview)
         .catch(() => setPreview(null))
         .finally(() => setPreviewLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [targetUserId, selection]);
+  }, [targetUserId, targetEvent, selection]);
 
   if (!gameData || !state || system === null) return <PageSkeleton />;
 
@@ -107,17 +114,20 @@ export function GalaxiePage() {
   const occupantsInSystem = galaxyOccupants.filter((o) => o.system === system);
   const pirateBasesInSystem = pirateBases.filter((b) => b.system === system);
   const sektorenInSystem = sektorPositions.filter((s) => s.system === system);
+  const eventsInSystem = galaxyEvents.filter((e) => e.system === system);
   const targetOccupant = targetUserId !== null ? galaxyOccupants.find((o) => o.userId === targetUserId) : null;
   const ownedShips = gameData.ships.filter((s) => (state.fleet[s.id] || 0) > 0);
 
   const totalSelected = Object.values(selection).reduce((a, b) => a + (b || 0), 0);
-  const canSend = targetUserId !== null && totalSelected > 0 && !!preview && preview.fuelCost <= state.resources.deuterium;
+  const canSend = (targetUserId !== null || !!targetEvent) && totalSelected > 0 && !!preview && preview.fuelCost <= state.resources.deuterium;
+  const canRelocate = !!relocateTarget && state.resources.dm >= gameData.relocateBaseCostDm;
 
   return (
     <div>
       <h2 style={{ marginBottom: 8 }}>Galaxie</h2>
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
-        Kein PvP – du kannst deine Flotte bei anderen Spielern "halten" lassen, um sie bei Piratenraids zu unterstützen.
+        Kein PvP – du kannst deine Flotte bei anderen Spielern "halten" lassen, um sie bei Piratenraids zu unterstützen. Gelegentlich
+        tauchen an freien Positionen Galaxie-Ereignisse (🛸🚀) auf - wer zuerst eine Flotte dorthin schickt, sichert sich die Beute.
         {ownGalaxyPosition && (
           <>
             {' '}
@@ -148,7 +158,11 @@ export function GalaxiePage() {
             const occ = occupantsInSystem.find((o) => o.position === pos);
             const isPirateBase = pirateBasesInSystem.some((b) => b.position === pos);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
+            const event = eventsInSystem.find((e) => e.position === pos);
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
+            const eventDef = event ? gameData.galaxyEventTypes[event.type] : null;
+            const alreadyEnRouteToEvent = event && state.eventTrips.some((t) => t.eventId === event.id);
+            const isFreeAndPickable = !occ && !isPirateBase && !sektor && !event;
             return (
               <div className="ship-card" key={pos} style={{ padding: 12 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Position {pos}</p>
@@ -163,6 +177,8 @@ export function GalaxiePage() {
                         className="qty-btn"
                         onClick={() => {
                           setTargetUserId(occ.userId);
+                          setTargetEvent(null);
+                          setRelocateTarget(null);
                           setSelection({});
                         }}
                       >
@@ -174,8 +190,46 @@ export function GalaxiePage() {
                   <p style={{ color: 'var(--accent-deut)', fontWeight: 600 }}>🛰️ {sektor.name}</p>
                 ) : isPirateBase ? (
                   <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>
+                ) : event ? (
+                  <>
+                    <p style={{ fontWeight: 600, color: 'var(--rf-gold)' }}>
+                      {eventDef?.icon || '❓'} {eventDef?.label || event.type}
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
+                      Verschwindet in {formatTime(event.expiresAt - now)}
+                    </p>
+                    {alreadyEnRouteToEvent ? (
+                      <p style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Flotte bereits unterwegs</p>
+                    ) : (
+                      <button
+                        className="qty-btn"
+                        onClick={() => {
+                          setTargetEvent(event);
+                          setTargetUserId(null);
+                          setRelocateTarget(null);
+                          setSelection({});
+                        }}
+                      >
+                        Flotte zur Bergung schicken
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <p style={{ color: 'var(--text-dim)' }}>frei</p>
+                  <>
+                    <p style={{ color: 'var(--text-dim)', marginBottom: isFreeAndPickable ? 6 : 0 }}>frei</p>
+                    {isFreeAndPickable && (
+                      <button
+                        className="qty-btn"
+                        onClick={() => {
+                          setRelocateTarget({ system, position: pos });
+                          setTargetUserId(null);
+                          setTargetEvent(null);
+                        }}
+                      >
+                        Basis hierher verlegen
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -183,10 +237,42 @@ export function GalaxiePage() {
         </div>
       </div>
 
-      {targetUserId !== null && targetOccupant && (
+      {relocateTarget && (
         <div className="queue-box" style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>
-            Flotte zu {targetOccupant.username} (1:{targetOccupant.system}:{targetOccupant.position}) schicken
+            Heimatbasis nach 1:{relocateTarget.system}:{relocateTarget.position} verlegen
+          </h3>
+          <p style={{ fontSize: 13, marginBottom: 12 }}>
+            Kosten:{' '}
+            <span style={{ color: canRelocate ? 'var(--accent-deut)' : 'var(--danger)' }}>
+              {gameData.relocateBaseCostDm} Dunkle Materie
+            </span>{' '}
+            · Deine Flotte/Verteidigung bleibt unverändert, nur deine Heimatposition ändert sich sofort.
+          </p>
+          <div className="build-row">
+            <button className="qty-btn" onClick={() => setRelocateTarget(null)}>
+              Abbrechen
+            </button>
+            <button
+              className="build-btn"
+              disabled={!canRelocate}
+              onClick={() => {
+                relocateBase(relocateTarget.system, relocateTarget.position).then(refreshGalaxy);
+                setRelocateTarget(null);
+              }}
+            >
+              Verlegen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {((targetUserId !== null && targetOccupant) || targetEvent) && (
+        <div className="queue-box" style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+            {targetEvent
+              ? `Bergungsflotte zu ${gameData.galaxyEventTypes[targetEvent.type]?.label || targetEvent.type} (1:${targetEvent.system}:${targetEvent.position}) schicken`
+              : `Flotte zu ${targetOccupant!.username} (1:${targetOccupant!.system}:${targetOccupant!.position}) schicken`}
           </h3>
           {ownedShips.length === 0 ? (
             <p style={{ color: 'var(--text-dim)' }}>Keine eigenen Schiffe verfügbar.</p>
@@ -231,6 +317,7 @@ export function GalaxiePage() {
               className="qty-btn"
               onClick={() => {
                 setTargetUserId(null);
+                setTargetEvent(null);
                 setSelection({});
               }}
             >
@@ -240,12 +327,17 @@ export function GalaxiePage() {
               className="build-btn"
               disabled={!canSend}
               onClick={() => {
-                holdFleet(targetUserId, selection).then(refreshGalaxy);
-                setTargetUserId(null);
+                if (targetEvent) {
+                  claimGalaxyEvent(targetEvent.id, selection).then(refreshGalaxy);
+                  setTargetEvent(null);
+                } else {
+                  holdFleet(targetUserId!, selection).then(refreshGalaxy);
+                  setTargetUserId(null);
+                }
                 setSelection({});
               }}
             >
-              Flotte losschicken (Halten)
+              {targetEvent ? 'Flotte losschicken (Bergung, kehrt automatisch zurück)' : 'Flotte losschicken (Halten)'}
             </button>
           </div>
         </div>
@@ -254,6 +346,7 @@ export function GalaxiePage() {
       <div className="queue-box">
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Flottenbewegungen</h3>
         {state.galaxyDeployments.length === 0 &&
+        state.eventTrips.length === 0 &&
         state.missions.length === 0 &&
         parties.filter((op) => op.status === 'departed').length === 0 ? (
           <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine eigenen Flotten unterwegs, haltend oder im Einsatz.</p>
@@ -338,6 +431,27 @@ export function GalaxiePage() {
                 </div>
               );
             })}
+            {state.eventTrips.map((trip) => {
+              const eventLabel = gameData.galaxyEventTypes[trip.eventType]?.label || trip.eventType;
+              const label = !trip.collected ? 'unterwegs' : 'Rückflug';
+              const color = !trip.collected ? 'var(--accent-kristall)' : trip.reward ? 'var(--accent-deut)' : 'var(--text-dim)';
+              const timeText = !trip.collected
+                ? `Ankunft in ${formatTime(trip.arriveTime - now)}`
+                : `Zu Hause in ${formatTime(trip.returnTime - now)}${trip.reward ? ' · Beute gesichert' : ' · leer (bereits vergriffen)'}`;
+              return (
+                <div className="queue-item" key={trip.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                  <div className="progress-row">
+                    <span>
+                      <span className="lore-title" onClick={() => setDetailEventTrip(trip)}>
+                        Bergungsflug: {eventLabel} · Von 1:{trip.originSystem}:{trip.originPosition}
+                      </span>{' '}
+                      <span style={{ color, fontWeight: 600 }}>[{label}]</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{timeText}</span>
+                </div>
+              );
+            })}
           </>
         )}
       </div>
@@ -403,6 +517,26 @@ export function GalaxiePage() {
       {detailIncoming && (
         <InfoModal title={`Flotte von ${detailIncoming.ownerUsername}`} onClose={() => setDetailIncoming(null)}>
           <ShipList ships={detailIncoming.ships} shipName={shipName} />
+        </InfoModal>
+      )}
+
+      {detailEventTrip && (
+        <InfoModal
+          title={`Bergungsflug: ${gameData.galaxyEventTypes[detailEventTrip.eventType]?.label || detailEventTrip.eventType}`}
+          onClose={() => setDetailEventTrip(null)}
+        >
+          <ShipList ships={detailEventTrip.ships} shipName={shipName} />
+          {detailEventTrip.collected && (
+            <p style={{ fontSize: 13, marginTop: 8 }}>
+              {detailEventTrip.reward
+                ? `Beute: ${detailEventTrip.reward.metall.toLocaleString('de-DE')} Metall, ${detailEventTrip.reward.kristall.toLocaleString(
+                    'de-DE'
+                  )} Kristall, ${detailEventTrip.reward.deuterium.toLocaleString('de-DE')} Deuterium${
+                    detailEventTrip.reward.dm ? `, ${detailEventTrip.reward.dm} DM` : ''
+                  }`
+                : 'Ereignis war bereits vergriffen - keine Beute.'}
+            </p>
+          )}
         </InfoModal>
       )}
     </div>

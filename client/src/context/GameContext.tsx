@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { updateServerTimeOffset } from '../lib/serverTime';
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent } from '../types/game';
 
 interface GameContextValue {
   gameData: GameData | null;
@@ -49,9 +49,12 @@ interface GameContextValue {
   pirateBases: GalaxyPosition[];
   sektorPositions: SektorGalaxyPosition[];
   incomingDeployments: IncomingDeployment[];
+  galaxyEvents: GalaxyEvent[];
   refreshGalaxy: () => Promise<void>;
   holdFleet: (targetUserId: number, ships: Record<string, number>) => Promise<void>;
   recallHold: (deploymentId: string) => Promise<void>;
+  relocateBase: (system: number, position: number) => Promise<void>;
+  claimGalaxyEvent: (eventId: string, ships: Record<string, number>) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -69,6 +72,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [pirateBases, setPirateBases] = useState<GalaxyPosition[]>([]);
   const [sektorPositions, setSektorPositions] = useState<SektorGalaxyPosition[]>([]);
   const [incomingDeployments, setIncomingDeployments] = useState<IncomingDeployment[]>([]);
+  const [galaxyEvents, setGalaxyEvents] = useState<GalaxyEvent[]>([]);
 
   function applyState(newState: PlayerState) {
     if (newState.serverTime) updateServerTimeOffset(newState.serverTime);
@@ -108,6 +112,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPirateBases(res.pirateBases);
       setSektorPositions(res.sektorPositions);
       setIncomingDeployments(res.incomingDeployments);
+      setGalaxyEvents(res.events);
     } catch {
       // siehe oben
     }
@@ -217,9 +222,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     pirateBases,
     sektorPositions,
     incomingDeployments,
+    galaxyEvents,
     refreshGalaxy,
     holdFleet: (targetUserId, ships) => run(() => api.holdFleet(targetUserId, ships)),
     recallHold: (deploymentId) => run(() => api.recallHold(deploymentId)),
+    relocateBase: (system, position) => run(() => api.relocateBase(system, position)),
+    claimGalaxyEvent: (eventId, ships) => run(() => api.claimGalaxyEvent(eventId, ships)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

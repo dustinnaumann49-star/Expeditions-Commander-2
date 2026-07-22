@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu in der Galaxie: Ereignisse und Basis-Verlegung',
+    changes: [
+      'Gelegentlich taucht jetzt an einer freien Position in der Galaxie ein Ereignis auf - ein verlassenes Wrack 🛸 oder ein Handelskonvoi 🚀. Wer zuerst eine Flotte hinschickt, sichert sich die Beute (Ressourcen, beim Konvoi auch etwas Dunkle Materie).',
+      'Kein Risiko dabei: kommt man zu spät, war das Ereignis schon vergriffen - die Flotte fliegt einfach leer wieder nach Hause, es geht nichts verloren außer der Flugzeit. Die Flotte kehrt danach automatisch zurück, ein manueller Rückruf ist nicht nötig.',
+      'Neu: die eigene Heimatbasis kann jetzt gegen 300 Dunkle Materie gezielt an eine andere freie Position in der Galaxie verlegt werden - praktisch, falls der Startplatz ungünstig zu Sektoren oder zum Mitspieler liegt. Wirkt sofort, Flotte/Verteidigung/Fortschritt bleiben unverändert.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'KI-Mitspieler: gemischte Flotte und Verteidigung',
     changes: [
       'KI-Vega und KI-Nyx haben bisher dauerhaft nur den billigsten Jäger-Typ als Flotte und ausschließlich Raketenwerfer als Verteidigung gebaut, egal wie lange sie schon spielten.',

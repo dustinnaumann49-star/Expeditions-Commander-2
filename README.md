@@ -58,7 +58,13 @@ server/
   src/game/raidReinforce.ts          Liste aktiver Raids zur Navigation in der Galaxie-Ansicht
   src/game/galaxy.ts                 GESAMTE Galaxie-Logik: Distanz/Flugzeit/Treibstoff,
                                       Positionsvergabe, "Halten"-Mechanik, Übersicht,
-                                      Raid-Verteidigungs-Einbindung
+                                      Raid-Verteidigungs-Einbindung, Heimatbasis verlegen
+  src/game/galaxyPositions.ts        Gemeinsames Hilfsmodul "ist diese Galaxie-Position frei?"
+                                      (Spieler/Piratenbasen/Sektoren) - genutzt von galaxy.ts
+                                      (Verlegen) und galaxyEvents.ts (Spawn), bewusst OHNE
+                                      Abhaengigkeit zu state.ts/galaxy.ts (Zirkelbezug-Vermeidung)
+  src/game/galaxyEvents.ts           Galaxie-Ereignisse (Wrack/Handelskonvoi): Spawn, Bergungs-
+                                      Rundflug (Claim + automatischer Rueckflug), Belohnung
   src/game/groupOps.ts               GESAMTE Multiplayer-Logik: Elite-Bollwerk- und
                                       Piratenadmiral-Expeditionen (Einladen/Rendezvous/Starten,
                                       Belohnungsvergabe)
@@ -929,6 +935,32 @@ client/
     mehr als der Reaper) - der Imperator soll ein zäher, schwer zu tötender Brocken bleiben, sein
     Waffenschaden liegt aber jetzt nur noch beim ~10-fachen des Salvendreadnought statt zuvor dem
     ~100-fachen. Baulimit (2) und Spezialteile-Kosten (1.000/Kategorie) bleiben unverändert.
+
+82. **Galaxie-Ereignisse (Wrack/Handelskonvoi, `game/galaxyEvents.ts`)** - Nutzerentscheidung
+    (nur 2 Spieler, PvE-Fokus): taucht zufällig an einer freien Galaxie-Position auf
+    (`maybeSpawnGalaxyEvent()`, `GALAXY_EVENT_SPAWN_CHANCE` in `economy.ts`, EINMAL pro
+    Heartbeat-Durchlauf gewürfelt, NICHT pro Nutzer-`tick()` - sonst würde die Chance bei aktiv
+    spielenden Menschen durch das 3s-Polling voellig anders wirken als bei einem nur alle 2 Minuten
+    per Heartbeat verarbeiteten Bot). Maximal `GALAXY_EVENT_MAX_ACTIVE` (2) gleichzeitig aktiv,
+    verschwindet nach `GALAXY_EVENT_LIFETIME_MS` (10h) ungenutzt wieder. Globale, nutzerunabhängige
+    Entität in einer eigenen DB-Tabelle (`galaxy_events`, dieselbe id/status/data_json-Struktur wie
+    `group_operations`). Bewusst kein PvP-Wettrennen mit Verlustrisiko: eine Bergungs-Flotte macht
+    einen einfachen Rundflug (Hin- und automatischer Rückflug OHNE manuellen Rückruf, anders als
+    "Halten") - kommt sie zu spät (Ereignis von jemand anderem bereits abgeholt), kostet das nur die
+    Flugzeit, nie Schiffe. Beute wird bei ANKUNFT gesichert (Ereignis wird sofort aus der globalen
+    Liste gelöscht, damit niemand sonst mehr danach greifen kann), aber erst bei RÜCKKEHR gutgeschrieben
+    - analog zu `Mission.farmed`/`finalizeMission()` in `missions.ts`. Positions-Kollisionen (Spieler/
+    Piratenbasen/Sektoren/andere Ereignisse) werden über das gemeinsame Hilfsmodul
+    `galaxyPositions.ts` ausgeschlossen (bewusst NICHT in `state.ts` verankert, um den Zirkelbezug
+    state.ts↔galaxy.ts zu vermeiden, den auch `galaxy.ts` selbst schon umgeht).
+
+83. **Heimatbasis verlegen (`relocateGalaxyPosition()` in `galaxy.ts`)** - gegen
+    `RELOCATE_BASE_COST_DM` (300 DM, reiner DM-Preis ohne Ressourcenanteil, analog zum
+    Klassenwechsel-Muster) gezielt eine neue, freie Galaxie-Position wählen, z.B. um näher an
+    bestimmten Sektoren/dem Mitspieler zu sitzen. Sofortige Wirkung, kein Flug/keine Wartezeit -
+    nur die gespeicherte `galaxyPosition` ändert sich, Flotte/Verteidigung/Fortschritt bleiben
+    unangetastet. Aktive Galaxie-Ereignisse zählen ebenfalls als belegt (vom Route-Handler als
+    `extraReserved`-Set übergeben, siehe Punkt 82 zum vermiedenen Zirkelbezug).
 
 ## Kurz-Changelog
 

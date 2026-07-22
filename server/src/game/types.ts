@@ -65,6 +65,48 @@ export interface GalaxyDeployment {
   returnTime: number | null; // gesetzt nach Rückruf, Ankunft zu Hause
 }
 
+// ===== Galaxie-Ereignisse (Wrack/Handelskonvoi) =====
+// Global, nicht an einen Nutzer gebunden (eigene DB-Tabelle galaxy_events, siehe db.ts) - taucht
+// zufaellig an einer freien Galaxie-Position auf, verschwindet nach GALAXY_EVENT_LIFETIME_MS
+// wieder, falls niemand es vorher beansprucht. `claimedBy` wird gesetzt, sobald eine Flotte dort
+// ankommt UND das Ereignis noch nicht vergeben war (Details siehe game/galaxyEvents.ts) - das
+// Ereignis wird danach sofort geloescht, damit es fuer alle anderen nicht mehr sichtbar ist.
+export interface GalaxyEvent {
+  id: string;
+  type: string; // Schluessel in GALAXY_EVENT_TYPES (economy.ts), z.B. 'wrack' | 'konvoi'
+  system: number;
+  position: number;
+  spawnedAt: number;
+  expiresAt: number;
+  claimedBy: number | null;
+}
+
+export interface GalaxyEventReward {
+  metall: number;
+  kristall: number;
+  deuterium: number;
+  dm: number;
+}
+
+// Eigener, einfacher Rundflug (Hin- und automatischer Rueckflug OHNE manuellen Rueckruf, anders
+// als "Halten" in GalaxyDeployment) - die Beute wird erst bei RUECKKEHR gutgeschrieben (nicht bei
+// Ankunft), analog zu Mission.farmed/finalizeMission in missions.ts.
+export interface GalaxyEventTrip {
+  id: string;
+  eventId: string;
+  eventType: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  collected: boolean; // true, sobald Ankunft verarbeitet wurde (auch wenn das Ereignis schon vergriffen war)
+  reward: GalaxyEventReward | null; // null, falls beim Eintreffen bereits vergriffen
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -484,6 +526,7 @@ export interface PlayerState {
   defenseModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
+  eventTrips: GalaxyEventTrip[]; // eigene, laufend zu Galaxie-Ereignissen unterwegs befindliche Flotten
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];

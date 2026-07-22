@@ -384,3 +384,58 @@ export const RAID_WAVE_JITTER_FACTOR = 0.25;
 // Balance-Anpassung (Juli 2026): Kurve von 70-110% auf 80-130% anheben, passend zur allgemeinen
 // Missions-/Raid-Balance-Anpassung.
 export const RAID_WAVE_FACTORS = [0.8, 0.9, 1.0, 1.15, 1.3];
+
+// ===== Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe game/galaxyEvents.ts) =====
+// Nutzerentscheidung (Juli 2026): taucht zufaellig an einer freien Galaxie-Position auf, gibt der
+// reinen Galaxie-Uebersicht einen Grund zum regelmaessigen Reinschauen. Bewusst PVE/kooperativ
+// (kein Wettrennen mit Verlust-Risiko) - wer zuerst ankommt, bekommt die Beute, ein zu spaetes
+// Eintreffen kostet nur die Flugzeit, nie Schiffe.
+export interface GalaxyEventTypeDef {
+  label: string;
+  icon: string;
+  metall: [number, number];
+  kristall: [number, number];
+  deuterium: [number, number];
+  dm: [number, number];
+}
+
+export const GALAXY_EVENT_TYPES: Record<string, GalaxyEventTypeDef> = {
+  wrack: {
+    label: 'Verlassenes Wrack',
+    icon: '🛸',
+    metall: [2000000, 5000000],
+    kristall: [1500000, 3500000],
+    deuterium: [800000, 2000000],
+    dm: [0, 0],
+  },
+  konvoi: {
+    label: 'Handelskonvoi',
+    icon: '🚀',
+    metall: [800000, 2000000],
+    kristall: [800000, 2000000],
+    deuterium: [500000, 1200000],
+    dm: [15, 35],
+  },
+};
+
+// Chance PRO Heartbeat-Tick (~alle 2 Min., siehe heartbeat.ts), nur gewuerfelt solange weniger als
+// GALAXY_EVENT_MAX_ACTIVE Ereignisse aktiv sind - ergibt bei 720 Ticks/Tag im Schnitt ca. 3-4 neue
+// Ereignisse pro Tag. Bewusst kein fixer Checkpoint-Rhythmus wie bei Raids (siehe economy.ts
+// rollFixedCheckpoints) - ein verpasstes Ereignis waehrend einer Downtime ist unkritisch, die
+// zusaetzliche Katch-up-Komplexitaet lohnt sich hier nicht.
+export const GALAXY_EVENT_SPAWN_CHANCE = 0.005;
+export const GALAXY_EVENT_MAX_ACTIVE = 2;
+export const GALAXY_EVENT_LIFETIME_MS = 10 * 3600 * 1000;
+
+export function rollGalaxyEventReward(type: string): { metall: number; kristall: number; deuterium: number; dm: number } {
+  const def = GALAXY_EVENT_TYPES[type];
+  if (!def) return { metall: 0, kristall: 0, deuterium: 0, dm: 0 };
+  const roll = ([min, max]: [number, number]) => Math.round(min + Math.random() * (max - min));
+  return { metall: roll(def.metall), kristall: roll(def.kristall), deuterium: roll(def.deuterium), dm: roll(def.dm) };
+}
+
+// ===== Heimatbasis verlegen (Galaxie, siehe game/galaxy.ts relocateGalaxyPosition) =====
+// Nutzerentscheidung (Juli 2026): reine DM-Kosten (kein Ressourcen-Anteil) - haelt es einfach und
+// konsistent zum bereits bestehenden Klassenwechsel-Muster (CLASS_CHANGE_COST_DM), keine
+// zusaetzliche Wartezeit/Cooldown noetig, die DM-Kosten allein bremsen Spam ausreichend.
+export const RELOCATE_BASE_COST_DM = 300;

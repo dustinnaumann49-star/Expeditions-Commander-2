@@ -84,6 +84,48 @@ export interface IncomingDeployment {
   holding: boolean;
 }
 
+export interface GalaxyEvent {
+  id: string;
+  type: string;
+  system: number;
+  position: number;
+  spawnedAt: number;
+  expiresAt: number;
+  claimedBy: number | null;
+}
+
+export interface GalaxyEventTypeDef {
+  label: string;
+  icon: string;
+  metall: [number, number];
+  kristall: [number, number];
+  deuterium: [number, number];
+  dm: [number, number];
+}
+
+export interface GalaxyEventReward {
+  metall: number;
+  kristall: number;
+  deuterium: number;
+  dm: number;
+}
+
+export interface GalaxyEventTrip {
+  id: string;
+  eventId: string;
+  eventType: string;
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number;
+  collected: boolean;
+  reward: GalaxyEventReward | null;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -377,6 +419,7 @@ export interface PlayerState {
   defenseModuleQueue: BuildJob[];
   galaxyPosition: GalaxyPosition | null;
   galaxyDeployments: GalaxyDeployment[];
+  eventTrips: GalaxyEventTrip[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
   missions: Mission[];
@@ -510,6 +553,8 @@ export interface GameData {
   changelog: ChangelogEntry[];
   playerClasses: ClassDefinition[];
   classChangeCostDm: number;
+  galaxyEventTypes: Record<string, GalaxyEventTypeDef>;
+  relocateBaseCostDm: number;
 }
 
 export interface ClassDefinition {

@@ -11,7 +11,8 @@ import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
 import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter } from './groupOps.js';
 import { simulateCombat } from './simulator.js';
-import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
+import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
+import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass } from './classActions.js';
@@ -25,7 +26,7 @@ import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD } from './data/economy.js';
+import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
 import { getLeaderboard } from './stats.js';
@@ -87,6 +88,8 @@ gameRouter.get('/data', (_req, res) => {
     scrapRefundRate: SCRAP_REFUND_RATE,
     playerClasses: PLAYER_CLASSES,
     classChangeCostDm: CLASS_CHANGE_COST_DM,
+    galaxyEventTypes: GALAXY_EVENT_TYPES,
+    relocateBaseCostDm: RELOCATE_BASE_COST_DM,
   });
 });
 
@@ -185,6 +188,7 @@ gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
       pirateBases: PIRATE_BASES,
       sektorPositions,
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
+      events: listActiveGalaxyEvents(),
       galaxySystems: GALAXY_SYSTEMS,
       galaxyPositions: GALAXY_POSITIONS,
     });
@@ -240,6 +244,25 @@ gameRouter.post('/galaxy/recall', (req: AuthedRequest, res) => {
   const { deploymentId } = req.body ?? {};
   if (typeof deploymentId !== 'string') return res.status(400).json({ error: 'deploymentId erforderlich.' });
   handleAction(req, res, (state) => recallHoldDeployment(state, deploymentId));
+});
+
+gameRouter.post('/galaxy/relocate', (req: AuthedRequest, res) => {
+  const { system, position } = req.body ?? {};
+  if (typeof system !== 'number' || typeof position !== 'number') {
+    return res.status(400).json({ error: 'system und position (Zahl) erforderlich.' });
+  }
+  // Aktive Galaxie-Ereignisse als zusaetzlich belegte Positionen mitgeben (siehe Kommentar in
+  // relocateGalaxyPosition() zum vermiedenen Zirkelbezug galaxy.ts <-> galaxyEvents.ts).
+  const extraReserved = new Set(listActiveGalaxyEvents().map((e) => `${e.system}:${e.position}`));
+  handleAction(req, res, (state) => relocateGalaxyPosition(state, { system, position }, extraReserved));
+});
+
+gameRouter.post('/galaxy/event/claim', (req: AuthedRequest, res) => {
+  const { eventId, ships } = req.body ?? {};
+  if (typeof eventId !== 'string' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'eventId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => startEventClaim(state, eventId, ships));
 });
 
 // ---- Sektor / Missionen ----
