@@ -328,6 +328,12 @@ export interface CombatDetail {
   allyResult?: CombatUnitResult;
   rewards?: RewardSummary;
   replay?: CombatReplay;
+  // Nur bei Raids (siehe RaidState.waveLog in raids.ts): der komplette Wellen-Verlauf als
+  // aufklappbare Unterabschnitte, gesammelt statt pro Welle einzeln verschickt - analog zu
+  // FarmDetail.skirmishes bei Piraten-Sektor-/Asteroiden-Missionen. Bei anderen Kampfberichten
+  // (Elite-Bollwerk, Piratenadmiral, einzelne Piraten-Sektor-Skirmishes) bleibt das Top-Level
+  // npcResults/playerResults-Paar wie bisher der EINZIGE Inhalt, hier unbenutzt.
+  skirmishes?: SkirmishSummary[];
 }
 
 export interface FarmDetail {
@@ -405,6 +411,13 @@ export interface RaidState {
   wavesProcessed: number;
   wavesWon: number;
   accumulatedDestroyed: number;
+  // Nutzerentscheidung (Juli 2026): jede Welle wird hier gesammelt statt sofort als eigene
+  // Nachricht verschickt (analog zu Mission.skirmishLog) - EIN gemeinsamer Abschlussbericht bei
+  // Raid-Ende statt bis zu 5 Einzel-Nachrichten pro Beteiligtem (Verteidiger, Verstaerker,
+  // haltende Flotten - siehe finalizeRaidWaves() in raids.ts, dieselbe waveLog-Referenz landet in
+  // JEDES Beteiligten CombatDetail.skirmishes). `hour` in jedem SkirmishSummary-Eintrag traegt
+  // hier die WELLEN-Nummer (1..RAID_WAVE_COUNT), kein echter Stunden-Bezug.
+  waveLog: SkirmishSummary[];
 }
 
 export interface FleetPreset {

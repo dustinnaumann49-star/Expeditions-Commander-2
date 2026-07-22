@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Raids: EIN Sammelbericht statt bis zu 5 Einzel-Nachrichten pro Welle',
+    changes: [
+      'Ein Piratenraid auf die Heimatbasis (5 Wellen) hat bisher pro Welle eine eigene Kampfbericht-Nachricht verschickt - bei aktiver Verstärkung oder haltenden Flotten sogar mehrfach an mehrere Spieler gleichzeitig.',
+      'Läuft jetzt gesammelt: alle 5 Wellen werden intern gesammelt und erst wenn der Raid komplett vorbei ist, bekommt jeder Beteiligte (Verteidiger, Verstärker, haltende Flotten) EINEN Abschlussbericht mit jeder Welle als eigenem aufklappbaren Abschnitt.',
+      'Die Vorab-Warnungen ("Piratenaktivität registriert", "Flotte ist gestartet") kommen weiterhin sofort - die bleiben wichtig, um rechtzeitig reagieren zu können.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Piraten-Sektor-Missionen: EIN Sammelbericht statt bis zu 4 Einzel-Nachrichten',
     changes: [
       'Bei einer Piraten-Sektor-Mission (Niedrig/Mittel/Hoch) kam bisher pro Stunden-Check eine eigene Kampfbericht-Nachricht rein - bis zu 4 Stück pro Mission.',

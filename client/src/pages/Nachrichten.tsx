@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { shipName } from '../lib/combatInfo';
-import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage } from '../types/game';
+import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage, SkirmishSummary } from '../types/game';
 
 function isFarmDetail(detail: CombatDetail | FarmDetail): detail is FarmDetail {
   return 'resources' in detail;
@@ -199,6 +199,33 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
   return rows;
 }
 
+// Gemeinsame Liste fuer gesammelte Einzel-Kaempfe (Stunden-Checks bei Missionen, Wellen bei
+// Raids) - wird sowohl im FarmDetail-Zweig (Missionen) als auch im CombatDetail-Zweig (Raids)
+// verwendet, siehe DetailModal. `unitLabel` haelt die Nummerierung kontextgerecht ("Stunde"
+// vs. "Welle"), da beide dasselbe `hour`-Feld in SkirmishSummary unterschiedlich nutzen.
+function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSummary[]; unitLabel: string; title: string }) {
+  if (skirmishes.length === 0) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{title}</p>
+      {skirmishes.map((sk, i) => (
+        <div key={i} style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 13, marginBottom: 6 }}>
+            <strong>
+              {unitLabel} {sk.hour}
+            </strong>{' '}
+            – {sk.outcome}
+          </p>
+          <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
+          <RewardTable rows={combatRewardRows(sk.rewards)} />
+          <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
+          <UnitTable title="Eigene Flotte" units={sk.playerResults} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }) {
   const { gameData } = useGame();
   if (!msg.detail) return null;
@@ -241,22 +268,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
                 </table>
               </div>
             )}
-            {msg.detail.skirmishes && msg.detail.skirmishes.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Piraten-Kontakte während der Mission</p>
-                {msg.detail.skirmishes.map((sk, i) => (
-                  <div key={i} style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                    <p style={{ fontSize: 13, marginBottom: 6 }}>
-                      <strong>Stunde {sk.hour}</strong> – {sk.outcome}
-                    </p>
-                    <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
-                    <RewardTable rows={combatRewardRows(sk.rewards)} />
-                    <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
-                    <UnitTable title="Eigene Eskorte" units={sk.playerResults} />
-                  </div>
-                ))}
-              </div>
-            )}
+            <SkirmishList skirmishes={msg.detail.skirmishes || []} unitLabel="Stunde" title="Piraten-Kontakte während der Mission" />
           </>
         ) : (
           <>
@@ -264,19 +276,29 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
               {msg.detail.sektorName} — {msg.detail.outcome}
             </h3>
             <p className="detail-sub" style={{ marginBottom: 12 }}>
-              {new Date(msg.time).toLocaleString('de-DE')} · {msg.detail.roundsFought} Runde(n)
+              {new Date(msg.time).toLocaleString('de-DE')}
+              {!(msg.detail.skirmishes && msg.detail.skirmishes.length > 0) && ` · ${msg.detail.roundsFought} Runde(n)`}
             </p>
-            <CombatSummaryBars
-              npcResults={msg.detail.npcResults}
-              playerResults={msg.detail.playerResults}
-              allyResult={msg.detail.allyResult}
-            />
-            <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
-            <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
-            {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
-            {groupByOwner(msg.detail.playerResults).map(([owner, units]) => (
-              <UnitTable key={owner} title={owner} units={units} />
-            ))}
+            {msg.detail.skirmishes && msg.detail.skirmishes.length > 0 ? (
+              <>
+                <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
+                <SkirmishList skirmishes={msg.detail.skirmishes} unitLabel="Welle" title="Wellen-Verlauf" />
+              </>
+            ) : (
+              <>
+                <CombatSummaryBars
+                  npcResults={msg.detail.npcResults}
+                  playerResults={msg.detail.playerResults}
+                  allyResult={msg.detail.allyResult}
+                />
+                <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
+                <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
+                {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
+                {groupByOwner(msg.detail.playerResults).map(([owner, units]) => (
+                  <UnitTable key={owner} title={owner} units={units} />
+                ))}
+              </>
+            )}
           </>
         )}
       </div>

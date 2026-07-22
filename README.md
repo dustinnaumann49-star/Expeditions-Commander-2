@@ -381,7 +381,12 @@ client/
     Zwischen-Nachricht - werden im Abschlussbericht implizit sichtbar (weniger
     `skirmishLog`-Einträge als `mission.processedHours` = ruhige Stunden dabei). Piraten-Sektor-
     Missionen erscheinen dadurch nicht mehr unter "Kampfberichte", sondern wie Asteroiden-
-    Missionen gesammelt unter "Farm-/Beuteberichte".
+    Missionen gesammelt unter "Farm-/Beuteberichte". Raids folgen demselben Prinzip über ein
+    eigenes `RaidState.waveLog`-Feld statt `Mission.skirmishLog` (siehe Punkt 45,
+    `CombatDetail.skirmishes` statt `FarmDetail.skirmishes` - Raid-Berichte bleiben deshalb unter
+    "Kampfberichte", nicht "Farm-/Beuteberichte"). Elite-Bollwerk und Piratenadmiral nutzen dieses
+    Muster BEWUSST NICHT (Nutzerentscheidung) - deren Multiplayer-Kampfberichte bleiben wie
+    bisher pro Stunden-/10-Minuten-Check einzeln.
 
 35. **Belohnungs-Eskalation pro Missionsart** (`getEscalationMultiplier()`,
     `REWARD_ESCALATION` in `economy.ts`):
@@ -491,7 +496,13 @@ client/
       wirkungslosen Raid.
     - **Ist nichts mehr zu verteidigen** (von Anfang an oder durch vorherige Wellen aufgerieben,
       `hasAnyDefense()`), werden die restlichen Wellen ohne Kampf übersprungen statt einzeln
-      sinnlos simuliert - eine einzige Sammel-Nachricht statt mehrfacher Leer-Wellen-Spam.
+      sinnlos simuliert.
+    - **Jede Welle (inkl. übersprungener/kampfloser) landet in `raid.waveLog` statt sofort als
+      eigene Nachricht verschickt zu werden** (Nutzerentscheidung Juli 2026, analog zu
+      `Mission.skirmishLog`, siehe Punkt 34) - `finalizeRaidWaves()` verschickt EINEN
+      Abschlussbericht PRO Beteiligtem (Verteidiger, jeder Verstärker, jede haltende Flotte),
+      alle mit derselben `waveLog`-Referenz als `CombatDetail.skirmishes` eingebettet. Ersetzt die
+      vorherigen bis zu `RAID_WAVE_COUNT` Einzel-Nachrichten PRO Beteiligtem.
     - **Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung** nach der
       letzten Welle (`finalizeRaidWaves()`): ein Container pro gewonnener Welle (Silber), bei
       einer PERFEKTEN Verteidigung (alle `RAID_WAVE_COUNT` Wellen gewonnen) werden alle zu Gold

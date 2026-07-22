@@ -98,6 +98,7 @@ function spawnRaidAt(state: PlayerState, checkpointTime: number): void {
     wavesProcessed: 0,
     wavesWon: 0,
     accumulatedDestroyed: 0,
+    waveLog: [],
   };
   const prepMin = Math.round(RAID_PREP_MS / 60000);
   const totalMin = Math.round((arrivalTime - checkpointTime) / 60000);
@@ -246,15 +247,17 @@ async function processRaidWaves(state: PlayerState, currentUserId?: number, curr
 
   while (raid.wavesProcessed < RAID_WAVE_COUNT && Date.now() >= raid.waveTimes[raid.wavesProcessed]) {
     if (!hasAnyDefense(state)) {
-      if (raid.wavesProcessed === 0) {
-        pushMessage(state, 'kampf', 'Piratenüberfall – keine Verteidigung vorhanden. Die Flotte plündert ungehindert.');
-      } else {
-        pushMessage(
-          state,
-          'kampf',
-          `Deine Verteidigung ist vollständig aufgerieben - die verbleibenden Wellen (${raid.wavesProcessed + 1}-${RAID_WAVE_COUNT}) treffen ungehindert auf deine Heimatbasis.`
-        );
-      }
+      const fromWave = raid.wavesProcessed + 1;
+      raid.waveLog.push({
+        hour: fromWave,
+        outcome:
+          fromWave === 1
+            ? 'Keine Verteidigung vorhanden - die Piratenflotte plündert ungehindert.'
+            : `Verteidigung vollständig aufgerieben - Wellen ${fromWave}-${RAID_WAVE_COUNT} treffen ungehindert auf die Heimatbasis.`,
+        roundsFought: 0,
+        npcResults: [],
+        playerResults: [],
+      });
       raid.wavesProcessed = RAID_WAVE_COUNT;
       break;
     }
@@ -315,7 +318,13 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     // Seltener Randfall - keine Angreifer generiert, Welle zaehlt kampflos als gewonnen.
     raid.wavesProcessed++;
     raid.wavesWon++;
-    pushMessage(state, 'kampf', `Welle ${waveNumber}/${RAID_WAVE_COUNT}: keine Angreifer gefunden - Welle übersprungen.`);
+    raid.waveLog.push({
+      hour: waveNumber,
+      outcome: `Welle ${waveNumber}/${RAID_WAVE_COUNT}: keine Angreifer gefunden - Welle übersprungen.`,
+      roundsFought: 0,
+      npcResults: [],
+      playerResults: [],
+    });
     return;
   }
 
@@ -424,20 +433,19 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
 
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   const outcome = waveWon ? `Welle ${waveNumber}/${RAID_WAVE_COUNT} abgewehrt – Angreifer vernichtet` : `Welle ${waveNumber}/${RAID_WAVE_COUNT} – Angreifer teilweise durchgekommen`;
-  const detail = {
-    sektorName: 'Heimatbasis',
-    outcome,
+
+  // Nutzerentscheidung (Juli 2026): keine Zwischen-Nachricht mehr pro Welle (weder fuer den
+  // Verteidiger noch fuer Verstaerker/haltende Flotten) - stattdessen EIN Eintrag in
+  // raid.waveLog, der spaeter bei finalizeRaidWaves() in JEDES Beteiligten Abschlussbericht
+  // eingebettet wird (dieselbe Referenz fuer alle, da der Kampfverlauf gemeinsam ist).
+  raid.waveLog.push({
+    hour: waveNumber,
+    outcome: `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(defenseRepairPercentFor(state.playerClass) * 100)}% repariert.${modifierText}`,
     roundsFought: result.roundsFought,
     npcResults,
     playerResults,
     replay: result.replay,
-  };
-  pushMessage(
-    state,
-    'kampf',
-    `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(defenseRepairPercentFor(state.playerClass) * 100)}% repariert.${modifierText}`,
-    detail
-  );
+  });
 
   reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
     const ownerKey = String(r.userId);
@@ -457,17 +465,11 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
       });
     });
     reinforcerState.stats.enemiesDestroyed += destroyedThisWave;
-    pushMessage(
-      reinforcerState,
-      'kampf',
-      `Deine Verstärkung für die Heimatbasis von ${ownerUsername}, Welle ${waveNumber}/${RAID_WAVE_COUNT}: ${waveWon ? 'abgewehrt' : 'Angreifer teilweise durchgekommen'} (${result.roundsFought} Runden).`,
-      detail
-    );
     if (r.userId !== currentUserId) savePlayerState(reinforcerState);
   });
 
   heldStates.forEach((holding) => {
-    const { deployment, ownerState, ownerUsername: holderUsername } = holding;
+    const { deployment, ownerState } = holding;
     const ownerKey = `held:${deployment.id}`;
     const ownerSurvivors = survivorsByOwner?.[ownerKey] || {};
     Object.entries(deployment.ships).forEach(([id, sentCount]) => {
@@ -476,7 +478,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
       const eff = getEffectiveStats(id, ownerState.research, {}, isBoosterActive(ownerState, 'kampf'), ownerState.playerClass, ownerState.shipModules);
       const statKey = `${ownerKey}:${id}`;
       playerResults.push({
-        id, name: shipName(id), ownerUsername: `${holderUsername} (haltende Flotte)`, sent: sentCount, survived, lost: sentCount - survived,
+        id, name: shipName(id), ownerUsername: `${holding.ownerUsername} (haltende Flotte)`, sent: sentCount, survived, lost: sentCount - survived,
         waffen: Math.round(eff.waffen), schild: Math.round(eff.schild), panzerung: Math.round(eff.panzerung),
         dmgTaken: Math.round(result.dmgTakenA[statKey] || 0), dmgDealt: Math.round(result.shotsA.dmgDealt[statKey] || 0),
         shotsFired: result.shotsA.shotsFired[statKey] || 0, hits: result.shotsA.hits[statKey] || 0,
@@ -485,12 +487,6 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
       });
     });
     ownerState.stats.enemiesDestroyed += destroyedThisWave;
-    pushMessage(
-      ownerState,
-      'kampf',
-      `Deine haltende Flotte bei ${ownerUsername}, Welle ${waveNumber}/${RAID_WAVE_COUNT}: ${waveWon ? 'abgewehrt' : 'Angreifer teilweise durchgekommen'} (${result.roundsFought} Runden).`,
-      detail
-    );
     persistHeldDeployment(holding, currentUserId);
   });
 
@@ -610,27 +606,48 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   const outcome = perfectDefense
     ? `Piratenüberfall abgewehrt – alle ${RAID_WAVE_COUNT} Wellen zurückgeschlagen! 🏆`
     : `Piratenüberfall beendet – ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt`;
+  const waveLogText = raid.waveLog.length > 0 ? ' Wellen-Verlauf siehe unten.' : '';
 
-  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerTextFor(ownerEliteHit)}${salvageText}`, {
+  // Nutzerentscheidung (Juli 2026): derselbe raid.waveLog (alle Wellen, gemeinsam erlebt) landet
+  // in JEDES Beteiligten Abschlussbericht - ersetzt die vorherigen bis zu 5 Einzel-Nachrichten pro
+  // Welle je Beteiligtem, siehe resolveOneWave().
+  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerTextFor(ownerEliteHit)}${salvageText}${waveLogText}`, {
     sektorName: 'Heimatbasis',
     outcome,
     roundsFought: 0,
     npcResults: [],
     playerResults: [],
+    skirmishes: raid.waveLog,
   });
   reinforcerStates.forEach(({ r, playerState }, i) => {
     pushMessage(
       playerState,
       'kampf',
-      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(reinforcerEliteHits[i])}${salvageText}`
+      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(reinforcerEliteHits[i])}${salvageText}${waveLogText}`,
+      {
+        sektorName: `Heimatbasis von ${ownerUsername}`,
+        outcome,
+        roundsFought: 0,
+        npcResults: [],
+        playerResults: [],
+        skirmishes: raid.waveLog,
+      }
     );
     if (r.userId !== currentUserId) savePlayerState(playerState);
   });
-  heldStates.forEach(({ ownerState, ownerUsername: holderUsername }, i) => {
+  heldStates.forEach(({ ownerState }, i) => {
     pushMessage(
       ownerState,
       'kampf',
-      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(heldEliteHits[i])}${salvageText}`
+      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(heldEliteHits[i])}${salvageText}${waveLogText}`,
+      {
+        sektorName: `Heimatbasis von ${ownerUsername}`,
+        outcome,
+        roundsFought: 0,
+        npcResults: [],
+        playerResults: [],
+        skirmishes: raid.waveLog,
+      }
     );
     if (ownerState.userId !== currentUserId) savePlayerState(ownerState);
   });

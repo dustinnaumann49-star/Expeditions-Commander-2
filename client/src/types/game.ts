@@ -295,6 +295,7 @@ export interface CombatDetail {
   allyResult?: CombatUnitResult;
   rewards?: RewardSummary;
   replay?: CombatReplay;
+  skirmishes?: SkirmishSummary[];
 }
 
 export interface SkirmishSummary {
