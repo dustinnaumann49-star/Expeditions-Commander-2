@@ -371,9 +371,17 @@ client/
     bewusst unterschiedlich je Sektor-Typ. Bei künftigen Laufzeit-Änderungen nach hartcodierten
     Stunden-Annahmen suchen, die eigentlich sektor-typ-abhängig sein müssten.
 
-34. **Asteroiden-Eskorte sammelt Piratenkontakte in `mission.skirmishLog` statt sofort zu
-    melden** - `finalizeMission`/`abortMissionDestroyed` bauen daraus EINEN gemeinsamen
-    Farm-Bericht mit allen Kämpfen als aufklappbare Unterabschnitte.
+34. **Alle Sektor-Kämpfe (Piraten-Sektoren UND Asteroiden-Eskorte) sammeln sich in
+    `mission.skirmishLog` statt sofort eine eigene Nachricht zu verschicken** (Nutzerentscheidung
+    Juli 2026 - ursprünglich nur für die Asteroiden-Eskorte, jetzt auch für Piraten-Sektor-
+    Stunden-Checks in `runHourlyCheck()`) - `finalizeMission`/`abortMissionDestroyed` bauen daraus
+    EINEN gemeinsamen Farm-Bericht bei Rückkehr, mit jedem Stunden-Check als eigener aufklappbarer
+    Unterabschnitt (volle `CombatDetail`-Tabellen + Kampf-Zusammenfassungs-Balken, siehe
+    Nachrichten.tsx). Stunden ohne Feindkontakt hinterlassen bewusst KEINEN Log-Eintrag und KEINE
+    Zwischen-Nachricht - werden im Abschlussbericht implizit sichtbar (weniger
+    `skirmishLog`-Einträge als `mission.processedHours` = ruhige Stunden dabei). Piraten-Sektor-
+    Missionen erscheinen dadurch nicht mehr unter "Kampfberichte", sondern wie Asteroiden-
+    Missionen gesammelt unter "Farm-/Beuteberichte".
 
 35. **Belohnungs-Eskalation pro Missionsart** (`getEscalationMultiplier()`,
     `REWARD_ESCALATION` in `economy.ts`):

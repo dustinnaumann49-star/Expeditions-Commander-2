@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Piraten-Sektor-Missionen: EIN Sammelbericht statt bis zu 4 Einzel-Nachrichten',
+    changes: [
+      'Bei einer Piraten-Sektor-Mission (Niedrig/Mittel/Hoch) kam bisher pro Stunden-Check eine eigene Kampfbericht-Nachricht rein - bis zu 4 Stück pro Mission.',
+      'Läuft jetzt genau wie bei der Asteroiden-Eskorte: alle Stunden-Checks werden gesammelt und erst bei Rückkehr der Flotte als EIN gemeinsamer Bericht zugestellt, jeder Check als eigener aufklappbarer Abschnitt mit vollem Kampfbericht.',
+      'Dadurch taucht eine zurückgekehrte Piraten-Sektor-Flotte jetzt unter "Farm-/Beuteberichte" auf statt unter "Kampfberichte" - dort, wo auch die Asteroiden-Missionen stehen.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Piratenkapitän aufgewertet',
     changes: [
       'Der Piratenkapitän war viel zu schwach - er ging in einer Welle mit vielen anderen Gegnern praktisch immer sofort unter, ohne dass man ihn überhaupt bemerkt hat.',

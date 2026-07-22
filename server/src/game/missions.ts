@@ -305,7 +305,9 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   }
 
   if (Math.random() >= cfg.checkChance) {
-    pushMessage(state, 'kampf', `Stunden-Check (Stufe ${mission.processedHours}/4) - kein Feindkontakt.`);
+    // Kein Feindkontakt in dieser Stunde - keine Zwischen-Nachricht mehr (Nutzerentscheidung,
+    // analog zu runAsteroidEscortCheck()): wird im Abschlussbericht implizit durch die Anzahl der
+    // Skirmish-Eintraege sichtbar (weniger Eintraege als processedHours = ruhige Stunden dabei).
     return;
   }
 
@@ -351,7 +353,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const npcIds = Object.keys(npcCombined).filter((id) => npcCombined[id] > 0);
 
   if (npcIds.length === 0) {
-    pushMessage(state, 'kampf', 'Feindkontakt. Keine nennenswerte Gegenwehr, kein Schaden.');
+    // Wie oben: keine Zwischen-Nachricht mehr, taucht als ruhige Stunde im Abschlussbericht auf.
     return;
   }
 
@@ -451,9 +453,10 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     ? 'Sieg mit Verlusten'
     : 'Verluste, Gegner überlebt';
 
+  let sandronatorText = '';
   if (mission.sandronatorAlive && (mission.ships.sandronator || 0) <= 0) {
     mission.sandronatorAlive = false;
-    pushMessage(state, 'kampf', 'Der Sandronator wurde zerstört. Der Ressourcen-Bonus (+100%) fällt für diese Mission weg.');
+    sandronatorText = ' Der Sandronator wurde zerstört - der Ressourcen-Bonus (+100%) fällt für den Rest der Mission weg.';
   }
 
   // Belohnungs-Eskalation: steigt mit jedem aufeinanderfolgenden Sieg innerhalb DERSELBEN Mission,
@@ -528,31 +531,32 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
 
   const hasRewards = lootGained || gainedTeile || captainContainerTier || captainDmGained > 0;
-  pushMessage(
-    state,
-    'kampf',
-    `Feindkontakt${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Ergebnis: ${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${modifierText}`,
-    {
-      sektorName: mission.sektorId,
-      outcome,
-      roundsFought: result.roundsFought,
-      npcResults,
-      playerResults,
-      replay: result.replay,
-      rewards: hasRewards
-        ? {
-            metall: lootGained?.metall,
-            kristall: lootGained?.kristall,
-            deuterium: lootGained?.deuterium,
-            teileWaffen: gainedTeile?.waffen,
-            teileSchild: gainedTeile?.schild,
-            teilePanzerung: gainedTeile?.panzerung,
-            containerTier: captainContainerTier,
-            dm: captainDmGained > 0 ? captainDmGained : undefined,
-          }
-        : undefined,
-    }
-  );
+
+  // Nutzerentscheidung: Piraten-Sektor-Kaempfe werden jetzt genau wie die Asteroiden-Eskorte
+  // gesammelt (mission.skirmishLog) statt sofort als eigene Nachricht verschickt - EIN
+  // gemeinsamer Abschlussbericht bei Rueckkehr statt bis zu 4 Einzel-Nachrichten pro Mission
+  // (siehe finalizeMission()).
+  if (!mission.skirmishLog) mission.skirmishLog = [];
+  mission.skirmishLog.push({
+    hour: mission.processedHours,
+    outcome: `${outcome}${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${modifierText}${sandronatorText}`,
+    roundsFought: result.roundsFought,
+    npcResults,
+    playerResults,
+    replay: result.replay,
+    rewards: hasRewards
+      ? {
+          metall: lootGained?.metall,
+          kristall: lootGained?.kristall,
+          deuterium: lootGained?.deuterium,
+          teileWaffen: gainedTeile?.waffen,
+          teileSchild: gainedTeile?.schild,
+          teilePanzerung: gainedTeile?.panzerung,
+          containerTier: captainContainerTier,
+          dm: captainDmGained > 0 ? captainDmGained : undefined,
+        }
+      : undefined,
+  });
 }
 
 // (siehe addContainers() in inventory.ts - Container stapeln sich jetzt statt einen neuen
@@ -614,7 +618,12 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       0
     );
     const ruhigeStunden = mission.processedHours - mission.skirmishLog.length;
-    skirmishText = ` Piraten-Kontakt in ${mission.skirmishLog.length} von ${mission.processedHours} Stunden (${ruhigeStunden > 0 ? `${ruhigeStunden} ruhig, ` : ''}insgesamt ${totalLost} Begleitschiff(e) verloren) - Details siehe unten.`;
+    const details = [ruhigeStunden > 0 ? `${ruhigeStunden} ruhig` : null, totalLost > 0 ? `insgesamt ${totalLost} Schiff(e) verloren` : null]
+      .filter(Boolean)
+      .join(', ');
+    skirmishText = ` Piraten-Kontakt in ${mission.skirmishLog.length} von ${mission.processedHours} Stunden${
+      details ? ` (${details})` : ''
+    } - Details siehe unten.`;
   }
   pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${skirmishText}`, detail);
 }
