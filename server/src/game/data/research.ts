@@ -27,7 +27,7 @@ export const RESEARCH: ResearchDefinition[] =
   { id:"zielerfassung", name:"Zielerfassung", img:"research/zielerfassung.png", lore:"Zielerfassung verfeinert die Feuerleitsysteme, damit Schüsse gezielt gefährliche RapidFire-Ziele zuerst treffen. Ein kleiner Rechenvorteil im Gefecht, der über Sieg oder Niederlage entscheiden kann.", effectPerLevel:0.06,
     baseCost:{metall:75000, kristall:50000, deuterium:20000}, costGrowth:1.8,
     baseTimeHours:14, timeGrowth:1.6, mainBranch:"waffen", parentId:"waffen" },
-  { id:"durchschlag", name:"Durchschlag (Overkill)", img:"research/durchschlag.png", lore:"Durchschlag-Forschung, von Veteranen nur 'Overkill' genannt, sorgt dafür, dass überschüssiger Schaden nicht verpufft, sondern das nächste Ziel trifft. Eine kalte, effiziente Weiterentwicklung der Kampfdoktrin.", effectPerLevel:0.10,
+  { id:"durchschlag", name:"Durchschlag (Overkill)", img:"research/durchschlag.png", lore:"Durchschlag-Forschung, von Veteranen nur 'Overkill' genannt, sorgt dafür, dass überschüssiger Schaden nicht verpufft, sondern das nächste Ziel trifft. Eine kalte, effiziente Weiterentwicklung der Kampfdoktrin.", effectPerLevel:0.05,
     baseCost:{metall:75000, kristall:50000, deuterium:20000}, costGrowth:1.8,
     baseTimeHours:14, timeGrowth:1.6, mainBranch:"waffen", parentId:"waffen" },
   { id:"schildregeneration", name:"Schild-Regeneration", img:"research/schildregeneration.png", lore:"Schild-Regeneration verbessert die Nachladeschaltkreise der Energiefelder, sodass zwischen zwei Gefechtsrunden mehr Kapazität wiederhergestellt wird. Ohne diese Forschung bleibt vom Schild nach einem Treffer nur ein Bruchteil übrig.", effectPerLevel:0.06,

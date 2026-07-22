@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Balance: Durchschlag-Forschung (Overkill) abgeschwächt',
+    changes: [
+      'Bei voller Ausbaustufe (10) konnte Überschussschaden bisher zu 100% auf das nächste gleichartige Schiff überschwappen - kombiniert mit der Kaskaden-Reichweite von 5 Schiffen konnte ein einzelner starker Treffer so bis zu 5 Schiffe auf einen Schlag vernichten.',
+      'Der Bonus pro Stufe sinkt von 10% auf 5%, bei voller Stufe 10 sind es jetzt maximal 50% statt 100% Übertrag - passt besser zu den zuletzt verlängerten, taktischeren Gefechten.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Balance: Kämpfe ziehen sich jetzt spürbar länger und taktischer hin',
     changes: [
       'Bisher konnte eine bereits angeschlagene Einheit (unter 70% ihrer HP) bei jedem weiteren Treffer eine mit dem Schaden LINEAR steigende Chance haben, sofort komplett zu explodieren - das liess ganze Flotten schon ab moderatem Schaden reihenweise "explodieren" statt übers Gefecht hinweg an HP zu verlieren, wodurch Kämpfe oft nach wenigen Runden entschieden waren.',

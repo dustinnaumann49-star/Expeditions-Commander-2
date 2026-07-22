@@ -340,6 +340,16 @@ client/
     Zufallskomponente in Wellenstärke/-zusammensetzung, nicht durch die Parameter selbst - exakte
     Rundenzahlen sind daher als Richtwert, nicht als garantierte Grenze zu verstehen.
 
+21b. **Durchschlag-Forschung (Overkill) auf 50% Maximalwert gedeckelt** (`effectPerLevel` in
+    `research.ts` von 0.10 auf 0.05 gesenkt, Nutzerentscheidung Juli 2026, Teil derselben
+    "Kämpfe sollen taktischer/länger dauern"-Balance-Runde wie Punkt 21a): bei voller Stufe 10
+    trug bisher 100% des Ueberschussschadens auf das naechste gleichartige Ziel ueber (kombiniert
+    mit `MAX_CASCADE = 5` in `applyHitToTarget()` konnte ein einzelner starker Treffer so bis zu 5
+    Schiffe desselben Typs auf einen Schlag vernichten statt die Flotte schrittweise
+    runterzunageln) - jetzt max. 50% bei Stufe 10. `getDurchschlagFraction()` in `combat.ts` liest
+    `effectPerLevel` weiterhin generisch aus `RESEARCH` aus, keine Code-Aenderung noetig.
+    `MAX_CASCADE` selbst blieb unveraendert bei 5.
+
 22. **Verteidigungsanlagen-Waffenwerte sind an die Kosteneffizienz der Schiffe gekoppelt**
     (Zielwert ca. 65 Kosten/Waffenpunkt), Schild/Panzerung auf Ziel-Gesamteffizienz 1,4 kalibriert
     (spürbar zäher als Schiffe). Verteidigungsanlagen (inkl. Schildkuppel-Pool) zählen NICHT in
