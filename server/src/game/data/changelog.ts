@@ -13,9 +13,9 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Balance: Kämpfe ziehen sich jetzt spürbar länger und taktischer hin',
     changes: [
       'Bisher konnte eine bereits angeschlagene Einheit (unter 70% ihrer HP) bei jedem weiteren Treffer eine mit dem Schaden LINEAR steigende Chance haben, sofort komplett zu explodieren - das liess ganze Flotten schon ab moderatem Schaden reihenweise "explodieren" statt übers Gefecht hinweg an HP zu verlieren, wodurch Kämpfe oft nach wenigen Runden entschieden waren.',
-      'Die Schwelle liegt jetzt bei 55% HP (statt 70%) und die Chance steigt innerhalb dieses Fensters quadratisch statt linear - schwer beschädigte Schiffe halten dadurch spürbar länger durch, bevor überhaupt ein nennenswertes Explosionsrisiko besteht.',
-      'Effekt im Kampfsimulator: Gefechte dauern jetzt im Schnitt deutlich länger (rund 90 statt 50-60 Runden) und verlaufen kontinuierlicher statt abrupt zu kippen.',
-      'Das Rundenlimit selbst (100 Runden) bleibt unverändert als CPU/RAM-Schutzgrenze bestehen - die neue Balance ist so austariert, dass Kämpfe im Regelfall deutlich darunter enden.',
+      'Die Chance steigt jetzt innerhalb desselben Schadens-Fensters leicht gedämpft statt rein linear - schwer beschädigte Schiffe halten dadurch etwas länger durch, bevor ein nennenswertes Explosionsrisiko besteht.',
+      'Effekt im Kampfsimulator: Gefechte dauern jetzt im Schnitt spürbar länger (rund 75-85 statt 50-60 Runden) und verlaufen kontinuierlicher statt abrupt zu kippen.',
+      'Das Rundenlimit selbst (100 Runden) bleibt unverändert als CPU/RAM-Schutzgrenze bestehen - die Balance ist so austariert, dass Kämpfe im Regelfall klar darunter enden.',
     ],
   },
   {

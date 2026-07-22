@@ -273,8 +273,8 @@ export const MAX_ROUNDS = 100;
 // besteht) UND quadratisch gedaempfte Chance (siehe EXPLOSION_CHANCE_EXPONENT) statt linear -
 // schwer beschaedigte Schiffe halten dadurch spuerbar laenger durch, die Chance wird erst nahe am
 // reg. Tod wirklich hoch.
-export const EXPLOSION_HP_THRESHOLD = 0.55;
-export const EXPLOSION_CHANCE_EXPONENT = 2;
+export const EXPLOSION_HP_THRESHOLD = 0.7;
+export const EXPLOSION_CHANCE_EXPONENT = 1.15;
 export const MAX_BUILD_SLOTS = 3;
 export const MAX_DEFENSE_SLOTS = 3;
 export const MAX_RESEARCH_SLOTS = 4;
