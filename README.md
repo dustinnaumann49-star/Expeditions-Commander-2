@@ -1276,3 +1276,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   - Manuell verifiziert (Kanonier-Klasse, +100% Waffenschaden): "Waffen: 1.500 (3.000)" bzw.
     "770 (1.540)" bei Verteidigung - exakt der erwartete 2x-Faktor, Schild/Panzerung bleiben
     korrekt ohne Klammer-Zusatz stehen (Kanonier wirkt nur auf Waffen).
+  - Nachtrag: Der Imperator wurde beim ersten Durchgang übersehen - er hat in `Spezialschiffe.tsx`
+    eine EIGENE Karten-Darstellung (Spezialteile statt normaler Ressourcen, nicht über
+    `ShipBuildCard` gerendert), daher ein separates `statDisplay()` dort ergänzt. Salvenschiffe
+    waren bereits erfasst (nutzen ganz normal `ShipBuildCard`). Verifiziert: "Waffen: 500.000
+    (1.000.000)" bei Kanonier-Klasse.

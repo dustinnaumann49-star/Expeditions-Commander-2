@@ -15,6 +15,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Schiffs- und Verteidigungs-Karten in der Werft zeigten bisher immer nur die reinen Basiswerte - auch wenn Forschung, Klasse, Module oder der Kampf-Booster den tatsächlichen Kampfwert längst verändert hatten.',
       'Jetzt steht bei einem Unterschied der tatsächliche Wert zusätzlich in Klammern dahinter, z.B. "Waffen: 1.500 (3.000)" - Basiswert zuerst, Effektivwert danach. Ohne Unterschied bleibt es beim einzelnen Wert, damit die Karten übersichtlich bleiben.',
       'Bei Schildkuppeln bleibt der Schild-Wert bewusst ohne Klammer-Zusatz - ihr Beitrag läuft über den gemeinsamen Kuppel-Schild-Pool, nicht über den Einzelwert.',
+      'Nachtrag: der Imperator hatte das noch nicht (eigene Karte im Spezialschiffe-Tab) - jetzt ebenfalls mit Effektivwert-Anzeige.',
     ],
   },
   {

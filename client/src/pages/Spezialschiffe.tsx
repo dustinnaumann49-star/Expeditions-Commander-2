@@ -5,7 +5,25 @@ import { InfoModal, InfoTable } from '../components/InfoModal';
 import { LoreModal } from '../components/LoreModal';
 import { ShipBuildCard, shipInfoRows, countShipEverywhere } from '../components/ShipBuildCard';
 import { ShipModuleRow } from '../components/ShipModuleRow';
-import { getRapidFireDisplay, getZielerfassungAccuracy, isTargetedByRapidFire, getPrecisionChance, getShieldRegenRate, getEvasionChance, getCritChance, driveTypeLabel } from '../lib/combatInfo';
+import {
+  getRapidFireDisplay,
+  getZielerfassungAccuracy,
+  isTargetedByRapidFire,
+  getPrecisionChance,
+  getShieldRegenRate,
+  getEvasionChance,
+  getCritChance,
+  driveTypeLabel,
+  getEffectiveShipStats,
+} from '../lib/combatInfo';
+
+// Siehe ShipBuildCard.tsx - identisches "Basiswert (Effektivwert)"-Muster, hier separat, da der
+// Imperator eine eigene Karten-Darstellung hat (Spezialteile statt normaler Ressourcen).
+function statDisplay(base: number, effective: number): string {
+  const rounded = Math.round(effective);
+  if (rounded === base) return base.toLocaleString('de-DE');
+  return `${base.toLocaleString('de-DE')} (${rounded.toLocaleString('de-DE')})`;
+}
 
 // Salvenschiffe bauen ganz normal ueber buildShip()/die 3 Bau-Slots (siehe ShipBuildCard) - nur
 // ihre Anzeige-Gruppierung ist hierher umgezogen. Der Imperator ist strukturell anders (Spezialteile
@@ -33,6 +51,7 @@ export function SpezialschiffePage() {
     !!teileCost && state.teile.waffen >= teileCost.waffen && state.teile.schild >= teileCost.schild && state.teile.panzerung >= teileCost.panzerung;
   const imperatorLimitReached = !!imperator?.maxCount && imperatorBestand >= imperator.maxCount;
   const pct = (val: number, max: number) => Math.min(100, Math.round((val / max) * 100));
+  const imperatorEffStats = imperator ? getEffectiveShipStats(gameData, state, imperator) : null;
 
   return (
     <div>
@@ -66,9 +85,9 @@ export function SpezialschiffePage() {
                   Bestand: {imperatorBestand}/{imperator.maxCount}
                 </p>
                 <div className="ship-stats">
-                  <span>Waffen: {imperator.stats.waffen.toLocaleString('de-DE')}</span>
-                  <span>Schild: {imperator.stats.schild.toLocaleString('de-DE')}</span>
-                  <span>Panzerung: {imperator.stats.panzerung.toLocaleString('de-DE')}</span>
+                  <span>Waffen: {statDisplay(imperator.stats.waffen, imperatorEffStats!.waffen)}</span>
+                  <span>Schild: {statDisplay(imperator.stats.schild, imperatorEffStats!.schild)}</span>
+                  <span>Panzerung: {statDisplay(imperator.stats.panzerung, imperatorEffStats!.panzerung)}</span>
                 </div>
                 <div className="ship-cost">
                   Kosten: {teileCost.waffen} Waffen-Teile, {teileCost.schild} Schild-Teile, {teileCost.panzerung} Panzerungs-Teile
