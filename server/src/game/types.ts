@@ -598,7 +598,7 @@ export interface PlayerStats {
   // Juli 2026: Punkte sollen nach Wert des vernichteten Gegners gestaffelt sein statt pauschal 1
   // Punkt pro Einheit) - `enemiesDestroyed` selbst bleibt als reiner Rohzaehler unveraendert
   // (Statistik-Anzeige "Feinde vernichtet"), die Gewichtung passiert erst in stats.ts
-  // calculatePoints() ueber getEnemyPointValue() - so bleibt das Prinzip "Punkte nie direkt
+  // calculatePoints() ueber getUnitPointValue() - so bleibt das Prinzip "Punkte nie direkt
   // speichern, nur aus Rohwerten berechnen" gewahrt und spaetere Wertanpassungen wirken
   // rueckwirkend auf bestehende Spielstaende.
   enemiesDestroyedByType: Record<string, number>;

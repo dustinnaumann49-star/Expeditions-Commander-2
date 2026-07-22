@@ -67,31 +67,35 @@ export function baseStats(id: string): CombatStats {
   return findShip(id)?.stats ?? findDefense(id)?.stats ?? findNpcSpecial(id)?.stats ?? { waffen: 0, schild: 0, panzerung: 0 };
 }
 
-// Punkte-Gewichtung fuer vernichtete Gegner (Nutzerentscheidung Juli 2026, siehe stats.ts
-// calculatePoints()): statt pauschal 1 Punkt pro vernichteter Einheit soll ein teurer/gefaehrlicher
-// Gegner (z.B. Reaper) deutlich mehr Punkte bringen als ein billiger (Leichter Jaeger). Leitet den
-// Punktwert aus den Baukosten her (Metall+Kristall+Deuterium summiert, wie auch sonst im Projekt
-// ueblich, siehe Punkt 22 README) statt fixer Werte pro Schiffstyp - so muss bei neuen
-// Schiffen/Verteidigungsanlagen nichts hier nachgepflegt werden. ENEMY_POINT_COST_SCALE ist so
+// Punkte-Gewichtung pro Einheit (Nutzerentscheidung Juli 2026, siehe stats.ts) - urspruenglich nur
+// fuer vernichtete Gegner gedacht (statt pauschal 1 Punkt pro Einheit soll ein teurer/gefaehrlicher
+// Gegner wie ein Reaper deutlich mehr Punkte bringen als ein billiger Leichter Jaeger), inzwischen
+// auch fuer die "Gesamtmacht"-Bewertung der EIGENEN Flotte/Verteidigung wiederverwendet (siehe
+// calculateFleetPowerPoints() in stats.ts) - derselbe Wert soll fuer beide Richtungen gelten.
+// Leitet den Punktwert aus den Baukosten her (Metall+Kristall+Deuterium summiert, wie auch sonst
+// im Projekt ueblich, siehe Punkt 22 README) statt fixer Werte pro Schiffstyp - so muss bei neuen
+// Schiffen/Verteidigungsanlagen nichts hier nachgepflegt werden. UNIT_POINT_COST_SCALE ist so
 // gewaehlt, dass ein Leichter Jaeger (Kosten 120.000) genau 1 Punkt ergibt.
-// Salvenschiffe/Imperator/Sentinel-/Ultimate-Kanone/Gigant-Schildkuppel tauchen NIE als Gegner auf
-// (aus generatePiratenFleet()/generateDefenseFleet() ausgeschlossen), brauchen daher keinen Eintrag.
-// Spezial-Bosse ohne Baukosten (Piratenkapitaen, Piratenadmiral) bekommen einen manuell
-// festgelegten Punktwert.
-export const ENEMY_POINT_COST_SCALE = 100000;
-const SPECIAL_ENEMY_POINTS: Record<string, number> = {
+// Salvenschiffe tauchen zwar NIE als Gegner auf (aus generatePiratenFleet() ausgeschlossen), haben
+// aber normale Baukosten und werden ueber die Formel korrekt gewichtet, wenn sie der EIGENEN Flotte
+// gehoeren. Sentinel-/Ultimate-Kanone/Gigant-Schildkuppel ebenso. Einheiten OHNE Baukosten
+// (Piratenkapitaen/-admiral als reine Bosse, Imperator als teileCost-basiertes Unikat) bekommen
+// einen manuell festgelegten Punktwert.
+export const UNIT_POINT_COST_SCALE = 100000;
+const UNIT_POINT_OVERRIDES: Record<string, number> = {
   piratenkapitan: 25,
   piratenadmiral: 500,
+  imperator: 1500,
 };
 
-export function getEnemyPointValue(unitId: string): number {
-  if (SPECIAL_ENEMY_POINTS[unitId] !== undefined) return SPECIAL_ENEMY_POINTS[unitId];
+export function getUnitPointValue(unitId: string): number {
+  if (UNIT_POINT_OVERRIDES[unitId] !== undefined) return UNIT_POINT_OVERRIDES[unitId];
   const ship = findShip(unitId);
   const def = findDefense(unitId);
   const cost = ship?.cost ?? def?.cost;
   if (!cost) return 1;
   const totalCost = cost.metall + cost.kristall + cost.deuterium;
-  return Math.max(1, Math.round(totalCost / ENEMY_POINT_COST_SCALE));
+  return Math.max(1, Math.round(totalCost / UNIT_POINT_COST_SCALE));
 }
 
 export function shipPowerBase(id: string): number {

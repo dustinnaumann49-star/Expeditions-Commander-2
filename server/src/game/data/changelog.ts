@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Punktzahl spiegelt jetzt eure aktuelle Gesamtmacht wider',
+    changes: [
+      'Eure Punktzahl in der Bestenliste zählt jetzt zusätzlich eure AKTUELLE Flotte und Verteidigung mit - nach demselben Wert-Prinzip wie vernichtete Gegner (ein Reaper zählt mehr als ein Leichter Jäger).',
+      'Das ist die einzige Punkte-Kategorie, die auch wieder sinken kann: verliert ihr Schiffe (Kampf, Verschrottung), sinkt euer Machtwert entsprechend - alle anderen Kategorien wachsen nur.',
+      'Bewusst NICHT eingerechnet: abgeschlossene Forschungen (irgendwann hat jeder alles fertig, dann sagt der Wert nichts mehr aus), geöffnete Container/erbeutete Ressourcen (Glück/Fleiß statt Kampfkraft), verlorene eigene Schiffe.',
+      'Nebenbei behoben: ein besiegter Piratenkapitän zählte bisher versehentlich doppelt in die Punktzahl (einmal als "Kapitän besiegt", einmal als "Gegner vernichtet") - jetzt nur noch einmal.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Balance: Punkte für vernichtete Gegner jetzt nach Wert gestaffelt',
     changes: [
       'Bisher gab jeder vernichtete Gegner genau 1 Punkt für die Bestenliste - egal ob Leichter Jäger oder Reaper.',

@@ -80,7 +80,8 @@ server/
                                       Sektor durch, OHNE den Spielstand zu verändern
   src/game/messages.ts               pushMessage()/clearMessages() - Nachrichten-Verlauf
   src/game/stats.ts                  PlayerStats-Punkteberechnung (POINT_WEIGHTS,
-                                      calculatePoints(), recordEnemyKills()) und Bestenliste
+                                      calculatePoints(), recordEnemyKills(),
+                                      calculateFleetPowerPoints()) und Bestenliste
                                       (getLeaderboard())
 
   src/game/data/ships.ts             Alle Schiffsdaten (Werte, Kosten, Bauzeit, Speed, Lore)
@@ -1064,21 +1065,37 @@ client/
     Kapitän-Spawn systematisch danebenliegen).
 
 85. **"Feinde vernichtet" fließt gestaffelt nach Gegnerwert in die Punktzahl ein statt pauschal 1
-    Punkt pro Einheit** (Nutzerentscheidung Juli 2026, `getEnemyPointValue()` in `combat.ts`,
+    Punkt pro Einheit** (Nutzerentscheidung Juli 2026, `getUnitPointValue()` in `combat.ts`,
     `POINT_WEIGHTS.perEnemyDestroyed` entfernt): Punktwert leitet sich aus den Baukosten her
-    (Metall+Kristall+Deuterium summiert, `ENEMY_POINT_COST_SCALE = 100000` - ein Leichter Jäger
+    (Metall+Kristall+Deuterium summiert, `UNIT_POINT_COST_SCALE = 100000` - ein Leichter Jäger
     ergibt so genau 1 Punkt), damit bei neuen Schiffen/Verteidigungsanlagen nichts manuell
-    nachgepflegt werden muss. Salvenschiffe/Imperator/Sentinel-/Ultimate-Kanone/Gigant-
-    Schildkuppel brauchen keinen Eintrag (tauchen nie als Gegner auf, siehe Punkt 24/26).
-    Piratenkapitän (25) und Piratenadmiral (500) haben keine Baukosten und bekommen daher feste
-    Werte in `SPECIAL_ENEMY_POINTS`. `PlayerStats.enemiesDestroyed` bleibt als reiner Rohzähler für
-    die Statistik-Anzeige unverändert; neu ist `enemiesDestroyedByType: Record<string, number>`,
-    das `recordEnemyKills()` (`stats.ts`, zentral genutzt von `missions.ts`/`raids.ts`
+    nachgepflegt werden muss. Einheiten OHNE Baukosten (Piratenkapitän 25, Piratenadmiral 500,
+    Imperator 1500 - teileCost-basiert statt Metall/Kristall/Deuterium) bekommen feste Werte in
+    `UNIT_POINT_OVERRIDES`. `PlayerStats.enemiesDestroyed` bleibt als reiner Rohzähler für die
+    Statistik-Anzeige unverändert; neu ist `enemiesDestroyedByType: Record<string, number>`, das
+    `recordEnemyKills()` (`stats.ts`, zentral genutzt von `missions.ts`/`raids.ts`
     x3/`groupOps.ts` statt der vorherigen 5 einzelnen `+=`-Stellen) parallel befüllt - die
     Punkteberechnung selbst liest nur noch `enemiesDestroyedByType`. **Wichtig:** bestehende
     Spielstände hatten Kills nie nach Typ aufgeschlüsselt, nur als Summe - ihre BISHERIGEN Kills
     tragen dadurch rückwirkend NICHT mehr zur Punktzahl bei (nur neue Kills ab diesem Update),
     was zu einem einmaligen Punkte-Rückgang in der Bestenliste führt.
+
+86. **Punktzahl erweitert um "Gesamtmacht" (aktuelle Flotte/Verteidigung) + gezielt NICHT auf
+    alle Statistik-Felder ausgeweitet** (Nutzerentscheidung Juli 2026, `calculateFleetPowerPoints()`
+    in `stats.ts`): liest `state.fleet`/`state.defense` direkt (nicht `PlayerStats`) und gewichtet
+    jede Einheit ueber dieselbe `getUnitPointValue()`-Funktion wie vernichtete Gegner (Punkt 85) -
+    ein gebauter Reaper zaehlt entsprechend mehr als ein Leichter Jaeger. **Einzige Punkte-Kategorie,
+    die wieder SINKEN kann** (bei Flottenverlust/Verschrottung) - bewusst so gewaehlt statt
+    `stats.shipsBuilt` (waechst nur, spiegelt historische Investition statt aktueller Staerke).
+    Fliesst in `getLeaderboard()` als `calculatePoints(stats) + calculateFleetPowerPoints(state)`
+    ein. Bewusst NICHT in die Punktzahl aufgenommen (Nutzerentscheidung, "nur die relevanten
+    Sachen"): `researchCompleted` (jeder Forschungszweig deckelt bei Stufe 10 - irgendwann haben
+    alle Spieler alles fertig, dann unterscheidet der Wert nicht mehr und traegt nichts zu einer
+    wachsenden "Macht" bei), `containersOpened`/`resourcesLooted` (Glueck/Fleiss, keine Kampfkraft),
+    `ownShipsLost` (Verlust, kein Gewinn). Ausserdem entfernt:
+    `POINT_WEIGHTS.captainDefeated` (fixer Wert 20) - besiegte Piratenkapitaene liefen SCHON ueber
+    `enemiesDestroyedByType.piratenkapitan` (Punkt 85) mit, waeren sonst doppelt gezaehlt worden.
+    `stats.captainsDefeated` bleibt als reiner Rohzaehler fuer die Statistik-Anzeige bestehen.
 
 ## Kurz-Changelog
 
