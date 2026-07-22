@@ -311,6 +311,16 @@ client/
 21. **RapidFire folgt einer bewussten 1:1-Rollenverteilung**, keine Häufung auf einzelne Klassen
     (RAPIDFIRE-Tabelle in `combatConstants.ts`). Nur der Bomber hat RF gegen Verteidigungsanlagen,
     der Imperator als Ausnahme gegen alles. Salvenschiffe (Punkt 24) sind komplett RF-immun.
+    **Ausnahme (Nutzerentscheidung Juli 2026):** so gut wie jede NPC-Einheit hat RF gegen
+    `leicht`/`schwer` (Jäger-Klassen) - kombiniert mit `weightsForProfile()`'s 'schwarm'-Profil
+    (gewichtet Tier-1/2-Schiffe stark, siehe `generatePiratenFleet()`), das Piraten-Flotten selbst
+    ueberwiegend aus genau diesen Klassen zusammensetzt, gingen eigene Jäger unabhängig von der
+    Stückzahl fast immer zuerst drauf. `getRapidFireChance()` in `combat.ts` nimmt jetzt einen
+    dritten Parameter `attackerIsPlayer` entgegen und halbiert (`NPC_RF_VS_JAEGER_FACTOR = 0.5`)
+    den RF-Bonus NUR wenn der SCHÜTZE ein NPC ist und das Ziel `leicht`/`schwer` - eine
+    symmetrische Absenkung haette auch die eigene Effektivitaet beim Räumen von
+    Piraten-Jäger-Schwärmen geschwächt. Die Ziel-AUSWAHL selbst (`rfMap` in `fireShots()`, ob ein
+    Schütze RF-Ziele bevorzugt anvisiert) bleibt unverändert - nur die Folgeschuss-Chance sinkt.
 
 22. **Verteidigungsanlagen-Waffenwerte sind an die Kosteneffizienz der Schiffe gekoppelt**
     (Zielwert ca. 65 Kosten/Waffenpunkt), Schild/Panzerung auf Ziel-Gesamteffizienz 1,4 kalibriert

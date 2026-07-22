@@ -267,10 +267,21 @@ export function getEffectiveStats(
   return { waffen: 0, schild: 0, panzerung: 0 };
 }
 
-export function getRapidFireChance(attackerId: string, defenderId: string): number {
+// Jaeger-Klassen (leicht/schwer), gegen die praktisch jede NPC-Einheit RapidFire hat - Piraten
+// bestehen ueberwiegend selbst aus genau diesen Klassen (siehe weightsForProfile(), 'schwarm'-
+// Profil gewichtet Tier-1/2-Schiffe stark), weshalb eine SYMMETRISCHE Absenkung auch die eigene
+// Effektivitaet beim Raeumen von Piraten-Jaeger-Schwaermen geschwaecht haette. Stattdessen NUR
+// abgesenkt, wenn der SCHUETZE ein NPC ist (Nutzerentscheidung Juli 2026) - eigene Schiffe
+// behalten vollen RF-Bonus gegen Piraten-Jaeger.
+const NPC_RF_REDUCED_TARGETS = new Set(['leicht', 'schwer']);
+const NPC_RF_VS_JAEGER_FACTOR = 0.5;
+
+export function getRapidFireChance(attackerId: string, defenderId: string, attackerIsPlayer = true): number {
   const rfValue = RAPIDFIRE[attackerId]?.[defenderId] || 0;
   if (rfValue === 0) return 0;
-  return (rfValue - 1) / rfValue;
+  const chance = (rfValue - 1) / rfValue;
+  if (!attackerIsPlayer && NPC_RF_REDUCED_TARGETS.has(defenderId)) return chance * NPC_RF_VS_JAEGER_FACTOR;
+  return chance;
 }
 
 // Gesamt-"Power" einer Flotte (Summe Waffen+Schild+Panzerung ueber alle Einheiten), nur fuer
@@ -859,7 +870,7 @@ function fireShots(
         let anyHit = false;
         volleyTargets.forEach((vt) => {
           if (!rollHit(vt, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
-            const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
+            const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId, applyPlayerResearch);
             if (missRfChance > 0 && Math.random() < missRfChance) {
               shots++;
               shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
@@ -872,7 +883,7 @@ function fireShots(
           const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
           applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
-          const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId);
+          const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId, applyPlayerResearch);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
             shots++;
             shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
@@ -883,7 +894,7 @@ function fireShots(
       }
 
       if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
-        const missRfChance = getRapidFireChance(shooter.typeId, target.typeId);
+        const missRfChance = getRapidFireChance(shooter.typeId, target.typeId, applyPlayerResearch);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;
           shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
@@ -897,7 +908,7 @@ function fireShots(
       const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
       shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
       applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
-      const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId);
+      const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId, applyPlayerResearch);
       if (hitRfChance > 0 && Math.random() < hitRfChance) {
         shots++;
         shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;

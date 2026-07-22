@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Balance: Jäger-Klassen überleben Piraten-Begegnungen jetzt besser',
+    changes: [
+      'Leichter und Schwerer Jäger gingen bisher unabhängig von der eingesetzten Anzahl fast immer als erstes drauf - der Grund: so gut wie jede Piraten-Einheit hat RapidFire (Bonus-Folgeschüsse) speziell gegen diese beiden Klassen, und Piraten-Flotten bestehen selbst überwiegend aus genau diesen Schiffen.',
+      'Der RapidFire-Bonus, den PIRATEN gegen deine Jäger-Klassen bekommen, ist jetzt halbiert. Deine eigenen Schiffe verlieren dadurch NICHTS an Schlagkraft gegen die piratischen Jäger-Schwärme - nur die Piraten fokussieren deine Jäger nicht mehr ganz so extrem.',
+      'Effekt im Kampfsimulator spürbar: Gefechte dauern spürbar länger und die Verluste bei Jäger-lastigen Flotten fallen im Schnitt etwas geringer aus.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Überarbeitet: Rückzug im Kampf ist jetzt gestaffelt statt alles-oder-nichts',
     changes: [
       'Bisher hat sich die GESAMTE Flotte auf einen Schlag zurückgezogen, sobald ihre kombinierte Kampfkraft auf 50% gefallen war - ziemlich binär: entweder alle Schiffe kämpften weiter oder alle flohen im selben Moment.',
