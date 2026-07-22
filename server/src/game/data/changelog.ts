@@ -18,6 +18,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Detailgrad nach Spionage-Stufe: Stufe 0 zeigt nur die Ressourcen der Basis. Ab Stufe 1 kommt eine grobe Schätzung zu Flotte/Verteidigung dazu, die mit jeder weiteren Stufe genauer wird - Stufe 10 zeigt alles exakt.',
       'Umgekehrt spionieren euch auch die Piraten gelegentlich aus - ihr bekommt dann eine Nachricht, von welcher Piratenbasis-Position aus das passiert ist (aber nicht, was sie gesehen haben).',
       'KI-Vega und KI-Nyx bauen sich ebenfalls Spionagesonden und schicken sie gelegentlich los.',
+      'Nachtrag: Spionageberichte sind jetzt genau wie Kampfberichte anklickbar - ein Klick öffnet eine ausführliche Ansicht mit Ressourcen- und Flotten-/Verteidigungstabellen statt eines einzelnen Fließtexts.',
     ],
   },
   {

@@ -400,12 +400,34 @@ export interface FarmDetail {
   skirmishes?: SkirmishSummary[];
 }
 
+// Strukturierter Spionagebericht (siehe spyMissions.ts buildSpyReport()) - separat von FarmDetail,
+// da die Discriminator-Erkennung im Client (isFarmDetail() in Nachrichten.tsx) sonst auf ein
+// gemeinsames Feld angewiesen waere. `low`/`high` sind bei `exact:true` (Spionage-Stufe >= 10 ODER
+// Stufe 0, wo ueberhaupt nichts erfasst wurde) identisch - der Client zeigt dann nur EINEN Wert
+// statt eines Bereichs.
+export interface SpyReportUnitRange {
+  id: string;
+  name: string;
+  low: number;
+  high: number;
+  exact: boolean;
+}
+
+export interface SpyReportDetail {
+  baseSystem: number;
+  basePosition: number;
+  level: number;
+  resources: { metall: number; kristall: number; deuterium: number };
+  fleet: SpyReportUnitRange[];
+  defense: SpyReportUnitRange[];
+}
+
 export interface GameMessage {
   id: string;
   type: 'kampf' | 'farm';
   time: number;
   text: string;
-  detail: CombatDetail | FarmDetail | null;
+  detail: CombatDetail | FarmDetail | SpyReportDetail | null;
 }
 
 export interface Container {

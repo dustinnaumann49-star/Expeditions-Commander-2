@@ -1242,3 +1242,19 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     Bericht bei Stufe 0 (nur Ressourcen, kein Flotten-/Verteidigungshinweis) UND bei Stufe 3 (Bereich
     exakt nach Formel: 20 Leichte Jäger bei 70% Fuzz → "6-34", rechnerisch exakt bestätigt) beide
     verifiziert, Rückflug/erneuter Versand nach Rückkehr funktioniert.
+- Nachtrag: Spionageberichte klickbar gemacht wie Kampfberichte (Nutzer-Feedback - erste Version war
+  reiner Fließtext ohne Aufklapp-Details). Neuer Typ `SpyReportDetail`/`SpyReportUnitRange`
+  (`types.ts`, Server UND Client-Pendant in `client/src/types/game.ts`) statt Text-Zusammenfassung -
+  `GameMessage.detail`-Union um `SpyReportDetail` erweitert, `pushMessage()`-Signatur entsprechend.
+  `spyMissions.ts` `buildSpyReport()` ersetzt das vorherige `buildSpyReportText()` (liefert jetzt ein
+  strukturiertes Objekt statt eines fertigen Strings, die Nachrichten-Kurzzeile zeigt nur noch
+  `Spionagebericht Piratenbasis 1:X:Y (Spionage Stufe N)`).
+  - **`Nachrichten.tsx`**: `isSpyReportDetail()` MUSS vor `isFarmDetail()` geprüft werden (beide
+    Typen haben ein `resources`-Feld, `level`/`baseSystem` sind die einzigen eindeutigen
+    Unterscheidungsmerkmale). Neue `SpyRangeTable`-Komponente (gleiches `combat-table`-Muster wie
+    `UnitTable`/`RewardTable`) zeigt bei `exact:true` nur einen Wert statt eines Bereichs. Modal-
+    Aufbau bewusst analog zu Kampfberichten: Titel + Datum/Stufen-Zeile, Ressourcen-Tabelle, dann
+    Flotte/Verteidigung-Tabellen (oder Hinweistext bei Stufe 0, wo beide Arrays leer sind).
+  - Erneut End-to-End verifiziert: Bericht in der Liste jetzt mit "(Details)"-Markierung, Modal
+    zeigt bei Stufe 3 korrekt gefüllte Flotten-/Verteidigungstabellen mit Bereichsangaben (inkl.
+    einer inzwischen durch Basis-Wachstum neu hinzugekommenen Kreuzer-Zeile).

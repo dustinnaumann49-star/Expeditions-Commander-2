@@ -3,10 +3,18 @@ import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { shipName } from '../lib/combatInfo';
-import type { CombatUnitResult, CombatDetail, FarmDetail, GameMessage, SkirmishSummary } from '../types/game';
+import type { CombatUnitResult, CombatDetail, FarmDetail, SpyReportDetail, SpyReportUnitRange, GameMessage, SkirmishSummary } from '../types/game';
 
-function isFarmDetail(detail: CombatDetail | FarmDetail): detail is FarmDetail {
-  return 'resources' in detail;
+type AnyDetail = CombatDetail | FarmDetail | SpyReportDetail;
+
+// SpyReportDetail hat wie FarmDetail ein `resources`-Feld - `level` ist das einzige Feld, das NUR
+// bei Spionageberichten vorkommt, muss deshalb VOR isFarmDetail geprueft werden.
+function isSpyReportDetail(detail: AnyDetail): detail is SpyReportDetail {
+  return 'level' in detail && 'baseSystem' in detail;
+}
+
+function isFarmDetail(detail: AnyDetail): detail is FarmDetail {
+  return 'resources' in detail && !isSpyReportDetail(detail);
 }
 
 function groupByOwner(results: CombatUnitResult[]): [string, CombatUnitResult[]][] {
@@ -164,6 +172,40 @@ function RewardTable({ rows }: { rows: [string, string][] }) {
   );
 }
 
+// Bereichs-Tabelle fuer Spionageberichte (siehe SpyReportUnitRange) - zeigt bei `exact:true` nur
+// EINEN Wert statt eines Bereichs (Stufe 10, oder generell wenn low===high).
+function SpyRangeTable({ title, units, emptyText }: { title: string; units: SpyReportUnitRange[]; emptyText: string }) {
+  if (units.length === 0) {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{title}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>{emptyText}</p>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{title}</p>
+      <table className="combat-table">
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left' }}>Einheit</th>
+            <th>{units.every((u) => u.exact) ? 'Anzahl' : 'Geschätzte Anzahl'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {units.map((u) => (
+            <tr key={u.id}>
+              <td style={{ textAlign: 'left' }}>{u.name}</td>
+              <td>{u.exact ? u.low.toLocaleString('de-DE') : `${u.low.toLocaleString('de-DE')}-${u.high.toLocaleString('de-DE')}`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function combatRewardRows(rewards: CombatDetail['rewards']): [string, string][] {
   if (!rewards) return [];
   const rows: [string, string][] = [];
@@ -238,7 +280,51 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
         <button id="modal-close" onClick={onClose}>
           ×
         </button>
-        {isFarmDetail(msg.detail) ? (
+        {isSpyReportDetail(msg.detail) ? (
+          <>
+            <h3 style={{ marginBottom: 4 }}>
+              Spionagebericht — Piratenbasis 1:{msg.detail.baseSystem}:{msg.detail.basePosition}
+            </h3>
+            <p className="detail-sub" style={{ marginBottom: 12 }}>
+              {new Date(msg.time).toLocaleString('de-DE')} · Spionage-Stufe {msg.detail.level}
+            </p>
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Ressourcen</p>
+              <table className="combat-table">
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: 'left' }}>Metall</td>
+                    <td style={{ textAlign: 'right', color: 'var(--accent-deut)', fontWeight: 600 }}>
+                      {msg.detail.resources.metall.toLocaleString('de-DE')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ textAlign: 'left' }}>Kristall</td>
+                    <td style={{ textAlign: 'right', color: 'var(--accent-deut)', fontWeight: 600 }}>
+                      {msg.detail.resources.kristall.toLocaleString('de-DE')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ textAlign: 'left' }}>Deuterium</td>
+                    <td style={{ textAlign: 'right', color: 'var(--accent-deut)', fontWeight: 600 }}>
+                      {msg.detail.resources.deuterium.toLocaleString('de-DE')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {msg.detail.level <= 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+                Keine Sensordaten zu Flotte/Verteidigung - dafür ist mindestens Spionage-Forschung Stufe 1 nötig.
+              </p>
+            ) : (
+              <>
+                <SpyRangeTable title="Flotte" units={msg.detail.fleet} emptyText="Keine Flotte entdeckt." />
+                <SpyRangeTable title="Verteidigung" units={msg.detail.defense} emptyText="Keine Verteidigung entdeckt." />
+              </>
+            )}
+          </>
+        ) : isFarmDetail(msg.detail) ? (
           <>
             <h3 style={{ marginBottom: 4 }}>{msg.detail.sektorName}</h3>
             <p className="detail-sub" style={{ marginBottom: 12 }}>

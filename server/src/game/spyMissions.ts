@@ -2,7 +2,7 @@ import { ACTIVE_PIRATE_BASE_IDS, PIRATE_BASE_IDS, PIRATE_BASES, SPY_PROBE_TRAVEL
 import { loadPirateBase } from './pirateBaseState.js';
 import { shipName } from './combat.js';
 import { pushMessage } from './messages.js';
-import type { PlayerState, SpyMissionDeployment, PirateBaseState, GalaxyPosition } from './types.js';
+import type { PlayerState, SpyMissionDeployment, PirateBaseState, GalaxyPosition, SpyReportDetail, SpyReportUnitRange } from './types.js';
 import type { ActionResult } from './actions.js';
 
 // ========== SPIONAGE (Nutzerentscheidung Juli 2026) ==========
@@ -47,38 +47,42 @@ export function startSpyProbe(state: PlayerState, baseId: string, qty: number): 
   return { ok: true };
 }
 
-function formatRange(value: number, fuzz: number): string {
-  if (value <= 0) return '0';
-  if (fuzz <= 0) return value.toLocaleString('de-DE');
+// Wandelt einen Bestand + Streuungsfaktor in einen Bereich um (bei fuzz<=0 ist low===high, siehe
+// SpyReportUnitRange.exact - der Client zeigt dann nur EINEN Wert statt eines Bereichs an).
+function buildUnitRange(id: string, value: number, fuzz: number): SpyReportUnitRange {
+  if (fuzz <= 0) return { id, name: shipName(id), low: value, high: value, exact: true };
   const low = Math.max(0, Math.round(value * (1 - fuzz)));
   const high = Math.round(value * (1 + fuzz));
-  return `${low.toLocaleString('de-DE')}-${high.toLocaleString('de-DE')}`;
+  return { id, name: shipName(id), low, high, exact: false };
 }
 
-// Detailgrad-Formel: Stufe 0 zeigt NUR Ressourcen (kein Flotten-/Verteidigungswert ueberhaupt).
-// Ab Stufe 1 kommen Flotte/Verteidigung als Bereich dazu, dessen Breite mit steigender Stufe
-// schrumpft (Stufe 1 = grosser Bereich "ungefaehr", Stufe 10 = exakt, fuzz 0).
-function buildSpyReportText(base: PirateBaseState, level: number): string {
-  const resText = `Ressourcen: ${base.resources.metall.toLocaleString('de-DE')} Metall, ${base.resources.kristall.toLocaleString(
-    'de-DE'
-  )} Kristall, ${base.resources.deuterium.toLocaleString('de-DE')} Deuterium.`;
-
-  if (level <= 0) {
-    return `Spionagebericht Piratenbasis 1:${base.system}:${base.position}: ${resText} Keine Sensordaten zu Flotte/Verteidigung (Spionage-Forschung Stufe 0 - nur Grundsensoren).`;
-  }
-
-  const fuzz = level >= 10 ? 0 : (10 - level) / 10;
-  const precisionLabel = level >= 10 ? 'exakt' : 'geschätzt';
-  const fleetLines = Object.entries(base.fleet)
-    .filter(([, c]) => c > 0)
-    .map(([id, c]) => `${shipName(id)}: ${formatRange(c, fuzz)}`);
-  const defenseLines = Object.entries(base.defense)
-    .filter(([, c]) => c > 0)
-    .map(([id, c]) => `${shipName(id)}: ${formatRange(c, fuzz)}`);
-  const fleetText = fleetLines.length ? ` Flotte (${precisionLabel}): ${fleetLines.join(', ')}.` : ' Keine Flotte entdeckt.';
-  const defenseText = defenseLines.length ? ` Verteidigung (${precisionLabel}): ${defenseLines.join(', ')}.` : ' Keine Verteidigung entdeckt.';
-
-  return `Spionagebericht Piratenbasis 1:${base.system}:${base.position}: ${resText}${fleetText}${defenseText}`;
+// Detailgrad-Formel (klickbarer Bericht wie Kampfberichte, siehe Nachrichten.tsx isSpyReportDetail):
+// Stufe 0 liefert ein SpyReportDetail mit LEEREN fleet/defense-Arrays (Client zeigt dann "keine
+// Sensordaten" statt einer Tabelle) - nur Ressourcen sind sichtbar. Ab Stufe 1 sind beide Arrays
+// gefuellt, mit einem Bereich, der mit steigender Stufe schrumpft (Stufe 1 = fuzz 0.9, Stufe 10 =
+// fuzz 0 = exakt).
+function buildSpyReport(base: PirateBaseState, level: number): SpyReportDetail {
+  const fuzz = level >= 10 ? 0 : level <= 0 ? 1 : (10 - level) / 10;
+  const fleet =
+    level <= 0
+      ? []
+      : Object.entries(base.fleet)
+          .filter(([, c]) => c > 0)
+          .map(([id, c]) => buildUnitRange(id, c, fuzz));
+  const defense =
+    level <= 0
+      ? []
+      : Object.entries(base.defense)
+          .filter(([, c]) => c > 0)
+          .map(([id, c]) => buildUnitRange(id, c, fuzz));
+  return {
+    baseSystem: base.system,
+    basePosition: base.position,
+    level,
+    resources: { ...base.resources },
+    fleet,
+    defense,
+  };
 }
 
 export async function processSpyMissions(state: PlayerState): Promise<void> {
@@ -89,7 +93,8 @@ export async function processSpyMissions(state: PlayerState): Promise<void> {
       const base = loadPirateBase(deployment.baseId);
       if (base) {
         const level = state.research.spionage || 0;
-        pushMessage(state, 'farm', buildSpyReportText(base, level));
+        const detail = buildSpyReport(base, level);
+        pushMessage(state, 'farm', `Spionagebericht Piratenbasis 1:${base.system}:${base.position} (Spionage Stufe ${level})`, detail);
       } else {
         pushMessage(state, 'farm', `Spionageflug zu Piratenbasis 1:${deployment.targetSystem}:${deployment.targetPosition} fehlgeschlagen - Basis nicht auffindbar.`);
       }

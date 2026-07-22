@@ -352,12 +352,29 @@ export interface FarmDetail {
   skirmishes?: SkirmishSummary[];
 }
 
+export interface SpyReportUnitRange {
+  id: string;
+  name: string;
+  low: number;
+  high: number;
+  exact: boolean;
+}
+
+export interface SpyReportDetail {
+  baseSystem: number;
+  basePosition: number;
+  level: number;
+  resources: { metall: number; kristall: number; deuterium: number };
+  fleet: SpyReportUnitRange[];
+  defense: SpyReportUnitRange[];
+}
+
 export interface GameMessage {
   id: string;
   type: 'kampf' | 'farm';
   time: number;
   text: string;
-  detail: CombatDetail | FarmDetail | null;
+  detail: CombatDetail | FarmDetail | SpyReportDetail | null;
 }
 
 export interface Container {
