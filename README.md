@@ -289,12 +289,24 @@ client/
     Gegner". Bei Mehrfachziel-Salvenschiffen (Punkt 24) gilt eine Korrektur
     (`MULTI_TARGET_POWER_CORRECTION = 8`), da reine Waffenwerte sonst massiv unterschätzt würden.
 
-20. **Rückzugs-Mechanismus** (`RETREAT_THRESHOLD = 0.5`, `runRounds()` in `combat.ts`): Seite A
-    (Spieler-Flotte inkl. Verteidigung) zieht sich zurück, sobald ihre verbliebene Kampfkraft
-    (Waffen+Schild+Panzerung, nicht Stückzahl) auf 50% der Startkraft fällt - verhindert
-    Alles-oder-Nichts-Ausgänge. Gilt NICHT für Heimverteidigung (Raids, `allowRetreat:false`, da
-    Verteidigungsanlagen sonst die ganze Streitmacht vorzeitig mitziehen würden) und wird NICHT
-    ausgelöst, wenn im selben Zug bereits der letzte Gegner fällt.
+20. **Gestaffelter Einzelschiff-Rückzug** (`UNIT_RETREAT_THRESHOLD = 0.3`, `runRounds()` in
+    `combat.ts`, Nutzerentscheidung Juli 2026 - ersetzt die vorherige Flotten-weite
+    `RETREAT_THRESHOLD = 0.5`-Schwelle auf die kombinierte Kampfkraft aller Einheiten, die bei
+    Unterschreitung die GESAMTE Seite A gleichzeitig abziehen liess): JEDES Schiff auf Seite A
+    (Spieler-Flotte) entscheidet jetzt einzeln anhand seines eigenen verbleibenden HP-Anteils - bei
+    30% oder weniger zieht es sich zurück (überlebt, kämpft aber ab dieser Runde nicht mehr mit),
+    während weniger beschädigte Schiffe weiterkämpfen. Verhindert Alles-oder-Nichts-Ausgänge noch
+    konsequenter als vorher: eigene Verluste liegen jetzt in einer echten Bandbreite statt nur bei
+    "kaum welche" oder "fast alles". Zurückgezogene Schiffe sammeln sich in `retreatedUnitsA` und
+    werden am Ende wieder zu `unitsA` addiert, damit sie als Überlebende zählen. Gilt NICHT für
+    Heimverteidigung (Raids, `allowRetreat:false`, da Verteidigungsanlagen nicht "fliehen" können)
+    und wird pro Runde nur ausgelöst, solange noch Gegner leben (kein "Rückzug" im selben Zug, in
+    dem bereits der letzte Gegner fällt). **Wichtig für Auswertungscode:** da jetzt auch NUR EIN
+    Teil der Flotte fliehen kann, während der Rest den Kampf trotzdem noch vollständig gewinnt,
+    ist `result.retreated` NICHT mehr automatisch exklusiv zu "alle Gegner vernichtet" - jede
+    Stelle, die `retreated` für Ausgangs-Text/Statistik nutzt, muss zusätzlich prüfen, ob der
+    Gegner wirklich noch lebt (siehe `npcFullyDestroyed`-Gate in `missions.ts`, `groupOps.ts` und
+    `simulator.ts` - `raids.ts` betroffen nicht, da dort `allowRetreat` immer `false` ist).
 
 21. **RapidFire folgt einer bewussten 1:1-Rollenverteilung**, keine Häufung auf einzelne Klassen
     (RAPIDFIRE-Tabelle in `combatConstants.ts`). Nur der Bomber hat RF gegen Verteidigungsanlagen,

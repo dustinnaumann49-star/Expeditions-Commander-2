@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Überarbeitet: Rückzug im Kampf ist jetzt gestaffelt statt alles-oder-nichts',
+    changes: [
+      'Bisher hat sich die GESAMTE Flotte auf einen Schlag zurückgezogen, sobald ihre kombinierte Kampfkraft auf 50% gefallen war - ziemlich binär: entweder alle Schiffe kämpften weiter oder alle flohen im selben Moment.',
+      'Jetzt entscheidet jedes Schiff einzeln: sobald ein Schiff auf 30% seiner Panzerung gesunken ist, zieht es sich zurück und überlebt, während die weniger beschädigten Schiffe weiterkämpfen. Stark angeschlagene Schiffe fliehen also zuerst, gesunde bleiben im Gefecht.',
+      'Ergebnis: die eigenen Verluste liegen jetzt in einer echten Bandbreite (z.B. 50-100%) statt nur bei "kaum welche" oder "fast alles" - macht Kämpfe spannender und die Flottenplanung lohnender.',
+      'Kampfsimulator und Kampfberichte wurden entsprechend angepasst: "Rückzug" wird nur noch angezeigt, wenn der Kampf NICHT trotzdem mit der vollständigen Vernichtung des Gegners endete.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Fix: Raid-Wellenberichte zeigten alle Spieler-Flotten in einem Topf',
     changes: [
       'Seit der Umstellung auf gesammelte Wellen-Berichte (ein Bericht am Ende statt einer Nachricht pro Welle) landeten Verteidiger-, Verstärker- und haltende Flotten fälschlich alle zusammen in einer einzigen Tabelle "Eigene Flotte" - man konnte nicht mehr erkennen, wessen Schiffe was geleistet haben.',

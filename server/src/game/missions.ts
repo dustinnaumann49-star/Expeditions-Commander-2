@@ -395,6 +395,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   });
 
   let anyNpcDestroyed = false;
+  let npcFullyDestroyed = true;
   const npcLosses: Record<string, number> = {};
   const npcResults: CombatUnitResult[] = npcIds.map((id) => {
     const base = id === 'piratenkapitan' && captainStats ? captainStats : baseStats(id);
@@ -402,6 +403,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     const survivedCount = result.survivorsB[id];
     const destroyedCount = sent - survivedCount;
     if (destroyedCount > 0) anyNpcDestroyed = true;
+    if (survivedCount > 0) npcFullyDestroyed = false;
     npcLosses[id] = destroyedCount;
     const isDefense = DEFENSES.some((d) => d.id === id);
     const isCaptain = id === 'piratenkapitan';
@@ -469,7 +471,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   state.stats.enemiesDestroyed += Object.values(npcLosses).reduce((a, b) => a + b, 0);
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
-  const outcome = result.retreated
+  const outcome = result.retreated && !npcFullyDestroyed
     ? 'Rückzug nach hohen Verlusten – Flotte hat sich rechtzeitig abgesetzt'
     : anyNpcDestroyed && !anyPlayerLoss
     ? 'Klarer Sieg'

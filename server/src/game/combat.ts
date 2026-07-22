@@ -947,20 +947,20 @@ function runRounds(
 
   let roundsFought = 0;
   let retreated = false;
-  // Kampfkraft-Basis fuer den Rueckzug statt reiner Stueckzahl (siehe unten) - waffen+schild+panzerung
-  // je Einheit, identische Definition wie combatFleetPower()/homePower in raids.ts.
-  function unitPower(u: CombatUnit): number {
-    return u.waffen + u.shieldMax + u.hpMax;
-  }
-  const initialPowerA = unitsA.reduce((sum, u) => sum + unitPower(u), 0);
-  // Ab welchem Anteil verbliebener KAMPFKRAFT (nicht Stueckzahl - eine Flotte aus vielen billigen
-  // Jaegern + wenigen teuren Kapitalschiffen wuerde sonst schon beim Verlust der zahlenmaessig
-  // dominanten, aber wertmaessig unbedeutenden Jaeger faelschlich als "aussichtslos" gelten, obwohl
-  // die eigentliche Staerke der Flotte noch unversehrt ist) zieht sich Seite A (Spieler-Flotte)
-  // zurueck, statt bis zur voelligen Vernichtung weiterzukaempfen. Gilt nicht fuer Seite B (NPCs)
-  // und nicht fuer reine Verteidigungsanlagen (koennen nicht "fliehen"), sondern nur fuer die
-  // kombinierte Kampfkraft der gesamten Seite A.
-  const RETREAT_THRESHOLD = 0.5;
+  // Gestaffelter Einzelschiff-Rueckzug (Nutzerentscheidung Juli 2026, ersetzt die vorherige
+  // Flotten-weite 50%-Kampfkraft-Schwelle, die die GESAMTE Seite A gleichzeitig abziehen liess -
+  // das war zu binaer: entweder kaempfte die volle Flotte weiter oder alles floh im selben Moment).
+  // Jetzt entscheidet JEDES Schiff EINZELN anhand seines eigenen verbleibenden HP-Anteils: sobald
+  // ein Schiff auf UNIT_RETREAT_THRESHOLD seiner Panzerung gesunken ist, zieht es sich zurueck
+  // (ueberlebt, kaempft aber nicht weiter mit) - staerker beschaedigte Schiffe fliehen so frueher als
+  // kaum angeschlagene. Gilt nur fuer Seite A (Spieler-Flotte auf Offensiv-Missionen) und nur wenn
+  // allowRetreat=true (Heimatverteidigung bei Raids setzt das bewusst auf false, da Verteidigung
+  // inkl. Anlagen nicht "fliehen" kann, siehe raids.ts). Zurueckgezogene Schiffe sammeln sich in
+  // retreatedUnitsA und werden am Ende wieder zu unitsA hinzugefuegt, damit sie als Ueberlebende
+  // zaehlen - fuer die Runden-Visualisierung gelten sie ab ihrer Rueckzugs-Runde als nicht mehr
+  // anwesend (korrekt, sie kaempfen ja nicht mehr mit).
+  const UNIT_RETREAT_THRESHOLD = 0.3;
+  const retreatedUnitsA: CombatUnit[] = [];
 
   // ---- Rundenverlauf fuer die spaetere Visualisierung aufzeichnen ----
   // Typ-Reihenfolge einmalig festlegen (Zaehlungen beziehen sich immer auf diese Reihenfolge).
@@ -1029,17 +1029,25 @@ function runRounds(
     // Zustand nach dieser Runde festhalten (fuer die Visualisierung im Kampfbericht)
     roundsA.push(countByType(unitsA, typesA));
     roundsB.push(countByType(unitsB, typesB));
-    // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Fallen in derselben Runde der letzte
-    // Gegner UND die eigene Truppe unter die Schwelle, ist der Kampf GEWONNEN - dann waere ein
-    // "Rueckzug" sowohl unlogisch als auch im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
-    if (allowRetreat && unitsB.length > 0 && initialPowerA > 0 && unitsA.length > 0) {
-      const currentPowerA = unitsA.reduce((sum, u) => sum + unitPower(u), 0);
-      if (currentPowerA / initialPowerA <= RETREAT_THRESHOLD) {
-        retreated = true;
-        break;
-      }
+    // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Ist der letzte Gegner in derselben
+    // Runde gefallen, ist der Kampf GEWONNEN - dann waere ein "Rueckzug" sowohl unlogisch als auch
+    // im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
+    if (allowRetreat && unitsB.length > 0 && unitsA.length > 0) {
+      const stillFighting: CombatUnit[] = [];
+      unitsA.forEach((u) => {
+        if (u.hpCur / u.hpMax <= UNIT_RETREAT_THRESHOLD) {
+          retreated = true;
+          retreatedUnitsA.push(u);
+        } else {
+          stillFighting.push(u);
+        }
+      });
+      unitsA = stillFighting;
     }
   }
+  // Zurueckgezogene Schiffe wieder einrechnen - sie haben ueberlebt, kaempfen ab ihrer Rueckzugs-
+  // Runde aber nicht mehr mit (siehe Kommentar oben bei UNIT_RETREAT_THRESHOLD).
+  unitsA = unitsA.concat(retreatedUnitsA);
 
   // Bei langen Kaempfen abtasten, damit der gespeicherte Verlauf kompakt bleibt: Start und Ende
   // bleiben immer erhalten, dazwischen wird gleichmaessig ausgeduennt.

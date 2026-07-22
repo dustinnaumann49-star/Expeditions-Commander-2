@@ -114,10 +114,15 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
 
     runs++;
     totalRounds += result.roundsFought;
-    if (result.retreated) retreats++;
 
     const npcFullyDestroyed = Object.keys(npcCombined).every((id) => (result.survivorsB[id] || 0) <= 0);
     if (npcFullyDestroyed) wins++;
+    // Seit dem gestaffelten Einzelschiff-Rueckzug (siehe UNIT_RETREAT_THRESHOLD in combat.ts)
+    // koennen einzelne Schiffe fliehen, waehrend der Rest der Flotte den Kampf trotzdem noch
+    // gewinnt - "Endet im Rueckzug" soll aber weiterhin exklusiv zu "Siegchance" bleiben (die drei
+    // Kategorien Sieg/Rueckzug/Totalverlust sollen sich zu 100% aufsummieren), daher nur zaehlen,
+    // wenn KEIN voller Sieg vorliegt.
+    if (result.retreated && !npcFullyDestroyed) retreats++;
 
     let sentTotal = 0;
     let lostTotal = 0;

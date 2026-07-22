@@ -627,11 +627,13 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   });
 
   let anyNpcDestroyed = false;
+  let npcFullyDestroyed = true;
   const npcResults: CombatUnitResult[] = Object.keys(npcCombined).map((id) => {
     const base = id === 'piratenkapitan' && captainStats ? captainStats : baseStats(id);
     const sent = npcCombined[id];
     const survivedCount = result.survivorsB[id] || 0;
     if (survivedCount < sent) anyNpcDestroyed = true;
+    if (survivedCount > 0) npcFullyDestroyed = false;
     return {
       id,
       name: shipName(id),
@@ -752,11 +754,12 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   }
 
   const teilnehmerListe = accepted.map((p) => p.username).join(', ');
-  const outcome = result.retreated
-    ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
-    : anyNpcDestroyed
-    ? 'Feindkontakt - Piraten erlitten Verluste'
-    : 'Feindkontakt - keine nennenswerte Wirkung';
+  const outcome =
+    result.retreated && !npcFullyDestroyed
+      ? 'Rückzug nach hohen Verlusten – Flotten rechtzeitig abgesetzt'
+      : anyNpcDestroyed
+      ? 'Feindkontakt - Piraten erlitten Verluste'
+      : 'Feindkontakt - keine nennenswerte Wirkung';
   const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}${modifierText}`;
