@@ -27,9 +27,12 @@ export const DEFENSES: DefenseDefinition[] =
   // desselben Kostenniveaus (Kosten/Waffenpunkt-Regel aus Punkt 17 wird hier bewusst durchbrochen,
   // analog zu den Salvenschiffen). MUSS aus generateDefenseFleet() ausgeschlossen werden (siehe
   // combat.ts), sonst tauchen sie in generierten Piraten-/Raid-Verteidigungen auf.
-  { id:"sentinelkanone", name:"Sentinel-Kanone", img:"defense/sentinelkanone.jpg", lore:"Die Sentinel-Kanone koppelt ein experimentelles Mehrfach-Zielerfassungs-Array an ein stationaeres Geschuetz - was bei Schiffen nur gegen wenige Ziele gleichzeitig funktioniert, wird hier mit der ungebremsten Energiezufuhr einer festen Basis kombiniert. Gegen anrueckende Jaegerschwaerme verwandelt sich ein einzelner Treffer in ein ganzes Sperrfeuer.", buildTime:70, maxCount:40,
+  // maxCount (Nutzerentscheidung, explizit als HARTE Grenze gewuenscht, siehe ships.ts fuer
+  // dieselbe Regel bei Imperator/Salvenschiffen): Sentinel-Kanone 150, Ultimate-Kanone 60 - bewusst
+  // hoeher als bei den Salvenschiffen, da ihre Werte im Vergleich weniger dominant sind.
+  { id:"sentinelkanone", name:"Sentinel-Kanone", img:"defense/sentinelkanone.jpg", lore:"Die Sentinel-Kanone koppelt ein experimentelles Mehrfach-Zielerfassungs-Array an ein stationaeres Geschuetz - was bei Schiffen nur gegen wenige Ziele gleichzeitig funktioniert, wird hier mit der ungebremsten Energiezufuhr einer festen Basis kombiniert. Gegen anrueckende Jaegerschwaerme verwandelt sich ein einzelner Treffer in ein ganzes Sperrfeuer.", buildTime:70, maxCount:150,
     cost:{metall:400000, kristall:250000, deuterium:100000}, stats:{waffen:8000, schild:8000, panzerung:60000} },
-  { id:"ultimatekanone", name:"Ultimate-Kanone", img:"defense/ultimatekanone.jpg", lore:"Die Ultimate-Kanone gilt als die teuerste stationaere Waffe, die je gebaut wurde - ihr Feuerleitsystem kann gleichzeitig Kreuzer- UND Kapitalschiff-Klassen anvisieren und abfeuern. Basen mit mehreren Ultimate-Kanonen gelten als praktisch unangreifbar fuer alles ausser massierten Elite-Flotten.", buildTime:150, maxCount:20,
+  { id:"ultimatekanone", name:"Ultimate-Kanone", img:"defense/ultimatekanone.jpg", lore:"Die Ultimate-Kanone gilt als die teuerste stationaere Waffe, die je gebaut wurde - ihr Feuerleitsystem kann gleichzeitig Kreuzer- UND Kapitalschiff-Klassen anvisieren und abfeuern. Basen mit mehreren Ultimate-Kanonen gelten als praktisch unangreifbar fuer alles ausser massierten Elite-Flotten.", buildTime:150, maxCount:60,
     cost:{metall:1200000, kristall:900000, deuterium:500000}, stats:{waffen:28000, schild:20000, panzerung:200000} },
   // Dritte Schildkuppel (siehe Nutzerentscheidung: kommt trotz "Spezial"-Charakter in den
   // normalen Schild-Tab statt zur Spezialverteidigung) - deutlich staerker als die Grosse

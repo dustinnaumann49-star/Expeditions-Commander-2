@@ -1122,3 +1122,6 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   die schließt diese Schiffe ohnehin unabhängig vom `maxCount` über `specialOnly`/`unique`/
   `MULTI_TARGET_VOLLEY_SHIPS` aus (`combat.ts` `generatePiratenFleet`/`generateFallbackFleet`),
   das war eine bewusste, separate Designentscheidung und bleibt unverändert.
+- Nachtrag: Baulimits der Spezialverteidigung ebenfalls angehoben (gleiche Nutzer-Regel wie oben,
+  siehe Kommentar in `defenses.ts`): Sentinel-Kanone 40→150, Ultimate-Kanone 20→60 - bewusst höher
+  als bei den Salvenschiffen, da ihre Werte im Vergleich weniger dominant sind.
