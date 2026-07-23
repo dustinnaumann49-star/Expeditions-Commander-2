@@ -187,6 +187,28 @@ export function GalaxiePage() {
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Gegenseite: {gameData.pirateAllianceName} (kontrolliert alle noch nicht eroberten Außenposten und Piratenbasen)
         </p>
+        {outposts.filter((o) => o.ownerSide === 'players' && o.garrisonPower > 0).length > 0 && (
+          <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Stationierte Flotten auf euren Außenposten:</p>
+            {outposts
+              .filter((o) => o.ownerSide === 'players' && o.garrisonPower > 0)
+              .map((o) => (
+                <div key={o.id} className="queue-item" style={{ fontSize: 12 }}>
+                  <span>
+                    🚩 1:{o.system}:{o.position} ({o.tier}) · {o.garrisonPower.toLocaleString('de-DE')} Schiffe
+                  </span>
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <button className="qty-btn" onClick={() => setSystem(o.system)}>
+                      Anzeigen
+                    </button>
+                    <button className="qty-btn" onClick={() => recallOutpost(o.id).then(refreshGalaxy)}>
+                      Zurückrufen
+                    </button>
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
@@ -301,7 +323,7 @@ export function GalaxiePage() {
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
                       {outpost.ownerSide === 'players' ? 'In Spielerhand' : 'Piraten-Garnison'} · Stärke ~{outpost.garrisonPower.toLocaleString('de-DE')}
-                      {outpost.ownerSide === 'players' && ' · +15% Flugzeit-Bonus in diesem System'}
+                      {outpost.ownerSide === 'players' && ' · trägt zum globalen Flugzeit-Bonus bei (+15% je gehaltenem Posten)'}
                     </p>
                     {outpost.ownerSide === 'players' ? (
                       <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

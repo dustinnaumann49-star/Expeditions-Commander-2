@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '23.07.2026',
+    title: 'Balance: Außenposten nachgeschärft',
+    changes: [
+      'Der Flugzeit-Bonus aus gehaltenen Außenposten gilt jetzt für JEDEN Flug (nicht mehr nur für Flüge im selben System) und addiert sich pro gehaltenem Posten: +15% je Posten, bis zu +90% bei allen 6.',
+      'Die piraten-eigene Garnison eines Außenpostens skaliert jetzt zusätzlich mit der Stärke der angreifenden Flotte, nicht mehr nur mit einem festen Wert je Stufe - eine starke Flotte fliegt nicht mehr automatisch verlustfrei durch.',
+      'Piraten-Rückeroberungsversuche gegen eure Außenposten liefern jetzt einen vollständigen Kampfbericht statt nur einer Textzeile.',
+    ],
+  },
+  {
+    date: '23.07.2026',
     title: 'Neu: Außenposten - kontestierte Galaxie-Knoten',
     changes: [
       '6 neue, feste Positionen in der Galaxie ("🚩 Außenposten") - starten in Piratenhand mit einer eigenen Garnison, die ihr durch einen Flottenangriff erobern könnt.',
