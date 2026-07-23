@@ -18,6 +18,12 @@ import type { PlayerState } from './types.js';
 // geprueft und angelegt, falls noch nicht vorhanden).
 const BOT_USERNAMES = ['KI-Vega', 'KI-Nyx'];
 
+// Chance PRO HEARTBEAT (alle 2 Minuten) fuer die "gelegentlichen" Bot-Aktionen (Halten bei
+// Mitspielern, Piratenbasis-Angriff, Piratenbasis-Spionage) - Nutzerentscheidung Juli 2026:
+// angehoben von 0.1 (im Schnitt nur alle ~20 Minuten ein Versuch, wirkte dadurch zu passiv) auf
+// 0.3 (im Schnitt alle ~6-7 Minuten).
+const BOT_ACTION_CHANCE = 0.3;
+
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
 const DEFENSE_IDS = [
   'raketenwerfer', 'leichteslaser', 'schwereslaser', 'gausskanone', 'ionengeschuetz', 'plasmawerfer',
@@ -169,13 +175,13 @@ async function maybeHandleGroupOps(state: PlayerState, humanUserIds: number[]): 
 
 // Menschlichen Mitspielern gelegentlich eine Teilflotte zum "Halten" schicken, damit sie bei
 // Piratenraids automatisch mitverteidigt wird (siehe galaxy.ts/raids.ts) - nicht bei JEDEM
-// Heartbeat (sonst wuerde staendig neu versucht), sondern mit kleiner Zufallschance, und nur
+// Heartbeat (sonst wuerde staendig neu versucht), sondern mit Zufallschance, und nur
 // falls dort nicht schon eine eigene Flotte haelt/unterwegs ist.
 function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
   for (const targetUserId of humanUserIds) {
     const alreadyThere = state.galaxyDeployments.some((d) => d.targetUserId === targetUserId && !d.recalled);
     if (alreadyThere) continue;
-    if (Math.random() > 0.1) continue;
+    if (Math.random() > BOT_ACTION_CHANCE) continue;
 
     const selection: Record<string, number> = {};
     let total = 0;
@@ -198,7 +204,7 @@ function maybeAttackPirateBase(state: PlayerState): void {
   for (const baseId of ACTIVE_PIRATE_BASE_IDS) {
     const alreadyAttacking = state.pirateAttacks.some((a) => a.baseId === baseId);
     if (alreadyAttacking) continue;
-    if (Math.random() > 0.1) continue;
+    if (Math.random() > BOT_ACTION_CHANCE) continue;
 
     const selection: Record<string, number> = {};
     let total = 0;
@@ -223,7 +229,7 @@ function maybeSpyOnPirateBase(state: PlayerState): void {
   for (const baseId of ACTIVE_PIRATE_BASE_IDS) {
     const alreadySpying = state.spyMissions.some((m) => m.baseId === baseId);
     if (alreadySpying) continue;
-    if (Math.random() > 0.1) continue;
+    if (Math.random() > BOT_ACTION_CHANCE) continue;
     if ((state.fleet.spionagesonde || 0) < 1) continue;
     startSpyProbe(state, baseId, 1);
   }

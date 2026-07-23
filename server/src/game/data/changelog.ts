@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Balance: Piratenbasen stärker + KI-Bots aktiver',
+    changes: [
+      'Piratenbasen starten jetzt direkt mit deutlich mehr Flotte, Verteidigung und Ressourcen - ein Angriff lohnt sich jetzt schon früh, statt erst nach wochenlangem passivem Nachwachsen.',
+      'Das passive Wachstum selbst ist ebenfalls schneller: kürzeres Intervall, größerer Schub pro Wachstumsschub, höhere Obergrenze pro Schiffs-/Verteidigungstyp.',
+      'KI-Mitspieler (KI-Vega, KI-Nyx) handeln jetzt deutlich häufiger - Piratenbasis-Angriffe, Spionage und Flotten-Unterstützung bei euch laufen im Schnitt alle 6-7 statt alle 20 Minuten an.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Neu: Wirtschafts-Klassen (Schmuggler, Ingenieur, Prospektor)',
     changes: [
       'Neben eurer Kampf-Klasse (Kanonier/Bollwerk/Kommandant) könnt ihr jetzt zusätzlich eine Wirtschafts-Klasse wählen - komplett unabhängig, rührt nie an Waffen/Schild/Panzerung. Zu finden im Klasse-Tab, unterhalb der Kampf-Klassen.',

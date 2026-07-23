@@ -1335,6 +1335,20 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     verifiziert (5.889.510 = Summe aus `combatFleetPowerBase()` über die Seed-Flotte/-Verteidigung),
     Angriffsflug inkl. Distanz/Flugzeit/Treibstoff-Vorschau, Kampfauflösung (korrekter Kampfbericht
     mit allen 4 NPC-Einheitstypen), "bereits angreifend"-Sperre und Rückflug funktionieren.
+  - **Rebalance Juli 2026 (Nutzerentscheidung, "mehr Aktivität + mittlere Stärke, Angriffe sollen
+    sich lohnen")**: Start-Bestand angehoben (`seedPirateBase()`: Flotte 20/8→60/25/10 inkl. neuem
+    `kreuzer`-Anteil, Verteidigung 15/8→40/25, Ressourcen 40k/25k/12k→150k/90k/40k) - vorher war
+    eine frische Basis so schwach, dass ein Angriff kaum lohnende Beute abwarf. Passive
+    Ressourcen-Rate 4000/2500/1200 → 6000/3500/1800 pro Stunde. Flotten-/Verteidigungs-Wachstum:
+    Intervall 3h → 1,5h, Schub 3/2 → 5/3 pro Tick, Kappungsgrenze 120/80 → 180/120 pro Typ (vorher
+    dauerte es rechnerisch ~2 Wochen bis zur vollen Kappungsgrenze, da sich 3 rotierende
+    Schiffstypen einen 3h-Takt teilten - jeder Typ wuchs effektiv nur alle 9h). Bereits bestehende
+    (lokal seit vorher gespeicherte) Basen wurden per einmaligem Wartungsskript auf den neuen
+    Mindestwert angehoben, NICHT automatisch in Produktions-Code - auf einem laufenden Server
+    wachsen bestehende Basen stattdessen einfach schneller in die neuen Werte hinein.
+  - **Bot-Aktivitätschance** (`BOT_ACTION_CHANCE` in `bot.ts`, betrifft `maybeHoldAtHumans()`/
+    `maybeAttackPirateBase()`/`maybeSpyOnPirateBase()`): 0,1 → 0,3 pro Heartbeat (alle 2 Minuten) -
+    vorher im Schnitt nur alle ~20 Minuten ein Versuch, jetzt alle ~6-7 Minuten.
 - Neu: Spionage reaktiviert + Spionagesonden gegen Piratenbasen (Nutzerentscheidung). Die
   Spionage-Forschung war seit Juli 2026 als Platzhalter gesperrt (ihr alter Effekt, Glättung der
   Gegner-Zusammensetzung, war kaum spürbar) - bekommt jetzt einen komplett NEUEN, echten Zweck:

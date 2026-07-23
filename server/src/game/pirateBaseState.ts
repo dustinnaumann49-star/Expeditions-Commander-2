@@ -21,34 +21,45 @@ const POSITION_BY_ID = new Map<string, GalaxyPosition>(PIRATE_BASE_IDS.map((id, 
 
 // Passives Ressourcen-Wachstum (pro Stunde), gedeckelt auf PIRATE_BASE_RESOURCE_CAP_HOURS Stunden
 // Vorrat - verhindert, dass eine lange nicht angegriffene Basis unbegrenzt Ressourcen anhaeuft.
-const PIRATE_BASE_RESOURCE_RATE = { metall: 4000, kristall: 2500, deuterium: 1200 };
+// Nutzerentscheidung Juli 2026: Rate angehoben (vorher 4000/2500/1200), damit sich ein Angriff auf
+// eine Piratenbasis auch wirklich lohnt statt nur homoeopathische Beute abzuwerfen.
+const PIRATE_BASE_RESOURCE_RATE = { metall: 6000, kristall: 3500, deuterium: 1800 };
 const PIRATE_BASE_RESOURCE_CAP_HOURS = 24;
 
 // Flotten-/Verteidigungs-Wachstum: alle PIRATE_BASE_GROWTH_INTERVAL_MS ein kleiner Schub auf einen
 // rotierenden Schiffs-/Verteidigungstyp (deterministisch nach absoluter Zeit, nicht nach zuletzt
 // verarbeitetem Zeitpunkt - damit eine lange nicht geladene Basis beim naechsten Laden nicht alle
 // verpassten Schuebe auf einmal nachholt, sondern einfach beim aktuellen Rotations-Index weitermacht).
-const PIRATE_BASE_GROWTH_INTERVAL_MS = 3 * 60 * 60 * 1000;
+// Nutzerentscheidung Juli 2026: Intervall halbiert (vorher 3h) und Schub-Menge sowie Kappungsgrenze
+// angehoben - bei der alten Rate dauerte es rechnerisch ~2 Wochen, bis eine Basis von Start auf
+// Kappungsgrenze durchwaechst (3 rotierende Schiffstypen teilen sich den 3h-Takt, jeder Typ wuchs
+// also effektiv nur alle 9h um +3). Ziel: Basen erreichen zuegiger eine "mittlere Staerke" statt
+// wochenlang nahe am schwachen Startwert zu verharren.
+const PIRATE_BASE_GROWTH_INTERVAL_MS = 1.5 * 60 * 60 * 1000;
 const PIRATE_BASE_GROWTH_SHIP_IDS = ['leicht', 'schwer', 'kreuzer'];
 const PIRATE_BASE_GROWTH_DEFENSE_IDS = ['raketenwerfer', 'leichteslaser'];
-const PIRATE_BASE_GROWTH_SHIP_STEP = 3;
-const PIRATE_BASE_GROWTH_DEFENSE_STEP = 2;
-const PIRATE_BASE_MAX_SHIPS_PER_TYPE = 120;
-const PIRATE_BASE_MAX_DEFENSE_PER_TYPE = 80;
+const PIRATE_BASE_GROWTH_SHIP_STEP = 5;
+const PIRATE_BASE_GROWTH_DEFENSE_STEP = 3;
+const PIRATE_BASE_MAX_SHIPS_PER_TYPE = 180;
+const PIRATE_BASE_MAX_DEFENSE_PER_TYPE = 120;
 
 // Anteil der AKTUELL gelagerten Basis-Ressourcen, der bei einem erfolgreichen Angriff gestohlen
 // wird (nicht vom Basis-Maximum, siehe RAID_LOOT_PERCENT-Vorbild in raids.ts fuer dasselbe Muster).
 const PIRATE_BASE_LOOT_PERCENT = 0.35;
 
+// Nutzerentscheidung Juli 2026: Start-Bestand angehoben (vorher 20/8 Schiffe, 15/8 Verteidigung,
+// 40k/25k/12k Ressourcen) - eine frisch angelegte Basis war vorher so schwach, dass ein Angriff
+// kaum lohnende Beute abwarf, bevor sie ueber Wochen von selbst nachgewachsen war. Startet jetzt
+// direkt auf "mittlerer Staerke" statt bei einem symbolischen Mindestwert.
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
   return {
     id,
     system: pos.system,
     position: pos.position,
-    fleet: { leicht: 20, schwer: 8 },
-    defense: { raketenwerfer: 15, leichteslaser: 8 },
-    resources: { metall: 40000, kristall: 25000, deuterium: 12000 },
+    fleet: { leicht: 60, schwer: 25, kreuzer: 10 },
+    defense: { raketenwerfer: 40, leichteslaser: 25 },
+    resources: { metall: 150000, kristall: 90000, deuterium: 40000 },
     lastGrowthAt: Date.now(),
   };
 }
