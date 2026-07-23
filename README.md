@@ -568,10 +568,12 @@ client/
       sondern auf der aktuellen VERTEIDIGUNGSANLAGEN-Stärke (`defensePower` in
       `resolveOneWave()`, Summe aus `waffen+schild+panzerung` aller Verteidigungsanlagen,
       Nutzerentscheidung - durchbricht bewusst die sonst geltende Entkopplungs-Regel, siehe Punkt
-      22), MULTIPLIZIERT mit einer festen Eskalationstabelle über die 5 Wellen: 80% / 90% / 100% /
-      115% / 130% (`RAID_WAVE_FACTORS` in `economy.ts`, seit der Balance-Anpassung Juli 2026 - vorher
-      70/80/90/100/110%; ersetzt die noch frühere zufällige Grund-Varianz `RAID_MULTIPLIER_ROLL`,
-      die für Raids nicht mehr verwendet wird). Verteidiger-
+      22), MULTIPLIZIERT mit einer festen Eskalationstabelle über die 5 Wellen: 130% / 150% / 170% /
+      185% / 200% (`RAID_WAVE_FACTORS` in `economy.ts`, Balance-Anpassung Juli 2026 Teil 2 -
+      Nutzerentscheidung: vorherige Kurve 80/90/100/115/130% war zu schwach, Verteidiger gewannen
+      Wellen fast immer ohne jeden Verlust, da eigene Tech-/Schild-Boni die knapp unterlegene
+      Rohstärke locker ausglichen; davor 70/80/90/100/110%; ersetzt die noch frühere zufällige
+      Grund-Varianz `RAID_MULTIPLIER_ROLL`, die für Raids nicht mehr verwendet wird). Verteidiger-
       Flotte/-Verteidigung tragen Verluste vorheriger Wellen weiter (kein Reset zwischen Wellen,
       `DEFENSE_REPAIR_PERCENT` greift weiterhin pro Welle). `RAID_MIN_TARGET_POWER` wirkt als
       Untergrenze für die Verteidigungsanlagen-Basis selbst (nicht mehr pro Welle geteilt) -

@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '23.07.2026',
+    title: 'Balance: Basis-Raids deutlich gefährlicher',
+    changes: [
+      'Raid-Angriffswellen waren bisher fast immer schwächer als die eigene Verteidigung - dank Forschungs-/Schildboni wurde praktisch nie ein Schiff oder eine Anlage zerstört, Raids liefen quasi verlustfrei durch.',
+      'Die Angriffsstärke der 5 Wellen wurde von 80-130% auf 130-200% der eigenen Basis-Power angehoben. Jede Welle ist jetzt eine echte Bedrohung, spürbare Verluste können schon ab der ersten Welle entstehen.',
+      'Eine perfekte 5/5-Verteidigung bleibt möglich, wird aber zur Ausnahme statt zum Normalfall - eine solide Verteidigung lohnt sich jetzt wirklich.',
+    ],
+  },
+  {
+    date: '23.07.2026',
     title: 'Optik: Kampfberichte mit mehreren Wellen/Stunden jetzt einklappbar',
     changes: [
       'Sammelberichte (Raids mit mehreren Wellen, Piraten-Sektor-/Asteroiden-Missionen mit mehreren Stunden-Checks) zeigten bisher ALLE Einzelkämpfe direkt untereinander voll ausgeklappt - bei vielen Einträgen musste man lange scrollen.',

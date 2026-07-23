@@ -389,7 +389,12 @@ export const RAID_WAVE_JITTER_FACTOR = 0.25;
 // Angriff gezielt mitwachsen lassen. Laenge MUSS RAID_WAVE_COUNT entsprechen.
 // Balance-Anpassung (Juli 2026): Kurve von 70-110% auf 80-130% anheben, passend zur allgemeinen
 // Missions-/Raid-Balance-Anpassung.
-export const RAID_WAVE_FACTORS = [0.8, 0.9, 1.0, 1.15, 1.3];
+// Balance-Anpassung (Juli 2026, Teil 2 - Nutzerentscheidung "moderat"): 80-130% war zu schwach -
+// da die Verteidigung meist zusaetzliche Tech-/Schild-Boni gegenueber der reinen Rohstaerke hat,
+// gewannen Verteidiger die Wellen fast immer OHNE jeden Verlust (0-1.3x der eigenen Power reicht
+// nie zum Durchbrechen). Kurve auf 130-200% angehoben, damit ab Welle 1 spuerbare Verluste
+// entstehen und eine perfekte 5/5-Verteidigung zur Ausnahme statt zum Normalfall wird.
+export const RAID_WAVE_FACTORS = [1.3, 1.5, 1.7, 1.85, 2.0];
 
 // ===== Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe game/galaxyEvents.ts) =====
 // Nutzerentscheidung (Juli 2026): taucht zufaellig an einer freien Galaxie-Position auf, gibt der
