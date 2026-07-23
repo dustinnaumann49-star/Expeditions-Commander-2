@@ -90,6 +90,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     galaxyDeployments: [],
     eventTrips: [],
     pirateAttacks: [],
+    outpostDeployments: [],
     spyMissions: [],
     nextPirateSpyCheck: Date.now() + PIRATE_SPY_CHECK_INTERVAL_MS,
     activeBoosters: {},
@@ -190,6 +191,7 @@ export function loadPlayerState(userId: number): PlayerState {
   if (!parsed.galaxyDeployments) parsed.galaxyDeployments = [];
   if (!parsed.eventTrips) parsed.eventTrips = [];
   if (!parsed.pirateAttacks) parsed.pirateAttacks = [];
+  if (!parsed.outpostDeployments) parsed.outpostDeployments = [];
   if (!parsed.spyMissions) parsed.spyMissions = [];
   if (!parsed.nextPirateSpyCheck) parsed.nextPirateSpyCheck = Date.now() + PIRATE_SPY_CHECK_INTERVAL_MS;
   // Alte, vor der Piratenbasen-Erweiterung gespawnte Raids haben kein pirateBase/launchTime-Feld -

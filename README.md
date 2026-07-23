@@ -64,9 +64,12 @@ server/
                                       Positionsvergabe, "Halten"-Mechanik, Übersicht,
                                       Raid-Verteidigungs-Einbindung, Heimatbasis verlegen
   src/game/galaxyPositions.ts        Gemeinsames Hilfsmodul "ist diese Galaxie-Position frei?"
-                                      (Spieler/Piratenbasen/Sektoren) - genutzt von galaxy.ts
-                                      (Verlegen) und galaxyEvents.ts (Spawn), bewusst OHNE
+                                      (Spieler/Piratenbasen/Sektoren/Aussenposten) - genutzt von
+                                      galaxy.ts (Verlegen) und galaxyEvents.ts (Spawn), bewusst OHNE
                                       Abhaengigkeit zu state.ts/galaxy.ts (Zirkelbezug-Vermeidung)
+  src/game/outposts.ts               Aussenposten (kontestierte Galaxie-Knoten): Eroberung,
+                                      Verstaerkung/Rueckruf der gemeinsamen Garnison, opportunistische
+                                      Piraten-Rueckeroberungs-KI, Flugzeit-Bonus-Berechnung
   src/game/galaxyEvents.ts           Galaxie-Ereignisse (Wrack/Handelskonvoi): Spawn, Bergungs-
                                       Rundflug (Claim + automatischer Rueckflug), Belohnung
   src/game/groupOps.ts               GESAMTE Multiplayer-Logik: Elite-Bollwerk- und
@@ -1222,6 +1225,42 @@ client/
       Kanonier-Klasse zeigte korrekt VERDOPPELTEN Waffenschaden (3.000 statt Basis-1.500) beim
       NPC-Verteidiger, Kampf loeste sich ueber 10 Runden korrekt auf, Beute wurde korrekt
       gutgeschrieben.
+
+89. **Außenposten: kontestierte Galaxie-Knoten** (Nutzerentscheidung Juli 2026, siehe
+    `game/outposts.ts`) - 6 feste Positionen (`OUTPOST_POSITIONS`/`OUTPOST_TIERS` in
+    `galaxyConstants.ts`, 2 pro Stärke-Stufe niedrig/mittel/hoch, reserviert wie `PIRATE_BASES` in
+    `getReservedGalaxyPositions()`), starten piraten-eigen. Reine PvE-Erweiterung: Konflikt ist
+    IMMER gegen die Piraten-KI, nie zwischen echten Spielern/Bots (siehe README-Prinzip "kein
+    PvP").
+    - **Eroberung**: Flotte hinschicken (`startOutpostAttack()`), Kampf gegen eine bei JEDEM
+      Angriff frisch gewürfelte NPC-Garnison (`generateFallbackFleet(OUTPOST_TIER_TARGET_POWER[tier])`
+      in `economy.ts`, kein dauerhaftes State-Tracking nötig solange piraten-eigen - analog zu
+      Sektoren/Raids). Sieg macht die Angreifer-ÜBERLEBENDEN sofort zur neuen, spieler-eigenen
+      Garnison (Eroberung UND Erst-Garnisonierung in einem Schritt) - Niederlage/Teilerfolg lässt
+      die Überlebenden automatisch heimkehren, Posten bleibt piraten-eigen.
+    - **Garnison ist ein gemeinsamer Pool der gesamten Spielerseite** (Menschen + Bots,
+      Nutzerentscheidung: kein Attributions-Tracking pro Beitragendem, unnötiger Aufwand für ein
+      2-Spieler-Koop-Team) - jeder darf per `startOutpostReinforcement()` verstärken (Flug ohne
+      Kampf, Schiffe fliegen direkt in `outpost.garrison`) und per `recallOutpostGarrison()` die
+      GESAMTE aktuelle Garnison zu sich zurückrufen.
+    - **Piraten-KI erobert opportunistisch zurück** (`runOutpostPirateAiTurn()`, einmal pro
+      Heartbeat, analog zu `runAllPirateBaseTurns()`) - KEIN fester Zeittakt wie bei Raids: pro
+      spieler-eigenem Posten `OUTPOST_PIRATE_ATTACK_CHANCE`-Chance (0.15) auf einen Rückeroberungs-
+      versuch, Angriffsstärke = Tier-Zielstärke × Zufalls-Vorteil (`OUTPOST_PIRATE_ADVANTAGE_ROLL`,
+      analog zum `RAID_WAVE_FACTORS`-Muster). Unverteidigte Posten fallen kampflos zurück.
+      Bewusst OHNE simulierte Anflugzeit (Piraten "erscheinen" direkt beim Heartbeat-Tick) - anders
+      als bei Raids/`PIRATE_BASES` gibt es keine Piraten-Ausgangsposition/-Flotte, die eine echte
+      Flugzeit-Simulation rechtfertigen würde.
+    - **Strategischer Bonus statt Wirtschafts-/Punktebonus** (Nutzerentscheidung): Flüge, die im
+      selben System wie ein spieler-eigener Außenposten starten ODER enden, sind
+      `OUTPOST_SPEED_BONUS` (1.15x) schneller (`outpostSpeedMultiplierForSystem()` in
+      `outposts.ts`) - eingehängt an den drei Aufrufstellen, die den Bonus anbieten sollen
+      (`missions.ts` `sendFleet()`, `pirateBaseState.ts` `startPirateBaseAttack()`, `outposts.ts`
+      selbst), bewusst NICHT in `galaxy.ts`s allgemeine Speed-Formel (würde Raids/Halten
+      ungewollt mitbeeinflussen).
+    - **Explizit kein Straf-Mechanismus**: ein verlorener Posten bedeutet nur, dass die dort
+      stationierten Schiffe weg sind - keine Kettenreaktion auf die Heimatbasis, keine
+      unwiderruflichen Entscheidungen (Nutzerentscheidung, siehe Kontext "casual Koop-Team").
 
 ## Kurz-Changelog
 

@@ -1,4 +1,4 @@
-import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES } from './data/galaxyConstants.js';
+import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, OUTPOST_POSITIONS } from './data/galaxyConstants.js';
 import { SEKTOR_CONFIG } from './data/sectors.js';
 import { listAllUsers, loadGameStateJson } from '../db.js';
 import type { GalaxyPosition } from './types.js';
@@ -29,6 +29,7 @@ export function getReservedGalaxyPositions(excludeUserId?: number): Set<string> 
     }
   });
   PIRATE_BASES.forEach((p) => reserved.add(key(p)));
+  OUTPOST_POSITIONS.forEach((p) => reserved.add(key(p)));
   Object.values(SEKTOR_CONFIG).forEach((cfg) => {
     if (cfg.galaxyPosition) reserved.add(key(cfg.galaxyPosition));
   });

@@ -7,6 +7,7 @@ import { processAllDepartedGroupOperations } from './groupOps.js';
 import { runBotTurn } from './bot.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
 import { processPirateAttacks, runAllPirateBaseTurns } from './pirateBaseState.js';
+import { processOutpostDeployments, runOutpostPirateAiTurn } from './outposts.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -54,6 +55,7 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
       // Zirkelimport-Vermeidung fuer pirateBaseState.ts) - deshalb hier explizit direkt danach.
       await processPirateAttacks(state);
+      await processOutpostDeployments(state);
       await processMissions(state);
       await processRaidTimer(state);
       // KI-Spieler-Feature nach dem Server-Umzug (Hetzner, siehe README) wieder REAKTIVIERT -
@@ -88,6 +90,15 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseTurns:', err);
+  }
+
+  // Aussenposten (siehe outposts.ts): opportunistische Piraten-Rueckeroberungsversuche gegen
+  // aktuell spieler-eigene Posten, einmal pro Heartbeat, analog zu runAllPirateBaseTurns() oben.
+  try {
+    await runOutpostPirateAiTurn();
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei runOutpostPirateAiTurn:', err);
   }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein

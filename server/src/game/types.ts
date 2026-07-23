@@ -148,6 +148,43 @@ export interface PirateAttackDeployment {
   resolved: boolean;
 }
 
+// ===== Aussenposten (kontestierte Galaxie-Knoten, siehe outposts.ts) =====
+// Global, nicht an einen Nutzer gebunden (eigene DB-Tabelle outposts, siehe db.ts) - feste
+// Position (OUTPOST_POSITIONS in galaxyConstants.ts), startet piraten-eigen mit einer bei jedem
+// Kampf frisch gewuerfelten NPC-Garnison (kein State-Tracking noetig, solange piraten-eigen).
+// Sobald spieler-eigen: `garrison` ist eine ECHTE, dauerhaft gespeicherte Schiffsliste (gemeinsamer
+// Pool aller Menschen+Bots der Spielerseite, Nutzerentscheidung - jeder darf verstaerken/zurueckrufen).
+export type OutpostTier = 'niedrig' | 'mittel' | 'hoch';
+export interface OutpostState {
+  id: string; // 'op_0'..'op_5' (Index aus OUTPOST_POSITIONS)
+  system: number;
+  position: number;
+  tier: OutpostTier;
+  ownerSide: 'pirates' | 'players';
+  garrison: Record<string, number>; // nur relevant wenn ownerSide === 'players'
+  ownerSince: number | null;
+}
+
+// Ein-Weg-Flug zu einem Aussenposten - 'attack' kaempft bei Ankunft gegen die aktuelle Garnison
+// (Erfolg = Eroberung UND Erst-Garnisonierung in einem Schritt, Ueberlebende bei Niederlage kehren
+// automatisch heim, siehe processOutpostDeployments()), 'reinforce' fliegt ohne Kampf direkt in die
+// Garnison eines bereits spieler-eigenen Postens (kein Rueckflug - Schiffe bleiben dort, bis
+// irgendwer sie per recallOutpostGarrison() zurueckruft).
+export interface OutpostDeployment {
+  id: string;
+  outpostId: string;
+  kind: 'attack' | 'reinforce';
+  ships: Record<string, number>;
+  originSystem: number;
+  originPosition: number;
+  targetSystem: number;
+  targetPosition: number;
+  startTime: number;
+  arriveTime: number;
+  returnTime: number | null; // nur bei 'attack' + Niederlage gesetzt (Ueberlebende kehren heim)
+  resolved: boolean;
+}
+
 // Spionageflug (siehe spyMissions.ts) - strukturell identisch zu PirateAttackDeployment, aber statt
 // Kampf wird bei Ankunft nur ein Bericht erzeugt (Detailgrad nach state.research.spionage), die
 // Sonde selbst nimmt nie Schaden. arriveTime/returnTime nutzen IMMER SPY_PROBE_TRAVEL_MS statt der
@@ -658,6 +695,7 @@ export interface PlayerState {
   galaxyDeployments: GalaxyDeployment[]; // eigene, laufend "haltende"/unterwegs befindliche Flotten
   eventTrips: GalaxyEventTrip[]; // eigene, laufend zu Galaxie-Ereignissen unterwegs befindliche Flotten
   pirateAttacks: PirateAttackDeployment[]; // eigene, laufend gegen Piratenbasen unterwegs befindliche Angriffsfluege
+  outpostDeployments: OutpostDeployment[]; // eigene, laufend gegen/zu Aussenposten unterwegs befindliche Fluege
   spyMissions: SpyMissionDeployment[]; // eigene, laufend gegen Piratenbasen unterwegs befindliche Spionagefluege
   nextPirateSpyCheck: number; // naechster faelliger Checkpoint fuer "Piraten spionieren mich aus" (siehe spyMissions.ts)
   activeBoosters: Record<string, number>;

@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary, OutpostSummary } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -107,6 +107,7 @@ export const api = {
       occupants: GalaxyOccupant[];
       pirateBases: GalaxyPosition[];
       pirateBaseSummaries: PirateBaseSummary[];
+      outposts: OutpostSummary[];
       sektorPositions: SektorGalaxyPosition[];
       incomingDeployments: IncomingDeployment[];
       events: GalaxyEvent[];
@@ -129,4 +130,10 @@ export const api = {
     request<PlayerState>('/game/galaxy/pirate-base/attack', { method: 'POST', body: JSON.stringify({ baseId, ships }) }),
   spyOnPirateBase: (baseId: string, qty: number) =>
     request<PlayerState>('/game/galaxy/pirate-base/spy', { method: 'POST', body: JSON.stringify({ baseId, qty }) }),
+  attackOutpost: (outpostId: string, ships: Record<string, number>) =>
+    request<PlayerState>('/game/galaxy/outpost/attack', { method: 'POST', body: JSON.stringify({ outpostId, ships }) }),
+  reinforceOutpost: (outpostId: string, ships: Record<string, number>) =>
+    request<PlayerState>('/game/galaxy/outpost/reinforce', { method: 'POST', body: JSON.stringify({ outpostId, ships }) }),
+  recallOutpost: (outpostId: string) =>
+    request<PlayerState>('/game/galaxy/outpost/recall', { method: 'POST', body: JSON.stringify({ outpostId }) }),
 };

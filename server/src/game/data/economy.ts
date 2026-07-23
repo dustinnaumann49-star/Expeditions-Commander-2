@@ -363,6 +363,29 @@ export const RAID_SALVAGE_DM_MAX = 20;
 // Feindstaerke einfliesst (siehe README "Wichtige Punkte" zur Entkopplung).
 export const RAID_MIN_TARGET_POWER = 200000;
 
+// ========== AUSSENPOSTEN (kontestierte Galaxie-Knoten, siehe game/outposts.ts) ==========
+// Zielstaerke der piraten-eigenen Garnison je Stufe (frisch gewuerfelt bei jedem Angriff, siehe
+// generateFallbackFleet() - kein dauerhaftes State-Tracking noetig solange piraten-eigen). Grob an
+// die bestehenden Piraten-Sektor-npcFloor-Werte angelehnt (sectors.ts), aber niedriger angesetzt -
+// Aussenposten sollen von 2 Spielern + 2 Bots ueber Zeit gemeinsam erobert werden koennen, nicht
+// nur solo mit maximaler Flotte.
+export const OUTPOST_TIER_TARGET_POWER: Record<'niedrig' | 'mittel' | 'hoch', number> = {
+  niedrig: 250000,
+  mittel: 700000,
+  hoch: 1600000,
+};
+// Strategischer Bonus (Nutzerentscheidung): +15% Flottengeschwindigkeit fuer Fluege, die im
+// selben System wie ein SPIELER-EIGENER Aussenposten starten/enden - siehe
+// outpostSpeedMultiplierForSystem() in outposts.ts.
+export const OUTPOST_SPEED_BONUS = 1.15;
+// Piraten-KI agiert opportunistisch statt im festen Takt (Nutzerentscheidung, analog zur
+// BOT_ACTION_CHANCE-Philosophie in bot.ts) - Chance PRO spieler-eigenem Aussenposten UND
+// Heartbeat, dass die Piraten einen Rueckeroberungsversuch starten.
+export const OUTPOST_PIRATE_ATTACK_CHANCE = 0.15;
+// Zufalls-Vorteil der Piraten-Angriffsflotte gegenueber der Tier-Zielstaerke (analog zum
+// RAID_WAVE_FACTORS-Muster) - Rueckeroberung ist dadurch eine echte Bedrohung, aber keine Garantie.
+export const OUTPOST_PIRATE_ADVANTAGE_ROLL = [1.0, 1.15, 1.3, 1.4];
+
 // Chance auf 1 zusaetzlichen Elite-Container PRO TEILNEHMER bei perfekter Raid-Verteidigung (5/5
 // Wellen) - Nutzerentscheidung: Elite bleibt ueberall reine Glueckssache, auch hier nur eine
 // Chance, kein garantierter Zusatz.

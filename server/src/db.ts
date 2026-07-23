@@ -56,6 +56,12 @@ db.exec(`
     data_json TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS outposts (
+    id TEXT PRIMARY KEY,
+    data_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
 
 // Migration: last_seen-Spalte nachtraeglich ergaenzen (fuer Online/Offline-Anzeige), falls die
@@ -157,6 +163,25 @@ export function listPirateBasesJson(): string[] {
 export function savePirateBaseJson(id: string, dataJson: string): void {
   db.prepare(
     `INSERT INTO pirate_bases (id, data_json, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET data_json = excluded.data_json, updated_at = excluded.updated_at`
+  ).run(id, dataJson, Date.now());
+}
+
+// Aussenposten (kontestierte Galaxie-Knoten, siehe game/outposts.ts): dieselbe einfache
+// id/data_json-Struktur wie pirate_bases - global, nie geloescht, nur ueberschrieben.
+export function getOutpostJson(id: string): string | undefined {
+  const row = db.prepare('SELECT data_json FROM outposts WHERE id = ?').get(id) as { data_json: string } | undefined;
+  return row?.data_json;
+}
+
+export function listOutpostsJson(): string[] {
+  const rows = db.prepare('SELECT data_json FROM outposts').all() as { data_json: string }[];
+  return rows.map((r) => r.data_json);
+}
+
+export function saveOutpostJson(id: string, dataJson: string): void {
+  db.prepare(
+    `INSERT INTO outposts (id, data_json, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET data_json = excluded.data_json, updated_at = excluded.updated_at`
   ).run(id, dataJson, Date.now());
 }

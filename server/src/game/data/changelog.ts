@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '23.07.2026',
+    title: 'Neu: Außenposten - kontestierte Galaxie-Knoten',
+    changes: [
+      '6 neue, feste Positionen in der Galaxie ("🚩 Außenposten") - starten in Piratenhand mit einer eigenen Garnison, die ihr durch einen Flottenangriff erobern könnt.',
+      'Ein eroberter Außenposten gehört eurer gesamten Seite (euch beiden + KI-Vega/KI-Nyx) gemeinsam - jeder kann die Garnison verstärken oder komplett zurückrufen.',
+      'Solange ihr einen Außenposten haltet, sind Flüge im selben System 15% schneller - ein spürbarer strategischer Vorteil.',
+      'Die Piraten versuchen von sich aus, verlorene Außenposten zurückzuerobern, wenn sich die Gelegenheit bietet - unverteidigte Posten sind besonders gefährdet.',
+      'Bleibt reines PvE: der einzige Gegner dabei sind die Piraten, nie ein anderer Spieler.',
+    ],
+  },
+  {
+    date: '23.07.2026',
     title: 'Balance: Basis-Raids deutlich gefährlicher',
     changes: [
       'Raid-Angriffswellen waren bisher fast immer schwächer als die eigene Verteidigung - dank Forschungs-/Schildboni wurde praktisch nie ein Schiff oder eine Anlage zerstört, Raids liefen quasi verlustfrei durch.',

@@ -49,6 +49,22 @@ export const PIRATE_BASE_IDS: string[] = PIRATE_BASES.map((_, i) => `pb_${i}`);
 // Koordinaten ohne eigenen Zustand, genau wie bisher.
 export const ACTIVE_PIRATE_BASE_IDS: string[] = PIRATE_BASE_IDS.slice(0, 4);
 
+// ========== AUSSENPOSTEN (kontestierte Galaxie-Knoten, siehe game/outposts.ts) ==========
+// Feste Positionen, analog zu PIRATE_BASES - kollidieren bewusst mit keiner PIRATE_BASES-/
+// SEKTOR_CONFIG-Position. 6 Posten, 2 pro Staerke-Stufe (Nutzerentscheidung), ueber die Galaxie
+// verteilt statt geklumpt.
+export const OUTPOST_POSITIONS: GalaxyPosition[] = [
+  { system: 6, position: 1 },
+  { system: 15, position: 6 },
+  { system: 24, position: 4 },
+  { system: 33, position: 8 },
+  { system: 41, position: 2 },
+  { system: 48, position: 5 },
+];
+export type OutpostTierName = 'niedrig' | 'mittel' | 'hoch';
+export const OUTPOST_TIERS: OutpostTierName[] = ['niedrig', 'niedrig', 'mittel', 'mittel', 'hoch', 'hoch'];
+export const OUTPOST_IDS: string[] = OUTPOST_POSITIONS.map((_, i) => `op_${i}`);
+
 // Repraesentative Flottengeschwindigkeit fuer die Flugzeit-Berechnung eines Raids - die
 // tatsaechliche Schiffszusammensetzung wird erst beim Eintreffen gewuerfelt (siehe combat.ts
 // generateFallbackFleet), daher ein fester Mittelwert statt der "langsamstes Schiff"-Regel, die

@@ -14,6 +14,7 @@ import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
 import { listActivePirateBaseSummaries, startPirateBaseAttack, processPirateAttacks } from './pirateBaseState.js';
+import { listOutpostSummaries, startOutpostAttack, startOutpostReinforcement, recallOutpostGarrison, processOutpostDeployments } from './outposts.js';
 import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
@@ -122,6 +123,7 @@ async function handleAction(req: AuthedRequest, res: Response, action: (state: P
     // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
     // Zirkelimport-Vermeidung fuer pirateBaseState.ts) - deshalb hier explizit direkt danach.
     await processPirateAttacks(state);
+    await processOutpostDeployments(state);
     const result = await action(state);
     if (!result.ok) return res.status(400).json({ error: result.error });
     savePlayerState(state);
@@ -199,6 +201,7 @@ gameRouter.get('/galaxy', async (req: AuthedRequest, res) => {
       // Angreifbare Piratenbasen (siehe pirateBaseState.ts) - nur eine grobe Machtzahl, keine
       // exakten Bestandszahlen (die bekommt man erst per Kampfbericht nach einem Angriff zu sehen).
       pirateBaseSummaries: await listActivePirateBaseSummaries(),
+      outposts: listOutpostSummaries(),
       sektorPositions,
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
       events: listActiveGalaxyEvents(),
@@ -292,6 +295,28 @@ gameRouter.post('/galaxy/pirate-base/spy', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'baseId und qty (Zahl) erforderlich.' });
   }
   handleAction(req, res, (state) => startSpyProbe(state, baseId, qty));
+});
+
+gameRouter.post('/galaxy/outpost/attack', (req: AuthedRequest, res) => {
+  const { outpostId, ships } = req.body ?? {};
+  if (typeof outpostId !== 'string' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'outpostId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => startOutpostAttack(state, outpostId, ships));
+});
+
+gameRouter.post('/galaxy/outpost/reinforce', (req: AuthedRequest, res) => {
+  const { outpostId, ships } = req.body ?? {};
+  if (typeof outpostId !== 'string' || typeof ships !== 'object' || ships === null) {
+    return res.status(400).json({ error: 'outpostId und ships erforderlich.' });
+  }
+  handleAction(req, res, (state) => startOutpostReinforcement(state, outpostId, ships));
+});
+
+gameRouter.post('/galaxy/outpost/recall', (req: AuthedRequest, res) => {
+  const { outpostId } = req.body ?? {};
+  if (typeof outpostId !== 'string') return res.status(400).json({ error: 'outpostId erforderlich.' });
+  handleAction(req, res, (state) => recallOutpostGarrison(state, outpostId));
 });
 
 // ---- Sektor / Missionen ----
