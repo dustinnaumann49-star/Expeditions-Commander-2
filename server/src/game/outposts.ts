@@ -415,11 +415,6 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
   for (const outpost of outposts) {
     if (Math.random() >= OUTPOST_PIRATE_ATTACK_CHANCE) continue;
 
-    const targetPower = OUTPOST_TIER_TARGET_POWER[outpost.tier];
-    const advantage = OUTPOST_PIRATE_ADVANTAGE_ROLL[Math.floor(Math.random() * OUTPOST_PIRATE_ADVANTAGE_ROLL.length)];
-    const npcShips = generateFallbackFleet(targetPower * advantage, pickWaveProfile('outpost'));
-    const npcIds = Object.keys(npcShips);
-
     const totalGarrison = Object.values(outpost.garrison).reduce((a, b) => a + (b || 0), 0);
     if (totalGarrison === 0) {
       // Unverteidigt - fallen kampflos zurueck an die Piraten.
@@ -429,6 +424,17 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       notifyHumans(`Piraten haben den unverteidigten Außenposten 1:${outpost.system}:${outpost.position} kampflos zurückerobert.`);
       continue;
     }
+
+    // Balance (Juli 2026): skaliert jetzt mit der Macht der TATSAECHLICH STATIONIERTEN Garnison
+    // (analog zum Spieler-Angriff in resolveOutpostAttack) statt einem fixen Tier-Wert - vorher
+    // liess sich der niedrige OUTPOST_TIER_TARGET_POWER-Wert (dominiert von der hohen Panzerung
+    // der Basis-Schiffsstats) mit 1-2 Schiffen erreichen, egal wie stark die Garnison tatsaechlich
+    // war.
+    const garrisonPower = combatFleetPowerBase(outpost.garrison);
+    const advantage = OUTPOST_PIRATE_ADVANTAGE_ROLL[Math.floor(Math.random() * OUTPOST_PIRATE_ADVANTAGE_ROLL.length)];
+    const targetPower = Math.max(garrisonPower * advantage, OUTPOST_TIER_TARGET_POWER[outpost.tier]);
+    const npcShips = generateFallbackFleet(targetPower, pickWaveProfile('outpost'));
+    const npcIds = Object.keys(npcShips);
 
     const garrisonIds = Object.keys(outpost.garrison);
     const result = await runCombatInWorker({
