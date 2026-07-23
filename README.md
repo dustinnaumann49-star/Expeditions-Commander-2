@@ -1261,6 +1261,12 @@ client/
     - **Explizit kein Straf-Mechanismus**: ein verlorener Posten bedeutet nur, dass die dort
       stationierten Schiffe weg sind - keine Kettenreaktion auf die Heimatbasis, keine
       unwiderruflichen Entscheidungen (Nutzerentscheidung, siehe Kontext "casual Koop-Team").
+    - **"Allianz" ist rein kosmetisch, kein eigenes Datenmodell** (Nutzerentscheidung: nur
+      Anzeige, keine Mechanik) - `ALLIANCE_NAME`/`PIRATE_ALLIANCE_NAME` ("Sternenbund"/
+      "Piratenkonföderation", `economy.ts`) werden über `/game/data` ausgeliefert, die
+      Mitgliederliste ist einfach `listAllUsers()` (alle Menschen+Bots). Panel oben in
+      `Galaxie.tsx` zeigt Name, Mitglieder, Anzahl gehaltener Außenposten - keine eigene
+      Berechtigungslogik, jeder Nutzer konnte ohnehin schon vorher verstärken/zurückrufen.
 
 ## Kurz-Changelog
 

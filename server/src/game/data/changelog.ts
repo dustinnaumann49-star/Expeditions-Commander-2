@@ -21,6 +21,15 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     date: '23.07.2026',
+    title: 'Neu: Eure Allianz hat jetzt einen Namen',
+    changes: [
+      'Oben in der Galaxie-Ansicht seht ihr jetzt eure Allianz "Sternenbund" mit allen Mitgliedern (du, dein Mitspieler, KI-Vega, KI-Nyx) sowie euren aktuell gehaltenen Außenposten.',
+      'Die Piratenseite tritt ab jetzt unter dem Namen "Piratenkonföderation" auf.',
+      'Rein kosmetisch - ändert nichts an Mechanik oder Regeln.',
+    ],
+  },
+  {
+    date: '23.07.2026',
     title: 'Balance: Basis-Raids deutlich gefährlicher',
     changes: [
       'Raid-Angriffswellen waren bisher fast immer schwächer als die eigene Verteidigung - dank Forschungs-/Schildboni wurde praktisch nie ein Schiff oder eine Anlage zerstört, Raids liefen quasi verlustfrei durch.',

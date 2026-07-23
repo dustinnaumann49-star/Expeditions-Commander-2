@@ -651,6 +651,8 @@ export interface GameData {
   relocateBaseCostDm: number;
   spyProbeTravelMs: number;
   spyProbeFuelCostPerProbe: number;
+  allianceName: string;
+  pirateAllianceName: string;
 }
 
 export interface ClassDefinition {

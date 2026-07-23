@@ -386,6 +386,13 @@ export const OUTPOST_PIRATE_ATTACK_CHANCE = 0.15;
 // RAID_WAVE_FACTORS-Muster) - Rueckeroberung ist dadurch eine echte Bedrohung, aber keine Garantie.
 export const OUTPOST_PIRATE_ADVANTAGE_ROLL = [1.0, 1.15, 1.3, 1.4];
 
+// Rein kosmetische Allianz-Namen (Nutzerentscheidung Juli 2026) - "Allianz" existiert NICHT als
+// eigenes Datenmodell/eigene Logik, sondern ist nur die informelle Bezeichnung fuer "alle Nutzer
+// aus `users`" (Menschen + Bots) gegenueber der Piraten-Seite. Rein zur Anzeige (siehe
+// AllianceOverview-Panel in Galaxie.tsx) - KEIN Einfluss auf Mechanik/Berechtigungen.
+export const ALLIANCE_NAME = 'Sternenbund';
+export const PIRATE_ALLIANCE_NAME = 'Piratenkonföderation';
+
 // Chance auf 1 zusaetzlichen Elite-Container PRO TEILNEHMER bei perfekter Raid-Verteidigung (5/5
 // Wellen) - Nutzerentscheidung: Elite bleibt ueberall reine Glueckssache, auch hier nur eine
 // Chance, kein garantierter Zusatz.
