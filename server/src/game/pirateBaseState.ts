@@ -1,7 +1,7 @@
 import { PIRATE_BASES, PIRATE_BASE_IDS, ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import { getPirateBaseJson, savePirateBaseJson } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
-import { outpostSpeedMultiplierForSystem } from './outposts.js';
+import { outpostSpeedMultiplier } from './outposts.js';
 import { combatFleetPowerBase, shipName, getEffectiveStats } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
@@ -184,7 +184,7 @@ export function startPirateBaseAttack(state: PlayerState, baseId: string, ships:
 
   const targetPos = POSITION_BY_ID.get(baseId)!;
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const bonus = outpostSpeedMultiplierForSystem(state.galaxyPosition.system, targetPos.system);
+  const bonus = outpostSpeedMultiplier();
   const speed = galaxyFleetSpeed(selected, state.research, state.playerClass, state.shipModules) * bonus;
   const travelMs = galaxyDurationMs(distance, speed);
   if (!Number.isFinite(travelMs)) return { ok: false, error: 'Diese Flotte kann nicht fliegen (keine Geschwindigkeit).' };

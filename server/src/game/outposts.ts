@@ -1,8 +1,8 @@
 import { OUTPOST_POSITIONS, OUTPOST_IDS, OUTPOST_TIERS } from './data/galaxyConstants.js';
-import { OUTPOST_TIER_TARGET_POWER, OUTPOST_SPEED_BONUS, OUTPOST_PIRATE_ATTACK_CHANCE, OUTPOST_PIRATE_ADVANTAGE_ROLL } from './data/economy.js';
+import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_CHANCE, OUTPOST_PIRATE_ADVANTAGE_ROLL } from './data/economy.js';
 import { getOutpostJson, saveOutpostJson, listAllUsers } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
-import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats } from './combat.js';
+import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats, combatFleetPowerBase, rollMultiplierWithOutlier } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { pushMessage } from './messages.js';
@@ -82,13 +82,14 @@ function garrisonShipPower(garrison: Record<string, number>): number {
   return Object.values(garrison).reduce((a, b) => a + (b || 0), 0);
 }
 
-// Strategischer Bonus (Nutzerentscheidung): Fluege, die in einem System starten ODER enden, in dem
-// ein SPIELER-EIGENER Aussenposten liegt, sind OUTPOST_SPEED_BONUS schneller. Bewusst NICHT in
-// galaxy.ts' allgemeine Speed-Formel eingebaut (siehe Plan) - nur an den Aufrufstellen multipliziert,
-// die den Bonus tatsaechlich anbieten sollen (missions.ts, pirateBaseState.ts, outposts.ts selbst).
-export function outpostSpeedMultiplierForSystem(...systems: (number | undefined)[]): number {
-  const ownedSystems = new Set(loadAllOutposts().filter((o) => o.ownerSide === 'players').map((o) => o.system));
-  return systems.some((s) => s !== undefined && ownedSystems.has(s)) ? OUTPOST_SPEED_BONUS : 1;
+// Strategischer Bonus (Nutzerentscheidung Juli 2026): JEDER Flug ist schneller, gestaffelt nach
+// der Anzahl spieler-eigener Aussenposten (nicht mehr an ein bestimmtes Start-/Zielsystem
+// gebunden). Bewusst NICHT in galaxy.ts' allgemeine Speed-Formel eingebaut (siehe Plan) - nur an
+// den Aufrufstellen multipliziert, die den Bonus tatsaechlich anbieten sollen (missions.ts,
+// pirateBaseState.ts, outposts.ts selbst).
+export function outpostSpeedMultiplier(): number {
+  const ownedCount = loadAllOutposts().filter((o) => o.ownerSide === 'players').length;
+  return 1 + ownedCount * OUTPOST_SPEED_BONUS_PER_OUTPOST;
 }
 
 // ========== ANGRIFF STARTEN (Eroberungsversuch gegen einen piraten-eigenen Posten) ==========
@@ -113,7 +114,7 @@ export function startOutpostAttack(state: PlayerState, outpostId: string, ships:
 
   const targetPos = POSITION_BY_ID.get(outpostId)!;
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const bonus = outpostSpeedMultiplierForSystem(state.galaxyPosition.system, targetPos.system);
+  const bonus = outpostSpeedMultiplier();
   const speed = galaxyFleetSpeed(selected, state.research, state.playerClass, state.shipModules) * bonus;
   const travelMs = galaxyDurationMs(distance, speed);
   if (!Number.isFinite(travelMs)) return { ok: false, error: 'Diese Flotte kann nicht fliegen (keine Geschwindigkeit).' };
@@ -165,7 +166,7 @@ export function startOutpostReinforcement(state: PlayerState, outpostId: string,
 
   const targetPos = POSITION_BY_ID.get(outpostId)!;
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const bonus = outpostSpeedMultiplierForSystem(state.galaxyPosition.system, targetPos.system);
+  const bonus = outpostSpeedMultiplier();
   const speed = galaxyFleetSpeed(selected, state.research, state.playerClass, state.shipModules) * bonus;
   const travelMs = galaxyDurationMs(distance, speed);
   if (!Number.isFinite(travelMs)) return { ok: false, error: 'Diese Flotte kann nicht fliegen (keine Geschwindigkeit).' };
@@ -210,7 +211,7 @@ export function recallOutpostGarrison(state: PlayerState, outpostId: string): Ac
 
   const targetPos = POSITION_BY_ID.get(outpostId)!;
   const distance = galaxyDistance(state.galaxyPosition, targetPos);
-  const bonus = outpostSpeedMultiplierForSystem(state.galaxyPosition.system, targetPos.system);
+  const bonus = outpostSpeedMultiplier();
   const speed = galaxyFleetSpeed(outpost.garrison, state.research, state.playerClass, state.shipModules) * bonus;
   const travelMs = galaxyDurationMs(distance, speed);
   if (!Number.isFinite(travelMs)) return { ok: false, error: 'Die Garnison kann nicht fliegen (keine Geschwindigkeit).' };
@@ -307,7 +308,9 @@ async function resolveOutpostAttack(state: PlayerState, deployment: OutpostDeplo
     return;
   }
 
-  const targetPower = OUTPOST_TIER_TARGET_POWER[outpost.tier];
+  const sentPower = combatFleetPowerBase(deployment.ships);
+  const { multiplier: rolledMultiplier } = rollMultiplierWithOutlier(OUTPOST_MULTIPLIER_ROLL[outpost.tier], 'outpost');
+  const targetPower = Math.max(sentPower * rolledMultiplier, OUTPOST_TIER_TARGET_POWER[outpost.tier]);
   const npcShips = generateFallbackFleet(targetPower, pickWaveProfile('outpost'));
 
   const result = await runCombatInWorker({
@@ -427,6 +430,7 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       continue;
     }
 
+    const garrisonIds = Object.keys(outpost.garrison);
     const result = await runCombatInWorker({
       sideAShips: outpost.garrison,
       sideBShips: npcShips,
@@ -434,7 +438,54 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       allowRetreat: false,
     });
 
+    const garrisonResults: CombatUnitResult[] = garrisonIds.map((id) => {
+      const eff = baseStats(id);
+      const sent = outpost.garrison[id] || 0;
+      const survived = result.survivorsA[id] || 0;
+      return {
+        id,
+        name: shipName(id),
+        sent,
+        survived,
+        lost: sent - survived,
+        waffen: Math.round(eff.waffen),
+        schild: Math.round(eff.schild),
+        panzerung: Math.round(eff.panzerung),
+        dmgTaken: Math.round(result.dmgTakenA[id] || 0),
+        dmgDealt: Math.round(result.shotsA.dmgDealt[id] || 0),
+        shotsFired: result.shotsA.shotsFired[id] || 0,
+        hits: result.shotsA.hits[id] || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
+        shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+      };
+    });
+    const npcResults: CombatUnitResult[] = npcIds.map((id) => {
+      const eff = baseStats(id);
+      const sent = npcShips[id];
+      const survivedCount = result.survivorsB[id] || 0;
+      return {
+        id,
+        name: shipName(id),
+        count: sent,
+        waffen: Math.round(eff.waffen),
+        schild: Math.round(eff.schild),
+        panzerung: Math.round(eff.panzerung),
+        dmgTaken: Math.round(result.dmgTakenB[id] || 0),
+        dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
+        destroyedCount: sent - survivedCount,
+        survivedCount,
+        destroyed: survivedCount <= 0,
+        shotsFired: result.shotsB.shotsFired[id] || 0,
+        hits: result.shotsB.hits[id] || 0,
+        rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
+        shieldRegen: Math.round(result.shieldRegenB[id] || 0),
+      };
+    });
+
     const garrisonWon = npcIds.every((id) => (result.survivorsB[id] || 0) <= 0);
+    let outcome: string;
     if (garrisonWon) {
       const survivors: Record<string, number> = {};
       Object.entries(outpost.garrison).forEach(([id]) => {
@@ -442,21 +493,35 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       });
       outpost.garrison = survivors;
       saveOutpost(outpost);
-      notifyHumans(`Piraten-Angriff auf euren Außenposten 1:${outpost.system}:${outpost.position} abgewehrt - Garnison hat Verluste erlitten, aber gehalten.`);
+      outcome = 'Rückeroberung abgewehrt';
     } else {
       outpost.ownerSide = 'pirates';
       outpost.garrison = {};
       saveOutpost(outpost);
-      notifyHumans(`Piraten haben euren Außenposten 1:${outpost.system}:${outpost.position} zurückerobert - die Garnison wurde vernichtet.`);
+      outcome = 'Außenposten von Piraten zurückerobert';
     }
+
+    const detail: CombatDetail = {
+      sektorName: `Außenposten 1:${outpost.system}:${outpost.position} (${outpost.tier})`,
+      outcome,
+      roundsFought: result.roundsFought,
+      npcResults,
+      playerResults: garrisonResults,
+    };
+    notifyHumans(
+      garrisonWon
+        ? `Piraten-Angriff auf euren Außenposten 1:${outpost.system}:${outpost.position} abgewehrt - Garnison hat Verluste erlitten, aber gehalten.`
+        : `Piraten haben euren Außenposten 1:${outpost.system}:${outpost.position} zurückerobert - die Garnison wurde vernichtet.`,
+      detail,
+    );
   }
 }
 
-function notifyHumans(text: string): void {
+function notifyHumans(text: string, detail?: CombatDetail): void {
   listAllUsers().forEach((u) => {
     if (u.isBot) return;
     const state = loadPlayerState(u.id);
-    pushMessage(state, 'kampf', text);
+    pushMessage(state, 'kampf', text, detail);
     savePlayerState(state);
   });
 }

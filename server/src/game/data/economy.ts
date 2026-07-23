@@ -374,10 +374,21 @@ export const OUTPOST_TIER_TARGET_POWER: Record<'niedrig' | 'mittel' | 'hoch', nu
   mittel: 700000,
   hoch: 1600000,
 };
-// Strategischer Bonus (Nutzerentscheidung): +15% Flottengeschwindigkeit fuer Fluege, die im
-// selben System wie ein SPIELER-EIGENER Aussenposten starten/enden - siehe
-// outpostSpeedMultiplierForSystem() in outposts.ts.
-export const OUTPOST_SPEED_BONUS = 1.15;
+// Balance (Juli 2026): Garnisonsstaerke skaliert jetzt zusaetzlich mit der Macht der ANGREIFENDEN
+// Flotte (analog PIRATEN_MULTIPLIER_ROLL in sectors.ts) - vorher war OUTPOST_TIER_TARGET_POWER ein
+// fixer Wert, den eine gut entwickelte Flotte verlustfrei ueberrannt hat. OUTPOST_TIER_TARGET_POWER
+// bleibt als Untergrenze fuer schwache Flotten erhalten, siehe resolveOutpostAttack() in
+// outposts.ts: targetPower = max(sentPower * rolledMultiplier, OUTPOST_TIER_TARGET_POWER[tier]).
+export const OUTPOST_MULTIPLIER_ROLL: Record<'niedrig' | 'mittel' | 'hoch', number[]> = {
+  niedrig: [0.5, 0.65, 0.8],
+  mittel: [0.85, 1.0, 1.15],
+  hoch: [1.1, 1.3, 1.5],
+};
+// Strategischer Bonus (Nutzerentscheidung Juli 2026): +15% Flottengeschwindigkeit PRO
+// SPIELER-EIGENEM Aussenposten, global fuer JEDEN Flug (nicht mehr an ein bestimmtes System
+// gebunden) - additiv, siehe outpostSpeedMultiplier() in outposts.ts. Bei allen 6 Posten in
+// Spielerhand also +90%.
+export const OUTPOST_SPEED_BONUS_PER_OUTPOST = 0.15;
 // Piraten-KI agiert opportunistisch statt im festen Takt (Nutzerentscheidung, analog zur
 // BOT_ACTION_CHANCE-Philosophie in bot.ts) - Chance PRO spieler-eigenem Aussenposten UND
 // Heartbeat, dass die Piraten einen Rueckeroberungsversuch starten.
