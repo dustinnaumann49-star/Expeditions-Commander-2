@@ -2,6 +2,26 @@
 
 React + Node/Express Backend, SQLite-Datenbank.
 
+## Lokale Entwicklung
+
+Erfordert **Node.js v20** (LTS). Auf Arch/CachyOS liefert das Standardpaket `nodejs` die
+Rolling-Release-Version (z.B. v26), die zu neu für die native `better-sqlite3`-Bindung ist - der
+Server crasht dann beim Start mit "Could not locate the bindings file". Stattdessen
+`nodejs-lts-iron` installieren:
+
+```
+sudo pacman -S nodejs-lts-iron
+```
+
+Nach einem Node-Wechsel muss die native Bindung neu gebaut werden:
+
+```
+cd server && npm rebuild better-sqlite3
+```
+
+Danach `npm install` in `client/` und `server/`, dann `npm run dev` in beiden Ordnern (siehe
+`.claude/launch.json` für die Ports 4000/5173).
+
 ## Deployment
 
 Hetzner CX33 (4 vCPU / 8 GB RAM) über Coolify. Server (`/server`, Nixpacks) und Client (`/client`,
