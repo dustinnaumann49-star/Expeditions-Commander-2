@@ -122,6 +122,12 @@ export interface PirateBaseState {
   defense: Record<string, number>;
   resources: { metall: number; kristall: number; deuterium: number };
   lastGrowthAt: number;
+  // Einmal-Migrationsflag (Nutzerentscheidung Juli 2026, "Angriffe sollen sich lohnen"-Rebalance,
+  // siehe seedPirateBase()/loadPirateBase() in pirateBaseState.ts): hebt bereits VOR dem Rebalance
+  // bestehende Basen einmalig auf den neuen Mindestbestand an, statt sie nur langsam ueber das
+  // (jetzt zwar schnellere) passive Wachstum reinwachsen zu lassen. Analog zum
+  // raidScheduleMigrated-Muster in state.ts.
+  strengthRebalanced2607?: boolean;
 }
 
 // Ein-Weg-Angriffsflug (Hin, EIN Kampf bei Ankunft, automatischer Rueckflug) gegen eine

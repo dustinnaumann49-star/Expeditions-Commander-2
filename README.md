@@ -1343,9 +1343,12 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     Intervall 3h → 1,5h, Schub 3/2 → 5/3 pro Tick, Kappungsgrenze 120/80 → 180/120 pro Typ (vorher
     dauerte es rechnerisch ~2 Wochen bis zur vollen Kappungsgrenze, da sich 3 rotierende
     Schiffstypen einen 3h-Takt teilten - jeder Typ wuchs effektiv nur alle 9h). Bereits bestehende
-    (lokal seit vorher gespeicherte) Basen wurden per einmaligem Wartungsskript auf den neuen
-    Mindestwert angehoben, NICHT automatisch in Produktions-Code - auf einem laufenden Server
-    wachsen bestehende Basen stattdessen einfach schneller in die neuen Werte hinein.
+    Basen bekommen die neuen Mindestwerte automatisch per Einmal-Migration (
+    `PirateBaseState.strengthRebalanced2607`, `applyStrengthRebalanceMigration()` in
+    `pirateBaseState.ts`, greift beim naechsten `loadPirateBase()` nach dem Deploy, analog zum
+    `raidScheduleMigrated`-Muster in `state.ts`) - hebt NUR nach oben an (`Math.max`), eine bereits
+    staerkere Basis bleibt unangetastet. Kein manueller Schritt auf dem Produktionsserver noetig,
+    ein normaler Git-Push/Deploy reicht.
   - **Bot-Aktivitätschance** (`BOT_ACTION_CHANCE` in `bot.ts`, betrifft `maybeHoldAtHumans()`/
     `maybeAttackPirateBase()`/`maybeSpyOnPirateBase()`): 0,1 → 0,3 pro Heartbeat (alle 2 Minuten) -
     vorher im Schnitt nur alle ~20 Minuten ein Versuch, jetzt alle ~6-7 Minuten.

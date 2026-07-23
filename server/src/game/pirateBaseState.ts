@@ -50,17 +50,24 @@ const PIRATE_BASE_LOOT_PERCENT = 0.35;
 // Nutzerentscheidung Juli 2026: Start-Bestand angehoben (vorher 20/8 Schiffe, 15/8 Verteidigung,
 // 40k/25k/12k Ressourcen) - eine frisch angelegte Basis war vorher so schwach, dass ein Angriff
 // kaum lohnende Beute abwarf, bevor sie ueber Wochen von selbst nachgewachsen war. Startet jetzt
-// direkt auf "mittlerer Staerke" statt bei einem symbolischen Mindestwert.
+// direkt auf "mittlerer Staerke" statt bei einem symbolischen Mindestwert. Dieselben Werte dienen
+// als Mindestbestand fuer bereits VOR diesem Rebalance bestehende Basen, siehe
+// applyStrengthRebalanceMigration() unten.
+const REBALANCED_FLOOR_FLEET: Record<string, number> = { leicht: 60, schwer: 25, kreuzer: 10 };
+const REBALANCED_FLOOR_DEFENSE: Record<string, number> = { raketenwerfer: 40, leichteslaser: 25 };
+const REBALANCED_FLOOR_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
   return {
     id,
     system: pos.system,
     position: pos.position,
-    fleet: { leicht: 60, schwer: 25, kreuzer: 10 },
-    defense: { raketenwerfer: 40, leichteslaser: 25 },
-    resources: { metall: 150000, kristall: 90000, deuterium: 40000 },
+    fleet: { ...REBALANCED_FLOOR_FLEET },
+    defense: { ...REBALANCED_FLOOR_DEFENSE },
+    resources: { ...REBALANCED_FLOOR_RESOURCES },
     lastGrowthAt: Date.now(),
+    strengthRebalanced2607: true,
   };
 }
 
@@ -72,6 +79,25 @@ export function ensurePirateBases(): void {
       savePirateBaseJson(id, JSON.stringify(seedPirateBase(id)));
     }
   });
+}
+
+// Einmal-Migration (Nutzerentscheidung Juli 2026, siehe PirateBaseState.strengthRebalanced2607 in
+// types.ts): hebt eine bereits VOR dem Rebalance bestehende Basis auf den neuen Mindestbestand an
+// (nur nach OBEN, nie nach unten - eine bereits staerkere Basis bleibt unangetastet), statt sie nur
+// langsam ueber das passive Wachstum reinwachsen zu lassen. Greift automatisch beim naechsten
+// `loadPirateBase()`-Aufruf nach dem Deploy, kein manueller Schritt noetig.
+function applyStrengthRebalanceMigration(base: PirateBaseState): void {
+  if (base.strengthRebalanced2607) return;
+  Object.entries(REBALANCED_FLOOR_FLEET).forEach(([id, floor]) => {
+    base.fleet[id] = Math.max(base.fleet[id] || 0, floor);
+  });
+  Object.entries(REBALANCED_FLOOR_DEFENSE).forEach(([id, floor]) => {
+    base.defense[id] = Math.max(base.defense[id] || 0, floor);
+  });
+  (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
+    base.resources[res] = Math.max(base.resources[res] || 0, REBALANCED_FLOOR_RESOURCES[res]);
+  });
+  base.strengthRebalanced2607 = true;
 }
 
 function applyGrowth(base: PirateBaseState, now: number): void {
@@ -98,6 +124,7 @@ export function loadPirateBase(id: string): PirateBaseState | null {
   const json = getPirateBaseJson(id);
   if (!json) return null;
   const base = JSON.parse(json) as PirateBaseState;
+  applyStrengthRebalanceMigration(base);
   applyGrowth(base, Date.now());
   savePirateBaseJson(id, JSON.stringify(base));
   return base;
