@@ -5,6 +5,7 @@ import { runEconomyBotTurn } from './economyBotTurn.js';
 import { listMyGroupOperations, respondToGroupOperation, startGroupOperation, createGroupOperation } from './groupOps.js';
 import { startHoldDeployment } from './galaxy.js';
 import { startPirateBaseAttack } from './pirateBaseState.js';
+import { listOutpostSummaries, startOutpostAttack } from './outposts.js';
 import { startSpyProbe } from './spyMissions.js';
 import { ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import { MAX_BUILD_SLOTS } from './data/combatConstants.js';
@@ -134,6 +135,32 @@ function maybeAttackPirateBase(state: PlayerState): void {
   }
 }
 
+// Aussenposten (siehe outposts.ts) greifen die KI-Bots ebenfalls automatisch an (Nutzerentscheidung
+// Juli 2026: Bots sollen sich genauso wie Menschen an der Eroberung beteiligen, nicht nur zusehen) -
+// dieselbe Zufallschance-Logik wie maybeAttackPirateBase oben, nur gegen noch piraten-eigene Posten.
+// Verstaerken/Zurueckrufen bleibt bewusst menschlichen Spielern vorbehalten (siehe README/Nutzer-
+// entscheidung zur Garnison als gemeinsamer Pool) - die Bots sollen den Bestand nicht eigenmaechtig
+// leerraeumen.
+function maybeAttackOutpost(state: PlayerState): void {
+  const attackableOutposts = listOutpostSummaries().filter((o) => o.ownerSide === 'pirates');
+  for (const outpost of attackableOutposts) {
+    const alreadyAttacking = state.outpostDeployments.some((d) => d.outpostId === outpost.id && d.kind === 'attack' && !d.resolved);
+    if (alreadyAttacking) continue;
+    if (Math.random() > BOT_ACTION_CHANCE) continue;
+
+    const selection: Record<string, number> = {};
+    let total = 0;
+    for (const id of ['leicht', 'schwer', 'kreuzer']) {
+      const take = Math.floor((state.fleet[id] || 0) * 0.15);
+      if (take > 0) {
+        selection[id] = take;
+        total += take;
+      }
+    }
+    if (total >= 5) startOutpostAttack(state, outpost.id, selection);
+  }
+}
+
 // KI-Bots spionieren ebenfalls Piratenbasen aus (Nutzerentscheidung: "Piraten und KI bots
 // spionieren auch") - bauen bei Bedarf ein paar Sonden nach (unabhaengig vom normalen
 // Kampfschiff-Bauslot-Rennen in maybeBuildShips) und schicken gelegentlich eine los.
@@ -163,6 +190,7 @@ export async function runBotTurn(state: PlayerState, allUsers: { id: number; use
   await maybeHandleGroupOps(state, humanUserIds);
   maybeHoldAtHumans(state, humanUserIds);
   maybeAttackPirateBase(state);
+  maybeAttackOutpost(state);
   maybeSpyOnPirateBase(state);
 }
 

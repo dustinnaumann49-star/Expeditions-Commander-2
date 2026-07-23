@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
@@ -242,8 +242,19 @@ export function GalaxiePage() {
             const eventDef = event ? gameData.galaxyEventTypes[event.type] : null;
             const alreadyEnRouteToEvent = event && state.eventTrips.some((t) => t.eventId === event.id);
             const isFreeAndPickable = !occ && !isPirateBase && !sektor && !event && !outpost;
+            // Feste Hex-/RGBA-Werte statt var(--accent-deut)/var(--danger) im "border"-Shorthand -
+            // manche Browser loesen CSS-Custom-Properties innerhalb eines Shorthands im Inline-Style
+            // nicht zuverlaessig gegenueber der .ship-card-Klassenregel auf (empirisch getestet:
+            // background mit rgba() hat funktioniert, border mit var() nicht).
+            const outpostCardStyle: CSSProperties = outpost
+              ? {
+                  padding: 12,
+                  border: `1px solid ${outpost.ownerSide === 'players' ? '#52f07a' : '#e0323c'}`,
+                  background: outpost.ownerSide === 'players' ? 'rgba(82,240,122,0.10)' : 'rgba(224,50,60,0.10)',
+                }
+              : { padding: 12 };
             return (
-              <div className="ship-card" key={pos} style={{ padding: 12 }}>
+              <div className="ship-card" key={pos} style={outpostCardStyle}>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Position {pos}</p>
                 {occ ? (
                   <>
@@ -322,7 +333,8 @@ export function GalaxiePage() {
                       🚩 Außenposten ({outpost.tier})
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
-                      {outpost.ownerSide === 'players' ? 'In Spielerhand' : 'Piraten-Garnison'} · Stärke ~{outpost.garrisonPower.toLocaleString('de-DE')}
+                      {outpost.ownerSide === 'players' ? `🚩 ${gameData.allianceName}` : `🏴‍☠️ ${gameData.pirateAllianceName}`} · Stärke ~
+                      {outpost.garrisonPower.toLocaleString('de-DE')}
                       {outpost.ownerSide === 'players' && ' · trägt zum globalen Flugzeit-Bonus bei (+15% je gehaltenem Posten)'}
                     </p>
                     {outpost.ownerSide === 'players' ? (
