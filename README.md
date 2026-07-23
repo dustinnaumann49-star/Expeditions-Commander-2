@@ -589,13 +589,16 @@ client/
       alle mit derselben `waveLog`-Referenz als `CombatDetail.skirmishes` eingebettet. Ersetzt die
       vorherigen bis zu `RAID_WAVE_COUNT` Einzel-Nachrichten PRO Beteiligtem.
     - **Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung** nach der
-      letzten Welle (`finalizeRaidWaves()`): ein Container pro gewonnener Welle (Silber), bei
-      einer PERFEKTEN Verteidigung (alle `RAID_WAVE_COUNT` Wellen gewonnen) werden alle zu Gold
-      aufgewertet UND zusätzlich (on top, nicht als Ersatz) ein Elite-Container vergeben - sonst
-      nur über den Piratenkapitän im Elite-Bollwerk erreichbar. Bergungs-DM und Ressourcen-
-      Diebstahl (nur falls nicht perfekt verteidigt) greifen ebenfalls nur EINMAL am Ende,
-      basierend auf der Summe/dem Endstand über alle Wellen (`raid.accumulatedDestroyed`), nicht
-      pro Welle.
+      letzten Welle (`finalizeRaidWaves()`): ein Silber-Container pro gewonnener Welle. Bei einer
+      PERFEKTEN Verteidigung (alle `RAID_WAVE_COUNT` Wellen gewonnen) gibt es stattdessen fest
+      5x Silber + 2x Gold (Balance-Anpassung Juli 2026 Teil 2, Nutzerentscheidung: vorher 4x
+      Silber + 1x Gold - angehoben, weil eine perfekte 5/5-Verteidigung seit der Verschärfung der
+      Raid-Wellenstärke, siehe `RAID_WAVE_FACTORS` oben, deutlich seltener geworden ist), PLUS
+      eine Chance von `RAID_PERFECT_ELITE_CHANCE` (20%, vorher 15%) auf 1 zusätzlichen (on top,
+      nicht als Ersatz) Elite-Container - sonst nur über den Piratenkapitän im Elite-Bollwerk
+      erreichbar. Bergungs-DM und Ressourcen-Diebstahl (nur falls nicht perfekt verteidigt)
+      greifen ebenfalls nur EINMAL am Ende, basierend auf der Summe/dem Endstand über alle Wellen
+      (`raid.accumulatedDestroyed`), nicht pro Welle.
     - **Statistik-Unterscheidung:** `raidsRepelledFull`/`raidsRepelledPartial` zählen genau EINMAL
       pro GESAMTEM Raid (sonst würde ein Raid bis zu 5x in die Bestenliste einzahlen),
       `enemiesDestroyed`/`ownShipsLost` dagegen live PRO Welle, sobald sie geschlagen ist.

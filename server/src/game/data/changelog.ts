@@ -19,6 +19,14 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     date: '23.07.2026',
+    title: 'Balance: Bessere Belohnung für perfekte Raid-Verteidigung',
+    changes: [
+      'Da eine perfekte 5/5-Raid-Verteidigung durch die stärkeren Angriffswellen jetzt seltener gelingt, wurde die Belohnung dafür angehoben: statt 4x Silber + 1x Gold gibt es jetzt 5x Silber + 2x Gold.',
+      'Die Zusatzchance auf einen Elite-Container bei perfekter Verteidigung steigt von 15% auf 20%.',
+    ],
+  },
+  {
+    date: '23.07.2026',
     title: 'Optik: Kampfberichte mit mehreren Wellen/Stunden jetzt einklappbar',
     changes: [
       'Sammelberichte (Raids mit mehreren Wellen, Piraten-Sektor-/Asteroiden-Missionen mit mehreren Stunden-Checks) zeigten bisher ALLE Einzelkämpfe direkt untereinander voll ausgeklappt - bei vielen Einträgen musste man lange scrollen.',

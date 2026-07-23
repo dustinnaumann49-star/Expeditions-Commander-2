@@ -366,7 +366,11 @@ export const RAID_MIN_TARGET_POWER = 200000;
 // Chance auf 1 zusaetzlichen Elite-Container PRO TEILNEHMER bei perfekter Raid-Verteidigung (5/5
 // Wellen) - Nutzerentscheidung: Elite bleibt ueberall reine Glueckssache, auch hier nur eine
 // Chance, kein garantierter Zusatz.
-export const RAID_PERFECT_ELITE_CHANCE = 0.15;
+// Balance-Anpassung (Juli 2026, Teil 2 - Nutzerentscheidung): von 15% auf 20% angehoben, passend
+// zur allgemeinen Container-Aufwertung bei perfekter Verteidigung nach der Raid-Wellen-
+// Verschaerfung (RAID_WAVE_FACTORS) - eine perfekte 5/5-Verteidigung ist jetzt seltener und lohnt
+// sich entsprechend staerker.
+export const RAID_PERFECT_ELITE_CHANCE = 0.20;
 
 // Raid-Wellensystem (Nutzerentscheidung): ein Raid ist nicht mehr EIN Kampf bei Ankunft, sondern
 // RAID_WAVE_COUNT einzelne Angriffswellen innerhalb eines RAID_ASSAULT_DURATION_MS-Fensters NACH

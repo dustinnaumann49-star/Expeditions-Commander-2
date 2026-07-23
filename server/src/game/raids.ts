@@ -579,12 +579,15 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   // (gemeinsamer Ausgang, keine Aufteilung, Punkt 5). Nutzerentscheidung (Container-Ueberflutung):
   // bei NICHT perfekter Verteidigung 1 Silber-Container PRO gewonnener Welle (wie bisher, aber nie
   // Gold). Bei PERFEKTER Verteidigung (5/5) NICHT mehr alle 5 zu Gold aufgewertet, sondern fest
-  // 4 Silber + 1 Gold, PLUS eine kleine Zusatzchance auf 1 Elite-Container (Elite bleibt ueberall
-  // reine Glueckssache, siehe data/economy.ts).
+  // 5 Silber + 2 Gold (Balance-Anpassung Juli 2026, Nutzerentscheidung: seit der Verschaerfung der
+  // Raid-Wellenstaerke, siehe RAID_WAVE_FACTORS, ist eine perfekte 5/5-Verteidigung deutlich
+  // seltener geworden und soll sich entsprechend staerker lohnen; vorher 4 Silber + 1 Gold),
+  // PLUS eine kleine Zusatzchance auf 1 Elite-Container (Elite bleibt ueberall reine
+  // Glueckssache, siehe data/economy.ts).
   const grantContainers = (target: PlayerState) => {
     if (perfectDefense) {
-      addContainers(target, 'silber', 4);
-      addContainers(target, 'gold', 1);
+      addContainers(target, 'silber', 5);
+      addContainers(target, 'gold', 2);
     } else if (raid.wavesWon > 0) {
       addContainers(target, 'silber', raid.wavesWon);
     }
@@ -629,7 +632,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   // Wurf, siehe oben), daher eine kleine Hilfsfunktion statt eines einzelnen gemeinsamen Strings.
   const containerTextFor = (eliteHit: boolean) => {
     const eliteText = eliteHit ? ' Zusätzlich: 1x Elite-Container (Glückstreffer)!' : '';
-    if (perfectDefense) return ` Belohnung: 4x Silber-, 1x Gold-Container.${eliteText}`;
+    if (perfectDefense) return ` Belohnung: 5x Silber-, 2x Gold-Container.${eliteText}`;
     if (raid.wavesWon > 0) return ` Belohnung: ${raid.wavesWon}x Silber-Container.`;
     return ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
   };
