@@ -452,6 +452,13 @@ client/
     Verstärker- und haltende Flotten bei Raids sonst alle in einer einzigen Tabelle "Eigene
     Flotte" statt getrennt nach Besitzer (Name kommt aus `CombatUnitResult.ownerUsername`, siehe
     homeShipIds/reinforcerStates/heldStates in raids.ts).
+    **UX-Verbesserung (Juli 2026, Nutzerentscheidung):** die "aufklappbaren Unterabschnitte" oben
+    waren bis dahin eigentlich nur visuell abgetrennte Karten, aber ALLE gleichzeitig voll
+    ausgeklappt - bei bis zu 12 Stunden-Checks bzw. 5 Wellen musste man durch eine sehr lange
+    Seite scrollen. `SkirmishList` haelt jetzt einen `openIndices: Set<number>`-State, jeder
+    Eintrag startet zugeklappt (nur Kopfzeile mit Ausgang sichtbar) und laesst sich einzeln per
+    Klick auf/zuklappen, plus "Alle aufklappen"/"Alle zuklappen"-Buttons oben in der Liste fuer
+    den Fall, dass man doch alles auf einmal sehen will.
 
 34a. **Asteroiden-Felder: "reicher Fund"-Chance pro Stunden-Check** (`ASTEROID_RICH_FIND_CHANCE`
     in `economy.ts`, `runAsteroidRichFindCheck()` in `missions.ts`, Nutzerentscheidung Juli 2026)

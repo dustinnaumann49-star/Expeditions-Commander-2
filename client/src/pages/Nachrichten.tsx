@@ -278,27 +278,73 @@ function RichFindList({ finds }: { finds: RichFindEntry[] }) {
 // Raids) - wird sowohl im FarmDetail-Zweig (Missionen) als auch im CombatDetail-Zweig (Raids)
 // verwendet, siehe DetailModal. `unitLabel` haelt die Nummerierung kontextgerecht ("Stunde"
 // vs. "Welle"), da beide dasselbe `hour`-Feld in SkirmishSummary unterschiedlich nutzen.
+// Nutzerentscheidung (Juli 2026): jeder Einzel-Kampf ist jetzt ein eigener, einklappbarer Bereich
+// statt alle Kaempfe direkt untereinander voll ausgeklappt zu zeigen - bei vielen Stunden-Checks/
+// Wellen (bis zu 12 bzw. 5) musste man vorher durch eine sehr lange Seite scrollen, um zu einem
+// spaeten Eintrag zu kommen. Standardmaessig alle zugeklappt (nur Kopfzeile mit Ausgang
+// sichtbar), Klick auf die Kopfzeile klappt EINEN Eintrag auf/zu - andere bleiben unberuehrt.
 function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSummary[]; unitLabel: string; title: string }) {
+  const [openIndices, setOpenIndices] = useState<Set<number>>(new Set());
   if (skirmishes.length === 0) return null;
+
+  const toggle = (i: number) => {
+    setOpenIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
   return (
     <div style={{ marginTop: 16 }}>
-      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{title}</p>
-      {skirmishes.map((sk, i) => (
-        <div key={i} style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 13, marginBottom: 6 }}>
-            <strong>
-              {unitLabel} {sk.hour}
-            </strong>{' '}
-            – {sk.outcome}
-          </p>
-          <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
-          <RewardTable rows={combatRewardRows(sk.rewards)} />
-          <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
-          {groupByOwner(sk.playerResults).map(([owner, units]) => (
-            <UnitTable key={owner} title={owner} units={units} />
-          ))}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <p style={{ fontWeight: 600, fontSize: 13 }}>{title}</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="qty-btn" style={{ fontSize: 11 }} onClick={() => setOpenIndices(new Set(skirmishes.map((_, i) => i)))}>
+            Alle aufklappen
+          </button>
+          <button className="qty-btn" style={{ fontSize: 11 }} onClick={() => setOpenIndices(new Set())}>
+            Alle zuklappen
+          </button>
         </div>
-      ))}
+      </div>
+      {skirmishes.map((sk, i) => {
+        const isOpen = openIndices.has(i);
+        return (
+          <div key={i} style={{ marginBottom: 8, border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+            <div
+              onClick={() => toggle(i)}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '8px 10px',
+                cursor: 'pointer',
+                background: 'var(--bg-secondary, rgba(255,255,255,0.03))',
+              }}
+            >
+              <p style={{ fontSize: 13, margin: 0 }}>
+                <strong>
+                  {unitLabel} {sk.hour}
+                </strong>{' '}
+                – {sk.outcome}
+              </p>
+              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{isOpen ? '▾ zuklappen' : '▸ aufklappen'}</span>
+            </div>
+            {isOpen && (
+              <div style={{ padding: '10px' }}>
+                <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
+                <RewardTable rows={combatRewardRows(sk.rewards)} />
+                <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
+                {groupByOwner(sk.playerResults).map(([owner, units]) => (
+                  <UnitTable key={owner} title={owner} units={units} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

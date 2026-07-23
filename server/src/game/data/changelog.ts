@@ -9,6 +9,15 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '23.07.2026',
+    title: 'Optik: Kampfberichte mit mehreren Wellen/Stunden jetzt einklappbar',
+    changes: [
+      'Sammelberichte (Raids mit mehreren Wellen, Piraten-Sektor-/Asteroiden-Missionen mit mehreren Stunden-Checks) zeigten bisher ALLE Einzelkämpfe direkt untereinander voll ausgeklappt - bei vielen Einträgen musste man lange scrollen.',
+      'Jeder Einzelkampf ist jetzt ein eigener, standardmäßig zugeklappter Bereich - nur Stunde/Welle und Ausgang sind auf den ersten Blick sichtbar, ein Klick auf die Kopfzeile klappt genau diesen einen Kampf auf.',
+      '"Alle aufklappen"/"Alle zuklappen"-Buttons oben in der Liste, falls ihr doch alles auf einmal sehen wollt.',
+    ],
+  },
+  {
     date: '22.07.2026',
     title: 'Neu: Piratenbasen wachsen jetzt genau wie ein Spieler',
     changes: [
