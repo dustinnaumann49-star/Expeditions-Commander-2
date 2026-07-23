@@ -28,10 +28,14 @@ server/
   src/game/heartbeat.ts              runGlobalHeartbeat() - verarbeitet Missionen/Raids/Gruppen-
                                       Expeditionen für ALLE Nutzer unabhängig von jedem Login,
                                       ruft danach runBotTurn() für die Bot-Accounts auf
-  src/game/bot.ts                    KI-Spieler-Entscheidungslogik: Gebäude/Forschung/Schiffe/
-                                      Verteidigung/Sektor-Missionen/Elite-Bollwerk/Halten - nutzt
-                                      dieselben Aktionsfunktionen wie die UI, ensureBotUsers()
-                                      legt die Accounts einmalig beim Start an
+  src/game/bot.ts                    KI-Spieler-Mitspieler-Interaktion: Elite-Bollwerk/Halten bei
+                                      Menschen/Piratenbasis-Angriff+Spionage - Wirtschafts-
+                                      Entscheidungen (Gebäude/Forschung/Schiffe/Verteidigung/
+                                      Mining) liegen in economyBotTurn.ts, ensureBotUsers() legt
+                                      die Accounts einmalig beim Start an
+  src/game/economyBotTurn.ts         Wirtschafts-Entscheidungslogik (runEconomyBotTurn()) -
+                                      genutzt von bot.ts UND pirateBaseState.ts, ausgelagert um
+                                      einen Zirkelimport zwischen beiden zu vermeiden
 
   src/db.ts                          SQLite-Zugriff: Nutzer, Spielstände, gemeinsame Operationen
 
@@ -1137,6 +1141,76 @@ client/
     Wirtschafts-Klassen-Bonus mit ein). Neuer Endpoint `POST /game/economy-class` (analog zu
     `/game/class`).
 
+88. **Piratenbasen wachsen jetzt "genau wie ein Spieler"** (Nutzerentscheidung Juli 2026: "Piraten
+    sollen genau so wachsen wie Spieler. Gebäude bauen, forschen und Asteroiden fliegen, Schiffe
+    und Verteidigung bauen. Ohne Begrenzung") - kompletter Umbau von `PirateBaseState` (vorher nur
+    `{fleet, defense, resources, lastGrowthAt}`, siehe Punkt bei "Rebalance Juli 2026" oben) auf
+    `{id, system, position, state: PlayerState}`. `state` ist ein VOLLWERTIGER `PlayerState` -
+    dieselbe Wirtschafts-/Bau-/Forschungs-/Mining-Maschinerie wie ein echter Spieler oder
+    KI-Mitspieler, KEINE kuenstlichen Obergrenzen mehr (Wachstum nur noch durch dieselben
+    wirtschaftlichen Grenzen begrenzt wie bei einem Spieler: Energie, Bauslots, Ressourcenertrag).
+    - **Synthetische, garantiert negative `userId`** (`SYNTHETIC_USER_ID_BASE = -1000` minus
+      Basis-Index in `pirateBaseState.ts`) - echte Nutzer-Ids sind autoinkrementiert und damit
+      immer positiv, kollidieren also nie. Piratenbasen tauchen dadurch NIE in `users`/
+      `listAllUsers()` auf und damit auch nie in Bestenliste/Multiplayer-Einladungen/"bei mir
+      halten"-Listen (die alle auf `listAllUsers()` aufbauen) - bewusst KEINE eigene
+      DB-Nutzer-Tabellen-Zeile, weiterhin dieselbe eigenstaendige `pirate_bases`-Tabelle wie vorher
+      (nur der JSON-Blob-Inhalt ist jetzt ein voller `PlayerState` statt der schlanken alten Form).
+    - **Start-/Migrations-Mindestbestand** (`SEED_FLEET`/`SEED_DEFENSE`/`SEED_RESOURCES` in
+      `pirateBaseState.ts`, uebernimmt die Werte aus der vorherigen "mittlere Staerke"-Rebalance):
+      Flotte 60/25/10 (leicht/schwer/kreuzer), Verteidigung 40/25 (raketenwerfer/leichteslaser),
+      Ressourcen 150k/90k/40k, PLUS `SEED_BUILDINGS` (kleine Mining-Basis: metallmine 4/
+      kristallmine 3/deuteriummine 2/solarkraftwerk 4) als Wirtschafts-Starthilfe - ohne eigene
+      Produktion haette eine Basis ihr Startkapital nur verbraucht, statt eigenstaendig
+      weiterzuwachsen. Bereits bestehende (alte) Basen werden per `migrateLegacyBase()` erkannt
+      (`isLegacyShape()`: kein `state`-Feld vorhanden) und automatisch auf einen vollwertigen
+      `PlayerState` umgestellt - ihr bisheriger Bestand fliesst dabei ein (`Math.max` gegen die
+      neuen Seed-Werte, nichts geht verloren), inkl. der Mining-Starthilfe. Greift automatisch
+      beim naechsten `loadPirateBase()`-Aufruf nach dem Deploy, kein manueller Schritt noetig.
+    - **Wirtschafts-/Entscheidungslogik wiederverwendet, aber in ZWEI eigene Module ausgelagert**
+      statt direkt aus `actions.ts`/`bot.ts` importiert - Grund: Zirkelimport-Vermeidung.
+      `actions.ts` importierte vorher `processPirateAttacks` aus `pirateBaseState.ts`; haette
+      `pirateBaseState.ts` umgekehrt aus `actions.ts` importiert, waere das ein Zirkelbezug
+      gewesen (analog zum bereits dokumentierten state.ts/galaxy.ts-Fall, siehe Punkt zu
+      `assignRandomGalaxyPosition()`). Genauso haette `pirateBaseState.ts -> bot.ts` den bereits
+      bestehenden `bot.ts -> pirateBaseState.ts`-Import (`startPirateBaseAttack`) zu einem Zyklus
+      geschlossen. Loesung:
+      - `runEconomyTick()` (NEU in `actions.ts`, exportiert): reiner "Wirtschafts-Tick" -
+        Produktion, alle vier Bau-/Forschungs-Warteschlangen, `processMissions()` - OHNE die
+        spielerspezifischen Extras (Raids/Spionage/Gruppen-Expeditionen). `tick()` ruft es zuerst
+        auf, macht danach normal weiter. `processPirateAttacks()` wurde dafuer aus `tick()`
+        HERAUSGENOMMEN und wird jetzt explizit an den beiden `tick()`-Aufrufstellen (`routes.ts`
+        `handleAction()`, `heartbeat.ts`) direkt danach aufgerufen - dadurch importiert `actions.ts`
+        nicht mehr aus `pirateBaseState.ts`, der Ruecken-Import wird sicher.
+      - **Neue Datei `economyBotTurn.ts`**: `maybeChooseClass`/`maybeBuildBuilding`/
+        `maybeStartResearch`/`maybeBuildShips`/`maybeBuildDefense`/`maybeSendMiningFleet` aus
+        `bot.ts` hierher verschoben, gebuendelt als `runEconomyBotTurn(state)`. Importiert nur aus
+        `actions.ts`/`missions.ts`/`classActions.ts` (keine davon importiert `economyBotTurn.ts`
+        zurueck) - dadurch koennen sowohl `bot.ts` (KI-Vega/KI-Nyx, ZUSAETZLICH zu deren
+        Mitspieler-Interaktionen wie Halten/Gruppen-Expeditionen/Piratenbasis-Angriff) als auch
+        `pirateBaseState.ts` (Piratenbasen, OHNE jede Mitspieler-Interaktion - ergibt fuer eine
+        Basis keinen Sinn) es gefahrlos importieren.
+    - **`loadPirateBase()` ist jetzt ASYNC** (ruft `runEconomyTick()` auf) - betrifft alle
+      Aufrufer: `listActivePirateBases()`/`listActivePirateBaseSummaries()` (beide jetzt async,
+      `GET /galaxy` in `routes.ts` entsprechend `async`), `resolvePirateBaseAttack()`,
+      `processSpyMissions()` in `spyMissions.ts`.
+    - **`runAllPirateBaseTurns()`** (NEU, `pirateBaseState.ts`, aufgerufen aus `heartbeat.ts`):
+      treibt alle aktiven Basen einmal PRO HEARTBEAT an (nicht nur lazy beim naechsten Laden durch
+      Angriff/Spionage/Galaxie-Ansicht) - sonst wuerden Basen nur wachsen, wenn zufaellig gerade
+      jemand hinschaut, genau wie bei den KI-Mitspielern.
+    - **Kampfaufloesung nutzt jetzt die ECHTEN, forschungs-/klassenabhaengigen Kampfwerte der
+      Piratenbasis** (`resolvePirateBaseAttack()`) statt der vorherigen reinen `baseStats()` ohne
+      jeden Bonus - `getEffectiveStats()` pro Einheit vorab berechnet und als
+      `sideBStatsOverride` an `runCombatInWorker()` durchgereicht (dasselbe bereits bestehende
+      Muster wie beim Piratenkapitaen/Piratenadmiral, siehe Punkt 84 bzw. Admiral-Boss-Punkt) -
+      keine Aenderung an der Kampf-Engine selbst noetig.
+    - Manuell End-to-End getestet (lokaler Dev-Server, Testaccount, per Skript vorgespulte
+      Ankunftszeit statt echter Wartezeit): Migration einer bestehenden (alten) Basis lief
+      fehlerfrei durch, Angriff mit 700 Schiffen gegen eine Basis mit zufaellig gewuerfelter
+      Kanonier-Klasse zeigte korrekt VERDOPPELTEN Waffenschaden (3.000 statt Basis-1.500) beim
+      NPC-Verteidiger, Kampf loeste sich ueber 10 Runden korrekt auf, Beute wurde korrekt
+      gutgeschrieben.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -1352,6 +1426,13 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   - **Bot-Aktivitätschance** (`BOT_ACTION_CHANCE` in `bot.ts`, betrifft `maybeHoldAtHumans()`/
     `maybeAttackPirateBase()`/`maybeSpyOnPirateBase()`): 0,1 → 0,3 pro Heartbeat (alle 2 Minuten) -
     vorher im Schnitt nur alle ~20 Minuten ein Versuch, jetzt alle ~6-7 Minuten.
+  - **ÜBERHOLT durch Punkt 88 (Nutzerentscheidung Juli 2026, selber Tag):** der obige
+    Schritt-/Intervall-/Kappungsgrenze-Ansatz wurde bereits am selben Tag durch eine vollstaendige
+    Wirtschafts-Simulation ersetzt ("Piraten sollen genau wie Spieler wachsen") - `applyGrowth()`,
+    `PIRATE_BASE_GROWTH_*`-Konstanten, `PIRATE_BASE_MAX_*_PER_TYPE` und
+    `applyStrengthRebalanceMigration()`/`strengthRebalanced2607` EXISTIEREN NICHT MEHR. Bleibt hier
+    nur als historischer Kontext stehen (erklaert, WARUM Punkt 88 die Seed-Werte 60/25/10 etc. als
+    Ausgangsbasis uebernommen hat), siehe Punkt 88 fuer den aktuellen Stand.
 - Neu: Spionage reaktiviert + Spionagesonden gegen Piratenbasen (Nutzerentscheidung). Die
   Spionage-Forschung war seit Juli 2026 als Platzhalter gesperrt (ihr alter Effekt, Glättung der
   Gegner-Zusammensetzung, war kaum spürbar) - bekommt jetzt einen komplett NEUEN, echten Zweck:

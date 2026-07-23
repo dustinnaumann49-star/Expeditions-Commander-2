@@ -6,6 +6,7 @@ import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { runBotTurn } from './bot.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
+import { processPirateAttacks, runAllPirateBaseTurns } from './pirateBaseState.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -50,6 +51,9 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       // Spieler laenger offline war (tick() berechnet die vergangene Zeit ja anhand von
       // state.lastUpdate) - durch den tick()-Aufruf hier jetzt ebenfalls behoben.
       await tick(state);
+      // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
+      // Zirkelimport-Vermeidung fuer pirateBaseState.ts) - deshalb hier explizit direkt danach.
+      await processPirateAttacks(state);
       await processMissions(state);
       await processRaidTimer(state);
       // KI-Spieler-Feature nach dem Server-Umzug (Hetzner, siehe README) wieder REAKTIVIERT -
@@ -72,6 +76,18 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei maybeSpawnGalaxyEvent:', err);
+  }
+
+  // Piratenbasen (Nutzerentscheidung Juli 2026: wachsen jetzt "genau wie Spieler" - eigene
+  // Wirtschaft, Forschung, Flotten-/Verteidigungsbau, Asteroiden-Mining, siehe pirateBaseState.ts)
+  // bekommen genau wie die Bot-Accounts ihren eigenen Zug pro Heartbeat, nicht nur lazy beim
+  // naechsten Laden (Angriff/Spionage/Galaxie-Ansicht) - sonst wuerden sie nur wachsen, wenn
+  // zufaellig gerade jemand hinschaut.
+  try {
+    await runAllPirateBaseTurns();
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseTurns:', err);
   }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein

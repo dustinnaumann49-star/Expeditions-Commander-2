@@ -1,74 +1,82 @@
 import { PIRATE_BASES, PIRATE_BASE_IDS, ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
-import { getPirateBaseJson, listPirateBasesJson, savePirateBaseJson } from '../db.js';
+import { getPirateBaseJson, savePirateBaseJson } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
-import { baseStats, combatFleetPowerBase, shipName, getEffectiveStats } from './combat.js';
+import { combatFleetPowerBase, shipName, getEffectiveStats } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { pushMessage } from './messages.js';
 import { DEFENSES } from './data/defenses.js';
-import type { PlayerState, PirateBaseState, PirateAttackDeployment, GalaxyPosition, CombatUnitResult, CombatDetail } from './types.js';
+import { defaultPlayerState } from './state.js';
+import { runEconomyTick } from './actions.js';
+import { runEconomyBotTurn } from './economyBotTurn.js';
+import type {
+  PlayerState,
+  PirateBaseState,
+  PirateAttackDeployment,
+  GalaxyPosition,
+  CombatUnitResult,
+  CombatDetail,
+  CombatStats,
+} from './types.js';
 import type { ActionResult } from './actions.js';
 
-// ========== PIRATENBASEN: PERSISTENTER ZUSTAND (ANGREIFBAR) ==========
-// Nutzerentscheidung (Juli 2026): Piratenbasen bekommen einen eigenen, angreifbaren Zustand
-// (Flotte/Verteidigung/Ressourcen wie ein Mini-KI-Spieler), unabhaengig von den normalen Raids
-// (die generieren ihre Gegnerflotte weiterhin frisch bei Wellen-Ankunft, siehe raids.ts - beide
-// Systeme laufen komplett getrennt nebeneinander her). Basen koennen NICHT zerstoert werden,
-// wachsen aber langsam von selbst nach (siehe applyGrowth unten) - bewusst nur ACTIVE_PIRATE_BASE_IDS
-// (4 von 12 Positionen) aktiv, um bei nur 2 Spielern + 2 KI-Bots nicht zu ueberfordern.
+// ========== PIRATENBASEN: WACHSEN "GENAU WIE EIN SPIELER" (ANGREIFBAR) ==========
+// Nutzerentscheidung (Juli 2026): Piratenbasen bekommen einen vollwertigen PlayerState - eigene
+// Wirtschaft, Forschung, Gebaeude, Flotten-/Verteidigungsbau, Asteroiden-Mining, genau wie ein
+// KI-Mitspieler (siehe economyBotTurn.ts/runEconomyTick() in actions.ts, beide auch von bot.ts
+// genutzt). KEINE kuenstlichen Obergrenzen mehr - Wachstum ist nur durch dieselben
+// wirtschaftlichen Grenzen begrenzt wie bei einem echten Spieler (Energie, Bauslots,
+// Ressourcenertrag). Komplett unabhaengig vom normalen Raid-System (generiert seine Gegnerflotte
+// weiterhin frisch bei Wellen-Ankunft, siehe raids.ts - keine Beruehrungspunkte). Koennen NICHT
+// zerstoert werden (Nutzerentscheidung) - bewusst nur ACTIVE_PIRATE_BASE_IDS (4 von 12
+// Positionen) aktiv, um die Galaxie-Uebersicht nicht zu ueberfrachten.
+//
+// WICHTIG (Zirkelimport-Vermeidung): actions.ts importierte frueher `processPirateAttacks` aus
+// dieser Datei - das haette einen Zirkelbezug erzeugt, sobald diese Datei umgekehrt
+// `runEconomyTick` aus actions.ts braucht. Der `processPirateAttacks()`-Aufruf wurde deshalb aus
+// `tick()` HERAUSGENOMMEN und wird jetzt explizit an den beiden tick()-Aufrufstellen
+// (routes.ts handleAction(), heartbeat.ts) direkt danach aufgerufen. Aus demselben Grund liegt die
+// wiederverwendbare Wirtschafts-Entscheidungslogik (Gebaeude/Forschung/Schiffe/Verteidigung/
+// Mining) in economyBotTurn.ts statt in bot.ts (das seinerseits `startPirateBaseAttack` aus
+// DIESER Datei importiert - ein Import in die Gegenrichtung waere sonst ebenfalls ein Zirkelbezug).
 
 const POSITION_BY_ID = new Map<string, GalaxyPosition>(PIRATE_BASE_IDS.map((id, i) => [id, PIRATE_BASES[i]]));
 
-// Passives Ressourcen-Wachstum (pro Stunde), gedeckelt auf PIRATE_BASE_RESOURCE_CAP_HOURS Stunden
-// Vorrat - verhindert, dass eine lange nicht angegriffene Basis unbegrenzt Ressourcen anhaeuft.
-// Nutzerentscheidung Juli 2026: Rate angehoben (vorher 4000/2500/1200), damit sich ein Angriff auf
-// eine Piratenbasis auch wirklich lohnt statt nur homoeopathische Beute abzuwerfen.
-const PIRATE_BASE_RESOURCE_RATE = { metall: 6000, kristall: 3500, deuterium: 1800 };
-const PIRATE_BASE_RESOURCE_CAP_HOURS = 24;
+// Garantiert negative Ids (echte Nutzer-Ids sind autoinkrementiert und damit immer positiv) -
+// kollidieren nie mit echten Spielern, tauchen daher nie in `users`/listAllUsers() auf und damit
+// auch nie in Bestenliste/Multiplayer-Einladungen/"bei mir halten"-Listen (siehe PirateBaseState-
+// Kommentar in types.ts).
+const SYNTHETIC_USER_ID_BASE = -1000;
+function syntheticUserIdFor(id: string): number {
+  return SYNTHETIC_USER_ID_BASE - PIRATE_BASE_IDS.indexOf(id);
+}
 
-// Flotten-/Verteidigungs-Wachstum: alle PIRATE_BASE_GROWTH_INTERVAL_MS ein kleiner Schub auf einen
-// rotierenden Schiffs-/Verteidigungstyp (deterministisch nach absoluter Zeit, nicht nach zuletzt
-// verarbeitetem Zeitpunkt - damit eine lange nicht geladene Basis beim naechsten Laden nicht alle
-// verpassten Schuebe auf einmal nachholt, sondern einfach beim aktuellen Rotations-Index weitermacht).
-// Nutzerentscheidung Juli 2026: Intervall halbiert (vorher 3h) und Schub-Menge sowie Kappungsgrenze
-// angehoben - bei der alten Rate dauerte es rechnerisch ~2 Wochen, bis eine Basis von Start auf
-// Kappungsgrenze durchwaechst (3 rotierende Schiffstypen teilen sich den 3h-Takt, jeder Typ wuchs
-// also effektiv nur alle 9h um +3). Ziel: Basen erreichen zuegiger eine "mittlere Staerke" statt
-// wochenlang nahe am schwachen Startwert zu verharren.
-const PIRATE_BASE_GROWTH_INTERVAL_MS = 1.5 * 60 * 60 * 1000;
-const PIRATE_BASE_GROWTH_SHIP_IDS = ['leicht', 'schwer', 'kreuzer'];
-const PIRATE_BASE_GROWTH_DEFENSE_IDS = ['raketenwerfer', 'leichteslaser'];
-const PIRATE_BASE_GROWTH_SHIP_STEP = 5;
-const PIRATE_BASE_GROWTH_DEFENSE_STEP = 3;
-const PIRATE_BASE_MAX_SHIPS_PER_TYPE = 180;
-const PIRATE_BASE_MAX_DEFENSE_PER_TYPE = 120;
+// Start-/Mindestbestand (Nutzerentscheidung Juli 2026: eine frisch angelegte Basis war vorher so
+// schwach, dass ein Angriff kaum lohnende Beute abwarf) - dient sowohl als Startwert fuer neue
+// Basen als auch als Mindestwert bei der Migration bereits bestehender (alter) Basen. Ab hier
+// wachsen Basen komplett eigenstaendig ueber runEconomyBotTurn()/runEconomyTick(), keine fixen
+// Wachstumsschritte/Obergrenzen mehr.
+const SEED_FLEET: Record<string, number> = { leicht: 60, schwer: 25, kreuzer: 10 };
+const SEED_DEFENSE: Record<string, number> = { raketenwerfer: 40, leichteslaser: 25 };
+const SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+// Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
+// aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
+const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
 
-// Anteil der AKTUELL gelagerten Basis-Ressourcen, der bei einem erfolgreichen Angriff gestohlen
-// wird (nicht vom Basis-Maximum, siehe RAID_LOOT_PERCENT-Vorbild in raids.ts fuer dasselbe Muster).
-const PIRATE_BASE_LOOT_PERCENT = 0.35;
-
-// Nutzerentscheidung Juli 2026: Start-Bestand angehoben (vorher 20/8 Schiffe, 15/8 Verteidigung,
-// 40k/25k/12k Ressourcen) - eine frisch angelegte Basis war vorher so schwach, dass ein Angriff
-// kaum lohnende Beute abwarf, bevor sie ueber Wochen von selbst nachgewachsen war. Startet jetzt
-// direkt auf "mittlerer Staerke" statt bei einem symbolischen Mindestwert. Dieselben Werte dienen
-// als Mindestbestand fuer bereits VOR diesem Rebalance bestehende Basen, siehe
-// applyStrengthRebalanceMigration() unten.
-const REBALANCED_FLOOR_FLEET: Record<string, number> = { leicht: 60, schwer: 25, kreuzer: 10 };
-const REBALANCED_FLOOR_DEFENSE: Record<string, number> = { raketenwerfer: 40, leichteslaser: 25 };
-const REBALANCED_FLOOR_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+function buildSeedState(id: string): PlayerState {
+  const pos = POSITION_BY_ID.get(id)!;
+  const state = defaultPlayerState(syntheticUserIdFor(id));
+  state.galaxyPosition = { system: pos.system, position: pos.position };
+  state.resources = { ...SEED_RESOURCES, dm: 0 };
+  Object.entries(SEED_FLEET).forEach(([shipId, qty]) => (state.fleet[shipId] = qty));
+  Object.entries(SEED_DEFENSE).forEach(([defId, qty]) => (state.defense[defId] = qty));
+  Object.entries(SEED_BUILDINGS).forEach(([buildingId, level]) => (state.buildings[buildingId] = level));
+  return state;
+}
 
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
-  return {
-    id,
-    system: pos.system,
-    position: pos.position,
-    fleet: { ...REBALANCED_FLOOR_FLEET },
-    defense: { ...REBALANCED_FLOOR_DEFENSE },
-    resources: { ...REBALANCED_FLOOR_RESOURCES },
-    lastGrowthAt: Date.now(),
-    strengthRebalanced2607: true,
-  };
+  return { id, system: pos.system, position: pos.position, state: buildSeedState(id) };
 }
 
 // Einmalig beim Serverstart aufgerufen (analog ensureBotUsers()) - legt fehlende aktive Basen an,
@@ -81,51 +89,41 @@ export function ensurePirateBases(): void {
   });
 }
 
-// Einmal-Migration (Nutzerentscheidung Juli 2026, siehe PirateBaseState.strengthRebalanced2607 in
-// types.ts): hebt eine bereits VOR dem Rebalance bestehende Basis auf den neuen Mindestbestand an
-// (nur nach OBEN, nie nach unten - eine bereits staerkere Basis bleibt unangetastet), statt sie nur
-// langsam ueber das passive Wachstum reinwachsen zu lassen. Greift automatisch beim naechsten
-// `loadPirateBase()`-Aufruf nach dem Deploy, kein manueller Schritt noetig.
-function applyStrengthRebalanceMigration(base: PirateBaseState): void {
-  if (base.strengthRebalanced2607) return;
-  Object.entries(REBALANCED_FLOOR_FLEET).forEach(([id, floor]) => {
-    base.fleet[id] = Math.max(base.fleet[id] || 0, floor);
+// Migration (Nutzerentscheidung Juli 2026, "Piraten sollen genau wie Spieler wachsen"-Umbau):
+// bestehende Basen aus dem VORHERIGEN, schlanken System (nur {fleet, defense, resources,
+// lastGrowthAt}, siehe Git-Historie) haben kein `state`-Feld - werden hier auf einen vollwertigen
+// PlayerState umgestellt, ihr bisheriger Bestand fliesst dabei (nach oben angehoben auf den neuen
+// Mindestwert) mit ein, damit keine bereits erspielte Staerke verloren geht.
+function isLegacyShape(raw: any): boolean {
+  return raw && typeof raw === 'object' && !raw.state;
+}
+
+function migrateLegacyBase(raw: any, id: string): PirateBaseState {
+  const pos = POSITION_BY_ID.get(id)!;
+  const state = buildSeedState(id);
+  Object.entries(SEED_FLEET).forEach(([shipId]) => {
+    state.fleet[shipId] = Math.max(state.fleet[shipId] || 0, raw.fleet?.[shipId] || 0);
   });
-  Object.entries(REBALANCED_FLOOR_DEFENSE).forEach(([id, floor]) => {
-    base.defense[id] = Math.max(base.defense[id] || 0, floor);
+  Object.entries(SEED_DEFENSE).forEach(([defId]) => {
+    state.defense[defId] = Math.max(state.defense[defId] || 0, raw.defense?.[defId] || 0);
   });
   (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
-    base.resources[res] = Math.max(base.resources[res] || 0, REBALANCED_FLOOR_RESOURCES[res]);
+    state.resources[res] = Math.max(state.resources[res] || 0, raw.resources?.[res] || 0);
   });
-  base.strengthRebalanced2607 = true;
+  return { id, system: pos.system, position: pos.position, state };
 }
 
-function applyGrowth(base: PirateBaseState, now: number): void {
-  const elapsedHours = Math.max(0, (now - base.lastGrowthAt) / 3600000);
-  if (elapsedHours > 0) {
-    (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
-      const cap = PIRATE_BASE_RESOURCE_RATE[res] * PIRATE_BASE_RESOURCE_CAP_HOURS;
-      base.resources[res] = Math.min(cap, base.resources[res] + PIRATE_BASE_RESOURCE_RATE[res] * elapsedHours);
-    });
-  }
-
-  const prevTick = Math.floor(base.lastGrowthAt / PIRATE_BASE_GROWTH_INTERVAL_MS);
-  const currentTick = Math.floor(now / PIRATE_BASE_GROWTH_INTERVAL_MS);
-  for (let t = prevTick + 1; t <= currentTick; t++) {
-    const shipId = PIRATE_BASE_GROWTH_SHIP_IDS[t % PIRATE_BASE_GROWTH_SHIP_IDS.length];
-    base.fleet[shipId] = Math.min(PIRATE_BASE_MAX_SHIPS_PER_TYPE, (base.fleet[shipId] || 0) + PIRATE_BASE_GROWTH_SHIP_STEP);
-    const defId = PIRATE_BASE_GROWTH_DEFENSE_IDS[t % PIRATE_BASE_GROWTH_DEFENSE_IDS.length];
-    base.defense[defId] = Math.min(PIRATE_BASE_MAX_DEFENSE_PER_TYPE, (base.defense[defId] || 0) + PIRATE_BASE_GROWTH_DEFENSE_STEP);
-  }
-  base.lastGrowthAt = now;
-}
-
-export function loadPirateBase(id: string): PirateBaseState | null {
+// Lazy bei jedem Laden angewendet (Angriff/Spionage/Galaxie-Ansicht) UND explizit einmal pro
+// Heartbeat fuer ALLE aktiven Basen (siehe runAllPirateBaseTurns() unten, aufgerufen aus
+// heartbeat.ts) - so wachsen Basen auch dann weiter, wenn gerade niemand hinschaut, genau wie ein
+// KI-Mitspieler.
+export async function loadPirateBase(id: string): Promise<PirateBaseState | null> {
   const json = getPirateBaseJson(id);
   if (!json) return null;
-  const base = JSON.parse(json) as PirateBaseState;
-  applyStrengthRebalanceMigration(base);
-  applyGrowth(base, Date.now());
+  const raw = JSON.parse(json);
+  const base: PirateBaseState = isLegacyShape(raw) ? migrateLegacyBase(raw, id) : (raw as PirateBaseState);
+  await runEconomyTick(base.state);
+  runEconomyBotTurn(base.state);
   savePirateBaseJson(id, JSON.stringify(base));
   return base;
 }
@@ -134,8 +132,15 @@ function savePirateBase(base: PirateBaseState): void {
   savePirateBaseJson(base.id, JSON.stringify(base));
 }
 
-export function listActivePirateBases(): PirateBaseState[] {
-  return ACTIVE_PIRATE_BASE_IDS.map((id) => loadPirateBase(id)).filter((b): b is PirateBaseState => b !== null);
+export async function listActivePirateBases(): Promise<PirateBaseState[]> {
+  const bases = await Promise.all(ACTIVE_PIRATE_BASE_IDS.map((id) => loadPirateBase(id)));
+  return bases.filter((b): b is PirateBaseState => b !== null);
+}
+
+// Treibt alle aktiven Piratenbasen einmal pro Heartbeat an (siehe heartbeat.ts) - reine
+// Bequemlichkeitsfunktion, `loadPirateBase()` macht bereits die eigentliche Arbeit.
+export async function runAllPirateBaseTurns(): Promise<void> {
+  await listActivePirateBases();
 }
 
 // Leichtgewichtige Anzeige-Zusammenfassung fuer die Galaxie-Uebersicht (siehe routes.ts) - keine
@@ -147,14 +152,19 @@ export interface PirateBaseSummary {
   power: number;
 }
 
-export function listActivePirateBaseSummaries(): PirateBaseSummary[] {
-  return listActivePirateBases().map((b) => ({
+export async function listActivePirateBaseSummaries(): Promise<PirateBaseSummary[]> {
+  const bases = await listActivePirateBases();
+  return bases.map((b) => ({
     id: b.id,
     system: b.system,
     position: b.position,
-    power: Math.round(combatFleetPowerBase({ ...b.fleet, ...b.defense })),
+    power: Math.round(combatFleetPowerBase({ ...b.state.fleet, ...b.state.defense })),
   }));
 }
+
+// Anteil der AKTUELL gelagerten Basis-Ressourcen, der bei einem erfolgreichen Angriff gestohlen
+// wird (nicht vom Basis-Maximum, siehe RAID_LOOT_PERCENT-Vorbild in raids.ts fuer dasselbe Muster).
+const PIRATE_BASE_LOOT_PERCENT = 0.35;
 
 // ========== ANGRIFF STARTEN ==========
 
@@ -226,17 +236,18 @@ export async function processPirateAttacks(state: PlayerState): Promise<void> {
 
 async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAttackDeployment): Promise<void> {
   deployment.resolved = true;
-  const base = loadPirateBase(deployment.baseId);
+  const base = await loadPirateBase(deployment.baseId);
   if (!base) {
     pushMessage(state, 'kampf', `Angriff auf Piratenbasis ${deployment.targetSystem}:${deployment.targetPosition} fehlgeschlagen - Basis nicht auffindbar. Flotte kehrt leer zurück.`);
     return;
   }
+  const pState = base.state;
 
   const npcCombined: Record<string, number> = {};
-  Object.entries(base.fleet).forEach(([id, qty]) => {
+  Object.entries(pState.fleet).forEach(([id, qty]) => {
     if (qty > 0) npcCombined[id] = qty;
   });
-  Object.entries(base.defense).forEach(([id, qty]) => {
+  Object.entries(pState.defense).forEach(([id, qty]) => {
     if (qty > 0) npcCombined[id] = (npcCombined[id] || 0) + qty;
   });
   const npcIds = Object.keys(npcCombined);
@@ -250,6 +261,23 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
     // Basis war leer (leergefarmt oder noch nicht nachgewachsen) - kein Kampf noetig, direkter Loot.
     anyNpcDestroyed = true;
   } else {
+    // Die Piratenbasis wirtschaftet jetzt "genau wie ein Spieler" (eigene Forschung/Klasse) -
+    // ihre effektiven Kampfwerte werden deshalb genau wie bei einem echten Spieler ueber
+    // getEffectiveStats() berechnet und per sideBStatsOverride durchgereicht (dasselbe bereits
+    // bestehende Muster wie beim Piratenkapitaen/Piratenadmiral), statt der vorherigen reinen
+    // baseStats() ohne jeden Bonus.
+    const sideBStatsOverride: Record<string, CombatStats> = {};
+    npcIds.forEach((id) => {
+      sideBStatsOverride[id] = getEffectiveStats(
+        id,
+        pState.research,
+        pState.defense,
+        isBoosterActive(pState, 'kampf'),
+        pState.playerClass,
+        pState.shipModules
+      );
+    });
+
     const result = await runCombatInWorker({
       sideAShips: deployment.ships,
       sideBShips: npcCombined,
@@ -257,25 +285,26 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
       playerClass: state.playerClass,
       kampfBoostActive: isBoosterActive(state, 'kampf'),
       shipModules: state.shipModules,
+      sideBStatsOverride,
     });
     roundsFought = result.roundsFought;
 
     npcResults = npcIds.map((id) => {
       const isDefenseUnit = DEFENSES.some((d) => d.id === id);
-      const base2 = baseStats(id);
+      const eff = sideBStatsOverride[id];
       const sent = npcCombined[id];
       const survivedCount = result.survivorsB[id] || 0;
       const destroyedCount = sent - survivedCount;
       if (destroyedCount > 0) anyNpcDestroyed = true;
-      if (isDefenseUnit) base.defense[id] = survivedCount;
-      else base.fleet[id] = survivedCount;
+      if (isDefenseUnit) pState.defense[id] = survivedCount;
+      else pState.fleet[id] = survivedCount;
       return {
         id,
         name: shipName(id),
         count: sent,
-        waffen: Math.round(base2.waffen),
-        schild: Math.round(base2.schild),
-        panzerung: Math.round(base2.panzerung),
+        waffen: Math.round(eff.waffen),
+        schild: Math.round(eff.schild),
+        panzerung: Math.round(eff.panzerung),
         dmgTaken: Math.round(result.dmgTakenB[id] || 0),
         dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
         destroyedCount,
@@ -319,13 +348,13 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
   let loot: { metall: number; kristall: number; deuterium: number } | undefined;
   if (anyNpcDestroyed) {
     loot = {
-      metall: Math.round(base.resources.metall * PIRATE_BASE_LOOT_PERCENT),
-      kristall: Math.round(base.resources.kristall * PIRATE_BASE_LOOT_PERCENT),
-      deuterium: Math.round(base.resources.deuterium * PIRATE_BASE_LOOT_PERCENT),
+      metall: Math.round(pState.resources.metall * PIRATE_BASE_LOOT_PERCENT),
+      kristall: Math.round(pState.resources.kristall * PIRATE_BASE_LOOT_PERCENT),
+      deuterium: Math.round(pState.resources.deuterium * PIRATE_BASE_LOOT_PERCENT),
     };
-    base.resources.metall -= loot.metall;
-    base.resources.kristall -= loot.kristall;
-    base.resources.deuterium -= loot.deuterium;
+    pState.resources.metall -= loot.metall;
+    pState.resources.kristall -= loot.kristall;
+    pState.resources.deuterium -= loot.deuterium;
     state.resources.metall += loot.metall;
     state.resources.kristall += loot.kristall;
     state.resources.deuterium += loot.deuterium;

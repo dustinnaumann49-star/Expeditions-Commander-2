@@ -66,20 +66,24 @@ function buildSpyReport(base: PirateBaseState, level: number): SpyReportDetail {
   const fleet =
     level <= 0
       ? []
-      : Object.entries(base.fleet)
+      : Object.entries(base.state.fleet)
           .filter(([, c]) => c > 0)
           .map(([id, c]) => buildUnitRange(id, c, fuzz));
   const defense =
     level <= 0
       ? []
-      : Object.entries(base.defense)
+      : Object.entries(base.state.defense)
           .filter(([, c]) => c > 0)
           .map(([id, c]) => buildUnitRange(id, c, fuzz));
   return {
     baseSystem: base.system,
     basePosition: base.position,
     level,
-    resources: { ...base.resources },
+    resources: {
+      metall: Math.floor(base.state.resources.metall),
+      kristall: Math.floor(base.state.resources.kristall),
+      deuterium: Math.floor(base.state.resources.deuterium),
+    },
     fleet,
     defense,
   };
@@ -90,7 +94,7 @@ export async function processSpyMissions(state: PlayerState): Promise<void> {
   for (const deployment of state.spyMissions) {
     if (!deployment.resolved && deployment.arriveTime <= now) {
       deployment.resolved = true;
-      const base = loadPirateBase(deployment.baseId);
+      const base = await loadPirateBase(deployment.baseId);
       if (base) {
         const level = state.research.spionage || 0;
         const detail = buildSpyReport(base, level);

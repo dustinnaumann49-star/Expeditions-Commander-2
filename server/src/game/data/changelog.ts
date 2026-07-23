@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '22.07.2026',
+    title: 'Neu: Piratenbasen wachsen jetzt genau wie ein Spieler',
+    changes: [
+      'Die 4 angreifbaren Piratenbasen hatten bisher nur eine einfache Flotte/Verteidigung/Ressourcen, die in festen Schritten nachwuchs. Jetzt betreiben sie eine vollständige eigene Wirtschaft: sie bauen Gebäude aus, betreiben Forschung, schicken Mining-Schiffe zu Asteroidenfeldern und bauen Schiffe/Verteidigung - exakt dieselbe Logik wie eure KI-Mitspieler KI-Vega und KI-Nyx.',
+      'Kein künstlicher Deckel mehr - eine Piratenbasis kann theoretisch beliebig stark werden, begrenzt nur durch dieselben wirtschaftlichen Grenzen wie bei euch (Energie, Bauplätze, Ressourcenertrag).',
+      'Kampfwerte im Angriffsbericht spiegeln jetzt die tatsächliche Forschung und Kampf-Klasse der Basis wider, statt fixer Basiswerte - eine Basis mit "Kanonier"-Klasse teilt z.B. doppelten Waffenschaden aus.',
+      'Bereits bestehende Basen wurden automatisch auf das neue System umgestellt, ihr bisheriger Bestand ging dabei nicht verloren.',
+    ],
+  },
+  {
+    date: '22.07.2026',
     title: 'Balance: Piratenbasen stärker + KI-Bots aktiver',
     changes: [
       'Piratenbasen starten jetzt direkt mit deutlich mehr Flotte, Verteidigung und Ressourcen - ein Angriff lohnt sich jetzt schon früh, statt erst nach wochenlangem passivem Nachwachsen.',

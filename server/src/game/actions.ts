@@ -9,7 +9,6 @@ import { MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SL
 import { findShip, findDefense } from './combat.js';
 import { processMissions } from './missions.js';
 import { processGalaxyDeployments } from './galaxy.js';
-import { processPirateAttacks } from './pirateBaseState.js';
 import { processSpyMissions, maybeGeneratePirateSpyReport } from './spyMissions.js';
 import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
@@ -289,7 +288,18 @@ function buildingTimeForLevel(state: PlayerState, building: BuildingDefinition, 
 // Wird bei jedem Laden des Spielzustands aufgerufen und rechnet alles seit `lastUpdate` hoch -
 // ersetzt den setInterval-Loop aus dem HTML-Prototyp durch ein zustandsloses "catch up"-Prinzip,
 // das serverseitig ohne Dauer-Prozess auskommt.
-export async function tick(state: PlayerState): Promise<PlayerState> {
+// Reiner "Wirtschafts-Tick" (Produktion, alle Bau-/Forschungs-Warteschlangen, Missionen) OHNE die
+// spielerspezifischen Extras (Raids/Piratenbasis-Angriffe/Spionage/Gruppen-Expeditionen) - extrahiert
+// aus tick() (Nutzerentscheidung Juli 2026), damit Piratenbasen (siehe pirateBaseState.ts, laufen
+// jetzt als vollwertige PlayerState-Wirtschaft "genau wie ein Spieler") dieselbe Produktions-/
+// Warteschlangen-/Mining-Logik nutzen koennen, OHNE die player-only Extras mitzuziehen (eine
+// Piratenbasis wird z.B. nicht "geraidet" oder spioniert die umgekehrt Spieler aus). Bewusst NICHT
+// in eine eigene Datei ausgelagert, um einen Zirkelimport zu vermeiden: `tick()` hier importiert
+// `processPirateAttacks` NICHT mehr direkt (siehe unten) - der Aufruf wandert stattdessen zu den
+// beiden tick()-Aufrufstellen (routes.ts handleAction(), heartbeat.ts), damit pirateBaseState.ts
+// gefahrlos `runEconomyTick` aus DIESER Datei importieren kann, ohne dass actions.ts umgekehrt aus
+// pirateBaseState.ts importiert.
+export async function runEconomyTick(state: PlayerState): Promise<void> {
   const now = Date.now();
   const deltaSec = Math.max(0, (now - state.lastUpdate) / 1000);
 
@@ -378,12 +388,17 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
     if (state.activeBoosters[id] <= now) delete state.activeBoosters[id];
   });
 
-  // Missionen (Farmen/Kampf) und Basis-Raids nachholen
+  // Missionen (Farmen/Kampf) nachholen - Asteroiden-/Piraten-Sektor-Fluege, genau wie bei einem
+  // echten Spieler.
   await processMissions(state);
+
+  state.lastUpdate = now;
+}
+
+export async function tick(state: PlayerState): Promise<PlayerState> {
+  await runEconomyTick(state);
+  const now = Date.now();
   await processRaidTimer(state);
-  // Angriffsfluege gegen Piratenbasen (siehe pirateBaseState.ts) - komplett unabhaengig vom
-  // normalen Raid-System, das weiterhin unveraendert oben in processRaidTimer laeuft.
-  await processPirateAttacks(state);
   // Spionagefluege gegen Piratenbasen UND der umgekehrte periodische Check "wurde ich gerade von
   // Piraten ausspioniert" (siehe spyMissions.ts) - beide komplett unabhaengig von Raids/Angriffen.
   await processSpyMissions(state);

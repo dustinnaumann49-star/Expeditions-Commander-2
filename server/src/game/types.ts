@@ -108,26 +108,24 @@ export interface GalaxyEventTrip {
 }
 
 // ===== Piratenbasen (angreifbar) =====
-// Global, nicht an einen Nutzer gebunden (eigene DB-Tabelle pirate_bases, siehe db.ts/
-// pirateBaseState.ts) - ein Mini-Pendant zu einem KI-Spieler-PlayerState, aber ohne Gebaeude/
-// Forschung/Warteschlangen: nur Flotte, Verteidigung und Ressourcen, die man erobern/pluendern
-// kann. Kann NICHT zerstoert werden (Nutzerentscheidung) - waechst stattdessen langsam von selbst
-// nach (siehe growPirateBase() in pirateBaseState.ts), `lastGrowthAt` traegt den Zeitpunkt der
-// zuletzt angewendeten Wachstums-Hochrechnung (analog zu PlayerState.lastUpdate).
+// Global, nicht an einen Nutzer/die `users`-Tabelle gebunden (eigene DB-Tabelle pirate_bases,
+// siehe db.ts/pirateBaseState.ts). Nutzerentscheidung Juli 2026 ("Piraten sollen genau wie
+// Spieler wachsen - Gebaeude bauen, forschen, Asteroiden fliegen, Schiffe/Verteidigung bauen,
+// ohne Begrenzung"): `state` ist ein VOLLWERTIGER PlayerState, angetrieben von exakt derselben
+// Wirtschafts-Logik wie ein KI-Mitspieler (`runEconomyBotTurn()` in economyBotTurn.ts,
+// `runEconomyTick()` in actions.ts) - KEINE kuenstlichen Obergrenzen mehr, Wachstum ist nur durch
+// dieselben wirtschaftlichen Grenzen begrenzt wie bei einem echten Spieler (Energie, Bauslots,
+// Ressourcenertrag). `state.userId` ist eine SYNTHETISCHE, garantiert negative Id (siehe
+// PIRATE_BASE_SYNTHETIC_USER_ID_OFFSET in pirateBaseState.ts) - kollidiert nie mit echten
+// (autoinkrementierten, positiven) Nutzer-Ids, taucht NIE in `users`/listAllUsers() auf und damit
+// auch nie in der Bestenliste/Multiplayer-Einladungen/Halten-Listen. Bewusst weiterhin NICHT
+// zerstoerbar (Nutzerentscheidung) - kann aber jetzt beliebig stark werden statt nur langsam
+// gedeckelt nachzuwachsen.
 export interface PirateBaseState {
   id: string; // Index-Id aus PIRATE_BASE_IDS (galaxyConstants.ts)
   system: number;
   position: number;
-  fleet: Record<string, number>;
-  defense: Record<string, number>;
-  resources: { metall: number; kristall: number; deuterium: number };
-  lastGrowthAt: number;
-  // Einmal-Migrationsflag (Nutzerentscheidung Juli 2026, "Angriffe sollen sich lohnen"-Rebalance,
-  // siehe seedPirateBase()/loadPirateBase() in pirateBaseState.ts): hebt bereits VOR dem Rebalance
-  // bestehende Basen einmalig auf den neuen Mindestbestand an, statt sie nur langsam ueber das
-  // (jetzt zwar schnellere) passive Wachstum reinwachsen zu lassen. Analog zum
-  // raidScheduleMigrated-Muster in state.ts.
-  strengthRebalanced2607?: boolean;
+  state: PlayerState;
 }
 
 // Ein-Weg-Angriffsflug (Hin, EIN Kampf bei Ankunft, automatischer Rueckflug) gegen eine

@@ -13,7 +13,7 @@ import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, c
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
-import { listActivePirateBaseSummaries, startPirateBaseAttack } from './pirateBaseState.js';
+import { listActivePirateBaseSummaries, startPirateBaseAttack, processPirateAttacks } from './pirateBaseState.js';
 import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
@@ -119,6 +119,9 @@ async function handleAction(req: AuthedRequest, res: Response, action: (state: P
   try {
     const state = loadPlayerState(req.userId!);
     await tick(state);
+    // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
+    // Zirkelimport-Vermeidung fuer pirateBaseState.ts) - deshalb hier explizit direkt danach.
+    await processPirateAttacks(state);
     const result = await action(state);
     if (!result.ok) return res.status(400).json({ error: result.error });
     savePlayerState(state);
@@ -181,7 +184,7 @@ gameRouter.post('/build/defensemodule', (req: AuthedRequest, res) => {
 
 // ---- Galaxie ----
 
-gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
+gameRouter.get('/galaxy', async (req: AuthedRequest, res) => {
   try {
     const state = loadPlayerState(req.userId!);
     const sektorPositions = SEKTOREN.filter((s) => SEKTOR_CONFIG[s.id]?.galaxyPosition).map((s) => ({
@@ -195,7 +198,7 @@ gameRouter.get('/galaxy', (req: AuthedRequest, res) => {
       pirateBases: PIRATE_BASES,
       // Angreifbare Piratenbasen (siehe pirateBaseState.ts) - nur eine grobe Machtzahl, keine
       // exakten Bestandszahlen (die bekommt man erst per Kampfbericht nach einem Angriff zu sehen).
-      pirateBaseSummaries: listActivePirateBaseSummaries(),
+      pirateBaseSummaries: await listActivePirateBaseSummaries(),
       sektorPositions,
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
       events: listActiveGalaxyEvents(),
