@@ -148,10 +148,16 @@ function maybeAttackOutpost(state: PlayerState): void {
     if (alreadyAttacking) continue;
     if (Math.random() > BOT_ACTION_CHANCE) continue;
 
+    // Deutlich groesserer Anteil + ALLE Kampfschifftypen statt nur leicht/schwer/kreuzer (Balance-
+    // Anpassung Juli 2026, Nutzer-Feedback "Bots erobern nie etwas") - Aussenposten-Garnisonen
+    // wurden im selben Zug klar staerker (Elite-Profil, Konzentrations-Bonus), ein 15%-Haeppchen der
+    // schwaechsten Schiffstypen reicht dagegen praktisch nie. Ein Aussenposten ist ein selteneres,
+    // hochwertigeres Ziel als eine Piratenbasis-Stichprobe (siehe maybeAttackPirateBase oben) -
+    // rechtfertigt einen deutlich groesseren Flotteneinsatz pro Versuch.
     const selection: Record<string, number> = {};
     let total = 0;
-    for (const id of ['leicht', 'schwer', 'kreuzer']) {
-      const take = Math.floor((state.fleet[id] || 0) * 0.15);
+    for (const id of COMBAT_SHIP_IDS) {
+      const take = Math.floor((state.fleet[id] || 0) * 0.5);
       if (take > 0) {
         selection[id] = take;
         total += take;
