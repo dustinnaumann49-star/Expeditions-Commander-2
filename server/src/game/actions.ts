@@ -16,7 +16,18 @@ import { processAllDepartedGroupOperations, listMyGroupOperations } from './grou
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
 import { ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER, ECONOMY_PROSPEKTOR_MINING_MULTIPLIER } from './data/economyClasses.js';
 import { isBoosterActive } from './boosterUtil.js';
+import { NPC_PRODUCTION_BONUS_MULTIPLIER } from './data/economy.js';
+import { listBotUserIds } from '../db.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
+
+// KI-Wachstums-Ausgleich (siehe NPC_PRODUCTION_BONUS_MULTIPLIER in economy.ts) - Piratenbasen
+// nutzen negative, synthetische userIds (siehe SYNTHETIC_USER_ID_BASE in pirateBaseState.ts, dort
+// bewusst NICHT importiert um Zirkelimporte zu vermeiden - ein einfacher Vorzeichen-Check reicht).
+// Fuer echte KI-Mitspieler (positive userId, is_bot-Flag in der DB) genuegt eine kleine, guenstige
+// Abfrage (aktuell nur 2 Zeilen).
+function isNpcState(state: PlayerState): boolean {
+  return state.userId < 0 || listBotUserIds().includes(state.userId);
+}
 
 // ========== FORSCHUNGS-MULTIPLIKATOREN (Bauzeit/Forschungszeit) ==========
 
@@ -266,9 +277,10 @@ export function mineOutputPerHour(state: PlayerState, buildingId: string): numbe
 // Rechnet die seit dem letzten tick() vergangene Zeit als passive Minen-Produktion hoch.
 export function accrueBuildingProduction(state: PlayerState, deltaSec: number): void {
   if (deltaSec <= 0) return;
-  state.resources.metall += (mineOutputPerHour(state, 'metallmine') / 3600) * deltaSec;
-  state.resources.kristall += (mineOutputPerHour(state, 'kristallmine') / 3600) * deltaSec;
-  state.resources.deuterium += (mineOutputPerHour(state, 'deuteriummine') / 3600) * deltaSec;
+  const npcBonus = isNpcState(state) ? NPC_PRODUCTION_BONUS_MULTIPLIER : 1;
+  state.resources.metall += (mineOutputPerHour(state, 'metallmine') / 3600) * deltaSec * npcBonus;
+  state.resources.kristall += (mineOutputPerHour(state, 'kristallmine') / 3600) * deltaSec * npcBonus;
+  state.resources.deuterium += (mineOutputPerHour(state, 'deuteriummine') / 3600) * deltaSec * npcBonus;
 }
 
 function buildingCostForLevel(building: BuildingDefinition, level: number): ResourceCost {

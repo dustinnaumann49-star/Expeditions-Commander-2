@@ -1,7 +1,10 @@
-import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, energyFactor } from './actions.js';
+import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyFactor } from './actions.js';
 import { RESEARCH } from './data/research.js';
 import { SEKTOR_CONFIG } from './data/sectors.js';
-import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS } from './data/combatConstants.js';
+import { BUILDING_MODULES } from './data/buildingModules.js';
+import { SHIP_MODULES } from './data/shipModules.js';
+import { DEFENSE_MODULES } from './data/defenseModules.js';
+import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS } from './data/combatConstants.js';
 import { sendFleet } from './missions.js';
 import { setPlayerClass } from './classActions.js';
 import type { PlayerState } from './types.js';
@@ -92,6 +95,38 @@ function maybeBuildDefense(state: PlayerState): void {
   }
 }
 
+// Nutzerentscheidung Juli 2026 ("niemand verwendet die Module") - bisher gab es dafuer GAR KEINE
+// KI-Logik, weder bei Bots noch bei Piratenbasen. Analog zu maybeBuildShips/-Defense: pro Aufruf
+// hoechstens EIN neues Modul pro Kategorie, damit sich das ueber mehrere Ticks natuerlich auf die
+// jeweiligen Slots verteilt (MAX_BUILDING_SLOTS=1, geteilt mit normalen Gebaeuden - siehe
+// startModuleUpgrade() in actions.ts; MAX_SHIP_MODULE_SLOTS/MAX_DEFENSE_MODULE_SLOTS=3 eigene
+// Slots). Gebaeude-Module brauchen hohe Basis-Gebaeude-Stufen (20/10/5, siehe buildingModules.ts)
+// und greifen daher fruehestens im spaeten Spielverlauf - Schiffs-/Verteidigungs-Module dagegen
+// sofort, sobald mindestens 1 Einheit des jeweiligen Typs vorhanden ist.
+function maybeBuildModules(state: PlayerState): void {
+  if (state.buildingQueue.length < MAX_BUILDING_SLOTS) {
+    for (const mod of BUILDING_MODULES) {
+      if ((state.buildings[mod.buildingId] || 0) < mod.requiredBuildingLevel) continue;
+      if ((state.buildingModules[mod.id] || 0) >= mod.maxLevel) continue;
+      if (startModuleUpgrade(state, mod.id).ok) break;
+    }
+  }
+  if (state.shipModuleQueue.length < MAX_SHIP_MODULE_SLOTS) {
+    for (const mod of SHIP_MODULES) {
+      if ((state.fleet[mod.shipId] || 0) <= 0) continue;
+      if ((state.shipModules[mod.id] || 0) >= mod.maxLevel) continue;
+      if (startShipModuleUpgrade(state, mod.id).ok) break;
+    }
+  }
+  if (state.defenseModuleQueue.length < MAX_DEFENSE_MODULE_SLOTS) {
+    for (const mod of DEFENSE_MODULES) {
+      if ((state.defense[mod.defenseId] || 0) <= 0) continue;
+      if ((state.shipModules[mod.id] || 0) >= mod.maxLevel) continue;
+      if (startDefenseModuleUpgrade(state, mod.id).ok) break;
+    }
+  }
+}
+
 function maybeSendMiningFleet(state: PlayerState): void {
   const asteroidIds = ['asteroid_niedrig', 'asteroid_mittel', 'asteroid_hoch'];
   if (state.missions.some((m) => asteroidIds.includes(m.sektorId) && !m.finalized)) return;
@@ -111,6 +146,7 @@ function maybeSendMiningFleet(state: PlayerState): void {
  */
 export function runEconomyBotTurn(state: PlayerState): void {
   maybeChooseClass(state);
+  maybeBuildModules(state); // vor maybeBuildBuilding: Gebaeude-Module bekommen Vorrang auf den gemeinsamen Slot, sobald sie freigeschaltet sind
   maybeBuildBuilding(state);
   maybeStartResearch(state);
   maybeBuildShips(state);

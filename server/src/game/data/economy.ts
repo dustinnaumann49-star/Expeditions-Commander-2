@@ -513,3 +513,11 @@ export function rollGalaxyEventReward(type: string): { metall: number; kristall:
 // konsistent zum bereits bestehenden Klassenwechsel-Muster (CLASS_CHANGE_COST_DM), keine
 // zusaetzliche Wartezeit/Cooldown noetig, die DM-Kosten allein bremsen Spam ausreichend.
 export const RELOCATE_BASE_COST_DM = 300;
+
+// ===== KI-Wachstums-Ausgleich (Nutzerentscheidung Juli 2026) =====
+// Bots/Piratenbasen wirtschaften nie so effizient wie ein Mensch mit vollem Ueberblick (verpasste
+// Bau-Slots, suboptimale Prioritaeten) - moderater Bonus auf die passive Minen-Produktion GLEICHT
+// DAS AUS, ersetzt aber nicht die Verhaltens-Fixes selbst (Modul-KI, seltenere Offensiv-Angriffe,
+// siehe economyBotTurn.ts/pirateBaseState.ts). Gilt NUR fuer NPC-Zustaende (siehe isNpcState() in
+// actions.ts), niemals fuer echte Spieler.
+export const NPC_PRODUCTION_BONUS_MULTIPLIER = 1.5;

@@ -78,7 +78,7 @@ function buildSeedState(id: string): PlayerState {
 
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
-  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [] };
+  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [], nextOffensiveCheck: null };
 }
 
 // Einmalig beim Serverstart aufgerufen (analog ensureBotUsers()) - legt fehlende aktive Basen an,
@@ -112,7 +112,7 @@ function migrateLegacyBase(raw: any, id: string): PirateBaseState {
   (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
     state.resources[res] = Math.max(state.resources[res] || 0, raw.resources?.[res] || 0);
   });
-  return { id, system: pos.system, position: pos.position, state, attacks: [] };
+  return { id, system: pos.system, position: pos.position, state, attacks: [], nextOffensiveCheck: null };
 }
 
 // Lazy bei jedem Laden angewendet (Angriff/Spionage/Galaxie-Ansicht) UND explizit einmal pro
@@ -125,6 +125,7 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   const raw = JSON.parse(json);
   const base: PirateBaseState = isLegacyShape(raw) ? migrateLegacyBase(raw, id) : (raw as PirateBaseState);
   if (!base.attacks) base.attacks = []; // Bestandsdaten von vor der Offensiv-KI (siehe runPirateBaseOffensiveTurn())
+  if (base.nextOffensiveCheck === undefined) base.nextOffensiveCheck = null; // Bestandsdaten von vor dem Cooldown-Umbau
   await runEconomyTick(base.state);
   runEconomyBotTurn(base.state);
   savePirateBaseJson(id, JSON.stringify(base));
@@ -385,10 +386,16 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
 // Nutzerentscheidung (Juli 2026): bisher waren die 4 aktiven Piratenbasen rein PASSIV (nur von
 // Menschen/Bots angreifbar, siehe oben) - das fuehlte sich trotz wachsender Basis-Flotte folgenlos
 // an ("mir passiert nichts"). Analog zu runOutpostPirateAiTurn() in outposts.ts bekommen Basen jetzt
-// eine kleine Zufallschance pro Heartbeat, selbst einen Angriffsflug mit einem Teil ihrer ECHTEN,
-// gewachsenen Flotte gegen einen zufaelligen Spieler/Bot loszuschicken - kein Rueckflug-Zeitfenster
-// (anders als beim umgekehrten Fall oben), Ueberlebende kehren bei Kampfaufloesung sofort zurueck.
-const PIRATE_BASE_OFFENSIVE_CHANCE = 0.15;
+// einen Cooldown pro Basis, selbst einen Angriffsflug mit einem Teil ihrer ECHTEN, gewachsenen
+// Flotte gegen einen zufaelligen Spieler/Bot loszuschicken - kein Rueckflug-Zeitfenster (anders als
+// beim umgekehrten Fall oben), Ueberlebende kehren bei Kampfaufloesung sofort zurueck.
+// Balance-Anpassung (Nutzer-Feedback Juli 2026: "das ist ja wirklich alle 2 Minuten so, das geht
+// zu oft"): von einer 15%-Zufallschance PRO Heartbeat (im Schnitt alle ~13 Minuten) auf einen
+// Cooldown von 12-24h umgestellt (~1-2 Angriffe pro Tag) - Basen sollen sich lieber aufbauen
+// (Forschung/Gebaeude/Verteidigung/Schiffe) statt ihre Flotte staendig in oft aussichtslosen
+// Angriffen gegen befestigte Spieler zu verheizen.
+const PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN_MS = 12 * 60 * 60 * 1000;
+const PIRATE_BASE_OFFENSIVE_COOLDOWN_MAX_MS = 24 * 60 * 60 * 1000;
 const PIRATE_BASE_OFFENSIVE_FLEET_SHARE = 0.2; // Anteil der Basis-Kampfflotte, der pro Angriff eingesetzt wird
 const PIRATE_BASE_OFFENSIVE_MIN_SHIPS = 5;
 const PIRATE_BASE_OFFENSIVE_LOOT_PERCENT = 0.2; // niedriger als PIRATE_BASE_LOOT_PERCENT - trifft echte Spieler, nicht die KI-Basis selbst
@@ -510,6 +517,10 @@ async function resolvePirateBaseOffensiveAttack(base: PirateBaseState, deploymen
   savePlayerState(targetState);
 }
 
+function rollNextOffensiveCheck(): number {
+  return Date.now() + PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN_MS + Math.random() * (PIRATE_BASE_OFFENSIVE_COOLDOWN_MAX_MS - PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN_MS);
+}
+
 async function runPirateBaseOffensiveTurn(base: PirateBaseState, targetUserIds: number[]): Promise<void> {
   const now = Date.now();
   for (const deployment of base.attacks) {
@@ -521,7 +532,13 @@ async function runPirateBaseOffensiveTurn(base: PirateBaseState, targetUserIds: 
 
   if (targetUserIds.length === 0) return;
   if (base.attacks.length > 0) return; // schon ein Angriff unterwegs - keine Ueberlappung
-  if (Math.random() > PIRATE_BASE_OFFENSIVE_CHANCE) return;
+  if (base.nextOffensiveCheck !== null && now < base.nextOffensiveCheck) return;
+  base.nextOffensiveCheck = rollNextOffensiveCheck();
+  // Sofort speichern (nicht erst am Ende): mehrere fruehe "return" weiter unten (zu kleine Flotte,
+  // keine gueltige Zielposition) wuerden den neu gewuerfelten Cooldown sonst nur im Speicher setzen
+  // und beim naechsten Laden wieder verlieren - die Basis wuerde dann bei JEDEM weiteren Heartbeat
+  // erneut pruefen statt den Cooldown tatsaechlich einzuhalten.
+  savePirateBase(base);
 
   const pState = base.state;
   const selection: Record<string, number> = {};

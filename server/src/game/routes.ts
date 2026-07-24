@@ -574,6 +574,11 @@ gameRouter.get('/debug/npcs', async (_req: AuthedRequest, res) => {
       buildings: b.state.buildings,
       research: b.state.research,
       outgoingAttacks: b.attacks.filter((a) => !a.resolved).length,
+      nextOffensiveCheck: b.nextOffensiveCheck,
+      buildQueueLength: b.state.buildQueue.length,
+      defenseQueueLength: b.state.defenseQueue.length,
+      researchQueueLength: b.state.researchQueue.length,
+      buildingQueueLength: b.state.buildingQueue.length,
     }));
 
     res.json({ bots, pirateBases });

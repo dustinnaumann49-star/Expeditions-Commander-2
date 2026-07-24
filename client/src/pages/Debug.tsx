@@ -173,7 +173,11 @@ export function DebugPage() {
             <EntityCard
               key={p.id}
               title={`🏴‍☠️ Piratenbasis 1:${p.system}:${p.position}`}
-              subtitle={`Angriffsflüge unterwegs: ${p.outgoingAttacks}`}
+              subtitle={`Angriffsflüge unterwegs: ${p.outgoingAttacks} · Nächster Angriffs-Check: ${
+                p.nextOffensiveCheck ? new Date(p.nextOffensiveCheck).toLocaleString('de-DE') : '–'
+              } · Bau-/Forschungswarteschlangen: ${p.buildQueueLength} Schiffe, ${p.defenseQueueLength} Verteidigung, ${
+                p.buildingQueueLength
+              } Gebäude, ${p.researchQueueLength} Forschung`}
               state={p}
               gameData={gameData}
             />

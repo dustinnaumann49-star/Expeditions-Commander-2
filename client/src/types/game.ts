@@ -769,4 +769,9 @@ export interface DebugPirateBaseState {
   buildings: Record<string, number>;
   research: Record<string, number>;
   outgoingAttacks: number;
+  nextOffensiveCheck: number | null;
+  buildQueueLength: number;
+  defenseQueueLength: number;
+  researchQueueLength: number;
+  buildingQueueLength: number;
 }

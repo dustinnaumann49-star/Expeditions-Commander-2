@@ -127,6 +127,9 @@ export interface PirateBaseState {
   position: number;
   state: PlayerState;
   attacks: PirateBaseOffensiveDeployment[]; // siehe runPirateBaseOffensiveTurn() in pirateBaseState.ts
+  // Cooldown statt Zufallschance PRO Heartbeat (Nutzerentscheidung Juli 2026: 1-2x/Tag statt alle
+  // paar Minuten - siehe PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN/MAX_MS in pirateBaseState.ts).
+  nextOffensiveCheck: number | null;
 }
 
 // Angriffsflug EINER Piratenbasis GEGEN einen Spieler/Bot (Basis als Angreifer, Gegenrichtung zu
