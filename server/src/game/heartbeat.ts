@@ -6,7 +6,7 @@ import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { runBotTurn } from './bot.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
-import { processPirateAttacks, runAllPirateBaseTurns } from './pirateBaseState.js';
+import { processPirateAttacks, runAllPirateBaseTurns, runAllPirateBaseOffensiveTurns } from './pirateBaseState.js';
 import { processOutpostDeployments, runOutpostPirateAiTurn } from './outposts.js';
 
 /**
@@ -90,6 +90,16 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseTurns:', err);
+  }
+
+  // Offensiv-KI der Piratenbasen (Nutzerentscheidung Juli 2026: Basen sollen euch auch selbst
+  // angreifen, nicht nur passiv angreifbar sein) - eigener Schritt NACH dem normalen Wachstums-Turn
+  // oben, damit gerade fertiggestellte Schiffe schon zur Verfuegung stehen.
+  try {
+    await runAllPirateBaseOffensiveTurns(users.map((u) => u.id));
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseOffensiveTurns:', err);
   }
 
   // Aussenposten (siehe outposts.ts): opportunistische Piraten-Rueckeroberungsversuche gegen

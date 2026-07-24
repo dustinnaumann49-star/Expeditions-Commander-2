@@ -126,6 +126,19 @@ export interface PirateBaseState {
   system: number;
   position: number;
   state: PlayerState;
+  attacks: PirateBaseOffensiveDeployment[]; // siehe runPirateBaseOffensiveTurn() in pirateBaseState.ts
+}
+
+// Angriffsflug EINER Piratenbasis GEGEN einen Spieler/Bot (Basis als Angreifer, Gegenrichtung zu
+// PirateAttackDeployment oben) - kein Rueckflug-Zeitfenster wie dort, Ueberlebende kehren bei
+// Ankunft/Kampfaufloesung sofort in base.state.fleet zurueck (siehe pirateBaseState.ts).
+export interface PirateBaseOffensiveDeployment {
+  id: string;
+  targetUserId: number;
+  ships: Record<string, number>;
+  startTime: number;
+  arriveTime: number;
+  resolved: boolean;
 }
 
 // Ein-Weg-Angriffsflug (Hin, EIN Kampf bei Ankunft, automatischer Rueckflug) gegen eine

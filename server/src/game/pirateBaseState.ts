@@ -7,13 +7,14 @@ import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { pushMessage } from './messages.js';
 import { DEFENSES } from './data/defenses.js';
-import { defaultPlayerState } from './state.js';
+import { defaultPlayerState, loadPlayerState, savePlayerState } from './state.js';
 import { runEconomyTick } from './actions.js';
 import { runEconomyBotTurn } from './economyBotTurn.js';
 import type {
   PlayerState,
   PirateBaseState,
   PirateAttackDeployment,
+  PirateBaseOffensiveDeployment,
   GalaxyPosition,
   CombatUnitResult,
   CombatDetail,
@@ -77,7 +78,7 @@ function buildSeedState(id: string): PlayerState {
 
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
-  return { id, system: pos.system, position: pos.position, state: buildSeedState(id) };
+  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [] };
 }
 
 // Einmalig beim Serverstart aufgerufen (analog ensureBotUsers()) - legt fehlende aktive Basen an,
@@ -111,7 +112,7 @@ function migrateLegacyBase(raw: any, id: string): PirateBaseState {
   (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
     state.resources[res] = Math.max(state.resources[res] || 0, raw.resources?.[res] || 0);
   });
-  return { id, system: pos.system, position: pos.position, state };
+  return { id, system: pos.system, position: pos.position, state, attacks: [] };
 }
 
 // Lazy bei jedem Laden angewendet (Angriff/Spionage/Galaxie-Ansicht) UND explizit einmal pro
@@ -123,6 +124,7 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   if (!json) return null;
   const raw = JSON.parse(json);
   const base: PirateBaseState = isLegacyShape(raw) ? migrateLegacyBase(raw, id) : (raw as PirateBaseState);
+  if (!base.attacks) base.attacks = []; // Bestandsdaten von vor der Offensiv-KI (siehe runPirateBaseOffensiveTurn())
   await runEconomyTick(base.state);
   runEconomyBotTurn(base.state);
   savePirateBaseJson(id, JSON.stringify(base));
@@ -377,4 +379,194 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
     rewards: loot ? { metall: loot.metall, kristall: loot.kristall, deuterium: loot.deuterium } : undefined,
   };
   pushMessage(state, 'kampf', messageText, detail);
+}
+
+// ========== OFFENSIV-KI: BASEN GREIFEN VON SICH AUS SPIELER/BOTS AN ==========
+// Nutzerentscheidung (Juli 2026): bisher waren die 4 aktiven Piratenbasen rein PASSIV (nur von
+// Menschen/Bots angreifbar, siehe oben) - das fuehlte sich trotz wachsender Basis-Flotte folgenlos
+// an ("mir passiert nichts"). Analog zu runOutpostPirateAiTurn() in outposts.ts bekommen Basen jetzt
+// eine kleine Zufallschance pro Heartbeat, selbst einen Angriffsflug mit einem Teil ihrer ECHTEN,
+// gewachsenen Flotte gegen einen zufaelligen Spieler/Bot loszuschicken - kein Rueckflug-Zeitfenster
+// (anders als beim umgekehrten Fall oben), Ueberlebende kehren bei Kampfaufloesung sofort zurueck.
+const PIRATE_BASE_OFFENSIVE_CHANCE = 0.15;
+const PIRATE_BASE_OFFENSIVE_FLEET_SHARE = 0.2; // Anteil der Basis-Kampfflotte, der pro Angriff eingesetzt wird
+const PIRATE_BASE_OFFENSIVE_MIN_SHIPS = 5;
+const PIRATE_BASE_OFFENSIVE_LOOT_PERCENT = 0.2; // niedriger als PIRATE_BASE_LOOT_PERCENT - trifft echte Spieler, nicht die KI-Basis selbst
+const OFFENSIVE_COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
+
+async function resolvePirateBaseOffensiveAttack(base: PirateBaseState, deployment: PirateBaseOffensiveDeployment): Promise<void> {
+  deployment.resolved = true;
+  const pState = base.state;
+  const targetState = loadPlayerState(deployment.targetUserId);
+
+  const targetCombined: Record<string, number> = {};
+  Object.entries(targetState.fleet).forEach(([id, qty]) => {
+    if (qty > 0) targetCombined[id] = qty;
+  });
+  Object.entries(targetState.defense).forEach(([id, qty]) => {
+    if (qty > 0) targetCombined[id] = (targetCombined[id] || 0) + qty;
+  });
+  const targetIds = Object.keys(targetCombined);
+
+  if (targetIds.length === 0) {
+    // Ziel hat weder Flotte noch Verteidigung daheim - Basis-Flotte kehrt unbenutzt zurueck, kein Kampf.
+    Object.entries(deployment.ships).forEach(([id, qty]) => {
+      if (qty > 0) pState.fleet[id] = (pState.fleet[id] || 0) + qty;
+    });
+    savePirateBase(base);
+    pushMessage(targetState, 'kampf', `Piratenbasis 1:${base.system}:${base.position} hat einen Angriff auf euch gestartet, aber weder Flotte noch Verteidigung bei euch vorgefunden - kein Kampf.`);
+    savePlayerState(targetState);
+    return;
+  }
+
+  const sideBStatsOverride: Record<string, CombatStats> = {};
+  targetIds.forEach((id) => {
+    sideBStatsOverride[id] = getEffectiveStats(id, targetState.research, targetState.defense, isBoosterActive(targetState, 'kampf'), targetState.playerClass, targetState.shipModules);
+  });
+
+  const result = await runCombatInWorker({
+    sideAShips: deployment.ships,
+    sideBShips: targetCombined,
+    research: pState.research,
+    playerClass: pState.playerClass,
+    kampfBoostActive: isBoosterActive(pState, 'kampf'),
+    shipModules: pState.shipModules,
+    sideBStatsOverride,
+  });
+
+  const attackerResults: CombatUnitResult[] = Object.keys(deployment.ships).map((id) => {
+    const eff = getEffectiveStats(id, pState.research, {}, isBoosterActive(pState, 'kampf'), pState.playerClass, pState.shipModules);
+    const sent = deployment.ships[id];
+    const survived = result.survivorsA[id] || 0;
+    if (survived > 0) pState.fleet[id] = (pState.fleet[id] || 0) + survived;
+    return {
+      id, name: shipName(id), sent, survived, lost: sent - survived,
+      waffen: Math.round(eff.waffen), schild: Math.round(eff.schild), panzerung: Math.round(eff.panzerung),
+      dmgTaken: Math.round(result.dmgTakenA[id] || 0), dmgDealt: Math.round(result.shotsA.dmgDealt[id] || 0),
+      shotsFired: result.shotsA.shotsFired[id] || 0, hits: result.shotsA.hits[id] || 0,
+      rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0), shieldRegen: Math.round(result.shieldRegenA[id] || 0),
+    };
+  });
+
+  let destroyedTargetPower = 0;
+  let totalTargetPower = 0;
+  const defenderResults: CombatUnitResult[] = targetIds.map((id) => {
+    const isDefenseUnit = DEFENSES.some((d) => d.id === id);
+    const eff = sideBStatsOverride[id];
+    const sent = targetCombined[id];
+    const survivedCount = result.survivorsB[id] || 0;
+    const destroyedCount = sent - survivedCount;
+    const unitPower = eff.waffen + eff.schild + eff.panzerung;
+    totalTargetPower += sent * unitPower;
+    destroyedTargetPower += destroyedCount * unitPower;
+    if (isDefenseUnit) targetState.defense[id] = survivedCount;
+    else targetState.fleet[id] = survivedCount;
+    return {
+      id, name: shipName(id), count: sent,
+      waffen: Math.round(eff.waffen), schild: Math.round(eff.schild), panzerung: Math.round(eff.panzerung),
+      dmgTaken: Math.round(result.dmgTakenB[id] || 0), dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
+      destroyedCount, survivedCount, destroyed: survivedCount <= 0, isDefense: isDefenseUnit,
+      shotsFired: result.shotsB.shotsFired[id] || 0, hits: result.shotsB.hits[id] || 0,
+      rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0), shieldRegen: Math.round(result.shieldRegenB[id] || 0),
+    };
+  });
+
+  // Plünderungsquote skaliert mit dem Zerstörungsanteil beim Ziel (0 = nichts getroffen, 1 = alles
+  // vernichtet) statt eines reinen Alles-oder-nichts, analog zum abgestuften Muster bei Raids.
+  const destructionRatio = totalTargetPower > 0 ? destroyedTargetPower / totalTargetPower : 0;
+  let lootText = '';
+  let loot: { metall: number; kristall: number; deuterium: number } | undefined;
+  if (destructionRatio > 0) {
+    const rate = PIRATE_BASE_OFFENSIVE_LOOT_PERCENT * destructionRatio;
+    loot = {
+      metall: Math.round(targetState.resources.metall * rate),
+      kristall: Math.round(targetState.resources.kristall * rate),
+      deuterium: Math.round(targetState.resources.deuterium * rate),
+    };
+    targetState.resources.metall -= loot.metall;
+    targetState.resources.kristall -= loot.kristall;
+    targetState.resources.deuterium -= loot.deuterium;
+    pState.resources.metall += loot.metall;
+    pState.resources.kristall += loot.kristall;
+    pState.resources.deuterium += loot.deuterium;
+    lootText = ` Erbeutet: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString('de-DE')} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
+  }
+
+  savePirateBase(base);
+
+  const outcome = destructionRatio >= 0.99 ? 'Verteidigung vernichtet' : destructionRatio > 0 ? 'Verteidigung angeschlagen' : 'Angriff abgewehrt';
+  const messageText = `Piratenbasis 1:${base.system}:${base.position} hat euch angegriffen: ${outcome}.${lootText}`;
+  const detail: CombatDetail = {
+    sektorName: `Piratenbasis 1:${base.system}:${base.position} (Angriff auf euch)`,
+    outcome,
+    roundsFought: result.roundsFought,
+    npcResults: attackerResults,
+    playerResults: defenderResults,
+    rewards: loot ? { metall: loot.metall, kristall: loot.kristall, deuterium: loot.deuterium } : undefined,
+  };
+  pushMessage(targetState, 'kampf', messageText, detail);
+  savePlayerState(targetState);
+}
+
+async function runPirateBaseOffensiveTurn(base: PirateBaseState, targetUserIds: number[]): Promise<void> {
+  const now = Date.now();
+  for (const deployment of base.attacks) {
+    if (!deployment.resolved && deployment.arriveTime <= now) {
+      await resolvePirateBaseOffensiveAttack(base, deployment);
+    }
+  }
+  base.attacks = base.attacks.filter((d) => !d.resolved);
+
+  if (targetUserIds.length === 0) return;
+  if (base.attacks.length > 0) return; // schon ein Angriff unterwegs - keine Ueberlappung
+  if (Math.random() > PIRATE_BASE_OFFENSIVE_CHANCE) return;
+
+  const pState = base.state;
+  const selection: Record<string, number> = {};
+  let total = 0;
+  for (const id of OFFENSIVE_COMBAT_SHIP_IDS) {
+    const take = Math.floor((pState.fleet[id] || 0) * PIRATE_BASE_OFFENSIVE_FLEET_SHARE);
+    if (take > 0) {
+      selection[id] = take;
+      total += take;
+    }
+  }
+  if (total < PIRATE_BASE_OFFENSIVE_MIN_SHIPS) return;
+
+  const targetUserId = targetUserIds[Math.floor(Math.random() * targetUserIds.length)];
+  const targetState = loadPlayerState(targetUserId);
+  if (!targetState.galaxyPosition) return;
+
+  const distance = galaxyDistance({ system: base.system, position: base.position }, targetState.galaxyPosition);
+  const speed = galaxyFleetSpeed(selection, pState.research, pState.playerClass, pState.shipModules);
+  const travelMs = galaxyDurationMs(distance, speed);
+  if (!Number.isFinite(travelMs)) return;
+
+  Object.entries(selection).forEach(([id, qty]) => {
+    pState.fleet[id] -= qty;
+  });
+
+  const now2 = Date.now();
+  base.attacks.push({
+    id: 'pboff_' + now2 + '_' + base.id,
+    targetUserId,
+    ships: selection,
+    startTime: now2,
+    arriveTime: now2 + travelMs,
+    resolved: false,
+  });
+  savePirateBase(base);
+  pushMessage(targetState, 'kampf', `⚠ Piratenbasis 1:${base.system}:${base.position} hat eine Flotte in Richtung eurer Basis gestartet! Ankunft in ${Math.round(travelMs / 60000)} Minuten.`);
+  savePlayerState(targetState);
+}
+
+// Treibt die Offensiv-KI aller aktiven Basen an (siehe heartbeat.ts) - Ziel-Pool sind alle echten
+// Nutzer (Menschen + KI-Mitspieler-Bots), NIEMALS andere Piratenbasen.
+export async function runAllPirateBaseOffensiveTurns(allUserIds: number[]): Promise<void> {
+  const bases = await listActivePirateBases();
+  for (const base of bases) {
+    await runPirateBaseOffensiveTurn(base, allUserIds);
+  }
 }
