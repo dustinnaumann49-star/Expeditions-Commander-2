@@ -9,6 +9,8 @@ import { listOutpostSummaries, startOutpostAttack } from './outposts.js';
 import { startSpyProbe } from './spyMissions.js';
 import { ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import { MAX_BUILD_SLOTS } from './data/combatConstants.js';
+import { OUTPOST_TIER_TARGET_POWER } from './data/economy.js';
+import { combatFleetPowerBase } from './combat.js';
 import type { PlayerState } from './types.js';
 
 // Namen der KI-Mitspieler - bei Bedarf hier anpassen/erweitern, bevor der Server das erste Mal
@@ -163,7 +165,15 @@ function maybeAttackOutpost(state: PlayerState): void {
         total += take;
       }
     }
-    if (total >= 5) startOutpostAttack(state, outpost.id, selection);
+    if (total < 5) continue;
+    // Mindeststaerke-Pruefung (Nutzer-Feedback Juli 2026: "Bots greifen mit winzigen Trupps zu oft
+    // an, spammen wie die Piraten vorher") - resolveOutpostAttack() kaempft ohnehin MINDESTENS gegen
+    // die Tier-Zielstaerke (OUTPOST_TIER_TARGET_POWER als Untergrenze, siehe outposts.ts), ein
+    // deutlich schwaecherer Versuch ist von vornherein aussichtslos. Bots warten jetzt lieber ein
+    // paar Heartbeats laenger, bis ihre Flotte gross genug ist, statt sich wiederholt sinnlos zu
+    // verheizen.
+    if (combatFleetPowerBase(selection) < OUTPOST_TIER_TARGET_POWER[outpost.tier]) continue;
+    startOutpostAttack(state, outpost.id, selection);
   }
 }
 

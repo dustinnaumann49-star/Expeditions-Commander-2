@@ -18,10 +18,10 @@ function isFarmDetail(detail: AnyDetail): detail is FarmDetail {
   return 'resources' in detail && !isSpyReportDetail(detail);
 }
 
-function groupByOwner(results: CombatUnitResult[]): [string, CombatUnitResult[]][] {
+function groupByOwner(results: CombatUnitResult[], defaultOwner = 'Deine Flotte'): [string, CombatUnitResult[]][] {
   const groups = new Map<string, CombatUnitResult[]>();
   results.forEach((u) => {
-    const owner = u.ownerUsername || 'Deine Flotte';
+    const owner = u.ownerUsername || defaultOwner;
     if (!groups.has(owner)) groups.set(owner, []);
     groups.get(owner)!.push(u);
   });
@@ -94,10 +94,12 @@ function CombatSummaryBars({
   npcResults,
   playerResults,
   allyResult,
+  ownLabel = 'Deine Flotte',
 }: {
   npcResults: CombatUnitResult[];
   playerResults: CombatUnitResult[];
   allyResult?: CombatUnitResult;
+  ownLabel?: string;
 }) {
   const ownUnits = [...playerResults, ...(allyResult ? [allyResult] : [])];
   const own = sumUnits(ownUnits);
@@ -112,7 +114,7 @@ function CombatSummaryBars({
       <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Kampf-Zusammenfassung</p>
       <div className="combat-bar-row">
         <div className="combat-bar-label">
-          <span>Schaden ausgeteilt — Deine Flotte</span>
+          <span>Schaden ausgeteilt — {ownLabel}</span>
           <span>{fmt(own.dealt)}</span>
         </div>
         <div className="combat-bar-track">
@@ -130,7 +132,7 @@ function CombatSummaryBars({
       </div>
       <div className="combat-bar-row">
         <div className="combat-bar-label">
-          <span>Verluste — Deine Flotte</span>
+          <span>Verluste — {ownLabel}</span>
           <span>
             {own.lost}/{own.sent} ({ownLossPct.toFixed(0)}%)
           </span>
@@ -454,17 +456,30 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
               </>
             ) : (
               <>
-                <CombatSummaryBars
-                  npcResults={msg.detail.npcResults}
-                  playerResults={msg.detail.playerResults}
-                  allyResult={msg.detail.allyResult}
-                />
-                <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
-                <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
-                {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
-                {groupByOwner(msg.detail.playerResults).map(([owner, units]) => (
-                  <UnitTable key={owner} title={owner} units={units} />
-                ))}
+                {(() => {
+                  // Aussenposten-Garnisonen gehoeren der GESAMTEN Seite (Menschen + Bots) gemeinsam,
+                  // nicht exklusiv dem Empfaenger dieser Nachricht - "Deine Flotte" waere hier
+                  // irrefuehrend (Nutzer-Feedback: sah aus wie ein persoenlicher Verlust, obwohl z.B.
+                  // ein Bot die Schiffe gestellt/verloren hat), siehe outposts.ts.
+                  const isOutpost = msg.detail!.sektorName.includes('Außenposten');
+                  const ownLabel = isOutpost ? 'Eure Garnison' : 'Deine Flotte';
+                  return (
+                    <>
+                      <CombatSummaryBars
+                        npcResults={msg.detail.npcResults}
+                        playerResults={msg.detail.playerResults}
+                        allyResult={msg.detail.allyResult}
+                        ownLabel={ownLabel}
+                      />
+                      <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
+                      <UnitTable title="Piraten/Alien (NPC)" units={msg.detail.npcResults} />
+                      {msg.detail.allyResult && <UnitTable title="Verbündete" units={[msg.detail.allyResult]} />}
+                      {groupByOwner(msg.detail.playerResults, ownLabel).map(([owner, units]) => (
+                        <UnitTable key={owner} title={owner} units={units} />
+                      ))}
+                    </>
+                  );
+                })()}
               </>
             )}
           </>

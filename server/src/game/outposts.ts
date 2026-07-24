@@ -1,12 +1,11 @@
 import { OUTPOST_POSITIONS, OUTPOST_IDS, OUTPOST_TIERS } from './data/galaxyConstants.js';
 import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN_MS, OUTPOST_PIRATE_ATTACK_COOLDOWN_MAX_MS, OUTPOST_PIRATE_ADVANTAGE_ROLL, OUTPOST_PIRATE_CONCENTRATION_FACTOR } from './data/economy.js';
-import { getOutpostJson, saveOutpostJson, listAllUsers } from '../db.js';
+import { getOutpostJson, saveOutpostJson } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
 import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats, combatFleetPowerBase, shipPowerBase, rollMultiplierWithOutlier } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { pushMessage } from './messages.js';
-import { loadPlayerState, savePlayerState } from './state.js';
 import type { PlayerState, OutpostState, OutpostDeployment, OutpostTier, GalaxyPosition, CombatUnitResult, CombatDetail } from './types.js';
 import type { ActionResult } from './actions.js';
 
@@ -434,7 +433,6 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       outpost.ownerSide = 'pirates';
       outpost.garrison = {};
       saveOutpost(outpost);
-      notifyHumans(`Piraten haben den unverteidigten Außenposten 1:${outpost.system}:${outpost.position} kampflos zurückerobert.`);
       continue;
     }
 
@@ -456,7 +454,6 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
     const npcShips = generateFallbackFleet(targetPower, pickWaveProfile('outpost'));
     const npcIds = Object.keys(npcShips);
 
-    const garrisonIds = Object.keys(outpost.garrison);
     const result = await runCombatInWorker({
       sideAShips: outpost.garrison,
       sideBShips: npcShips,
@@ -464,90 +461,22 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
       allowRetreat: false,
     });
 
-    const garrisonResults: CombatUnitResult[] = garrisonIds.map((id) => {
-      const eff = baseStats(id);
-      const sent = outpost.garrison[id] || 0;
-      const survived = result.survivorsA[id] || 0;
-      return {
-        id,
-        name: shipName(id),
-        sent,
-        survived,
-        lost: sent - survived,
-        waffen: Math.round(eff.waffen),
-        schild: Math.round(eff.schild),
-        panzerung: Math.round(eff.panzerung),
-        dmgTaken: Math.round(result.dmgTakenA[id] || 0),
-        dmgDealt: Math.round(result.shotsA.dmgDealt[id] || 0),
-        shotsFired: result.shotsA.shotsFired[id] || 0,
-        hits: result.shotsA.hits[id] || 0,
-        rapidFireTriggers: result.shotsA.rapidFireTriggers[id] || 0,
-        shieldDmgTaken: Math.round(result.shieldDmgTakenA[id] || 0),
-        shieldRegen: Math.round(result.shieldRegenA[id] || 0),
-      };
-    });
-    const npcResults: CombatUnitResult[] = npcIds.map((id) => {
-      const eff = baseStats(id);
-      const sent = npcShips[id];
-      const survivedCount = result.survivorsB[id] || 0;
-      return {
-        id,
-        name: shipName(id),
-        count: sent,
-        waffen: Math.round(eff.waffen),
-        schild: Math.round(eff.schild),
-        panzerung: Math.round(eff.panzerung),
-        dmgTaken: Math.round(result.dmgTakenB[id] || 0),
-        dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
-        destroyedCount: sent - survivedCount,
-        survivedCount,
-        destroyed: survivedCount <= 0,
-        shotsFired: result.shotsB.shotsFired[id] || 0,
-        hits: result.shotsB.hits[id] || 0,
-        rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
-        shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
-        shieldRegen: Math.round(result.shieldRegenB[id] || 0),
-      };
-    });
-
+    // Nutzerentscheidung (Juli 2026): kein persoenlicher Nachrichten-Eintrag mehr fuer
+    // Rueckeroberungsversuche - anders als beim Spieler-Angriff (resolveOutpostAttack) gibt es hier
+    // keinen menschlichen Akteur (die Piraten greifen von selbst an), eine Benachrichtigung an ALLE
+    // Menschen bei JEDEM Versuch wirkte wie Spam. Der Ausgang bleibt ueber die Galaxie-Ansicht
+    // sichtbar (Garnisonsstaerke/Besitzer, siehe listOutpostSummaries()).
     const garrisonWon = npcIds.every((id) => (result.survivorsB[id] || 0) <= 0);
-    let outcome: string;
     if (garrisonWon) {
       const survivors: Record<string, number> = {};
       Object.entries(outpost.garrison).forEach(([id]) => {
         survivors[id] = result.survivorsA[id] || 0;
       });
       outpost.garrison = survivors;
-      saveOutpost(outpost);
-      outcome = 'Rückeroberung abgewehrt';
     } else {
       outpost.ownerSide = 'pirates';
       outpost.garrison = {};
-      saveOutpost(outpost);
-      outcome = 'Außenposten von Piraten zurückerobert';
     }
-
-    const detail: CombatDetail = {
-      sektorName: `Außenposten 1:${outpost.system}:${outpost.position} (${outpost.tier})`,
-      outcome,
-      roundsFought: result.roundsFought,
-      npcResults,
-      playerResults: garrisonResults,
-    };
-    notifyHumans(
-      garrisonWon
-        ? `Piraten-Angriff auf euren Außenposten 1:${outpost.system}:${outpost.position} abgewehrt - Garnison hat Verluste erlitten, aber gehalten.`
-        : `Piraten haben euren Außenposten 1:${outpost.system}:${outpost.position} zurückerobert - die Garnison wurde vernichtet.`,
-      detail,
-    );
+    saveOutpost(outpost);
   }
-}
-
-function notifyHumans(text: string, detail?: CombatDetail): void {
-  listAllUsers().forEach((u) => {
-    if (u.isBot) return;
-    const state = loadPlayerState(u.id);
-    pushMessage(state, 'kampf', text, detail);
-    savePlayerState(state);
-  });
 }
