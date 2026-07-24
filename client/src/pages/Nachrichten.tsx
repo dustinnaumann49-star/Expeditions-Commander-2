@@ -241,6 +241,7 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
   if (detail.teile.waffen) rows.push(['Waffen-Teile', detail.teile.waffen.toLocaleString('de-DE')]);
   if (detail.teile.schild) rows.push(['Schild-Teile', detail.teile.schild.toLocaleString('de-DE')]);
   if (detail.teile.panzerung) rows.push(['Panzerungs-Teile', detail.teile.panzerung.toLocaleString('de-DE')]);
+  if (detail.eliteContainers) rows.push(['💎 Elite-Container', detail.eliteContainers.toLocaleString('de-DE')]);
   return rows;
 }
 
@@ -251,7 +252,7 @@ function RichFindList({ finds }: { finds: RichFindEntry[] }) {
   if (finds.length === 0) return null;
   return (
     <div style={{ marginTop: 16 }}>
-      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Reiche Asteroidenfunde (Ertrag verdoppelt)</p>
+      <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Reiche Funde (Ertrag verdoppelt)</p>
       <table className="combat-table">
         <thead>
           <tr>

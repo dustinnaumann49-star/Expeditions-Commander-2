@@ -380,6 +380,7 @@ export interface FarmDetail {
   resources: { metall: number; kristall: number; deuterium: number };
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
+  eliteContainers?: number;
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
   richFinds?: RichFindEntry[];
@@ -553,6 +554,7 @@ export interface SektorConfig {
   captainChance?: number;
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
+  guaranteedEliteContainers?: number;
   multiplayerOnly?: boolean;
   resourceCapOverTime?: { metall: number; kristall: number; deuterium: number };
 }

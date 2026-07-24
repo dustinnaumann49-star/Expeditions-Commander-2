@@ -298,14 +298,25 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
             <strong style={{ color: 'var(--accent-kristall)' }}>{defenseFactor}%</strong> deiner Power (zusätzlicher Mix aus Verteidigungsanlagen)
           </span>
         </div>
-        <div className="info-row">
-          <span className="info-label">☠ Piratenkapitän-Event</span>
-          <span className="info-value">
-            <strong style={{ color: 'var(--rf-gold)' }}>{((cfg.captainChance || 0) * 100).toFixed(0)}%</strong> Chance pro Kampf · Belohnung bei
-            Sieg: <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
-            <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong>
-          </span>
-        </div>
+        {cfg.captainChance ? (
+          <div className="info-row">
+            <span className="info-label">☠ Piratenkapitän-Event</span>
+            <span className="info-value">
+              <strong style={{ color: 'var(--rf-gold)' }}>{(cfg.captainChance * 100).toFixed(0)}%</strong> Chance pro Kampf · Belohnung bei
+              Sieg: <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
+              <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong>
+            </span>
+          </div>
+        ) : cfg.guaranteedEliteContainers ? (
+          <div className="info-row">
+            <span className="info-label">💎 Garantierte Belohnung</span>
+            <span className="info-value">
+              <strong style={{ color: 'var(--rf-gold)' }}>{cfg.guaranteedEliteContainers}x Elite-Container</strong> bei erfolgreicher Rückkehr ·
+              zusätzlich <strong style={{ color: 'var(--accent-dm)' }}>8%</strong> Chance pro Stunden-Check, die bisherige Beute dieser Mission zu
+              verdoppeln
+            </span>
+          </div>
+        ) : null}
         <div className="info-row">
           <span className="info-label">📈 Sieges-Serie</span>
           <span className="info-value">

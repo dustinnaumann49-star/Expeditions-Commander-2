@@ -26,10 +26,10 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 5 Teile pro Kategorie.",
     aktivitaet:"Piraten-Chance 55%", gefahr:"Niedrig", level:"gruen" },
   { id:"piraten_mittel", name:"Sektor P9 – Piraten-Sektor (Mittel)", img:"sektoren/piraten_mittel.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 10 Teile pro Kategorie.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 10 pro Kategorie) - garantiert 1 Elite-Container bei Rückkehr. 8% Chance pro Stunde, die bisherige Beute dieser Mission zu verdoppeln.",
     aktivitaet:"Piraten-Chance 65%", gefahr:"Mittel", level:"gelb" },
   { id:"piraten_hoch", name:"Sektor P9 – Piraten-Sektor (Hoch)", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 15 Teile pro Kategorie. Gegner können hier auch stärker sein als die eigene Flotte.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 15 pro Kategorie) - garantiert 3 Elite-Container bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. 8% Chance pro Stunde, die bisherige Beute dieser Mission zu verdoppeln.",
     aktivitaet:"Piraten-Chance 75%", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
     typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 130% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
@@ -54,6 +54,10 @@ export interface SektorConfig {
   captainChance?: number;
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
+  // Garantierte Elite-Container bei Missionsende (Nutzerentscheidung Juli 2026, Balance-Umbau
+  // Piraten-Sektor: Mittel/Hoch ersetzen die Kapitaen-Zufallschance durch eine planbare, garantierte
+  // Belohnung - siehe finalizeMission() in missions.ts).
+  guaranteedEliteContainers?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // NUR bei piraten_elite (Elite-Bollwerk) genutzt, laeuft linear ueber dessen 4h-Missionsdauer (MISSION_DURATION_MS) - NICHT zu verwechseln mit dmCap bei Asteroiden-Feldern, das ueber ASTEROID_MISSION_DURATION_MS (12h) laeuft
   // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
@@ -75,15 +79,21 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // leicht - checkChance/Feindstaerke/Beute wurden gestaffelt angehoben (niedrig am wenigsten,
   // hoch am staerksten), damit ein spuerbarer Schwierigkeits-/Belohnungs-Unterschied zwischen den
   // Stufen entsteht. niedrig bleibt bewusst die deutlich sanfteste Stufe fuer Gelegenheitsspieler.
+  // Balance-Umbau (Nutzerentscheidung Juli 2026, "Piraten-Sektor fuehlt sich neben Aussenposten/
+  // Piratenbasen ueberfluessig an"): Teile bleiben die Kernbelohnung ueberall, lootBase deutlich
+  // reduziert (nur noch kleiner Nebeneffekt, nicht mehr Haupt-Anreiz). Mittel/Hoch tauschen die
+  // Kapitaen-Zufallschance gegen GARANTIERTE Elite-Container (planbar statt Gluecksspiel) und werden
+  // spuerbar staerker (npcFloor + PIRATEN_MULTIPLIER_ROLL weiter unten angehoben). Niedrig
+  // bleibt bewusst unangetastet - weiterhin die sanfte Einstiegsstufe ohne Elite-Container.
   piraten_niedrig:  { checkChance:0.55, type:"piraten", teileCap:5, npcFloor:300000,
-    lootBase:{metall:10000, kristall:6500, deuterium:2500}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    lootBase:{metall:3000, kristall:2000, deuterium:800}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.05, captainContainerTier:"silber", captainDm:10, galaxyPosition:{system:10, position:5} },
-  piraten_mittel:   { checkChance:0.65, type:"piraten", teileCap:10, npcFloor:800000,
-    lootBase:{metall:21000, kristall:13000, deuterium:5500}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.08, captainContainerTier:"silber", captainDm:20, galaxyPosition:{system:27, position:9} },
-  piraten_hoch:     { checkChance:0.75, type:"piraten", teileCap:15, npcFloor:1800000,
-    lootBase:{metall:35000, kristall:22000, deuterium:10000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.12, captainContainerTier:"gold", captainDm:35, galaxyPosition:{system:45, position:3} },
+  piraten_mittel:   { checkChance:0.65, type:"piraten", teileCap:10, npcFloor:950000,
+    lootBase:{metall:6000, kristall:3800, deuterium:1600}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    guaranteedEliteContainers:1, galaxyPosition:{system:27, position:9} },
+  piraten_hoch:     { checkChance:0.75, type:"piraten", teileCap:15, npcFloor:2400000,
+    lootBase:{metall:10000, kristall:6500, deuterium:3000}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    guaranteedEliteContainers:3, galaxyPosition:{system:45, position:3} },
   piraten_elite:    { checkChance:1, type:"piraten", teileCap:20, npcFloor:3000000,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
@@ -108,10 +118,13 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
 // zwischen staerkster Solo-Stufe und Elite-Bollwerk zu klein geworden, Elite soll spuerbar die
 // haerteste Stufe bleiben (durchschnittlich 130% der KOMBINIERTEN Flottenstaerke aller
 // Teilnehmer).
+// Mittel/Hoch angehoben (Balance-Umbau Juli 2026, siehe Kommentar bei SEKTOR_CONFIG oben) - im
+// Gegenzug fuer die garantierten Elite-Container sollen diese beiden Stufen spuerbar mehr
+// Gegenwehr leisten als vorher.
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> =
 {
   piraten_niedrig: [0.15, 0.175, 0.20],
-  piraten_mittel:  [0.55, 0.65, 0.75],
-  piraten_hoch:    [1.00, 1.10, 1.25],
+  piraten_mittel:  [0.65, 0.75, 0.85],
+  piraten_hoch:    [1.20, 1.35, 1.55],
   piraten_elite:   [1.15, 1.30, 1.45]
 };

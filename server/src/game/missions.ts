@@ -12,6 +12,7 @@ import {
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
   ASTEROID_RICH_FIND_CHANCE,
+  PIRATEN_RICH_FIND_CHANCE,
   COMBAT_SHIP_IDS,
   getEscalationMultiplier,
 } from './data/economy.js';
@@ -306,10 +307,14 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   });
 }
 
-function runAsteroidRichFindCheck(mission: Mission) {
+// Generalisiert (Nutzerentscheidung Juli 2026: "das System wie im Asteroiden-Feld ist cool" -
+// jetzt auch fuer Piraten-Sektoren Mittel/Hoch, siehe runHourlyCheck()) - urspruenglich nur fuer
+// Asteroiden-Felder, Logik selbst war schon generisch genug (verdoppelt einfach `mission.farmed`),
+// nur der Name/die Chance waren asteroid-spezifisch benannt.
+function runRichFindCheck(mission: Mission, chance: number) {
   const hasFarm = mission.farmed.metall > 0 || mission.farmed.kristall > 0 || mission.farmed.deuterium > 0;
   if (!hasFarm) return;
-  if (Math.random() >= ASTEROID_RICH_FIND_CHANCE) return;
+  if (Math.random() >= chance) return;
 
   const bonus = {
     metall: mission.farmed.metall,
@@ -329,9 +334,17 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (!cfg) return;
 
   if (cfg.type === 'asteroid') {
-    runAsteroidRichFindCheck(mission);
+    runRichFindCheck(mission, ASTEROID_RICH_FIND_CHANCE);
     await runAsteroidEscortCheck(state, mission);
     return;
+  }
+
+  // Piraten-Sektoren Mittel/Hoch (Balance-Umbau Juli 2026): dieselbe "reicher Fund"-Chance wie im
+  // Asteroiden-Feld, laeuft UNABHAENGIG vom checkChance-Wuerfel weiter unten (also auch in ruhigen
+  // Stunden ohne Piratenkontakt) - bewusst NUR Mittel/Hoch (nicht Niedrig, Elite-Bollwerk oder der
+  // Piratenadmiral, die ausserhalb dieses Balance-Umbaus liegen).
+  if (mission.sektorId === 'piraten_mittel' || mission.sektorId === 'piraten_hoch') {
+    runRichFindCheck(mission, PIRATEN_RICH_FIND_CHANCE);
   }
 
   if (Math.random() >= cfg.checkChance) {
@@ -631,6 +644,11 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
   Object.entries(mission.ships).forEach(([id, c]) => {
     if (c > 0) state.fleet[id] = (state.fleet[id] || 0) + c;
   });
+  // Garantierte Elite-Container (Balance-Umbau Juli 2026, siehe SEKTOR_CONFIG-Kommentar in
+  // sectors.ts) - nur bei Piraten-Sektor Mittel/Hoch, ersetzt dort die vorherige Kapitaen-
+  // Zufallschance durch eine planbare Belohnung bei erfolgreicher Rueckkehr.
+  const guaranteedEliteContainers = cfgForStats?.guaranteedEliteContainers || 0;
+  if (guaranteedEliteContainers > 0) addContainers(state, 'elite', guaranteedEliteContainers);
   const detail: FarmDetail = {
     sektorName: mission.sektorId,
     resources: {
@@ -644,6 +662,7 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       schild: Math.floor(mission.teile.schild),
       panzerung: Math.floor(mission.teile.panzerung),
     },
+    eliteContainers: guaranteedEliteContainers > 0 ? guaranteedEliteContainers : undefined,
     fleetReturned: { ...mission.ships },
     skirmishes: mission.skirmishLog,
     richFinds: mission.richFindLog,
@@ -654,7 +673,7 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       (sum, f) => sum + f.bonus.metall + f.bonus.kristall + f.bonus.deuterium,
       0
     );
-    richFindText = ` Reicher Asteroidenfund in Stunde ${mission.richFindLog
+    richFindText = ` Reicher Fund in Stunde ${mission.richFindLog
       .map((f) => f.hour)
       .join(', ')} (Ertrag verdoppelt, Bonus insgesamt ${Math.floor(totalBonus).toLocaleString('de-DE')} Ressourcen) - Details siehe unten.`;
   }

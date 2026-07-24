@@ -464,6 +464,7 @@ export interface FarmDetail {
   resources: { metall: number; kristall: number; deuterium: number };
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
+  eliteContainers?: number; // garantierte Elite-Container bei Missionsende (siehe SEKTOR_CONFIG.guaranteedEliteContainers)
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
   richFinds?: RichFindEntry[];
