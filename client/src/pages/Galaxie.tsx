@@ -178,9 +178,13 @@ export function GalaxiePage() {
       <div className="queue-box" style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>🚩 {gameData.allianceName}</h3>
         <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 6 }}>
-          Mitglieder: <strong>du</strong>
+          Mitglieder: <strong style={{ color: 'var(--accent-deut)' }}>du</strong>
           {users.map((u) => (
-            <span key={u.id}>, {u.isBot && '🤖 '}{u.username}</span>
+            <span key={u.id}>
+              {', '}
+              {u.isBot && '🤖 '}
+              <strong style={{ color: 'var(--accent-kristall)' }}>{u.username}</strong>
+            </span>
           ))}
           {' '}· Außenposten gehalten: <strong>{outposts.filter((o) => o.ownerSide === 'players').length}/{outposts.length}</strong>
         </p>
@@ -265,7 +269,7 @@ export function GalaxiePage() {
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Position {pos}</p>
                 {occ ? (
                   <>
-                    <p style={{ fontWeight: 600 }}>
+                    <p style={{ fontWeight: 600, color: isOwn ? 'var(--accent-deut)' : 'var(--accent-kristall)' }}>
                       {occ.isBot && '🤖 '}
                       {occ.username} {isOwn && '(du)'}
                     </p>
