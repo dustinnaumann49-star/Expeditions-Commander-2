@@ -508,7 +508,13 @@ export function GalaxiePage() {
                     <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.max(0, (p[s.id] || 0) - 10) }))}>
                       -10
                     </button>
+                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.max(0, (p[s.id] || 0) - 1) }))}>
+                      -1
+                    </button>
                     <span style={{ padding: '0 6px' }}>{qty}</span>
+                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.min(avail, (p[s.id] || 0) + 1) }))}>
+                      +1
+                    </button>
                     <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.min(avail, (p[s.id] || 0) + 10) }))}>
                       +10
                     </button>
