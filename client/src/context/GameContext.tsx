@@ -117,14 +117,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   async function refreshGalaxy() {
     try {
       const res = await api.getGalaxy();
-      setGalaxyOccupants(res.occupants);
-      setOwnGalaxyPosition(res.ownPosition);
-      setPirateBases(res.pirateBases);
-      setPirateBaseSummaries(res.pirateBaseSummaries);
-      setOutposts(res.outposts);
-      setSektorPositions(res.sektorPositions);
-      setIncomingDeployments(res.incomingDeployments);
-      setGalaxyEvents(res.events);
+      // Fallback auf leere Arrays (Nutzerentscheidung Juli 2026: eine fehlkonfigurierte
+      // VITE_API_BASE liess den Client bisher auf HTML statt JSON antworten - request() faengt das
+      // zwar als leeres Objekt {} ab statt zu werfen, aber ".filter()" auf den dann UNDEFINED
+      // Feldern liess die ganze App abstuerzen. Defensive Absicherung, damit eine kaputte/leere
+      // Antwort hoechstens leere Listen zeigt statt eines White-Screen-Crashs).
+      setGalaxyOccupants(res.occupants || []);
+      setOwnGalaxyPosition(res.ownPosition ?? null);
+      setPirateBases(res.pirateBases || []);
+      setPirateBaseSummaries(res.pirateBaseSummaries || []);
+      setOutposts(res.outposts || []);
+      setSektorPositions(res.sektorPositions || []);
+      setIncomingDeployments(res.incomingDeployments || []);
+      setGalaxyEvents(res.events || []);
     } catch {
       // siehe oben
     }
@@ -133,7 +138,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   async function refreshUsers() {
     try {
       const res = await api.listUsers();
-      setUsers(res.users);
+      setUsers(res.users || []);
     } catch {
       // siehe oben
     }

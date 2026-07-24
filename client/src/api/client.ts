@@ -27,11 +27,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}/api${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `Anfrage fehlgeschlagen (${res.status})`);
   }
-  return data as T;
+  // Bewusst NICHT wie beim Fehlerfall oben auf {} zurueckfallen, falls das JSON-Parsing hier
+  // fehlschlaegt (Nutzerentscheidung Juli 2026, nach echtem Vorfall): eine falsch konfigurierte
+  // VITE_API_BASE liess den Client bisher HTML statt JSON zurueckbekommen (z.B. die SPA-Fallback-
+  // Seite eines falsch geroouteten Servers) - das wurde vorher STILL als "erfolgreiche", aber leere
+  // Antwort behandelt, wodurch z.B. `outposts` ueberall im Code plötzlich `undefined` statt eines
+  // Arrays war und die App mit kryptischen ".filter() of undefined"-Fehlern abstuerzte. Jetzt wirft
+  // das hier stattdessen einen klaren, sprechenden Fehler.
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new Error('Antwort vom Server war kein gültiges JSON - meist ein Zeichen für eine falsch konfigurierte API-Adresse (VITE_API_BASE).');
+  }
 }
 
 export const api = {
