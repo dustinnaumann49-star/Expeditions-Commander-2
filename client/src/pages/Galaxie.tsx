@@ -187,6 +187,13 @@ export function GalaxiePage() {
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Gegenseite: {gameData.pirateAllianceName} (kontrolliert alle noch nicht eroberten Außenposten und Piratenbasen)
         </p>
+        <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginTop: 4 }}>
+          Aktueller Flugzeit-Bonus aus Außenposten:{' '}
+          <strong>
+            +{Math.round(outposts.filter((o) => o.ownerSide === 'players').length * gameData.outpostSpeedBonusPerOutpost * 100)}%
+          </strong>{' '}
+          (gilt für jeden Flug, nicht nur zu/von Außenposten)
+        </p>
         {outposts.filter((o) => o.ownerSide === 'players' && o.garrisonPower > 0).length > 0 && (
           <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
             <p style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Stationierte Flotten auf euren Außenposten:</p>

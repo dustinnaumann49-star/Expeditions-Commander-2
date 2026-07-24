@@ -653,6 +653,7 @@ export interface GameData {
   spyProbeFuelCostPerProbe: number;
   allianceName: string;
   pirateAllianceName: string;
+  outpostSpeedBonusPerOutpost: number;
 }
 
 export interface ClassDefinition {
