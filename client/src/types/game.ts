@@ -740,3 +740,33 @@ export interface ActiveRaidInfo {
   waveCount: number;
   holdingCount: number;
 }
+
+// ===== Debug-Einblick in KI-Bots/Piratenbasen (siehe /api/game/debug/npcs) =====
+export interface DebugBotState {
+  username: string;
+  playerClass: PlayerClass | null;
+  economyClass: EconomyClass | null;
+  galaxyPosition: GalaxyPosition | null;
+  resources: { metall: number; kristall: number; deuterium: number; dm: number };
+  fleet: Record<string, number>;
+  defense: Record<string, number>;
+  buildings: Record<string, number>;
+  research: Record<string, number>;
+  buildQueueLength: number;
+  defenseQueueLength: number;
+  researchQueueLength: number;
+  buildingQueueLength: number;
+}
+
+export interface DebugPirateBaseState {
+  id: string;
+  system: number;
+  position: number;
+  playerClass: PlayerClass | null;
+  resources: { metall: number; kristall: number; deuterium: number; dm: number };
+  fleet: Record<string, number>;
+  defense: Record<string, number>;
+  buildings: Record<string, number>;
+  research: Record<string, number>;
+  outgoingAttacks: number;
+}

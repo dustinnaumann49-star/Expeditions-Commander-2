@@ -17,6 +17,7 @@ import { GalaxiePage } from './pages/Galaxie';
 import { UpdatesPage } from './pages/Updates';
 import { StatistikPage } from './pages/Statistik';
 import { KlassePage } from './pages/Klasse';
+import { DebugPage } from './pages/Debug';
 import { useGame } from './context/GameContext';
 
 const NAV_ITEMS = [
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { to: '/klasse', label: 'Klasse' },
   { to: '/statistik', label: 'Statistik' },
   { to: '/updates', label: 'Updates' },
+  { to: '/debug', label: 'Debug' },
 ];
 
 // Zurueckgestuft auf EIN einziges, festes Hintergrundbild fuer die gesamte App (siehe README) -
@@ -103,6 +105,7 @@ function GameHome() {
         <Route path="/klasse" element={<KlassePage />} />
         <Route path="/statistik" element={<StatistikPage />} />
         <Route path="/updates" element={<UpdatesPage />} />
+        <Route path="/debug" element={<DebugPage />} />
       </Routes>
     </Layout>
   );

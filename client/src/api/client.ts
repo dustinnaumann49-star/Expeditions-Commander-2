@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary, OutpostSummary } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary, OutpostSummary, DebugBotState, DebugPirateBaseState } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -147,4 +147,5 @@ export const api = {
     request<PlayerState>('/game/galaxy/outpost/reinforce', { method: 'POST', body: JSON.stringify({ outpostId, ships }) }),
   recallOutpost: (outpostId: string) =>
     request<PlayerState>('/game/galaxy/outpost/recall', { method: 'POST', body: JSON.stringify({ outpostId }) }),
+  getDebugNpcs: () => request<{ bots: DebugBotState[]; pirateBases: DebugPirateBaseState[] }>('/game/debug/npcs'),
 };
