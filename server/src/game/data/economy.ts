@@ -396,6 +396,18 @@ export const OUTPOST_PIRATE_ATTACK_CHANCE = 0.15;
 // Zufalls-Vorteil der Piraten-Angriffsflotte gegenueber der Tier-Zielstaerke (analog zum
 // RAID_WAVE_FACTORS-Muster) - Rueckeroberung ist dadurch eine echte Bedrohung, aber keine Garantie.
 export const OUTPOST_PIRATE_ADVANTAGE_ROLL = [1.0, 1.15, 1.3, 1.4];
+// Konzentrations-Bonus (Nutzer-Feedback Juli 2026, siehe runOutpostPirateAiTurn() in outposts.ts,
+// empirisch mit echten Kampfsimulationen kalibriert) - faengt ab, dass eine Garnison aus wenigen,
+// ueberdurchschnittlich STARKEN Einzelschiffen (z.B. 1 Imperator) trotz korrekt power-skalierter
+// Gegnerstaerke praktisch unbesiegbar war: die einfache Power-Summe (Waffen+Schild+Panzerung)
+// unterschaetzt, wie sehr ein Superschiff Massenangriffe schwacher Schiffe wegsteckt. Bewusst an
+// der DURCHSCHNITTSSTAERKE PRO SCHIFF festgemacht (nicht an der reinen Schiffsanzahl) - eine
+// Garnison aus vielen GUENSTIGEN Schiffen (z.B. 100 Leichte Jaeger) bleibt dadurch unangetastet
+// (ratio bleibt bei 1, kein Bonus), nur echte Elite-Stacks bekommen den Aufschlag. Multiplikator =
+// 1 + FACTOR * log2(Durchschnittsmacht-pro-Schiff / Macht eines Leichten Jaegers). Bei 1 Imperator
+// (Faktor ~32x staerker als ein Leichter Jaeger) macht FACTOR=1.4 daraus ein 8x-Multiplikator -
+// spuerbare, aber nicht garantierte Bedrohung (in Tests ca. 40-60% Siegchance fuer die Piraten).
+export const OUTPOST_PIRATE_CONCENTRATION_FACTOR = 1.4;
 
 // Rein kosmetische Allianz-Namen (Nutzerentscheidung Juli 2026) - "Allianz" existiert NICHT als
 // eigenes Datenmodell/eigene Logik, sondern ist nur die informelle Bezeichnung fuer "alle Nutzer

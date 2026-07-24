@@ -340,6 +340,14 @@ export const WAVE_PROFILE_WEIGHTS: Record<string, Partial<Record<WaveProfile, nu
   piraten_hoch: { schwarm: 0.1, kampfgruppe: 0.45, elitekader: 0.45 },
   piraten_elite: { schwarm: 0.1, kampfgruppe: 0.4, elitekader: 0.5 },
   raid: { schwarm: 0.5, kampfgruppe: 0.4, elitekader: 0.1 },
+  // Balance (Juli 2026, Nutzer-Feedback): fehlte bisher komplett, fiel damit auf den
+  // pickWaveProfile()-Standardwert {schwarm:1} zurueck - IMMER die schwaechste, "leicht"-lastige
+  // Zusammensetzung. Das machte einen Power-technisch korrekt skalierten Piratenangriff gegen
+  // wenige starke Schiffe (z.B. 1 Imperator) trotzdem wirkungslos: viele billige Leichte Jaeger
+  // kommen kaum durch dessen Panzerung/Schild, ihre Feuerkraft verpufft. Analog zu piraten_hoch/
+  // -elite angehoben, damit Aussenposten-Gegner (Eroberung UND Rueckeroberung, siehe outposts.ts)
+  // aus weniger, aber deutlich staerkeren Schiffen bestehen.
+  outpost: { schwarm: 0.15, kampfgruppe: 0.45, elitekader: 0.4 },
 };
 
 // Basis-Wellentabelle fuer Kontexte OHNE eigene Sektor-Tabelle. Fuer Raids seit der

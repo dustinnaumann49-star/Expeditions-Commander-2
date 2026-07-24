@@ -1,8 +1,8 @@
 import { OUTPOST_POSITIONS, OUTPOST_IDS, OUTPOST_TIERS } from './data/galaxyConstants.js';
-import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_CHANCE, OUTPOST_PIRATE_ADVANTAGE_ROLL } from './data/economy.js';
+import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_CHANCE, OUTPOST_PIRATE_ADVANTAGE_ROLL, OUTPOST_PIRATE_CONCENTRATION_FACTOR } from './data/economy.js';
 import { getOutpostJson, saveOutpostJson, listAllUsers } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
-import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats, combatFleetPowerBase, rollMultiplierWithOutlier } from './combat.js';
+import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats, combatFleetPowerBase, shipPowerBase, rollMultiplierWithOutlier } from './combat.js';
 import { runCombatInWorker } from './combatRunner.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { pushMessage } from './messages.js';
@@ -432,7 +432,14 @@ export async function runOutpostPirateAiTurn(): Promise<void> {
     // war.
     const garrisonPower = combatFleetPowerBase(outpost.garrison);
     const advantage = OUTPOST_PIRATE_ADVANTAGE_ROLL[Math.floor(Math.random() * OUTPOST_PIRATE_ADVANTAGE_ROLL.length)];
-    const targetPower = Math.max(garrisonPower * advantage, OUTPOST_TIER_TARGET_POWER[outpost.tier]);
+    // Konzentrations-Bonus (siehe OUTPOST_PIRATE_CONCENTRATION_FACTOR in economy.ts fuer Details) -
+    // an der DURCHSCHNITTSMACHT PRO SCHIFF festgemacht, nicht an der reinen Schiffsanzahl, damit
+    // normale Massen-Garnisonen unangetastet bleiben und nur echte Elite-Stacks (z.B. 1 Imperator)
+    // den Aufschlag bekommen.
+    const avgPowerPerShip = garrisonPower / totalGarrison;
+    const concentrationRatio = Math.max(1, avgPowerPerShip / shipPowerBase('leicht'));
+    const concentrationBonus = 1 + OUTPOST_PIRATE_CONCENTRATION_FACTOR * Math.log2(concentrationRatio);
+    const targetPower = Math.max(garrisonPower * advantage * concentrationBonus, OUTPOST_TIER_TARGET_POWER[outpost.tier]);
     const npcShips = generateFallbackFleet(targetPower, pickWaveProfile('outpost'));
     const npcIds = Object.keys(npcShips);
 
