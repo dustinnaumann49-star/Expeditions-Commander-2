@@ -389,10 +389,12 @@ export const OUTPOST_MULTIPLIER_ROLL: Record<'niedrig' | 'mittel' | 'hoch', numb
 // gebunden) - additiv, siehe outpostSpeedMultiplier() in outposts.ts. Bei allen 6 Posten in
 // Spielerhand also +90%.
 export const OUTPOST_SPEED_BONUS_PER_OUTPOST = 0.15;
-// Piraten-KI agiert opportunistisch statt im festen Takt (Nutzerentscheidung, analog zur
-// BOT_ACTION_CHANCE-Philosophie in bot.ts) - Chance PRO spieler-eigenem Aussenposten UND
-// Heartbeat, dass die Piraten einen Rueckeroberungsversuch starten.
-export const OUTPOST_PIRATE_ATTACK_CHANCE = 0.15;
+// Rueckeroberungs-Rhythmus (Nutzerentscheidung Juli 2026, ersetzt die vorherige Zufallschance PRO
+// Heartbeat/alle 2 Minuten - fuehlte sich bei mehreren gehaltenen Posten wie Dauerbeschuss an).
+// Nach jedem Versuch (egal ob Angriff ausgeloest wurde oder nicht - siehe runOutpostPirateAiTurn())
+// wird der naechste Check-Zeitpunkt zufaellig in diesem Fenster neu gewuerfelt.
+export const OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN_MS = 60 * 60 * 1000;
+export const OUTPOST_PIRATE_ATTACK_COOLDOWN_MAX_MS = 120 * 60 * 1000;
 // Zufalls-Vorteil der Piraten-Angriffsflotte gegenueber der Tier-Zielstaerke (analog zum
 // RAID_WAVE_FACTORS-Muster) - Rueckeroberung ist dadurch eine echte Bedrohung, aber keine Garantie.
 export const OUTPOST_PIRATE_ADVANTAGE_ROLL = [1.0, 1.15, 1.3, 1.4];

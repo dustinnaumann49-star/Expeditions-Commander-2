@@ -1,5 +1,5 @@
 import { OUTPOST_POSITIONS, OUTPOST_IDS, OUTPOST_TIERS } from './data/galaxyConstants.js';
-import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_CHANCE, OUTPOST_PIRATE_ADVANTAGE_ROLL, OUTPOST_PIRATE_CONCENTRATION_FACTOR } from './data/economy.js';
+import { OUTPOST_TIER_TARGET_POWER, OUTPOST_MULTIPLIER_ROLL, OUTPOST_SPEED_BONUS_PER_OUTPOST, OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN_MS, OUTPOST_PIRATE_ATTACK_COOLDOWN_MAX_MS, OUTPOST_PIRATE_ADVANTAGE_ROLL, OUTPOST_PIRATE_CONCENTRATION_FACTOR } from './data/economy.js';
 import { getOutpostJson, saveOutpostJson, listAllUsers } from '../db.js';
 import { galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost } from './galaxy.js';
 import { shipName, generateFallbackFleet, pickWaveProfile, getEffectiveStats, baseStats, combatFleetPowerBase, shipPowerBase, rollMultiplierWithOutlier } from './combat.js';
@@ -28,7 +28,7 @@ const TIER_BY_ID = new Map<string, OutpostTier>(OUTPOST_IDS.map((id, i) => [id, 
 
 function seedOutpost(id: string): OutpostState {
   const pos = POSITION_BY_ID.get(id)!;
-  return { id, system: pos.system, position: pos.position, tier: TIER_BY_ID.get(id)!, ownerSide: 'pirates', garrison: {}, ownerSince: null };
+  return { id, system: pos.system, position: pos.position, tier: TIER_BY_ID.get(id)!, ownerSide: 'pirates', garrison: {}, ownerSince: null, nextPirateAttackCheck: null };
 }
 
 export function loadOutpost(id: string): OutpostState | null {
@@ -39,7 +39,9 @@ export function loadOutpost(id: string): OutpostState | null {
     saveOutpostJson(id, JSON.stringify(fresh));
     return fresh;
   }
-  return JSON.parse(json) as OutpostState;
+  const outpost = JSON.parse(json) as OutpostState;
+  if (outpost.nextPirateAttackCheck === undefined) outpost.nextPirateAttackCheck = null; // Bestandsdaten von vor dem Cooldown-Umbau
+  return outpost;
 }
 
 export function loadAllOutposts(): OutpostState[] {
@@ -381,6 +383,7 @@ async function resolveOutpostAttack(state: PlayerState, deployment: OutpostDeplo
       if (qty > 0) survivors[id] = qty;
     });
     outpost.garrison = survivors;
+    outpost.nextPirateAttackCheck = rollNextPirateAttackCheck(); // Gnadenfrist statt sofort wieder angreifbar
     saveOutpost(outpost);
     outcome = 'Außenposten erobert';
   } else {
@@ -401,19 +404,29 @@ async function resolveOutpostAttack(state: PlayerState, deployment: OutpostDeplo
   pushMessage(state, 'kampf', `Angriff auf Außenposten 1:${outpost.system}:${outpost.position}: ${outcome}.`, detail);
 }
 
+// Naechster Rueckeroberungs-Check, zufaellig im OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN/MAX_MS-Fenster
+// (siehe economy.ts) - ersetzt die vorherige Zufallschance PRO Heartbeat.
+function rollNextPirateAttackCheck(): number {
+  return Date.now() + OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN_MS + Math.random() * (OUTPOST_PIRATE_ATTACK_COOLDOWN_MAX_MS - OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN_MS);
+}
+
 // ========== PIRATEN-KI: OPPORTUNISTISCHE RUECKEROBERUNG ==========
-// Einmal pro Heartbeat (siehe heartbeat.ts, analog zu runAllPirateBaseTurns()) - fuer jeden
-// spieler-eigenen Posten eine Chance, dass die Piraten einen Rueckeroberungsversuch starten.
-// Bewusst OHNE simulierte Anflugzeit (die Piraten "erscheinen" direkt beim Heartbeat-Tick) - eine
-// echte Flugzeit-Simulation braeuchte eine Piraten-Ausgangsposition/-Flotte, die es hier (anders
-// als bei Raids/PIRATE_BASES) nicht gibt, und wuerde den Nutzen fuer wenig zusaetzlichen Wert stark
+// Einmal pro Heartbeat (siehe heartbeat.ts, analog zu runAllPirateBaseTurns()) geprueft, aber pro
+// Posten nur AKTIV, sobald dessen individueller Cooldown (nextPirateAttackCheck) abgelaufen ist -
+// nicht mehr bei jedem Heartbeat eine Zufallschance (fuehlte sich bei mehreren Posten wie
+// Dauerbeschuss an, siehe OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN/MAX_MS in economy.ts). Bewusst OHNE
+// simulierte Anflugzeit (die Piraten "erscheinen" direkt beim faelligen Check) - eine echte
+// Flugzeit-Simulation braeuchte eine Piraten-Ausgangsposition/-Flotte, die es hier (anders als bei
+// Raids/PIRATE_BASES) nicht gibt, und wuerde den Nutzen fuer wenig zusaetzlichen Wert stark
 // verkomplizieren.
 export async function runOutpostPirateAiTurn(): Promise<void> {
   const outposts = loadAllOutposts().filter((o) => o.ownerSide === 'players');
   if (outposts.length === 0) return;
 
+  const now = Date.now();
   for (const outpost of outposts) {
-    if (Math.random() >= OUTPOST_PIRATE_ATTACK_CHANCE) continue;
+    if (outpost.nextPirateAttackCheck !== null && now < outpost.nextPirateAttackCheck) continue;
+    outpost.nextPirateAttackCheck = rollNextPirateAttackCheck();
 
     const totalGarrison = Object.values(outpost.garrison).reduce((a, b) => a + (b || 0), 0);
     if (totalGarrison === 0) {

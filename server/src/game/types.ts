@@ -176,6 +176,10 @@ export interface OutpostState {
   ownerSide: 'pirates' | 'players';
   garrison: Record<string, number>; // nur relevant wenn ownerSide === 'players'
   ownerSince: number | null;
+  // Cooldown statt Zufallschance PRO Heartbeat (Nutzerentscheidung Juli 2026, nach Feedback "die
+  // greifen ja alle 2 Minuten an") - siehe runOutpostPirateAiTurn() in outposts.ts. Erst NACH
+  // diesem Zeitpunkt wird ueberhaupt wieder ein Rueckeroberungsversuch geprueft.
+  nextPirateAttackCheck: number | null;
 }
 
 // Ein-Weg-Flug zu einem Aussenposten - 'attack' kaempft bei Ankunft gegen die aktuelle Garnison
