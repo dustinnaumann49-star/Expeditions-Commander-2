@@ -1287,6 +1287,114 @@ client/
       Mitgliederliste ist einfach `listAllUsers()` (alle Menschen+Bots). Panel oben in
       `Galaxie.tsx` zeigt Name, Mitglieder, Anzahl gehaltener Außenposten - keine eigene
       Berechtigungslogik, jeder Nutzer konnte ohnehin schon vorher verstärken/zurückrufen.
+90. **Außenposten-Balance-Umbau (Nutzer-Feedback Juli 2026, mehrteilig, ersetzt Teile von Punkt 89)**
+    - live getestet und mehrfach nachgeschärft, siehe `outposts.ts`/`economy.ts`:
+    - **Speed-Bonus global statt System-gebunden**: `outpostSpeedMultiplier()` (vorher
+      `outpostSpeedMultiplierForSystem()`) gilt jetzt für JEDEN Flug, nicht mehr nur bei Start/Ziel
+      im Besitz-System - und addiert sich pro gehaltenem Posten (`OUTPOST_SPEED_BONUS_PER_OUTPOST`
+      = 0.15, bis zu +90% bei allen 6). Aktueller Gesamtwert jetzt in der Galaxie-Allianzbox
+      sichtbar (`outpostSpeedBonusPerOutpost` über `/game/data` ausgeliefert).
+    - **Garnisonsstärke skaliert mit echter Macht statt fixem Tier-Wert**: sowohl beim Spieler-
+      Angriff (`resolveOutpostAttack()`, `sentPower * OUTPOST_MULTIPLIER_ROLL[tier]`) als auch bei
+      der Piraten-Rückeroberung (`runOutpostPirateAiTurn()`, skaliert mit `combatFleetPowerBase()`
+      der TATSÄCHLICH stationierten Garnison) - der alte fixe `OUTPOST_TIER_TARGET_POWER`-Wert
+      bleibt nur noch als Untergrenze für schwache Flotten.
+    - **Konzentrations-Bonus gegen Elite-Stacks**: eine Garnison aus wenigen, überdurchschnittlich
+      starken Einzelschiffen (Live-Fund: 1 Imperator war trotz Machtskalierung praktisch
+      unbesiegbar) bekommt einen zusätzlichen Multiplikator = `1 + OUTPOST_PIRATE_CONCENTRATION_FACTOR
+      * log2(Durchschnittsmacht-pro-Schiff / Macht eines Leichten Jägers)` - an der
+      DURCHSCHNITTSMACHT PRO SCHIFF festgemacht statt der reinen Schiffsanzahl, damit normale
+      Massen-Garnisonen unangetastet bleiben. Mit echten Kampfsimulationen kalibriert (Faktor 1.4 →
+      ca. 40-60% Siegchance der Piraten gegen 1 Imperator).
+    - **`WAVE_PROFILE_WEIGHTS['outpost']` ergänzt** (fehlte komplett, fiel auf `{schwarm:1}`
+      zurück) - Außenposten-Gegner bestehen jetzt aus stärkeren Schiffstypen statt nur der
+      billigsten Masse.
+    - **Rückeroberungs-Rhythmus auf Cooldown umgestellt** (`nextPirateAttackCheck` pro Außenposten,
+      60-120min zufällig) statt einer 15%-Zufallschance PRO Heartbeat (fühlte sich bei mehreren
+      gehaltenen Posten wie Dauerbeschuss an) - neu erobernde Spieler bekommen zusätzlich eine
+      Gnadenfrist statt sofort wieder angreifbar zu sein.
+    - **Keine persönliche Nachricht mehr bei Rückeroberungsversuchen** (`notifyHumans()` entfernt) -
+      kein menschlicher Akteur beteiligt, fühlte sich wie Spam an; Ausgang bleibt über die
+      Galaxie-Ansicht (Garnisonsstärke/Besitzer) sichtbar.
+    - **Farbliche Markierung + zentrale Garnison-Übersicht**: Außenposten-Karten in der
+      Galaxie-Ansicht sind grün (Spieler-Allianz) oder rot (Piraten) hinterlegt statt nur als Text
+      erkennbar (fester Hex-Wert statt `var(--accent-deut)` im `border`-Shorthand - manche Browser
+      lösen CSS-Custom-Properties dort im Inline-Style nicht zuverlässig gegen die CSS-Klasse auf).
+      Neue "Stationierte Flotten"-Übersicht in der Allianzbox zeigt alle gehaltenen Posten mit
+      direktem "Zurückrufen"-Button, ohne durch alle 50 Systeme blättern zu müssen.
+    - **Kampfberichte zeigen "Eure Garnison" statt "Deine Flotte"** bei Außenposten-Ereignissen
+      (`CombatSummaryBars`/`groupByOwner` in `Nachrichten.tsx` bekommen ein `ownLabel`/
+      `defaultOwner`-Prop) - die Garnison gehört der ganzen Seite, nicht exklusiv dem
+      Nachrichtenempfänger.
+91. **KI-Bots greifen jetzt sinnvoll Außenposten an** (`bot.ts` `maybeAttackOutpost()`) - setzte
+    vorher nur `leicht/schwer/kreuzer` mit 15% Flottenanteil ein; da Bots mit der Zeit vor allem
+    stärkere Schiffstypen bauen, kam dabei fast immer weniger als der Mindestwert von 5 Schiffen
+    zusammen und der Angriff wurde komplett übersprungen (kein Zufalls-Pech, ein harter Blocker).
+    Jetzt alle Kampfschifftypen, 50% Flottenanteil, plus eine Mindeststärke-Prüfung gegen die
+    Tier-Zielstärke des Postens, bevor überhaupt ein Versuch gestartet wird.
+92. **Piratenbasen greifen jetzt selbst Spieler/Bots an** (`runAllPirateBaseOffensiveTurns()` in
+    `pirateBaseState.ts`, neuer `PirateBaseOffensiveDeployment`-Typ) - die 4 aktiven Piratenbasen
+    waren bisher rein passiv (nur von Menschen/Bots angreifbar, siehe Punkt 88). Analog zur
+    Außenposten-Piraten-KI: Cooldown pro Basis (`nextOffensiveCheck`, ursprünglich eine 15%-
+    Zufallschance PRO Heartbeat, nach Nutzer-Feedback "das geht ja alle 2 Minuten, viel zu oft" auf
+    12-24h umgestellt, ~1-2 Angriffe/Tag), sendet 20% der echten Kampfflotte gegen einen
+    zufälligen Spieler/Bot (Ziel-Home-Fleet+Verteidigung, keine simulierte Rückflugzeit -
+    Überlebende kehren bei Kampfauflösung sofort zurück), Beute proportional zum Zerstörungsanteil
+    beim Ziel.
+93. **Piraten-Sektor Mittel/Hoch überarbeitet** (Nutzer-Feedback: "man sieht kaum noch eine
+    Verwendung für den Sektor" neben den frisch überarbeiteten Außenposten/Piratenbasen) - siehe
+    `sectors.ts`/`missions.ts`:
+    - Mittel/Hoch tauschen die bisherige Kapitän-Zufallschance gegen GARANTIERTE Elite-Container
+      (`guaranteedEliteContainers`: 1 bzw. 3, vergeben in `finalizeMission()`) - planbar statt
+      Glücksspiel. Niedrig bleibt unverändert (weiterhin Kapitän-Chance auf Silber, keine Elite-
+      Container).
+    - `lootBase` auf allen 3 Stufen deutlich reduziert (nur noch Nebeneffekt, Teile bleiben die
+      Kernbelohnung); Mittel/Hoch im Gegenzug spürbar stärkere Gegner (`npcFloor` +
+      `PIRATEN_MULTIPLIER_ROLL` angehoben).
+    - **"Reicher Fund"-Mechanik vom Asteroiden-Feld übertragen**: `runAsteroidRichFindCheck()`
+      generalisiert zu `runRichFindCheck(mission, chance)` (Logik war schon generisch genug, nur
+      Name/Chance waren asteroid-spezifisch) - 8% Chance pro Stunden-Check (`PIRATEN_RICH_FIND_CHANCE`),
+      die akkumulierte Beute der laufenden Mission zu verdoppeln, NUR Mittel/Hoch.
+94. **KI-Wirtschafts-Verbesserungen nach Beobachtung über die neue Debug-Seite** (siehe Punkt 95) -
+    `economyBotTurn.ts`/`actions.ts`:
+    - **Modul-Bau-KI ergänzt** (`maybeBuildModules()`) - fehlte bisher KOMPLETT, weder Bots noch
+      Piratenbasen haben je ein Gebäude-/Schiffs-/Verteidigungsmodul gebaut. Analog zu
+      `maybeBuildShips()`: pro Aufruf höchstens ein neues Modul pro Kategorie. Gebäude-Module
+      brauchen hohe Basis-Gebäude-Stufen (20/10/5) und greifen daher erst spät im Spielverlauf,
+      Schiffs-/Verteidigungsmodule sofort sobald mindestens 1 Einheit des Typs vorhanden ist.
+    - **Moderater +50%-Produktionsbonus NUR für NPC-Zustände** (`NPC_PRODUCTION_BONUS_MULTIPLIER`
+      in `economy.ts`, `isNpcState()` in `actions.ts` - Piratenbasen über negative `userId`, Bots
+      über `is_bot`-Flag/`listBotUserIds()`) auf die passive Minen-Produktion
+      (`accrueBuildingProduction()`) - gleicht aus, dass eine KI nie so effizient wirtschaftet wie
+      ein Mensch mit vollem Überblick, ersetzt aber nicht die Verhaltens-Fixes selbst. Anpassbarer
+      Einzelwert, falls sich +50% als zu schwach/stark erweist.
+95. **Debug-Seite für Einblick in KI-Bots/Piratenbasen** (`pages/Debug.tsx`, `GET
+    /api/game/debug/npcs` in `routes.ts`) - Nutzerentscheidung: reines 2-Spieler-Koop-Spiel unter
+    vertrauten Mitspielern, kein PvP, daher unbedenklich, den vollen Zustand (Flotte, Verteidigung,
+    Gebäude, Forschung, Ressourcen, Bau-/Forschungswarteschlangen, nächster Angriffs-Check) von
+    KI-Vega/KI-Nyx und allen 4 Piratenbasen einsehbar zu machen. Rein lesend, kein `tick()`/`save`
+    über den Endpunkt selbst nötig.
+    - **Bugfix Flackern**: `EntityCard` war als verschachtelte Funktion INNERHALB von `DebugPage`
+      definiert - bekam dadurch bei jedem Rendern (u.a. alle 3s durch das globale State-Polling in
+      `GameContext.tsx`) eine neue Funktionsreferenz, React hat sie deshalb bei jedem Poll komplett
+      neu gemountet statt nur aktualisiert, was die `queue-box`-Eintrittsanimation ständig erneut
+      ausgelöst hat. Fix: Komponente auf Modulebene mit stabiler Referenz, `gameData` als Prop statt
+      Closure.
+96. **Diverse kleinere UX-/Infra-Verbesserungen (Juli 2026)**:
+    - Spielernamen in der Galaxie-Ansicht farblich hervorgehoben (grün "du", cyan alle anderen) -
+      waren vorher gedimmt (`var(--text-dim)`) oder ungefärbt und gingen in der Übersicht unter.
+    - Einzelschiff-Feinauswahl (`-1`/`+1`-Buttons neben `-10`/`+10`/`Alle`) beim Flotten-Versand in
+      der Galaxie - vorher nur 10er-Schritte oder alles.
+    - **Client stürzt nicht mehr ab bei falsch konfigurierter `VITE_API_BASE`** (Live-Vorfall):
+      `request()` in `api/client.ts` fing einen JSON-Parse-Fehler bisher auch bei Erfolgs-Status
+      still zu `{}` ab (z.B. wenn eine falsch geroutete Domain HTML statt JSON zurückgibt) - dadurch
+      wurden Felder wie `outposts` überall `undefined` statt eines Arrays, die App stürzte mit
+      kryptischen `.filter()`-Fehlern ab. Wirft jetzt einen sprechenden Fehler; `GameContext.tsx`
+      fällt bei Galaxie-/Nutzerlisten zusätzlich defensiv auf leere Arrays zurück.
+    - **Deployed-Commit-Hash über `/api/health` + Server-Log sichtbar** (`git rev-parse --short
+      HEAD` beim Start, fällt auf `'unbekannt'` zurück falls kein `.git` im Produktions-Image
+      vorhanden ist) - hilft bei der Frage "läuft auf dem Server wirklich der neueste Stand?"
+      (Coolify-Deploy-Diagnose nach mehreren Verwirrungen um Webhook/Build-Variable/CORS).
 
 ## Kurz-Changelog
 

@@ -9,6 +9,64 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '25.07.2026',
+    title: 'Balance: KI-Mitspieler und Piratenbasen wachsen jetzt effizienter',
+    changes: [
+      'KI-Vega/KI-Nyx und die Piratenbasen bauen jetzt auch Gebäude-/Schiffs-/Verteidigungs-Module aus, nicht mehr nur die Basis-Gebäude/Schiffe/Verteidigung selbst.',
+      'Piratenbasen greifen euch nur noch 1-2x am Tag an (statt im Schnitt alle paar Minuten) - sie sollen sich lieber aufbauen (Forschung, Gebäude, Verteidigung, Flotte) statt ihre Schiffe ständig in Angriffen zu verlieren.',
+      'KI-Mitspieler und Piratenbasen bekommen einen moderaten Bonus auf ihre Rohstoffproduktion (+50%), um auszugleichen, dass eine KI nie so effizient wirtschaftet wie ein Mensch mit vollem Überblick. Gilt nicht für echte Spieler.',
+    ],
+  },
+  {
+    date: '25.07.2026',
+    title: 'Neu: Debug-Ansicht für KI-Bots und Piratenbasen',
+    changes: [
+      'Neuer Menüpunkt "Debug" zeigt den vollen Zustand von KI-Vega/KI-Nyx und allen 4 aktiven Piratenbasen - Flotte, Verteidigung, Gebäude, Forschung, Ressourcen und laufende Angriffe.',
+      'Reines Beobachtungs-Werkzeug, um nachzuvollziehen, wie sich die KI-Mitspieler und Piratenbasen über die Zeit entwickeln.',
+    ],
+  },
+  {
+    date: '25.07.2026',
+    title: 'UX: Spielernamen in der Galaxie-Ansicht farblich hervorgehoben',
+    changes: [
+      'Namen (dein eigener Account, KI-Bots, dein Mitspieler) waren bisher gedimmt oder ungefärbt und gingen in der Galaxie-Übersicht leicht unter - jetzt durchgängig grün für "du" und cyan für alle anderen.',
+    ],
+  },
+  {
+    date: '24.07.2026',
+    title: 'Balance: Piraten-Sektor überarbeitet',
+    changes: [
+      'Mittel und Hoch geben jetzt garantiert 1 bzw. 3 Elite-Container bei erfolgreicher Rückkehr, statt nur einer Zufallschance auf einen Kapitän-Container - planbar statt Glücksspiel.',
+      'Dafür deutlich stärkere Gegner auf Mittel/Hoch und spürbar geringere Ressourcen-Beute auf allen 3 Stufen - Teile und Container sind jetzt die Kernbelohnung, Ressourcen nur noch ein kleiner Nebeneffekt.',
+      'Neu auf Mittel/Hoch: 8% Chance pro Stunden-Check, die bisherige Beute der laufenden Mission zu verdoppeln - dieselbe Mechanik wie der "reiche Fund" im Asteroiden-Feld.',
+      'Niedrig bleibt bewusst unverändert als sanfte Einstiegsstufe.',
+    ],
+  },
+  {
+    date: '24.07.2026',
+    title: 'Balance: KI-Bots greifen jetzt sinnvoll an',
+    changes: [
+      'KI-Vega/KI-Nyx beteiligen sich jetzt tatsächlich an der Eroberung von Außenposten, mit einem deutlich größeren und vielfältigeren Flotteneinsatz pro Versuch als vorher - davor wurde ein Angriffsversuch fast immer mangels ausreichender Flotte übersprungen.',
+    ],
+  },
+  {
+    date: '24.07.2026',
+    title: 'Neu: Piratenbasen greifen jetzt selbst an',
+    changes: [
+      'Die 4 aktiven Piratenbasen waren bisher rein passiv (nur ihr konntet sie angreifen) - sie greifen jetzt gelegentlich auch selbst mit einem Teil ihrer gewachsenen Flotte einen zufälligen Spieler oder Bot an, inklusive vollständigem Kampfbericht und Beute proportional zum angerichteten Schaden.',
+    ],
+  },
+  {
+    date: '24.07.2026',
+    title: 'Balance: Piraten-Rückeroberung nachgeschärft',
+    changes: [
+      'Die Zusammensetzung der Rückeroberungs-Flotte besteht jetzt aus stärkeren Schiffstypen statt nur billiger Leichter-Jäger-Masse.',
+      'Eine Garnison aus wenigen, extrem starken Einzelschiffen (z.B. 1 Imperator) war trotz Machtskalierung praktisch unbesiegbar - ein neuer Aufschlag für solche "Elite-Stacks" macht auch das zu einer echten, wenn auch nicht garantierten Bedrohung. Normale Garnisonen aus vielen günstigen Schiffen bleiben davon unberührt.',
+      'Rückeroberungsversuche laufen jetzt auf einem 60-120-Minuten-Cooldown pro Außenposten statt einer Zufallschance bei jedem Heartbeat - fühlte sich vorher wie Dauerbeschuss an.',
+      'Erzeugt keine persönliche Nachricht mehr an alle Spieler bei jedem Versuch (kein menschlicher Akteur beteiligt) - der Ausgang bleibt weiterhin über die Galaxie-Ansicht sichtbar.',
+    ],
+  },
+  {
     date: '23.07.2026',
     title: 'Balance: Außenposten nachgeschärft',
     changes: [
