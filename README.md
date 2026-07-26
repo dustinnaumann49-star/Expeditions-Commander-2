@@ -1395,6 +1395,36 @@ client/
       HEAD` beim Start, fällt auf `'unbekannt'` zurück falls kein `.git` im Produktions-Image
       vorhanden ist) - hilft bei der Frage "läuft auf dem Server wirklich der neueste Stand?"
       (Coolify-Deploy-Diagnose nach mehreren Verwirrungen um Webhook/Build-Variable/CORS).
+97. **UNTERSUCHUNG LÄUFT (Stand 26.07.2026, noch NICHT umgesetzt): wiederkehrende mehrminütige
+    CPU-Spitzen auf dem Server** - Nutzer-Beobachtung über Coolify-Metriken (250% CPU, mehrfach
+    täglich, unregelmäßig), OHNE jede Fehlermeldung in den bisherigen Logs. Zeitlich mit
+    laufenden Raids/Kämpfen korreliert (Nutzer-Beobachtung: "bei jedem Kampf steigt die CPU-
+    Spitze").
+    - **Diagnose-Instrumentierung bereits live** (siehe Punkt 96/Commit `004bd49`): jede
+      Heartbeat-Phase (`heartbeat.ts`), jeder einzelne Nutzer-`tick()`, sowie `GET /game/state`
+      und `handleAction()` (`routes.ts`) werden gestoppt und NUR bei ungewöhnlicher Dauer
+      geloggt (>500ms Nutzer/Aktion, >1s Phase, >3s gesamter Heartbeat) - wartet noch auf einen
+      konkreten Log-Treffer beim nächsten Auftreten, um die Hypothese unten zu bestätigen.
+    - **Arbeitshypothese**: dieser Server läuft nach dem "Nachhol"-Prinzip (siehe Architektur-
+      Kommentar in `heartbeat.ts`/`actions.ts` `runEconomyTick()`) - JEDER `tick()` rechnet
+      Produktion UND alle fälligen Kämpfe (Raid-Wellen, Sektor-Stundenchecks, jetzt auch
+      Außenposten-/Piratenbasen-Offensiv-KI) seit dem letzten Mal nach. Werden mehrere Kämpfe im
+      selben Zeitfenster fällig, muss das Kampf-Worker-Pool (`combatRunner.ts`, `POOL_SIZE=2`)
+      mehrere Kämpfe nacheinander abarbeiten - kombiniert mit `better-sqlite3` (SYNCHRON/
+      blockierend, siehe `db.ts`) könnte ein solcher Schwall den Node-Hauptprozess kurzzeitig
+      fürs Anfrage-Handling blockieren (erklärt "keine Aktion kam an, aber kein Fehler geloggt").
+    - **Nutzer-Feedback zum "Nachhol"-Prinzip generell**: möchte perspektivisch weg davon, Dinge
+      "nachholen" zu müssen, hin zu echter Live-Berechnung - eingeordnet als eigenständiges,
+      größeres Architektur-Thema (andere DB-Anbindung nötig, da `better-sqlite3` synchron ist),
+      NICHT Teil des aktuellen, kleineren Fixes unten.
+    - **Geplanter nächster Schritt (nach Log-Bestätigung), bewusst KLEIN gehalten statt eines
+      Architektur-Umbaus**: dem Heartbeat "Luft zum Atmen" zwischen den einzelnen Kampf-
+      Auflösungen geben (z.B. `await new Promise(r => setImmediate(r))` zwischen Nutzern/
+      Kämpfen in der Schleife) - lässt den Event-Loop zwischendurch normale Spieler-Anfragen
+      bedienen, statt eine ganze Kampf-Serie am Stück durchzurechnen. Der Server läuft ohnehin
+      schon dauerhaft (Hetzner, kein Serverless/Free-Tier mehr) - ein "echtes Nachholen über
+      Stunden" sollte dadurch bereits selten sein, ein kurzer Neustart/Redeploy bleibt aber ein
+      Fall, der weiterhin etwas nachholen muss.
 
 ## Kurz-Changelog
 
