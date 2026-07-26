@@ -104,11 +104,23 @@ gameRouter.get('/data', (_req, res) => {
   });
 });
 
+// Diagnose (Juli 2026, Nutzer-Feedback: wiederkehrende mehrminuetige CPU-Spitzen auf dem Server,
+// waehrenddessen kamen keine Spieler-Aktionen an, aber nirgends ein Fehler in den Logs) - dieser
+// Endpunkt wird vom Client alle 3s gepollt (siehe GameContext.tsx), ist also der mit Abstand
+// haeufigste tick()-Aufloeser durch einen echten Nutzer. Nur bei ungewoehnlicher Dauer wird
+// geloggt (siehe SLOW_TICK_MS), um die Logs bei normalem, schnellem Betrieb nicht zuzuspammen.
+const SLOW_TICK_MS = 500;
+
 gameRouter.get('/state', async (req: AuthedRequest, res) => {
   try {
+    const tickStart = Date.now();
     const state = loadPlayerState(req.userId!);
     await tick(state);
     savePlayerState(state);
+    const tickMs = Date.now() - tickStart;
+    if (tickMs > SLOW_TICK_MS) {
+      console.warn(`GET /game/state: langsamer tick() fuer Nutzer ${req.userId}: ${tickMs}ms`);
+    }
     res.json({ ...state, serverTime: Date.now(), energyProduced: energyProduced(state), energyConsumed: energyConsumed(state) });
   } catch (err) {
     console.error(err);
@@ -121,6 +133,7 @@ gameRouter.get('/state', async (req: AuthedRequest, res) => {
 // bei Erfolg speichern und neuen Zustand zurueckgeben.
 async function handleAction(req: AuthedRequest, res: Response, action: (state: PlayerState) => ActionResult | Promise<ActionResult>) {
   try {
+    const actionStart = Date.now();
     const state = loadPlayerState(req.userId!);
     await tick(state);
     // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
@@ -130,6 +143,12 @@ async function handleAction(req: AuthedRequest, res: Response, action: (state: P
     const result = await action(state);
     if (!result.ok) return res.status(400).json({ error: result.error });
     savePlayerState(state);
+    // Diagnose (siehe SLOW_TICK_MS bei GET /game/state) - dieselbe Schwelle, dieselbe Absicht:
+    // wiederkehrende mehrminuetige CPU-Spitzen ohne jede Spur in den bisherigen Logs aufspueren.
+    const actionMs = Date.now() - actionStart;
+    if (actionMs > SLOW_TICK_MS) {
+      console.warn(`handleAction: langsame Aktion fuer Nutzer ${req.userId}: ${actionMs}ms`);
+    }
     res.json({ ...state, serverTime: Date.now(), energyProduced: energyProduced(state), energyConsumed: energyConsumed(state) });
   } catch (err) {
     console.error(err);

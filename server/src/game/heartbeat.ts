@@ -25,10 +25,23 @@ import { processOutpostDeployments, runOutpostPirateAiTurn } from './outposts.js
  * Cron Job, oder ein kostenloser externer Uptime-Pinger wie cron-job.org/UptimeRobot), der diesen
  * Endpunkt alle paar Minuten aufruft - siehe /api/heartbeat in index.ts.
  */
+// Diagnose (Juli 2026, Nutzer-Feedback: wiederkehrende CPU-Spitzen auf dem Server, mehrere Minuten
+// lang, ohne jede Spur in den bisherigen Logs - vermuteter Zusammenhang mit dem "Nachhol"-Prinzip
+// dieses Servers, siehe Kommentar oben) - jede Phase wird jetzt einzeln gestoppt, und JEDER
+// einzelne Nutzer-tick() wird gemessen. Nur bei ungewoehnlich langer Dauer wird tatsaechlich
+// geloggt (siehe SLOW_*_MS unten), damit die normalen, schnellen Durchlaeufe (die grosse Mehrheit)
+// die Logs nicht zuspammen - beim naechsten Auftreten sollte so sichtbar werden, WELCHE Phase/
+// WELCHER Nutzer die Zeit braucht, statt nur "irgendwo, irgendwie".
+const SLOW_USER_TICK_MS = 500;
+const SLOW_PHASE_MS = 1000;
+const SLOW_HEARTBEAT_TOTAL_MS = 3000;
+
 export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; errors: number }> {
+  const heartbeatStart = Date.now();
   const users = listAllUsers();
   let errors = 0;
   for (const u of users) {
+    const userTickStart = Date.now();
     // Fehler-Isolation PRO NUTZER: ohne try/catch wuerde eine Ausnahme bei EINEM Nutzer den
     // gesamten Durchlauf abbrechen - alle danach gelisteten Nutzer wuerden dann bei JEDEM
     // Heartbeat-Aufruf (alle 2 Minuten, dauerhaft) niemals verarbeitet, komplett unsichtbar (der
@@ -65,10 +78,18 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
         await runBotTurn(state, users);
       }
       savePlayerState(state);
+      const userTickMs = Date.now() - userTickStart;
+      if (userTickMs > SLOW_USER_TICK_MS) {
+        console.warn(`runGlobalHeartbeat: Langsamer tick() bei ${u.username} (${u.isBot ? 'Bot' : 'Mensch'}, id=${u.id}): ${userTickMs}ms`);
+      }
     } catch (err) {
       errors++;
       console.error(`runGlobalHeartbeat: Fehler bei Nutzer ${u.id}:`, err);
     }
+  }
+  const userLoopMs = Date.now() - heartbeatStart;
+  if (userLoopMs > SLOW_PHASE_MS) {
+    console.warn(`runGlobalHeartbeat: Nutzer-Schleife (${users.length} Nutzer) dauerte ${userLoopMs}ms`);
   }
 
   // Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe galaxyEvents.ts): global, nicht an einen Nutzer
@@ -85,36 +106,52 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   // bekommen genau wie die Bot-Accounts ihren eigenen Zug pro Heartbeat, nicht nur lazy beim
   // naechsten Laden (Angriff/Spionage/Galaxie-Ansicht) - sonst wuerden sie nur wachsen, wenn
   // zufaellig gerade jemand hinschaut.
+  const pirateBaseTurnsStart = Date.now();
   try {
     await runAllPirateBaseTurns();
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseTurns:', err);
   }
+  const pirateBaseTurnsMs = Date.now() - pirateBaseTurnsStart;
+  if (pirateBaseTurnsMs > SLOW_PHASE_MS) {
+    console.warn(`runGlobalHeartbeat: runAllPirateBaseTurns() dauerte ${pirateBaseTurnsMs}ms`);
+  }
 
   // Offensiv-KI der Piratenbasen (Nutzerentscheidung Juli 2026: Basen sollen euch auch selbst
   // angreifen, nicht nur passiv angreifbar sein) - eigener Schritt NACH dem normalen Wachstums-Turn
   // oben, damit gerade fertiggestellte Schiffe schon zur Verfuegung stehen.
+  const offensiveTurnsStart = Date.now();
   try {
     await runAllPirateBaseOffensiveTurns(users.map((u) => u.id));
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseOffensiveTurns:', err);
   }
+  const offensiveTurnsMs = Date.now() - offensiveTurnsStart;
+  if (offensiveTurnsMs > SLOW_PHASE_MS) {
+    console.warn(`runGlobalHeartbeat: runAllPirateBaseOffensiveTurns() dauerte ${offensiveTurnsMs}ms`);
+  }
 
   // Aussenposten (siehe outposts.ts): opportunistische Piraten-Rueckeroberungsversuche gegen
   // aktuell spieler-eigene Posten, einmal pro Heartbeat, analog zu runAllPirateBaseTurns() oben.
+  const outpostAiStart = Date.now();
   try {
     await runOutpostPirateAiTurn();
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei runOutpostPirateAiTurn:', err);
   }
+  const outpostAiMs = Date.now() - outpostAiStart;
+  if (outpostAiMs > SLOW_PHASE_MS) {
+    console.warn(`runGlobalHeartbeat: runOutpostPirateAiTurn() dauerte ${outpostAiMs}ms`);
+  }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein
   // einziger Durchlauf mit einem beliebigen Nutzer als Anker-Zustand deckt ALLE laufenden
   // Expeditionen ab, ein Durchlauf pro Nutzer waere unnoetig (siehe processAllDepartedGroupOperations).
   if (users.length > 0) {
+    const groupOpsStart = Date.now();
     try {
       const anchorState = loadPlayerState(users[0].id);
       await processAllDepartedGroupOperations(anchorState);
@@ -123,6 +160,17 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       errors++;
       console.error('runGlobalHeartbeat: Fehler bei processAllDepartedGroupOperations:', err);
     }
+    const groupOpsMs = Date.now() - groupOpsStart;
+    if (groupOpsMs > SLOW_PHASE_MS) {
+      console.warn(`runGlobalHeartbeat: processAllDepartedGroupOperations() dauerte ${groupOpsMs}ms`);
+    }
+  }
+
+  const totalMs = Date.now() - heartbeatStart;
+  if (totalMs > SLOW_HEARTBEAT_TOTAL_MS) {
+    console.warn(
+      `runGlobalHeartbeat: GESAMTER Durchlauf ungewöhnlich langsam: ${totalMs}ms für ${users.length} Nutzer (Nutzer-Schleife ${userLoopMs}ms, Piratenbasen ${pirateBaseTurnsMs}ms, Offensiv-KI ${offensiveTurnsMs}ms, Außenposten-KI ${outpostAiMs}ms)`
+    );
   }
 
   return { usersProcessed: users.length, errors };
