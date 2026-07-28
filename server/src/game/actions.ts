@@ -402,26 +402,58 @@ export async function runEconomyTick(state: PlayerState): Promise<void> {
 
   // Missionen (Farmen/Kampf) nachholen - Asteroiden-/Piraten-Sektor-Fluege, genau wie bei einem
   // echten Spieler.
+  const missionsStart = Date.now();
   await processMissions(state);
+  const missionsMs = Date.now() - missionsStart;
+  if (missionsMs > SLOW_TICK_PHASE_MS) {
+    console.warn(`runEconomyTick: langsames processMissions() fuer Nutzer ${state.userId}: ${missionsMs}ms`);
+  }
 
   state.lastUpdate = now;
 }
 
+// Diagnose (Juli 2026, Nutzer-Feedback: CPU-Spitzen genau beim Einloggen/aktiven Spielen, auch
+// NACH Entfernung der KI-Mitspieler/Piratenbasen-Autonomie - siehe README Punkt 98/99) - tick()
+// laeuft bei JEDEM GET /game/state-Poll (alle 3s, siehe GameContext.tsx), einzelne Teilschritte
+// hatten aber bisher keine eigene Zeitmessung wie der globale Heartbeat. Nur bei ungewoehnlicher
+// Dauer wird geloggt, um die Logs im Normalbetrieb nicht zuzuspammen.
+const SLOW_TICK_PHASE_MS = 1000;
+
 export async function tick(state: PlayerState): Promise<PlayerState> {
+  const t0 = Date.now();
   await runEconomyTick(state);
+  const t1 = Date.now();
   const now = Date.now();
   await processRaidTimer(state);
+  const t2 = Date.now();
   // Spionagefluege gegen Piratenbasen UND der umgekehrte periodische Check "wurde ich gerade von
   // Piraten ausspioniert" (siehe spyMissions.ts) - beide komplett unabhaengig von Raids/Angriffen.
   await processSpyMissions(state);
   maybeGeneratePirateSpyReport(state);
+  const t3 = Date.now();
   // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
   // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
   // damit Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene
   // Spieler selbst gerade nicht online ist (siehe README fuer den Hintergrund).
   await processOverdueRaidsForOtherUsers(state);
+  const t4 = Date.now();
   await processOverdueRaidSpawnsForOtherUsers(state);
+  const t5 = Date.now();
   await processAllDepartedGroupOperations(state);
+  const t6 = Date.now();
+  const phases: [string, number][] = [
+    ['runEconomyTick', t1 - t0],
+    ['processRaidTimer', t2 - t1],
+    ['processSpyMissions+Report', t3 - t2],
+    ['processOverdueRaidsForOtherUsers', t4 - t3],
+    ['processOverdueRaidSpawnsForOtherUsers', t5 - t4],
+    ['processAllDepartedGroupOperations', t6 - t5],
+  ];
+  for (const [label, ms] of phases) {
+    if (ms > SLOW_TICK_PHASE_MS) {
+      console.warn(`tick(): langsame Phase "${label}" fuer Nutzer ${state.userId}: ${ms}ms`);
+    }
+  }
 
   state.lastUpdate = now;
   return state;
