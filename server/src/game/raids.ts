@@ -3,9 +3,9 @@ import {
   RAID_SPAWN_CHANCE,
   RAID_LOOT_PERCENT,
   COMBAT_SHIP_IDS,
-  rollFixedCheckpoints,
-  RAID_CHECK_HOURS_LOCAL,
+  rollWeeklyCheckpoints,
   RAID_SCHEDULE_BY_USERNAME,
+  RAID_FALLBACK_SCHEDULE,
   RAID_SALVAGE_DM_PER_KILL,
   RAID_SALVAGE_DM_MAX,
   RAID_MIN_TARGET_POWER,
@@ -13,7 +13,9 @@ import {
   RAID_ASSAULT_DURATION_MS,
   RAID_WAVE_JITTER_FACTOR,
   RAID_WAVE_FACTORS,
-  RAID_PERFECT_ELITE_CHANCE,
+  RAID_WAVE_WIN_SILBER,
+  RAID_WAVE_WIN_GOLD,
+  RAID_WAVE_WIN_ELITE,
 } from './data/economy.js';
 import { PIRATE_BASES, PIRATE_FLEET_SPEED, RAID_PREP_MS } from './data/galaxyConstants.js';
 import {
@@ -51,11 +53,12 @@ import type { CombatUnitResult, PlayerState, PlayerClass, RaidState } from './ty
 // Plant die RAID_WAVE_COUNT Angriffswellen EINMALIG bei spawnRaidAt() (nicht bei jeder Welle neu),
 // damit die Zeitpunkte von Anfang an feststehen und z.B. in der Galaxie-/Sektor-Anzeige einsehbar
 // waeren. Erste Welle trifft sofort bei Ankunft ein (arrivalTime), die weiteren ungefaehr im
-// RAID_ASSAULT_DURATION_MS/(RAID_WAVE_COUNT-1)-Takt (15 Min. bei 5 Wellen/1h) mit etwas Zufalls-
-// Streuung (RAID_WAVE_JITTER_FACTOR), damit es sich nicht wie ein exaktes Metronom anfuehlt. Jede
-// Welle bekommt mindestens einen Bruchteil des Basis-Intervalls Abstand zur vorherigen (kein
-// Ueberholen) und die letzte Welle wird hart auf das Fensterende gekappt - "muss innerhalb 1
-// Stunde nach Ankunft abgeschlossen sein" gilt dadurch garantiert, unabhaengig vom Zufall.
+// RAID_ASSAULT_DURATION_MS/(RAID_WAVE_COUNT-1)-Takt (ca. alle 2,2h bei 12 Wellen/24h) mit etwas
+// Zufalls-Streuung (RAID_WAVE_JITTER_FACTOR), damit es sich nicht wie ein exaktes Metronom
+// anfuehlt. Jede Welle bekommt mindestens einen Bruchteil des Basis-Intervalls Abstand zur
+// vorherigen (kein Ueberholen) und die letzte Welle wird hart auf das Fensterende gekappt - "muss
+// innerhalb 24 Stunden nach Ankunft abgeschlossen sein" gilt dadurch garantiert, unabhaengig vom
+// Zufall.
 function planRaidWaveTimes(arrivalTime: number): number[] {
   const baseInterval = RAID_ASSAULT_DURATION_MS / (RAID_WAVE_COUNT - 1);
   const minGap = baseInterval * (1 - RAID_WAVE_JITTER_FACTOR);
@@ -78,7 +81,7 @@ function planRaidWaveTimes(arrivalTime: number): number[] {
 }
 
 // Spawnt einen Raid ausgehend vom TATSAECHLICHEN Checkpoint-Zeitpunkt (nicht "jetzt") - wichtig
-// beim Nachrollen verpasster Checkpoints (siehe rollFixedCheckpoints in economy.ts), damit
+// beim Nachrollen verpasster Checkpoints (siehe rollWeeklyCheckpoints in economy.ts), damit
 // spawnedAt/launchTime/arrivalTime der eigentlich vorgesehenen Uhrzeit entsprechen und nicht dem
 // zufaelligen Moment, in dem irgendjemand als Naechstes online war.
 //
@@ -113,11 +116,11 @@ function spawnRaidAt(state: PlayerState, checkpointTime: number): void {
   };
   const prepMin = Math.round(RAID_PREP_MS / 60000);
   const totalMin = Math.round((arrivalTime - checkpointTime) / 60000);
-  const assaultMin = Math.round(RAID_ASSAULT_DURATION_MS / 60000);
+  const assaultHours = Math.round(RAID_ASSAULT_DURATION_MS / 3600000);
   pushMessage(
     state,
     'kampf',
-    `⚠ Piratenaktivität bei Basis 1:${pirateBase.system}:${pirateBase.position} registriert! Ihre Flotte startet in ${prepMin} Minuten, geschätzte Ankunft der ersten Welle in ${totalMin} Minuten. Danach greifen sie in ${RAID_WAVE_COUNT} Wellen über etwa ${assaultMin} Minuten an. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
+    `⚠ Piratenaktivität bei Basis 1:${pirateBase.system}:${pirateBase.position} registriert! Ihre Flotte startet in ${prepMin} Minuten, geschätzte Ankunft der ersten Welle in ${totalMin} Minuten. Danach greifen sie in ${RAID_WAVE_COUNT} Wellen über etwa ${assaultHours} Stunden an. Verstärke deine Verteidigung oder rufe deine Flotte zurück.`
   );
 }
 
@@ -138,15 +141,14 @@ function notifyRaidLaunchIfDue(state: PlayerState): void {
   );
 }
 
-// Ermittelt fuer einen Nutzer, ob er einen fest zugewiesenen, GARANTIERTEN Raid-Rhythmus hat
-// (siehe RAID_SCHEDULE_BY_USERNAME, Performance-Notmassnahme) - Chance 1.0 (immer) statt der
-// normalen RAID_SPAWN_CHANCE, und die individuell zugewiesenen Stunden statt des gemeinsamen
-// RAID_CHECK_HOURS_LOCAL-Rhythmus. Unbekannte Nutzernamen fallen auf das alte Verhalten zurueck.
-function getRaidSchedule(userId: number): { hours: number[]; chance: number } {
+// Ermittelt fuer einen Nutzer seinen woechentlichen Raid-Rhythmus (siehe RAID_SCHEDULE_BY_USERNAME) -
+// Chance 1.0 (immer) fuer die beiden namentlich zugewiesenen Spieler, RAID_FALLBACK_SCHEDULE MIT
+// RAID_SPAWN_CHANCE-Wuerfeln fuer unbekannte/zukuenftige Nutzernamen.
+function getRaidSchedule(userId: number): { spec: { weekday: number; hour: number }; chance: number } {
   const user = getUserById(userId);
-  const fixedHours = user ? RAID_SCHEDULE_BY_USERNAME[user.username] : undefined;
-  if (fixedHours) return { hours: fixedHours, chance: 1 };
-  return { hours: RAID_CHECK_HOURS_LOCAL, chance: RAID_SPAWN_CHANCE };
+  const fixedSpec = user ? RAID_SCHEDULE_BY_USERNAME[user.username] : undefined;
+  if (fixedSpec) return { spec: fixedSpec, chance: 1 };
+  return { spec: RAID_FALLBACK_SCHEDULE, chance: RAID_SPAWN_CHANCE };
 }
 
 // Heimatverteidigung (Raids) MUSS zusaetzlich zu COMBAT_SHIP_IDS auch den Imperator einschliessen -
@@ -179,7 +181,7 @@ export async function processRaidTimer(state: PlayerState) {
   if (now < state.nextRaidCheck) return;
 
   const schedule = getRaidSchedule(state.userId);
-  state.nextRaidCheck = rollFixedCheckpoints(state.nextRaidCheck, now, schedule.chance, (checkpointTime) => spawnRaidAt(state, checkpointTime), schedule.hours);
+  state.nextRaidCheck = rollWeeklyCheckpoints(state.nextRaidCheck, now, schedule.chance, (checkpointTime) => spawnRaidAt(state, checkpointTime), schedule.spec);
 }
 
 /**
@@ -233,12 +235,12 @@ export async function processOverdueRaidSpawnsForOtherUsers(currentState: Player
       if (otherState.raid) continue; // bereits ein Raid aktiv - nichts zu tun
       if (now < otherState.nextRaidCheck) continue;
       const schedule = getRaidSchedule(u.id);
-      otherState.nextRaidCheck = rollFixedCheckpoints(
+      otherState.nextRaidCheck = rollWeeklyCheckpoints(
         otherState.nextRaidCheck,
         now,
         schedule.chance,
         (checkpointTime) => spawnRaidAt(otherState, checkpointTime),
-        schedule.hours
+        schedule.spec
       );
       savePlayerState(otherState);
     } catch (err) {
@@ -522,9 +524,8 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
 }
 
 // Schliesst den Raid ab, sobald alle RAID_WAVE_COUNT Wellen abgearbeitet sind - EINE
-// Gesamt-Belohnung statt Belohnung pro Welle (Nutzerentscheidung), die mit raid.wavesWon skaliert:
-// 1 Container pro gewonnener Welle (Silber), bei einer PERFEKTEN Verteidigung (alle Wellen
-// gewonnen) werden alle Container zu Gold aufgewertet. Bergungs-DM wird EINMAL aus der ueber alle
+// Gesamt-Belohnung statt Belohnung pro Welle, die linear mit raid.wavesWon skaliert (siehe
+// RAID_WAVE_WIN_SILBER/GOLD/ELITE in economy.ts). Bergungs-DM wird EINMAL aus der ueber alle
 // Wellen aufsummierten Kill-Zahl berechnet (raid.accumulatedDestroyed), Ressourcen-Diebstahl
 // (RAID_LOOT_PERCENT) greift genau EINMAL, sofern nicht alle Wellen abgewehrt wurden.
 function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUserState?: PlayerState): void {
@@ -572,46 +573,21 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     state.resources.deuterium = Math.max(0, state.resources.deuterium - stolen.deuterium);
   }
 
-  // EIN Container pro gewonnener Welle (0-RAID_WAVE_COUNT), bei perfekter Verteidigung alle als
-  // Gold statt Silber - Verteidiger UND alle Verstaerker/Halter bekommen dieselbe Menge/Stufe
-  // (gemeinsamer Ausgang, keine Aufteilung, Punkt 5).
-  // Gold statt Silber - Verteidiger UND alle Verstaerker/Halter bekommen dieselbe Menge/Stufe
-  // (gemeinsamer Ausgang, keine Aufteilung, Punkt 5). Nutzerentscheidung (Container-Ueberflutung):
-  // bei NICHT perfekter Verteidigung 1 Silber-Container PRO gewonnener Welle (wie bisher, aber nie
-  // Gold). Bei PERFEKTER Verteidigung (5/5) NICHT mehr alle 5 zu Gold aufgewertet, sondern fest
-  // 5 Silber + 2 Gold (Balance-Anpassung Juli 2026, Nutzerentscheidung: seit der Verschaerfung der
-  // Raid-Wellenstaerke, siehe RAID_WAVE_FACTORS, ist eine perfekte 5/5-Verteidigung deutlich
-  // seltener geworden und soll sich entsprechend staerker lohnen; vorher 4 Silber + 1 Gold),
-  // PLUS eine kleine Zusatzchance auf 1 Elite-Container (Elite bleibt ueberall reine
-  // Glueckssache, siehe data/economy.ts).
+  // Container-Belohnung linear nach ANZAHL gewonnener Wellen (0-RAID_WAVE_COUNT), GENAU EINMAL am
+  // Ende des gesamten Raids vergeben - kein Bonus mehr NUR bei perfekter Verteidigung, jede
+  // gewonnene Welle zaehlt gleich viel (siehe RAID_WAVE_WIN_* in economy.ts). Verteidiger UND alle
+  // Verstaerker/Halter bekommen dieselbe Menge (gemeinsamer Ausgang, keine Aufteilung, Punkt 5).
+  // Elite-Container sind jetzt ein FESTER Anteil (kein Gluecks-Wurf mehr) - bei 12/12 gewonnenen
+  // Wellen ergibt das 120 Silber + 72 Gold + 24 Elite-Container.
   const grantContainers = (target: PlayerState) => {
-    if (perfectDefense) {
-      addContainers(target, 'silber', 5);
-      addContainers(target, 'gold', 2);
-    } else if (raid.wavesWon > 0) {
-      addContainers(target, 'silber', raid.wavesWon);
-    }
+    if (raid.wavesWon <= 0) return;
+    addContainers(target, 'silber', raid.wavesWon * RAID_WAVE_WIN_SILBER);
+    addContainers(target, 'gold', raid.wavesWon * RAID_WAVE_WIN_GOLD);
+    addContainers(target, 'elite', raid.wavesWon * RAID_WAVE_WIN_ELITE);
   };
   grantContainers(state);
   reinforcerStates.forEach(({ playerState }) => grantContainers(playerState));
   heldStates.forEach(({ ownerState }) => grantContainers(ownerState));
-
-  // Elite-Zusatzchance NUR bei perfekter Verteidigung (Nutzerentscheidung) - unabhaengig gewuerfelt
-  // PRO Teilnehmer (kein gemeinsamer Wurf fuer alle, jeder hat seine eigene Chance) - Ergebnis pro
-  // Empfaenger gemerkt, damit die Abschluss-Nachricht nur dem tatsaechlichen Gewinner den
-  // Elite-Container ankuendigt.
-  const ownerEliteHit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
-  if (ownerEliteHit) addContainers(state, 'elite', 1);
-  const reinforcerEliteHits = reinforcerStates.map(({ playerState }) => {
-    const hit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
-    if (hit) addContainers(playerState, 'elite', 1);
-    return hit;
-  });
-  const heldEliteHits = heldStates.map(({ ownerState }) => {
-    const hit = perfectDefense && Math.random() < RAID_PERFECT_ELITE_CHANCE;
-    if (hit) addContainers(ownerState, 'elite', 1);
-    return hit;
-  });
 
   // "Raid abgewehrt"-Statistik zaehlt genau EINMAL fuer den gesamten Raid (nicht pro Welle) - eine
   // perfekte Verteidigung (5/5) zaehlt als voller Erfolg, alles andere als Teilerfolg, analog zur
@@ -628,14 +604,12 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   });
 
   const salvageText = salvageDm > 0 ? ` Bergung aus den zerstörten Flotten: ${salvageDm} Dunkle Materie.` : '';
-  // Belohnungstext ist jetzt PRO EMPFAENGER unterschiedlich (Elite-Bonus ist ein individueller
-  // Wurf, siehe oben), daher eine kleine Hilfsfunktion statt eines einzelnen gemeinsamen Strings.
-  const containerTextFor = (eliteHit: boolean) => {
-    const eliteText = eliteHit ? ' Zusätzlich: 1x Elite-Container (Glückstreffer)!' : '';
-    if (perfectDefense) return ` Belohnung: 5x Silber-, 2x Gold-Container.${eliteText}`;
-    if (raid.wavesWon > 0) return ` Belohnung: ${raid.wavesWon}x Silber-Container.`;
-    return ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
-  };
+  // Belohnungstext ist jetzt fuer ALLE Empfaenger identisch (keine individuelle Gluecks-Komponente
+  // mehr, siehe grantContainers() oben).
+  const containerText =
+    raid.wavesWon > 0
+      ? ` Belohnung: ${raid.wavesWon * RAID_WAVE_WIN_SILBER}x Silber-, ${raid.wavesWon * RAID_WAVE_WIN_GOLD}x Gold-, ${raid.wavesWon * RAID_WAVE_WIN_ELITE}x Elite-Container.`
+      : ' Keine Welle erfolgreich abgewehrt - keine Container-Belohnung.';
   const stolenText = stolen
     ? ` Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`
     : ' Ressourcen vollständig sicher.';
@@ -647,7 +621,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   // Nutzerentscheidung (Juli 2026): derselbe raid.waveLog (alle Wellen, gemeinsam erlebt) landet
   // in JEDES Beteiligten Abschlussbericht - ersetzt die vorherigen bis zu 5 Einzel-Nachrichten pro
   // Welle je Beteiligtem, siehe resolveOneWave().
-  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerTextFor(ownerEliteHit)}${salvageText}${waveLogText}`, {
+  pushMessage(state, 'kampf', `${outcome}${stolenText}${containerText}${salvageText}${waveLogText}`, {
     sektorName: 'Heimatbasis',
     outcome,
     roundsFought: 0,
@@ -659,7 +633,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       playerState,
       'kampf',
-      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(reinforcerEliteHits[i])}${salvageText}${waveLogText}`,
+      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
       {
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,
@@ -675,7 +649,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       ownerState,
       'kampf',
-      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerTextFor(heldEliteHits[i])}${salvageText}${waveLogText}`,
+      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
       {
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,

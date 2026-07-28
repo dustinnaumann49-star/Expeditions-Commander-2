@@ -686,6 +686,7 @@ export interface PlayerState {
   raid: RaidState | null;
   nextRaidCheck: number;
   raidScheduleMigrated?: boolean; // Einmal-Migrationsflag, siehe state.ts loadPlayerState()
+  raidWeeklyScheduleMigrated?: boolean; // Zweites Einmal-Migrationsflag (Umbau 2x/Tag -> 1x/Woche Sonntag 0 Uhr), siehe state.ts loadPlayerState()
   lastUpdate: number;
   stats: PlayerStats;
 }

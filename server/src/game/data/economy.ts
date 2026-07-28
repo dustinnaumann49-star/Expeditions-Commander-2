@@ -256,25 +256,26 @@ export const NPC_SPECIALS: NpcSpecialDef[] =
     stats:{waffen:0, schild:0, panzerung:0} },
 ];
 
-// Raid prueft zu vier festen Tageszeiten (Server-Ortszeit), nicht mehr in zufaelligen
-// Intervallen. Sinn: Spieler wissen genau, wann ein Check stattfindet.
-export const RAID_CHECK_HOURS_LOCAL = [0, 6, 12, 18];
+// Raid-Rhythmus (Nutzerentscheidung 28.07.2026, Umbau von 2x/Tag auf 1x/Woche): ein Raid ist jetzt
+// eine ganztaegige Belagerung (24h, viele Wellen, siehe RAID_WAVE_COUNT/RAID_ASSAULT_DURATION_MS
+// unten) statt eines kurzen ~2h-Ereignisses - dafuer nur noch 1x/Woche statt 2x/Tag. Passt besser
+// zum tatsaechlichen Spielrhythmus (teils mehrwoechige Abwesenheit) als starre taegliche
+// Zeitfenster, die man leicht verpasst.
+export interface RaidScheduleSpec { weekday: number; hour: number } // weekday: 0=Sonntag..6=Samstag, Server-Ortszeit (Berlin)
 
-// WICHTIG (Performance-Notmassnahme, siehe Nutzerentscheidung nach Server-Absturz): auf dem
-// Starter-Tarif (0,5 CPU / 512MB) hat der Server zusammengebrochen, als zwei Kampfaufloesungen
-// (Raids bei beiden Spielern) exakt zur selben Zeit (0:00 Uhr) liefen. Fix: JEDER der beiden
-// echten Spieler bekommt jetzt einen FEST ZUGEWIESENEN, GARANTIERTEN Raid-Rhythmus (kein Wuerfeln
-// mehr, siehe RAID_SPAWN_CHANCE unten - wird fuer diese beiden Namen auf 100% gesetzt) zu
-// UNTERSCHIEDLICHEN Uhrzeiten, damit nie wieder zwei Kampfaufloesungen gleichzeitig laufen.
-// Faellt ein Nutzername NICHT in dieser Liste (z.B. ein zukuenftiger dritter Spieler), gilt der
-// normale RAID_CHECK_HOURS_LOCAL-Rhythmus MIT Wuerfeln als Fallback (siehe raids.ts).
-// Nutzerentscheidung: Raids kommen nur noch alle 12h statt alle 6h (haelt die Container-/Belohnungs-
-// Flut in Grenzen) - ShadowEagle und SchnelleRatte weiterhin gegeneinander versetzt, damit nie
-// beide gleichzeitig getroffen werden.
-export const RAID_SCHEDULE_BY_USERNAME: Record<string, number[]> = {
-  ShadowEagle: [0, 12],
-  SchnelleRatte: [6, 18],
+// Nutzerentscheidung: Sonntag ist DER gemeinsame Raid-Tag - beide echten Spieler (und der
+// Fallback fuer unbekannte/zukuenftige Nutzernamen) starten ihr woechentliches Raid-Event Sonntag
+// 0:00 Uhr deutscher Ortszeit. Die urspruengliche Stagger-Notwendigkeit (Server-Absturz bei
+// zeitgleichen Kampfaufloesungen auf dem Starter-Tarif, siehe Git-Historie) ist durch die
+// Stack-Aggregat-Engine + Autonomie-Entfernung mittlerweile entschaerft (Kampfberechnungen dauern
+// jetzt Sekundenbruchteile statt Minuten, siehe README Punkt 103) - gemeinsamer Wochentag ist daher
+// unproblematisch. Die beiden echten Spieler bekommen Chance 1.0 (garantiert, kein Wuerfeln), der
+// Fallback fuer unbekannte Namen wuerfelt weiterhin gegen RAID_SPAWN_CHANCE.
+export const RAID_SCHEDULE_BY_USERNAME: Record<string, RaidScheduleSpec> = {
+  ShadowEagle: { weekday: 0, hour: 0 },
+  SchnelleRatte: { weekday: 0, hour: 0 },
 };
+export const RAID_FALLBACK_SCHEDULE: RaidScheduleSpec = { weekday: 0, hour: 0 };
 
 const BERLIN_TZ = 'Europe/Berlin';
 
@@ -296,7 +297,7 @@ function berlinOffsetHours(utcMs: number): number {
 // Vorwarnzeit, siehe raids.ts.
 // Balance-Anpassung (Juli 2026): von 60% auf 70% angehoben, analog zur Missions-Balance -
 // Heimatverteidigung soll dem neuen Schwierigkeitsniveau der Piraten-Sektoren entsprechen.
-export const RAID_SPAWN_CHANCE = 0.7; // 70% Chance bei jedem der vier Checks
+export const RAID_SPAWN_CHANCE = 0.7; // 70% Chance beim woechentlichen Fallback-Checkpoint
 export const RAID_LOOT_PERCENT = 0.25;
 
 export const ASTEROID_ESCORT_POWER_MIN = 0.08;
@@ -347,71 +348,59 @@ export const COMBAT_SHIP_IDS = [
   'salvenjaeger', 'salvenkreuzer', 'salvendreadnought',
 ];
 
-// Liefert den naechsten der vier festen Tages-Checkpunkte (00/06/12/18 Uhr UTC) NACH "now".
-// Wird fuer Raids verwendet, damit sie an
-// denselben, fuer alle Spieler vorhersehbaren Zeitpunkten geprueft werden.
-export function nextFixedCheckpoint(now: number, localHours: number[] = RAID_CHECK_HOURS_LOCAL): number {
+// Liefert den naechsten woechentlichen Checkpoint (fester Wochentag+Uhrzeit, Server-Ortszeit) NACH
+// "now". Ersetzt die vorherige rein stunden-basierte nextFixedCheckpoint()/RAID_CHECK_HOURS_LOCAL
+// (Umbau auf 1x/Woche, siehe RAID_SCHEDULE_BY_USERNAME oben). Arbeitet in einem "pseudo-Berlin"-
+// Datumsrahmen (now um den aktuellen Offset verschoben, sodass UTC-Getter/Setter direkt die
+// Berliner Ortszeit-Felder liefern) - dieselbe Toleranz gegenueber dem Sommer-/Winterzeit-Wechsel
+// wie beim Rest der Datei (berlinOffsetHours() wird frisch pro Aufruf ermittelt).
+export function nextWeeklyCheckpoint(now: number, spec: RaidScheduleSpec): number {
   const offset = berlinOffsetHours(now);
-  // Deutsche Ortszeit-Stunden in die entsprechenden UTC-Stunden umrechnen (Date arbeitet intern
-  // mit UTC-Methoden, wie im Rest der Datei) - sortiert, damit die Schleife unten korrekt die
-  // naechstgelegene findet.
-  const utcHours = [...new Set(localHours.map((h) => (((h - offset) % 24) + 24) % 24))].sort((a, b) => a - b);
-  const d = new Date(now);
-  d.setUTCMinutes(0, 0, 0);
-  for (const hour of utcHours) {
-    d.setUTCHours(hour);
-    if (d.getTime() > now) return d.getTime();
-  }
-  // Kein Checkpoint mehr heute uebrig -> erster Checkpoint morgen
-  d.setUTCDate(d.getUTCDate() + 1);
-  d.setUTCHours(utcHours[0]);
-  return d.getTime();
+  const pseudoNow = new Date(now + offset * 3600 * 1000);
+  const d = new Date(pseudoNow);
+  d.setUTCHours(spec.hour, 0, 0, 0);
+  const dayDiff = (spec.weekday - d.getUTCDay() + 7) % 7;
+  d.setUTCDate(d.getUTCDate() + dayDiff);
+  if (d.getTime() <= pseudoNow.getTime()) d.setUTCDate(d.getUTCDate() + 7);
+  return d.getTime() - offset * 3600 * 1000;
 }
 
 // Sicherheitsnetz gegen (praktisch unmoegliche) Endlosschleifen bei extrem alten/verwaisten
-// Spielstaenden - bei 4 Checkpoints/Tag deckt das ueber 100 Jahre ab, weit mehr als je gebraucht.
-const MAX_BACKFILL_CHECKPOINTS = 400;
+// Spielstaenden - bei 1 Checkpoint/Woche deckt das >1 Jahr Rueckstand ab, weit mehr als je gebraucht.
+const MAX_BACKFILL_WEEKLY_CHECKPOINTS = 60;
 
 /**
- * Rollt JEDEN verpassten Checkpoint zwischen "lastCheck" (exklusiv) und "now" (inklusiv) einzeln
- * nach, statt (wie zuvor) einfach zum naechsten Checkpoint NACH "now" zu springen und alle
- * dazwischenliegenden Zeitpunkte ersatzlos zu ueberspringen. Wichtig fuer Spieler, die laenger
- * offline waren: sie sollen dieselbe statistische Chance je verstrichenem Checkpoint bekommen wie
- * ein durchgehend aktiver Spieler, nicht nur einen einzigen verspaeteten Wurf im Moment ihrer
- * Rueckkehr. Stoppt beim ERSTEN erfolgreichen Wurf (nur ein Raid/Event kann gleichzeitig aktiv
- * sein) und ruft dann `onSuccess` mit dem TATSAECHLICHEN Checkpoint-Zeitpunkt auf (nicht "now") -
- * dadurch basieren spawnedAt/arrivalTime auf der eigentlich vorgesehenen Uhrzeit, nicht auf dem
- * zufaelligen Moment, in dem der Spieler zufaellig wieder online kam.
+ * Rollt JEDEN verpassten woechentlichen Checkpoint zwischen "lastCheck" (exklusiv) und "now"
+ * (inklusiv) einzeln nach - analog zur vorherigen rollFixedCheckpoints()-Logik, nur auf
+ * nextWeeklyCheckpoint() umgestellt. Wichtig fuer Spieler, die laenger offline waren: sie sollen
+ * dieselbe statistische Chance je verstrichenem Checkpoint bekommen wie ein durchgehend aktiver
+ * Spieler, nicht nur einen einzigen verspaeteten Wurf im Moment ihrer Rueckkehr. Stoppt beim
+ * ERSTEN erfolgreichen Wurf (nur ein Raid kann gleichzeitig aktiv sein) und ruft dann `onSuccess`
+ * mit dem TATSAECHLICHEN Checkpoint-Zeitpunkt auf (nicht "now").
  * Gibt den naechsten zu speichernden Checkpoint zurueck (das naechste Mal, ab dem wieder geprueft
  * werden soll).
  */
-export function rollFixedCheckpoints(
+export function rollWeeklyCheckpoints(
   lastCheck: number,
   now: number,
   spawnChance: number,
   onSuccess: (checkpointTime: number) => void,
-  localHours: number[] = RAID_CHECK_HOURS_LOCAL
+  spec: RaidScheduleSpec
 ): number {
   let checkpoint = lastCheck;
-  for (let i = 0; i < MAX_BACKFILL_CHECKPOINTS; i++) {
+  for (let i = 0; i < MAX_BACKFILL_WEEKLY_CHECKPOINTS; i++) {
     // WICHTIG: erst pruefen, ob der AKTUELL gespeicherte Checkpoint faellig ist, dann erst
-    // weiterruecken. Die vorherige Reihenfolge (erst nextFixedCheckpoint() aufrufen, DANACH
-    // pruefen) hat den eigentlich faelligen, gespeicherten Checkpoint nie selbst gewuerfelt,
-    // sondern ist sofort zum naechsten gesprungen und hat DAS als "noch nicht faellig" erkannt -
-    // dadurch wurde bei jedem Tick eines aktiv spielenden Nutzers (Checkpoint gerade eben faellig
-    // geworden) der faellige Checkpoint komplett uebersprungen, ohne je gewuerfelt zu werden.
-    // Raids konnten dadurch praktisch nie spawnen, solange jemand aktiv online war -
-    // nur bei mehrtaegiger Abwesenheit (mehrere uebersprungene Checkpoints) gab es zufaellig
-    // noch einen Treffer, weil dann IMMER NOCH ein Checkpoint in der Vergangenheit lag.
+    // weiterruecken (siehe historische Erklaerung bei der vorherigen rollFixedCheckpoints()-Version
+    // in der Git-Historie - dieselbe Reihenfolge-Falle gilt hier genauso).
     if (checkpoint > now) return checkpoint;
     if (Math.random() < spawnChance) {
       onSuccess(checkpoint);
-      return nextFixedCheckpoint(checkpoint, localHours);
+      return nextWeeklyCheckpoint(checkpoint, spec);
     }
-    checkpoint = nextFixedCheckpoint(checkpoint, localHours);
+    checkpoint = nextWeeklyCheckpoint(checkpoint, spec);
   }
   // Sicherheitsnetz gegriffen (extrem lange Abwesenheit) - Rest ueberspringen statt zu haengen.
-  return nextFixedCheckpoint(now, localHours);
+  return nextWeeklyCheckpoint(now, spec);
 }
 
 // ===== Belohnungs-Eskalation pro ueberlebtem Stunden-Check (Piraten-Sektoren + Elite-Bollwerk) =====
@@ -505,42 +494,46 @@ export const OUTPOST_PIRATE_CONCENTRATION_FACTOR = 1.4;
 export const ALLIANCE_NAME = 'Sternenbund';
 export const PIRATE_ALLIANCE_NAME = 'Piratenkonföderation';
 
-// Chance auf 1 zusaetzlichen Elite-Container PRO TEILNEHMER bei perfekter Raid-Verteidigung (5/5
-// Wellen) - Nutzerentscheidung: Elite bleibt ueberall reine Glueckssache, auch hier nur eine
-// Chance, kein garantierter Zusatz.
-// Balance-Anpassung (Juli 2026, Teil 2 - Nutzerentscheidung): von 15% auf 20% angehoben, passend
-// zur allgemeinen Container-Aufwertung bei perfekter Verteidigung nach der Raid-Wellen-
-// Verschaerfung (RAID_WAVE_FACTORS) - eine perfekte 5/5-Verteidigung ist jetzt seltener und lohnt
-// sich entsprechend staerker.
-export const RAID_PERFECT_ELITE_CHANCE = 0.20;
-
 // Raid-Wellensystem (Nutzerentscheidung): ein Raid ist nicht mehr EIN Kampf bei Ankunft, sondern
 // RAID_WAVE_COUNT einzelne Angriffswellen innerhalb eines RAID_ASSAULT_DURATION_MS-Fensters NACH
 // der Ankunft (Vorbereitungszeit/Flugzeit davor bleiben unveraendert, siehe RAID_PREP_MS in
-// galaxyConstants.ts - die Stunde ist NUR fuer die Wellen-Phase, nicht fuer An-/Abflug). Die
-// Gesamt-Feindstaerke bleibt gleich wie bei einem einzelnen Raid vorher (auf die Wellen verteilt,
-// siehe raids.ts), Belohnung gibt es NICHT pro Welle einzeln, sondern als EINE Abschluss-Belohnung
-// am Ende, die mit der Anzahl gewonnener Wellen skaliert (siehe finalizeRaidWaves() in raids.ts).
-export const RAID_WAVE_COUNT = 5;
-export const RAID_ASSAULT_DURATION_MS = 60 * 60 * 1000; // 1 Stunde
+// galaxyConstants.ts). Die Gesamt-Feindstaerke bleibt gleich wie bei einem einzelnen Raid vorher
+// (auf die Wellen verteilt, siehe raids.ts).
+// Umbau 28.07.2026 (Nutzerentscheidung, Teil des Wochen-Umbaus oben): von 5 Wellen/1h auf 12
+// Wellen/24h - passend zur neuen woechentlichen Belagerung (ca. alle 2,2h eine Welle statt alle 15
+// Min., siehe planRaidWaveTimes() in raids.ts, das automatisch RAID_WAVE_COUNT gleichmaessig ueber
+// RAID_ASSAULT_DURATION_MS verteilt, keine Aenderung an der Verteil-Logik selbst noetig).
+// Belohnung wird weiterhin als EINE Abschluss-Belohnung am Ende vergeben (nicht pro Welle
+// ausgezahlt), skaliert aber jetzt linear mit JEDER gewonnenen Welle statt eines Fixbetrags nur bei
+// perfekter Verteidigung (RAID_WAVE_WIN_* unten, siehe finalizeRaidWaves() in raids.ts).
+export const RAID_WAVE_COUNT = 12;
+export const RAID_ASSAULT_DURATION_MS = 24 * 60 * 60 * 1000; // 24 Stunden
 // Zufalls-Anteil bei der Wellen-Zeitplanung (siehe planRaidWaveTimes() in raids.ts) - haelt die
 // Abstaende "ungefaehr" gleich statt exakt im Metronom-Takt, ohne dass sich Wellen ueberholen oder
 // das Gesamtfenster gesprengt wird (letzte Welle wird dort hart auf das Fensterende gekappt).
 export const RAID_WAVE_JITTER_FACTOR = 0.25;
-// Feindstaerke pro Welle (Nutzerentscheidung, ersetzt die vorherige zufaellige Grund-Varianz
-// RAID_MULTIPLIER_ROLL fuer Raids): steigt fest von 70% auf 110% ueber die RAID_WAVE_COUNT
-// Wellen, MULTIPLIZIERT mit der aktuellen VERTEIDIGUNGSANLAGEN-Staerke (nicht mehr Flotte/
-// Verstaerkung, siehe waveDefensePower() in raids.ts) - bewusste Abkehr von der sonstigen
-// Entkopplungs-Regel (siehe README Punkt 22/45): hier soll eine staerkere Verteidigung den
+// Feindstaerke pro Welle, MULTIPLIZIERT mit der aktuellen VERTEIDIGUNGSANLAGEN+FLOTTE-Staerke
+// (siehe RAID_FLEET_POWER_WEIGHT/RAID_DEFENSE_POWER_WEIGHT in raids.ts) - bewusste Abkehr von der
+// sonstigen Entkopplungs-Regel (README Punkt 22/45): hier soll eine staerkere Verteidigung den
 // Angriff gezielt mitwachsen lassen. Laenge MUSS RAID_WAVE_COUNT entsprechen.
-// Balance-Anpassung (Juli 2026): Kurve von 70-110% auf 80-130% anheben, passend zur allgemeinen
-// Missions-/Raid-Balance-Anpassung.
-// Balance-Anpassung (Juli 2026, Teil 2 - Nutzerentscheidung "moderat"): 80-130% war zu schwach -
-// da die Verteidigung meist zusaetzliche Tech-/Schild-Boni gegenueber der reinen Rohstaerke hat,
-// gewannen Verteidiger die Wellen fast immer OHNE jeden Verlust (0-1.3x der eigenen Power reicht
-// nie zum Durchbrechen). Kurve auf 130-200% angehoben, damit ab Welle 1 spuerbare Verluste
-// entstehen und eine perfekte 5/5-Verteidigung zur Ausnahme statt zum Normalfall wird.
-export const RAID_WAVE_FACTORS = [1.3, 1.5, 1.7, 1.85, 2.0];
+// Umbau 28.07.2026 (Nutzerentscheidung "die Wellen staerker machen", direkte Folge der massiv
+// erhoehten Pro-Welle-Belohnung RAID_WAVE_WIN_* unten - eine 12/12-Vollverteidigung darf bei einem
+// derart lohnenden Preis kein Selbstlaeufer sein): Kurve von vorher 130-200% (5 Wellen) auf jetzt
+// 130-300% ueber 12 Wellen gestreckt - die ersten Wellen bleiben aehnlich wie vorher zu bewaeltigen,
+// die spaeten Wellen einer 24h-Belagerung werden aber deutlich haerter als alles, was es bisher gab.
+export const RAID_WAVE_FACTORS = [1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.7, 3.0];
+
+// Container-Menge PRO GEWONNENER WELLE (Nutzerentscheidung 28.07.2026, ersetzt die vorherige
+// FIXE Abschluss-Belohnung von 5 Silber+2 Gold+RAID_PERFECT_ELITE_CHANCE nur bei perfekter
+// 5/5-Verteidigung): finalizeRaidWaves() in raids.ts zaehlt am Ende raid.wavesWon zusammen und
+// multipliziert mit diesen Werten - GENAU EINE Abschluss-Belohnung, keine Auszahlung pro Welle.
+// Bei allen 12 Wellen gewonnen ergibt das 120 Silber + 72 Gold + 24 Elite-Container pro Woche -
+// bewusst ein grosser Sprung ggue. der vorherigen Wochensumme (max. 70 Silber + 28 Gold bei
+// 2x/Tag), im Gegenzug dafuer nur noch 1x/Woche pruefbar UND durch RAID_WAVE_FACTORS oben deutlich
+// schwerer durchgaengig zu gewinnen als vorher.
+export const RAID_WAVE_WIN_SILBER = 10;
+export const RAID_WAVE_WIN_GOLD = 6;
+export const RAID_WAVE_WIN_ELITE = 2;
 
 // ===== Galaxie-Ereignisse (Wrack/Handelskonvoi, siehe game/galaxyEvents.ts) =====
 // Nutzerentscheidung (Juli 2026): taucht zufaellig an einer freien Galaxie-Position auf, gibt der

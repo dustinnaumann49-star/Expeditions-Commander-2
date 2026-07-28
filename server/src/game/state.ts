@@ -6,7 +6,7 @@ import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_SPY_CHECK_INTERVAL_MS } from './data/galaxyConstants.js';
-import { nextFixedCheckpoint, RAID_CHECK_HOURS_LOCAL, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
+import { nextWeeklyCheckpoint, RAID_FALLBACK_SCHEDULE, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
 import type { GalaxyPosition, PlayerState } from './types.js';
 import { loadGameStateJson, saveGameStateJson, listAllUsers, getUserById } from '../db.js';
 
@@ -42,12 +42,11 @@ function assignRandomGalaxyPosition(excludeUserId?: number): GalaxyPosition {
   return free[Math.floor(Math.random() * free.length)];
 }
 
-// PERFORMANCE-NOTMASSNAHME (siehe README): einzelne Spieler bekommen per Nutzername einen fest
-// zugewiesenen Raid-Rhythmus, damit nie zwei Kampfaufloesungen gleichzeitig laufen (siehe
-// RAID_SCHEDULE_BY_USERNAME in economy.ts, ausfuehrlich dort kommentiert).
-function raidHoursForUser(userId: number): number[] {
+// Einzelne Spieler bekommen per Nutzername einen fest zugewiesenen woechentlichen Raid-Termin
+// (siehe RAID_SCHEDULE_BY_USERNAME in economy.ts, ausfuehrlich dort kommentiert).
+function raidScheduleForUser(userId: number) {
   const user = getUserById(userId);
-  return (user && RAID_SCHEDULE_BY_USERNAME[user.username]) || RAID_CHECK_HOURS_LOCAL;
+  return (user && RAID_SCHEDULE_BY_USERNAME[user.username]) || RAID_FALLBACK_SCHEDULE;
 }
 
 export function defaultPlayerState(userId: number): PlayerState {
@@ -99,8 +98,9 @@ export function defaultPlayerState(userId: number): PlayerState {
     inventory: [],
     presets: [],
     raid: null,
-    nextRaidCheck: nextFixedCheckpoint(Date.now(), raidHoursForUser(userId)),
+    nextRaidCheck: nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId)),
     raidScheduleMigrated: true,
+    raidWeeklyScheduleMigrated: true,
     lastUpdate: Date.now(),
     stats: defaultPlayerStats(),
   };
@@ -179,7 +179,19 @@ export function loadPlayerState(userId: number): PlayerState {
   if (!parsed.raidScheduleMigrated) {
     parsed.raidScheduleMigrated = true;
     if (!parsed.raid) {
-      parsed.nextRaidCheck = nextFixedCheckpoint(Date.now(), raidHoursForUser(userId));
+      parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
+    }
+  }
+  // Zweite Migration (28.07.2026, Umbau 2x/Tag -> 1x/Woche, siehe RAID_SCHEDULE_BY_USERNAME in
+  // economy.ts): bestehende Spielstaende haben `nextRaidCheck` noch nach dem alten taeglichen
+  // Rhythmus gesetzt - der Zeitstempel ist zwar technisch noch gueltig (wuerde beim naechsten
+  // faelligen Zeitpunkt einmalig ausloesen, dann automatisch in den neuen woechentlichen Rhythmus
+  // uebergehen), aber EINMALIG sofort auf "naechster Sonntag 0 Uhr" zurueckgesetzt, damit alle
+  // Spieler ab dem Deploy sauber im neuen Rhythmus starten statt auf einen alten Zwischenwert zu warten.
+  if (!parsed.raidWeeklyScheduleMigrated) {
+    parsed.raidWeeklyScheduleMigrated = true;
+    if (!parsed.raid) {
+      parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
     }
   }
   if (!parsed.buildingQueue) parsed.buildingQueue = [];
