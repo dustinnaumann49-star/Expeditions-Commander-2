@@ -1666,6 +1666,25 @@ client/
         den Normalfall.
     - Plan-Datei mit vollständiger technischer Abwägung:
       `.claude/plans/purring-imagining-corbato.md` (falls noch vorhanden).
+104. **Bugfix: kritischer Treffer gegen Aggregat-Stapel wurde vierfach statt doppelt gezählt.**
+    Nutzer-Bericht nach erstem echten Elite-Bollwerk-Test mit Massenflotte: "fast die ganze Flotte
+    vernichtet". Root Cause: `applyAggregateHit()` bekam von `fireShots()` bereits den FERTIGEN,
+    bei einem Krit schon mit `CRIT_DAMAGE_MULTIPLIER` multiplizierten Schaden (`dmg = shooter.waffen
+    * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1)`), reichte den Krit-Status aber ZUSAETZLICH an
+    `applyAggregateDamage(stack, 1, isCrit?1:0, dmg, ...)` weiter - die multipliziert bei
+    `crits>0` SELBST nochmal, macht aus einem 2x-Krit versehentlich einen 4x-Treffer. Betraf nur
+    Treffer von NORMALEN (unter der Schwelle simulierten) Einheiten GEGEN Aggregat-Stapel, nicht
+    Aggregat-vs-Aggregat (dort war die Multiplikation schon vorher korrekt einfach).
+    - **Fix**: `applyAggregateHit()` uebergibt `crits` jetzt immer als `0` an
+      `applyAggregateDamage()`, da `dmg` bereits der fertige Schaden ist.
+    - **Eingeordnet, nicht ueberbewertet**: Vergleichstest (dieselbe Flottenzusammensetzung, aber
+      unterhalb der Aggregat-Schwelle, also 100% exakte Alt-Simulation) gegen denselben Sektor
+      verlor SOGAR prozentual MEHR (86% vs. 58% bei der grossen, aggregierten Flotte nach dem Fix)
+      - die neue Engine ist also nicht grundsaetzlich haerter als die alte. Nutzer bestaetigte:
+      betroffen war Piraten-Sektor Hoch/Elite-Bollwerk, beide laut Sektor-Konfiguration BEWUSST so
+      ausgelegt, dass der Gegner 115-155% der eingesetzten Flottenstaerke erreichen kann
+      (`PIRATEN_MULTIPLIER_ROLL`, `sectors.ts`) - deutliche Verluste dort sind grossteils
+      By-Design, nicht nur der gefundene Bug.
 
 ## Kurz-Changelog
 

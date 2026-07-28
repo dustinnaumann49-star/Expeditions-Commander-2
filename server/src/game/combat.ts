@@ -1028,7 +1028,13 @@ function applyAggregateHit(
     remainingDmg -= absorbed;
     if (remainingDmg <= 0) return;
   }
-  applyAggregateDamage(stack, 1, isCrit ? 1 : 0, remainingDmg, dmgTakenTarget, shieldDmgTakenTarget, aggStatKey(stack));
+  // WICHTIG: `dmg` ist bereits der fertige, ggf. kritisch multiplizierte Schaden (siehe Aufrufer in
+  // fireShots() - `dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1)`). applyAggregateDamage()
+  // multipliziert bei crits>0 SELBST nochmal mit CRIT_DAMAGE_MULTIPLIER - crits hier immer auf 0
+  // lassen, sonst wird ein kritischer Treffer VIERFACH statt doppelt gezaehlt (Bug, gefunden nach
+  // Nutzer-Feedback "fast die ganze Flotte vernichtet" - einzelne NPC-Schuetzen landeten dadurch
+  // stark ueberhoehten Schaden gegen Aggregat-Stapel).
+  applyAggregateDamage(stack, 1, 0, remainingDmg, dmgTakenTarget, shieldDmgTakenTarget, aggStatKey(stack));
 }
 
 function fireShots(
