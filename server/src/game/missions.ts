@@ -8,6 +8,7 @@ import {
   MISSION_TRAVEL_MS,
   MISSION_DURATION_MS,
   ASTEROID_MISSION_DURATION_MS,
+  MISSION_HOURLY_CATCHUP_CAP,
   ASTEROID_ESCORT_POWER_MIN,
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
@@ -712,7 +713,11 @@ async function tickMission(state: PlayerState, mission: Mission, now: number) {
   }
   const maxHours = Math.round((mission.endTime - mission.arriveTime) / 3600000);
   const hoursElapsed = Math.min(maxHours, Math.floor((cappedNow - mission.arriveTime) / 3600000));
-  while (mission.processedHours < hoursElapsed) {
+  // Nachhol-Deckel (siehe MISSION_HOURLY_CATCHUP_CAP in economy.ts) - bei einem grossen
+  // Rueckstand werden pro Aufruf hoechstens so viele Stunden-Checks nachgeholt, der Rest folgt
+  // beim naechsten tick(). `targetHours` bleibt dadurch ggf. UNTER `hoursElapsed`.
+  const targetHours = Math.min(hoursElapsed, mission.processedHours + MISSION_HOURLY_CATCHUP_CAP);
+  while (mission.processedHours < targetHours) {
     mission.processedHours++;
     const totalShips = Object.values(mission.ships).reduce((a, b) => a + b, 0);
     if (totalShips > 0) {
@@ -723,7 +728,10 @@ async function tickMission(state: PlayerState, mission: Mission, now: number) {
       }
     }
   }
-  if (now >= mission.returnTime) {
+  // Erst finalisieren, wenn WIRKLICH alle faelligen Stunden-Checks abgearbeitet sind (nicht nur
+  // wenn die reale Rueckflugzeit erreicht ist) - sonst wuerden bei einem gedeckelten Rueckstand
+  // noch ausstehende Kaempfe/Beute uebersprungen statt beim naechsten Aufruf nachgeholt zu werden.
+  if (now >= mission.returnTime && mission.processedHours >= maxHours) {
     finalizeMission(state, mission);
   }
 }

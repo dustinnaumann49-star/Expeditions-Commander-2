@@ -254,6 +254,24 @@ export const MISSION_DURATION_MS = 4 * 3600 * 1000;
 // noetig (guenstig fuer Spieler mit wenig Zeit), dafuer entsprechend mehr Ertrag pro Durchgang.
 export const ASTEROID_MISSION_DURATION_MS = 12 * 3600 * 1000;
 
+// Diagnose-Fix (Juli 2026, Live-Vorfall siehe README Punkt 97): wenn ein Nutzer/Bot laengere Zeit
+// nicht getickt wurde (z.B. Server-Neustart), musste tickMission() beim naechsten Aufruf ALLE seit
+// da an faelligen Stunden-Checks (jede loest bei Piraten-Sektor/Eskorte einen echten Kampf im
+// Worker-Pool aus) in einem einzigen, durchgehenden Rutsch nachholen - bei einem grossen Rueckstand
+// (z.B. 150+ Stunden) blockierte das den kleinen 2-Worker-Kampf-Pool so lange am Stueck, dass echte
+// Spieler-Anfragen waehrenddessen haengen blieben. Live bestaetigt UND eskalierend beobachtet:
+// erst 87s fuer einen einzigen tick(), kurz danach (waehrend der Rueckstand weiter anwuchs, weil er
+// schneller entstand als er abgearbeitet wurde) bis zu 934s (>15 Minuten) fuer eine einzelne
+// GET /game/state-Anfrage. Deckelt die NACHGEHOLTEN Stunden-Checks pro einzelnem
+// tickMission()-Aufruf auf einen bewusst NIEDRIGEN Wert (Reaktionsfaehigkeit priorisiert vor
+// Abarbeitungs-Geschwindigkeit) - ein groesserer Rueckstand verteilt sich dadurch ueber mehrere
+// Heartbeat-/Request-Durchlaeufe statt alles auf einmal zu erzwingen. Ressourcen-Produktion
+// (accrueBuildingProduction) ist davon NICHT betroffen (reine Arithmetik, kein Kampf, bleibt sofort
+// vollstaendig aktuell). Falls nach diesem Fix IMMER NOCH lange Anfragen auftreten: siehe README
+// Punkt 97 "Eskalationsplan" fuer die naechsten Schritte (Wert hier weiter senken, Event-Loop-
+// Yield zwischen JEDEM einzelnen Stunden-Check statt nur pro Aufruf, etc.).
+export const MISSION_HOURLY_CATCHUP_CAP = 8;
+
 export const SCRAP_REFUND_RATE = 0.3;
 export const TRADE_VALUE: Record<string, number> = { metall: 1, kristall: 1.5, deuterium: 3 };
 export const TRADE_FEE = 0.2;
