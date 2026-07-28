@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Piraten stärker, Elite-Bollwerk jetzt auch solo möglich',
+    changes: [
+      'Piraten kämpfen jetzt mit voller statt halber Forschung - werden dadurch spürbar zäher/treffsicherer, ohne dass ihre Flotten größer werden.',
+      'Elite-Bollwerk lässt sich jetzt klar erkennbar auch alleine fliegen: einfach niemanden einladen und direkt unter "Meine Operationen" starten, kein Warten auf Mitspieler nötig.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Balance: Jäger und Kreuzer bekommen eine echte Rolle gegen Elite-/Spezialschiffe',
     changes: [
       'Leichter und Schwerer Jäger weichen großen Schiffen (Schlachtschiff, Bomber, Schlachtkreuzer, Zerstörer, Reaper, Imperator, allen 3 Salvenschiffen) jetzt viel häufiger aus - sie tanken diese Schüsse quasi durch Ausweichen, statt sinnlos wegzusterben.',

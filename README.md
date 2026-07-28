@@ -1546,6 +1546,24 @@ client/
       `server/`), aber kein echter Elite-Bollwerk-Testlauf mit den neuen Werten. Falls sich +45/+18
       Prozentpunkte im Spiel zu stark/schwach anfühlen, einfach `SIZE_MISMATCH_EVASION_BONUS` in
       `combatConstants.ts` anpassen (ein einziger, leicht auffindbarer Ort).
+100. **Balance: `PIRATE_RESEARCH_SHARE` auf 100% angehoben, Elite-Bollwerk solo nutzbar gemacht.**
+    Nutzerentscheidung: Piraten bekommen jetzt volle statt halbe Forschung (Waffen/Schild/
+    Panzerung-Multiplikatoren UND Präzision/Ausweichen/Krit/Zielerfassung/Schild-Regen) - bewusst
+    als CPU-günstigere Alternative zu größeren Feindflotten, da das NUR die Stärke jeder einzelnen
+    Piraten-Einheit erhöht, keine zusätzlichen Einheiten hinzufügt (Rechenlast in der
+    Kampfsimulation skaliert mit Einheitenanzahl × Schüsse, nicht mit Stat-Höhe). Spieler behalten
+    weiterhin Klassen-Bonus UND Schiffs-/Verteidigungs-Module exklusiv - Piraten bekommen NIE
+    beides, siehe `computePirateResearch()` in `combat.ts`.
+    - Falls 100% sich als zu hart herausstellt: `PIRATE_RESEARCH_SHARE` in `combatConstants.ts`
+      ist die einzige Stelle, die angepasst werden muss (war vorher 0.5).
+    - **Elite-Bollwerk solo**: war technisch schon vorher möglich (die Einladungs-Checkboxen in
+      `Multiplayer.tsx` sind komplett optional, `createGroupOperation()`/`startGroupOperation()`
+      in `groupOps.ts` erfordern KEINE Mitspieler - mit 0 Eingeladenen ist der Ersteller der
+      einzige Teilnehmer und der "Jetzt starten"-Button sofort nutzbar). Nur der UI-Text hat das
+      nicht klar genug gesagt - jetzt ergänzt: "Niemanden einladen? Kein Problem - lass die Liste
+      unten leer und starte danach unter 'Meine Operationen' sofort solo." Live im Dev-Server
+      verifiziert (Registrierung, Flotte per DB seeden, Operation OHNE Einladung erstellt und
+      gestartet - Status ging sofort auf "departed", kein Warten auf andere Teilnehmer nötig).
 
 ## Kurz-Changelog
 

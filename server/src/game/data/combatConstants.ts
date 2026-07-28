@@ -282,16 +282,19 @@ export const CRIT_CHANCE_BASE: Record<string, number> = {
 export const CRIT_CHANCE_MAX = 0.35;
 export const CRIT_DAMAGE_MULTIPLIER = 2;
 
-// Piraten/NPCs bekamen bisher GAR KEINE Forschung (Praezision/Ausweichen/Kritische Treffer/
+// Piraten/NPCs bekamen urspruenglich GAR KEINE Forschung (Praezision/Ausweichen/Kritische Treffer/
 // Zielerfassung/Schild-Regeneration/Durchschlag sowie die Waffen-/Schild-/Panzerung-Multiplikatoren
-// liefen fuer sie immer auf reinem Basiswert). Nutzerentscheidung nach Feedback ("Piraten wirken
-// mittlerweile zu leicht"): Piraten bekommen jetzt PIRATE_RESEARCH_SHARE (50%) des relevanten
-// Forschungsstands - bewusst NUR Forschung, NICHT Klassen-Bonus/Schiffs-/Verteidigungs-Module/
-// Kampf-Booster (die bleiben exklusiv beim Spieler). Bei Mehrspieler-Kaempfen (Elite-Bollwerk,
-// Raid mit Verstaerkung/haltenden Flotten) zaehlt der DURCHSCHNITT aller Beteiligten
-// (Nutzerentscheidung), siehe computePirateResearch() in combat.ts. Bewusst als eigene, leicht
-// auffindbare Konstante - falls sich 50% als zu viel/wenig herausstellt, reicht eine Zahl hier.
-export const PIRATE_RESEARCH_SHARE = 0.5;
+// liefen fuer sie immer auf reinem Basiswert), dann 50% (Nutzerentscheidung nach Feedback "Piraten
+// wirken zu leicht"). Auf 100% angehoben (Nutzerentscheidung 28.07.2026, siehe README) als
+// CPU-guenstigere Alternative zu groesseren Flotten: erhoeht NUR die Staerke JEDER EINZELNEN
+// Piraten-Einheit (mehr Rechenlast skaliert mit Einheitenanzahl/Schuessen, nicht mit Stat-Hoehe -
+// diese Aenderung fuegt KEINE zusaetzlichen Einheiten hinzu). Bewusst weiterhin NUR Forschung,
+// NICHT Klassen-Bonus/Schiffs-/Verteidigungs-Module/Kampf-Booster (die bleiben exklusiv beim
+// Spieler - der eigene Vorteil bleibt also trotz 100% erhalten). Bei Mehrspieler-Kaempfen
+// (Elite-Bollwerk, Raid mit Verstaerkung/haltenden Flotten) zaehlt der DURCHSCHNITT aller
+// Beteiligten (Nutzerentscheidung), siehe computePirateResearch() in combat.ts. Bewusst als eigene,
+// leicht auffindbare Konstante - falls sich 100% als zu viel herausstellt, reicht eine Zahl hier.
+export const PIRATE_RESEARCH_SHARE = 1.0;
 
 export const MAX_RESEARCH_LEVEL = 10;
 // Forschungsbaum: einheitliche Voraussetzungs-Schwelle fuer JEDE Eltern->Kind-Verbindung (siehe

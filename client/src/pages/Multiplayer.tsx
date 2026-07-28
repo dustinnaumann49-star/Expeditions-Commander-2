@@ -358,6 +358,10 @@ function ExpeditionEventsView() {
             Eingeladene Spieler fliegen mit ihrer gewählten Flotte zuerst zu dir - erst wenn alle bei dir eingetroffen sind, kannst du gemeinsam
             {sektorId === 'piraten_admiral' ? ' zum Piratenadmiral weiterstarten.' : ' zum Elite-Bollwerk weiterstarten.'}
           </p>
+          <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginBottom: 8 }}>
+            Niemanden einladen? Kein Problem - lass die Liste unten leer und starte danach unter "Meine Operationen" sofort solo, ganz ohne zu
+            warten.
+          </p>
           {sektorId === 'piraten_admiral' && (
             <p style={{ fontSize: 12, color: 'var(--accent-kristall)', marginBottom: 8 }}>
               Nur Kreuzer-Klasse und größere Schiffe erlaubt - keine Jäger, keine Versorgungsschiffe.
