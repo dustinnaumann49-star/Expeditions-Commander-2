@@ -11,6 +11,17 @@ import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
+// Gruppen-Ueberschriften fuer die Flottenauswahl beim Missionsversand - dieselbe Klassen-Einteilung
+// wie in der Werft (SCHIFFE_KLASSEN in Werft.tsx), damit sich Spieler nicht an zwei verschiedene
+// Kategorisierungen gewoehnen muessen. Ohne Ueberschriften wirkte die lange, flache Liste
+// unuebersichtlich (Nutzer-Feedback).
+const SHIP_GROUPS = [
+  { name: 'Jäger-Klasse', ids: ['leicht', 'schwer'] },
+  { name: 'Kreuzer-Klasse', ids: ['kreuzer', 'schlachtschiff', 'bomber'] },
+  { name: 'Elite-Klasse', ids: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
+  { name: 'Spezialschiffe', ids: ['salvenjaeger', 'salvenkreuzer', 'salvendreadnought', 'imperator'] },
+];
+
 const SEKTOR_KLASSEN = [
   { id: 'asteroid', name: 'Asteroiden-Feld', match: (id: string) => id.startsWith('asteroid_') },
   { id: 'piraten', name: 'Piraten-Sektor', match: (id: string) => id.startsWith('piraten_') },
@@ -103,33 +114,52 @@ function SektorCard({
           </>
         ) : isSelected ? (
           <>
-            {availableIds.map((id) => {
-              const avail = fleet[id] || 0;
-              if (avail === 0) return null;
-              const cap = id === 'mining' ? cfg.miningCap : id === 'begleitschiff' ? cfg.escortCap : undefined;
-              const maxSendable = cap ? Math.min(avail, cap) : avail;
-              const qty = selection[id] || 0;
-              return (
-                <div className="queue-item" key={id}>
-                  <span>
-                    {shipName(gameData, id)} (verfügbar: {avail}
-                    {cap ? `, max ${cap}` : ''})
-                  </span>
-                  <span className="qty-row">
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-                      -10
-                    </button>
-                    <span style={{ padding: '0 6px' }}>{qty}</span>
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 10) }))}>
-                      +10
-                    </button>
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: maxSendable }))}>
-                      Alle
-                    </button>
-                  </span>
-                </div>
-              );
-            })}
+            {(() => {
+              const renderRow = (id: string) => {
+                const avail = fleet[id] || 0;
+                if (avail === 0) return null;
+                const cap = id === 'mining' ? cfg.miningCap : id === 'begleitschiff' ? cfg.escortCap : undefined;
+                const maxSendable = cap ? Math.min(avail, cap) : avail;
+                const qty = selection[id] || 0;
+                return (
+                  <div className="queue-item" key={id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                    <span>
+                      {shipName(gameData, id)} (verfügbar: {avail}
+                      {cap ? `, max ${cap}` : ''})
+                    </span>
+                    <span className="qty-row" style={{ flexWrap: 'nowrap' }}>
+                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
+                        -10
+                      </button>
+                      <span style={{ padding: '0 6px' }}>{qty}</span>
+                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 10) }))}>
+                        +10
+                      </button>
+                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: maxSendable }))}>
+                        Alle
+                      </button>
+                    </span>
+                  </div>
+                );
+              };
+              // Gruppen-Ueberschriften (siehe SHIP_GROUPS) nur, wenn die Sektor-Flotte ueberhaupt aus
+              // Kampfschiffen besteht (Piraten-Sektoren) - bei Asteroiden-Feldern (mining/begleitschiff/
+              // sandronator) passt die Klassen-Einteilung nicht, dort bleibt die Liste flach.
+              const isCombatFleet = availableIds.includes('leicht');
+              if (!isCombatFleet) {
+                return availableIds.map(renderRow);
+              }
+              return SHIP_GROUPS.map((group) => {
+                const idsInGroup = group.ids.filter((id) => availableIds.includes(id) && (fleet[id] || 0) > 0);
+                if (idsInGroup.length === 0) return null;
+                return (
+                  <div key={group.name} style={{ marginBottom: 6 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-kristall)', margin: '6px 0 2px' }}>{group.name}</p>
+                    {idsInGroup.map(renderRow)}
+                  </div>
+                );
+              });
+            })()}
             {preview.loading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
             {preview.preview && !preview.loading && <p style={{ fontSize: 13, marginTop: 6 }}>Anflugzeit: {formatTime(preview.preview.durationMs)} (Rückflug identisch)</p>}
             <div className="qty-row" style={{ marginTop: 8 }}>
