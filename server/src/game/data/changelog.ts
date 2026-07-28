@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Balance: Jäger und Kreuzer bekommen eine echte Rolle gegen Elite-/Spezialschiffe',
+    changes: [
+      'Leichter und Schwerer Jäger weichen großen Schiffen (Schlachtschiff, Bomber, Schlachtkreuzer, Zerstörer, Reaper, Imperator, allen 3 Salvenschiffen) jetzt viel häufiger aus - sie tanken diese Schüsse quasi durch Ausweichen, statt sinnlos wegzusterben.',
+      'Kreuzer weichen denselben großen Schiffen ebenfalls spürbar häufiger aus, bleiben aber weiterhin deren Hauptziel - nur eben nicht mehr bei praktisch jedem Schuss getroffen.',
+      'Kämpfe zwischen ähnlich großen Schiffen (Jäger gegen Jäger, Kreuzer gegen Jäger/Kreuzer) bleiben unverändert - der Bonus greift nur, wenn deutlich größere Schiffe schießen.',
+      'Ziel: ein guter Flottenmix aus Jägern, Kreuzern und Elite-/Spezialschiffen soll sich wieder lohnen, statt dass nur "je mehr Elite, desto besser" zählt.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Server-Stabilität: KI-Mitspieler entfernt, Piratenbasen passiv, Außenposten entfernt',
     changes: [
       'KI-Vega und KI-Nyx wurden komplett entfernt - sie waren die Hauptursache wiederkehrender, mehrminütiger Server-Verzögerungen (rund um die Uhr Kämpfe/Missionen/Angriffe ohne menschliche Entscheidungspause).',

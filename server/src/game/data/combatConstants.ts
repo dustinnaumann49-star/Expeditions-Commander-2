@@ -213,6 +213,46 @@ export const EVASION_BASE: Record<string, number> = {
 };
 export const EVASION_MAX = 0.30; // harte Obergrenze, damit Jaegerschwaerme nicht unbesiegbar werden
 
+// ===== Groessen-Fehlpaarung: Jaeger/Kreuzer weichen grossen/Elite-/Spezialschiffen gezielt aus =====
+// Nutzerentscheidung (Balance-Feedback nach Elite-Bollwerk-Beobachtungen: Kampf 1 Jaeger tot,
+// Kampf 2 Kreuzer tot, Kampf 3-4 nur noch die grossen Schiffe, die kaum noch Schaden nehmen) -
+// Jaeger/Kreuzer hatten gegen Elite-/Spezialschiffe (Faktor 35-330 weniger Waffenschaden) keine
+// erkennbare Rolle mehr. Neue Rollenaufteilung: Jaeger TANKEN grosse/Elite-/Spezialschiffe durch
+// massives Ausweichen (ein Fehlschuss zaehlt als Tanken, ohne dass ein Ziel-Umleiten noetig waere),
+// Kreuzer bleiben das eigentliche Ziel dieser Schiffsklassen, sind aber ebenfalls schwerer (nicht
+// unmoeglich) zu treffen. Bewusst NUR als Bonus auf die Ausweichchance des VERTEIDIGERS gegen genau
+// diese groessere Schuetzen-Klasse - Kaempfe zwischen aehnlich grossen Schiffen (Jaeger vs Jaeger,
+// Kreuzer vs Jaeger/Kreuzer) bleiben unveraendert beim EVASION_BASE-Wert. RapidFire gegen Imperator/
+// Salvenschiffe bleibt bewusst so gut wie nicht vorhanden (siehe RAPIDFIRE oben) - sie sollen trotz
+// seltener Treffer beim Verteidiger nicht durch eine Kampfentscheidung "weggewuerfelt" werden
+// koennen, ihre Staerke soll sich ueber die maxCount-Obergrenze regulieren, nicht ueber RF-Pech.
+export type ShipSizeClass = 'klein' | 'mittel' | 'gross';
+export const SHIP_SIZE_CLASS: Partial<Record<string, ShipSizeClass>> = {
+  leicht: 'klein',
+  schwer: 'klein',
+  kreuzer: 'mittel',
+  schlachtschiff: 'gross',
+  bomber: 'gross',
+  schlachtkreuzer: 'gross',
+  zerstoerer: 'gross',
+  reaper: 'gross',
+  imperator: 'gross',
+  salvenjaeger: 'gross',
+  salvenkreuzer: 'gross',
+  salvendreadnought: 'gross',
+};
+// [Verteidiger-Groessenklasse][Schuetzen-Groessenklasse] -> zusaetzliche Ausweichchance, addiert auf
+// EVASION_BASE (vor dem Deckel - siehe EVASION_MAX_SIZE_MISMATCH). Keine Eintraege = kein Bonus,
+// bleibt beim normalen EVASION_MAX-Deckel.
+export const SIZE_MISMATCH_EVASION_BONUS: Partial<Record<ShipSizeClass, Partial<Record<ShipSizeClass, number>>>> = {
+  klein: { gross: 0.45 },
+  mittel: { gross: 0.18 },
+};
+// Nur fuer Treffer mit aktivem Groessen-Fehlpaarung-Bonus - deutlich hoeher als der normale
+// EVASION_MAX, sonst wuerde der Deckel den ganzen Sinn des Bonus (Jaeger/Kreuzer sollen gegen
+// GROSSE Schiffe wirklich selten getroffen werden) direkt wieder auffressen.
+export const EVASION_MAX_SIZE_MISMATCH = 0.75;
+
 // Basis-Chance auf einen kritischen Treffer (doppelter Schaden). Grosse Schiffe treffen seltener,
 // richten dafuer aber oefter verheerenden Schaden an, wenn sie treffen.
 export const CRIT_CHANCE_BASE: Record<string, number> = {

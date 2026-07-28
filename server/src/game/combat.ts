@@ -16,6 +16,9 @@ import {
   SHIELD_REGEN_MODIFIER,
   EVASION_BASE,
   EVASION_MAX,
+  EVASION_MAX_SIZE_MISMATCH,
+  SHIP_SIZE_CLASS,
+  SIZE_MISMATCH_EVASION_BONUS,
   CRIT_CHANCE_BASE,
   CRIT_CHANCE_MAX,
   CRIT_DAMAGE_MULTIPLIER,
@@ -181,13 +184,22 @@ export function getPrecisionChance(research: Record<string, number>, applyPlayer
 // Ausweichchance des ZIELS: Gegenstueck zur Praezision des Schuetzen. Kleine Schiffe entziehen sich
 // haeufiger einem Treffer; unbewegliche Verteidigungsanlagen koennen das grundsaetzlich nicht.
 // Siehe getPrecisionChance oben zur `applyPlayerResearch`-Namensgeschichte.
-export function getEvasionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string): number {
+// `shooterTypeId` (optional): ermoeglicht den Groessen-Fehlpaarung-Bonus (SIZE_MISMATCH_EVASION_BONUS)
+// - kleine Schiffe (Jaeger) weichen grossen/Elite-/Spezialschiffen gezielt aus (Tank-/Ausweichrolle,
+// siehe README), Kreuzer moderat. Kaempfe zwischen aehnlich grossen Schiffen bleiben beim Basiswert
+// (kein Bonus, falls Verteidiger/Schuetze keiner Groessenklasse zugeordnet sind oder keine
+// definierte Paarung existiert).
+export function getEvasionChance(research: Record<string, number>, applyPlayerResearch: boolean, typeId: string, shooterTypeId?: string): number {
   const base = EVASION_BASE[typeId] || 0;
   if (base <= 0) return 0; // Verteidigungsanlagen & Kapitalschiffe ohne Basis-Ausweichen
   const level = research.ausweichen || 0;
   const tech = RESEARCH.find((r) => r.id === 'ausweichen');
   const bonus = level * (tech ? tech.effectPerLevel : 0.015);
-  return Math.min(EVASION_MAX, base + bonus);
+  const defenderClass = SHIP_SIZE_CLASS[typeId];
+  const shooterClass = shooterTypeId ? SHIP_SIZE_CLASS[shooterTypeId] : undefined;
+  const mismatchBonus = defenderClass && shooterClass ? SIZE_MISMATCH_EVASION_BONUS[defenderClass]?.[shooterClass] || 0 : 0;
+  const cap = mismatchBonus > 0 ? EVASION_MAX_SIZE_MISMATCH : EVASION_MAX;
+  return Math.min(cap, base + bonus + mismatchBonus);
 }
 
 // Chance des SCHUETZEN auf einen kritischen Treffer (doppelter Schaden). Grosse Schiffe treffen
@@ -817,10 +829,11 @@ function rollHit(
   precision: number,
   researchTarget: Record<string, number>,
   targetIsPlayerUnit: boolean,
-  battleModifier: BattleModifierType | null = null
+  battleModifier: BattleModifierType | null = null,
+  shooterTypeId?: string
 ): boolean {
   if (Math.random() >= precision) return false;
-  let evasion = getEvasionChance(researchTarget, targetIsPlayerUnit, target.typeId);
+  let evasion = getEvasionChance(researchTarget, targetIsPlayerUnit, target.typeId, shooterTypeId);
   // Truemmerfeld schwaecht gezielt das Ausweichen des SPIELERS, nicht das der NPCs.
   if (battleModifier === 'truemmerfeld' && targetIsPlayerUnit) evasion *= 0.85;
   if (evasion > 0 && Math.random() < evasion) return false;
@@ -907,7 +920,7 @@ function fireShots(
         // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
         let anyHit = false;
         volleyTargets.forEach((vt) => {
-          if (!rollHit(vt, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
+          if (!rollHit(vt, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
             const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId, applyPlayerResearch);
             if (missRfChance > 0 && Math.random() < missRfChance) {
               shots++;
@@ -931,7 +944,7 @@ function fireShots(
         continue;
       }
 
-      if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier)) {
+      if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId, applyPlayerResearch);
         if (missRfChance > 0 && Math.random() < missRfChance) {
           shots++;

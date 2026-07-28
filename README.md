@@ -1511,6 +1511,41 @@ client/
       "langsam"-Zeilen mehr, da keine automatisierte KI mehr Kämpfe/Missionen auslöst. Falls
       dennoch weiterhin Spitzen auftreten, liegt die Ursache dann zwingend bei echten
       Spieleraktionen oder den fest getakteten Raids - nicht mehr bei KI/Piratenbasen.
+99. **Balance: Jäger/Kreuzer bekommen eine Tank-/Ausweich-Rolle gegen große/Elite-/Spezialschiffe.**
+    Nutzer-Feedback nach Elite-Bollwerk-Beobachtungen: bei genug Salvenschiffen/Imperator in der
+    Flotte wurden Leichter/Schwerer Jäger und Kreuzer komplett bedeutungslos - Kampf 1 waren die
+    Jäger tot, Kampf 2 die Kreuzer, Kampf 3-4 räumten nur noch die großen Schiffe alles weg, ohne
+    selbst nennenswert Schaden zu nehmen. Ursache: Jäger/Kreuzer-Waffenschaden liegt um Faktor
+    35-330 unter Salvenschiffen/Imperator, UND praktisch jede NPC-Einheit hat ohnehin schon
+    RapidFire speziell gegen Leicht/Schwer - sie starben also überproportional schnell OHNE
+    nennenswerten Schadensbeitrag.
+    - **Neue Mechanik**: Ausweichchance ist jetzt zusätzlich von der GRÖSSENKLASSE des Schützen
+      abhängig (`SHIP_SIZE_CLASS`/`SIZE_MISMATCH_EVASION_BONUS` in `combatConstants.ts`,
+      `getEvasionChance()`/`rollHit()` in `combat.ts`) - vorher war Ausweichen rein zielabhängig,
+      unabhängig davon, WER schießt.
+      - **Klein** (Leichter/Schwerer Jäger) bekommt **+45 Prozentpunkte** Ausweichchance gegen
+        **Groß** (Schlachtschiff, Bomber, Schlachtkreuzer, Zerstörer, Reaper, Imperator,
+        alle 3 Salvenschiffe) - ein Fehlschuss zählt bewusst schon als "Tanken" (kein
+        Ziel-Umleiten nötig, der Schuss ist einfach verpufft).
+      - **Mittel** (Kreuzer) bekommt **+18 Prozentpunkte** gegen Groß - bleibt das eigentliche
+        Ziel dieser Schiffsklassen, aber spürbar schwerer (nicht unmöglich) zu treffen.
+      - Kämpfe zwischen ähnlich großen Schiffen (Jäger vs. Jäger/NPC-Jäger, Kreuzer vs.
+        Jäger/Kreuzer) bleiben unverändert beim bisherigen `EVASION_BASE`-Wert - der Bonus greift
+        NUR bei der Größen-Fehlpaarung.
+      - Eigener, höherer Deckel nur für Fehlpaarungs-Treffer (`EVASION_MAX_SIZE_MISMATCH = 0.75`
+        statt normal `EVASION_MAX = 0.30`), sonst hätte der normale Deckel den ganzen Bonus
+        wieder aufgefressen.
+    - **Bewusst unverändert gelassen** (Nutzer-Bestätigung): RapidFire gegen Imperator/
+      Salvenschiffe bleibt so gut wie nicht vorhanden (einzige Ausnahme: `plasmawerfer` RF=2 vs.
+      `imperator`, ein Nischenfall nur bei Piratenbasis-Angriffen) - sie sollen trotz seltener
+      Treffer nicht per RF-Pech "weggewürfelt" werden, ihre Stärke reguliert sich über die
+      `maxCount`-Obergrenze. Kritische-Treffer-Chance der Elite-/Spezialschiffe war schon vorher
+      die höchste im ganzen Spiel (Imperator 20%, Salvendreadnought 15% vs. Kreuzers eigene 6%) -
+      erfüllt den Wunsch "seltener, aber dafür harte Treffer" bereits ohne weitere Änderung.
+    - **NOCH NICHT GETESTET** (Stand dieses Commits): kompiliert sauber (`tsc --noEmit` in
+      `server/`), aber kein echter Elite-Bollwerk-Testlauf mit den neuen Werten. Falls sich +45/+18
+      Prozentpunkte im Spiel zu stark/schwach anfühlen, einfach `SIZE_MISMATCH_EVASION_BONUS` in
+      `combatConstants.ts` anpassen (ein einziger, leicht auffindbarer Ort).
 
 ## Kurz-Changelog
 
