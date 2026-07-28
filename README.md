@@ -1395,36 +1395,73 @@ client/
       HEAD` beim Start, fällt auf `'unbekannt'` zurück falls kein `.git` im Produktions-Image
       vorhanden ist) - hilft bei der Frage "läuft auf dem Server wirklich der neueste Stand?"
       (Coolify-Deploy-Diagnose nach mehreren Verwirrungen um Webhook/Build-Variable/CORS).
-97. **UNTERSUCHUNG LÄUFT (Stand 26.07.2026, noch NICHT umgesetzt): wiederkehrende mehrminütige
-    CPU-Spitzen auf dem Server** - Nutzer-Beobachtung über Coolify-Metriken (250% CPU, mehrfach
-    täglich, unregelmäßig), OHNE jede Fehlermeldung in den bisherigen Logs. Zeitlich mit
-    laufenden Raids/Kämpfen korreliert (Nutzer-Beobachtung: "bei jedem Kampf steigt die CPU-
-    Spitze").
-    - **Diagnose-Instrumentierung bereits live** (siehe Punkt 96/Commit `004bd49`): jede
-      Heartbeat-Phase (`heartbeat.ts`), jeder einzelne Nutzer-`tick()`, sowie `GET /game/state`
-      und `handleAction()` (`routes.ts`) werden gestoppt und NUR bei ungewöhnlicher Dauer
-      geloggt (>500ms Nutzer/Aktion, >1s Phase, >3s gesamter Heartbeat) - wartet noch auf einen
-      konkreten Log-Treffer beim nächsten Auftreten, um die Hypothese unten zu bestätigen.
-    - **Arbeitshypothese**: dieser Server läuft nach dem "Nachhol"-Prinzip (siehe Architektur-
-      Kommentar in `heartbeat.ts`/`actions.ts` `runEconomyTick()`) - JEDER `tick()` rechnet
-      Produktion UND alle fälligen Kämpfe (Raid-Wellen, Sektor-Stundenchecks, jetzt auch
-      Außenposten-/Piratenbasen-Offensiv-KI) seit dem letzten Mal nach. Werden mehrere Kämpfe im
-      selben Zeitfenster fällig, muss das Kampf-Worker-Pool (`combatRunner.ts`, `POOL_SIZE=2`)
-      mehrere Kämpfe nacheinander abarbeiten - kombiniert mit `better-sqlite3` (SYNCHRON/
-      blockierend, siehe `db.ts`) könnte ein solcher Schwall den Node-Hauptprozess kurzzeitig
-      fürs Anfrage-Handling blockieren (erklärt "keine Aktion kam an, aber kein Fehler geloggt").
-    - **Nutzer-Feedback zum "Nachhol"-Prinzip generell**: möchte perspektivisch weg davon, Dinge
-      "nachholen" zu müssen, hin zu echter Live-Berechnung - eingeordnet als eigenständiges,
-      größeres Architektur-Thema (andere DB-Anbindung nötig, da `better-sqlite3` synchron ist),
-      NICHT Teil des aktuellen, kleineren Fixes unten.
-    - **Geplanter nächster Schritt (nach Log-Bestätigung), bewusst KLEIN gehalten statt eines
-      Architektur-Umbaus**: dem Heartbeat "Luft zum Atmen" zwischen den einzelnen Kampf-
-      Auflösungen geben (z.B. `await new Promise(r => setImmediate(r))` zwischen Nutzern/
-      Kämpfen in der Schleife) - lässt den Event-Loop zwischendurch normale Spieler-Anfragen
-      bedienen, statt eine ganze Kampf-Serie am Stück durchzurechnen. Der Server läuft ohnehin
-      schon dauerhaft (Hetzner, kein Serverless/Free-Tier mehr) - ein "echtes Nachholen über
-      Stunden" sollte dadurch bereits selten sein, ein kurzer Neustart/Redeploy bleibt aber ein
-      Fall, der weiterhin etwas nachholen muss.
+97. **CPU-Spitzen-Vorfall (Stand 26.07.2026): URSACHE BESTÄTIGT, ERSTER FIX DEPLOYED, WEITERE
+    BEOBACHTUNG NÖTIG** - falls eine neue Chat-Session das hier weiterführt: dieser Punkt ist der
+    vollständige Stand, keine andere Quelle nötig. Live-Vorfall: wiederkehrende, sich SELBST
+    VERSTÄRKENDE Verzögerungen (Coolify-Metriken zeigten 250% CPU über mehrere Minuten, mehrfach
+    täglich), eskalierend von 87 Sekunden für einen einzelnen `tick()`-Aufruf bis zu 934 Sekunden
+    (>15 Minuten!) für eine einzelne `GET /game/state`-Anfrage eines echten Spielers - der
+    Rückstand wuchs schneller, als er abgearbeitet werden konnte (klassische Teufelsspirale).
+    - **Diagnose-Instrumentierung** (Commit `004bd49`): `heartbeat.ts` und `routes.ts` stoppen
+      jede Phase/jeden Nutzer-`tick()`/jede Anfrage und loggen NUR bei ungewöhnlicher Dauer
+      (>500ms Nutzer/Aktion, >1s Phase, >3s gesamter Heartbeat) - Log-Zeilen enthalten
+      "langsam"/"dauerte". **Bleibt aktiv** (nützlich, um den Fix unten zu verifizieren und für
+      künftige Vorfälle).
+    - **URSACHE BESTÄTIGT über die Logs**: fast die gesamte Zeit eines langsamen `tick()` steckte
+      in EINEM einzigen Nutzer (z.B. "Langsamer tick() bei KI-Nyx (Bot, id=3): 87111ms"), während
+      Piratenbasen/Offensiv-KI/Außenposten-KI im selben Durchlauf nur 0-2ms brauchten - die
+      NEUEN Systeme aus Punkt 90-96 sind NICHT die Ursache. Der eigentliche Verursacher:
+      `tickMission()` in `missions.ts` hatte KEINEN Deckel für ihre Stunden-Check-Nachholschleife
+      (`while (mission.processedHours < hoursElapsed)`) - jeder fällige Stunden-Check bei einer
+      Piraten-Sektor-/Asteroiden-Eskorte-Mission löst einen ECHTEN Kampf im kleinen 2-Worker-Pool
+      aus (`combatRunner.ts`, `POOL_SIZE=2`). War ein Nutzer/Bot länger nicht getickt worden (z.B.
+      nach einem Server-Neustart), musste ALLES auf einmal in einem durchgehenden Rutsch
+      nachgeholt werden - bei 100+ fälligen Stunden entsprechend viele sequenzielle Kämpfe
+      hintereinander, die den Worker-Pool so lange belegten, dass andere Anfragen (inkl. der
+      eigenen Folge-Anfragen desselben Nutzers, siehe die eskalierenden 73s→934s) in der
+      Warteschlange hängen blieben.
+    - **FIX DEPLOYED (Commit `40aa623`)**: `MISSION_HOURLY_CATCHUP_CAP` (`economy.ts`, aktuell
+      `= 8`) deckelt die pro `tickMission()`-Aufruf NACHGEHOLTEN Stunden-Checks - ein größerer
+      Rückstand verteilt sich jetzt über mehrere Heartbeat-/Request-Durchläufe statt alles auf
+      einmal zu erzwingen. `finalizeMission()` wird zusätzlich erst ausgelöst, wenn WIRKLICH alle
+      Stunden abgearbeitet sind (`mission.processedHours >= maxHours`), nicht nur wenn die reale
+      Rückflugzeit erreicht ist - sonst würden bei gedeckeltem Rückstand ausstehende Kämpfe/Beute
+      übersprungen statt beim nächsten Aufruf nachgeholt zu werden. Ressourcen-Produktion
+      (`accrueBuildingProduction`) ist NICHT betroffen (reine Arithmetik, kein Kampf).
+    - **NOCH NICHT VERIFIZIERT** (Stand dieses Commits) - der Fix wurde geschrieben, kompiliert
+      sauber (`npx tsc --noEmit` in `server/`), ist gepusht, aber ob er auf dem Server deployed
+      wurde UND ob er das Problem tatsächlich behoben hat, war zum Zeitpunkt dieses Commits noch
+      offen (Chat-Session ging zu Ende, siehe unten).
+    - **NÄCHSTE SCHRITTE FÜR DIE FORTSETZUNG (in dieser Reihenfolge)**:
+      1. Prüfen, ob `40aa623` (oder neuer) auf dem Server deployed ist (`/api/health` →
+         `commit`-Feld, siehe Punkt 96) - falls nicht: Nutzer bitten, in Coolify beim
+         Server-Service auf "Redeploy" zu klicken.
+      2. Server-Logs (Coolify → Server-Service → "Logs"-Tab, im Suchfeld nach `dauerte` oder
+         `langsam` filtern) nach dem Deploy eine Weile beobachten. Erwartung: falls noch ein
+         Rückstand besteht, sollten jetzt viele KURZE "langsam"-Zeilen auftauchen (der gedeckelte
+         Rückstand baut sich über mehrere Aufrufe ab) statt einzelner Riesenwerte im
+         Minutenbereich - UND die Werte sollten mit der Zeit sinken, nicht weiter eskalieren.
+      3. Falls die Werte WEITERHIN eskalieren (Rückstand wächst schneller, als der Deckel ihn
+         abbauen kann) oder einzelne Anfragen trotz Deckel noch mehrere Sekunden brauchen:
+         - `MISSION_HOURLY_CATCHUP_CAP` in `economy.ts` weiter senken (z.B. auf `4` oder `2`).
+         - Zusätzlich einen echten Event-Loop-Yield ZWISCHEN JEDEM einzelnen Stunden-Check in der
+           `while`-Schleife in `tickMission()` einbauen (`await new Promise(r => setImmediate(r))`
+           nach jedem `runHourlyCheck()`-Aufruf), nicht nur den Gesamt-Deckel - stellt sicher,
+           dass der Hauptprozess selbst bei einem einzelnen, sehr langen Request-Handler
+           zwischendurch andere Anfragen bedienen kann.
+         - Prüfen, ob `processRaidTimer()`/`processSpyMissions()` (`raids.ts`/`spyMissions.ts`)
+           ähnliche ungedeckelte Nachhol-Schleifen haben - bei Raids unwahrscheinlich (max. 5
+           Wellen fix, `RAID_WAVE_COUNT`), aber nicht abschließend geprüft.
+         - Prüfen, ob der Rückstand strukturell IMMER WEITER waechst (z.B. weil `maybeSendMiningFleet()`
+           in `economyBotTurn.ts` staendig neue 12h-Missionen nachschiebt, bevor die alten
+           abgearbeitet sind) statt nur ein einmaliger Nachhol-Rueckstand nach einem Neustart zu
+           sein - das waere ein strukturelles statt ein einmaliges Problem.
+      4. Falls der Fix funktioniert (Werte sinken/bleiben niedrig): Punkt hier als ERLEDIGT
+         markieren, CHANGELOG.ts-Eintrag ergänzen (siehe Muster bei den anderen Balance-Fixes).
+    - **Nutzer-Feedback zum "Nachhol"-Prinzip generell** (NICHT Teil des aktuellen Fixes, größeres
+      Architektur-Thema für später): möchte perspektivisch weg von "Dinge müssen nachgeholt
+      werden" hin zu echter Live-Berechnung - würde eine andere DB-Anbindung erfordern (aktuell
+      `better-sqlite3`, SYNCHRON/blockierend, siehe `db.ts`), nicht kurzfristig umsetzbar.
 
 ## Kurz-Changelog
 
