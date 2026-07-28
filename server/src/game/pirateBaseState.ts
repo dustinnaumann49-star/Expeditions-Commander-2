@@ -72,14 +72,22 @@ const SEED_DEFENSE: Record<string, number> = {
 };
 const SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
 
-// Ressourcen-Obergrenze (Nutzerentscheidung 28.07.2026, zweite Ueberarbeitung): Basen produzieren
+// Ressourcen-Obergrenze (Nutzerentscheidung 28.07.2026, NACHKALIBRIERT): Basen produzieren
 // weiterhin passiv ueber runEconomyTick() (siehe Kommentar bei loadPirateBase()), koennen ihre
 // Bestaende aber seit der Autonomie-Entfernung nie mehr selbst ausgeben - ohne Deckel waeren sie
 // mit der Zeit unbegrenzt reich geworden, ohne dass sich ihre Staerke (SEED_FLEET/SEED_DEFENSE)
-// mitveraendert haette. "Hoch" gewaehlt (bewusst mehr als ein einzelner Silber-Container, aber
-// unter einem Elite-Container) - lohnt sich als Beutezug, ist aber durch die starke Garnison oben
-// erkauft. Gleiches Verhaeltnis wie SEED_RESOURCES (3,75 : 2,25 : 1) beibehalten.
-const RESOURCE_CAP = { metall: 15000000, kristall: 9000000, deuterium: 4000000 };
+// mitveraendert haette.
+// Der erste Wurf (15M/9M/4M) war zu niedrig angesetzt, OHNE gegen die tatsaechliche passive
+// Produktionsrate der SEED_BUILDINGS (unten) gegengerechnet zu werden: Metallmine Stufe 4 mit dem
+// NPC_PRODUCTION_BONUS_MULTIPLIER (1,5x) produziert ~87.800 Metall/h - der alte Deckel war damit
+// bereits nach ~7-9 Tagen erreicht und kappte danach jedes weitere Wachstum, obwohl die Basis noch
+// lange nicht "ausgereift" war. Neu kalibriert auf ~3 Wochen (504h) ungebremstes Wachstum bis zum
+// Anschlag, im Verhaeltnis der TATSAECHLICHEN Produktionsraten (Metall:Kristall:Deuterium ≈
+// 7,3:3,3:1, nicht das willkuerliche SEED_RESOURCES-Verhaeltnis von vorher) - eine "reife" Basis
+// liefert damit bei PIRATE_BASE_LOOT_PERCENT=0.35 pro vollem Beutezug ca. 15,4M/7M/2,1M, spuerbar
+// mehr als ein Silber-Container und in Metall-Reichweite eines Gold-Containers - angemessen fuer
+// eine Basis, die eine ~5.300-Schiffe-Garnison durchbrechen muss.
+const RESOURCE_CAP = { metall: 44000000, kristall: 20000000, deuterium: 6000000 };
 // Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
 // aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
 const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
