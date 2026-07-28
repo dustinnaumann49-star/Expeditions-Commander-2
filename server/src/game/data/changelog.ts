@@ -9,6 +9,16 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '28.07.2026',
+    title: 'Server-Stabilität: KI-Mitspieler entfernt, Piratenbasen passiv, Außenposten entfernt',
+    changes: [
+      'KI-Vega und KI-Nyx wurden komplett entfernt - sie waren die Hauptursache wiederkehrender, mehrminütiger Server-Verzögerungen (rund um die Uhr Kämpfe/Missionen/Angriffe ohne menschliche Entscheidungspause).',
+      'Piratenbasen wachsen nicht mehr eigenständig und greifen euch nicht mehr von sich aus an - sie bleiben weiterhin angreifbar, halten aber dauerhaft ihren aktuellen Bestand.',
+      'Außenposten-Feature komplett entfernt (Eroberung/Verstärkung/Rückruf, Flugzeit-Bonus).',
+      'Normale Raids (die Piratenbasen regelmäßig gegen euch starten) sind davon nicht betroffen und laufen unverändert weiter.',
+    ],
+  },
+  {
     date: '25.07.2026',
     title: 'Balance: KI-Mitspieler und Piratenbasen wachsen jetzt effizienter',
     changes: [

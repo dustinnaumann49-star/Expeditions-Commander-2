@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
@@ -6,7 +6,7 @@ import { api } from '../api/client';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip, PirateBaseSummary, PirateAttackDeployment, SpyMissionDeployment, OutpostSummary, OutpostDeployment } from '../types/game';
+import type { GalaxyDeployment, Mission, IncomingDeployment, GalaxyEvent, GalaxyEventTrip, PirateBaseSummary, PirateAttackDeployment, SpyMissionDeployment } from '../types/game';
 
 function deploymentStatus(d: GalaxyDeployment, now: number): { label: string; color: string } {
   if (d.recalled) {
@@ -37,7 +37,6 @@ export function GalaxiePage() {
     ownGalaxyPosition,
     pirateBases,
     pirateBaseSummaries,
-    outposts,
     sektorPositions,
     incomingDeployments,
     galaxyEvents,
@@ -51,9 +50,6 @@ export function GalaxiePage() {
     claimGalaxyEvent,
     attackPirateBase,
     spyOnPirateBase,
-    attackOutpost,
-    reinforceOutpost,
-    recallOutpost,
     error,
   } = useGame();
   const [, forceTick] = useState(0);
@@ -63,8 +59,6 @@ export function GalaxiePage() {
   const [targetEvent, setTargetEvent] = useState<GalaxyEvent | null>(null);
   const [targetPirateBase, setTargetPirateBase] = useState<PirateBaseSummary | null>(null);
   const [targetSpyBase, setTargetSpyBase] = useState<PirateBaseSummary | null>(null);
-  const [targetOutpostAttack, setTargetOutpostAttack] = useState<OutpostSummary | null>(null);
-  const [targetOutpostReinforce, setTargetOutpostReinforce] = useState<OutpostSummary | null>(null);
   const [relocateTarget, setRelocateTarget] = useState<{ system: number; position: number } | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [preview, setPreview] = useState<{ distance: number; durationMs: number; fuelCost: number } | null>(null);
@@ -74,7 +68,6 @@ export function GalaxiePage() {
   const [detailIncoming, setDetailIncoming] = useState<IncomingDeployment | null>(null);
   const [detailEventTrip, setDetailEventTrip] = useState<GalaxyEventTrip | null>(null);
   const [detailPirateAttack, setDetailPirateAttack] = useState<PirateAttackDeployment | null>(null);
-  const [detailOutpostDeployment, setDetailOutpostDeployment] = useState<OutpostDeployment | null>(null);
   const [detailSpyMission, setDetailSpyMission] = useState<SpyMissionDeployment | null>(null);
 
   useEffect(() => {
@@ -107,7 +100,7 @@ export function GalaxiePage() {
       setPreview(null);
       return;
     }
-    if (targetUserId === null && !targetEvent && !targetPirateBase && !targetOutpostAttack && !targetOutpostReinforce) {
+    if (targetUserId === null && !targetEvent && !targetPirateBase) {
       setPreview(null);
       return;
     }
@@ -118,13 +111,10 @@ export function GalaxiePage() {
     }
     setPreviewLoading(true);
     const t = setTimeout(() => {
-      const outpostTarget = targetOutpostAttack || targetOutpostReinforce;
       const target = targetEvent
         ? { targetPosition: { system: targetEvent.system, position: targetEvent.position } }
         : targetPirateBase
         ? { targetPosition: { system: targetPirateBase.system, position: targetPirateBase.position } }
-        : outpostTarget
-        ? { targetPosition: { system: outpostTarget.system, position: outpostTarget.position } }
         : { targetUserId: targetUserId! };
       api
         .galaxyPreview(selection, target)
@@ -133,7 +123,7 @@ export function GalaxiePage() {
         .finally(() => setPreviewLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [targetUserId, targetEvent, targetPirateBase, targetOutpostAttack, targetOutpostReinforce, selection]);
+  }, [targetUserId, targetEvent, targetPirateBase, selection]);
 
   if (!gameData || !state || system === null) return <PageSkeleton />;
 
@@ -142,7 +132,6 @@ export function GalaxiePage() {
   const positions = Array.from({ length: gameData.galaxyPositions }, (_, i) => i + 1);
   const occupantsInSystem = galaxyOccupants.filter((o) => o.system === system);
   const pirateBasesInSystem = pirateBases.filter((b) => b.system === system);
-  const outpostsInSystem = outposts.filter((o) => o.system === system);
   const sektorenInSystem = sektorPositions.filter((s) => s.system === system);
   const eventsInSystem = galaxyEvents.filter((e) => e.system === system);
   const targetOccupant = targetUserId !== null ? galaxyOccupants.find((o) => o.userId === targetUserId) : null;
@@ -154,7 +143,7 @@ export function GalaxiePage() {
   const canSendSpy = !!targetSpyBase && probeQty > 0 && spyFuelCost <= state.resources.deuterium;
   const canSend = targetSpyBase
     ? canSendSpy
-    : (targetUserId !== null || !!targetEvent || !!targetPirateBase || !!targetOutpostAttack || !!targetOutpostReinforce) &&
+    : (targetUserId !== null || !!targetEvent || !!targetPirateBase) &&
       totalSelected > 0 &&
       !!preview &&
       preview.fuelCost <= state.resources.deuterium;
@@ -186,40 +175,10 @@ export function GalaxiePage() {
               <strong style={{ color: 'var(--accent-kristall)' }}>{u.username}</strong>
             </span>
           ))}
-          {' '}· Außenposten gehalten: <strong>{outposts.filter((o) => o.ownerSide === 'players').length}/{outposts.length}</strong>
         </p>
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-          Gegenseite: {gameData.pirateAllianceName} (kontrolliert alle noch nicht eroberten Außenposten und Piratenbasen)
+          Gegenseite: {gameData.pirateAllianceName} (kontrolliert alle noch nicht eroberten Piratenbasen)
         </p>
-        <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginTop: 4 }}>
-          Aktueller Flugzeit-Bonus aus Außenposten:{' '}
-          <strong>
-            +{Math.round(outposts.filter((o) => o.ownerSide === 'players').length * gameData.outpostSpeedBonusPerOutpost * 100)}%
-          </strong>{' '}
-          (gilt für jeden Flug, nicht nur zu/von Außenposten)
-        </p>
-        {outposts.filter((o) => o.ownerSide === 'players' && o.garrisonPower > 0).length > 0 && (
-          <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Stationierte Flotten auf euren Außenposten:</p>
-            {outposts
-              .filter((o) => o.ownerSide === 'players' && o.garrisonPower > 0)
-              .map((o) => (
-                <div key={o.id} className="queue-item" style={{ fontSize: 12 }}>
-                  <span>
-                    🚩 1:{o.system}:{o.position} ({o.tier}) · {o.garrisonPower.toLocaleString('de-DE')} Schiffe
-                  </span>
-                  <span style={{ display: 'flex', gap: 6 }}>
-                    <button className="qty-btn" onClick={() => setSystem(o.system)}>
-                      Anzeigen
-                    </button>
-                    <button className="qty-btn" onClick={() => recallOutpost(o.id).then(refreshGalaxy)}>
-                      Zurückrufen
-                    </button>
-                  </span>
-                </div>
-              ))}
-          </div>
-        )}
       </div>
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
@@ -247,25 +206,12 @@ export function GalaxiePage() {
             const alreadySpyingBase = pirateBaseSummary && state.spyMissions.some((m) => m.baseId === pirateBaseSummary.id);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
             const event = eventsInSystem.find((e) => e.position === pos);
-            const outpost = outpostsInSystem.find((o) => o.position === pos);
-            const alreadyAttackingOutpost = outpost && state.outpostDeployments.some((d) => d.outpostId === outpost.id && d.kind === 'attack' && !d.resolved);
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
             const eventDef = event ? gameData.galaxyEventTypes[event.type] : null;
             const alreadyEnRouteToEvent = event && state.eventTrips.some((t) => t.eventId === event.id);
-            const isFreeAndPickable = !occ && !isPirateBase && !sektor && !event && !outpost;
-            // Feste Hex-/RGBA-Werte statt var(--accent-deut)/var(--danger) im "border"-Shorthand -
-            // manche Browser loesen CSS-Custom-Properties innerhalb eines Shorthands im Inline-Style
-            // nicht zuverlaessig gegenueber der .ship-card-Klassenregel auf (empirisch getestet:
-            // background mit rgba() hat funktioniert, border mit var() nicht).
-            const outpostCardStyle: CSSProperties = outpost
-              ? {
-                  padding: 12,
-                  border: `1px solid ${outpost.ownerSide === 'players' ? '#52f07a' : '#e0323c'}`,
-                  background: outpost.ownerSide === 'players' ? 'rgba(82,240,122,0.10)' : 'rgba(224,50,60,0.10)',
-                }
-              : { padding: 12 };
+            const isFreeAndPickable = !occ && !isPirateBase && !sektor && !event;
             return (
-              <div className="ship-card" key={pos} style={outpostCardStyle}>
+              <div className="ship-card" key={pos} style={{ padding: 12 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Position {pos}</p>
                 {occ ? (
                   <>
@@ -336,57 +282,6 @@ export function GalaxiePage() {
                       </>
                     ) : (
                       <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>Nicht angreifbar</p>
-                    )}
-                  </>
-                ) : outpost ? (
-                  <>
-                    <p style={{ color: outpost.ownerSide === 'players' ? 'var(--accent-deut)' : 'var(--danger)', fontWeight: 600 }}>
-                      🚩 Außenposten ({outpost.tier})
-                    </p>
-                    <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
-                      {outpost.ownerSide === 'players' ? `🚩 ${gameData.allianceName}` : `🏴‍☠️ ${gameData.pirateAllianceName}`} · Stärke ~
-                      {outpost.garrisonPower.toLocaleString('de-DE')}
-                      {outpost.ownerSide === 'players' && ' · trägt zum globalen Flugzeit-Bonus bei (+15% je gehaltenem Posten)'}
-                    </p>
-                    {outpost.ownerSide === 'players' ? (
-                      <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button
-                          className="qty-btn"
-                          onClick={() => {
-                            setTargetOutpostReinforce(outpost);
-                            setTargetOutpostAttack(null);
-                            setTargetPirateBase(null);
-                            setTargetSpyBase(null);
-                            setTargetUserId(null);
-                            setTargetEvent(null);
-                            setRelocateTarget(null);
-                            setSelection({});
-                          }}
-                        >
-                          Verstärken
-                        </button>
-                        <button className="qty-btn" onClick={() => recallOutpost(outpost.id).then(refreshGalaxy)}>
-                          Garnison zurückrufen
-                        </button>
-                      </span>
-                    ) : alreadyAttackingOutpost ? (
-                      <span style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Angriff unterwegs</span>
-                    ) : (
-                      <button
-                        className="qty-btn"
-                        onClick={() => {
-                          setTargetOutpostAttack(outpost);
-                          setTargetOutpostReinforce(null);
-                          setTargetPirateBase(null);
-                          setTargetSpyBase(null);
-                          setTargetUserId(null);
-                          setTargetEvent(null);
-                          setRelocateTarget(null);
-                          setSelection({});
-                        }}
-                      >
-                        Angreifen
-                      </button>
                     )}
                   </>
                 ) : event ? (
@@ -466,7 +361,7 @@ export function GalaxiePage() {
         </div>
       )}
 
-      {((targetUserId !== null && targetOccupant) || targetEvent || targetPirateBase || targetSpyBase || targetOutpostAttack || targetOutpostReinforce) && (
+      {((targetUserId !== null && targetOccupant) || targetEvent || targetPirateBase || targetSpyBase) && (
         <div className="queue-box" style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>
             {targetEvent
@@ -475,10 +370,6 @@ export function GalaxiePage() {
               ? `Angriffsflotte zur Piratenbasis (1:${targetPirateBase.system}:${targetPirateBase.position}, Machtwert ${targetPirateBase.power.toLocaleString('de-DE')}) schicken`
               : targetSpyBase
               ? `Spionagesonde(n) zur Piratenbasis (1:${targetSpyBase.system}:${targetSpyBase.position}) schicken`
-              : targetOutpostAttack
-              ? `Angriffsflotte zum Außenposten (1:${targetOutpostAttack.system}:${targetOutpostAttack.position}, ${targetOutpostAttack.tier}) schicken`
-              : targetOutpostReinforce
-              ? `Verstärkung zum Außenposten (1:${targetOutpostReinforce.system}:${targetOutpostReinforce.position}) schicken`
               : `Flotte zu ${targetOccupant!.username} (1:${targetOccupant!.system}:${targetOccupant!.position}) schicken`}
           </h3>
           {targetSpyBase ? (
@@ -567,8 +458,6 @@ export function GalaxiePage() {
                 setTargetEvent(null);
                 setTargetPirateBase(null);
                 setTargetSpyBase(null);
-                setTargetOutpostAttack(null);
-                setTargetOutpostReinforce(null);
                 setSelection({});
               }}
             >
@@ -587,12 +476,6 @@ export function GalaxiePage() {
                 } else if (targetSpyBase) {
                   spyOnPirateBase(targetSpyBase.id, probeQty).then(refreshGalaxy);
                   setTargetSpyBase(null);
-                } else if (targetOutpostAttack) {
-                  attackOutpost(targetOutpostAttack.id, selection).then(refreshGalaxy);
-                  setTargetOutpostAttack(null);
-                } else if (targetOutpostReinforce) {
-                  reinforceOutpost(targetOutpostReinforce.id, selection).then(refreshGalaxy);
-                  setTargetOutpostReinforce(null);
                 } else {
                   holdFleet(targetUserId!, selection).then(refreshGalaxy);
                   setTargetUserId(null);
@@ -606,10 +489,6 @@ export function GalaxiePage() {
                 ? 'Angriff starten (kehrt automatisch zurück)'
                 : targetSpyBase
                 ? 'Sonde(n) losschicken (kehrt automatisch zurück)'
-                : targetOutpostAttack
-                ? 'Angriff starten (bei Sieg neue Garnison, sonst kehrt Flotte zurück)'
-                : targetOutpostReinforce
-                ? 'Verstärkung losschicken (kein Rückflug, bis zurückgerufen)'
                 : 'Flotte losschicken (Halten)'}
             </button>
           </div>
@@ -621,7 +500,6 @@ export function GalaxiePage() {
         {state.galaxyDeployments.length === 0 &&
         state.eventTrips.length === 0 &&
         state.pirateAttacks.length === 0 &&
-        state.outpostDeployments.length === 0 &&
         state.spyMissions.length === 0 &&
         state.missions.length === 0 &&
         parties.filter((op) => op.status === 'departed').length === 0 ? (
@@ -746,25 +624,6 @@ export function GalaxiePage() {
                 </div>
               );
             })}
-            {state.outpostDeployments.map((d) => {
-              const label = d.resolved ? 'abgeschlossen' : d.returnTime !== null ? 'kehrt zurück' : 'unterwegs';
-              const color = !d.resolved ? 'var(--accent-kristall)' : 'var(--text-dim)';
-              const timeText = !d.resolved ? `Ankunft in ${formatTime(d.arriveTime - now)}` : 'Abgeschlossen';
-              const kindLabel = d.kind === 'attack' ? 'Angriffsflug' : 'Verstärkung';
-              return (
-                <div className="queue-item" key={d.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                  <div className="progress-row">
-                    <span>
-                      <span className="lore-title" onClick={() => setDetailOutpostDeployment(d)}>
-                        {kindLabel}: Außenposten (1:{d.targetSystem}:{d.targetPosition}) · Von 1:{d.originSystem}:{d.originPosition}
-                      </span>{' '}
-                      <span style={{ color, fontWeight: 600 }}>[{label}]</span>
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{timeText}</span>
-                </div>
-              );
-            })}
             {state.spyMissions.map((m) => {
               const label = !m.resolved ? 'unterwegs' : 'Rückflug';
               const color = !m.resolved ? 'var(--accent-kristall)' : 'var(--text-dim)';
@@ -856,20 +715,6 @@ export function GalaxiePage() {
           <ShipList ships={detailPirateAttack.ships} shipName={shipName} />
           <p style={{ fontSize: 13, marginTop: 8 }}>
             {detailPirateAttack.resolved ? 'Kampf bereits ausgetragen - Details siehe Kampfbericht in den Nachrichten.' : 'Noch im Anflug.'}
-          </p>
-        </InfoModal>
-      )}
-
-      {detailOutpostDeployment && (
-        <InfoModal
-          title={`${detailOutpostDeployment.kind === 'attack' ? 'Angriffsflug' : 'Verstärkung'}: Außenposten 1:${detailOutpostDeployment.targetSystem}:${detailOutpostDeployment.targetPosition}`}
-          onClose={() => setDetailOutpostDeployment(null)}
-        >
-          <ShipList ships={detailOutpostDeployment.ships} shipName={shipName} />
-          <p style={{ fontSize: 13, marginTop: 8 }}>
-            {detailOutpostDeployment.resolved
-              ? 'Bereits abgeschlossen - Details siehe Kampfbericht in den Nachrichten (bei Angriffen).'
-              : 'Noch im Anflug.'}
           </p>
         </InfoModal>
       )}

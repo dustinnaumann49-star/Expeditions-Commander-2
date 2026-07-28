@@ -2,7 +2,6 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
-import { outpostSpeedMultiplier } from './outposts.js';
 import { isBoosterActive } from './boosterUtil.js';
 import {
   MISSION_TRAVEL_MS,
@@ -98,8 +97,7 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   let travelMs = MISSION_TRAVEL_MS;
   if (cfg.galaxyPosition && state.galaxyPosition) {
     const distance = galaxyDistance(state.galaxyPosition, cfg.galaxyPosition);
-    const bonus = outpostSpeedMultiplier();
-    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules) * bonus;
+    const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
     const computed = galaxyDurationMs(distance, speed);
     if (Number.isFinite(computed)) travelMs = computed;
   }

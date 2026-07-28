@@ -1395,9 +1395,10 @@ client/
       HEAD` beim Start, fällt auf `'unbekannt'` zurück falls kein `.git` im Produktions-Image
       vorhanden ist) - hilft bei der Frage "läuft auf dem Server wirklich der neueste Stand?"
       (Coolify-Deploy-Diagnose nach mehreren Verwirrungen um Webhook/Build-Variable/CORS).
-97. **CPU-Spitzen-Vorfall (Stand 26.07.2026): URSACHE BESTÄTIGT, ERSTER FIX DEPLOYED, WEITERE
-    BEOBACHTUNG NÖTIG** - falls eine neue Chat-Session das hier weiterführt: dieser Punkt ist der
-    vollständige Stand, keine andere Quelle nötig. Live-Vorfall: wiederkehrende, sich SELBST
+97. **CPU-Spitzen-Vorfall (Stand 26.07.2026): URSACHE BESTÄTIGT, ERSTER FIX DEPLOYED** - dieser
+    Fix (Nachhol-Deckel) wurde am 28.07.2026 durch eine strukturellere Lösung ABGELÖST, siehe
+    Punkt 98 (KI-Mitspieler/Piratenbasen-Autonomie entfernt statt nur gedeckelt). Bleibt hier als
+    vollständige Diagnose-Historie erhalten. Live-Vorfall: wiederkehrende, sich SELBST
     VERSTÄRKENDE Verzögerungen (Coolify-Metriken zeigten 250% CPU über mehrere Minuten, mehrfach
     täglich), eskalierend von 87 Sekunden für einen einzelnen `tick()`-Aufruf bis zu 934 Sekunden
     (>15 Minuten!) für eine einzelne `GET /game/state`-Anfrage eines echten Spielers - der
@@ -1462,6 +1463,54 @@ client/
       Architektur-Thema für später): möchte perspektivisch weg von "Dinge müssen nachgeholt
       werden" hin zu echter Live-Berechnung - würde eine andere DB-Anbindung erfordern (aktuell
       `better-sqlite3`, SYNCHRON/blockierend, siehe `db.ts`), nicht kurzfristig umsetzbar.
+98. **CPU-Spitzen-Vorfall: STRUKTURELLE LÖSUNG (28.07.2026) - KI-Mitspieler entfernt,
+    Piratenbasen-Autonomie entfernt, Außenposten-Feature entfernt.** Löst Punkt 97 ab: statt den
+    Nachhol-Deckel weiter zu verfeinern, wurde die eigentliche Lastquelle beseitigt. Nutzer ist für
+    4+ Wochen nicht erreichbar und braucht ein System, das ohne Nachjustieren stabil läuft.
+    - **Analyse (Live-Logs nach dem `40aa623`-Redeploy)**: der Nachhol-Deckel funktionierte
+      (sinkende statt eskalierende "langsam"-Zeilen), aber die eigentliche Quelle der teuren
+      Kämpfe war strukturell: KI-Vega/KI-Nyx (`bot.ts`) und die 4 aktiven Piratenbasen
+      (`pirateBaseState.ts`) liefen rund um die Uhr ohne menschliche Entscheidungspause -
+      Piratensektor-Missionen, Gruppen-Expeditionen, Piratenbasis-/Außenposten-Angriffe, jeweils
+      mit echter Kampfsimulation im nur 2 Worker großen Pool (`combatRunner.ts`).
+    - **KI-Vega/KI-Nyx entfernt**: `ensureBotUsers()` nicht mehr aufgerufen, stattdessen
+      `removeBotUsers()` (bereits vorbereitet in `db.ts`, war schon einmal im Einsatz vor dem
+      Hetzner-Umzug) beim Serverstart - löscht Accounts + Spielstand endgültig aus der DB.
+      `bot.ts`/`economyBotTurn.ts` komplett gelöscht (nirgends mehr referenziert).
+    - **Piratenbasen-Autonomie entfernt**: `loadPirateBase()` (`pirateBaseState.ts`) ruft kein
+      `runEconomyBotTurn()` mehr auf - Basen bauen/forschen/minen nicht mehr selbst, bleiben
+      dauerhaft auf ihrem Startbestand (`SEED_FLEET`/`SEED_DEFENSE`/`SEED_BUILDINGS`) stehen.
+      Offensiv-KI (Basen greifen Spieler von sich aus an) komplett entfernt. Bleiben weiterhin
+      über `startPirateBaseAttack()` von Spielern angreifbar - nur ohne jede Eigeninitiative.
+      Die normalen, fest getakteten Raids (`raids.ts`, `processRaidTimer`) sind davon **komplett
+      unberührt** - generieren ihre Gegnerflotte live bei Wellen-Ankunft, unabhängig von jedem
+      PirateBaseState (bestätigt vor der Änderung geprüft).
+    - **Außenposten-Feature komplett entfernt**: `outposts.ts` gelöscht, alle Routen
+      (`/galaxy/outpost/*`), Heartbeat-Aufrufe, DB-Tabelle `outposts` + Accessor-Funktionen,
+      Typen (`OutpostState`/`OutpostDeployment`/`OutpostSummary`) sowie die komplette Client-UI
+      (`Galaxie.tsx`, `GameContext.tsx`, `api/client.ts`, `types/game.ts`) entfernt. Der
+      Flugzeit-Bonus (`OUTPOST_SPEED_BONUS_PER_OUTPOST`) fällt ersatzlos weg (war ohnehin an
+      erobertes Außenposten-Territorium gebunden, das es nicht mehr gibt).
+    - **`heartbeat.ts` dadurch deutlich schlanker**: pro Nutzer nur noch `tick()` +
+      `processPirateAttacks()` (löst nur spieler-initiierte Angriffe auf) + `processMissions()` +
+      `processRaidTimer()`. Keine Bot-Turns, keine Piratenbasen-Wachstums-/Offensiv-Turns, keine
+      Außenposten-KI mehr - nur noch echte Spieleraktionen und die fest getakteten Raids erzeugen
+      Last.
+    - **Was WARUM der Heartbeat überhaupt existiert** (Nutzerfrage): ohne ihn hängt jede
+      zeitbasierte Spielmechanik (Raid-Checkpoints, Missions-Fortschritt für offline Spieler,
+      Ressourcenproduktion) daran, dass zufällig gerade ein Spieler online ist und eine Anfrage
+      stellt - bei 0 aktiven Spielern (z.B. nachts, oder während der Nutzer 4+ Wochen weg ist)
+      würde sonst schlicht nichts passieren. Der interne `setInterval` in `index.ts` ruft
+      `runGlobalHeartbeat()` alle 2 Minuten auf, unabhängig von jedem Request - bleibt bestehen,
+      ist aber jetzt durch den Wegfall der KI/Piratenbasen-Autonomie strukturell deutlich billiger.
+    - **NOCH NICHT VERIFIZIERT** (Stand dieses Commits): Code kompiliert sauber (`tsc --noEmit` in
+      `server/` UND `client/`), aber ob der Redeploy die CPU-Spitzen tatsächlich beendet hat, war
+      zum Zeitpunkt dieses Commits noch offen (Chat-Session ging zu Ende, siehe unten).
+    - **NÄCHSTE SCHRITTE FÜR DIE FORTSETZUNG**: Redeploy in Coolify prüfen/auslösen, danach die
+      Logs (Suche nach `dauerte`/`langsam`) eine Weile beobachten - Erwartung: praktisch keine
+      "langsam"-Zeilen mehr, da keine automatisierte KI mehr Kämpfe/Missionen auslöst. Falls
+      dennoch weiterhin Spitzen auftreten, liegt die Ursache dann zwingend bei echten
+      Spieleraktionen oder den fest getakteten Raids - nicht mehr bei KI/Piratenbasen.
 
 ## Kurz-Changelog
 

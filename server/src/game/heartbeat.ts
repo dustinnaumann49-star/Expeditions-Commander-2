@@ -4,10 +4,8 @@ import { tick } from './actions.js';
 import { processMissions } from './missions.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
-import { runBotTurn } from './bot.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
-import { processPirateAttacks, runAllPirateBaseTurns, runAllPirateBaseOffensiveTurns } from './pirateBaseState.js';
-import { processOutpostDeployments, runOutpostPirateAiTurn } from './outposts.js';
+import { processPirateAttacks } from './pirateBaseState.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -67,16 +65,11 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       await tick(state);
       // Nicht mehr Teil von tick() selbst (siehe Kommentar bei runEconomyTick() in actions.ts,
       // Zirkelimport-Vermeidung fuer pirateBaseState.ts) - deshalb hier explizit direkt danach.
+      // Loest nur bereits von einem Spieler gestartete Angriffe auf (siehe startPirateBaseAttack in
+      // routes.ts) - Piratenbasen greifen selbst nicht mehr an (siehe README Punkt 97/98).
       await processPirateAttacks(state);
-      await processOutpostDeployments(state);
       await processMissions(state);
       await processRaidTimer(state);
-      // KI-Spieler-Feature nach dem Server-Umzug (Hetzner, siehe README) wieder REAKTIVIERT -
-      // laeuft NACH der normalen Zeit-Verarbeitung, damit z.B. gerade fertiggestellte Gebaeude/
-      // Forschung schon beruecksichtigt sind, bevor der naechste Schritt geplant wird.
-      if (u.isBot) {
-        await runBotTurn(state, users);
-      }
       savePlayerState(state);
       const userTickMs = Date.now() - userTickStart;
       if (userTickMs > SLOW_USER_TICK_MS) {
@@ -101,51 +94,11 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     console.error('runGlobalHeartbeat: Fehler bei maybeSpawnGalaxyEvent:', err);
   }
 
-  // Piratenbasen (Nutzerentscheidung Juli 2026: wachsen jetzt "genau wie Spieler" - eigene
-  // Wirtschaft, Forschung, Flotten-/Verteidigungsbau, Asteroiden-Mining, siehe pirateBaseState.ts)
-  // bekommen genau wie die Bot-Accounts ihren eigenen Zug pro Heartbeat, nicht nur lazy beim
-  // naechsten Laden (Angriff/Spionage/Galaxie-Ansicht) - sonst wuerden sie nur wachsen, wenn
-  // zufaellig gerade jemand hinschaut.
-  const pirateBaseTurnsStart = Date.now();
-  try {
-    await runAllPirateBaseTurns();
-  } catch (err) {
-    errors++;
-    console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseTurns:', err);
-  }
-  const pirateBaseTurnsMs = Date.now() - pirateBaseTurnsStart;
-  if (pirateBaseTurnsMs > SLOW_PHASE_MS) {
-    console.warn(`runGlobalHeartbeat: runAllPirateBaseTurns() dauerte ${pirateBaseTurnsMs}ms`);
-  }
-
-  // Offensiv-KI der Piratenbasen (Nutzerentscheidung Juli 2026: Basen sollen euch auch selbst
-  // angreifen, nicht nur passiv angreifbar sein) - eigener Schritt NACH dem normalen Wachstums-Turn
-  // oben, damit gerade fertiggestellte Schiffe schon zur Verfuegung stehen.
-  const offensiveTurnsStart = Date.now();
-  try {
-    await runAllPirateBaseOffensiveTurns(users.map((u) => u.id));
-  } catch (err) {
-    errors++;
-    console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseOffensiveTurns:', err);
-  }
-  const offensiveTurnsMs = Date.now() - offensiveTurnsStart;
-  if (offensiveTurnsMs > SLOW_PHASE_MS) {
-    console.warn(`runGlobalHeartbeat: runAllPirateBaseOffensiveTurns() dauerte ${offensiveTurnsMs}ms`);
-  }
-
-  // Aussenposten (siehe outposts.ts): opportunistische Piraten-Rueckeroberungsversuche gegen
-  // aktuell spieler-eigene Posten, einmal pro Heartbeat, analog zu runAllPirateBaseTurns() oben.
-  const outpostAiStart = Date.now();
-  try {
-    await runOutpostPirateAiTurn();
-  } catch (err) {
-    errors++;
-    console.error('runGlobalHeartbeat: Fehler bei runOutpostPirateAiTurn:', err);
-  }
-  const outpostAiMs = Date.now() - outpostAiStart;
-  if (outpostAiMs > SLOW_PHASE_MS) {
-    console.warn(`runGlobalHeartbeat: runOutpostPirateAiTurn() dauerte ${outpostAiMs}ms`);
-  }
+  // Piratenbasen wachsen NICHT MEHR eigenstaendig und greifen auch nicht mehr selbst an
+  // (Nutzerentscheidung, CPU-Spitzen-Vorfall siehe README Punkt 97/98 - war neben den KI-
+  // Mitspielern die zweite Hauptquelle der rechenintensiven Kaempfe im Heartbeat). Basen bleiben
+  // ueber processPirateAttacks() oben weiterhin von Spielern angreifbar, aber ohne jede
+  // Eigeninitiative. Aussenposten-Feature komplett entfernt (siehe README).
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein
   // einziger Durchlauf mit einem beliebigen Nutzer als Anker-Zustand deckt ALLE laufenden
@@ -169,7 +122,7 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   const totalMs = Date.now() - heartbeatStart;
   if (totalMs > SLOW_HEARTBEAT_TOTAL_MS) {
     console.warn(
-      `runGlobalHeartbeat: GESAMTER Durchlauf ungewöhnlich langsam: ${totalMs}ms für ${users.length} Nutzer (Nutzer-Schleife ${userLoopMs}ms, Piratenbasen ${pirateBaseTurnsMs}ms, Offensiv-KI ${offensiveTurnsMs}ms, Außenposten-KI ${outpostAiMs}ms)`
+      `runGlobalHeartbeat: GESAMTER Durchlauf ungewöhnlich langsam: ${totalMs}ms für ${users.length} Nutzer (Nutzer-Schleife ${userLoopMs}ms)`
     );
   }
 

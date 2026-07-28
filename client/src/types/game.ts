@@ -147,33 +147,6 @@ export interface PirateAttackDeployment {
   resolved: boolean;
 }
 
-export type OutpostTier = 'niedrig' | 'mittel' | 'hoch';
-
-export interface OutpostSummary {
-  id: string;
-  system: number;
-  position: number;
-  tier: OutpostTier;
-  ownerSide: 'pirates' | 'players';
-  garrisonPower: number;
-  ownerSince: number | null;
-}
-
-export interface OutpostDeployment {
-  id: string;
-  outpostId: string;
-  kind: 'attack' | 'reinforce';
-  ships: Record<string, number>;
-  originSystem: number;
-  originPosition: number;
-  targetSystem: number;
-  targetPosition: number;
-  startTime: number;
-  arriveTime: number;
-  returnTime: number | null;
-  resolved: boolean;
-}
-
 export interface SpyMissionDeployment {
   id: string;
   baseId: string;
@@ -511,7 +484,6 @@ export interface PlayerState {
   galaxyDeployments: GalaxyDeployment[];
   eventTrips: GalaxyEventTrip[];
   pirateAttacks: PirateAttackDeployment[];
-  outpostDeployments: OutpostDeployment[];
   spyMissions: SpyMissionDeployment[];
   activeBoosters: Record<string, number>;
   teile: { waffen: number; schild: number; panzerung: number };
@@ -655,7 +627,6 @@ export interface GameData {
   spyProbeFuelCostPerProbe: number;
   allianceName: string;
   pirateAllianceName: string;
-  outpostSpeedBonusPerOutpost: number;
 }
 
 export interface ClassDefinition {

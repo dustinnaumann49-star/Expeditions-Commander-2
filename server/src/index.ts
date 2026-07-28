@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { authRouter } from './auth/routes.js';
 import { gameRouter } from './game/routes.js';
 import { runGlobalHeartbeat } from './game/heartbeat.js';
-import { ensureBotUsers } from './game/bot.js';
+import { removeBotUsers } from './db.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
@@ -51,11 +51,17 @@ app.use('/api/game', gameRouter);
 app.listen(PORT, () => {
   console.log(`Expedition-Commander Server läuft auf Port ${PORT} (Commit ${deployedCommit})`);
 
-  // KI-Spieler-Accounts einmalig anlegen, falls noch nicht vorhanden (siehe game/bot.ts).
-  // Nach dem Server-Umzug (Hetzner, deutlich mehr CPU/RAM, siehe README) wieder REAKTIVIERT -
-  // die urspruengliche Performance-Notmassnahme (Bots entfernt) ist mit der neuen Hardware
-  // nicht mehr noetig.
-  ensureBotUsers().catch((err) => console.error('ensureBotUsers-Fehler:', err));
+  // KI-Spieler-Accounts (KI-Vega/KI-Nyx) endgueltig entfernen (Nutzerentscheidung Juli 2026,
+  // CPU-Spitzen-Vorfall siehe README Punkt 97/98): waren die Hauptquelle der rechenintensiven
+  // Kaempfe im Heartbeat (Piratensektor-Missionen, Gruppen-Expeditionen, Basis-/Aussenposten-
+  // Angriffe rund um die Uhr ohne menschliche Entscheidungspause). Loescht Accounts + Spielstand,
+  // idempotent (macht nichts, falls schon entfernt).
+  try {
+    const removed = removeBotUsers();
+    if (removed > 0) console.log(`${removed} KI-Spieler-Account(s) entfernt.`);
+  } catch (err) {
+    console.error('removeBotUsers-Fehler:', err);
+  }
   // Angreifbare Piratenbasen einmalig anlegen, falls noch nicht vorhanden (siehe game/pirateBaseState.ts).
   try {
     ensurePirateBases();
