@@ -99,7 +99,12 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     categories: [
       { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Rohstoff-Fracht', metall:12000000, kristall:7000000, deuterium:3500000 }] },
       { category: 'teile', chance: 0.80, rewards: [{ type:'teile', label:'Ausrüstungs-Kiste', waffen:20, schild:20, panzerung:20 }] },
-      { category: 'zeitgutschein', chance: 0.20, rewards: [
+      // Rohwert bewusst deutlich hoeher als die gewuenschte reale Chance (siehe rollContainerCategories()
+      // in inventory.ts): resources/teile liegen bei 80% und belegen bei der "genau 2 Treffer"-Normalisierung
+      // fast immer beide Slots, wodurch Zeitgutschein/Freischiff trotz ihres eingetragenen Werts real seltener
+      // vorkommen. 0.20 ergab nur ~15% reale Chance (Nutzer-Feedback: "zu selten") - 0.38 wurde per Simulation
+      // (2 Mio. Durchlaeufe) auf ~28% reale Chance kalibriert.
+      { category: 'zeitgutschein', chance: 0.38, rewards: [
         { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (40%)', percent:0.40 },
         { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (40%)', percent:0.40 },
         { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (40%)', percent:0.40 },
@@ -119,7 +124,8 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
       { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Große Rohstoff-Fracht', metall:29000000, kristall:23000000, deuterium:19000000 }] },
       { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Dunkle Materie', amount:25 }] },
       { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Große Ausrüstungs-Kiste', waffen:50, schild:50, panzerung:50 }] },
-      { category: 'zeitgutschein', chance: 0.15, rewards: [
+      // Siehe Kommentar bei Silber-Container: 0.15 ergab nur ~10% reale Chance, 0.32 auf ~22% real kalibriert.
+      { category: 'zeitgutschein', chance: 0.32, rewards: [
         { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (75%)', percent:0.75 },
         { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (75%)', percent:0.75 },
         { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (75%)', percent:0.75 },
@@ -144,7 +150,8 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
       { category: 'resources', chance: 0.80, rewards: [{ type:'resources', label:'Elite-Rohstoff-Frachtladung', metall:52000000, kristall:44000000, deuterium:37000000 }] },
       { category: 'dm', chance: 0.60, rewards: [{ type:'dm', label:'Große Dunkle-Materie-Reserve', amount:50 }] },
       { category: 'teile', chance: 0.60, rewards: [{ type:'teile', label:'Elite-Ausrüstungs-Kiste', waffen:90, schild:90, panzerung:90 }] },
-      { category: 'zeitgutschein', chance: 0.10, rewards: [
+      // Siehe Kommentar bei Silber-Container: 0.10 ergab nur ~7% reale Chance, 0.23 auf ~16% real kalibriert.
+      { category: 'zeitgutschein', chance: 0.23, rewards: [
         { type:'zeitgutschein_bau_schiffe', label:'Zeit-Gutschein Bau: Schiffe (100%)', percent:1.0 },
         { type:'zeitgutschein_bau_verteidigung', label:'Zeit-Gutschein Bau: Verteidigung (100%)', percent:1.0 },
         { type:'zeitgutschein_bau_gebaeude', label:'Zeit-Gutschein Bau: Gebäude (100%)', percent:1.0 },
