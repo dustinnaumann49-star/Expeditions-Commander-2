@@ -46,6 +46,16 @@ function newId(prefix: string): string {
   return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
 
+// Verhindert, dass DIESELBE Gruppen-Operation von zwei ueberlappenden tick()-Aufrufen gleichzeitig
+// verarbeitet wird (Nutzer-Bug: bei sehr grossen Flotten kann eine einzelne Kampfberechnung im
+// Worker laenger als die 3s-Poll-Distanz des Clients dauern - ohne diese Sperre laedt eine zweite,
+// ueberlappende Anfrage denselben, noch nicht gespeicherten Operations-Stand, erhoeht
+// processedHours/adminChecksElapsed vom SELBEN Ausgangswert nochmal und simuliert denselben Check
+// ein zweites Mal mit neuen Zufallswerten - sichtbar als "der Kampfbericht aendert sich alle paar
+// Sekunden", obwohl es derselbe Check sein sollte. In-Memory-Sperre reicht, da der Server als
+// einzelner Node-Prozess laeuft (kein Multi-Instance-Setup, siehe README).
+const opsCurrentlyTicking = new Set<string>();
+
 function loadOp(id: string): GroupOperation | undefined {
   const json = getGroupOperationJson(id);
   return json ? (JSON.parse(json) as GroupOperation) : undefined;
@@ -587,6 +597,19 @@ async function finalizeAdminEncounter(
 }
 
 async function tickGroupExpedition(op: GroupOperation, currentState: PlayerState): Promise<void> {
+  // Siehe opsCurrentlyTicking oben - verhindert doppelte Verarbeitung derselben Operation durch
+  // ueberlappende tick()-Aufrufe (z.B. mehrere 3s-Polls, deren erster bei einer sehr grossen
+  // Flotte noch im Kampf-Worker haengt, wenn der naechste schon startet).
+  if (opsCurrentlyTicking.has(op.id)) return;
+  opsCurrentlyTicking.add(op.id);
+  try {
+    await tickGroupExpeditionInner(op, currentState);
+  } finally {
+    opsCurrentlyTicking.delete(op.id);
+  }
+}
+
+async function tickGroupExpeditionInner(op: GroupOperation, currentState: PlayerState): Promise<void> {
   const now = Date.now();
   if (op.sektorId === 'piraten_admiral') {
     return tickAdminEncounter(op, currentState);

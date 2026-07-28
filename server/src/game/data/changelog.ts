@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Bugfix: Elite-Bollwerk-Kampfbericht änderte sich beim Ansehen ständig',
+    changes: [
+      'Bei sehr großen Flotten konnte derselbe Stunden-Check beim Neuladen der Seite mehrfach unterschiedliche Kampfzahlen zeigen, obwohl es dieselbe Stunde war - lag an zwei überlappenden Hintergrund-Aktualisierungen, die denselben Check versehentlich doppelt berechnet haben.',
+      'Jeder Stunden-Check wird jetzt garantiert nur noch einmal berechnet, egal wie schnell hintereinander die Seite aktualisiert wird.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Bugfix: Piratenadmiral zeigt jetzt einen echten Kampfbericht',
     changes: [
       'Der Kampf gegen den Piratenadmiral (Sektor P10) lief technisch immer korrekt ab, aber die Nachricht dazu zeigte bisher nur eine knappe Textzeile ohne Gegnerflotte, Runden oder Schadenszahlen - fühlte sich an wie ein Sieg ohne echten Kampf.',

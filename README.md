@@ -1590,6 +1590,34 @@ client/
       Eskorte (Schlachtschiff/Schlachtkreuzer/Zerstörer/Reaper) sowie die eigene Flotte - Eskorte
       zu 97% vernichtet, Admiral selbst überlebt (erwartetes Verhalten, er ist der zähe Hauptgegner).
       Rückzugs-Nachricht zeigt korrekt nur die Beute-Zusammenfassung ohne Kampfbericht.
+102. **Bugfix: Elite-Bollwerk-Kampfbericht änderte sich beim Ansehen alle paar Sekunden (Race
+    Condition bei überlappenden tick()-Aufrufen).** Nutzer-Beobachtung: derselbe Stunden-Check
+    zeigte beim Nachladen mehrfach unterschiedliche Zahlen, obwohl es dieselbe Stunde sein sollte.
+    - **Root Cause**: Bei sehr großen Flotten (Nutzer-Testfall: >11.000 Schiffe) kann eine einzelne
+      Kampfberechnung im Worker-Thread mehrere Minuten dauern - deutlich länger als die 3s-Poll-
+      Distanz des Clients (`GameContext.tsx`). `tick()` (jeder GET /game/state-Poll) ruft
+      `processAllDepartedGroupOperations()` auf, die JEDE laufende Gruppen-Operation lädt/verarbeitet/
+      speichert - ohne jede Sperre konnte eine zweite, überlappende Anfrage denselben, noch nicht
+      gespeicherten `processedHours`-Stand laden, ihn vom SELBEN Ausgangswert erneut erhöhen und
+      denselben Stunden-Check ein zweites Mal mit neuen Zufallswerten simulieren. Betraf sowohl
+      Elite-Bollwerk (`runGroupHourlyCheck`) als auch strukturell den Piratenadmiral
+      (`runAdminCheck`), beide laufen über `tickGroupExpedition()`.
+    - **Fix**: Modul-weite In-Memory-Sperre (`opsCurrentlyTicking` Set in `groupOps.ts`) um
+      `tickGroupExpedition()` - eine Operation wird nur von EINEM `tick()`-Aufruf gleichzeitig
+      verarbeitet, ein zweiter überlappender Aufruf kehrt sofort zurück, statt denselben Check
+      doppelt zu simulieren. In-Memory reicht aus, da der Server als einzelner Node-Prozess läuft
+      (kein Multi-Instance-Setup).
+    - **Live verifiziert** (Dev-Server, `Promise.all` mit 2-3 echt gleichzeitigen Anfragen gegen
+      denselben Operations-Zustand): vor dem Fix nicht reproduziert (Zeitdruck), nach dem Fix bei
+      mehreren Testläufen mit großen Testflotten (1.500-2.900 Schiffe) durchgehend GENAU EINE
+      Kampf-Nachricht pro Stunden-Check, `processedHours` korrekt inkrementiert, alle bis auf die
+      erste Anfrage kehrten sofort zurück (blockiert durch die Sperre) statt selbst zu rechnen.
+    - **Nebenbefund**: eine Kampfberechnung mit >11.000 Schiffen dauerte im Test über 5 Minuten
+      (`tick(): langsame Phase "processAllDepartedGroupOperations"` Diagnose-Log, siehe Punkt 98/99)
+      - bestätigt, dass extrem große Flottengrößen selbst nach Entfernung der KI-Autonomie ein
+      eigenständiges CPU-Risiko bleiben. Kein akuter Handlungsbedarf (menschentempo, kein 24/7-
+      Trigger), aber falls Spieler regelmäßig mit fünfstelligen Flottengrößen in Multiplayer-
+      Sektoren fliegen, könnte das künftig relevant werden.
 
 ## Kurz-Changelog
 
