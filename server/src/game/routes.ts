@@ -13,7 +13,7 @@ import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, c
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
-import { listActivePirateBaseSummaries, listActivePirateBases, startPirateBaseAttack, processPirateAttacks } from './pirateBaseState.js';
+import { listActivePirateBaseSummaries, startPirateBaseAttack, processPirateAttacks } from './pirateBaseState.js';
 import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
@@ -525,58 +525,3 @@ gameRouter.post('/simulate', async (req: AuthedRequest, res) => {
   }
 });
 
-// ---- Debug: KI-Bots/Piratenbasen-Einblick ----
-
-// Nutzerentscheidung (Juli 2026): reines 2-Spieler-Koop-Spiel unter vertrauten Mitspielern, keine
-// PvP-Konkurrenz - spricht nichts dagegen, den vollen Zustand von KI-Vega/KI-Nyx und den 4 aktiven
-// Piratenbasen einsehbar zu machen, um deren Wirtschafts-/Angriffsverhalten zu beobachten und die
-// Balance zu beurteilen. Bewusst NUR lesend, kein handleAction (kein tick/save noetig - loadPlayerState/
-// listActivePirateBases() aktualisieren zwar intern beim Laden, das ist aber ohnehin ihr normales
-// Verhalten bei jedem Zugriff, siehe bot.ts/pirateBaseState.ts).
-gameRouter.get('/debug/npcs', async (_req: AuthedRequest, res) => {
-  try {
-    const botUsers = listAllUsers().filter((u) => u.isBot);
-    const bots = botUsers.map((u) => {
-      const state = loadPlayerState(u.id);
-      return {
-        username: u.username,
-        playerClass: state.playerClass,
-        economyClass: state.economyClass,
-        galaxyPosition: state.galaxyPosition,
-        resources: state.resources,
-        fleet: state.fleet,
-        defense: state.defense,
-        buildings: state.buildings,
-        research: state.research,
-        buildQueueLength: state.buildQueue.length,
-        defenseQueueLength: state.defenseQueue.length,
-        researchQueueLength: state.researchQueue.length,
-        buildingQueueLength: state.buildingQueue.length,
-      };
-    });
-
-    const bases = await listActivePirateBases();
-    const pirateBases = bases.map((b) => ({
-      id: b.id,
-      system: b.system,
-      position: b.position,
-      playerClass: b.state.playerClass,
-      resources: b.state.resources,
-      fleet: b.state.fleet,
-      defense: b.state.defense,
-      buildings: b.state.buildings,
-      research: b.state.research,
-      outgoingAttacks: b.attacks.filter((a) => !a.resolved).length,
-      nextOffensiveCheck: b.nextOffensiveCheck,
-      buildQueueLength: b.state.buildQueue.length,
-      defenseQueueLength: b.state.defenseQueue.length,
-      researchQueueLength: b.state.researchQueue.length,
-      buildingQueueLength: b.state.buildingQueue.length,
-    }));
-
-    res.json({ bots, pirateBases });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Interner Fehler beim Laden der Debug-Daten.' });
-  }
-});
