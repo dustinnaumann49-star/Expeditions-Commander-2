@@ -1564,6 +1564,32 @@ client/
       unten leer und starte danach unter 'Meine Operationen' sofort solo." Live im Dev-Server
       verifiziert (Registrierung, Flotte per DB seeden, Operation OHNE Einladung erstellt und
       gestartet - Status ging sofort auf "departed", kein Warten auf andere Teilnehmer nötig).
+101. **Bugfix: Piratenadmiral (P10) hatte gar keinen sichtbaren Kampfbericht.** Nutzer-Feedback nach
+    Solo-Test: "wir sind auf nichts getroffen, was sofort als Sieg gewertet wurde" - ein Boss-Kampf
+    hat sich tatsächlich stattgefunden (100 Runden, echte Verluste auf beiden Seiten), aber die
+    Nachricht dazu enthielt NUR eine knappe Text-Zeile + Beute-Zahlen, KEINE Gegnerflotte/Runden/
+    Schaden - fühlte sich wie ein Sieg ohne jeden erkennbaren Kampf an.
+    - **Root Cause**: `runAdminCheck()`/`finalizeAdminEncounter()` in `groupOps.ts` pushten bei
+      JEDEM Check (Check-N-Zwischennachricht UND finale Sieg-/Niederlage-Nachricht) ein
+      `FarmDetail`-Objekt (`{ sektorName, resources, dm, teile, fleetReturned }`) statt eines
+      echten `CombatDetail` mit `npcResults`/`playerResults`/`roundsFought` - im Gegensatz zu
+      `runGroupHourlyCheck()` (Elite-Bollwerk), das diesen vollen Kampfbericht schon immer korrekt
+      gebaut hat. Der Kampf selbst lief technisch immer korrekt ab (`runMultiOwnerCombatInWorker()`
+      wurde immer aufgerufen), nur der Bericht darüber fehlte komplett.
+    - **Fix**: `runAdminCheck()` baut jetzt `npcResults` (Piratenadmiral + Eskorte, inkl. Basiswerte
+      aus `encounter.statsOverride`) und `playerResults` (pro Teilnehmer/Schiffstyp, analog zu
+      `runGroupHourlyCheck()`) aus dem `MultiOwnerCombatResult` auf und übergibt ein vollständiges
+      `CombatDetail` an alle drei möglichen Ausgänge (Check läuft weiter / Sieg / Niederlage).
+      `finalizeAdminEncounter()` bekommt einen neuen optionalen `combatDetail`-Parameter - bei
+      Sieg/Niederlage (frischer Kampf) wird er mit den Belohnungen zu EINER Nachricht kombiniert;
+      beim reinen Rückzug (`respondAdminEncounter()` mit `action:'extract'`, KEIN frischer Kampf in
+      diesem Moment) bleibt es bei der reinen Beute-Zusammenfassung, da es dafür nichts zu zeigen
+      gibt.
+    - **Live verifiziert** (Dev-Server, Solo-Operation mit 110 Kreuzern gegen den Admiral): Check-
+      Nachricht zeigt jetzt "100 Runde(n)", volle Schaden/Verluste-Tabelle für Piratenadmiral +
+      Eskorte (Schlachtschiff/Schlachtkreuzer/Zerstörer/Reaper) sowie die eigene Flotte - Eskorte
+      zu 97% vernichtet, Admiral selbst überlebt (erwartetes Verhalten, er ist der zähe Hauptgegner).
+      Rückzugs-Nachricht zeigt korrekt nur die Beute-Zusammenfassung ohne Kampfbericht.
 
 ## Kurz-Changelog
 

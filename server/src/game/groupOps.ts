@@ -376,43 +376,111 @@ async function runAdminCheck(
     allowRetreat: true,
   });
 
+  // Kampfbericht aufbauen (Nutzer-Feedback: vorher gab es beim Piratenadmiral GAR KEINEN
+  // sichtbaren Kampfbericht - nur eine knappe Text-Nachricht ohne Gegnerflotte/Runden/Schaden,
+  // ein Sieg wirkte dadurch wie "wir sind auf nichts getroffen"). Analog zu runGroupHourlyCheck()
+  // oben (Elite-Bollwerk), das denselben MultiOwnerCombatResult-Aufbau schon richtig macht.
+  const npcResults: CombatUnitResult[] = Object.keys(encounter.npcShips).map((id) => {
+    const base = encounter.statsOverride[id] || baseStats(id);
+    const sent = encounter.npcShips[id];
+    const survivedCount = result.survivorsB[id] || 0;
+    return {
+      id,
+      name: id === ADMIRAL_BOSS_ID ? 'Piratenadmiral' : shipName(id),
+      count: sent,
+      waffen: Math.round(base.waffen),
+      schild: Math.round(base.schild),
+      panzerung: Math.round(base.panzerung),
+      dmgTaken: Math.round(result.dmgTakenB[id] || 0),
+      dmgDealt: Math.round(result.shotsB.dmgDealt[id] || 0),
+      destroyedCount: sent - survivedCount,
+      survivedCount,
+      destroyed: survivedCount <= 0,
+      isCaptain: id === ADMIRAL_BOSS_ID,
+      shotsFired: result.shotsB.shotsFired[id] || 0,
+      hits: result.shotsB.hits[id] || 0,
+      rapidFireTriggers: result.shotsB.rapidFireTriggers[id] || 0,
+      shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
+      shieldRegen: Math.round(result.shieldRegenB[id] || 0),
+    };
+  });
+
   // Ueberlebende Schiffe sofort in die Teilnehmer-Flotten uebernehmen (auch bei einer laufenden,
   // noch nicht abgeschlossenen Begegnung) - vermeidet doppeltes Verrechnen, falls der naechste
-  // Check erst viel spaeter (naechster tick()) verarbeitet wird.
+  // Check erst viel spaeter (naechster tick()) verarbeitet wird. playerResults MUSS dabei VOR dem
+  // Ueberschreiben von p.ships gebaut werden, sonst ist die urspruenglich entsandte Stueckzahl
+  // ("sent") nicht mehr rekonstruierbar (Object.entries(p.ships) liest sent+mutiert im selben
+  // Durchlauf, analog zu runGroupHourlyCheck() oben).
+  const playerResults: CombatUnitResult[] = [];
   accepted.forEach((p) => {
-    Object.keys(p.ships).forEach((id) => {
+    const pState = participantStates.get(p.userId)!;
+    Object.entries(p.ships).forEach(([id, sent]) => {
+      if (sent <= 0) return;
       const survived = result.survivorsByOwner[String(p.userId)]?.[id] || 0;
+      const eff = getEffectiveStats(id, pState.research, {}, isBoosterActive(pState, 'kampf'), pState.playerClass, pState.shipModules);
+      const statKey = `${p.userId}:${id}`;
+      playerResults.push({
+        id,
+        name: shipName(id),
+        ownerUsername: p.username,
+        sent,
+        survived,
+        lost: sent - survived,
+        waffen: Math.round(eff.waffen),
+        schild: Math.round(eff.schild),
+        panzerung: Math.round(eff.panzerung),
+        dmgTaken: Math.round(result.dmgTakenA[statKey] || 0),
+        dmgDealt: Math.round(result.shotsA.dmgDealt[statKey] || 0),
+        shotsFired: result.shotsA.shotsFired[statKey] || 0,
+        hits: result.shotsA.hits[statKey] || 0,
+        rapidFireTriggers: result.shotsA.rapidFireTriggers[statKey] || 0,
+        shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0),
+        shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
+      });
       p.ships[id] = survived;
     });
   });
 
   const bossDestroyed = (result.survivorsB[ADMIRAL_BOSS_ID] || 0) <= 0;
   const playerRetreated = !!result.retreated;
+  const checkNr = checksElapsed + 1;
+  const outcome = bossDestroyed
+    ? 'Piratenadmiral vernichtet'
+    : playerRetreated
+    ? 'Rückzug nach hohen Verlusten'
+    : 'Check überstanden - der Admiral kämpft weiter';
+  const detail: CombatDetail = {
+    sektorName: `Sektor P10 – Piratenadmiral (Check ${checkNr}/${ADMIRAL_TOTAL_CHECKS})`,
+    outcome,
+    roundsFought: result.roundsFought,
+    npcResults,
+    playerResults,
+    replay: result.replay,
+  };
 
   if (bossDestroyed) {
-    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'victory', checksElapsed + 1);
+    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'victory', checkNr, detail);
     return;
   }
 
   if (playerRetreated) {
-    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'defeat', checksElapsed + 1);
+    await finalizeAdminEncounter(op, accepted, participantStates, currentUserId, 'defeat', checkNr, detail);
     return;
   }
 
   // Check gewonnen (Flotte musste sich nicht zurueckziehen), Boss aber noch nicht besiegt -
   // Rueckzugs-Entscheidung faellig, bevor es (falls gewuenscht) weitergeht.
-  op.adminChecksElapsed = checksElapsed + 1;
+  op.adminChecksElapsed = checkNr;
   op.adminAwaitingDecision = true;
   saveOp(op);
 
-  const checkNr = op.adminChecksElapsed;
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
     pushMessage(
       pState,
       'kampf',
       `Piratenadmiral (Check ${checkNr}/${ADMIRAL_TOTAL_CHECKS}): Check überstanden, der Admiral kämpft weiter. Entscheidung nötig: Beute sichern und abziehen, oder weitermachen?`,
-      { sektorName: 'Sektor P10 – Piratenadmiral', resources: { metall: 0, kristall: 0, deuterium: 0 }, dm: 0, teile: { waffen: 0, schild: 0, panzerung: 0 } }
+      detail
     );
   });
 }
@@ -456,7 +524,8 @@ async function finalizeAdminEncounter(
   participantStates: Map<number, PlayerState>,
   currentUserId: number,
   outcome: 'victory' | 'defeat' | 'extracted',
-  checksCompleted: number
+  checksCompleted: number,
+  combatDetail?: CombatDetail
 ): Promise<void> {
   op.adminChecksElapsed = checksCompleted; // fuer Konsistenz, auch wenn die Operation direkt danach 'resolved' wird
   let reward = { metall: 0, kristall: 0, deuterium: 0 };
@@ -492,13 +561,25 @@ async function finalizeAdminEncounter(
     pState.resources.kristall += Math.floor(reward.kristall);
     pState.resources.deuterium += Math.floor(reward.deuterium);
     pState.resources.dm += dmReward;
-    pushMessage(pState, 'kampf', `Piratenadmiral (Sektor P10): ${outcomeText}`, {
-      sektorName: 'Sektor P10 – Piratenadmiral',
-      resources: reward,
-      dm: dmReward,
-      teile: { waffen: 0, schild: 0, panzerung: 0 },
-      fleetReturned: { ...p.ships },
-    });
+    // Bei victory/defeat (frisch aus runAdminCheck) den vollen Kampfbericht (Gegnerflotte/Runden/
+    // Schaden) zeigen statt nur der knappen Belohnungs-Zusammenfassung - genau das hat bisher
+    // gefehlt und einen echten Sieg wie "wir sind auf nichts getroffen" wirken lassen. Bei
+    // 'extracted' (Rueckzugs-Entscheidung, kein frischer Kampf in diesem Moment) bleibt es beim
+    // reinen Beute-Bericht, da es dafuer keinen Kampf zum Zeigen gibt.
+    if (combatDetail) {
+      pushMessage(pState, 'kampf', `Piratenadmiral (Sektor P10): ${outcomeText}`, {
+        ...combatDetail,
+        rewards: { metall: reward.metall || undefined, kristall: reward.kristall || undefined, deuterium: reward.deuterium || undefined, dm: dmReward || undefined },
+      });
+    } else {
+      pushMessage(pState, 'kampf', `Piratenadmiral (Sektor P10): ${outcomeText}`, {
+        sektorName: 'Sektor P10 – Piratenadmiral',
+        resources: reward,
+        dm: dmReward,
+        teile: { waffen: 0, schild: 0, panzerung: 0 },
+        fleetReturned: { ...p.ships },
+      });
+    }
   });
 
   op.status = 'resolved';

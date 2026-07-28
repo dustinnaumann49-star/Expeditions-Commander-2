@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Bugfix: Piratenadmiral zeigt jetzt einen echten Kampfbericht',
+    changes: [
+      'Der Kampf gegen den Piratenadmiral (Sektor P10) lief technisch immer korrekt ab, aber die Nachricht dazu zeigte bisher nur eine knappe Textzeile ohne Gegnerflotte, Runden oder Schadenszahlen - fühlte sich an wie ein Sieg ohne echten Kampf.',
+      'Jede Check-Nachricht (egal ob "Admiral kämpft weiter", Sieg oder Niederlage) zeigt jetzt den vollständigen Kampfbericht: Rundenzahl, Schaden ausgeteilt/erlitten, komplette Einheiten-Tabelle für Piratenadmiral, Eskorte und eure eigene Flotte.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Piraten stärker, Elite-Bollwerk jetzt auch solo möglich',
     changes: [
       'Piraten kämpfen jetzt mit voller statt halber Forschung - werden dadurch spürbar zäher/treffsicherer, ohne dass ihre Flotten größer werden.',
