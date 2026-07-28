@@ -17,6 +17,18 @@ export function shipName(gameData: GameData, id: string): string {
   return gameData.ships.find((s) => s.id === id)?.name || gameData.defenses.find((d) => d.id === id)?.name || id;
 }
 
+// Gruppen-Ueberschriften fuer Kampfschiff-Flottenauswahl - dieselbe Klassen-Einteilung wie in der
+// Werft (SCHIFFE_KLASSEN in Werft.tsx), damit Spieler sich nicht an zwei verschiedene
+// Kategorisierungen gewoehnen muessen. Zentral hier statt in Sektor.tsx/Multiplayer.tsx dupliziert,
+// da beide Seiten dieselbe Flottenauswahl-UI brauchen (Missionsversand, Elite-Bollwerk,
+// Piratenadmiral, Einladungs-Annahme).
+export const SHIP_GROUPS: { name: string; ids: string[] }[] = [
+  { name: 'Jäger-Klasse', ids: ['leicht', 'schwer'] },
+  { name: 'Kreuzer-Klasse', ids: ['kreuzer', 'schlachtschiff', 'bomber'] },
+  { name: 'Elite-Klasse', ids: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
+  { name: 'Spezialschiffe', ids: ['salvenjaeger', 'salvenkreuzer', 'salvendreadnought', 'imperator'] },
+];
+
 // z.B. "Leichter Jäger: 95.0% (20)" - Chance auf Folgeschuss + roher RF-Wert
 export function getRapidFireDisplay(gameData: GameData, attackerId: string): string | null {
   const rf = gameData.rapidfire[attackerId];

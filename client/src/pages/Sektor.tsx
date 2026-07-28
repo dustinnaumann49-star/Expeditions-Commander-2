@@ -4,23 +4,12 @@ import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
-import { shipName } from '../lib/combatInfo';
+import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
 import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import { SimulatorView } from './Simulator';
 import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
-
-// Gruppen-Ueberschriften fuer die Flottenauswahl beim Missionsversand - dieselbe Klassen-Einteilung
-// wie in der Werft (SCHIFFE_KLASSEN in Werft.tsx), damit sich Spieler nicht an zwei verschiedene
-// Kategorisierungen gewoehnen muessen. Ohne Ueberschriften wirkte die lange, flache Liste
-// unuebersichtlich (Nutzer-Feedback).
-const SHIP_GROUPS = [
-  { name: 'Jäger-Klasse', ids: ['leicht', 'schwer'] },
-  { name: 'Kreuzer-Klasse', ids: ['kreuzer', 'schlachtschiff', 'bomber'] },
-  { name: 'Elite-Klasse', ids: ['schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator'] },
-  { name: 'Spezialschiffe', ids: ['salvenjaeger', 'salvenkreuzer', 'salvendreadnought', 'imperator'] },
-];
 
 const SEKTOR_KLASSEN = [
   { id: 'asteroid', name: 'Asteroiden-Feld', match: (id: string) => id.startsWith('asteroid_') },

@@ -4,7 +4,7 @@ import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
-import { shipName } from '../lib/combatInfo';
+import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal } from '../components/InfoModal';
@@ -43,29 +43,40 @@ function FleetPicker({
   selection: Record<string, number>;
   setSelection: (fn: (p: Record<string, number>) => Record<string, number>) => void;
 }) {
+  const renderRow = (id: string) => {
+    const avail = fleet[id] || 0;
+    if (avail === 0) return null;
+    const qty = selection[id] || 0;
+    return (
+      <div className="queue-item" key={id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+        <span>
+          {shipName(gameData, id)} (verfügbar: {avail})
+        </span>
+        <span className="qty-row" style={{ flexWrap: 'nowrap' }}>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
+            -10
+          </button>
+          <span style={{ padding: '0 6px' }}>{qty}</span>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>
+            +10
+          </button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>
+            Alle
+          </button>
+        </span>
+      </div>
+    );
+  };
+
   return (
     <>
-      {availableIds.map((id) => {
-        const avail = fleet[id] || 0;
-        if (avail === 0) return null;
-        const qty = selection[id] || 0;
+      {SHIP_GROUPS.map((group) => {
+        const idsInGroup = group.ids.filter((id) => availableIds.includes(id) && (fleet[id] || 0) > 0);
+        if (idsInGroup.length === 0) return null;
         return (
-          <div className="queue-item" key={id}>
-            <span>
-              {shipName(gameData, id)} (verfügbar: {avail})
-            </span>
-            <span className="qty-row">
-              <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-                -10
-              </button>
-              <span style={{ padding: '0 6px' }}>{qty}</span>
-              <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>
-                +10
-              </button>
-              <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>
-                Alle
-              </button>
-            </span>
+          <div key={group.name} style={{ marginBottom: 6 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-kristall)', margin: '6px 0 2px' }}>{group.name}</p>
+            {idsInGroup.map(renderRow)}
           </div>
         );
       })}
