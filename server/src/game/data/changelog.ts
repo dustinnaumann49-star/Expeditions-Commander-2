@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Riesenflotten sind jetzt kein Problem mehr für den Server',
+    changes: [
+      'Die Kampf-Engine wurde grundlegend überarbeitet: sehr große Flotten (mehrere tausend Schiffe eines Typs) werden jetzt gebündelt statt Schiff für Schiff berechnet - ein Kampf mit über 16.000 Schiffen dauert jetzt Sekundenbruchteile statt mehrere Minuten.',
+      'Kein Limit mehr nötig: schickt so viele Schiffe in den Kampf, wie ihr wollt - normale Flottengrößen sind davon komplett unberührt, nur riesige Stapel profitieren von der neuen, schnelleren Berechnung.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Bugfix: Elite-Bollwerk-Kampfbericht änderte sich beim Ansehen ständig',
     changes: [
       'Bei sehr großen Flotten konnte derselbe Stunden-Check beim Neuladen der Seite mehrfach unterschiedliche Kampfzahlen zeigen, obwohl es dieselbe Stunde war - lag an zwei überlappenden Hintergrund-Aktualisierungen, die denselben Check versehentlich doppelt berechnet haben.',

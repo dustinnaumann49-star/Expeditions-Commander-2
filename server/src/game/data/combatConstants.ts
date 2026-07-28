@@ -307,6 +307,16 @@ export const PRECISION_BASE = 0.40;
 export const PRECISION_MAX_PLAYER = 0.60;
 export const DEFENSE_REPAIR_PERCENT = 0.70;
 export const MAX_ROUNDS = 100;
+// Performance-Grenze (Nutzer-Entscheidung nach CPU-Vorfall bei einer 16.500-Schiffe-Flotte, siehe
+// README Punkt 102/103): buildUnits() erzeugte bisher PRO EINZELNEM SCHIFF ein eigenes Objekt, das
+// jede Runde eigenstaendig wuerfelt - bei sehr grossen Stapeln (mehrere Tausend Schiffe DESSELBEN
+// Typs) fuehrte das zu mehrminuetigen Kampfberechnungen. Stapel eines Schiffs-/Verteidigungstyps
+// MIT MEHR ALS dieser Stueckzahl werden ab jetzt als EIN Aggregat-aggregierter Block simuliert
+// (Erwartungswert + statistisches Sampling statt Einzel-RNG pro Schiff, siehe fireShotsAggregate()
+// in combat.ts) - Rechenzeit haengt dann nur noch von der ANZAHL VERSCHIEDENER TYPEN ab, nicht mehr
+// von der Gesamt-Schiffsanzahl. Stapel BIS zu dieser Schwelle bleiben exakt wie bisher (identisches
+// Verhalten/Balance) - betrifft in der Praxis nur sehr grosse Flotten, nicht den Normalfall.
+export const STACK_AGGREGATE_THRESHOLD = 300;
 // Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
 // eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
 // regulaer per Schaden auf 0 HP gebracht zu werden. Vorher 0.7 mit LINEARER Chance (1 -

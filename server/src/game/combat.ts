@@ -32,6 +32,7 @@ import {
   MULTI_TARGET_POWER_CORRECTION,
   FLEET_SIZE_BONUS_CAP,
   FLEET_SIZE_BONUS_RATE,
+  STACK_AGGREGATE_THRESHOLD,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { ADMIRAL_BOSS_ID } from './data/combatConstants.js';
@@ -588,16 +589,118 @@ interface CombatUnit {
   hpCur: number;
 }
 
-function buildUnits(shipsObj: Record<string, number>, statsFn: (id: string) => CombatStats): CombatUnit[] {
+// ===== Aggregat-Stapel fuer sehr grosse Stueckzahlen (siehe STACK_AGGREGATE_THRESHOLD) =====
+// Ein Stapel EINES Typs mit mehr als STACK_AGGREGATE_THRESHOLD Einheiten wird NICHT mehr als
+// einzelne CombatUnit-Objekte gefuehrt (das war bei mehreren tausend Schiffen der Hauptgrund fuer
+// mehrminuetige Kampfberechnungen, siehe README Punkt 102/103), sondern als EIN aggregierter Pool:
+// `shieldPoolCur`/`hpPoolCur` sind die Summe ueber alle noch lebenden Einheiten dieses Typs
+// (analog zum bereits bestehenden gemeinsamen Schildkuppel-Pool `poolA`, nur pro Schiffstyp statt
+// nur fuer Kuppeln). Schaden wird direkt vom Pool abgezogen statt einzelne Objekte zu durchsuchen -
+// Rechenzeit haengt dadurch nur noch von der ANZAHL VERSCHIEDENER TYPEN ab, nicht mehr von der
+// Gesamt-Stueckzahl. `ownerShares` (nur bei Mehrspieler-Beitraegen mehrerer Spieler DESSELBEN Typs)
+// haelt den Anteil jedes Beitragenden fest, um Verluste am Ende proportional zuzurechnen.
+interface AggregateStack {
+  typeId: string;
+  waffen: number; // pro Einheit
+  shieldMax: number; // pro Einheit
+  shieldPoolCur: number;
+  hpMax: number; // pro Einheit (Panzerung)
+  hpPoolCur: number;
+  initialHpPool: number; // fuer den Rueckzugs-Schwellenwert (Anteil vom Start-Bestand)
+  active: boolean; // false = hat sich zurueckgezogen, kaempft nicht mehr mit (ueberlebt aber)
+  ownerShares?: Record<string, number>; // ownerKey -> Anteil (0..1), nur bei Mehrspieler-Aggregaten
+}
+
+function aggAliveCount(a: AggregateStack): number {
+  return a.hpPoolCur > 0 ? Math.ceil(a.hpPoolCur / a.hpMax) : 0;
+}
+
+// Einfache Box-Muller-Normalverteilung (Mittelwert 0, Standardabweichung 1) - fuer die
+// Normalverteilungs-Approximation von sampleBinomial() unten.
+function gaussianRandom(): number {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Sampelt eine Binomial(n,p)-verteilte Zufallszahl (z.B. "wie viele von n Schuessen treffen,
+// gegeben Trefferchance p"). Exakt per Schleife fuer kleine n (billig genug, bewahrt exakte
+// Varianz), sonst per Normalverteilungs-Approximation - deutlich schneller als n Einzel-Wuerfe,
+// hinreichend genau fuer die grossen n, die bei Aggregat-Stapeln vorkommen.
+function sampleBinomial(n: number, p: number): number {
+  if (n <= 0 || p <= 0) return 0;
+  if (p >= 1) return n;
+  if (n <= 40) {
+    let count = 0;
+    for (let i = 0; i < n; i++) if (Math.random() < p) count++;
+    return count;
+  }
+  const mean = n * p;
+  const stddev = Math.sqrt(n * p * (1 - p));
+  const sample = Math.round(mean + gaussianRandom() * stddev);
+  return Math.max(0, Math.min(n, sample));
+}
+
+// Wendet gebuendelten Schaden (hits Treffer, davon crits kritisch) auf einen Aggregat-Stapel an -
+// Schild-Pool zuerst, dann HP-Pool (kein Durchschlag-Kaskade/Explosions-Sonderfall fuer Aggregate,
+// bewusst vereinfacht - siehe README Punkt 103, bei so grossen Stapeln faellt das kaum ins
+// Gewicht). `hits` kann auch 1 sein (ein einzelner Schuss von einem normalen CombatUnit-Schuetzen
+// auf ein Aggregat-Ziel).
+function applyAggregateDamage(
+  stack: AggregateStack,
+  hits: number,
+  crits: number,
+  dmgPerHit: number,
+  dmgTakenTarget: Record<string, number>,
+  shieldDmgTakenTarget: Record<string, number>,
+  statKeyStr: string
+): number {
+  if (hits <= 0) return 0;
+  const normalHits = hits - crits;
+  let totalDmg = normalHits * dmgPerHit + crits * dmgPerHit * CRIT_DAMAGE_MULTIPLIER;
+  const dealt = totalDmg;
+  const shieldAbsorbed = Math.min(totalDmg, stack.shieldPoolCur);
+  stack.shieldPoolCur -= shieldAbsorbed;
+  totalDmg -= shieldAbsorbed;
+  if (shieldAbsorbed > 0) shieldDmgTakenTarget[statKeyStr] = (shieldDmgTakenTarget[statKeyStr] || 0) + shieldAbsorbed;
+  if (totalDmg > 0) {
+    const applied = Math.min(totalDmg, stack.hpPoolCur);
+    stack.hpPoolCur -= applied;
+    dmgTakenTarget[statKeyStr] = (dmgTakenTarget[statKeyStr] || 0) + applied;
+  }
+  return dealt;
+}
+
+function buildUnits(
+  shipsObj: Record<string, number>,
+  statsFn: (id: string) => CombatStats
+): { units: CombatUnit[]; aggregates: AggregateStack[] } {
   const units: CombatUnit[] = [];
+  const aggregates: AggregateStack[] = [];
   Object.entries(shipsObj).forEach(([id, count]) => {
     if (!count || count <= 0) return;
     const s = statsFn(id);
+    if (count > STACK_AGGREGATE_THRESHOLD) {
+      const hpPool = count * s.panzerung;
+      aggregates.push({
+        typeId: id,
+        waffen: s.waffen,
+        shieldMax: s.schild,
+        shieldPoolCur: count * s.schild,
+        hpMax: s.panzerung,
+        hpPoolCur: hpPool,
+        initialHpPool: hpPool,
+        active: true,
+      });
+      return;
+    }
     for (let i = 0; i < count; i++) {
       units.push({ typeId: id, waffen: s.waffen, shieldMax: s.schild, shieldCur: s.schild, hpMax: s.panzerung, hpCur: s.panzerung });
     }
   });
-  return units;
+  return { units, aggregates };
 }
 
 export interface OwnedFleetContribution {
@@ -635,23 +738,44 @@ export function computePirateResearch(research: Record<string, number>, contribu
   return scaled;
 }
 
+// Aggregiert pro (ownerKey, typeId)-Paar statt pro Typ global - vermeidet das Problem, mehrere
+// Beitragende mit unterschiedlicher Forschung/Klasse/Modulen (= unterschiedlichen effektiven
+// Werten) im selben Aggregat-Pool zusammenmischen zu muessen. In der Praxis reicht das: relevant
+// wird ein Aggregat ohnehin nur, wenn EIN Spieler allein schon eine sehr grosse Stueckzahl eines
+// Typs beitraegt.
 function buildUnitsMultiOwner(
   contributions: OwnedFleetContribution[],
   fallbackStatsFn: (id: string) => CombatStats
-): CombatUnit[] {
+): { units: CombatUnit[]; aggregates: AggregateStack[] } {
   const units: CombatUnit[] = [];
+  const aggregates: AggregateStack[] = [];
   contributions.forEach(({ ownerKey, ships, research, defenseCounts, playerClass, kampfBoostActive, shipModules }) => {
     const fn = (id: string) =>
       research ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null, shipModules || {}) : fallbackStatsFn(id);
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);
+      if (count > STACK_AGGREGATE_THRESHOLD) {
+        const hpPool = count * s.panzerung;
+        aggregates.push({
+          typeId: id,
+          waffen: s.waffen,
+          shieldMax: s.schild,
+          shieldPoolCur: count * s.schild,
+          hpMax: s.panzerung,
+          hpPoolCur: hpPool,
+          initialHpPool: hpPool,
+          active: true,
+          ownerShares: { [ownerKey]: 1 },
+        });
+        return;
+      }
       for (let i = 0; i < count; i++) {
         units.push({ typeId: id, ownerKey, waffen: s.waffen, shieldMax: s.schild, shieldCur: s.schild, hpMax: s.panzerung, hpCur: s.panzerung });
       }
     });
   });
-  return units;
+  return { units, aggregates };
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -840,6 +964,73 @@ function rollHit(
   return true;
 }
 
+// Wie rollHit(), aber fuer ein Aggregat-Ziel (das keine volle CombatUnit ist) - braucht nur dessen
+// typeId fuer den Groessen-Fehlpaarung-/Forschungs-Ausweichen-Lookup.
+function rollHitVsTypeId(
+  typeId: string,
+  precision: number,
+  researchTarget: Record<string, number>,
+  targetIsPlayerUnit: boolean,
+  battleModifier: BattleModifierType | null,
+  shooterTypeId?: string
+): boolean {
+  if (Math.random() >= precision) return false;
+  let evasion = getEvasionChance(researchTarget, targetIsPlayerUnit, typeId, shooterTypeId);
+  if (battleModifier === 'truemmerfeld' && targetIsPlayerUnit) evasion *= 0.85;
+  if (evasion > 0 && Math.random() < evasion) return false;
+  return true;
+}
+
+// Gewichtete Zielauswahl zwischen der normalen Einzel-Einheiten-Pool und Aggregat-Stapeln -
+// Aggregate zaehlen mit ihrer aktuell lebenden Stueckzahl als Gewicht, damit ein Stapel aus 5000
+// Schiffen realistisch oefter getroffen wird als ein einzelnes uebrig gebliebenes Schiff.
+function pickWeightedTarget(
+  pool: CombatUnit[],
+  aggregates: AggregateStack[]
+): { unit?: CombatUnit; agg?: AggregateStack } {
+  const aggAlive = aggregates.filter((a) => a.active && a.hpPoolCur > 0);
+  const totalAggWeight = aggAlive.reduce((s, a) => s + aggAliveCount(a), 0);
+  const totalWeight = pool.length + totalAggWeight;
+  if (totalWeight <= 0) return {};
+  let roll = Math.random() * totalWeight;
+  if (roll < pool.length) return { unit: pool[Math.floor(Math.random() * pool.length)] };
+  roll -= pool.length;
+  for (const a of aggAlive) {
+    const w = aggAliveCount(a);
+    if (roll < w) return { agg: a };
+    roll -= w;
+  }
+  return {};
+}
+
+function aggStatKey(a: AggregateStack): string {
+  if (a.ownerShares) {
+    const keys = Object.keys(a.ownerShares);
+    if (keys.length === 1) return `${keys[0]}:${a.typeId}`;
+  }
+  return a.typeId;
+}
+
+// Wendet gebuendelten Schaden auf ein Aggregat an, inkl. optionalem gemeinsamem Schild-Pool
+// (Schildkuppeln bei der Heimatverteidigung) - analog zu applyHitToTarget() fuer normale Einheiten.
+function applyAggregateHit(
+  stack: AggregateStack,
+  dmg: number,
+  isCrit: boolean,
+  dmgTakenTarget: Record<string, number>,
+  shieldDmgTakenTarget: Record<string, number>,
+  targetsSharedShieldPool?: { remaining: number }
+) {
+  let remainingDmg = dmg;
+  if (targetsSharedShieldPool && targetsSharedShieldPool.remaining > 0) {
+    const absorbed = Math.min(remainingDmg, targetsSharedShieldPool.remaining);
+    targetsSharedShieldPool.remaining -= absorbed;
+    remainingDmg -= absorbed;
+    if (remainingDmg <= 0) return;
+  }
+  applyAggregateDamage(stack, 1, isCrit ? 1 : 0, remainingDmg, dmgTakenTarget, shieldDmgTakenTarget, aggStatKey(stack));
+}
+
 function fireShots(
   shooters: CombatUnit[],
   targets: CombatUnit[],
@@ -850,9 +1041,10 @@ function fireShots(
   researchTarget: Record<string, number>,
   shooterStats: ShotStats,
   targetsSharedShieldPool?: { remaining: number },
-  battleModifier: BattleModifierType | null = null
+  battleModifier: BattleModifierType | null = null,
+  targetAggregates: AggregateStack[] = []
 ) {
-  if (targets.length === 0) return;
+  if (targets.length === 0 && targetAggregates.length === 0) return;
   const MAX_SHOTS_PER_UNIT = 50;
   const overkillFraction = getDurchschlagFraction(researchShooter);
   // Einmal pro fireShots()-Aufruf aufgebaut (nicht pro Schuss!) - siehe AliveTargetPool/
@@ -864,6 +1056,7 @@ function fireShots(
     alivePool.remove(unit);
     typedPool?.remove(unit);
   };
+  const hasAggregateTargets = targetAggregates.length > 0;
 
   shooters.forEach((shooter) => {
     let shots = 1;
@@ -889,13 +1082,16 @@ function fireShots(
       shooterStats.shotsFired[statKey(shooter)] = (shooterStats.shotsFired[statKey(shooter)] || 0) + 1;
 
       const aliveTargets = alivePool.array;
-      if (alivePool.size === 0) break;
+      if (alivePool.size === 0 && !hasAggregateTargets) break;
 
-      let target: CombatUnit;
+      let target: CombatUnit | undefined;
+      let targetAgg: AggregateStack | undefined;
       let volleyTargets: CombatUnit[] | null = null;
+      let volleyAggregates: AggregateStack[] | null = null;
       if (hasRFPotential && Math.random() < accuracy) {
         const rfPool = aliveTargets.filter((t) => rfMap[t.typeId] !== undefined);
-        if (rfPool.length > 0) {
+        const rfAggs = hasAggregateTargets ? targetAggregates.filter((a) => a.active && a.hpPoolCur > 0 && rfMap[a.typeId] !== undefined) : [];
+        if (rfPool.length > 0 || rfAggs.length > 0) {
           if (MULTI_TARGET_VOLLEY_SHIPS.has(shooter.typeId)) {
             // Mehrfachziel-Salve: ein Treffer PRO anfaelligem Schiffstyp, der gerade praesent ist
             // (nicht pro Einzeleinheit) - je ein Vertreter pro Typ wird ausgewaehlt.
@@ -907,19 +1103,25 @@ function fireShots(
                 volleyTargets.push(t);
               }
             }
+            volleyAggregates = rfAggs;
           }
-          target = pickRandom(rfPool);
+          const picked = pickWeightedTarget(rfPool, rfAggs);
+          target = picked.unit;
+          targetAgg = picked.agg;
         } else {
-          target = pickRandom(aliveTargets);
+          const picked = pickWeightedTarget(aliveTargets, []);
+          target = picked.unit;
         }
       } else {
-        target = pickRandom(aliveTargets);
+        const picked = pickWeightedTarget(aliveTargets, targetAggregates);
+        target = picked.unit;
+        targetAgg = picked.agg;
       }
 
-      if (volleyTargets && volleyTargets.length > 0) {
+      if ((volleyTargets && volleyTargets.length > 0) || (volleyAggregates && volleyAggregates.length > 0)) {
         // Fuer jeden betroffenen Typ ein eigener Treffer/Verfehlen-Wurf, unabhaengig voneinander.
         let anyHit = false;
-        volleyTargets.forEach((vt) => {
+        (volleyTargets || []).forEach((vt) => {
           if (!rollHit(vt, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
             const missRfChance = getRapidFireChance(shooter.typeId, vt.typeId, applyPlayerResearch);
             if (missRfChance > 0 && Math.random() < missRfChance) {
@@ -940,9 +1142,55 @@ function fireShots(
             shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
           }
         });
+        (volleyAggregates || []).forEach((va) => {
+          if (!rollHitVsTypeId(va.typeId, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
+            const missRfChance = getRapidFireChance(shooter.typeId, va.typeId, applyPlayerResearch);
+            if (missRfChance > 0 && Math.random() < missRfChance) {
+              shots++;
+              shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+            }
+            return;
+          }
+          anyHit = true;
+          const isCrit = critChance > 0 && Math.random() < critChance;
+          if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
+          const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
+          applyAggregateHit(va, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
+          const hitRfChance = getRapidFireChance(shooter.typeId, va.typeId, applyPlayerResearch);
+          if (hitRfChance > 0 && Math.random() < hitRfChance) {
+            shots++;
+            shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+          }
+        });
         if (anyHit) shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
         continue;
       }
+
+      if (targetAgg) {
+        if (!rollHitVsTypeId(targetAgg.typeId, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
+          const missRfChance = getRapidFireChance(shooter.typeId, targetAgg.typeId, applyPlayerResearch);
+          if (missRfChance > 0 && Math.random() < missRfChance) {
+            shots++;
+            shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+          }
+          continue;
+        }
+        shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
+        const isCrit = critChance > 0 && Math.random() < critChance;
+        if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
+        const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+        shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
+        applyAggregateHit(targetAgg, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
+        const hitRfChance = getRapidFireChance(shooter.typeId, targetAgg.typeId, applyPlayerResearch);
+        if (hitRfChance > 0 && Math.random() < hitRfChance) {
+          shots++;
+          shooterStats.rapidFireTriggers[statKey(shooter)] = (shooterStats.rapidFireTriggers[statKey(shooter)] || 0) + 1;
+        }
+        continue;
+      }
+
+      if (!target) continue;
 
       if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, shooter.typeId)) {
         const missRfChance = getRapidFireChance(shooter.typeId, target.typeId, applyPlayerResearch);
@@ -968,10 +1216,122 @@ function fireShots(
   });
 }
 
+// ===== Aggregat-SCHUETZEN (grosse Stapel als Angreifer) =====
+// Statt jede Einheit einzeln feuern zu lassen (das war der eigentliche Performance-Killer bei
+// grossen Flotten), wird die GESAMTE Schusszahl des Stapels ueber den Erwartungswert der
+// RapidFire-Kette + Normalverteilungs-Sampling berechnet (sampleBinomial oben), dann proportional
+// auf die Ziel-"Eimer" (normale Einzel-Ziel-Pool als EIN Eimer + jedes gegnerische Aggregat als
+// eigener Eimer) verteilt. Pro Eimer wird die Trefferzahl wieder per sampleBinomial bestimmt und in
+// EINEM Rutsch angewendet - kein Schuss-fuer-Schuss-Loop mehr fuer den Aggregat-Anteil des Kampfes.
+function fireShotsAggregateShooters(
+  shooterStacks: AggregateStack[],
+  targets: CombatUnit[],
+  targetAggregates: AggregateStack[],
+  dmgTakenTarget: Record<string, number>,
+  shieldDmgTakenTarget: Record<string, number>,
+  applyPlayerResearch: boolean,
+  researchShooter: Record<string, number>,
+  researchTarget: Record<string, number>,
+  shooterStats: ShotStats,
+  targetsSharedShieldPool?: { remaining: number },
+  battleModifier: BattleModifierType | null = null
+) {
+  const MAX_SHOTS_PER_UNIT = 50;
+  shooterStacks.forEach((stack) => {
+    if (!stack.active || stack.hpPoolCur <= 0) return;
+    const count = aggAliveCount(stack);
+    if (count <= 0) return;
+
+    let precision = getPrecisionChance(researchShooter, applyPlayerResearch, stack.typeId);
+    let critChance = getCritChance(researchShooter, applyPlayerResearch, stack.typeId);
+    const rfMap = RAPIDFIRE[stack.typeId] || {};
+    const hasRFPotential = Object.keys(rfMap).length > 0;
+    let accuracy = hasRFPotential ? getZielerfassungAccuracy(researchShooter, stack.typeId) : 0;
+    if (battleModifier === 'nebel' && applyPlayerResearch) precision *= 0.85;
+    if (battleModifier === 'sensorstoerung' && applyPlayerResearch) accuracy *= 0.8;
+    if (battleModifier === 'strahlungssturm' && !applyPlayerResearch) critChance = Math.min(1, critChance * 1.5);
+
+    // Erwartete Folgeschuss-Kette: gewichteter Durchschnitt der RapidFire-Chance ueber die aktuell
+    // lebenden, RF-faehigen Zieltypen (gewichtet nach deren Anteil an ALLEN lebenden Zielen) -
+    // ergibt denselben Erwartungswert wie das Original (geometrische Reihe), ohne die Kette pro
+    // Schiff einzeln zu simulieren.
+    const aliveIndividualCount = targets.length;
+    const aliveAggTargets = targetAggregates.filter((a) => a.active && a.hpPoolCur > 0);
+    const totalAliveTargets = aliveIndividualCount + aliveAggTargets.reduce((s, a) => s + aggAliveCount(a), 0);
+    let expectedContinuation = 0;
+    if (hasRFPotential && totalAliveTargets > 0) {
+      const individualRfWeight = targets.filter((t) => rfMap[t.typeId] !== undefined).length;
+      const aggRfWeight = aliveAggTargets.filter((a) => rfMap[a.typeId] !== undefined).reduce((s, a) => s + aggAliveCount(a), 0);
+      const rfEligibleShare = (individualRfWeight + aggRfWeight) / totalAliveTargets;
+      // Durchschnittlicher RF-Wert der anfaelligen Ziele (grobe Naeherung: Durchschnitt aller im
+      // Mapping gelisteten Chancen, gewichtet ist bei der geringen Anzahl Zieltypen nicht noetig).
+      const rfChances = Object.keys(rfMap).map((tid) => getRapidFireChance(stack.typeId, tid, applyPlayerResearch));
+      const avgRfChance = rfChances.length > 0 ? rfChances.reduce((a, b) => a + b, 0) / rfChances.length : 0;
+      expectedContinuation = accuracy * rfEligibleShare * avgRfChance;
+    }
+    const expectedShotsPerUnit = Math.min(MAX_SHOTS_PER_UNIT, 1 / Math.max(0.0001, 1 - expectedContinuation));
+    const meanShots = count * expectedShotsPerUnit;
+    const stddevShots = Math.sqrt(count) * expectedShotsPerUnit * 0.5;
+    let totalShots = Math.round(meanShots + gaussianRandom() * stddevShots);
+    totalShots = Math.max(count, Math.min(count * MAX_SHOTS_PER_UNIT, totalShots));
+    if (totalAliveTargets <= 0 || totalShots <= 0) return;
+
+    shooterStats.shotsFired[stack.typeId] = (shooterStats.shotsFired[stack.typeId] || 0) + totalShots;
+
+    // Schuesse proportional auf die Ziel-"Eimer" verteilen: normale Einzel-Pool (ein Eimer) +
+    // jedes gegnerische Aggregat (je ein Eimer) - gewichtet nach lebender Stueckzahl.
+    const buckets: { weight: number; isIndividual: boolean; agg?: AggregateStack }[] = [];
+    if (aliveIndividualCount > 0) buckets.push({ weight: aliveIndividualCount, isIndividual: true });
+    aliveAggTargets.forEach((a) => buckets.push({ weight: aggAliveCount(a), isIndividual: false, agg: a }));
+    const totalBucketWeight = buckets.reduce((s, b) => s + b.weight, 0);
+    if (totalBucketWeight <= 0) return;
+
+    buckets.forEach((bucket) => {
+      const shotsAtBucket = Math.round(totalShots * (bucket.weight / totalBucketWeight));
+      if (shotsAtBucket <= 0) return;
+
+      if (bucket.isIndividual) {
+        // Kleine Pool (per Definition unter STACK_AGGREGATE_THRESHOLD) - einzeln abhandeln reicht
+        // performancemaessig locker aus, nutzt dieselbe Trefferlogik wie normale Schuetzen.
+        const pool = new AliveTargetPool(targets);
+        for (let i = 0; i < shotsAtBucket && pool.size > 0; i++) {
+          const target = pickRandom(pool.array);
+          if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, stack.typeId)) continue;
+          shooterStats.hits[stack.typeId] = (shooterStats.hits[stack.typeId] || 0) + 1;
+          const isCrit = critChance > 0 && Math.random() < critChance;
+          if (isCrit) shooterStats.crits[stack.typeId] = (shooterStats.crits[stack.typeId] || 0) + 1;
+          const dmg = stack.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          shooterStats.dmgDealt[stack.typeId] = (shooterStats.dmgDealt[stack.typeId] || 0) + dmg;
+          applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, 0, targetsSharedShieldPool, (u) => pool.remove(u), undefined);
+        }
+      } else if (bucket.agg) {
+        const hits = sampleBinomial(shotsAtBucket, precision * (1 - getEvasionChance(researchTarget, !applyPlayerResearch, bucket.agg.typeId, stack.typeId)));
+        const crits = sampleBinomial(hits, critChance);
+        if (hits > 0) {
+          shooterStats.hits[stack.typeId] = (shooterStats.hits[stack.typeId] || 0) + hits;
+          if (crits > 0) shooterStats.crits[stack.typeId] = (shooterStats.crits[stack.typeId] || 0) + crits;
+          const dealt = applyAggregateDamage(
+            bucket.agg,
+            hits,
+            crits,
+            stack.waffen,
+            dmgTakenTarget,
+            shieldDmgTakenTarget,
+            aggStatKey(bucket.agg)
+          );
+          shooterStats.dmgDealt[stack.typeId] = (shooterStats.dmgDealt[stack.typeId] || 0) + dealt;
+        }
+      }
+    });
+  });
+}
+
 interface RoundsResult {
   roundsFought: number;
   unitsA: CombatUnit[];
   unitsB: CombatUnit[];
+  aggregatesA: AggregateStack[];
+  aggregatesB: AggregateStack[];
   dmgTakenA: Record<string, number>;
   dmgTakenB: Record<string, number>;
   shieldDmgTakenA: Record<string, number>;
@@ -985,8 +1345,15 @@ interface RoundsResult {
   replay: CombatReplay;
 }
 
+function sideHasLife(units: CombatUnit[], aggregates: AggregateStack[]): boolean {
+  return units.length > 0 || aggregates.some((a) => a.active && a.hpPoolCur > 0);
+}
+
 // Kern der Kampf-Simulation, unabhaengig davon ob Seite A einem einzelnen Spieler gehoert
-// (resolveCombat) oder mehreren Spielern gemeinsam (resolveCombatMultiOwner).
+// (resolveCombat) oder mehreren Spielern gemeinsam (resolveCombatMultiOwner). `aggregatesAIn`/
+// `aggregatesBIn` sind die (bei normalen Flottengroessen leeren) Aggregat-Stapel oberhalb von
+// STACK_AGGREGATE_THRESHOLD - siehe fireShotsAggregateShooters() fuer die statistische
+// Schuss-Berechnung, die diese Stapel unabhaengig von ihrer Stueckzahl performant haelt.
 function runRounds(
   unitsAIn: CombatUnit[],
   unitsBIn: CombatUnit[],
@@ -994,10 +1361,14 @@ function runRounds(
   pirateResearch: Record<string, number>,
   sharedShieldPoolA = 0,
   allowRetreat = true,
-  battleModifier: BattleModifierType | null = null
+  battleModifier: BattleModifierType | null = null,
+  aggregatesAIn: AggregateStack[] = [],
+  aggregatesBIn: AggregateStack[] = []
 ): RoundsResult {
   let unitsA = unitsAIn;
   let unitsB = unitsBIn;
+  const aggregatesA = aggregatesAIn;
+  const aggregatesB = aggregatesBIn;
   const dmgTakenA: Record<string, number> = {};
   const dmgTakenB: Record<string, number> = {};
   const shieldDmgTakenA: Record<string, number> = {};
@@ -1020,25 +1391,27 @@ function runRounds(
   // inkl. Anlagen nicht "fliehen" kann, siehe raids.ts). Zurueckgezogene Schiffe sammeln sich in
   // retreatedUnitsA und werden am Ende wieder zu unitsA hinzugefuegt, damit sie als Ueberlebende
   // zaehlen - fuer die Runden-Visualisierung gelten sie ab ihrer Rueckzugs-Runde als nicht mehr
-  // anwesend (korrekt, sie kaempfen ja nicht mehr mit).
+  // anwesend (korrekt, sie kaempfen ja nicht mehr mit). Aggregate ziehen sich als GANZES zurueck
+  // (active=false) statt gestaffelt einzeln - bleiben aber im Array (zaehlen als Ueberlebende).
   const UNIT_RETREAT_THRESHOLD = 0.3;
   const retreatedUnitsA: CombatUnit[] = [];
 
   // ---- Rundenverlauf fuer die spaetere Visualisierung aufzeichnen ----
   // Typ-Reihenfolge einmalig festlegen (Zaehlungen beziehen sich immer auf diese Reihenfolge).
-  const typesA = Array.from(new Set(unitsA.map((u) => u.typeId)));
-  const typesB = Array.from(new Set(unitsB.map((u) => u.typeId)));
+  const typesA = Array.from(new Set([...unitsA.map((u) => u.typeId), ...aggregatesA.map((a) => a.typeId)]));
+  const typesB = Array.from(new Set([...unitsB.map((u) => u.typeId), ...aggregatesB.map((a) => a.typeId)]));
   const roundsA: number[][] = [];
   const roundsB: number[][] = [];
   const MAX_SNAPSHOTS = 30;
-  function countByType(units: CombatUnit[], types: string[]): number[] {
+  function countByType(units: CombatUnit[], aggregates: AggregateStack[], types: string[]): number[] {
     const counts = new Map<string, number>();
     units.forEach((u) => counts.set(u.typeId, (counts.get(u.typeId) || 0) + 1));
+    aggregates.forEach((a) => counts.set(a.typeId, (counts.get(a.typeId) || 0) + aggAliveCount(a)));
     return types.map((t) => counts.get(t) || 0);
   }
   // Startzustand als erster Eintrag
-  roundsA.push(countByType(unitsA, typesA));
-  roundsB.push(countByType(unitsB, typesB));
+  roundsA.push(countByType(unitsA, aggregatesA, typesA));
+  roundsB.push(countByType(unitsB, aggregatesB, typesB));
 
   // Schild-Regeneration wird pro Einheitstyp berechnet (grosse Schiffe/Verteidigungsanlagen laden
   // deutlich staerker auf) - daher hier vorab je vorkommendem Typ zwischenspeichern, statt bei
@@ -1069,10 +1442,12 @@ function runRounds(
   const poolA = { remaining: sharedShieldPoolA };
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
-    if (unitsA.length === 0 || unitsB.length === 0) break;
+    if (!sideHasLife(unitsA, aggregatesA) || !sideHasLife(unitsB, aggregatesB)) break;
     roundsFought = round;
-    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, pirateResearch, shotsA, undefined, battleModifier);
-    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, pirateResearch, research, shotsB, poolA, battleModifier);
+    fireShots(unitsA, unitsB, dmgTakenB, shieldDmgTakenB, true, research, pirateResearch, shotsA, undefined, battleModifier, aggregatesB);
+    fireShotsAggregateShooters(aggregatesA, unitsB, aggregatesB, dmgTakenB, shieldDmgTakenB, true, research, pirateResearch, shotsA, undefined, battleModifier);
+    fireShots(unitsB, unitsA, dmgTakenA, shieldDmgTakenA, false, pirateResearch, research, shotsB, poolA, battleModifier, aggregatesA);
+    fireShotsAggregateShooters(aggregatesB, unitsA, aggregatesA, dmgTakenA, shieldDmgTakenA, false, pirateResearch, research, shotsB, poolA, battleModifier);
     unitsA = unitsA.filter((u) => u.hpCur > 0);
     unitsB = unitsB.filter((u) => u.hpCur > 0);
     unitsA.forEach((u) => {
@@ -1085,16 +1460,30 @@ function runRounds(
       u.shieldCur = Math.min(u.shieldMax, u.shieldCur + u.shieldMax * regenFor(u.typeId, false));
       shieldRegenB[statKey(u)] = (shieldRegenB[statKey(u)] || 0) + (u.shieldCur - before);
     });
+    aggregatesA.forEach((a) => {
+      if (!a.active || a.hpPoolCur <= 0) return;
+      const before = a.shieldPoolCur;
+      const maxPool = aggAliveCount(a) * a.shieldMax;
+      a.shieldPoolCur = Math.min(maxPool, a.shieldPoolCur + maxPool * regenFor(a.typeId, true));
+      shieldRegenA[aggStatKey(a)] = (shieldRegenA[aggStatKey(a)] || 0) + (a.shieldPoolCur - before);
+    });
+    aggregatesB.forEach((a) => {
+      if (!a.active || a.hpPoolCur <= 0) return;
+      const before = a.shieldPoolCur;
+      const maxPool = aggAliveCount(a) * a.shieldMax;
+      a.shieldPoolCur = Math.min(maxPool, a.shieldPoolCur + maxPool * regenFor(a.typeId, false));
+      shieldRegenB[aggStatKey(a)] = (shieldRegenB[aggStatKey(a)] || 0) + (a.shieldPoolCur - before);
+    });
     if (sharedShieldPoolA > 0) {
       poolA.remaining = Math.min(sharedShieldPoolA, poolA.remaining + sharedShieldPoolA * poolRegen);
     }
     // Zustand nach dieser Runde festhalten (fuer die Visualisierung im Kampfbericht)
-    roundsA.push(countByType(unitsA, typesA));
-    roundsB.push(countByType(unitsB, typesB));
+    roundsA.push(countByType(unitsA, aggregatesA, typesA));
+    roundsB.push(countByType(unitsB, aggregatesB, typesB));
     // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Ist der letzte Gegner in derselben
     // Runde gefallen, ist der Kampf GEWONNEN - dann waere ein "Rueckzug" sowohl unlogisch als auch
     // im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
-    if (allowRetreat && unitsB.length > 0 && unitsA.length > 0) {
+    if (allowRetreat && sideHasLife(unitsB, aggregatesB) && sideHasLife(unitsA, aggregatesA)) {
       const stillFighting: CombatUnit[] = [];
       unitsA.forEach((u) => {
         if (u.hpCur / u.hpMax <= UNIT_RETREAT_THRESHOLD) {
@@ -1105,10 +1494,18 @@ function runRounds(
         }
       });
       unitsA = stillFighting;
+      aggregatesA.forEach((a) => {
+        if (a.active && a.hpPoolCur > 0 && a.hpPoolCur / a.initialHpPool <= UNIT_RETREAT_THRESHOLD) {
+          a.active = false;
+          retreated = true;
+        }
+      });
     }
   }
   // Zurueckgezogene Schiffe wieder einrechnen - sie haben ueberlebt, kaempfen ab ihrer Rueckzugs-
-  // Runde aber nicht mehr mit (siehe Kommentar oben bei UNIT_RETREAT_THRESHOLD).
+  // Runde aber nicht mehr mit (siehe Kommentar oben bei UNIT_RETREAT_THRESHOLD). Zurueckgezogene
+  // Aggregate bleiben ohnehin im aggregatesA-Array (nur active=false), keine separate Wieder-
+  // Einrechnung noetig.
   unitsA = unitsA.concat(retreatedUnitsA);
 
   // Bei langen Kaempfen abtasten, damit der gespeicherte Verlauf kompakt bleibt: Start und Ende
@@ -1132,6 +1529,8 @@ function runRounds(
     roundsFought,
     unitsA,
     unitsB,
+    aggregatesA,
+    aggregatesB,
     dmgTakenA,
     dmgTakenB,
     shieldDmgTakenA,
@@ -1180,15 +1579,17 @@ export function resolveCombat(
   allowRetreat = true,
   battleModifier: BattleModifierType | null = null
 ): CombatResult {
-  const unitsA0 = buildUnits(sideAShips, statsFnA);
-  const unitsB0 = buildUnits(sideBShips, statsFnB);
+  const { units: unitsA0, aggregates: aggregatesA0 } = buildUnits(sideAShips, statsFnA);
+  const { units: unitsB0, aggregates: aggregatesB0 } = buildUnits(sideBShips, statsFnB);
   const pirateResearch = computePirateResearch(research);
-  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier, aggregatesA0, aggregatesB0);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
+  r.aggregatesA.forEach((a) => (survivorsA[a.typeId] = (survivorsA[a.typeId] || 0) + aggAliveCount(a)));
   const survivorsB: Record<string, number> = {};
   r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
+  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggAliveCount(a)));
   Object.keys(sideAShips).forEach((id) => {
     if (survivorsA[id] === undefined) survivorsA[id] = 0;
   });
@@ -1236,10 +1637,10 @@ export function resolveCombatMultiOwner(
   allowRetreat = true,
   battleModifier: BattleModifierType | null = null
 ): MultiOwnerCombatResult {
-  const unitsA0 = buildUnitsMultiOwner(contributions, statsFnA);
-  const unitsB0 = buildUnits(sideBShips, statsFnB);
+  const { units: unitsA0, aggregates: aggregatesA0 } = buildUnitsMultiOwner(contributions, statsFnA);
+  const { units: unitsB0, aggregates: aggregatesB0 } = buildUnits(sideBShips, statsFnB);
   const pirateResearch = computePirateResearch(research, contributions);
-  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier, aggregatesA0, aggregatesB0);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};
@@ -1250,8 +1651,19 @@ export function resolveCombatMultiOwner(
       survivorsByOwner[u.ownerKey][u.typeId] = (survivorsByOwner[u.ownerKey][u.typeId] || 0) + 1;
     }
   });
+  // Aggregate aus buildUnitsMultiOwner gehoeren immer genau EINEM Beitragenden (siehe
+  // buildUnitsMultiOwner() - aggregiert wird pro (ownerKey, typeId), nie ownerKey-uebergreifend).
+  r.aggregatesA.forEach((a) => {
+    const count = aggAliveCount(a);
+    survivorsA[a.typeId] = (survivorsA[a.typeId] || 0) + count;
+    const ownerKey = a.ownerShares ? Object.keys(a.ownerShares)[0] : undefined;
+    if (ownerKey && survivorsByOwner[ownerKey]) {
+      survivorsByOwner[ownerKey][a.typeId] = (survivorsByOwner[ownerKey][a.typeId] || 0) + count;
+    }
+  });
   const survivorsB: Record<string, number> = {};
   r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
+  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggAliveCount(a)));
 
   const allAIds = new Set<string>();
   contributions.forEach((c) => Object.keys(c.ships).forEach((id) => allAIds.add(id)));

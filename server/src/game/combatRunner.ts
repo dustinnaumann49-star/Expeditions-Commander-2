@@ -59,8 +59,12 @@ export interface CombatWorkerRequest {
 // mehrfach nutzen) statt Neuerzeugung pro Kampf. Wird erst beim ALLERERSTEN Kampf angelegt
 // (kein Overhead, solange nie gekaempft wird), bleibt danach fuer die gesamte Laufzeit des
 // Server-Prozesses bestehen.
-const POOL_SIZE = 2; // begrenzt gleichzeitig laufende Worker - genug fuer zwei parallele Kaempfe,
-// ohne bei mehr gleichzeitigen Anfragen unbegrenzt viele Worker (und damit Speicher) zu erzeugen.
+// Von 2 auf 3 angehoben (Nutzerentscheidung, siehe README Punkt 102/103) - Server hat 4 vCPU
+// (Hetzner CX33), 1 Kern bleibt bewusst fuer den Haupt-Event-Loop (HTTP-Requests/Heartbeat) frei.
+// Loest NICHT das Problem einzelner sehr grosser Kaempfe (die bleiben single-threaded so lange wie
+// sie brauchen), erhoeht aber den Durchsatz bei mehreren gleichzeitigen Kaempfen normaler Groesse.
+const POOL_SIZE = 3; // begrenzt gleichzeitig laufende Worker - ohne bei mehr gleichzeitigen
+// Anfragen unbegrenzt viele Worker (und damit Speicher) zu erzeugen.
 
 interface PoolEntry {
   worker: Worker;

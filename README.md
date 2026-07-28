@@ -1618,6 +1618,54 @@ client/
       eigenständiges CPU-Risiko bleiben. Kein akuter Handlungsbedarf (menschentempo, kein 24/7-
       Trigger), aber falls Spieler regelmäßig mit fünfstelligen Flottengrößen in Multiplayer-
       Sektoren fliegen, könnte das künftig relevant werden.
+103. **Kampf-Engine: Stack-basierte Aggregat-Simulation für sehr große Flotten (löst Punkt 102s
+    Nebenbefund).** Nutzerentscheidung nach Abwägung zwischen "nur eine Flottengröße-Obergrenze
+    einführen" und "die Engine wirklich massentauglich machen" - bewusst für Letzteres entschieden
+    ("meine Frau mag Massen an Schiffen"). Root Cause (bestätigt): `buildUnits()` in `combat.ts`
+    erzeugte pro EINZELNEM Schiff ein eigenes Objekt, das jede Runde individuell wuerfelt - bei
+    16.500 Schiffen >5 Minuten pro Kampf (siehe Punkt 102).
+    - **Ansatz**: Hybrid-Schwellenwert `STACK_AGGREGATE_THRESHOLD = 300`
+      (`combatConstants.ts`) - ein Stapel EINES Typs BIS zu dieser Stückzahl bleibt exakt wie
+      bisher (unveränderter Code-Pfad, 100% identisches Verhalten). Stapel DARÜBER werden als EIN
+      `AggregateStack`-Objekt behandelt (Pool aus Gesamt-Schild/-HP statt Einzel-Objekte pro
+      Schiff, analog zum schon bestehenden gemeinsamen Schildkuppel-Pool).
+    - **Aggregat-Ziele**: `fireShots()` wählt jetzt gewichtet zwischen normaler Einzel-Ziel-Pool
+      und Aggregat-Stapeln (gewichtet nach lebender Stückzahl) - Einzel-Schützen können also auch
+      riesige Gegner-Stapel treffen, ein einzelner Treffer wird direkt auf den Pool angewendet
+      (`applyAggregateHit`/`applyAggregateDamage`).
+    - **Aggregat-Schützen** (`fireShotsAggregateShooters`, neu): statt jedes Schiff einzeln feuern
+      zu lassen, wird die GESAMTE Schusszahl des Stapels über den Erwartungswert der
+      RapidFire-Kette + Normalverteilungs-Sampling (`sampleBinomial`) berechnet, dann proportional
+      auf die Ziel-"Eimer" verteilt (normale Pool als ein Eimer + jedes gegnerische Aggregat als
+      eigener Eimer) - Trefferzahl pro Eimer wieder per `sampleBinomial`, in EINEM Rutsch
+      angewendet. Kein Schuss-für-Schuss-Loop mehr für den Aggregat-Anteil.
+    - **Bewusste Vereinfachungen bei Aggregaten** (siehe Code-Kommentare in `combat.ts`): kein
+      Durchschlag-Kaskade zwischen Typen, Explosions-Mechanik nicht angewendet, Rückzug erfolgt als
+      GANZES statt gestaffelt einzeln (`hpPoolCur / initialHpPool <= UNIT_RETREAT_THRESHOLD` →
+      `active = false`) - bei so großen Stapeln fällt das kaum ins Gewicht, siehe Plan-Datei für die
+      vollständige Abwägung.
+    - **`buildUnitsMultiOwner()`**: aggregiert pro (ownerKey, typeId)-Paar statt global pro Typ -
+      vermeidet das Problem, mehrere Beitragende mit unterschiedlicher Forschung/Klasse/Modulen im
+      selben Pool vermischen zu müssen. Relevant wird ein Aggregat dadurch nur, wenn EIN Spieler
+      allein schon eine sehr große Stückzahl eines Typs beiträgt (in der Praxis der Normalfall bei
+      Solo-Elite-Bollwerk mit Massenflotte).
+    - **`POOL_SIZE` in `combatRunner.ts` 2→3** (ergänzend, geringes Risiko) - mehr parallele
+      Worker-Kämpfe möglich (Server hat 4 vCPU, 1 Kern bleibt fuer den Haupt-Event-Loop frei). Löst
+      NICHT das Problem einzelner riesiger Kämpfe (die bleiben single-threaded), hilft aber beim
+      Durchsatz mehrerer gleichzeitiger normaler Kämpfe.
+    - **Live verifiziert** (Dev-Server, dieselbe 16.500-Schiffe-Flotte wie im Punkt-102-Test):
+      - Kampfsimulator (`/api/game/simulate`, 12 Wiederholungen derselben Flotte): **0,785s
+        gesamt** (vorher >300s für EINEN einzigen Kampf) - alle Verlustzahlen plausibel
+        (0 ≤ avgLost ≤ sent für jeden Schiffstyp).
+      - Echter Elite-Bollwerk-Kampf über den Gruppen-Operationen-Pfad (`GET /game/state` löst den
+        fälligen Stunden-Check aus, inkl. einer NPC-Gegenflotte mit 36.539 Leichten Jägern - selbst
+        AUF NPC-Seite jetzt aggregiert): **0,26s gesamt**, 100 Runden, vollständiger Kampfbericht
+        mit plausiblen Verlusten auf beiden Seiten.
+      - Kleine Flotte (unterhalb der Schwelle, 50/40/30/10 Schiffe verschiedener Typen) weiterhin
+        unverändert schnell (<1s für 12 Simulationen) - bestätigt den unveränderten Code-Pfad für
+        den Normalfall.
+    - Plan-Datei mit vollständiger technischer Abwägung:
+      `.claude/plans/purring-imagining-corbato.md` (falls noch vorhanden).
 
 ## Kurz-Changelog
 
