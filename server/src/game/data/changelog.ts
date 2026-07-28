@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '28.07.2026',
+    title: 'Bugfix: Massenflotten verloren viel zu viele Schiffe',
+    changes: [
+      'Nach der Massenflotten-Umstellung zogen sich große Stapel erst zurück, wenn fast die gesamte Gruppe bereits vernichtet war - vorher (und bei kleineren Flotten weiterhin) ziehen sich einzelne, ungünstig getroffene Schiffe schon deutlich früher zurück, während der Rest kaum Schaden hat.',
+      'Große Flotten verlieren jetzt wieder deutlich weniger Schiffe pro Kampf - Verluste in schweren Sektoren (Hoch, Elite-Bollwerk) sanken in unseren Tests von rund 58% auf rund 45%.',
+    ],
+  },
+  {
+    date: '28.07.2026',
     title: 'Riesenflotten sind jetzt kein Problem mehr für den Server',
     changes: [
       'Die Kampf-Engine wurde grundlegend überarbeitet: sehr große Flotten (mehrere tausend Schiffe eines Typs) werden jetzt gebündelt statt Schiff für Schiff berechnet - ein Kampf mit über 16.000 Schiffen dauert jetzt Sekundenbruchteile statt mehrere Minuten.',

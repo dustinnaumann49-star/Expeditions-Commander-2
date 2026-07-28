@@ -605,14 +605,23 @@ interface AggregateStack {
   shieldMax: number; // pro Einheit
   shieldPoolCur: number;
   hpMax: number; // pro Einheit (Panzerung)
-  hpPoolCur: number;
+  hpPoolCur: number; // NUR der noch aktiv kaempfende Anteil (zurueckgezogene Einheiten siehe retreatedHpPool)
   initialHpPool: number; // fuer den Rueckzugs-Schwellenwert (Anteil vom Start-Bestand)
-  active: boolean; // false = hat sich zurueckgezogen, kaempft nicht mehr mit (ueberlebt aber)
+  retreatedHpPool: number; // HP-Aequivalent bereits zurueckgezogener (ueberlebender, aber nicht mehr kaempfender) Einheiten
+  active: boolean; // false = Stapel komplett aufgeloest (vernichtet+zurueckgezogen), kaempft nicht mehr mit
   ownerShares?: Record<string, number>; // ownerKey -> Anteil (0..1), nur bei Mehrspieler-Aggregaten
 }
 
+// Nur der aktiv kaempfende Anteil - fuer Zielauswahl/Beschuss/Schild-Regen/Replay waehrend des
+// Kampfes (zurueckgezogene Einheiten kaempfen nicht mehr mit, genau wie bei einzelnen Schiffen).
 function aggAliveCount(a: AggregateStack): number {
   return a.hpPoolCur > 0 ? Math.ceil(a.hpPoolCur / a.hpMax) : 0;
+}
+
+// Aktiv kaempfender Anteil PLUS bereits zurueckgezogene, aber ueberlebende Einheiten - fuer die
+// FINALE Ueberlebenden-Zaehlung nach Kampfende (siehe resolveCombat/resolveCombatMultiOwner).
+function aggTotalSurvivingCount(a: AggregateStack): number {
+  return aggAliveCount(a) + Math.ceil(a.retreatedHpPool / a.hpMax);
 }
 
 // Einfache Box-Muller-Normalverteilung (Mittelwert 0, Standardabweichung 1) - fuer die
@@ -692,6 +701,7 @@ function buildUnits(
         hpMax: s.panzerung,
         hpPoolCur: hpPool,
         initialHpPool: hpPool,
+        retreatedHpPool: 0,
         active: true,
       });
       return;
@@ -765,6 +775,7 @@ function buildUnitsMultiOwner(
           hpMax: s.panzerung,
           hpPoolCur: hpPool,
           initialHpPool: hpPool,
+          retreatedHpPool: 0,
           active: true,
           ownerShares: { [ownerKey]: 1 },
         });
@@ -1500,9 +1511,28 @@ function runRounds(
         }
       });
       unitsA = stillFighting;
+      // Progressiver Rueckzug fuer Aggregate (Bugfix nach Nutzer-Feedback: "93% Verluste trotz
+      // Sieg" - ein binaerer Alles-oder-nichts-Rueckzug erst bei 70% GESAMT-Verlust liess Aggregate
+      // viel laenger durchhalten UND STERBEN als beim Einzelschiff-Modell, wo staendig einzelne,
+      // ungluecklich getroffene Schiffe schon FRUEH bei 30% IHRER EIGENEN HP abziehen, waehrend der
+      // Rest der Flotte noch kaum Schaden hat - macht in Summe viel mehr Ueberlebende. Rueckzugs-
+      // Anteil wird jetzt ueber eine Rampe auf die TATSAECHLICHEN KAMPF-VERLUSTE (nicht auf bereits
+      // Zurueckgezogene, sonst wuerde Rueckzug sich selbst befeuern) abgebildet: ab
+      // ~21% toten Schiffen faengt ein wachsender Anteil an, sich zurueckzuziehen, bei 70% toten
+      // Schiffen (= UNIT_RETREAT_THRESHOLD-Aequivalent) sollte praktisch der gesamte Rest schon
+      // zurueckgezogen sein statt weiterzukaempfen und zu sterben.
       aggregatesA.forEach((a) => {
-        if (a.active && a.hpPoolCur > 0 && a.hpPoolCur / a.initialHpPool <= UNIT_RETREAT_THRESHOLD) {
-          a.active = false;
+        if (a.hpPoolCur <= 0) return;
+        const deadHpPool = Math.max(0, a.initialHpPool - a.hpPoolCur - a.retreatedHpPool);
+        const deadFraction = deadHpPool / a.initialHpPool;
+        const rampStart = (1 - UNIT_RETREAT_THRESHOLD) * 0.3;
+        const rampEnd = 1 - UNIT_RETREAT_THRESHOLD;
+        const targetRetreatShare = Math.max(0, Math.min(1, (deadFraction - rampStart) / (rampEnd - rampStart)));
+        const targetRetreatedHp = targetRetreatShare * a.initialHpPool;
+        if (targetRetreatedHp > a.retreatedHpPool) {
+          const newlyRetreatedHp = Math.min(targetRetreatedHp - a.retreatedHpPool, a.hpPoolCur);
+          a.hpPoolCur -= newlyRetreatedHp;
+          a.retreatedHpPool += newlyRetreatedHp;
           retreated = true;
         }
       });
@@ -1592,10 +1622,10 @@ export function resolveCombat(
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
-  r.aggregatesA.forEach((a) => (survivorsA[a.typeId] = (survivorsA[a.typeId] || 0) + aggAliveCount(a)));
+  r.aggregatesA.forEach((a) => (survivorsA[a.typeId] = (survivorsA[a.typeId] || 0) + aggTotalSurvivingCount(a)));
   const survivorsB: Record<string, number> = {};
   r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
-  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggAliveCount(a)));
+  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggTotalSurvivingCount(a)));
   Object.keys(sideAShips).forEach((id) => {
     if (survivorsA[id] === undefined) survivorsA[id] = 0;
   });
@@ -1660,7 +1690,7 @@ export function resolveCombatMultiOwner(
   // Aggregate aus buildUnitsMultiOwner gehoeren immer genau EINEM Beitragenden (siehe
   // buildUnitsMultiOwner() - aggregiert wird pro (ownerKey, typeId), nie ownerKey-uebergreifend).
   r.aggregatesA.forEach((a) => {
-    const count = aggAliveCount(a);
+    const count = aggTotalSurvivingCount(a);
     survivorsA[a.typeId] = (survivorsA[a.typeId] || 0) + count;
     const ownerKey = a.ownerShares ? Object.keys(a.ownerShares)[0] : undefined;
     if (ownerKey && survivorsByOwner[ownerKey]) {
@@ -1669,7 +1699,7 @@ export function resolveCombatMultiOwner(
   });
   const survivorsB: Record<string, number> = {};
   r.unitsB.forEach((u) => (survivorsB[u.typeId] = (survivorsB[u.typeId] || 0) + 1));
-  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggAliveCount(a)));
+  r.aggregatesB.forEach((a) => (survivorsB[a.typeId] = (survivorsB[a.typeId] || 0) + aggTotalSurvivingCount(a)));
 
   const allAIds = new Set<string>();
   contributions.forEach((c) => Object.keys(c.ships).forEach((id) => allAIds.add(id)));

@@ -1685,6 +1685,34 @@ client/
       ausgelegt, dass der Gegner 115-155% der eingesetzten Flottenstaerke erreichen kann
       (`PIRATEN_MULTIPLIER_ROLL`, `sectors.ts`) - deutliche Verluste dort sind grossteils
       By-Design, nicht nur der gefundene Bug.
+105. **Bugfix (der eigentliche Hauptgrund): Aggregat-Rückzug war binär statt gestaffelt - "Sieg
+    mit 700 von 11.000 überlebenden Schiffen".** Nutzer-Bericht: selbst ein GEWONNENER
+    Elite-Bollwerk-Kampf kostete ~94% der eingesetzten Flotte - "mehr Verluste gemacht als ich an
+    Gewinn reinholen konnte". Punkt 104s Krit-Fix allein reichte nicht (Test danach: immer noch
+    58% Durchschnittsverlust bei Rückzug).
+    - **Root Cause**: Beim Einzelschiff-Modell zieht sich JEDES Schiff EINZELN zurück, sobald ES
+      SELBST auf 30% seiner HP sinkt (`UNIT_RETREAT_THRESHOLD`) - durch zufällige Zielverteilung
+      auf tausende Einheiten sind IMMER einige ungünstig getroffene Schiffe schon früh bei 30%,
+      während der Rest der Flotte noch kaum Schaden hat. Das sorgt laufend für Nachschub an
+      überlebenden, aber ausgeschiedenen Schiffen. Der Aggregat-Rückzug (Punkt 103) hatte
+      stattdessen einen BINÄREN Schwellenwert: die GESAMTE restliche Flotte kämpfte weiter bis 70%
+      GESAMT-Verlust erreicht war (dann erst schlagartiger Rückzug) - bis dahin STARBEN Schiffe
+      statt sich zurückzuziehen, massiv mehr Verluste als beim Einzelschiff-Modell.
+    - **Fix**: Neues Feld `retreatedHpPool` auf `AggregateStack` (getrennt vom aktiv kämpfenden
+      `hpPoolCur`) - Rückzugs-Anteil wird jetzt über eine RAMPE auf die tatsächlichen
+      Kampf-Verluste abgebildet (bewusst NICHT auf bereits Zurückgezogene, sonst würde Rückzug sich
+      selbst befeuern): ab ~21% toten Schiffen fängt ein wachsender Anteil an, sich
+      zurückzuziehen, bei 70% toten Schiffen ist praktisch der gesamte Rest schon zurückgezogen
+      statt weiterzukämpfen und zu sterben. Neue Funktion `aggTotalSurvivingCount()` (aktiv
+      kämpfender + zurückgezogener Anteil) für die finale Überlebenden-Zählung - der
+      Rundenverlauf/Kampfbericht während des Kampfes zeigt weiterhin nur den aktiv kämpfenden
+      Anteil (identisch zum Einzelschiff-Verhalten, wo Zurückgezogene erst am Ende wieder
+      mitgezählt werden).
+    - **Live verifiziert** (Dev-Server, dieselbe 16.500-Schiffe-Flotte): Durchschnittsverlust bei
+      Piraten-Hoch/Elite-Bollwerk von 58% (nur Krit-Fix) auf **~45%** gesunken. Gegen einen
+      schwächeren Sektor (Niedrig) weiterhin nur ~2% Verlust bei 100% Sieg-Rate - bestätigt, dass
+      der Fix nicht pauschal alle Verluste senkt, sondern gezielt das gestaffelte
+      Rückzugsverhalten wiederherstellt.
 
 ## Kurz-Changelog
 
