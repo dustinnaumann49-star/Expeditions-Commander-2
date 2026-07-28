@@ -554,6 +554,10 @@ export interface ContainerCategoryDef {
   category: 'resources' | 'dm' | 'teile' | 'zeitgutschein' | 'freischiff';
   chance: number;
   rewards: ContainerReward[];
+  // Tatsaechliche Auszahlungs-Wahrscheinlichkeit NACH der "genau 2 Treffer"-Normalisierung
+  // (server-seitig vorberechnet, siehe computeRealCategoryChances() in economy.ts) - das ist der
+  // Wert, der dem Spieler angezeigt werden soll, nicht der rohe `chance`-Einzelwurf.
+  realChance: number;
 }
 
 export interface ContainerTypeDef {

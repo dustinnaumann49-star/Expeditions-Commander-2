@@ -69,8 +69,8 @@ export function InventarPage() {
                       {config.icon} {config.name} × {c.count}
                     </strong>
                     <span className="detail-sub">
-                      Mögliche Inhalte (2 pro Öffnung, unabhängige Chance je Kategorie):{' '}
-                      {config.categories.map((cat) => `${CATEGORY_LABELS[cat.category] || cat.category} (${Math.round(cat.chance * 100)}%)`).join(', ')}
+                      Mögliche Inhalte (2 pro Öffnung, tatsächliche Chance je Kategorie):{' '}
+                      {config.categories.map((cat) => `${CATEGORY_LABELS[cat.category] || cat.category} (${Math.round(cat.realChance * 100)}%)`).join(', ')}
                     </span>
                     <div className="build-row">
                       <span></span>
@@ -115,10 +115,10 @@ export function InventarPage() {
       <div className="queue-box" style={{ marginTop: 20 }}>
         <h3 style={{ fontSize: 14, marginBottom: 4 }}>📦 Container-Übersicht</h3>
         <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12 }}>
-          Bei jeder Öffnung werden genau 2 der unten gelisteten Kategorien ausgelost (jede Kategorie unabhängig gegen ihre eigene Chance
-          - bei zu vielen/zu wenigen Treffern wird auf 2 normalisiert). Enthält eine Kategorie mehrere Varianten (z.B. Zeit-Gutscheine),
-          wird bei Treffer zufällig eine davon vergeben. Zusätzlich hat JEDE Öffnung eine {Math.round(gameData.containerJackpotChance * 100)}%
-          Chance auf einen Bonus-Jackpot obendrauf.
+          Bei jeder Öffnung werden genau 2 der unten gelisteten Kategorien ausgelost - die angezeigte Prozentzahl ist bereits die
+          tatsächliche Chance, dass diese Kategorie am Ende wirklich dabei ist (nicht der rohe Einzelwurf). Enthält eine Kategorie
+          mehrere Varianten (z.B. Zeit-Gutscheine), wird bei Treffer zufällig eine davon vergeben. Zusätzlich hat JEDE Öffnung eine{' '}
+          {Math.round(gameData.containerJackpotChance * 100)}% Chance auf einen Bonus-Jackpot obendrauf.
         </p>
         {TIER_ORDER.map((tier) => {
           const config = gameData.containerTypes[tier];
@@ -132,7 +132,7 @@ export function InventarPage() {
               {config.categories.map((cat, i) => (
                 <div key={i} style={{ fontSize: 12, marginBottom: 4 }}>
                   <strong>{CATEGORY_LABELS[cat.category] || cat.category}</strong>{' '}
-                  <span style={{ color: 'var(--accent-kristall)' }}>({Math.round(cat.chance * 100)}%)</span>:{' '}
+                  <span style={{ color: 'var(--accent-kristall)' }}>({Math.round(cat.realChance * 100)}%)</span>:{' '}
                   {cat.rewards.length === 1 ? (
                     <span style={{ color: 'var(--text-dim)' }}>{formatContainerReward(cat.rewards[0], shipName)}</span>
                   ) : (

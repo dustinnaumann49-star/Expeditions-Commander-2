@@ -72,6 +72,14 @@ export interface ContainerCategoryDef {
   category: 'resources' | 'dm' | 'teile' | 'zeitgutschein' | 'freischiff';
   chance: number; // 0-1, unabhaengiger Wurf PRO Kategorie beim Oeffnen
   rewards: ContainerRewardDef[];
+  // Tatsaechliche Wahrscheinlichkeit, dass diese Kategorie NACH der "genau 2 Treffer"-Normalisierung
+  // (siehe Kommentar unten) am Ende wirklich ausgezahlt wird - wird NICHT von Hand gepflegt, sondern
+  // unten per computeRealCategoryChances() aus `chance` alle Kategorien EINES Containers berechnet und
+  // reingeschrieben. Grund: `chance` allein ist fuer die Anzeige irrefuehrend, da Kategorien mit hoher
+  // Einzelchance (z.B. Ressourcen/Teile bei 80%) fast immer beide Slots belegen und seltenere
+  // Kategorien (Zeitgutschein/Freischiff) dadurch real deutlich seltener vorkommen als ihr `chance`-Wert
+  // suggeriert (Nutzer-Feedback: Zeitgutscheine "fühlen sich zu selten an" trotz eingetragener 15-20%).
+  realChance?: number;
 }
 
 export interface ContainerTypeDef {
@@ -165,6 +173,42 @@ export const CONTAINER_TYPES: Record<string, ContainerTypeDef> =
     ],
   },
 };
+
+// Berechnet EXAKT (Enumeration aller 2^n Treffer/Fehlschlag-Kombinationen, nicht simuliert) die
+// tatsaechliche Wahrscheinlichkeit, dass jede Kategorie eines Containers am Ende der Normalisierung
+// auf "genau 2 Treffer" (siehe rollContainerCategories() in inventory.ts) wirklich ausgezahlt wird.
+// Muss exakt denselben Algorithmus abbilden wie dort: bei >2 Treffern zaehlt fuer jede getroffene
+// Kategorie die Standard-Kombinatorik-Formel "P(Element in zufaelliger 2er-Teilmenge) = 2/Trefferanzahl",
+// bei <2 Treffern werden die fehlenden Plaetze deterministisch nach `chance` absteigend aufgefuellt
+// (Array.sort ist seit ES2019 stabil, bei Chance-Gleichstand gewinnt daher wie im Original die
+// Reihenfolge im categories-Array).
+function computeRealCategoryChances(categories: ContainerCategoryDef[]): number[] {
+  const n = categories.length;
+  const result = new Array(n).fill(0);
+  for (let mask = 0; mask < (1 << n); mask++) {
+    let prob = 1;
+    const hitIdx: number[] = [];
+    const missIdx: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const isHit = ((mask >> i) & 1) === 1;
+      prob *= isHit ? categories[i].chance : 1 - categories[i].chance;
+      (isHit ? hitIdx : missIdx).push(i);
+    }
+    if (prob === 0) continue;
+    if (hitIdx.length > 2) {
+      hitIdx.forEach((idx) => (result[idx] += prob * (2 / hitIdx.length)));
+    } else {
+      const need = 2 - hitIdx.length;
+      const sortedMiss = [...missIdx].sort((a, b) => categories[b].chance - categories[a].chance);
+      [...hitIdx, ...sortedMiss.slice(0, need)].forEach((idx) => (result[idx] += prob));
+    }
+  }
+  return result;
+}
+Object.values(CONTAINER_TYPES).forEach((config) => {
+  const real = computeRealCategoryChances(config.categories);
+  config.categories.forEach((cat, i) => (cat.realChance = real[i]));
+});
 
 // ===== Jackpot-Mechanik =====
 // Bei JEDER Container-Oeffnung (unabhaengig von der Stufe) besteht zusaetzlich zu den normalen
