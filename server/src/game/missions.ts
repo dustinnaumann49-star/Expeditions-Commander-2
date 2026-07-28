@@ -15,6 +15,7 @@ import {
   PIRATEN_RICH_FIND_CHANCE,
   COMBAT_SHIP_IDS,
   getEscalationMultiplier,
+  ABBAU_BOOST_MULTIPLIER,
 } from './data/economy.js';
 import {
   getEffectiveStats,
@@ -50,7 +51,10 @@ export function miningMultiplier(state: PlayerState): number {
   const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
   // Wirtschafts-Klasse "Prospektor" (Nutzerentscheidung Juli 2026, siehe economyClasses.ts).
   const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
-  return base * specific * economy;
+  // Abbau-Booster (Nutzer-Fund 28.07.2026: war bisher nirgends verdrahtet, siehe Kommentar bei
+  // ABBAU_BOOST_MULTIPLIER in economy.ts) - wirkt hier UND in actions.ts miningBuildingMultiplier().
+  const booster = isBoosterActive(state, 'abbau') ? ABBAU_BOOST_MULTIPLIER : 1;
+  return base * specific * economy * booster;
 }
 
 // ========== FLOTTE ENTSENDEN ==========

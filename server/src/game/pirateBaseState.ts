@@ -50,14 +50,36 @@ function syntheticUserIdFor(id: string): number {
   return SYNTHETIC_USER_ID_BASE - PIRATE_BASE_IDS.indexOf(id);
 }
 
-// Start-/Mindestbestand (Nutzerentscheidung Juli 2026: eine frisch angelegte Basis war vorher so
-// schwach, dass ein Angriff kaum lohnende Beute abwarf) - dient sowohl als Startwert fuer neue
-// Basen als auch als Mindestwert bei der Migration bereits bestehender (alter) Basen. Ab hier
-// wachsen Basen komplett eigenstaendig ueber runEconomyBotTurn()/runEconomyTick(), keine fixen
-// Wachstumsschritte/Obergrenzen mehr.
-const SEED_FLEET: Record<string, number> = { leicht: 60, schwer: 25, kreuzer: 10 };
-const SEED_DEFENSE: Record<string, number> = { raketenwerfer: 40, leichteslaser: 25 };
+// Start-/Mindestbestand. Seit Entfernung der Piratenbasen-Autonomie (README Punkt 98, 28.07.2026)
+// bauen Basen selbst NICHTS mehr dazu - dieser Bestand ist damit nicht mehr nur ein "Startwert",
+// sondern die DAUERHAFTE Garnisonsstaerke jeder aktiven Basis. Nutzerentscheidung (28.07.2026,
+// zweite Ueberarbeitung): auf "stark" angehoben - eine feste Wache dieser Groessenordnung soll auch
+// grosse Spieler-Flotten ernsthaft fordern, nicht nur symbolischen Widerstand leisten. Bewusst
+// gemischte Tier-Zusammensetzung statt nur billiger Fodder-Schiffe (analog zum "kampfgruppe"/
+// "elitekader"-Wellenprofil, siehe pickWaveProfile() in combat.ts). Salvenschiffe/Imperator
+// bewusst NICHT enthalten (README Punkt 24: MUESSEN aus jeder NPC-Flottengenerierung ausgeschlossen
+// bleiben). Mehrere Typen liegen bewusst ueber STACK_AGGREGATE_THRESHOLD (300) - lastet die neue
+// Aggregat-Kampf-Engine aus, bleibt aber performant (siehe README Punkt 103).
+// Dient weiterhin als Mindestwert bei der Migration bereits bestehender (alter, schwaecherer)
+// Basen (siehe migrateLegacyBase() UND der Floor-Up-Schritt in loadPirateBase() unten) - eine
+// Basis kann durch eine spaetere Anhebung dieser Konstanten also nachtraeglich staerker werden,
+// aber nie schwaecher.
+const SEED_FLEET: Record<string, number> = {
+  leicht: 2000, schwer: 1500, kreuzer: 800, schlachtschiff: 400, bomber: 300, schlachtkreuzer: 150, zerstoerer: 100, reaper: 50,
+};
+const SEED_DEFENSE: Record<string, number> = {
+  raketenwerfer: 400, leichteslaser: 300, schwereslaser: 200, gausskanone: 100, ionengeschuetz: 80, plasmawerfer: 40,
+};
 const SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+
+// Ressourcen-Obergrenze (Nutzerentscheidung 28.07.2026, zweite Ueberarbeitung): Basen produzieren
+// weiterhin passiv ueber runEconomyTick() (siehe Kommentar bei loadPirateBase()), koennen ihre
+// Bestaende aber seit der Autonomie-Entfernung nie mehr selbst ausgeben - ohne Deckel waeren sie
+// mit der Zeit unbegrenzt reich geworden, ohne dass sich ihre Staerke (SEED_FLEET/SEED_DEFENSE)
+// mitveraendert haette. "Hoch" gewaehlt (bewusst mehr als ein einzelner Silber-Container, aber
+// unter einem Elite-Container) - lohnt sich als Beutezug, ist aber durch die starke Garnison oben
+// erkauft. Gleiches Verhaeltnis wie SEED_RESOURCES (3,75 : 2,25 : 1) beibehalten.
+const RESOURCE_CAP = { metall: 15000000, kristall: 9000000, deuterium: 4000000 };
 // Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
 // aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
 const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
@@ -126,7 +148,23 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   const base: PirateBaseState = isLegacyShape(raw) ? migrateLegacyBase(raw, id) : (raw as PirateBaseState);
   if (!base.attacks) base.attacks = []; // Bestandsdaten von vor der Offensiv-KI (siehe runPirateBaseOffensiveTurn())
   if (base.nextOffensiveCheck === undefined) base.nextOffensiveCheck = null; // Bestandsdaten von vor dem Cooldown-Umbau
+  // Floor-Up (Nutzerentscheidung 28.07.2026): bereits bestehende Basen wurden vor einer Anhebung von
+  // SEED_FLEET/SEED_DEFENSE gespeichert und wuerden sonst dauerhaft auf ihrem alten, schwaecheren
+  // Bestand stehen bleiben (Autonomie ist entfernt, sie koennen sich nicht mehr selbst hochbauen).
+  // Nur ANHEBEN, nie absenken - eine bereits (z.B. durch eine fruehere hoehere Konstante) staerkere
+  // Basis darf nicht ploetzlich schwaecher werden.
+  Object.entries(SEED_FLEET).forEach(([shipId, qty]) => {
+    base.state.fleet[shipId] = Math.max(base.state.fleet[shipId] || 0, qty);
+  });
+  Object.entries(SEED_DEFENSE).forEach(([defId, qty]) => {
+    base.state.defense[defId] = Math.max(base.state.defense[defId] || 0, qty);
+  });
   await runEconomyTick(base.state);
+  // Ressourcen-Deckel NACH dem Tick anwenden (siehe RESOURCE_CAP oben) - kappt ueberschuessige
+  // passive Produktion, ohne die Produktionsrate selbst zu veraendern.
+  base.state.resources.metall = Math.min(base.state.resources.metall, RESOURCE_CAP.metall);
+  base.state.resources.kristall = Math.min(base.state.resources.kristall, RESOURCE_CAP.kristall);
+  base.state.resources.deuterium = Math.min(base.state.resources.deuterium, RESOURCE_CAP.deuterium);
   savePirateBaseJson(id, JSON.stringify(base));
   return base;
 }

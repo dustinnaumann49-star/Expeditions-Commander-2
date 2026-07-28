@@ -36,7 +36,7 @@ import {
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { ADMIRAL_BOSS_ID } from './data/combatConstants.js';
-import { NPC_SPECIALS } from './data/economy.js';
+import { NPC_SPECIALS, KAMPF_BOOST_MULTIPLIER } from './data/economy.js';
 import {
   CLASS_KANONIER_WAFFEN_MULTIPLIER,
   CLASS_KANONIER_SCHILD_MULTIPLIER,
@@ -233,7 +233,7 @@ export function computeDomeSharedPool(
   playerClass: PlayerClass | null = null,
   shipModules: Record<string, number> = {}
 ): number {
-  const kampfBoost = kampfBoostActive ? 1.2 : 1;
+  const kampfBoost = kampfBoostActive ? KAMPF_BOOST_MULTIPLIER : 1;
   const classSchildMult = classCombatMultipliers(playerClass).schild;
   let total = 0;
   DEFENSES.forEach((d) => {
@@ -265,7 +265,7 @@ function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: numb
 
 /**
  * Effektive Kampfwerte eines Schiffs/einer Verteidigungsanlage unter Beruecksichtigung von Forschung
- * und (nur bei Verteidigung) Schildkuppel-Bonus. `kampfBoostActive` entspricht dem 24h-Kampf-Booster (+20%).
+ * und (nur bei Verteidigung) Schildkuppel-Bonus. `kampfBoostActive` entspricht dem 24h-Kampf-Booster (siehe KAMPF_BOOST_MULTIPLIER in economy.ts).
  * `playerClass` wendet den jeweiligen Klassenbonus an (siehe classCombatMultipliers() oben) - NIE
  * fuer NPC/Piraten (die haben keine playerClass, siehe alle Aufrufer). `shipModules` wendet die
  * pro-Schiff-Module (Waffen/Schild/Panzerung, siehe data/shipModules.ts) an - gilt NUR fuer Schiffe,
@@ -279,7 +279,7 @@ export function getEffectiveStats(
   playerClass: PlayerClass | null = null,
   shipModules: Record<string, number> = {}
 ): CombatStats {
-  const kampfBoost = kampfBoostActive ? 1.2 : 1;
+  const kampfBoost = kampfBoostActive ? KAMPF_BOOST_MULTIPLIER : 1;
   const classMult = classCombatMultipliers(playerClass);
   const ship = findShip(id);
   if (ship) {
@@ -719,7 +719,7 @@ export interface OwnedFleetContribution {
   research?: Record<string, number>; // eigene Forschung des Beitragenden - faellt sonst auf die Forschung von Seite A zurueck
   defenseCounts?: Record<string, number>; // fuer Schildkuppel-Bonus, falls relevant (z.B. Heimatverteidiger bei Raid)
   playerClass?: PlayerClass | null; // eigene Klasse des Beitragenden (Kampfbonus je Klasse), siehe getEffectiveStats()
-  kampfBoostActive?: boolean; // eigener aktiver 24h-Kampf-Booster des Beitragenden (+20%), siehe isBoosterActive() in actions.ts
+  kampfBoostActive?: boolean; // eigener aktiver 24h-Kampf-Booster des Beitragenden (siehe KAMPF_BOOST_MULTIPLIER in economy.ts), siehe isBoosterActive() in actions.ts
   shipModules?: Record<string, number>; // eigene Schiffs-Module des Beitragenden, siehe data/shipModules.ts
 }
 

@@ -16,7 +16,7 @@ import { processAllDepartedGroupOperations, listMyGroupOperations } from './grou
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
 import { ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER, ECONOMY_PROSPEKTOR_MINING_MULTIPLIER } from './data/economyClasses.js';
 import { isBoosterActive } from './boosterUtil.js';
-import { NPC_PRODUCTION_BONUS_MULTIPLIER } from './data/economy.js';
+import { NPC_PRODUCTION_BONUS_MULTIPLIER, BAUTEMPO_BOOST_FACTOR, FORSCHUNGSTEMPO_BOOST_FACTOR, ABBAU_BOOST_MULTIPLIER } from './data/economy.js';
 import { listBotUserIds } from '../db.js';
 import type { PlayerState, ResourceCost, BuildingDefinition } from './types.js';
 
@@ -35,7 +35,7 @@ function isNpcState(state: PlayerState): boolean {
 // (Schiffe, Verteidigung, Gebaeude) gleichermassen, siehe README Punkt 1.
 function baseTimeMultiplier(state: PlayerState): number {
   let m = Math.max(0.3, 1 - (state.research.bauzeit || 0) * RESEARCH[3].effectPerLevel);
-  if (isBoosterActive(state, 'bautempo')) m *= 0.5;
+  if (isBoosterActive(state, 'bautempo')) m *= BAUTEMPO_BOOST_FACTOR;
   return m;
 }
 
@@ -145,7 +145,7 @@ export function gebaeudeBauzeitMultiplier(state: PlayerState, buildingId?: strin
 }
 
 export function researchTimeMultiplier(state: PlayerState): number {
-  return isBoosterActive(state, 'forschungstempo') ? 0.5 : 1;
+  return isBoosterActive(state, 'forschungstempo') ? FORSCHUNGSTEMPO_BOOST_FACTOR : 1;
 }
 
 // ========== KLASSEN-KOSTENMULTIPLIKATOREN (Kanonier/Bollwerk/Kommandant) ==========
@@ -260,7 +260,8 @@ function miningBuildingMultiplier(state: PlayerState): number {
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_minen || 0) * 0.05;
   const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
-  return base * specific * economy;
+  const booster = isBoosterActive(state, 'abbau') ? ABBAU_BOOST_MULTIPLIER : 1;
+  return base * specific * economy * booster;
 }
 
 // Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor, Mining-Forschung und dem

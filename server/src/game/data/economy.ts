@@ -7,12 +7,26 @@ export interface BoosterDefinition {
   durationHours: number;
 }
 
-export const BOOSTERS: BoosterDefinition[] = 
+// Balance-Ueberarbeitung (Nutzerentscheidung 28.07.2026): Booster wirkten im Vergleich zu
+// Schiffs-/Verteidigungs-Modulen (Millionen an Ressourcen fuer +3%/Stufe, dauerhaft) auffallend
+// guenstig fuer einen sofortigen, flottenweiten 24h-Effekt - bewusst staerker UND teurer gemacht,
+// damit sie sich weiterhin lohnen, aber nicht die guenstigere Alternative zur echten Investition
+// in Module sind. Effekt-Werte hier NUR fuer die Anzeige (`desc`) - die tatsaechliche Wirkung steckt
+// in den Konstanten unten (BAUTEMPO_BOOST_FACTOR usw.), von actions.ts/missions.ts/combat.ts genutzt.
+export const BAUTEMPO_BOOST_FACTOR = 0.35; // Bauzeit auf 35% (= -65%)
+export const FORSCHUNGSTEMPO_BOOST_FACTOR = 0.35; // Forschungszeit auf 35% (= -65%)
+export const KAMPF_BOOST_MULTIPLIER = 1.35; // Waffen/Schild/Panzerung +35%
+// Abbau-Booster war bisher ein Blindgaenger (Nutzer-Fund 28.07.2026: der Effekt wurde nirgends im
+// Code angewendet, nur beworben) - erstmals wirklich verdrahtet (miningBuildingMultiplier() in
+// actions.ts, miningMultiplier() in missions.ts), daher direkt mit dem neuen, staerkeren Wert.
+export const ABBAU_BOOST_MULTIPLIER = 1.7; // Mining-Rate +70%
+
+export const BOOSTERS: BoosterDefinition[] =
 [
-  { id:"bautempo", name:"Bautempo-Boost", desc:"Schiffsbauzeit -50% für 24h", img:"booster/bautempo.png", cost:20, durationHours:24 },
-  { id:"forschungstempo", name:"Forschungstempo-Boost", desc:"Forschungszeit -50% für 24h", img:"booster/forschungstempo.png", cost:20, durationHours:24 },
-  { id:"kampf", name:"Kampf-Boost", desc:"Waffen/Schild/Panzerung +20% für 24h", img:"booster/kampf.png", cost:30, durationHours:24 },
-  { id:"abbau", name:"Abbau-Boost", desc:"Mining-Rate +50% für 24h", img:"booster/abbau.png", cost:15, durationHours:24 }
+  { id:"bautempo", name:"Bautempo-Boost", desc:"Schiffsbauzeit -65% für 24h", img:"booster/bautempo.png", cost:35, durationHours:24 },
+  { id:"forschungstempo", name:"Forschungstempo-Boost", desc:"Forschungszeit -65% für 24h", img:"booster/forschungstempo.png", cost:35, durationHours:24 },
+  { id:"kampf", name:"Kampf-Boost", desc:"Waffen/Schild/Panzerung +35% für 24h", img:"booster/kampf.png", cost:55, durationHours:24 },
+  { id:"abbau", name:"Abbau-Boost", desc:"Mining-Rate +70% für 24h", img:"booster/abbau.png", cost:30, durationHours:24 }
 ];
 
 export interface VoucherDefinition {
