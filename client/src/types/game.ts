@@ -590,6 +590,8 @@ export interface GameData {
   boosters: BoosterDefinition[];
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
+  containerJackpotChance: number;
+  containerJackpotRewards: Record<string, ContainerReward>;
   tradeValue: Record<string, number>;
   tradeFee: number;
   scrapRefundRate: number;
