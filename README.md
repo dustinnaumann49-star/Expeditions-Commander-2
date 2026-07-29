@@ -2076,6 +2076,38 @@ client/
       Server UND Client kompilieren sauber. Plan-Datei mit vollständiger Design-Historie:
       `.claude/plans/tranquil-forging-pretzel.md`.
 
+121. **Bugfix: Raid startete bei einem Spieler weiterhin zu alten, nicht-sonntäglichen Zeitpunkten
+    nach der Umstellung auf 1x/Woche.** Nutzer-Bericht: bei seiner Frau (`SchnelleRatte`) korrekt
+    seit dem Umbau (Punkt 108) kein Raid mehr außerhalb Sonntag 0 Uhr, bei ihm selbst aber weiterhin
+    einer zum alten Rhythmus.
+    - **Root Cause**: Die beiden Einmal-Migrationen in `state.ts` (`raidScheduleMigrated`/
+      `raidWeeklyScheduleMigrated`), die `nextRaidCheck` auf den neuen Sonntags-Rhythmus
+      umstellen sollten, setzten ihr "erledigt"-Flag IMMER, aber den eigentlichen Reset NUR wenn
+      `!parsed.raid` (kein aktiver Raid). War beim betroffenen Nutzer GENAU im Moment des
+      gestrigen Deploys ein Raid aktiv (plausibel beim alten 2x/Tag-Rhythmus), wurde die Migration
+      faelschlich als "erledigt" markiert, OHNE `nextRaidCheck` tatsaechlich zurueckzusetzen - der
+      Zeitstempel blieb auf einem alten, nicht sonntaeglichen Wert stehen. Da der betroffene Spieler
+      in `RAID_SCHEDULE_BY_USERNAME` eine Chance von 1 (immer) hat, loeste dieser stehengebliebene
+      Alt-Zeitstempel beim naechsten `processRaidTimer()`-Durchlauf sofort einen neuen Raid aus -
+      zum alten, falschen Zeitpunkt. Seine Frau hatte im Deploy-Moment keinen aktiven Raid, die
+      Migration griff bei ihr sauber.
+    - **Fix**: Beide bestehenden Migrationsbloecke setzen ihr Flag jetzt NUR NOCH, wenn der Reset
+      auch tatsaechlich angewendet wurde (`if (!parsed.xMigrated && !parsed.raid)` statt Flag immer
+      + Reset nur bedingt) - retried also bei jedem weiteren Laden, bis es einmal ohne aktiven Raid
+      klappt. Zusaetzlich neuer dritter Migrationsflag `raidWeeklyScheduleRealigned`
+      (`PlayerState`, `types.ts`) fuer die bereits betroffenen Bestandskonten, deren beide aelteren
+      Flags von gestern schon (fälschlich) auf `true` stehen und daher nicht mehr retryen wuerden -
+      korrigiert `nextRaidCheck` einmalig unabhaengig vom Stand der beiden aelteren Flags, sobald
+      kein Raid mehr aktiv ist.
+    - **Verifiziert** (Node-Testskript gegen `dist/game/state.js`, simulierter Bestandsaccount mit
+      beiden Alt-Flags auf `true` und `nextRaidCheck` auf einen 20 Tage alten, nicht-sonntäglichen
+      Zeitstempel gesetzt, kein aktiver Raid): nach `loadPlayerState()` korrekt auf den naechsten
+      Sonntag 0 Uhr Berliner Zeit (01./02.08.2026) korrigiert, `raidWeeklyScheduleRealigned` auf
+      `true` gesetzt. `tsc -p tsconfig.json` kompiliert sauber.
+    - **Wichtig**: greift erst nach dem naechsten Deploy UND naechstem Laden des betroffenen
+      Kontos (Login oder Heartbeat) - bis dahin kann der bereits gestern ausgeloeste Fehl-Raid noch
+      laufen, das ist unabhaengig vom Fix und muss regulaer auslaufen.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

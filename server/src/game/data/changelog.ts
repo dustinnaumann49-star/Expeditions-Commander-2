@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '29.07.2026',
+    title: 'Bugfix: vereinzelt Raid zum alten Zeitpunkt statt Sonntag 0 Uhr',
+    changes: [
+      'Bei der Umstellung auf den wöchentlichen Sonntags-Rhythmus konnte es bei einem Konto passieren, dass trotzdem noch ein Raid zum alten Zeitpunkt startete, wenn genau beim Update ein Raid aktiv war. Behoben - ab jetzt startet bei allen zuverlässig nur noch der Sonntag-0-Uhr-Termin.',
+    ],
+  },
+  {
+    date: '29.07.2026',
     title: 'Neu: Allianz-Station',
     changes: [
       'Neue Seite "Allianz": gründet eine Allianz, ladet euch gegenseitig ein - nach Annahme könnt ihr gemeinsam eine Raumstation an einer frei wählbaren Galaxie-Position bauen.',

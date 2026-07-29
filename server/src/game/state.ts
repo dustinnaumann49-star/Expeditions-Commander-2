@@ -176,11 +176,17 @@ export function loadPlayerState(userId: number): PlayerState {
   // falls der Nutzername einen fest zugewiesenen hat. Verhindert einen letzten "Uebergangs-
   // Konflikt", bei dem beide Spieler durch den noch alten, gemeinsamen Zeitstempel doch noch
   // einmal gleichzeitig raiden wuerden.
-  if (!parsed.raidScheduleMigrated) {
+  // WICHTIG: das `xMigrated`-Flag wird bewusst NUR gesetzt, wenn der Reset auch tatsaechlich
+  // angewendet wurde (also innerhalb des `if (!parsed.raid)`-Zweigs) - vorher stand es
+  // UNBEDINGT davor, wodurch ein Spieler, der GENAU im Moment des Deploys mitten in einem Raid
+  // steckte, die Migration fuer immer als "erledigt" markierte, OHNE dass `nextRaidCheck`
+  // tatsaechlich neu gesetzt wurde (Bugfix 29.07.2026, Nutzer-Bericht: bekam nach der Umstellung
+  // auf 1x/Woche trotzdem noch einen Raid zum alten, nicht-sonntaeglichen Zeitpunkt - der zweite
+  // Spieler ohne aktiven Raid im Deploy-Moment war nicht betroffen). Jetzt retried die Migration
+  // bei jedem weiteren Laden, bis sie tatsaechlich einmal mit `!parsed.raid` durchlaeuft.
+  if (!parsed.raidScheduleMigrated && !parsed.raid) {
     parsed.raidScheduleMigrated = true;
-    if (!parsed.raid) {
-      parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
-    }
+    parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
   }
   // Zweite Migration (28.07.2026, Umbau 2x/Tag -> 1x/Woche, siehe RAID_SCHEDULE_BY_USERNAME in
   // economy.ts): bestehende Spielstaende haben `nextRaidCheck` noch nach dem alten taeglichen
@@ -188,11 +194,19 @@ export function loadPlayerState(userId: number): PlayerState {
   // faelligen Zeitpunkt einmalig ausloesen, dann automatisch in den neuen woechentlichen Rhythmus
   // uebergehen), aber EINMALIG sofort auf "naechster Sonntag 0 Uhr" zurueckgesetzt, damit alle
   // Spieler ab dem Deploy sauber im neuen Rhythmus starten statt auf einen alten Zwischenwert zu warten.
-  if (!parsed.raidWeeklyScheduleMigrated) {
+  if (!parsed.raidWeeklyScheduleMigrated && !parsed.raid) {
     parsed.raidWeeklyScheduleMigrated = true;
-    if (!parsed.raid) {
-      parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
-    }
+    parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
+  }
+  // Dritte, einmalige Nachkorrektur (29.07.2026) fuer genau den obigen Bug: bei den beiden
+  // betroffenen Spielern (siehe RAID_SCHEDULE_BY_USERNAME) stehen die beiden Flags oben von
+  // GESTERN bereits auf `true`, OBWOHL der Reset damals wegen eines aktiven Raids uebersprungen
+  // wurde - retryen wuerde also nicht mehr greifen. Einmaliger dritter Flag, der unabhaengig vom
+  // Stand der beiden aelteren Flags nochmal sauber auf den naechsten korrekten Wochentermin
+  // setzt, sobald kein Raid mehr aktiv ist.
+  if (!parsed.raidWeeklyScheduleRealigned && !parsed.raid) {
+    parsed.raidWeeklyScheduleRealigned = true;
+    parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
   }
   if (!parsed.buildingQueue) parsed.buildingQueue = [];
   // Galaxie-Position nachruesten (existierte vor Einfuehrung dieses Systems nicht) - betrifft
