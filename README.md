@@ -1898,6 +1898,24 @@ client/
       Profiling-Methodik als nächster Hebel typisierte Arrays fürs `CombatUnit`-Grundgerüst
       realistisch (kleinerer, aber spürbarer Effekt als der schon behobene RF-Flaschenhals).
 
+115. **Perf: Worker-Pool von 3 auf 1 gesenkt (Nutzerentscheidung 29.07.2026, direkte
+    Anschlussfrage an Punkt 114).** Nutzerfrage: warum die CPU trotz normalerweise ~10% Auslastung
+    bei einem Kampf so stark hochschnellt, und ob eine kleinere Pool-Größe das begrenzen könnte.
+    - **Klärung**: `POOL_SIZE` in `combatRunner.ts` bestimmt NICHT die Rechengeschwindigkeit eines
+      einzelnen Kampfs (der läuft ohnehin komplett auf genau einem Worker/Kern, egal wie groß der
+      Pool ist) - sie bestimmt nur, wie viele VERSCHIEDENE Kämpfe gleichzeitig auf separaten Kernen
+      parallel laufen dürfen. Bei Pool=3 konnten bis zu 3 gleichzeitige Kämpfe zusammen bis zu 75%
+      der 4 vCPU (Hetzner CX33) belegen.
+    - **Fix**: `POOL_SIZE` auf 1 gesenkt - deckelt die maximal mögliche GLEICHZEITIGE CPU-Last durch
+      Kampfberechnung technisch auf einen einzigen Kern. Weitere, während ein Kampf läuft eingehende
+      Kampfanfragen werden jetzt über die bereits bestehende `waitQueue` serialisiert statt parallel
+      gerechnet - bei nur 2 Spielern und nach der Piraten-Sektor-Exklusivität/4h-Takt-Reduktion
+      (Punkt 112/109) ist echte Gleichzeitigkeit ohnehin selten geworden, und bei der aktuellen
+      Kampfzeit (~1,1s worst case bei `STACK_AGGREGATE_THRESHOLD`=1.200, siehe Punkt 114) ist eine
+      eventuelle Wartezeit kaum spürbar. Ursprünglicher Grund für Pool=3 (Durchsatz bei vielen
+      gleichzeitigen Kämpfen, README Punkt 102/103) war eher auf mehr aktive Spieler ausgelegt.
+    - Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

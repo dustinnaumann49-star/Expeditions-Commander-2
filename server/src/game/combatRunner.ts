@@ -63,7 +63,15 @@ export interface CombatWorkerRequest {
 // (Hetzner CX33), 1 Kern bleibt bewusst fuer den Haupt-Event-Loop (HTTP-Requests/Heartbeat) frei.
 // Loest NICHT das Problem einzelner sehr grosser Kaempfe (die bleiben single-threaded so lange wie
 // sie brauchen), erhoeht aber den Durchsatz bei mehreren gleichzeitigen Kaempfen normaler Groesse.
-const POOL_SIZE = 3; // begrenzt gleichzeitig laufende Worker - ohne bei mehr gleichzeitigen
+// 29.07.2026 (Nutzerentscheidung): auf 1 gesenkt. Deckelt die maximal moegliche GLEICHZEITIGE
+// CPU-Last durch Kampfberechnung auf einen einzigen Kern (statt bis zu 3 Kerne bei parallelen
+// Kaempfen) - macht bei nur 2 Spielern und nach der Piraten-Sektor-Exklusivitaet/4h-Takt-Reduktion
+// mehr Sinn als hoher Durchsatz bei echter Gleichzeitigkeit, die inzwischen selten geworden ist.
+// Aendert NICHTS an der Geschwindigkeit EINES einzelnen Kampfs (der laeuft ohnehin nur auf einem
+// Worker/Kern) - echte Gleichzeitigkeit wird jetzt schlicht in die waitQueue serialisiert statt
+// parallel gerechnet, bei der aktuellen STACK_AGGREGATE_THRESHOLD-Kampfzeit (~1,1s worst case,
+// siehe Punkt 114) kaum spuerbar.
+const POOL_SIZE = 1; // begrenzt gleichzeitig laufende Worker - ohne bei mehr gleichzeitigen
 // Anfragen unbegrenzt viele Worker (und damit Speicher) zu erzeugen.
 
 interface PoolEntry {
