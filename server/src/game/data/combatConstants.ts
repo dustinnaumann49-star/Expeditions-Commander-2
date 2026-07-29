@@ -316,6 +316,13 @@ export const MAX_ROUNDS = 100;
 // in combat.ts) - Rechenzeit haengt dann nur noch von der ANZAHL VERSCHIEDENER TYPEN ab, nicht mehr
 // von der Gesamt-Schiffsanzahl. Stapel BIS zu dieser Schwelle bleiben exakt wie bisher (identisches
 // Verhalten/Balance) - betrifft in der Praxis nur sehr grosse Flotten, nicht den Normalfall.
+// Testlauf 28.07.2026 (Nutzerentscheidung, nach dem Raid-/Sektor-Umbau auf Wochen-/24h-Rhythmus):
+// versuchsweise auf 800 angehoben in der Annahme, seltenere Kaempfe wuerden das ausgleichen -
+// Live-Messung im Kampfsimulator widerlegte das: die Rechenzeit pro Kampf skaliert deutlich
+// ueberproportional mit der individuell simulierten Schiffsanzahl (5 Schiffstypen a 300/500/700
+// Stueck ergaben ~1,7s/~3,8s/~6,9s PRO KAMPF, nicht nur im Hintergrund, sondern als direkte
+// Wartezeit auf der Seite) - "seltener, aber laengere Kaempfe" aendert nichts an der Wartezeit
+// EINES einzelnen Kampfs. Deshalb wieder auf 300 zurueckgesetzt (Nutzerentscheidung).
 export const STACK_AGGREGATE_THRESHOLD = 300;
 // Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
 // eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
