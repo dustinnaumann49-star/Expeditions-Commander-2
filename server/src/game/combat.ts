@@ -1068,10 +1068,18 @@ function fireShots(
   // AliveTargetsByType oben. Nur bei Durchschlag-Forschung > 0 lohnt sich der zusaetzliche
   // Aufwand fuer die typisierte Pool ueberhaupt (Kaskaden treten sonst nie auf).
   const alivePool = new AliveTargetPool(targets);
-  const typedPool = overkillFraction > 0 ? new AliveTargetsByType(targets) : undefined;
+  // Performance-Fix (Nutzer-Profiling 29.07.2026): war vorher nur bei Durchschlag-Forschung > 0
+  // aufgebaut - die RapidFire-Zielpool-Bildung weiter unten hat deswegen bei JEDEM EINZELNEN
+  // Schuss `aliveTargets.filter(...)` ueber die GESAMTE Zielliste durchsucht (O(Ziele) pro Schuss).
+  // Bei grossen Individual-Flotten (mehrere tausend Ziele, viele Schuetzen mit RapidFire-Potenzial)
+  // war das mit Abstand der teuerste Teil der gesamten Kampfberechnung (Node-Profiler: >90% der
+  // JS-Zeit in genau dieser forEach-Schleife, dominiert von wiederholten Array-Allokationen/GC).
+  // typedPool jetzt IMMER aufgebaut (einmalig pro fireShots()-Aufruf, nicht pro Schuss) - macht die
+  // RF-Pool-Bildung unten O(Anzahl RF-faehiger Typen) statt O(Gesamt-Zielanzahl).
+  const typedPool = new AliveTargetsByType(targets);
   const onKill = (unit: CombatUnit) => {
     alivePool.remove(unit);
-    typedPool?.remove(unit);
+    typedPool.remove(unit);
   };
   const hasAggregateTargets = targetAggregates.length > 0;
 
@@ -1083,7 +1091,10 @@ function fireShots(
     let precision = getPrecisionChance(researchShooter, applyPlayerResearch, shooter.typeId);
     let critChance = getCritChance(researchShooter, applyPlayerResearch, shooter.typeId);
     const rfMap = RAPIDFIRE[shooter.typeId] || {};
-    const hasRFPotential = Object.keys(rfMap).length > 0;
+    // Einmal pro SCHUETZE ermittelt (nicht pro Schuss) - direkt die Typen, gegen die dieser
+    // Schuetze RapidFire hat, statt bei jedem Schuss erneut Object.keys()/Filterung zu wiederholen.
+    const rfTypeIds = Object.keys(rfMap);
+    const hasRFPotential = rfTypeIds.length > 0;
     let accuracy = hasRFPotential ? getZielerfassungAccuracy(researchShooter, shooter.typeId) : 0;
 
     // Kampf-Modifikatoren (siehe BATTLE_MODIFIER_LABELS, combatConstants.ts) - Nebel/
@@ -1106,7 +1117,15 @@ function fireShots(
       let volleyTargets: CombatUnit[] | null = null;
       let volleyAggregates: AggregateStack[] | null = null;
       if (hasRFPotential && Math.random() < accuracy) {
-        const rfPool = aliveTargets.filter((t) => rfMap[t.typeId] !== undefined);
+        // Performance-Fix (siehe Kommentar bei typedPool oben): baut den RF-Zielpool aus den
+        // vorbereiteten Pro-Typ-Buckets zusammen (O(RF-faehige Typen)) statt bei JEDEM Schuss die
+        // GESAMTE aliveTargets-Liste zu durchsuchen (O(Gesamt-Zielanzahl) - bei tausenden Zielen
+        // und vielen Schuetzen/Schuessen der mit Abstand teuerste Teil der Kampfberechnung).
+        const rfPool: CombatUnit[] = [];
+        for (const typeId of rfTypeIds) {
+          const bucket = typedPool.arrayFor(typeId);
+          if (bucket.length > 0) rfPool.push(...bucket);
+        }
         const rfAggs = hasAggregateTargets ? targetAggregates.filter((a) => a.active && a.hpPoolCur > 0 && rfMap[a.typeId] !== undefined) : [];
         if (rfPool.length > 0 || rfAggs.length > 0) {
           if (MULTI_TARGET_VOLLEY_SHIPS.has(shooter.typeId)) {
