@@ -9,7 +9,7 @@ import { openContainer, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
-import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter } from './groupOps.js';
+import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter, recallGroupOperation } from './groupOps.js';
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
@@ -29,7 +29,7 @@ import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, SPY_PROBE_TRAVEL_MS, SPY_PROBE_FUEL_COST_PER_PROBE } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM, ALLIANCE_NAME, PIRATE_ALLIANCE_NAME } from './data/economy.js';
+import { BOOSTERS, SHOP_VOUCHERS, CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM, ALLIANCE_NAME, PIRATE_ALLIANCE_NAME, PIRATEN_CHECK_COUNT } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS, SHIELD_REGEN_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, SHIELD_REGEN_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
 import { getLeaderboard } from './stats.js';
@@ -101,6 +101,7 @@ gameRouter.get('/data', (_req, res) => {
     spyProbeFuelCostPerProbe: SPY_PROBE_FUEL_COST_PER_PROBE,
     allianceName: ALLIANCE_NAME,
     pirateAllianceName: PIRATE_ALLIANCE_NAME,
+    piratenCheckCount: PIRATEN_CHECK_COUNT,
   });
 });
 
@@ -496,6 +497,12 @@ gameRouter.post('/party/start', (req: AuthedRequest, res) => {
   const { opId } = req.body ?? {};
   if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
   handleAction(req, res, (state) => startGroupOperation(state, opId));
+});
+
+gameRouter.post('/party/recall', (req: AuthedRequest, res) => {
+  const { opId } = req.body ?? {};
+  if (typeof opId !== 'string') return res.status(400).json({ error: 'opId erforderlich.' });
+  handleAction(req, res, (state) => recallGroupOperation(state, opId));
 });
 
 gameRouter.post('/party/admiral-decide', (req: AuthedRequest, res) => {

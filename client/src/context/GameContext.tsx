@@ -42,6 +42,7 @@ interface GameContextValue {
   respondToParty: (opId: string, accept: boolean, ships: Record<string, number>) => Promise<void>;
   cancelParty: (opId: string) => Promise<void>;
   startParty: (opId: string) => Promise<void>;
+  recallParty: (opId: string) => Promise<void>;
   respondAdminEncounter: (opId: string, action: 'extract' | 'continue') => Promise<void>;
 
   // Galaxie
@@ -227,6 +228,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     respondToParty: (opId, accept, ships) => runAndRefreshParties(() => api.respondToParty(opId, accept, ships)),
     cancelParty: (opId) => runAndRefreshParties(() => api.cancelParty(opId)),
     startParty: (opId) => runAndRefreshParties(() => api.startParty(opId)),
+    recallParty: (opId) => runAndRefreshParties(() => api.recallParty(opId)),
     respondAdminEncounter: (opId, action) => runAndRefreshParties(() => api.respondAdminEncounter(opId, action)),
 
     galaxyOccupants,

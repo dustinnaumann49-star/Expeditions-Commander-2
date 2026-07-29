@@ -315,10 +315,30 @@ export const ASTEROID_RICH_FIND_CHANCE = 0.08;
 export const PIRATEN_RICH_FIND_CHANCE = 0.08;
 
 export const MISSION_TRAVEL_MS = 60 * 1000;
-export const MISSION_DURATION_MS = 4 * 3600 * 1000;
+// Umbau 28.07.2026 (Nutzerentscheidung, Teil des Wochen-/Tages-Umbaus wie schon bei Raids):
+// Piraten-Sektor (Solo) UND Elite-Bollwerk teilen sich diese Konstante - von 4h auf 24h angehoben.
+// Kampf-Checks laufen NICHT mehr stuendlich, sondern alle PIRATEN_CHECK_INTERVAL_MS (4h) - macht bei
+// 24h Gesamtdauer 6 Checks statt vorher 4 stuendliche. Piratenadmiral ist NICHT betroffen (eigener
+// 10-Minuten-Check-Rhythmus in groupOps.ts, siehe README).
+export const MISSION_DURATION_MS = 24 * 3600 * 1000;
+// Kampf-Check-Intervall fuer Piraten-Sektor/Elite-Bollwerk (Nutzerentscheidung 28.07.2026, ersetzt
+// den bisherigen stuendlichen Rhythmus) - genutzt in missions.ts tickMission()/groupOps.ts
+// tickGroupExpeditionInner() statt der hartcodierten 3600000 (1h). NUR fuer type:"piraten"-Sektoren,
+// Asteroiden-Felder bleiben stuendlich (siehe ASTEROID_MISSION_DURATION_MS unten).
+export const PIRATEN_CHECK_INTERVAL_MS = 4 * 3600 * 1000;
+// Anzahl Checks pro Elite-Bollwerk-Expedition (MISSION_DURATION_MS / PIRATEN_CHECK_INTERVAL_MS =
+// 24h/4h = 6) - als eigene Konstante statt ueberall neu berechnet, u.a. fuer die "perfekte Serie"-
+// Pruefung und Anzeige-Texte in groupOps.ts (ersetzt die vorherige hartcodierte 4).
+export const PIRATEN_CHECK_COUNT = MISSION_DURATION_MS / PIRATEN_CHECK_INTERVAL_MS;
 // Asteroiden-Felder laufen bewusst laenger als Piraten-Sektoren: weniger haeufiges Nachschauen
 // noetig (guenstig fuer Spieler mit wenig Zeit), dafuer entsprechend mehr Ertrag pro Durchgang.
-export const ASTEROID_MISSION_DURATION_MS = 12 * 3600 * 1000;
+// Umbau 28.07.2026: von 12h auf 24h angehoben (Nutzerentscheidung) - dmCap/farmRate bleiben
+// BEWUSST unveraendert (kein Verdoppeln), die dmCap-Rate berechnet sich ohnehin dynamisch aus der
+// tatsaechlichen Missionsdauer (siehe accrueFarming() in missions.ts) und wird dadurch automatisch
+// langsamer statt hoeher - Nutzerentscheidung: ein hoeherer Cap wuerde die Ressourcen-/Dunkle-
+// Materie-Menge im Spiel zu stark aufblaehen und andere Balance-Bereiche (z.B. Massen-Schiffbau)
+// verzerren.
+export const ASTEROID_MISSION_DURATION_MS = 24 * 3600 * 1000;
 
 // Diagnose-Fix (Juli 2026, Live-Vorfall siehe README Punkt 97): wenn ein Nutzer/Bot laengere Zeit
 // nicht getickt wurde (z.B. Server-Neustart), musste tickMission() beim naechsten Aufruf ALLE seit

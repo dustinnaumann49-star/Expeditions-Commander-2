@@ -23,17 +23,17 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (25.000/h je Schiff) / Dunkle Materie bis 45",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"piraten_niedrig", name:"Sektor P9 – Piraten-Sektor (Niedrig)", img:"sektoren/piraten_niedrig.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 5 Teile pro Kategorie.",
-    aktivitaet:"Piraten-Chance 55%", gefahr:"Niedrig", level:"gruen" },
+    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 8 Teile pro Kategorie (nur durch gewonnene Kämpfe erreichbar).",
+    aktivitaet:"Piraten-Chance 55% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Niedrig", level:"gruen" },
   { id:"piraten_mittel", name:"Sektor P9 – Piraten-Sektor (Mittel)", img:"sektoren/piraten_mittel.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 10 pro Kategorie) - garantiert 1 Elite-Container bei Rückkehr. 8% Chance pro Stunde, die bisherige Beute dieser Mission zu verdoppeln.",
-    aktivitaet:"Piraten-Chance 65%", gefahr:"Mittel", level:"gelb" },
+    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 15 pro Kategorie, nur durch gewonnene Kämpfe erreichbar) - garantiert 1 Elite-Container bei Rückkehr. 8% Chance pro Check, die bisherige Beute dieser Mission zu verdoppeln.",
+    aktivitaet:"Piraten-Chance 65% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Mittel", level:"gelb" },
   { id:"piraten_hoch", name:"Sektor P9 – Piraten-Sektor (Hoch)", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 15 pro Kategorie) - garantiert 3 Elite-Container bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. 8% Chance pro Stunde, die bisherige Beute dieser Mission zu verdoppeln.",
-    aktivitaet:"Piraten-Chance 75%", gefahr:"Hoch", level:"rot" },
+    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 23 pro Kategorie, nur durch gewonnene Kämpfe erreichbar) - garantiert 3 Elite-Container bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. 8% Chance pro Check, die bisherige Beute dieser Mission zu verdoppeln.",
+    aktivitaet:"Piraten-Chance 75% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 130% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Zusätzlich zur normalen Beute/Teile-Sammlung: bis zu 20.000.000 Metall, 16.000.000 Kristall, 10.000.000 Deuterium über die Zeit (wie im Asteroiden-Feld).",
-    aktivitaet:"Kampf garantiert (jede Stunde)", gefahr:"Extrem", level:"rot" },
+    typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 130% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Jederzeit per Rückruf abbrechbar - bereits gewonnene Kämpfe bleiben erhalten.",
+    aktivitaet:"Kampf garantiert (alle 4 Stunden, 24h Gesamtdauer)", gefahr:"Extrem", level:"rot" },
   { id:"piraten_admiral", name:"Sektor P10 – Piratenadmiral", img:"sektoren/piraten_admiral.jpg",
     typ:"Boss-Gefecht (Nur Multiplayer)", zweck:"Ein einzelner, extrem zäher Piratenadmiral + kleine Elite-Eskorte statt einer Masse an Gegnern - nur Kreuzer-Klasse und größere Schiffe erlaubt (keine Jäger, keine Versorgungsschiffe). Alle 10 Minuten ein garantierter Kampf, bis zu 6 Checks über 1 Stunde. Nach jedem gewonnenen Kampf: Beute sichern und abziehen, oder weitermachen für mehr - der Admiral wird dabei mit jedem Check wütender (+15% auf seine Werte). Beim echten Sieg eine große Einmalprämie plus Dunkle Materie.",
     aktivitaet:"Kampf garantiert (alle 10 Minuten)", gefahr:"Extrem", level:"rot" }
@@ -59,7 +59,6 @@ export interface SektorConfig {
   // Belohnung - siehe finalizeMission() in missions.ts).
   guaranteedEliteContainers?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
-  resourceCapOverTime?: { metall: number; kristall: number; deuterium: number }; // NUR bei piraten_elite (Elite-Bollwerk) genutzt, laeuft linear ueber dessen 4h-Missionsdauer (MISSION_DURATION_MS) - NICHT zu verwechseln mit dmCap bei Asteroiden-Feldern, das ueber ASTEROID_MISSION_DURATION_MS (12h) laeuft
   // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
   // (ersetzt die vorher feste MISSION_TRAVEL_MS, siehe sendFleet() in missions.ts). Fehlt bewusst
   // bei piraten_elite (Elite-Bollwerk, nur ueber Gruppen-Expeditionen erreichbar) - bleibt bei der
@@ -85,19 +84,31 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // Kapitaen-Zufallschance gegen GARANTIERTE Elite-Container (planbar statt Gluecksspiel) und werden
   // spuerbar staerker (npcFloor + PIRATEN_MULTIPLIER_ROLL weiter unten angehoben). Niedrig
   // bleibt bewusst unangetastet - weiterhin die sanfte Einstiegsstufe ohne Elite-Container.
-  piraten_niedrig:  { checkChance:0.55, type:"piraten", teileCap:5, npcFloor:300000,
+  // Umbau 28.07.2026 (Nutzerentscheidung): Kampf-Checks laufen nicht mehr stuendlich, sondern alle
+  // PIRATEN_CHECK_INTERVAL_MS (4h) ueber die volle MISSION_DURATION_MS (24h) - macht 6 Checks statt
+  // vorher 4. teileCap ist jetzt die EINZIGE Teile-Quelle (die vorherige zeitbasierte Hintergrund-
+  // Zuteilung in accrueFarming() wurde entfernt, siehe missions.ts) - auf 1,5x angehoben (analog zur
+  // Check-Anzahl 6/4), damit eine durchgehend siegreiche Flotte weiterhin denselben Gesamt-Teile-
+  // Ertrag pro Trip erreichen kann. lootBase (Rohstoff-Beute pro gewonnenem Check) bleibt UNVERAENDERT
+  // (Nutzerentscheidung: keine zusaetzliche Rohstoff-Inflation, gleiche Begruendung wie beim
+  // Asteroiden-Feld-Cap) - profitiert aber automatisch von den zusaetzlichen Checks pro Trip.
+  piraten_niedrig:  { checkChance:0.55, type:"piraten", teileCap:8, npcFloor:300000,
     lootBase:{metall:3000, kristall:2000, deuterium:800}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.05, captainContainerTier:"silber", captainDm:10, galaxyPosition:{system:10, position:5} },
-  piraten_mittel:   { checkChance:0.65, type:"piraten", teileCap:10, npcFloor:950000,
+  piraten_mittel:   { checkChance:0.65, type:"piraten", teileCap:15, npcFloor:950000,
     lootBase:{metall:6000, kristall:3800, deuterium:1600}, bonusLootChance:0.15, bonusLootMultiplier:3,
     guaranteedEliteContainers:1, galaxyPosition:{system:27, position:9} },
-  piraten_hoch:     { checkChance:0.75, type:"piraten", teileCap:15, npcFloor:2400000,
+  piraten_hoch:     { checkChance:0.75, type:"piraten", teileCap:23, npcFloor:2400000,
     lootBase:{metall:10000, kristall:6500, deuterium:3000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     guaranteedEliteContainers:3, galaxyPosition:{system:45, position:3} },
-  piraten_elite:    { checkChance:1, type:"piraten", teileCap:20, npcFloor:3000000,
+  // resourceCapOverTime entfernt (Umbau 28.07.2026, Nutzerentscheidung "nicht mehr ueber Zeit,
+  // sondern durch gewonnene Kaempfe") - lootBase (25M/15M/10M PRO gewonnenem Check) war ohnehin
+  // schon die dominante Rohstoffquelle hier, der Wegfall des zeitbasierten Zusatz-Tricklers ist
+  // gegenueber den 6 potenziellen lootBase-Ausschuettungen pro Trip vernachlaessigbar.
+  piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
-    multiplayerOnly:true, resourceCapOverTime:{metall:20000000, kristall:16000000, deuterium:10000000},
+    multiplayerOnly:true,
     galaxyPosition:{system:37, position:5} },
   // Boss-Gefecht (Punkt 76, siehe README): NUTZT SEKTOR_CONFIG nur fuer Anzeige-Zwecke/
   // Voraussetzungspruefung (multiplayerOnly, galaxyPosition fuer die Anflugzeit) - die eigentliche

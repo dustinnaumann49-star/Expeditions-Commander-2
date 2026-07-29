@@ -91,6 +91,7 @@ function OpEntry({
   now,
   onCancel,
   onStart,
+  onRecall,
   onAdminDecide,
 }: {
   op: GroupOperation;
@@ -99,6 +100,7 @@ function OpEntry({
   now: number;
   onCancel: (opId: string) => void;
   onStart: (opId: string) => void;
+  onRecall: (opId: string) => void;
   onAdminDecide: (opId: string, action: 'extract' | 'continue') => void;
 }) {
   const isCreator = op.creatorId === myUserId;
@@ -126,10 +128,18 @@ function OpEntry({
           .join(' · ')}
       </p>
       {op.sektorId !== 'piraten_admiral' && op.status === 'departed' && op.processedHours !== undefined && (
-        <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-          Fortschritt: {op.processedHours}/4 Stunden ·{' '}
-          {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
-        </p>
+        <>
+          <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            Fortschritt: {op.processedHours}/{gameData.piratenCheckCount} Checks (alle 4h) ·{' '}
+            {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
+          </p>
+          <div className="build-row">
+            <span></span>
+            <button className="qty-btn" onClick={() => onRecall(op.id)}>
+              🔙 Jetzt zurückrufen
+            </button>
+          </div>
+        </>
       )}
       {op.sektorId === 'piraten_admiral' && op.status === 'departed' && (
         <>
@@ -228,7 +238,7 @@ function PendingInviteCard({
 }
 
 function ExpeditionEventsView() {
-  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, respondAdminEncounter, sektorPositions, error } = useGame();
+  const { gameData, state, users, parties, createParty, respondToParty, cancelParty, startParty, recallParty, respondAdminEncounter, sektorPositions, error } = useGame();
   const [sektorId, setSektorId] = useState<'piraten_elite' | 'piraten_admiral'>('piraten_elite');
   const [showSektorInfo, setShowSektorInfo] = useState(false);
   const [selection, setSelection] = useState<Record<string, number>>({});
@@ -304,6 +314,7 @@ function ExpeditionEventsView() {
                       now={now}
                       onCancel={cancelParty}
                       onStart={startParty}
+                      onRecall={recallParty}
                       onAdminDecide={respondAdminEncounter}
                       key={op.id}
                     />
@@ -323,6 +334,7 @@ function ExpeditionEventsView() {
                       now={now}
                       onCancel={cancelParty}
                       onStart={startParty}
+                      onRecall={recallParty}
                       onAdminDecide={respondAdminEncounter}
                       key={op.id}
                     />

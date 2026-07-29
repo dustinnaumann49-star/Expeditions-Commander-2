@@ -44,7 +44,7 @@ export function StatistikPage() {
     ['🌒 Piraten-Sektor Mittel – Siege', (s) => s.missionsMittel],
     ['🌕 Piraten-Sektor Hoch – Siege', (s) => s.missionsHoch],
     ['⛏️ Asteroiden-Einsätze', (s) => s.asteroidMissions],
-    ['🛡️ Elite-Bollwerk – gewonnene Stunden-Checks', (s) => s.eliteBollwerkChecks],
+    ['🛡️ Elite-Bollwerk – gewonnene Checks', (s) => s.eliteBollwerkChecks],
     ['🏠 Raids vollständig abgewehrt', (s) => s.raidsRepelledFull],
     ['🏚️ Raids teilweise abgewehrt', (s) => s.raidsRepelledPartial],
     ['☠ Piratenkapitäne besiegt', (s) => s.captainsDefeated],

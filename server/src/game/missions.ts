@@ -7,6 +7,7 @@ import {
   MISSION_TRAVEL_MS,
   MISSION_DURATION_MS,
   ASTEROID_MISSION_DURATION_MS,
+  PIRATEN_CHECK_INTERVAL_MS,
   MISSION_HOURLY_CATCHUP_CAP,
   ASTEROID_ESCORT_POWER_MIN,
   ASTEROID_ESCORT_POWER_MAX,
@@ -172,18 +173,10 @@ function accrueFarming(state: PlayerState, mission: Mission, deltaSec: number) {
     }
   }
 
-  if (cfg.type === 'piraten' && cfg.teileCap) {
-    (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-      if (mission.teile[part] < cfg.teileCap!) {
-        // Rate leitet sich aus der TATSAECHLICHEN Missionsdauer ab (nicht der globalen
-        // MISSION_DURATION_MS-Konstante wie urspruenglich) - Bugfix: vorher haette eine von der
-        // Standarddauer abweichende Mission das Teile-Cap nie korrekt erreicht.
-        const durationMs = mission.endTime - mission.arriveTime;
-        const rate = (cfg.teileCap! / (durationMs / 1000)) * sandronatorBonus;
-        mission.teile[part] = Math.min(cfg.teileCap!, mission.teile[part] + rate * deltaSec);
-      }
-    });
-  }
+  // Teile-Zuteilung fuer Piraten-Sektoren laeuft seit dem Umbau 28.07.2026 (Nutzerentscheidung
+  // "nicht mehr ueber Zeit, sondern durch gewonnene Kaempfe") NICHT mehr hier zeitbasiert -
+  // ausschliesslich noch ueber den Pro-Check-Bonus in runHourlyCheck() unten, gedeckelt durch
+  // cfg.teileCap (siehe sectors.ts fuer die dafuer angehobenen Werte).
 }
 
 // ========== STUENDLICHER FEINDKONTAKT-CHECK ==========
@@ -713,10 +706,16 @@ async function tickMission(state: PlayerState, mission: Mission, now: number) {
     accrueFarming(state, mission, (cappedNow - mission.lastTick) / 1000);
     mission.lastTick = cappedNow;
   }
-  const maxHours = Math.round((mission.endTime - mission.arriveTime) / 3600000);
-  const hoursElapsed = Math.min(maxHours, Math.floor((cappedNow - mission.arriveTime) / 3600000));
+  // Check-Intervall (Umbau 28.07.2026, Nutzerentscheidung): Piraten-Sektoren checken nur noch alle
+  // PIRATEN_CHECK_INTERVAL_MS (4h), Asteroiden-Felder bleiben stuendlich - `mission.processedHours`
+  // zaehlt dadurch bei Piraten-Sektoren keine echten Stunden mehr, sondern Check-Einheiten (0-6 bei
+  // 24h/4h), der Feldname bleibt aber unveraendert (durchgaengig als Check-Zaehler genutzt).
+  const cfgForInterval = SEKTOR_CONFIG[mission.sektorId];
+  const checkIntervalMs = cfgForInterval?.type === 'piraten' ? PIRATEN_CHECK_INTERVAL_MS : 3600000;
+  const maxHours = Math.round((mission.endTime - mission.arriveTime) / checkIntervalMs);
+  const hoursElapsed = Math.min(maxHours, Math.floor((cappedNow - mission.arriveTime) / checkIntervalMs));
   // Nachhol-Deckel (siehe MISSION_HOURLY_CATCHUP_CAP in economy.ts) - bei einem grossen
-  // Rueckstand werden pro Aufruf hoechstens so viele Stunden-Checks nachgeholt, der Rest folgt
+  // Rueckstand werden pro Aufruf hoechstens so viele Checks nachgeholt, der Rest folgt
   // beim naechsten tick(). `targetHours` bleibt dadurch ggf. UNTER `hoursElapsed`.
   const targetHours = Math.min(hoursElapsed, mission.processedHours + MISSION_HOURLY_CATCHUP_CAP);
   while (mission.processedHours < targetHours) {

@@ -297,7 +297,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">🎲 Feindstärke (wird pro Stunden-Check gewürfelt)</span>
+          <span className="info-label">🎲 Feindstärke (wird pro Check gewürfelt, alle 4h)</span>
           <span className="info-value">
             <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power · gelegentlich auch deutlich
             schwächer oder stärker als üblich
@@ -331,7 +331,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
             <span className="info-label">💎 Garantierte Belohnung</span>
             <span className="info-value">
               <strong style={{ color: 'var(--rf-gold)' }}>{cfg.guaranteedEliteContainers}x Elite-Container</strong> bei erfolgreicher Rückkehr ·
-              zusätzlich <strong style={{ color: 'var(--accent-dm)' }}>8%</strong> Chance pro Stunden-Check, die bisherige Beute dieser Mission zu
+              zusätzlich <strong style={{ color: 'var(--accent-dm)' }}>8%</strong> Chance pro Check (alle 4h), die bisherige Beute dieser Mission zu
               verdoppeln
             </span>
           </div>
@@ -372,8 +372,8 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         <div className="info-row">
           <span className="info-label">🔧 Teile-Sammlung</span>
           <span className="info-value">
-            Läuft passiv über die Zeit bis Cap (<strong style={{ color: 'var(--accent-kristall)' }}>{cfg.teileCap}</strong>), zusätzlicher
-            Sofort-Bonus bei jedem Sieg (klar <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> / mit Verlusten{' '}
+            Nur durch gewonnene Kämpfe erreichbar, bis zu Cap (<strong style={{ color: 'var(--accent-kristall)' }}>{cfg.teileCap}</strong>) - pro
+            Check (klar <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> / mit Verlusten{' '}
             <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> / Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
             Cap, vor Sieges-Serie-Bonus)
           </span>
@@ -415,7 +415,7 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
       <div className="info-row">
         <span className="info-label">🌑 Dunkle Materie</span>
         <span className="info-value">
-          Bis zu <strong style={{ color: 'var(--accent-dm)' }}>{cfg.dmCap} DM</strong> pro vollem 12h-Einsatz (linear über die Zeit)
+          Bis zu <strong style={{ color: 'var(--accent-dm)' }}>{cfg.dmCap} DM</strong> pro vollem 24h-Einsatz (linear über die Zeit)
         </span>
       </div>
       <div className="info-row">

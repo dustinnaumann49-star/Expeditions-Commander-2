@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, getEscalationMultiplier } from './data/economy.js';
+import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, PIRATEN_CHECK_INTERVAL_MS, PIRATEN_CHECK_COUNT, getEscalationMultiplier } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -211,6 +211,36 @@ export function cancelGroupOperation(state: PlayerState, opId: string): ActionRe
   return { ok: true };
 }
 
+// ========== VORZEITIGER RUECKRUF (jederzeit waehrend "departed") ==========
+// Nutzerentscheidung 28.07.2026: bei einer jetzt 24h langen Elite-Bollwerk-Expedition (statt vorher
+// 4h) muss JEDER Teilnehmer die Moeglichkeit haben, vorzeitig abzubrechen, wenn sich eine schlechte
+// Kampfserie abzeichnet - zieht ALLE Teilnehmer gemeinsam zurueck (kein Teil-Rueckruf, die
+// Expedition ist ein gemeinsamer Kampfverband). Bewusst nicht auf den Ersteller beschraenkt (anders
+// als cancelGroupOperation oben) - jeder einzelne Teilnehmer soll selbst die Reissleine ziehen
+// koennen, ohne auf den Ersteller warten zu muessen. Analog zu recallMission() bei Solo-Missionen:
+// verarbeitet zuerst noch faellige Checks ganz normal (ein bereits faelliger Check zaehlt noch,
+// laesst sich aber durch rechtzeitigen Rueckruf VOR dem naechsten Check vermeiden), dann sofortige
+// Heimkehr mit allem bisher Angesammelten - OHNE Ruecklaufzeit.
+export async function recallGroupOperation(state: PlayerState, opId: string): Promise<ActionResult> {
+  const op = loadOp(opId);
+  if (!op) return { ok: false, error: 'Operation nicht gefunden.' };
+  if (op.status !== 'departed') return { ok: false, error: 'Kann nur eine laufende Expedition zurueckrufen.' };
+  if (op.sektorId === 'piraten_admiral') {
+    return { ok: false, error: 'Der Piratenadmiral hat einen eigenen Rueckzugs-Mechanismus ("Abziehen"-Option).' };
+  }
+  const isParticipant = op.participants.some((p) => p.userId === state.userId && p.status === 'accepted');
+  if (!isParticipant) return { ok: false, error: 'Du bist kein Teilnehmer dieser Expedition.' };
+
+  await tickGroupExpedition(op, state);
+  if (op.status !== 'departed') return { ok: true }; // durch den Tick bereits beendet (Flotte vernichtet)
+
+  const accepted = op.participants.filter((p) => p.status === 'accepted');
+  const participantStates = new Map<number, PlayerState>();
+  accepted.forEach((p) => participantStates.set(p.userId, p.userId === state.userId ? state : loadPlayerState(p.userId)));
+  finalizeGroupExpedition(op, accepted, participantStates, state.userId);
+  return { ok: true };
+}
+
 // ========== STARTEN ==========
 
 function contributionsFromParticipants(op: GroupOperation, participantStates: Map<number, PlayerState>): OwnedFleetContribution[] {
@@ -288,7 +318,6 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
     op.endTime = op.arriveTime + MISSION_DURATION_MS;
     op.returnTime = op.endTime + travelMs;
     op.processedHours = 0;
-    op.lastTick = null;
   }
   saveOp(op);
 
@@ -621,37 +650,18 @@ async function tickGroupExpeditionInner(op: GroupOperation, currentState: Player
   const participantStates = new Map<number, PlayerState>();
   accepted.forEach((p) => participantStates.set(p.userId, p.userId === currentState.userId ? currentState : loadPlayerState(p.userId)));
 
-  const cfg = SEKTOR_CONFIG[op.sektorId!];
   const cappedNow = Math.min(now, op.endTime);
-  if (!op.lastTick) op.lastTick = op.arriveTime;
-  if (cappedNow > op.lastTick && cfg) {
-    const deltaSec = (cappedNow - op.lastTick) / 1000;
-    accepted.forEach((p) => {
-      if (cfg.teileCap && p.teile) {
-        (['waffen', 'schild', 'panzerung'] as const).forEach((part) => {
-          if (p.teile![part] < cfg.teileCap!) {
-            const rate = cfg.teileCap! / (MISSION_DURATION_MS / 1000);
-            p.teile![part] = Math.min(cfg.teileCap!, p.teile![part] + rate * deltaSec);
-          }
-        });
-      }
-      if (cfg.resourceCapOverTime && p.farmed) {
-        const cap = cfg.resourceCapOverTime;
-        const totalRate = (cap.metall + cap.kristall + cap.deuterium) / (MISSION_DURATION_MS / 1000);
-        const totalSoFar = p.farmed.metall + p.farmed.kristall + p.farmed.deuterium;
-        const totalCap = cap.metall + cap.kristall + cap.deuterium;
-        if (totalSoFar < totalCap) {
-          const gain = Math.min(totalCap - totalSoFar, totalRate * deltaSec);
-          p.farmed.metall += gain * (cap.metall / totalCap);
-          p.farmed.kristall += gain * (cap.kristall / totalCap);
-          p.farmed.deuterium += gain * (cap.deuterium / totalCap);
-        }
-      }
-    });
-    op.lastTick = cappedNow;
-  }
+  // Zeitbasierte Teile-/Ressourcen-Zuteilung entfernt (Umbau 28.07.2026, Nutzerentscheidung "nicht
+  // mehr ueber Zeit, sondern durch gewonnene Kaempfe") - siehe runGroupHourlyCheck() unten fuer den
+  // alleinigen, jetzt hochskalierten Pro-Check-Bonus (teileCap in sectors.ts wurde entsprechend
+  // angehoben, resourceCapOverTime komplett entfernt).
 
-  const hoursElapsed = Math.min(4, Math.floor((cappedNow - op.arriveTime) / 3600000));
+  // Check-Intervall (Umbau 28.07.2026): alle PIRATEN_CHECK_INTERVAL_MS (4h) statt stuendlich, macht
+  // bei 24h Gesamtdauer 6 Checks statt vorher 4. `op.processedHours` zaehlt weiterhin Check-
+  // Einheiten, keine echten Stunden mehr (Feldname unveraendert, siehe missions.ts fuer dieselbe
+  // Umstellung bei Solo-Missionen).
+  const maxHours = Math.round((op.endTime - op.arriveTime) / PIRATEN_CHECK_INTERVAL_MS);
+  const hoursElapsed = Math.min(maxHours, Math.floor((cappedNow - op.arriveTime) / PIRATEN_CHECK_INTERVAL_MS));
   while ((op.processedHours || 0) < hoursElapsed) {
     op.processedHours = (op.processedHours || 0) + 1;
     await runGroupHourlyCheck(op, accepted, participantStates);
@@ -867,7 +877,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       : 'Feindkontakt - keine nennenswerte Wirkung';
   const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Stunde ${op.processedHours}/4: ${outcome}.${lootText}${teileGainText}${captainText}${modifierText}`;
+  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${teileGainText}${captainText}${modifierText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
@@ -909,11 +919,12 @@ function finalizeGroupExpedition(
   // alle 4 Checks gewonnen, KEIN einziger Rueckschlag dazwischen (op.streakWins wird bei jedem
   // Check ohne vernichteten Gegner auf 0 zurueckgesetzt, siehe runGroupHourlyCheck) - die GESAMTE
   // ueber die Expedition angesammelte Ressourcen-Ausbeute (NICHT Teile/DM) nochmal komplett.
-  // Belohnung dafuer, die volle, sehr harte 4-Stunden-Expedition ohne einen einzigen Rueckschlag
-  // durchzustehen - on top der bereits eingebauten Verdopplung PRO Sieg (REWARD_ESCALATION
-  // "double"-Modus), die schon bis zu 750 Mio. Ressourcen bei einer perfekten Serie ergibt (siehe
-  // README) - mit diesem Bonus also bis zu 1,5 Milliarden.
-  const perfectRun = (op.streakWins || 0) >= 4;
+  // Belohnung dafuer, die volle, sehr harte 24-Stunden-Expedition (PIRATEN_CHECK_COUNT Checks) ohne
+  // einen einzigen Rueckschlag durchzustehen - on top der bereits eingebauten Verdopplung PRO Sieg
+  // (REWARD_ESCALATION "double"-Modus). ACHTUNG: mit 6 statt vorher 4 Checks liegt die maximale
+  // Serie jetzt bei 2^6=64x statt 2^4=16x - deutlich staerker als urspruenglich fuer dieses
+  // Eskalationsmodell vorgesehen, siehe Nutzerhinweis/README fuer eine moegliche Nachjustierung.
+  const perfectRun = (op.streakWins || 0) >= PIRATEN_CHECK_COUNT;
 
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
@@ -944,7 +955,7 @@ function finalizeGroupExpedition(
       pState,
       'farm',
       `Gemeinsame Expedition ${op.sektorId} (mit ${teilnehmerListe}) zurückgekehrt.${
-        perfectRun ? ' 🏆 Perfekte Serie - alle 4 Kämpfe gewonnen! Gesamte Ressourcen-Ausbeute nochmal verdoppelt.' : ''
+        perfectRun ? ` 🏆 Perfekte Serie - alle ${PIRATEN_CHECK_COUNT} Kämpfe gewonnen! Gesamte Ressourcen-Ausbeute nochmal verdoppelt.` : ''
       }`,
       {
         sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,

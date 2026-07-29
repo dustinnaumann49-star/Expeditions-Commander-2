@@ -528,7 +528,6 @@ export interface SektorConfig {
   captainDm?: number;
   guaranteedEliteContainers?: number;
   multiplayerOnly?: boolean;
-  resourceCapOverTime?: { metall: number; kristall: number; deuterium: number };
 }
 
 export interface BoosterDefinition {
@@ -633,6 +632,7 @@ export interface GameData {
   spyProbeFuelCostPerProbe: number;
   allianceName: string;
   pirateAllianceName: string;
+  piratenCheckCount: number;
 }
 
 export interface ClassDefinition {
