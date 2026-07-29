@@ -1874,38 +1874,29 @@ client/
     - `STACK_AGGREGATE_THRESHOLD` bleibt unverändert bei 300 (siehe Punkt 114 - offene
       Entscheidung, ob jetzt angehoben werden soll).
 
-114. **OFFENER PUNKT FÜR DIE NÄCHSTE CHAT-SESSION: `STACK_AGGREGATE_THRESHOLD` ggf. anheben?**
-    Kontext für den Einstieg (Nutzer musste wegen Token-Limit die Session wechseln, dieser Punkt
-    hält den Stand fest): Nutzer möchte eigentlich Richtung "altes Einzelschiff-Verhalten" zurück
-    (mehr Kämpfe exakt statt aggregiert simuliert), ABER nur wenn das ohne echte CPU-/Latenz-Risiken
-    machbar ist - keine zusätzliche Server-Leistung kaufen wollen (zu teuer).
-    - **Bisheriger Stand**: Punkt 113s Performance-Fix (RF-Zielpool per Typ-Buckets statt
-      Voll-Filterung pro Schuss) hat die Kosten grosser Einzelschiff-Gefechte um den Faktor 7-14x
-      gesenkt, OHNE `STACK_AGGREGATE_THRESHOLD` selbst anzufassen (bleibt bei 300). Ein FRÜHERER
-      Testlauf, die Schwelle direkt (ohne diesen Fix) von 300 auf 800 anzuheben, wurde bereits
-      verworfen (siehe Punkt 111s Erwähnung des Testlaufs) - 5 Schiffstypen à 700 Stück brauchten
-      damals ~6,9s PRO KAMPF (direkte Wartezeit, kein Hintergrund-Batch).
-    - **Nach dem Perf-Fix aus Punkt 113 sieht die Rechnung jetzt anders aus**: dieselbe
-      Kampfgrösse (3.500 Schiffe insgesamt bei 5 Typen à 700), die VOR dem Fix ~9,4s brauchte,
-      braucht danach nur noch ~0,7s. Bei 5.000 Schiffen (1.000/Typ) sind es jetzt ~1,5s statt
-      ~21s. Eine erneute Anhebung von `STACK_AGGREGATE_THRESHOLD` (z.B. auf 800-1500) wäre also
-      JETZT mit ganz anderen (deutlich guenstigeren) Kennzahlen zu bewerten als beim verworfenen
-      ersten Versuch - wurde aber noch NICHT erneut getestet/entschieden.
-    - **Nächste Schritte für die Fortsetzung**:
-      1. Mit demselben Benchmark-Muster wie in Punkt 113 (Node-Skript, das `resolveCombat` direkt
-         aus `dist/game/combat.js` aufruft, `STACK_AGGREGATE_THRESHOLD` temporär hochgesetzt) neu
-         durchmessen, bei welcher Schwelle die Kampfzeit wieder in einen unangenehmen Bereich
-         kommt (Richtwert aus der Vergangenheit: alles über ~2-3s pro Kampf fühlte sich als echte
-         Wartezeit an, nicht nur Hintergrundlast).
-      2. Mit dem Nutzer eine konkrete neue Zielschwelle abstimmen (nicht eigenmächtig setzen -
-         siehe Nutzerentscheidung-Historie zu genau diesem Wert).
-      3. `STACK_AGGREGATE_THRESHOLD` in `combatConstants.ts` entsprechend anheben, Kommentar dort
-         aktualisieren (bisherige Kommentar-Historie zu 300/800 direkt darüber lesen für Kontext).
-      4. Weitere mögliche Hebel, falls noch mehr Spielraum gewünscht ist (siehe Punkt 113s
-         Profiling-Methodik für den nächsten Flaschenhals, falls einer auftaucht): typisierte
-         Arrays fürs `CombatUnit`-Grundgerüst selbst waeren jetzt, nach Beseitigung des groesseren
-         RF-Flaschenhalses, ein realistischerer naechster Hebel mit spuerbarerem (aber kleinerem)
-         Effekt als vorher.
+114. **Perf-Neumessung: `STACK_AGGREGATE_THRESHOLD` von 300 auf 1.200 angehoben (Nutzerentscheidung
+    29.07.2026, Fortsetzung von Punkt 113).** Nutzer wollte eigentlich Richtung "altes
+    Einzelschiff-Verhalten" zurück (mehr Kämpfe exakt statt aggregiert simuliert), ABER nur wenn
+    das ohne echte CPU-/Latenz-Risiken machbar ist.
+    - **Neue Messung** (gleiches Benchmark-Muster wie Punkt 113: `resolveCombat` direkt aus
+      `dist/game/combat.js`, `STACK_AGGREGATE_THRESHOLD` temporär auf einen sehr hohen Wert
+      gesetzt um den Einzelschiff-Pfad zu erzwingen, 5 Schiffstypen à N Stück, NPC-Seite 30%
+      stärker, Median aus 3-5 Läufen): 300→176ms · 500→307ms · 700→488ms · **800→607ms** ·
+      1.000→831ms · **1.200→1,10s** · 1.500→1,51s · 2.000→2,44s · 3.000→4,25s. Skaliert nach dem
+      Perf-Fix aus Punkt 113 praktisch linear statt quadratisch mit der Flottengröße - bestätigt
+      dessen Wirkung nochmal unabhängig.
+    - **Nutzerentscheidung**: 1.200 als "sauberer Mittelweg" gewählt (~1,1s, deutlich unter der
+      als unangenehm empfundenen ~2-3s-Marke aus der Vergangenheit) - bewusst noch nicht 1.500-2.000,
+      Ergebnis wird erstmal live beobachtet ("werde beobachten wie es läuft"), bevor ggf. weiter
+      angehoben wird.
+    - `STACK_AGGREGATE_THRESHOLD` in `combatConstants.ts` auf 1.200 gesetzt, Kommentar-Historie
+      dort um diesen Testlauf ergänzt. Server neu gebaut (`tsc -p tsconfig.json` in `server/`),
+      Sanity-Check bestätigt: 500/Typ (jetzt unter der neuen Schwelle, vorher über der alten 300er
+      Schwelle aggregiert) läuft exakt über den Einzelschiff-Pfad, ~376ms, plausible
+      Überlebenden-Zahlen.
+    - **Offen für später**: falls noch mehr Spielraum gewünscht ist, wäre laut Punkt 113s
+      Profiling-Methodik als nächster Hebel typisierte Arrays fürs `CombatUnit`-Grundgerüst
+      realistisch (kleinerer, aber spürbarer Effekt als der schon behobene RF-Flaschenhals).
 
 ## Kurz-Changelog
 

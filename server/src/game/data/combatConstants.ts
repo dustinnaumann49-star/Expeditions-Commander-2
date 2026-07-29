@@ -323,7 +323,12 @@ export const MAX_ROUNDS = 100;
 // Stueck ergaben ~1,7s/~3,8s/~6,9s PRO KAMPF, nicht nur im Hintergrund, sondern als direkte
 // Wartezeit auf der Seite) - "seltener, aber laengere Kaempfe" aendert nichts an der Wartezeit
 // EINES einzelnen Kampfs. Deshalb wieder auf 300 zurueckgesetzt (Nutzerentscheidung).
-export const STACK_AGGREGATE_THRESHOLD = 300;
+// 29.07.2026 (Nutzerentscheidung, nach README Punkt 113s RF-Zielpool-Perf-Fix): derselbe Test
+// (5 Schiffstypen, Einzelschiff-Pfad erzwungen) zeigte mit dem Fix eine deutlich guenstigere Kurve
+// (300 Stk/Typ ~0,18s, 800 ~0,6s, 1.200 ~1,1s, 1.500 ~1,5s, 2.000 ~2,4s). Auf 1.200 angehoben -
+// guter Mittelweg zwischen spuerbar mehr Einzelschiff-Praezision fuer Massenflotten und noch
+// flotter Kampfzeit. Wird nach Live-Beobachtung ggf. weiter angepasst (siehe README Punkt 114).
+export const STACK_AGGREGATE_THRESHOLD = 1200;
 // Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
 // eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
 // regulaer per Schaden auf 0 HP gebracht zu werden. Vorher 0.7 mit LINEARER Chance (1 -
