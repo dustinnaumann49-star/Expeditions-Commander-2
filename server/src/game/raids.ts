@@ -258,7 +258,17 @@ async function processRaidWaves(state: PlayerState, currentUserId?: number, curr
   const raid = state.raid;
   if (!raid) return;
 
-  while (raid.wavesProcessed < RAID_WAVE_COUNT && Date.now() >= raid.waveTimes[raid.wavesProcessed]) {
+  // WICHTIG: Schleifen-/Abschluss-Bedingung nutzt raid.waveTimes.length statt der globalen
+  // RAID_WAVE_COUNT-Konstante - ein bereits gespawnter Raid hat seine Wellenzeiten EINMALIG bei
+  // spawnRaidAt() mit der zu diesem Zeitpunkt gueltigen Wellenzahl erzeugt. Wird RAID_WAVE_COUNT
+  // spaeter per Deploy geaendert (z.B. 5 -> 12, siehe Umbau 28.07.2026), haette ein Vergleich gegen
+  // die globale Konstante bei einem bereits laufenden Raid mit nur 5 waveTimes-Eintraegen dazu
+  // gefuehrt, dass raid.waveTimes[5] undefined ist (Date.now() >= undefined ist immer false) - der
+  // Raid blieb dann bei wavesProcessed=5 haengen UND wavesProcessed>=RAID_WAVE_COUNT(12) wurde nie
+  // wahr, der Raid wurde nie finalisiert (Live-Bug, permanent "Welle 5/5" haengend). Bugfix:
+  // raid.waveTimes.length ist immer die tatsaechliche Wellenzahl DIESES Raids, unabhaengig von
+  // spaeteren Aenderungen an RAID_WAVE_COUNT.
+  while (raid.wavesProcessed < raid.waveTimes.length && Date.now() >= raid.waveTimes[raid.wavesProcessed]) {
     if (!hasAnyDefense(state)) {
       const fromWave = raid.wavesProcessed + 1;
       raid.waveLog.push({
@@ -266,18 +276,18 @@ async function processRaidWaves(state: PlayerState, currentUserId?: number, curr
         outcome:
           fromWave === 1
             ? 'Keine Verteidigung vorhanden - die Piratenflotte plündert ungehindert.'
-            : `Verteidigung vollständig aufgerieben - Wellen ${fromWave}-${RAID_WAVE_COUNT} treffen ungehindert auf die Heimatbasis.`,
+            : `Verteidigung vollständig aufgerieben - Wellen ${fromWave}-${raid.waveTimes.length} treffen ungehindert auf die Heimatbasis.`,
         roundsFought: 0,
         npcResults: [],
         playerResults: [],
       });
-      raid.wavesProcessed = RAID_WAVE_COUNT;
+      raid.wavesProcessed = raid.waveTimes.length;
       break;
     }
     await resolveOneWave(state, raid, currentUserId, currentUserState);
   }
 
-  if (raid.wavesProcessed >= RAID_WAVE_COUNT) {
+  if (raid.wavesProcessed >= raid.waveTimes.length) {
     finalizeRaidWaves(state, currentUserId, currentUserState);
   }
 }
@@ -347,7 +357,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     raid.wavesWon++;
     raid.waveLog.push({
       hour: waveNumber,
-      outcome: `Welle ${waveNumber}/${RAID_WAVE_COUNT}: keine Angreifer gefunden - Welle übersprungen.`,
+      outcome: `Welle ${waveNumber}/${raid.waveTimes.length}: keine Angreifer gefunden - Welle übersprungen.`,
       roundsFought: 0,
       npcResults: [],
       playerResults: [],
@@ -460,7 +470,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-  const outcome = waveWon ? `Welle ${waveNumber}/${RAID_WAVE_COUNT} abgewehrt – Angreifer vernichtet` : `Welle ${waveNumber}/${RAID_WAVE_COUNT} – Angreifer teilweise durchgekommen`;
+  const outcome = waveWon ? `Welle ${waveNumber}/${raid.waveTimes.length} abgewehrt – Angreifer vernichtet` : `Welle ${waveNumber}/${raid.waveTimes.length} – Angreifer teilweise durchgekommen`;
 
   // Nutzerentscheidung (Juli 2026): keine Zwischen-Nachricht mehr pro Welle (weder fuer den
   // Verteidiger noch fuer Verstaerker/haltende Flotten) - stattdessen EIN Eintrag in
@@ -540,7 +550,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     playerState: r.userId === currentUserId && currentUserState ? currentUserState : loadPlayerState(r.userId),
   }));
 
-  const perfectDefense = raid.wavesWon >= RAID_WAVE_COUNT;
+  const perfectDefense = raid.wavesWon >= raid.waveTimes.length;
 
   // Bergungs-DM ("Bergung aus der zerstoerten Flotte") - skaliert mit der GESAMT-Anzahl
   // vernichteter Piratenschiffe/-anlagen ueber alle Wellen, unabhaengig vom Gesamtausgang. Jeder
@@ -614,8 +624,8 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     ? ` Erbeutet: ${stolen.metall.toLocaleString('de-DE')} Metall, ${stolen.kristall.toLocaleString('de-DE')} Kristall, ${stolen.deuterium.toLocaleString('de-DE')} Deuterium.`
     : ' Ressourcen vollständig sicher.';
   const outcome = perfectDefense
-    ? `Piratenüberfall abgewehrt – alle ${RAID_WAVE_COUNT} Wellen zurückgeschlagen! 🏆`
-    : `Piratenüberfall beendet – ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt`;
+    ? `Piratenüberfall abgewehrt – alle ${raid.waveTimes.length} Wellen zurückgeschlagen! 🏆`
+    : `Piratenüberfall beendet – ${raid.wavesWon}/${raid.waveTimes.length} Wellen abgewehrt`;
   const waveLogText = raid.waveLog.length > 0 ? ' Wellen-Verlauf siehe unten.' : '';
 
   // Nutzerentscheidung (Juli 2026): derselbe raid.waveLog (alle Wellen, gemeinsam erlebt) landet
@@ -633,7 +643,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       playerState,
       'kampf',
-      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
+      `Raid-Verteidigung bei ${ownerUsername} beendet: ${raid.wavesWon}/${raid.waveTimes.length} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
       {
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,
@@ -649,7 +659,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     pushMessage(
       ownerState,
       'kampf',
-      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${RAID_WAVE_COUNT} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
+      `Deine haltende Flotte bei ${ownerUsername}: Raid-Verteidigung beendet, ${raid.wavesWon}/${raid.waveTimes.length} Wellen abgewehrt.${containerText}${salvageText}${waveLogText}`,
       {
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,
