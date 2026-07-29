@@ -41,7 +41,7 @@ function formatContainerReward(r: ContainerReward, shipName: (id: string) => str
 }
 
 export function InventarPage() {
-  const { gameData, state, openContainer, openAllContainers, redeemRewardItem, error } = useGame();
+  const { gameData, state, openContainer, openAllContainers, redeemRewardItem, redeemAllRewardItems, error } = useGame();
   if (!gameData || !state) return <PageSkeleton />;
   const shipName = (id: string) => gameData.ships.find((s) => s.id === id)?.name || id;
 
@@ -106,9 +106,16 @@ export function InventarPage() {
                           {item.count > 1 ? `${item.count}x ` : ''}
                           {item.reward.label}
                         </span>
-                        <button className="qty-btn" onClick={() => redeemRewardItem(item.id)}>
-                          ✅ Einlösen
-                        </button>
+                        <span>
+                          <button className="qty-btn" onClick={() => redeemRewardItem(item.id)}>
+                            ✅ Einlösen
+                          </button>{' '}
+                          {cat !== 'zeitgutschein' && item.count > 1 && (
+                            <button className="build-btn" onClick={() => redeemAllRewardItems(item.id)}>
+                              ✅ Alle {item.count} einlösen
+                            </button>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>

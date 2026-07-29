@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '30.07.2026',
+    title: 'Inventar: "Alle einlösen" für gestapelte Belohnungen',
+    changes: [
+      'Rohstoff-Fracht, Ausrüstungs-Teile und geschenkte Schiffe lassen sich jetzt mit einem Klick komplett auf einmal einlösen, statt jeden einzeln anklicken zu müssen.',
+      'Zeit-Gutscheine bleiben bewusst einzeln einlösbar - die wirken sofort auf eine laufende Bauschlange, gezieltes Einsetzen ist hier der Sinn.',
+    ],
+  },
+  {
+    date: '30.07.2026',
     title: 'Allianz-Station: Bilder, Ertrag/Energie-Anzeige, Roboterfabrik + Nanitenfabrik',
     changes: [
       'Die Stations-Gebäudekarten zeigen jetzt richtige Bilder statt nur Emoji.',

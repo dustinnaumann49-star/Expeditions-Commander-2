@@ -22,6 +22,7 @@ interface GameContextValue {
   openContainer: (containerId: string) => Promise<void>;
   openAllContainers: (tier: 'silber' | 'gold' | 'elite') => Promise<void>;
   redeemRewardItem: (itemId: string) => Promise<void>;
+  redeemAllRewardItems: (itemId: string) => Promise<void>;
   executeTrade: (amount: number, from: string, to: string) => Promise<void>;
   scrapShip: (shipId: string, qty: number) => Promise<void>;
   scrapDefense: (defId: string, qty: number) => Promise<void>;
@@ -246,6 +247,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     openContainer: (containerId) => run(() => api.openContainer(containerId)),
     openAllContainers: (tier) => run(() => api.openAllContainers(tier)),
     redeemRewardItem: (itemId) => run(() => api.redeemRewardItem(itemId)),
+    redeemAllRewardItems: (itemId) => run(() => api.redeemAllRewardItems(itemId)),
     executeTrade: (amount, from, to) => run(() => api.executeTrade(amount, from, to)),
     scrapShip: (shipId, qty) => run(() => api.scrapShip(shipId, qty)),
     scrapDefense: (defId, qty) => run(() => api.scrapDefense(defId, qty)),

@@ -80,6 +80,8 @@ export const api = {
     request<PlayerState>('/game/inventory/open-all', { method: 'POST', body: JSON.stringify({ tier }) }),
   redeemRewardItem: (itemId: string) =>
     request<PlayerState>('/game/inventory/redeem', { method: 'POST', body: JSON.stringify({ itemId }) }),
+  redeemAllRewardItems: (itemId: string) =>
+    request<PlayerState>('/game/inventory/redeem-all', { method: 'POST', body: JSON.stringify({ itemId }) }),
   executeTrade: (amount: number, from: string, to: string) =>
     request<PlayerState>('/game/trade/execute', { method: 'POST', body: JSON.stringify({ amount, from, to }) }),
   scrapShip: (shipId: string, qty: number) =>

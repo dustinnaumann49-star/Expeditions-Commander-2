@@ -222,6 +222,10 @@ export function applyReward(state: PlayerState, reward: ContainerReward): boolea
   }
 }
 
+function isTimeVoucher(type: string): boolean {
+  return type.startsWith('zeitgutschein');
+}
+
 export function redeemRewardItem(state: PlayerState, itemId: string): ActionResult {
   const idx = state.inventory.findIndex((i) => 'type' in i && i.type === 'rewardItem' && i.id === itemId);
   if (idx === -1) return { ok: false, error: 'Gegenstand nicht gefunden.' };
@@ -248,5 +252,28 @@ export function redeemRewardItem(state: PlayerState, itemId: string): ActionResu
   item.count = (item.count || 1) - 1;
   if (item.count <= 0) state.inventory.splice(idx, 1);
   pushMessage(state, 'farm', `✅ Eingelöst: ${reward.label}.`);
+  return { ok: true };
+}
+
+// "Alle einlösen" fuer einen ganzen Beloehnungs-Stapel auf einmal (Nutzerentscheidung, analog zu
+// openAllContainers() - Einzeln-Klicken bei z.B. 26x Rohstoff-Fracht ist nicht praktikabel).
+// Zeit-Gutscheine sind BEWUSST ausgeschlossen: die wirken sofort auf die aktuell laufenden
+// Bau-/Forschungs-Warteschlangen, ein gebuendeltes Einloesen aller auf einmal ergibt spielerisch
+// keinen Sinn (man will sie gezielt einzeln einsetzen, wenn man sie gerade braucht) - der Client
+// zeigt den "Alle einlösen"-Button fuer diese Kategorie deshalb erst gar nicht an, hier zusaetzlich
+// serverseitig abgesichert.
+export function redeemAllRewardItems(state: PlayerState, itemId: string): ActionResult {
+  const idx = state.inventory.findIndex((i) => 'type' in i && i.type === 'rewardItem' && i.id === itemId);
+  if (idx === -1) return { ok: false, error: 'Gegenstand nicht gefunden.' };
+  const item = state.inventory[idx] as RewardItem;
+  const reward = item.reward;
+  if (isTimeVoucher(reward.type as string)) {
+    return { ok: false, error: 'Zeit-Gutscheine lassen sich nur einzeln einlösen.' };
+  }
+
+  const count = item.count || 1;
+  for (let i = 0; i < count; i++) applyReward(state, reward);
+  state.inventory.splice(idx, 1);
+  pushMessage(state, 'farm', `✅ ${count}x eingelöst: ${reward.label}.`);
   return { ok: true };
 }

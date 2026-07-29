@@ -2194,6 +2194,41 @@ client/
     - Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber. Bewusst grosszuegiger
       Sicherheitsabstand gewaehlt (die gemessenen Werte liessen deutlich hoehere Schwellen zu) -
       Nutzerentscheidung: lieber konservativ mit Reserve als knapp kalkuliert.
+    - **Nachtrag (selbe Unterhaltung): Skalierungs-Nachweis fuer sehr grosse Flotten.** Nutzerfrage:
+      wie verhaelt sich das System bei 15.000-100.000+ Schiffen, und laesst es sich noch
+      nachbessern? Zusaetzlicher Benchmark (worst case + realistische Extremfaelle): gemischte
+      Flotte (alle 15 Typen gleichmaessig) bei 15.000/30.000/50.000/100.000 Schiffen bleibt
+      durchgehend bei 25-36ms (sinkt sogar leicht, da der Aggregat-Anteil waechst). Ein einzelner
+      Massen-Stapel EINES Typs (der urspruengliche 16.500-Schiffe-Vorfall aus Punkt 102) bei
+      15.000-100.000 Stueck: 0,2ms. Absoluter Extremfall (alle 15 Typen je 100.000 = 1,5 Mio.
+      Schiffe gesamt): 26ms. Erklaerung: die Rechenzeit haengt seit der Aggregat-Engine (Punkt 103)
+      nur noch von der ANZAHL VERSCHIEDENER TYPEN ab (hier max. 15), nicht von der Gesamt-
+      Stueckzahl - die pro Klasse gestaffelten Schwellen aus diesem Punkt deckeln zusaetzlich den
+      teuren Einzelschiff-Anteil auf eine kleine, flottengroessen-unabhaengige Konstante. Das
+      System skaliert dadurch praktisch beliebig, `STACK_AGGREGATE_THRESHOLD_BY_TYPE` bleibt bei
+      Bedarf jederzeit nachjustierbar (reine Datentabelle, keine strukturelle Aenderung).
+
+125. **Feature: "Alle einlösen" fuer gestapelte Inventar-Belohnungen (ausser Zeit-Gutscheine).**
+    Nutzer-Feedback (Screenshot: 9x einzeln anklickbare Belohnungen im Inventar) - Einzeln-Klicken
+    bei groesseren Stapeln (z.B. 26x Rohstoff-Fracht) ist nicht praktikabel, analog zum bereits
+    bestehenden "Alle X öffnen"-Button bei Containern (Punkt siehe `openAllContainers()`).
+    - **Neue Funktion `redeemAllRewardItems()`** (`inventory.ts`) - loest denselben
+      `applyReward()`-Pfad wie die Einzel-Variante `count`-mal in einer Schleife aus, EINE
+      zusammengefasste Nachricht ("✅ 5x eingelöst: ...") statt 5 Einzelnachrichten, entfernt den
+      Inventar-Eintrag danach komplett.
+    - **Zeit-Gutscheine bewusst ausgeschlossen** (Nutzerentscheidung: "das macht ja sowieso kein
+      Sinn") - die wirken sofort auf die aktuell laufende Bau-/Forschungs-Warteschlange, gezieltes
+      einzelnes Einsetzen ist der Sinn der Sache. Server lehnt einen direkten API-Aufruf fuer diese
+      Kategorie zusaetzlich ab (`isTimeVoucher()`-Check), der Client zeigt den Button dafuer gar
+      nicht erst an.
+    - Neue Route `POST /inventory/redeem-all`, Client-Button "✅ Alle X einlösen" erscheint nur bei
+      `item.count > 1` UND Kategorie ≠ Zeit-Gutscheine.
+    - **Live verifiziert** (Dev-Server, 5x Rohstoff-Fracht + 3x Zeit-Gutschein geseedet): "Alle 5
+      einlösen" schrieb korrekt 5x die Menge gut (Metall +25.000/Kristall +15.000/Deuterium
+      +5.000, exakt 5×), Inventar-Eintrag danach komplett entfernt. Zeit-Gutschein-Kategorie zeigte
+      erwartungsgemäß keinen Batch-Button; direkter API-Aufruf gegen `/inventory/redeem-all` mit
+      der Zeitgutschein-`itemId` wurde korrekt mit Fehlermeldung abgelehnt. `tsc`/`tsc --noEmit` in
+      Server UND Client kompilieren sauber.
 
 ## Kurz-Changelog
 

@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { sendFleet, recallMission } from './missions.js';
-import { openContainer, openAllContainers, redeemRewardItem } from './inventory.js';
+import { openContainer, openAllContainers, redeemRewardItem, redeemAllRewardItems } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
@@ -356,6 +356,12 @@ gameRouter.post('/inventory/redeem', (req: AuthedRequest, res) => {
   const { itemId } = req.body ?? {};
   if (typeof itemId !== 'string') return res.status(400).json({ error: 'itemId erforderlich.' });
   handleAction(req, res, (state) => redeemRewardItem(state, itemId));
+});
+
+gameRouter.post('/inventory/redeem-all', (req: AuthedRequest, res) => {
+  const { itemId } = req.body ?? {};
+  if (typeof itemId !== 'string') return res.status(400).json({ error: 'itemId erforderlich.' });
+  handleAction(req, res, (state) => redeemAllRewardItems(state, itemId));
 });
 
 // ---- Haendler ----
