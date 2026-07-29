@@ -184,7 +184,28 @@ function stationEnergyReductionModuleId(building: StationBuildingDefinition): st
   return `${building.id}_energiesparmodul`;
 }
 function stationTimeModuleId(building: StationBuildingDefinition): string {
-  return building.kind === 'energie' ? `${building.id}_wartungsoptimierung` : `${building.id}_automatisierung`;
+  if (building.kind === 'energie') return `${building.id}_wartungsoptimierung`;
+  if (building.kind === 'roboter' || building.kind === 'nanit') return `${building.id}_wartungsfreiheit`;
+  return `${building.id}_automatisierung`;
+}
+function stationStrengthenModuleId(building: StationBuildingDefinition): string {
+  return `${building.id}_verstaerkte_automatisierung`;
+}
+
+// Roboterfabrik/Nanitenfabrik verkuerzen die Bauzeit ALLER Gebaeude/Module DERSELBEN Stufe
+// (analog roboterNaniteFactor(..., 'building') in actions.ts) - 25%/-50% pro Stufe,
+// kompoundierend, zusaetzlich verstaerkt durch ihr eigenes "Verstaerkte Automatisierung"-Modul.
+// Pro Stufe GETRENNT wie beim Energiefaktor (ein V3-Nanit hilft nicht rueckwirkend V1/V2).
+function stationBauzeitFactorForTier(station: Station, tier: 1 | 2 | 3): number {
+  const tierBuildings = stationBuildingsForTier(tier);
+  const roboter = tierBuildings.find((b) => b.kind === 'roboter');
+  const nanit = tierBuildings.find((b) => b.kind === 'nanit');
+  const roboterLevel = roboter ? station.buildings[roboter.id] || 0 : 0;
+  const nanitLevel = nanit ? station.buildings[nanit.id] || 0 : 0;
+  let factor = Math.pow(0.75, roboterLevel) * Math.pow(0.5, nanitLevel);
+  if (roboter) factor *= stationModuleReductionFactor(station, stationStrengthenModuleId(roboter));
+  if (nanit) factor *= stationModuleReductionFactor(station, stationStrengthenModuleId(nanit));
+  return factor;
 }
 
 // Energiefaktor GETRENNT pro Stufe (V1-Solarkraftwerk deckt nur V1-Minen, V2-Solarkraftwerk nur
@@ -251,11 +272,13 @@ function stationBuildingCostForLevel(building: StationBuildingDefinition, level:
 
 function stationBuildingTimeMs(station: Station, building: StationBuildingDefinition, level: number): number {
   const base = building.baseTimeSeconds * Math.pow(building.timeGrowth, level - 1) * 1000;
-  return base * stationModuleReductionFactor(station, stationTimeModuleId(building));
+  return base * stationBauzeitFactorForTier(station, building.tier) * stationModuleReductionFactor(station, stationTimeModuleId(building));
 }
 
-function stationModuleTimeMs(mod: BuildingModuleDefinition, level: number): number {
-  return mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000;
+function stationModuleTimeMs(station: Station, mod: BuildingModuleDefinition, level: number): number {
+  const base = mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000;
+  const building = findStationBuilding(mod.buildingId);
+  return base * (building ? stationBauzeitFactorForTier(station, building.tier) : 1);
 }
 function stationModuleCostForLevel(mod: BuildingModuleDefinition, level: number): ResourceCost {
   const f = Math.pow(mod.costGrowth, level - 1);
@@ -380,7 +403,7 @@ export function startStationModuleUpgrade(state: PlayerState, stationId: string,
   station.resources.deuterium -= cost.deuterium;
 
   const now = Date.now();
-  station.buildQueue.push({ moduleId, startTime: now, endTime: now + stationModuleTimeMs(mod, currentLevel + 1) });
+  station.buildQueue.push({ moduleId, startTime: now, endTime: now + stationModuleTimeMs(station, mod, currentLevel + 1) });
   saveStation(station);
   return { ok: true };
 }

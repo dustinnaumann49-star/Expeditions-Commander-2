@@ -9,6 +9,16 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '30.07.2026',
+    title: 'Allianz-Station: Bilder, Ertrag/Energie-Anzeige, Roboterfabrik + Nanitenfabrik',
+    changes: [
+      'Die Stations-Gebäudekarten zeigen jetzt richtige Bilder statt nur Emoji.',
+      'Jede Mine zeigt jetzt "Ertrag: X/h", das Solarkraftwerk zeigt seine Energieleistung, und es gibt eine neue "Energieversorgung"-Anzeige pro Stufe (Erzeugt/Verbraucht) - genau wie bei den Gebäuden zu Hause.',
+      'Neue Bauzeit-Anzeige bei jedem Gebäude.',
+      'Zwei neue Gebäude: Roboterfabrik und Nanitenfabrik (inkl. ihrer Module) - verkürzen die Bauzeit aller anderen Gebäude derselben Stufe, genau wie zu Hause.',
+    ],
+  },
+  {
     date: '29.07.2026',
     title: 'Bugfix: vereinzelt Raid zum alten Zeitpunkt statt Sonntag 0 Uhr',
     changes: [

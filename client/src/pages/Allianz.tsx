@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { formatTime } from '../lib/format';
 import { serverNow } from '../lib/serverTime';
-import type { StationBuildingDefinition } from '../types/game';
+import type { BuildingModuleDefinition, GameData, Station, StationBuildingDefinition } from '../types/game';
 
 function stationBuildingCostForLevel(building: StationBuildingDefinition, level: number) {
   const f = Math.pow(building.costGrowth, level - 1);
@@ -23,7 +23,90 @@ function stationModuleCostForLevel(mod: { baseCost: { metall: number; kristall: 
   };
 }
 
-const BUILDING_ICON: Record<string, string> = { mine_metall: '⛏️', mine_kristall: '💎', mine_deuterium: '🧪', energie: '☀️' };
+// Spiegelt server/src/game/stations.ts 1:1 (README Punkt 1 gilt analog auch hier - jede
+// Zeit-/Ertrags-Anzeige im Client MUSS dieselbe Formel wie der Server nutzen). Die Station hat
+// bewusst KEINE Kopplung an Spieler-Forschung/-Klasse/-Booster, daher braucht es hier - anders
+// als lib/multipliers.ts fuer die Heimatbasis - keinen PlayerState-Parameter.
+function stationLevelScaledValue(base: number, level: number): number {
+  return level > 0 ? base * level * Math.pow(1.1, level) : 0;
+}
+function stationModuleLevel(station: Station, moduleId: string): number {
+  return station.buildingModules[moduleId] || 0;
+}
+function stationModuleBoostFactor(gameData: GameData, station: Station, moduleId: string): number {
+  const mod = gameData.stationBuildingModules.find((m) => m.id === moduleId);
+  if (!mod) return 1;
+  return 1 + stationModuleLevel(station, moduleId) * mod.effectPerLevel;
+}
+function stationModuleReductionFactor(gameData: GameData, station: Station, moduleId: string): number {
+  const mod = gameData.stationBuildingModules.find((m) => m.id === moduleId);
+  if (!mod) return 1;
+  return Math.max(0.5, 1 - stationModuleLevel(station, moduleId) * mod.effectPerLevel);
+}
+function stationOutputModuleId(b: StationBuildingDefinition): string {
+  return b.kind === 'energie' ? `${b.id}_ertragssteigerung` : `${b.id}_foerdereffizienz`;
+}
+function stationEnergyReductionModuleId(b: StationBuildingDefinition): string {
+  return `${b.id}_energiesparmodul`;
+}
+function stationTimeModuleId(b: StationBuildingDefinition): string {
+  if (b.kind === 'energie') return `${b.id}_wartungsoptimierung`;
+  if (b.kind === 'roboter' || b.kind === 'nanit') return `${b.id}_wartungsfreiheit`;
+  return `${b.id}_automatisierung`;
+}
+function stationStrengthenModuleId(b: StationBuildingDefinition): string {
+  return `${b.id}_verstaerkte_automatisierung`;
+}
+const TIER_MINE_KINDS = ['mine_metall', 'mine_kristall', 'mine_deuterium'];
+
+function stationEnergyForTier(gameData: GameData, station: Station, tier: 1 | 2 | 3): { produced: number; consumed: number } {
+  const tierBuildings = gameData.stationBuildings.filter((b) => b.tier === tier);
+  const solar = tierBuildings.find((b) => b.kind === 'energie');
+  const produced = solar
+    ? stationLevelScaledValue(solar.baseEnergyOutput || 0, station.buildings[solar.id] || 0) * stationModuleBoostFactor(gameData, station, stationOutputModuleId(solar))
+    : 0;
+  let consumed = 0;
+  tierBuildings.forEach((b) => {
+    if (TIER_MINE_KINDS.includes(b.kind)) {
+      const base = stationLevelScaledValue(b.baseEnergyUse || 0, station.buildings[b.id] || 0);
+      consumed += base * stationModuleReductionFactor(gameData, station, stationEnergyReductionModuleId(b));
+    }
+  });
+  return { produced, consumed };
+}
+function stationEnergyFactorForTier(gameData: GameData, station: Station, tier: 1 | 2 | 3): number {
+  const { produced, consumed } = stationEnergyForTier(gameData, station, tier);
+  if (consumed <= 0) return 1;
+  return Math.min(1, produced / consumed);
+}
+function stationMineOutputPerHour(gameData: GameData, station: Station, b: StationBuildingDefinition): number {
+  if (!b.baseOutput) return 0;
+  const base = stationLevelScaledValue(b.baseOutput, station.buildings[b.id] || 0);
+  const moduleFactor = stationModuleBoostFactor(gameData, station, stationOutputModuleId(b));
+  return base * moduleFactor * stationEnergyFactorForTier(gameData, station, b.tier);
+}
+function stationBauzeitFactorForTier(gameData: GameData, station: Station, tier: 1 | 2 | 3): number {
+  const tierBuildings = gameData.stationBuildings.filter((b) => b.tier === tier);
+  const roboter = tierBuildings.find((b) => b.kind === 'roboter');
+  const nanit = tierBuildings.find((b) => b.kind === 'nanit');
+  const roboterLevel = roboter ? station.buildings[roboter.id] || 0 : 0;
+  const nanitLevel = nanit ? station.buildings[nanit.id] || 0 : 0;
+  let factor = Math.pow(0.75, roboterLevel) * Math.pow(0.5, nanitLevel);
+  if (roboter) factor *= stationModuleReductionFactor(gameData, station, stationStrengthenModuleId(roboter));
+  if (nanit) factor *= stationModuleReductionFactor(gameData, station, stationStrengthenModuleId(nanit));
+  return factor;
+}
+function stationBuildingTimeMs(gameData: GameData, station: Station, b: StationBuildingDefinition, level: number): number {
+  const base = b.baseTimeSeconds * Math.pow(b.timeGrowth, level - 1) * 1000;
+  return base * stationBauzeitFactorForTier(gameData, station, b.tier) * stationModuleReductionFactor(gameData, station, stationTimeModuleId(b));
+}
+function stationModuleTimeMs(gameData: GameData, station: Station, mod: BuildingModuleDefinition, level: number): number {
+  const base = mod.baseTimeSeconds * Math.pow(mod.timeGrowth, level - 1) * 1000;
+  const building = gameData.stationBuildings.find((b) => b.id === mod.buildingId);
+  return base * (building ? stationBauzeitFactorForTier(gameData, station, building.tier) : 1);
+}
+
+const BUILDING_ICON: Record<string, string> = { mine_metall: '⛏️', mine_kristall: '💎', mine_deuterium: '🧪', energie: '☀️', roboter: '🤖', nanit: '🔬' };
 
 // Allianz-Station (siehe README, .claude/plans/tranquil-forging-pretzel.md): kooperatives
 // Gemeinschafts-Feature zwischen genau den registrierten Spielern - kein Allianz-Browser noetig,
@@ -277,6 +360,22 @@ export function AllianzPage() {
                       Noch nicht freigeschaltet - alle V{selectedTier - 1}-Minen müssen zuerst Level 30 erreichen.
                     </p>
                   ) : (
+                    <>
+                      {(() => {
+                        const { produced, consumed } = stationEnergyForTier(gameData, station, selectedTier);
+                        const deficit = consumed > produced;
+                        return (
+                          <div className="queue-box" style={{ marginBottom: 12 }}>
+                            <h3 style={{ fontSize: 14, marginBottom: 4 }}>
+                              Energieversorgung V{selectedTier}
+                            </h3>
+                            <p style={{ fontSize: 13, color: deficit ? 'var(--danger)' : 'var(--text-dim)' }}>
+                              Erzeugt: {Math.floor(produced).toLocaleString('de-DE')} / Verbraucht: {Math.floor(consumed).toLocaleString('de-DE')}
+                              {deficit && ' – Energiedefizit: Minen produzieren gedrosselt!'}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     <div className="ship-grid">
                       {gameData.stationBuildings
                         .filter((b) => b.tier === selectedTier)
@@ -290,6 +389,12 @@ export function AllianzPage() {
                           const queueBusy = station.buildQueue.length > 0;
                           return (
                             <div className="ship-card" key={b.id}>
+                              <img
+                                className="ship-img"
+                                src={`/${b.img}`}
+                                alt={b.name}
+                                onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                              />
                               <div className="ship-info">
                                 <h3>
                                   {BUILDING_ICON[b.kind] || ''} {b.name}
@@ -298,6 +403,16 @@ export function AllianzPage() {
                                   Stufe {level}
                                   {b.maxLevel !== undefined ? ` / ${b.maxLevel}` : ''}
                                 </p>
+                                {TIER_MINE_KINDS.includes(b.kind) && level > 0 && (
+                                  <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginBottom: 4 }}>
+                                    Ertrag: {Math.floor(stationMineOutputPerHour(gameData, station, b)).toLocaleString('de-DE')}/h
+                                  </p>
+                                )}
+                                {b.kind === 'energie' && level > 0 && (
+                                  <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginBottom: 4 }}>
+                                    Energie: {Math.floor(stationLevelScaledValue(b.baseEnergyOutput || 0, level) * stationModuleBoostFactor(gameData, station, stationOutputModuleId(b))).toLocaleString('de-DE')}
+                                  </p>
+                                )}
                                 {queueJob ? (
                                   <p style={{ fontSize: 12, color: 'var(--accent-deut)' }}>Im Bau - fertig in {formatTime(Math.max(0, queueJob.endTime - now))}</p>
                                 ) : maxed ? (
@@ -307,6 +422,9 @@ export function AllianzPage() {
                                     <p style={{ fontSize: 12 }}>
                                       Kosten: {cost.metall.toLocaleString('de-DE')} Metall / {cost.kristall.toLocaleString('de-DE')} Kristall /{' '}
                                       {cost.deuterium.toLocaleString('de-DE')} Deuterium
+                                    </p>
+                                    <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+                                      Bauzeit: {formatTime(stationBuildingTimeMs(gameData, station, b, level + 1))}
                                     </p>
                                     <button
                                       className="build-btn"
@@ -347,6 +465,7 @@ export function AllianzPage() {
                                               {modCost.metall.toLocaleString('de-DE')} M / {modCost.kristall.toLocaleString('de-DE')} K /{' '}
                                               {modCost.deuterium.toLocaleString('de-DE')} D
                                             </p>
+                                            <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{formatTime(stationModuleTimeMs(gameData, station, m, modLevel + 1))}</p>
                                             <button
                                               className="qty-btn"
                                               style={{ fontSize: 11, padding: '2px 8px' }}
@@ -365,6 +484,7 @@ export function AllianzPage() {
                           );
                         })}
                     </div>
+                    </>
                   )}
                 </div>
               )}

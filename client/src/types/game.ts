@@ -640,8 +640,9 @@ export interface GameData {
 export interface StationBuildingDefinition {
   id: string;
   name: string;
+  img: string;
   tier: 1 | 2 | 3;
-  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie';
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie' | 'roboter' | 'nanit';
   baseCost: { metall: number; kristall: number; deuterium: number };
   costGrowth: number;
   baseTimeSeconds: number;

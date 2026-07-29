@@ -206,8 +206,9 @@ export interface BuildingDefinition {
 export interface StationBuildingDefinition {
   id: string; // z.B. "v1_metallmine" - namensraum-getrennt pro Stufe, siehe Station.buildings
   name: string;
+  img: string; // wiederverwendet dasselbe Bild wie das Heimatbasis-Pendant (data/buildings.ts), kein eigenes noetig
   tier: 1 | 2 | 3;
-  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie';
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie' | 'roboter' | 'nanit';
   baseCost: ResourceCost;
   costGrowth: number;
   baseTimeSeconds: number;

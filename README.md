@@ -2118,6 +2118,47 @@ client/
     naechste sichere Zwischenstufe. Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber.
     Wird wie bisher live weiterbeobachtet.
 
+123. **Nachtrag Allianz-Station (Punkt 120): Bilder, Ertrags-/Energieanzeige, Roboterfabrik +
+    Nanitenfabrik ergänzt.** Nutzer-Feedback nach erstem Live-Test (Screenshot der Produktivinstanz):
+    Gebäude-Karten zeigten nur Emoji statt Bild, keine Ertrags-/Energiewerte sichtbar (anders als bei
+    der Heimatbasis), und es fehlten zwei der sechs Heimatbasis-Gebäude komplett.
+    - **Bilder**: `StationBuildingDefinition` bekommt ein `img`-Feld (`types.ts`, Server + Client) -
+      wiederverwendet bewusst dieselben Bilder wie die Heimatbasis-Pendants (`buildings/
+      metallmine.jpg` usw. für ALLE drei Stufen V1/V2/V3, kein eigenes Bild pro Stufe nötig,
+      Nutzerentscheidung). `Allianz.tsx` rendert jetzt `<img className="ship-img">` wie jede andere
+      Baukarte im Spiel.
+    - **Roboterfabrik + Nanitenfabrik**: 6 neue Einträge in `data/stationBuildings.ts` (V1/V2/V3 ×
+      2), Werte 1:1 von der Heimatbasis übernommen (`data/buildings.ts`) mit Level-Cap 30 wie die
+      übrigen Stations-Gebäude. Neue Formel `stationBauzeitFactorForTier()` (`stations.ts`, Client-
+      Pendant in `Allianz.tsx`) - spiegelt `roboterNaniteFactor(..., 'building')` aus `actions.ts`
+      (0,75^Roboter-Level × 0,5^Nanit-Level, kompoundierend), wirkt auf die Bauzeit ALLER Gebäude
+      UND Module DERSELBEN Stufe (nicht stufenübergreifend, gleiches Prinzip wie beim
+      Energiefaktor - ein V3-Nanit hilft nicht rückwirkend V1/V2). `stationBuildingTimeMs()`/
+      `stationModuleTimeMs()` wenden den Faktor jetzt zusätzlich zum bestehenden
+      Selbst-Bauzeit-Modul an.
+    - **Module für Roboterfabrik/Nanitenfabrik**: Modul-Generator (`data/stationBuildingModules.ts`)
+      branched jetzt nach `kind` - Minen weiterhin 3 Module, Solarkraftwerk 2, Roboter-/Nanitenfabrik
+      neu ebenfalls 2 ("Verstärkte Automatisierung" als `strengthen_factor`, verstärkt den
+      Bauzeit-Bonus zusätzlich ohne die Fabrik selbst weiter auszubauen; "Wartungsfreiheit" als
+      `buildtime_self`, verkürzt nur die eigene Ausbaustufe) - Freischalt-Schwelle 10 (Roboter) bzw.
+      5 (Nanit), identisch zur Heimatbasis.
+    - **Ertrags-/Energieanzeige**: neue "Energieversorgung V{Stufe}"-Box (analog `Gebaeude.tsx`s
+      "Energieversorgung"-Box) zeigt Erzeugt/Verbraucht pro Stufe, rot bei Energiedefizit. Jede
+      Mine zeigt jetzt "Ertrag: X/h" (nur wenn Level > 0), Solarkraftwerk zeigt "Energie: X". Neue
+      "Bauzeit: X"-Zeile bei jedem Gebäude (fehlte bisher komplett). Alle Formeln 1:1 aus
+      `stations.ts` in `Allianz.tsx` gespiegelt (README Punkt 1 gilt analog: Client-Anzeige MUSS
+      dieselbe Formel wie der Server nutzen) - die Station hat bewusst keine Kopplung an
+      Spieler-Forschung/-Klasse/-Booster, daher ohne `PlayerState`-Parameter (anders als
+      `lib/multipliers.ts` für die Heimatbasis).
+    - **Live verifiziert** (Dev-Server): alle 6 Gebäudebilder laden (200/304, keine kaputten
+      Links). Roboterfabrik Level 5 seeded → Metallmine-Bauzeit korrekt von 30min auf 7m8s gesunken
+      (0,75⁵ = 23,7%, exakt errechnet). Metallmine + Solarkraftwerk Level 5 seeded → "Energieversorgung
+      V1: Erzeugt 10.468 / Verbraucht 5.636" und "Ertrag: 80.525/h" - beide exakt nach
+      `levelScaledValue`-Formel nachgerechnet bestätigt (10000×5×1,1⁵ bzw. 1300×5×1,1⁵). `tsc`/
+      `tsc --noEmit` in Server UND Client kompilieren sauber. Bestehende Stationen (JSON-Blob,
+      flache `buildings`-Map) sind rückwärtskompatibel - neue Gebäude-IDs fehlen dort einfach und
+      zählen als Level 0, keine Migration nötig.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
