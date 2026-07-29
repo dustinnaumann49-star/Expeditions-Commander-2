@@ -38,6 +38,7 @@ export function GalaxiePage() {
     pirateBases,
     pirateBaseSummaries,
     sektorPositions,
+    stationPositions,
     incomingDeployments,
     galaxyEvents,
     parties,
@@ -132,6 +133,7 @@ export function GalaxiePage() {
   const occupantsInSystem = galaxyOccupants.filter((o) => o.system === system);
   const pirateBasesInSystem = pirateBases.filter((b) => b.system === system);
   const sektorenInSystem = sektorPositions.filter((s) => s.system === system);
+  const stationsInSystem = stationPositions.filter((s) => s.system === system);
   const eventsInSystem = galaxyEvents.filter((e) => e.system === system);
   const targetOccupant = targetUserId !== null ? galaxyOccupants.find((o) => o.userId === targetUserId) : null;
   const ownedShips = gameData.ships.filter((s) => (state.fleet[s.id] || 0) > 0);
@@ -187,11 +189,12 @@ export function GalaxiePage() {
             const alreadyAttackingBase = pirateBaseSummary && state.pirateAttacks.some((a) => a.baseId === pirateBaseSummary.id);
             const alreadySpyingBase = pirateBaseSummary && state.spyMissions.some((m) => m.baseId === pirateBaseSummary.id);
             const sektor = sektorenInSystem.find((s) => s.position === pos);
+            const stationHere = stationsInSystem.find((s) => s.position === pos);
             const event = eventsInSystem.find((e) => e.position === pos);
             const isOwn = occ && ownGalaxyPosition && occ.system === ownGalaxyPosition.system && occ.position === ownGalaxyPosition.position;
             const eventDef = event ? gameData.galaxyEventTypes[event.type] : null;
             const alreadyEnRouteToEvent = event && state.eventTrips.some((t) => t.eventId === event.id);
-            const isFreeAndPickable = !occ && !isPirateBase && !sektor && !event;
+            const isFreeAndPickable = !occ && !isPirateBase && !sektor && !stationHere && !event;
             return (
               <div className="ship-card" key={pos} style={{ padding: 12 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Position {pos}</p>
@@ -217,6 +220,8 @@ export function GalaxiePage() {
                   </>
                 ) : sektor ? (
                   <p style={{ color: 'var(--accent-deut)', fontWeight: 600 }}>🛰️ {sektor.name}</p>
+                ) : stationHere ? (
+                  <p style={{ color: 'var(--accent-deut)', fontWeight: 600 }}>🛰️ Allianz-Station ({stationHere.allianceName})</p>
                 ) : isPirateBase ? (
                   <>
                     <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>

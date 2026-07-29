@@ -1,4 +1,4 @@
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, SimulationResult, LeaderboardEntry, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary, Alliance, Station } from '../types/game';
 
 const TOKEN_KEY = 'ec_token';
 // Lokal (npm run dev) leer lassen -> nutzt den Vite-Proxy (siehe vite.config.ts).
@@ -111,6 +111,21 @@ export const api = {
   recallParty: (opId: string) => request<PlayerState>('/game/party/recall', { method: 'POST', body: JSON.stringify({ opId }) }),
   respondAdminEncounter: (opId: string, action: 'extract' | 'continue') =>
     request<PlayerState>('/game/party/admiral-decide', { method: 'POST', body: JSON.stringify({ opId, action }) }),
+  getAlliance: () => request<{ alliance: Alliance | null; station: Station | null }>('/game/alliance'),
+  createAlliance: (name: string) => request<PlayerState>('/game/alliance/create', { method: 'POST', body: JSON.stringify({ name }) }),
+  inviteToAlliance: (userId: number) => request<PlayerState>('/game/alliance/invite', { method: 'POST', body: JSON.stringify({ userId }) }),
+  respondToAllianceInvite: (allianceId: string, accept: boolean) =>
+    request<PlayerState>('/game/alliance/respond', { method: 'POST', body: JSON.stringify({ allianceId, accept }) }),
+  foundStation: (system: number, position: number) =>
+    request<PlayerState>('/game/alliance/station/found', { method: 'POST', body: JSON.stringify({ system, position }) }),
+  buildStationBuilding: (stationId: string, buildingId: string) =>
+    request<PlayerState>('/game/alliance/station/build', { method: 'POST', body: JSON.stringify({ stationId, buildingId }) }),
+  buildStationModule: (stationId: string, moduleId: string) =>
+    request<PlayerState>('/game/alliance/station/module', { method: 'POST', body: JSON.stringify({ stationId, moduleId }) }),
+  depositToStation: (stationId: string, resource: string, amount: number) =>
+    request<PlayerState>('/game/alliance/station/deposit', { method: 'POST', body: JSON.stringify({ stationId, resource, amount }) }),
+  withdrawFromStation: (stationId: string, resource: string, amount: number) =>
+    request<PlayerState>('/game/alliance/station/withdraw', { method: 'POST', body: JSON.stringify({ stationId, resource, amount }) }),
   listActiveRaids: () => request<{ raids: ActiveRaidInfo[] }>('/game/raids/active'),
   getLeaderboard: () => request<{ leaderboard: LeaderboardEntry[] }>('/game/leaderboard'),
   simulateCombat: (sektorId: string, selection: Record<string, number>) =>
@@ -122,6 +137,7 @@ export const api = {
       pirateBases: GalaxyPosition[];
       pirateBaseSummaries: PirateBaseSummary[];
       sektorPositions: SektorGalaxyPosition[];
+      stationPositions: { allianceName: string; system: number; position: number }[];
       incomingDeployments: IncomingDeployment[];
       events: GalaxyEvent[];
       galaxySystems: number;

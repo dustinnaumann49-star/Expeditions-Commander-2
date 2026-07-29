@@ -56,6 +56,20 @@ db.exec(`
     data_json TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS alliances (
+    id TEXT PRIMARY KEY,
+    creator_id INTEGER NOT NULL,
+    data_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS stations (
+    id TEXT PRIMARY KEY,
+    alliance_id TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `);
 
 // Migration: last_seen-Spalte nachtraeglich ergaenzen (fuer Online/Offline-Anzeige), falls die
@@ -159,6 +173,43 @@ export function savePirateBaseJson(id: string, dataJson: string): void {
     `INSERT INTO pirate_bases (id, data_json, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET data_json = excluded.data_json, updated_at = excluded.updated_at`
   ).run(id, dataJson, Date.now());
+}
+
+// Allianzen (siehe game/stations.ts): dieselbe id/data_json-Struktur wie pirate_bases (kein
+// status noetig - Mitgliedschaft/Einladungsstatus steckt bereits IM data_json, siehe
+// Alliance.members). creator_id bleibt als Spalte fuer moegliche kuenftige Abfragen, wird aber
+// aktuell nur beim Schreiben mitgegeben, nicht separat abgefragt (Mitgliedschafts-Lookup laeuft
+// wie bei group_operations komplett client-/JS-seitig ueber alle geladenen Datensaetze, siehe
+// listMyGroupOperations() in groupOps.ts - bei "wenige Spieler" unproblematisch).
+export function listAlliancesJson(): string[] {
+  const rows = db.prepare('SELECT data_json FROM alliances').all() as { data_json: string }[];
+  return rows.map((r) => r.data_json);
+}
+
+export function saveAllianceJson(id: string, creatorId: number, dataJson: string): void {
+  db.prepare(
+    `INSERT INTO alliances (id, creator_id, data_json, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET data_json = excluded.data_json, updated_at = excluded.updated_at`
+  ).run(id, creatorId, dataJson, Date.now());
+}
+
+// Allianz-Stationen (siehe game/stations.ts): eine Station gehoert zu genau einer Allianz
+// (alliance_id), ebenfalls reine id/data_json-Struktur.
+export function getStationJson(id: string): string | undefined {
+  const row = db.prepare('SELECT data_json FROM stations WHERE id = ?').get(id) as { data_json: string } | undefined;
+  return row?.data_json;
+}
+
+export function listStationsJson(): string[] {
+  const rows = db.prepare('SELECT data_json FROM stations').all() as { data_json: string }[];
+  return rows.map((r) => r.data_json);
+}
+
+export function saveStationJson(id: string, allianceId: string, dataJson: string): void {
+  db.prepare(
+    `INSERT INTO stations (id, alliance_id, data_json, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET data_json = excluded.data_json, updated_at = excluded.updated_at`
+  ).run(id, allianceId, dataJson, Date.now());
 }
 
 export interface UserRow {

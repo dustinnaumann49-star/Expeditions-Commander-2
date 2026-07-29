@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { updateServerTimeOffset } from '../lib/serverTime';
-import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary } from '../types/game';
+import type { GameData, PlayerState, AppUser, GroupOperation, ActiveRaidInfo, GalaxyOccupant, GalaxyPosition, SektorGalaxyPosition, IncomingDeployment, GalaxyEvent, PirateBaseSummary, Alliance, Station } from '../types/game';
 
 interface GameContextValue {
   gameData: GameData | null;
@@ -52,6 +52,7 @@ interface GameContextValue {
   pirateBases: GalaxyPosition[];
   pirateBaseSummaries: PirateBaseSummary[];
   sektorPositions: SektorGalaxyPosition[];
+  stationPositions: { allianceName: string; system: number; position: number }[];
   incomingDeployments: IncomingDeployment[];
   galaxyEvents: GalaxyEvent[];
   refreshGalaxy: () => Promise<void>;
@@ -61,6 +62,19 @@ interface GameContextValue {
   claimGalaxyEvent: (eventId: string, ships: Record<string, number>) => Promise<void>;
   attackPirateBase: (baseId: string, ships: Record<string, number>) => Promise<void>;
   spyOnPirateBase: (baseId: string, qty: number) => Promise<void>;
+
+  // Allianz-Station
+  alliance: Alliance | null;
+  station: Station | null;
+  refreshAlliance: () => Promise<void>;
+  createAlliance: (name: string) => Promise<void>;
+  inviteToAlliance: (userId: number) => Promise<void>;
+  respondToAllianceInvite: (allianceId: string, accept: boolean) => Promise<void>;
+  foundStation: (system: number, position: number) => Promise<void>;
+  buildStationBuilding: (stationId: string, buildingId: string) => Promise<void>;
+  buildStationModule: (stationId: string, moduleId: string) => Promise<void>;
+  depositToStation: (stationId: string, resource: string, amount: number) => Promise<void>;
+  withdrawFromStation: (stationId: string, resource: string, amount: number) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -78,8 +92,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [pirateBases, setPirateBases] = useState<GalaxyPosition[]>([]);
   const [pirateBaseSummaries, setPirateBaseSummaries] = useState<PirateBaseSummary[]>([]);
   const [sektorPositions, setSektorPositions] = useState<SektorGalaxyPosition[]>([]);
+  const [stationPositions, setStationPositions] = useState<{ allianceName: string; system: number; position: number }[]>([]);
   const [incomingDeployments, setIncomingDeployments] = useState<IncomingDeployment[]>([]);
   const [galaxyEvents, setGalaxyEvents] = useState<GalaxyEvent[]>([]);
+  const [alliance, setAlliance] = useState<Alliance | null>(null);
+  const [station, setStation] = useState<Station | null>(null);
 
   function applyState(newState: PlayerState) {
     if (newState.serverTime) updateServerTimeOffset(newState.serverTime);
@@ -124,8 +141,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setPirateBases(res.pirateBases || []);
       setPirateBaseSummaries(res.pirateBaseSummaries || []);
       setSektorPositions(res.sektorPositions || []);
+      setStationPositions(res.stationPositions || []);
       setIncomingDeployments(res.incomingDeployments || []);
       setGalaxyEvents(res.events || []);
+    } catch {
+      // siehe oben
+    }
+  }
+
+  async function refreshAlliance() {
+    try {
+      const res = await api.getAlliance();
+      setAlliance(res.alliance);
+      setStation(res.station);
     } catch {
       // siehe oben
     }
@@ -148,12 +176,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refreshParties();
     refreshRaids();
     refreshGalaxy();
+    refreshAlliance();
     const interval = setInterval(() => {
       api.getState().then(applyState).catch(() => {});
       refreshUsers();
       refreshParties();
       refreshRaids();
       refreshGalaxy();
+      refreshAlliance();
     }, 3000);
     // Wenn der Tab aus dem Hintergrund zurueckkommt (Browser drosseln Timer dort teils stark),
     // sofort nachziehen statt bis zu 5s auf den naechsten Poll zu warten - wichtig fuer den
@@ -189,6 +219,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   async function runAndRefreshParties(fn: () => Promise<PlayerState>) {
     await run(fn);
     await refreshParties();
+  }
+
+  // Wie run(), aktualisiert danach zusaetzlich Allianz+Station (fuer Gruenden/Einladen/Antworten).
+  async function runAndRefreshAlliance(fn: () => Promise<PlayerState>) {
+    await run(fn);
+    await refreshAlliance();
   }
 
   const value: GameContextValue = {
@@ -238,6 +274,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     pirateBases,
     pirateBaseSummaries,
     sektorPositions,
+    stationPositions,
     incomingDeployments,
     galaxyEvents,
     refreshGalaxy,
@@ -247,6 +284,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
     claimGalaxyEvent: (eventId, ships) => run(() => api.claimGalaxyEvent(eventId, ships)),
     attackPirateBase: (baseId, ships) => run(() => api.attackPirateBase(baseId, ships)),
     spyOnPirateBase: (baseId, qty) => run(() => api.spyOnPirateBase(baseId, qty)),
+
+    alliance,
+    station,
+    refreshAlliance,
+    createAlliance: (name) => runAndRefreshAlliance(() => api.createAlliance(name)),
+    inviteToAlliance: (userId) => runAndRefreshAlliance(() => api.inviteToAlliance(userId)),
+    respondToAllianceInvite: (allianceId, accept) => runAndRefreshAlliance(() => api.respondToAllianceInvite(allianceId, accept)),
+    foundStation: (system, position) => runAndRefreshAlliance(() => api.foundStation(system, position)),
+    buildStationBuilding: (stationId, buildingId) => runAndRefreshAlliance(() => api.buildStationBuilding(stationId, buildingId)),
+    buildStationModule: (stationId, moduleId) => runAndRefreshAlliance(() => api.buildStationModule(stationId, moduleId)),
+    depositToStation: (stationId, resource, amount) => runAndRefreshAlliance(() => api.depositToStation(stationId, resource, amount)),
+    withdrawFromStation: (stationId, resource, amount) => runAndRefreshAlliance(() => api.withdrawFromStation(stationId, resource, amount)),
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

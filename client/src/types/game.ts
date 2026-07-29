@@ -633,6 +633,23 @@ export interface GameData {
   spyProbeTravelMs: number;
   spyProbeFuelCostPerProbe: number;
   piratenCheckCount: number;
+  stationBuildings: StationBuildingDefinition[];
+  stationBuildingModules: BuildingModuleDefinition[];
+}
+
+export interface StationBuildingDefinition {
+  id: string;
+  name: string;
+  tier: 1 | 2 | 3;
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie';
+  baseCost: { metall: number; kristall: number; deuterium: number };
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+  baseOutput?: number;
+  baseEnergyUse?: number;
+  baseEnergyOutput?: number;
+  maxLevel?: number;
 }
 
 export interface ClassDefinition {
@@ -692,6 +709,35 @@ export interface GroupOperation {
   adminChecksElapsed?: number;
   adminNextCheckTime?: number;
   adminAwaitingDecision?: boolean;
+}
+
+export interface AllianceMember {
+  userId: number;
+  username: string;
+  status: 'pending' | 'accepted';
+  isCreator: boolean;
+}
+
+export interface Alliance {
+  id: string;
+  name: string;
+  creatorId: number;
+  members: AllianceMember[];
+  createdAt: number;
+  stationId?: string;
+}
+
+export interface Station {
+  id: string;
+  allianceId: string;
+  position: GalaxyPosition;
+  tier: 1 | 2 | 3;
+  buildings: Record<string, number>;
+  buildingModules: Record<string, number>;
+  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number }[];
+  resources: { metall: number; kristall: number; deuterium: number };
+  lastTick: number;
+  createdAt: number;
 }
 
 export interface SimulationResult {

@@ -13,6 +13,7 @@ import { ShopPage } from './pages/Shop';
 import { NachrichtenPage } from './pages/Nachrichten';
 import { InventarPage } from './pages/Inventar';
 import { MultiplayerPage } from './pages/Multiplayer';
+import { AllianzPage } from './pages/Allianz';
 import { GalaxiePage } from './pages/Galaxie';
 import { UpdatesPage } from './pages/Updates';
 import { StatistikPage } from './pages/Statistik';
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { to: '/haendler', label: 'Händler' },
   { to: '/shop', label: 'Shop' },
   { to: '/multiplayer', label: 'Multiplayer' },
+  { to: '/allianz', label: 'Allianz' },
   { to: '/galaxie', label: 'Galaxie' },
   { to: '/nachrichten', label: 'Nachrichten' },
   { to: '/inventar', label: 'Inventar' },
@@ -97,6 +99,7 @@ function GameHome() {
         <Route path="/haendler" element={<HaendlerPage />} />
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/multiplayer" element={<MultiplayerPage />} />
+        <Route path="/allianz" element={<AllianzPage />} />
         <Route path="/galaxie" element={<GalaxiePage />} />
         <Route path="/nachrichten" element={<NachrichtenPage />} />
         <Route path="/inventar" element={<InventarPage />} />

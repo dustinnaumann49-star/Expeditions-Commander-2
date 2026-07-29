@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '29.07.2026',
+    title: 'Neu: Allianz-Station',
+    changes: [
+      'Neue Seite "Allianz": gründet eine Allianz, ladet euch gegenseitig ein - nach Annahme könnt ihr gemeinsam eine Raumstation an einer frei wählbaren Galaxie-Position bauen.',
+      'Auf der Station gibt es nur Minen (Metall/Kristall/Deuterium) und ein Solarkraftwerk, dafür in drei Ausbaustufen V1/V2/V3 - jede Version liefert deutlich mehr Ertrag, kostet aber auch mehr und dauert länger. V2 schaltet sich frei, sobald alle drei V1-Minen Level 30 erreicht haben, V3 entsprechend nach V2.',
+      'Alle Gebäude haben wie zu Hause auch Module (Fördereffizienz, Energiesparmodul, Automatisierung bzw. beim Solarkraftwerk Ertragssteigerung/Wartungsoptimierung).',
+      'Die Station produziert passiv, ganz ohne Mining-Schiffe - läuft auch weiter, wenn gerade niemand online ist.',
+      'Ressourcen werden gemeinsam auf der Station gelagert und können von jedem Mitglied jederzeit frei eingezahlt oder abgehoben werden - keine Genehmigung nötig.',
+      'Die Station ist NICHT angreifbar - reines Kooperations-Feature ohne Gegner.',
+    ],
+  },
+  {
+    date: '29.07.2026',
     title: 'Galaxie-Ansicht aufgeräumt',
     changes: [
       'Das "🚩 Sternenbund"-Kästchen oben auf der Galaxie-Seite (Mitgliederliste, Gegenseite "Piratenkonföderation") ist entfernt - es war rein dekorativ und hatte keinerlei Funktion.',

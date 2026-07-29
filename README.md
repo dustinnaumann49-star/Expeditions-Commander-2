@@ -1996,6 +1996,86 @@ client/
       Konsolen-Fehler. `tsc -p tsconfig.json` (Server) und `tsc --noEmit` (Client) kompilieren
       sauber.
 
+120. **Feature: Allianz-Station - echtes, persistentes Allianzsystem mit gemeinsam gebauter
+    Raumstation.** Nutzerentscheidung (direkte Folge auf Punkt 119s Entfernung des rein
+    kosmetischen Allianz-Panels): "richtiges" Allianzsystem - jemand gründet eine Allianz, ein
+    zweiter Spieler tritt bei, gemeinsam wird eine Raumstation an einer Galaxie-Position gebaut.
+    Dort gibt es nur Minen + Solarkraftwerk (inkl. aller Module) in drei Versionen V1/V2/V3
+    (jede Version besser, aber teurer/langsamer, schaltet sich sequenziell frei). Ressourcen
+    werden gemeinsam gelagert und per Self-Service auf beide Mitglieder verteilt.
+    - **Kontext**: es gab bereits einmal ein "Außenposten"-System (`OUTPOST_POSITIONS`/
+      `OUTPOST_TIERS` in `galaxyConstants.ts`, verwaiste `outposts`-DB-Tabelle, `outposts.ts`
+      existiert nicht mehr) - wurde entfernt, weil die Piraten-KI, die diese Posten angriff,
+      dieselben CPU-Spitzen verursachte wie die (ebenfalls entfernten) KI-Mitspieler. Die neue
+      Station ist bewusst **komplett anders**: keine Gegner-KI, nicht angreifbar, rein kooperativ
+      zwischen den Spielern - strukturell risikofrei fürs damalige CPU-Problem.
+    - **Datenmodell**: neue Tabellen `alliances`/`stations` (`db.ts`, gleiches id/data_json-Muster
+      wie `group_operations`/`galaxy_events`). `Alliance` (Mitglieder mit pending/accepted-Status,
+      analog `GroupOperationParticipant`, aber PERSISTENT statt einmalig) und `Station`
+      (Position, `tier`, `buildings`/`buildingModules`-Maps, `buildQueue`, eigenes
+      `resources`-Lager) in `types.ts`. Ein Nutzer kann aktuell nur Mitglied EINER Allianz sein -
+      kein Allianz-Browser/mehrere gleichzeitige Allianzen nötig (Nutzer-Entscheidung, nur 2
+      Spieler betroffen).
+    - **Wichtige Design-Entscheidung**: die Station bekommt in `game/stations.ts` KOMPLETT
+      EIGENE, von `actions.ts` entkoppelte Produktions-/Kosten-/Energie-Formeln (1:1 dasselbe
+      Muster: `levelScaledValue`, `buildingCostForLevel`, `energyFactor`) statt die
+      Heimatbasis-Funktionen wiederzuverwenden - die sind eng an `PlayerState.research`/
+      `economyClass`/Booster gekoppelt, was für eine GEMEINSAME Station keinen Sinn ergibt (wessen
+      Forschung sollte gelten, wenn beide Mitglieder unterschiedlich weit sind?). Stations-Produktion
+      hängt NUR von der Gebäude-Stufe ab, keine Spieler-Boni.
+    - **Gebäude-Balance** (`data/stationBuildings.ts`, 12 Einträge: 4 Gebäude × 3 Stufen,
+      namensraum-getrennte IDs wie `v1_metallmine`): V1 = identische Basiswerte wie die
+      Heimatbasis-Pendants (`buildings.ts`), aber mit Level-Cap 30 (Nutzerentscheidung) statt
+      unbegrenzt. V2 = 2x Kosten/1.3x Bauzeit/1.5x Ertrag relativ zu V1, V3 = 4x/1.6x/2.5x -
+      erster Wurf, wie jedes Wirtschafts-Feature in diesem Projekt live nachkalibrierbar.
+      Solarkraftwerk bewusst OHNE Level-Cap (muss frei ausgebaut werden können, um die
+      Minen-Energie zu decken). Energiefaktor GETRENNT pro Stufe berechnet (ein spätes
+      V3-Solarkraftwerk versorgt nicht rückwirkend V1/V2 mit) - **Produktion selbst ist aber
+      kumulativ über alle freigeschalteten Stufen** (Nutzerentscheidung: V1-Ausbau bleibt auch
+      nach V2/V3-Freischaltung wertvoll, kein Ablöse-Wechsel).
+    - **Module** (`data/stationBuildingModules.ts`, 33 Einträge, generiert statt von Hand
+      getippt - analog zum `buildModule()`-Generator in `shipModules.ts`): dieselben 3
+      Modul-Kinds pro Mine (Fördereffizienz/Energiesparmodul/Automatisierung) und 2 pro
+      Solarkraftwerk (Ertragssteigerung/Wartungsoptimierung) wie bei der Heimatbasis, Freischaltung
+      ab Gebäude-Level 20, `maxLevel:10`. Teilen sich denselben Bau-Slot mit den Gebäuden selbst
+      (`Station.buildQueue`-Einträge haben jetzt `buildingId` ODER `moduleId`, analog
+      `PlayerState.BuildJob`).
+    - **Stufen-Freischaltung**: `checkTierUnlock()` schaltet die nächste Stufe frei, sobald alle
+      3 Minen der aktuellen Stufe ihr Level-Cap (30) erreicht haben (Solarkraftwerk zählt bewusst
+      nicht mit, da es keinen Cap hat).
+    - **Galaxie-Integration**: Ersteller wählt bei Gründung eine freie Position (`foundStation()`,
+      nutzt dieselbe `getReservedGalaxyPositions()`/`isGalaxyPositionFree()`-Prüfung wie
+      `relocateGalaxyPosition()`, jetzt um Stations-Positionen erweitert). Analog zum
+      Piraten-Sektor-Buttons-Bugfix (Punkt 116) zeigt die Galaxie-Ansicht eine belegte
+      Stations-Position jetzt auch SICHTBAR als belegt ("🛰️ Allianz-Station (Name)") statt nur
+      serverseitig zu blockieren - neues `stationPositions`-Feld im `/game/galaxy`-Bundle.
+    - **Passive Produktion ohne Dauer-Prozess**: `processStationTick()` (Bau-Warteschlange +
+      Produktion + Stufen-Check) läuft opportunistisch bei JEDEM Laden der Station
+      (`loadStationWithTick()`, analog zum Nachhol-Prinzip aus `pirateBaseState.ts`) UND zusätzlich
+      aus dem globalen Heartbeat (`runStationHeartbeatTick()` in `heartbeat.ts`), damit Produktion
+      auch läuft, wenn gerade niemand die Allianz-Seite offen hat.
+    - **Einzahlen/Abheben**: Self-Service in beide Richtungen (`depositToStation()`/
+      `withdrawFromStation()`, kein Genehmigungsschritt - "nach Wunsch aufteilen"). Einzahlen löst
+      das Henne-Ei-Problem einer frisch gegründeten Station bei 0 Ressourcen.
+    - **Neue Routen** `/alliance`, `/alliance/create`, `/alliance/invite`, `/alliance/respond`,
+      `/alliance/station/found`, `/alliance/station/build`, `/alliance/station/module`,
+      `/alliance/station/deposit`, `/alliance/station/withdraw` (routes.ts, 1:1 nach dem Muster
+      der bestehenden `/party/*`-Routen). Neue Client-Seite `Allianz.tsx` (Gründen/Einladen/
+      Annehmen, Stufen-Tabs V1/V2/V3 mit Sperr-Hinweis, Baukarten inkl. Modulen, Ressourcen-Pool
+      + Einzahlen/Abheben-Formular), neuer Nav-Eintrag.
+    - **Live verifiziert** (Dev-Server, zwei Testaccounts, DB-Seeding für Zeitraffer): Allianz
+      gründen/einladen/annehmen End-to-End funktioniert, Station-Gründung an einer gewählten
+      Position reserviert diese korrekt (in der Galaxie sichtbar als belegt), Einzahlen/Abheben
+      verschiebt Ressourcen korrekt zwischen Spieler- und Stations-Konto, Metallmine+Solarkraftwerk
+      gebaut produzierten nach 1h Zeitraffer exakt die erwartete Menge (`levelScaledValue`-Formel,
+      Energiefaktor 1 bestätigt), alle Bau-Buttons korrekt deaktiviert während ein Bauvorhaben
+      läuft (geteilter Slot für Gebäude UND Module), V1-Minen auf Level 30 gesetzt schaltete V2
+      korrekt frei (inkl. korrekter 2x-Kostenwerte), Modul-Bau (Fördereffizienz) funktioniert mit
+      korrekter Bauzeit (`baseTimeSeconds × 4`) und Kosten. Zweiter Test-Account sah nach Neuladen
+      exakt denselben Stations-Stand (Multi-Viewer-Konsistenz bestätigt). `tsc`/`tsc --noEmit` in
+      Server UND Client kompilieren sauber. Plan-Datei mit vollständiger Design-Historie:
+      `.claude/plans/tranquil-forging-pretzel.md`.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

@@ -10,6 +10,9 @@ import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
 import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter, recallGroupOperation } from './groupOps.js';
+import { createAlliance, inviteToAlliance, respondToAllianceInvite, getMyAllianceAndStation, foundStation, listAllStationPositions, startStationBuildingConstruction, startStationModuleUpgrade, depositToStation, withdrawFromStation } from './stations.js';
+import { STATION_BUILDINGS } from './data/stationBuildings.js';
+import { STATION_BUILDING_MODULES } from './data/stationBuildingModules.js';
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
 import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
@@ -100,6 +103,8 @@ gameRouter.get('/data', (_req, res) => {
     spyProbeTravelMs: SPY_PROBE_TRAVEL_MS,
     spyProbeFuelCostPerProbe: SPY_PROBE_FUEL_COST_PER_PROBE,
     piratenCheckCount: PIRATEN_CHECK_COUNT,
+    stationBuildings: STATION_BUILDINGS,
+    stationBuildingModules: STATION_BUILDING_MODULES,
   });
 });
 
@@ -222,6 +227,7 @@ gameRouter.get('/galaxy', async (req: AuthedRequest, res) => {
       // exakten Bestandszahlen (die bekommt man erst per Kampfbericht nach einem Angriff zu sehen).
       pirateBaseSummaries: await listActivePirateBaseSummaries(),
       sektorPositions,
+      stationPositions: listAllStationPositions(),
       incomingDeployments: getIncomingDeploymentsFor(req.userId!),
       events: listActiveGalaxyEvents(),
       galaxySystems: GALAXY_SYSTEMS,
@@ -515,6 +521,77 @@ gameRouter.post('/party/admiral-decide', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'opId und action ("extract"|"continue") erforderlich.' });
   }
   handleAction(req, res, (state) => respondAdminEncounter(state, opId, action));
+});
+
+// ---- Allianz-Station (Nutzerentscheidung, siehe .claude/plans/tranquil-forging-pretzel.md) ----
+
+gameRouter.get('/alliance', (req: AuthedRequest, res) => {
+  try {
+    res.json(getMyAllianceAndStation(req.userId!));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Interner Fehler beim Laden der Allianz.' });
+  }
+});
+
+gameRouter.post('/alliance/create', (req: AuthedRequest, res) => {
+  const { name } = req.body ?? {};
+  if (typeof name !== 'string') return res.status(400).json({ error: 'name erforderlich.' });
+  handleAction(req, res, (state) => createAlliance(state, name));
+});
+
+gameRouter.post('/alliance/invite', (req: AuthedRequest, res) => {
+  const { userId } = req.body ?? {};
+  if (typeof userId !== 'number') return res.status(400).json({ error: 'userId erforderlich.' });
+  handleAction(req, res, (state) => inviteToAlliance(state, userId));
+});
+
+gameRouter.post('/alliance/respond', (req: AuthedRequest, res) => {
+  const { allianceId, accept } = req.body ?? {};
+  if (typeof allianceId !== 'string' || typeof accept !== 'boolean') {
+    return res.status(400).json({ error: 'allianceId und accept erforderlich.' });
+  }
+  handleAction(req, res, (state) => respondToAllianceInvite(state, allianceId, accept));
+});
+
+gameRouter.post('/alliance/station/found', (req: AuthedRequest, res) => {
+  const { system, position } = req.body ?? {};
+  if (typeof system !== 'number' || typeof position !== 'number') {
+    return res.status(400).json({ error: 'system und position erforderlich.' });
+  }
+  handleAction(req, res, (state) => foundStation(state, { system, position }));
+});
+
+gameRouter.post('/alliance/station/build', (req: AuthedRequest, res) => {
+  const { stationId, buildingId } = req.body ?? {};
+  if (typeof stationId !== 'string' || typeof buildingId !== 'string') {
+    return res.status(400).json({ error: 'stationId und buildingId erforderlich.' });
+  }
+  handleAction(req, res, (state) => startStationBuildingConstruction(state, stationId, buildingId));
+});
+
+gameRouter.post('/alliance/station/module', (req: AuthedRequest, res) => {
+  const { stationId, moduleId } = req.body ?? {};
+  if (typeof stationId !== 'string' || typeof moduleId !== 'string') {
+    return res.status(400).json({ error: 'stationId und moduleId erforderlich.' });
+  }
+  handleAction(req, res, (state) => startStationModuleUpgrade(state, stationId, moduleId));
+});
+
+gameRouter.post('/alliance/station/deposit', (req: AuthedRequest, res) => {
+  const { stationId, resource, amount } = req.body ?? {};
+  if (typeof stationId !== 'string' || typeof resource !== 'string' || typeof amount !== 'number') {
+    return res.status(400).json({ error: 'stationId, resource und amount erforderlich.' });
+  }
+  handleAction(req, res, (state) => depositToStation(state, stationId, resource, amount));
+});
+
+gameRouter.post('/alliance/station/withdraw', (req: AuthedRequest, res) => {
+  const { stationId, resource, amount } = req.body ?? {};
+  if (typeof stationId !== 'string' || typeof resource !== 'string' || typeof amount !== 'number') {
+    return res.status(400).json({ error: 'stationId, resource und amount erforderlich.' });
+  }
+  handleAction(req, res, (state) => withdrawFromStation(state, stationId, resource, amount));
 });
 
 // ---- Kampfsimulator ----

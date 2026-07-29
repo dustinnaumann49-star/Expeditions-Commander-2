@@ -199,6 +199,25 @@ export interface BuildingDefinition {
   baseEnergyOutput?: number; // Energieertrag bei Stufe 1 (nur Solarkraftwerk)
 }
 
+// Allianz-Station-Gebaeude (siehe data/stationBuildings.ts, game/stations.ts) - eigenstaendige,
+// von BuildingDefinition entkoppelte Struktur (kein "kind" fuer Roboter/Nanit noetig, nur Minen +
+// Solarkraftwerk existieren auf der Station), zusaetzlich `tier` (V1/V2/V3) und `maxLevel`
+// (Minen gedeckelt, Solarkraftwerk bewusst ohne Cap - siehe Nutzerentscheidung im Plan).
+export interface StationBuildingDefinition {
+  id: string; // z.B. "v1_metallmine" - namensraum-getrennt pro Stufe, siehe Station.buildings
+  name: string;
+  tier: 1 | 2 | 3;
+  kind: 'mine_metall' | 'mine_kristall' | 'mine_deuterium' | 'energie';
+  baseCost: ResourceCost;
+  costGrowth: number;
+  baseTimeSeconds: number;
+  timeGrowth: number;
+  baseOutput?: number;
+  baseEnergyUse?: number;
+  baseEnergyOutput?: number;
+  maxLevel?: number; // undefined = kein Cap (nur Solarkraftwerk)
+}
+
 // Gebaeude-Modulsystem (Baum-Zweige pro Gebaeude, analog zum Forschungsbaum in types.ts
 // ResearchDefinition) - jedes Modul verbessert GENAU EINEN Aspekt seines Basis-Gebaeudes
 // zusaetzlich, stapelt sich mit der allgemeinen Forschung (Mining-Boost/Bauzeit-Zweige), ersetzt
@@ -610,6 +629,45 @@ export interface GroupOperation {
   adminChecksElapsed?: number; // wie viele der max. ADMIRAL_TOTAL_CHECKS bereits abgehandelt wurden
   adminNextCheckTime?: number; // wann der naechste 10-Minuten-Check faellig ist (nur relevant, wenn NICHT awaitingDecision)
   adminAwaitingDecision?: boolean; // true direkt nach einem gewonnenen Check - pausiert weitere Checks, bis der Ersteller entscheidet
+}
+
+// ===== Allianz-Station (siehe game/stations.ts, README) =====
+// Kooperatives Gemeinschafts-Feature zwischen den Spielern - bewusst OHNE jede Gegner-KI/
+// Angreifbarkeit (das fruehere "Aussenposten"-System mit Piraten-KI wurde wegen CPU-Spitzen
+// entfernt, siehe galaxyConstants.ts OUTPOST_*-Konstanten). Mitgliedschaft ist PERSISTENT (anders
+// als GroupOperationParticipant, das nur fuer eine einzelne Expedition gilt).
+export interface AllianceMember {
+  userId: number;
+  username: string;
+  status: 'pending' | 'accepted';
+  isCreator: boolean;
+}
+
+export interface Alliance {
+  id: string;
+  name: string;
+  creatorId: number;
+  members: AllianceMember[];
+  createdAt: number;
+  stationId?: string;
+}
+
+// Gebaeude-IDs sind pro Stufe namensraum-getrennt (z.B. "v1_metallmine", "v2_metallmine"), siehe
+// data/stationBuildings.ts - ueberschneiden sich weder mit PlayerState.buildings noch
+// untereinander. Produktion/Kosten haengen NUR von der jeweiligen Gebaeude-Stufe ab, NICHT von
+// der Forschung/Klasse/den Boostern eines einzelnen Mitglieds (siehe stations.ts fuer die
+// eigenstaendigen, von actions.ts entkoppelten Formeln).
+export interface Station {
+  id: string;
+  allianceId: string;
+  position: GalaxyPosition;
+  tier: 1 | 2 | 3; // hoechste FREIGESCHALTETE Stufe - Produktion zaehlt kumulativ ALLE Stufen <= tier
+  buildings: Record<string, number>; // Gebaeude-Id (z.B. "v1_metallmine") -> Stufe
+  buildingModules: Record<string, number>; // Modul-Id -> Stufe
+  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number }[];
+  resources: { metall: number; kristall: number; deuterium: number };
+  lastTick: number;
+  createdAt: number;
 }
 
 // Kumulative Statistik ueber die gesamte Spieler-Historie - Grundlage fuer die Statistik-Seite

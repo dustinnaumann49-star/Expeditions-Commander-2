@@ -6,6 +6,7 @@ import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
 import { processPirateAttacks } from './pirateBaseState.js';
+import { runStationHeartbeatTick } from './stations.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -92,6 +93,16 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
   } catch (err) {
     errors++;
     console.error('runGlobalHeartbeat: Fehler bei maybeSpawnGalaxyEvent:', err);
+  }
+
+  // Allianz-Stationen (siehe stations.ts): rein passive Produktion, KEINE Gegner-KI - holt die
+  // seit dem letzten Tick vergangene Zeit fuer ALLE Stationen nach, unabhaengig davon, ob gerade
+  // ein Mitglied online ist. Global wie Galaxie-Ereignisse, nicht an einen Nutzer gebunden.
+  try {
+    runStationHeartbeatTick();
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei runStationHeartbeatTick:', err);
   }
 
   // Piratenbasen wachsen NICHT MEHR eigenstaendig und greifen auch nicht mehr selbst an

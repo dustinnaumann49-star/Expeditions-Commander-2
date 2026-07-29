@@ -1,7 +1,7 @@
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, OUTPOST_POSITIONS } from './data/galaxyConstants.js';
 import { SEKTOR_CONFIG } from './data/sectors.js';
-import { listAllUsers, loadGameStateJson } from '../db.js';
-import type { GalaxyPosition } from './types.js';
+import { listAllUsers, loadGameStateJson, listStationsJson } from '../db.js';
+import type { GalaxyPosition, Station } from './types.js';
 
 // Eigenstaendiges Modul OHNE Abhaengigkeit zu state.ts/galaxy.ts (nutzt wie
 // state.ts:assignRandomGalaxyPosition() direkt loadGameStateJson() statt loadPlayerState()) -
@@ -32,6 +32,15 @@ export function getReservedGalaxyPositions(excludeUserId?: number): Set<string> 
   OUTPOST_POSITIONS.forEach((p) => reserved.add(key(p)));
   Object.values(SEKTOR_CONFIG).forEach((cfg) => {
     if (cfg.galaxyPosition) reserved.add(key(cfg.galaxyPosition));
+  });
+  // Allianz-Stationen (siehe game/stations.ts) belegen ihre gewaehlte Position ebenfalls dauerhaft.
+  listStationsJson().forEach((j) => {
+    try {
+      const station = JSON.parse(j) as Station;
+      if (station.position) reserved.add(key(station.position));
+    } catch {
+      // Kaputter/leerer Eintrag - einfach ignorieren, blockiert keine Position.
+    }
   });
   return reserved;
 }
