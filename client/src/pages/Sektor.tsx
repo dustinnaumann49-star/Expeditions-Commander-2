@@ -210,50 +210,35 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
         <div className="info-row">
           <span className="info-label">👑 Gegner</span>
           <span className="info-value">
-            Ein einzelner, extrem zäher <strong style={{ color: 'var(--danger-bright)' }}>Piratenadmiral</strong> + kleine Elite-Eskorte (wenige
-            große Schiffe statt vieler kleiner) - beide skalieren mit eurer eingesetzten Flottenstärke, ähnlich wie beim Elite-Bollwerk, aber
-            deutlich härter (110-150% statt 105-135%).
+            <strong style={{ color: 'var(--danger-bright)' }}>Piratenadmiral</strong> + Elite-Eskorte, skaliert 110-150% der Flottenstärke
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">🚢 Zugangsvoraussetzung</span>
+          <span className="info-label">🚢 Zugang</span>
           <span className="info-value">
-            Nur <strong style={{ color: 'var(--accent-kristall)' }}>Kreuzer-Klasse und größere Schiffe</strong> erlaubt - keine Jäger, keine
-            Versorgungsschiffe.
+            Nur <strong style={{ color: 'var(--accent-kristall)' }}>Kreuzer-Klasse und größer</strong>
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">⏱️ Ablauf</span>
           <span className="info-value">
-            Bis zu <strong style={{ color: 'var(--accent-deut)' }}>6 Kämpfe</strong> im Abstand von je{' '}
-            <strong style={{ color: 'var(--accent-deut)' }}>10 Minuten</strong> (max. 1 Stunde Gesamtdauer)
+            Bis zu <strong style={{ color: 'var(--accent-deut)' }}>6 Kämpfe</strong>, alle{' '}
+            <strong style={{ color: 'var(--accent-deut)' }}>10 Min</strong> (max. 1h) · Admiral wird pro Kampf{' '}
+            <strong style={{ color: 'var(--danger-bright)' }}>+15% stärker</strong>
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">🔥 Eskalierende Wut</span>
+          <span className="info-label">🤔 Nach jedem Sieg</span>
           <span className="info-value">
-            Der Admiral wird mit jedem weiteren Kampf <strong style={{ color: 'var(--danger-bright)' }}>+15% stärker</strong> (Waffen/Schild/
-            Panzerung), solange er nicht besiegt wurde
+            <strong style={{ color: 'var(--accent-deut)' }}>Sichern &amp; abziehen</strong> oder{' '}
+            <strong style={{ color: 'var(--danger-bright)' }}>weitermachen</strong> - bei Niederlage danach geht nur die ungesicherte Beute
+            verloren, nicht die Flotte
           </span>
         </div>
-        <div className="info-row">
-          <span className="info-label">🤔 Entscheidung nach jedem gewonnenen Kampf</span>
+        <div className="info-row" style={{ borderBottom: 'none' }}>
+          <span className="info-label">🏆 Beute</span>
           <span className="info-value">
-            Beute <strong style={{ color: 'var(--accent-deut)' }}>sichern und abziehen</strong> (sicher), oder{' '}
-            <strong style={{ color: 'var(--danger-bright)' }}>weitermachen</strong> für mehr - bei einer Niederlage danach geht nur die noch
-            ungesicherte Beute verloren, NICHT die Flotte
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">💰 Beute bei Abzug</span>
-          <span className="info-value">
-            Moderat mit der Anzahl überstandener Kämpfe wachsend (kein Verdopplungs-Modus wie beim Elite-Bollwerk)
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">🏆 Beute bei echtem Sieg</span>
-          <span className="info-value">
-            Große Einmal-Prämie + exklusiver Dunkle-Materie-Bonus, den es sonst nirgends gibt
+            Wächst mit überstandenen Kämpfen · bei echtem Sieg zusätzlich große Einmalprämie + exklusiver DM-Bonus
           </span>
         </div>
       </div>
@@ -290,49 +275,32 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">🚢 Schiffsklassen im Pool</span>
+          <span className="info-label">🎲 Feindstärke (pro Check, alle 4h)</span>
           <span className="info-value">
-            Alle Kampfschiff-Typen möglich, in jedem Sektor – kleine/günstige Schiffe deutlich häufiger als seltene Elite-Schiffe. Piraten sind
-            (bis auf den einzigartigen Sandronator und den Imperator) nicht mehr an Baugrenzen gebunden, genau wie du selbst.
+            <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power
           </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">🎲 Feindstärke (wird pro Check gewürfelt, alle 4h)</span>
-          <span className="info-value">
-            <strong style={{ color: 'var(--danger-bright)' }}>{multiplierRollText}</strong> deiner Kampf-Power · gelegentlich auch deutlich
-            schwächer oder stärker als üblich
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">🌊 Zusammensetzung</span>
-          <span className="info-value">Variiert von Kampf zu Kampf – mal viele kleine Schiffe, mal wenige starke</span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">⚡ Unvorhersehbare Umstände</span>
-          <span className="info-value">Seltene Sonderbedingungen können einzelne Kämpfe zu deinen Gunsten oder Ungunsten beeinflussen</span>
         </div>
         <div className="info-row">
           <span className="info-label">🛡️ Verteidigung</span>
           <span className="info-value">
-            <strong style={{ color: 'var(--accent-kristall)' }}>{defenseFactor}%</strong> deiner Power (zusätzlicher Mix aus Verteidigungsanlagen)
+            <strong style={{ color: 'var(--accent-kristall)' }}>{defenseFactor}%</strong> deiner Power zusätzlich
           </span>
         </div>
         {cfg.captainChance ? (
           <div className="info-row">
-            <span className="info-label">☠ Piratenkapitän-Event</span>
+            <span className="info-label">☠ Piratenkapitän</span>
             <span className="info-value">
-              <strong style={{ color: 'var(--rf-gold)' }}>{(cfg.captainChance * 100).toFixed(0)}%</strong> Chance pro Kampf · Belohnung bei
-              Sieg: <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
-              <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong>
+              <strong style={{ color: 'var(--rf-gold)' }}>{(cfg.captainChance * 100).toFixed(0)}%</strong> Chance pro Kampf ·{' '}
+              <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
+              <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong> bei Sieg
             </span>
           </div>
         ) : cfg.guaranteedEliteContainers ? (
           <div className="info-row">
-            <span className="info-label">💎 Garantierte Belohnung</span>
+            <span className="info-label">💎 Garantiert</span>
             <span className="info-value">
-              <strong style={{ color: 'var(--rf-gold)' }}>{cfg.guaranteedEliteContainers}x Elite-Container</strong> bei erfolgreicher Rückkehr ·
-              zusätzlich <strong style={{ color: 'var(--accent-dm)' }}>8%</strong> Chance pro Check (alle 4h), die bisherige Beute dieser Mission zu
-              verdoppeln
+              <strong style={{ color: 'var(--rf-gold)' }}>{cfg.guaranteedEliteContainers}x Elite-Container</strong> bei Rückkehr ·{' '}
+              <strong style={{ color: 'var(--accent-dm)' }}>8%</strong>/Check Beute-Verdopplung
             </span>
           </div>
         ) : null}
@@ -341,23 +309,22 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
           <span className="info-value">
             {sektorId === 'piraten_elite' ? (
               <>
-                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt sich</strong> mit jedem aufeinanderfolgenden Sieg in derselben Expedition
-                (bis zu <strong style={{ color: 'var(--accent-dm)' }}>8x</strong> nach 4 Siegen in Folge) - wirkt auf Beute und Teile-Bonus
+                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> pro Sieg in Folge (max.{' '}
+                <strong style={{ color: 'var(--accent-dm)' }}>8x</strong>)
               </>
             ) : (
               <>
-                Beute und Teile-Bonus steigen mit jedem aufeinanderfolgenden Sieg in derselben Mission um{' '}
                 <strong style={{ color: 'var(--accent-deut)' }}>
                   {sektorId === 'piraten_niedrig' ? '+10%' : sektorId === 'piraten_mittel' ? '+20%' : '+35%'}
                 </strong>{' '}
-                (max.{' '}
+                pro Sieg in Folge (max.{' '}
                 <strong style={{ color: 'var(--accent-deut)' }}>
                   {sektorId === 'piraten_niedrig' ? '130%' : sektorId === 'piraten_mittel' ? '160%' : '205%'}
                 </strong>
                 )
               </>
             )}{' '}
-            - bricht bei einem Check ohne vernichteten Gegner ab
+            - bricht bei einem Check ohne Sieg ab
           </span>
         </div>
         <div className="info-row">
@@ -366,30 +333,28 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
             <strong style={{ color: 'var(--accent-metall)' }}>{cfg.lootBase?.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
             <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
             <strong style={{ color: 'var(--accent-deut)' }}>{cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium</strong> ·{' '}
-            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% Chance auf {cfg.bonusLootMultiplier}x Volltreffer (vor Sieges-Serie-Bonus)
+            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% auf {cfg.bonusLootMultiplier}x
           </span>
         </div>
         <div className="info-row">
-          <span className="info-label">🔧 Teile-Sammlung</span>
+          <span className="info-label">🔧 Teile pro Check (bis Cap {cfg.teileCap})</span>
           <span className="info-value">
-            Nur durch gewonnene Kämpfe erreichbar, bis zu Cap (<strong style={{ color: 'var(--accent-kristall)' }}>{cfg.teileCap}</strong>) - pro
-            Check (klar <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> / mit Verlusten{' '}
-            <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> / Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
-            Cap, vor Sieges-Serie-Bonus)
+            Klarer Sieg <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> · mit Verlusten{' '}
+            <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> · Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
+            Cap
           </span>
         </div>
         <div className="info-row">
           <span className="info-label">⭐ Sandronator</span>
           <span className="info-value">
-            <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> Beute UND Teile-Vergabe für die gesamte Mission, solange er überlebt
+            <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> Beute und Teile, solange er überlebt
           </span>
         </div>
         <div className="info-row" style={{ borderBottom: 'none', fontSize: 11, color: 'var(--text-dim)' }}>
-          <span className="info-label">💡 Taktischer Hinweis</span>
+          <span className="info-label">💡 RapidFire-Kontern</span>
           <span className="info-value">
-            RapidFire-Matchups gelten unabhängig vom Sektor: Schwere Jäger gegen Leichte Jäger, Kreuzer gegen Schwere Jäger, Schlachtschiffe gegen
-            Kreuzer, Schlachtkreuzer stark gegen Leichte/Schwere Jäger/Kreuzer/Schlachtschiffe, Zerstörer gegen Schlachtkreuzer/Bomber, Reaper gegen
-            Zerstörer/Schlachtkreuzer/Bomber, Bomber stark gegen alle Verteidigungsanlagen.
+            Schwerer Jäger → Leichter Jäger · Kreuzer → Schwerer Jäger · Schlachtschiff → Kreuzer · Schlachtkreuzer → kleine Klassen ·
+            Zerstörer/Reaper → Schlachtkreuzer/Bomber · Bomber → Verteidigungsanlagen
           </span>
         </div>
       </div>
@@ -401,13 +366,11 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
       <div className="info-row">
         <span className="info-label">⛏️ Abbaurate</span>
         <span className="info-value">
-          <strong style={{ color: 'var(--text)' }}>{cfg.farmRate?.toLocaleString('de-DE')}</strong> Ressourcen/h pro Mining-Schiff (
-          <span style={{ color: 'var(--accent-metall)' }}>50% Metall</span> / <span style={{ color: 'var(--accent-kristall)' }}>30% Kristall</span> /{' '}
-          <span style={{ color: 'var(--accent-deut)' }}>20% Deuterium</span>)
+          <strong style={{ color: 'var(--text)' }}>{cfg.farmRate?.toLocaleString('de-DE')}</strong> Ressourcen/h pro Mining-Schiff
         </span>
       </div>
       <div className="info-row">
-        <span className="info-label">🚀 Max. Mining-Schiffe pro Einsatz</span>
+        <span className="info-label">🚀 Max. Mining-Schiffe</span>
         <span className="info-value">
           <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.miningCap}</strong>
         </span>
@@ -415,33 +378,25 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
       <div className="info-row">
         <span className="info-label">🌑 Dunkle Materie</span>
         <span className="info-value">
-          Bis zu <strong style={{ color: 'var(--accent-dm)' }}>{cfg.dmCap} DM</strong> pro vollem 24h-Einsatz (linear über die Zeit)
-        </span>
-      </div>
-      <div className="info-row">
-        <span className="info-label">✅ Sicherheit ohne Begleitschiff</span>
-        <span className="info-value" style={{ color: 'var(--accent-deut)' }}>
-          Kein Feindkontakt möglich - risikofreies Farmen
+          Bis zu <strong style={{ color: 'var(--accent-dm)' }}>{cfg.dmCap} DM</strong> pro vollem 24h-Einsatz
         </span>
       </div>
       <div className="info-row">
         <span className="info-label">🛡️ Begleitschiff (optional)</span>
         <span className="info-value">
-          Max. <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.escortCap}</strong> pro Einsatz · Bei jedem Stunden-Check garantiert ein
-          kleiner Piraten-Überfall (nur Leichte/Schwere Jäger) mit{' '}
+          Max. <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.escortCap}</strong> · Überfall-Chance mit{' '}
           <strong style={{ color: 'var(--danger-bright)' }}>
             {(gameData.asteroidEscortPowerMin * 100).toFixed(0)}–{(gameData.asteroidEscortPowerMax * 100).toFixed(0)}%
           </strong>{' '}
-          deiner Begleitschiff-Power
+          Begleitschiff-Power
         </span>
       </div>
       <div className="info-row">
-        <span className="info-label">💰 Bonus-Beute pro vernichtetem Piratenschiff</span>
+        <span className="info-label">💰 Bonus-Beute pro Kill</span>
         <span className="info-value">
           <strong style={{ color: 'var(--accent-metall)' }}>{gameData.asteroidEscortKillReward.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
           <strong style={{ color: 'var(--accent-kristall)' }}>{gameData.asteroidEscortKillReward.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
-          <strong style={{ color: 'var(--accent-deut)' }}>{gameData.asteroidEscortKillReward.deuterium.toLocaleString('de-DE')} Deuterium</strong> -
-          gutgeschrieben bei Rückkehr
+          <strong style={{ color: 'var(--accent-deut)' }}>{gameData.asteroidEscortKillReward.deuterium.toLocaleString('de-DE')} Deuterium</strong>
         </span>
       </div>
       <div className="info-row" style={{ borderBottom: 'none' }}>
