@@ -2159,6 +2159,42 @@ client/
       flache `buildings`-Map) sind rückwärtskompatibel - neue Gebäude-IDs fehlen dort einfach und
       zählen als Level 0, keine Migration nötig.
 
+124. **Perf: `STACK_AGGREGATE_THRESHOLD` von einem globalen Wert auf pro Schiffs-/
+    Verteidigungsklasse gestaffelte Schwellen umgebaut (Nutzerentscheidung).** Auslöser: ein
+    Server-Log zeigte `processMissions()` mit 9,5s Dauer fuer einen einzelnen Nutzer - Ursache war
+    `MISSION_HOURLY_CATCHUP_CAP` (bis zu 8 nachgeholte Stunden-Checks pro Tick, siehe Kommentar in
+    `economy.ts`), von denen jeder bei der bisherigen flachen Schwelle 2.000 im Worst Case ~2,4s
+    kosten konnte (8 × 2,4s ≈ 19s theoretisches Maximum). Nutzer-Analyse: EIN globaler Schwellenwert
+    ist strukturell falsch, da kleine/billige Schiffe (Jäger) in der Praxis in viel groesserer
+    Stueckzahl gebaut werden als teure Elite-Schiffe - eine gemeinsame Zahl ist fuer die einen zu
+    niedrig oder die anderen zu hoch angesetzt.
+    - **Neue Struktur** (`data/combatConstants.ts`): `STACK_AGGREGATE_THRESHOLD_BY_TYPE` (Record
+      pro Schiffs-/Verteidigungs-Id) + `stackAggregateThresholdFor(typeId)`-Helper (Fallback auf
+      den bisherigen globalen Wert `STACK_AGGREGATE_THRESHOLD`, der jetzt nur noch als Default fuer
+      nicht explizit gelistete Typen dient). `combat.ts`s zwei `buildUnits()`/
+      `buildUnitsMultiOwner()`-Callsites nutzen jetzt `stackAggregateThresholdFor(id)` statt der
+      alten flachen Konstante.
+    - **Werte** (Nutzerentscheidung, 1:1 nach den bestehenden UI-Kategorien `SHIP_GROUPS` in
+      `client/src/lib/combatInfo.ts`): Jäger-Klasse (leicht/schwer) 500, Kreuzer-Klasse
+      (kreuzer/schlachtschiff/bomber) 100, Elite-Klasse (schlachtkreuzer/zerstoerer/reaper/
+      sandronator) 50. Verteidigungsanlagen OHNE `maxCount` (raketenwerfer/leichteslaser/
+      schwereslaser/gausskanone/ionengeschuetz/plasmawerfer, siehe `data/defenses.ts`) bekommen
+      ebenfalls 100 (Nutzerentscheidung nach Rückfrage - waren bisher NICHT explizit erwähnt,
+      obwohl gerade Raid-Heimatverteidigung leicht in die Tausende geht). Mining/Begleitschiff/
+      Spionagesonde/Salvenschiffe/Imperator/Schildkuppeln/Sentinel-/Ultimate-Kanone bewusst NICHT
+      gelistet (bleiben beim Default 2.000) - alle bereits über `maxCount`/`isDome` gedeckelt, eine
+      Aggregation greift dort in der Praxis nie.
+    - **Benchmark** (Node-Skript gegen `dist/game/combat.js`, Worst Case: jeder Typ EXAKT an seiner
+      eigenen Schwelle, also weiterhin im teuren Einzelschiff-Pfad): Flotte (1.500 Schiffe, 9 Typen)
+      vs. gleich starke Flotte 180ms, vs. 1,3x stärkere Flotte 161ms. Verteidigung (600 Anlagen, 6
+      Typen) vs. Flotte 203ms. **Flotte + Verteidigung gleichzeitig (Raid-Szenario) 306ms** - statt
+      der bisherigen ~2,4s bei flacher 2.000er-Schwelle. Damit sinkt auch das
+      `MISSION_HOURLY_CATCHUP_CAP`-Worst-Case von ~19s auf ~2,4s (8 × 306ms) - löst das eingangs
+      beobachtete Problem, ohne den Cap selbst anfassen zu müssen.
+    - Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber. Bewusst grosszuegiger
+      Sicherheitsabstand gewaehlt (die gemessenen Werte liessen deutlich hoehere Schwellen zu) -
+      Nutzerentscheidung: lieber konservativ mit Reserve als knapp kalkuliert.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

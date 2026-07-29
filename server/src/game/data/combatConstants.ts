@@ -334,8 +334,52 @@ export const MAX_ROUNDS = 100;
 // Richtwerts ("ueber 2-3s fuehlt sich wie echte Wartezeit an") UND `POOL_SIZE` in
 // `combatRunner.ts` steht inzwischen auf 1 (serialisiert, kein zweiter Worker-Slot faengt einen
 // langen Kampf mehr ab) - falls sich Kaempfe zaeh anfuehlen, waere 1.500 (~1,5s) die naechste
-// sichere Zwischenstufe. Wird weiter live beobachtet.
+// sichere Zwischenstufe.
+// 30.07.2026 (Nutzerentscheidung, grundlegender Umbau nach Beobachtung eines echten Rueckstau-
+// Vorfalls, siehe MISSION_HOURLY_CATCHUP_CAP-Kommentar): EIN globaler Schwellenwert fuer ALLE
+// Schiffs-/Verteidigungstypen gleichzeitig ist strukturell ungeeignet - kleine, guenstige Schiffe
+// (Jaeger) werden in der Praxis in viel groesserer Stueckzahl gebaut als teure Elite-Schiffe, eine
+// gemeinsame Schwelle ist fuer die einen zu niedrig oder fuer die anderen zu hoch. Ersetzt durch
+// STACK_AGGREGATE_THRESHOLD_BY_TYPE (pro Schiffs-/Verteidigungsklasse gestaffelt, siehe dort) -
+// diese Konstante bleibt nur noch als DEFAULT fuer alle nicht explizit gelisteten Typen bestehen
+// (Mining/Begleitschiff/Spionagesonde/Salvenschiffe/Imperator/Schildkuppeln/Sentinel-/
+// Ultimate-Kanone - alle bereits ueber maxCount/isDome oder aehnliche Mechanismen gedeckelt, eine
+// Aggregation greift dort in der Praxis nie).
 export const STACK_AGGREGATE_THRESHOLD = 2000;
+// Pro Schiffs-/Verteidigungsklasse gestaffelte Schwelle (Nutzerentscheidung 30.07.2026) - je
+// teurer/staerker die Klasse, desto niedriger die Schwelle (grosse Stueckzahlen davon sind
+// unrealistisch, eine niedrige Schwelle kostet also kaum echte Praezision, spart aber
+// Rechenzeit sobald doch mal viele davon zusammenkommen). Gruppierung 1:1 nach den bestehenden
+// UI-Kategorien (SHIP_GROUPS in client/src/lib/combatInfo.ts: Jaeger-/Kreuzer-/Elite-Klasse).
+// Verteidigungsanlagen OHNE maxCount (siehe data/defenses.ts) bekommen dieselbe Schwelle wie die
+// Kreuzer-Klasse - das war bisher der Hauptverdaechtige fuer sehr grosse Einzelstapel (Raid-
+// Heimatverteidigung kann leicht in die Tausende gehen), siehe README Punkt 124 fuer die
+// Benchmark-Werte, die diese Zahlen bestaetigt haben.
+export const STACK_AGGREGATE_THRESHOLD_BY_TYPE: Record<string, number> = {
+  // Jaeger-Klasse
+  leicht: 500,
+  schwer: 500,
+  // Kreuzer-Klasse
+  kreuzer: 100,
+  schlachtschiff: 100,
+  bomber: 100,
+  // Elite-Klasse
+  schlachtkreuzer: 50,
+  zerstoerer: 50,
+  reaper: 50,
+  sandronator: 50,
+  // Verteidigungsanlagen ohne maxCount (siehe data/defenses.ts)
+  raketenwerfer: 100,
+  leichteslaser: 100,
+  schwereslaser: 100,
+  gausskanone: 100,
+  ionengeschuetz: 100,
+  plasmawerfer: 100,
+};
+
+export function stackAggregateThresholdFor(typeId: string): number {
+  return STACK_AGGREGATE_THRESHOLD_BY_TYPE[typeId] ?? STACK_AGGREGATE_THRESHOLD;
+}
 // Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
 // eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
 // regulaer per Schaden auf 0 HP gebracht zu werden. Vorher 0.7 mit LINEARER Chance (1 -

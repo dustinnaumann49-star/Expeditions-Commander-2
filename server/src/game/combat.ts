@@ -32,7 +32,7 @@ import {
   MULTI_TARGET_POWER_CORRECTION,
   FLEET_SIZE_BONUS_CAP,
   FLEET_SIZE_BONUS_RATE,
-  STACK_AGGREGATE_THRESHOLD,
+  stackAggregateThresholdFor,
 } from './data/combatConstants.js';
 import type { WaveProfile, BattleModifierType } from './data/combatConstants.js';
 import { ADMIRAL_BOSS_ID } from './data/combatConstants.js';
@@ -589,8 +589,8 @@ interface CombatUnit {
   hpCur: number;
 }
 
-// ===== Aggregat-Stapel fuer sehr grosse Stueckzahlen (siehe STACK_AGGREGATE_THRESHOLD) =====
-// Ein Stapel EINES Typs mit mehr als STACK_AGGREGATE_THRESHOLD Einheiten wird NICHT mehr als
+// ===== Aggregat-Stapel fuer sehr grosse Stueckzahlen (siehe stackAggregateThresholdFor()) =====
+// Ein Stapel EINES Typs mit mehr als seiner klassenspezifischen Schwelle wird NICHT mehr als
 // einzelne CombatUnit-Objekte gefuehrt (das war bei mehreren tausend Schiffen der Hauptgrund fuer
 // mehrminuetige Kampfberechnungen, siehe README Punkt 102/103), sondern als EIN aggregierter Pool:
 // `shieldPoolCur`/`hpPoolCur` sind die Summe ueber alle noch lebenden Einheiten dieses Typs
@@ -691,7 +691,7 @@ function buildUnits(
   Object.entries(shipsObj).forEach(([id, count]) => {
     if (!count || count <= 0) return;
     const s = statsFn(id);
-    if (count > STACK_AGGREGATE_THRESHOLD) {
+    if (count > stackAggregateThresholdFor(id)) {
       const hpPool = count * s.panzerung;
       aggregates.push({
         typeId: id,
@@ -765,7 +765,7 @@ function buildUnitsMultiOwner(
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);
-      if (count > STACK_AGGREGATE_THRESHOLD) {
+      if (count > stackAggregateThresholdFor(id)) {
         const hpPool = count * s.panzerung;
         aggregates.push({
           typeId: id,
