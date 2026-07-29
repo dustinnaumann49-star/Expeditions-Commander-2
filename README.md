@@ -2108,6 +2108,16 @@ client/
       Kontos (Login oder Heartbeat) - bis dahin kann der bereits gestern ausgeloeste Fehl-Raid noch
       laufen, das ist unabhaengig vom Fix und muss regulaer auslaufen.
 
+122. **Perf: `STACK_AGGREGATE_THRESHOLD` von 1.200 auf 2.000 angehoben (Nutzerentscheidung, direkte
+    Fortsetzung von Punkt 114/115).** CPU blieb bei echten Kaempfen mit 1.200 laut Nutzer-Beobachtung
+    durchgehend unter 10% - auf 2.000 angehoben, naechste Stufe der bereits vermessenen
+    Benchmark-Kurve (siehe Punkt 114): Worst Case (5 Schiffstypen exakt an der Schwelle) ~2,4s statt
+    ~1,1s. Liegt an der Kante des alten Richtwerts ("ueber 2-3s fuehlt sich wie echte Wartezeit an")
+    UND `POOL_SIZE` (Punkt 115) steht inzwischen auf 1 - ein langer Kampf wird nicht mehr durch einen
+    zweiten Worker-Slot abgefedert. Falls sich Kaempfe zaeh anfuehlen, ist 1.500 (~1,5s) die
+    naechste sichere Zwischenstufe. Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber.
+    Wird wie bisher live weiterbeobachtet.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

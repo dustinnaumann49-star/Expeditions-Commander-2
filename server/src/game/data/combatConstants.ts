@@ -327,8 +327,15 @@ export const MAX_ROUNDS = 100;
 // (5 Schiffstypen, Einzelschiff-Pfad erzwungen) zeigte mit dem Fix eine deutlich guenstigere Kurve
 // (300 Stk/Typ ~0,18s, 800 ~0,6s, 1.200 ~1,1s, 1.500 ~1,5s, 2.000 ~2,4s). Auf 1.200 angehoben -
 // guter Mittelweg zwischen spuerbar mehr Einzelschiff-Praezision fuer Massenflotten und noch
-// flotter Kampfzeit. Wird nach Live-Beobachtung ggf. weiter angepasst (siehe README Punkt 114).
-export const STACK_AGGREGATE_THRESHOLD = 1200;
+// flotter Kampfzeit.
+// 29.07.2026, spaeter am selben Tag (Nutzerentscheidung nach Live-Beobachtung): CPU blieb bei
+// echten Kaempfen mit 1.200 durchgehend unter 10% - auf 2.000 angehoben (~2,4s Worst-Case bei 5
+// Typen exakt an der Schwelle, siehe Benchmark-Tabelle oben). Liegt an der Kante des alten
+// Richtwerts ("ueber 2-3s fuehlt sich wie echte Wartezeit an") UND `POOL_SIZE` in
+// `combatRunner.ts` steht inzwischen auf 1 (serialisiert, kein zweiter Worker-Slot faengt einen
+// langen Kampf mehr ab) - falls sich Kaempfe zaeh anfuehlen, waere 1.500 (~1,5s) die naechste
+// sichere Zwischenstufe. Wird weiter live beobachtet.
+export const STACK_AGGREGATE_THRESHOLD = 2000;
 // Instant-Explosions-Mechanik (applyHitToTarget() in combat.ts, Nutzerentscheidung Juli 2026):
 // eine Einheit unter dieser HP-Schwelle kann bei einem Treffer sofort komplett ausfallen, statt
 // regulaer per Schaden auf 0 HP gebracht zu werden. Vorher 0.7 mit LINEARER Chance (1 -
