@@ -95,7 +95,7 @@ function SektorCard({
 
         {activeMission ? (
           <>
-            <MissionStatus mission={activeMission} now={now} onShowFleet={() => setFleetMissionId(activeMission.id)} />
+            <MissionStatus mission={activeMission} now={now} onShowFleet={() => setFleetMissionId(activeMission.id)} cfg={cfg} piratenCheckCount={gameData.piratenCheckCount} />
             <div className="build-row">
               <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Vorzeitiger Abbruch holt Flotte + bisherigen Ertrag sofort zurück.</span>
               <button className="qty-btn" style={{ color: 'var(--danger)' }} onClick={() => recallMission(activeMission.id)}>
@@ -416,7 +416,19 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
   );
 }
 
-function MissionStatus({ mission, now, onShowFleet }: { mission: Mission; now: number; onShowFleet: () => void }) {
+function MissionStatus({
+  mission,
+  now,
+  onShowFleet,
+  cfg,
+  piratenCheckCount,
+}: {
+  mission: Mission;
+  now: number;
+  onShowFleet: () => void;
+  cfg: GameData['sektorConfig'][string];
+  piratenCheckCount: number;
+}) {
   let status: string;
   let remaining: number;
   let phaseStart: number;
@@ -454,6 +466,15 @@ function MissionStatus({ mission, now, onShowFleet }: { mission: Mission; now: n
         <span>Verbleibend</span>
         <span>{formatTime(remaining)}</span>
       </div>
+      {cfg.type === 'piraten' && mission.processedHours > 0 && (
+        <div className="queue-item">
+          <span>⚔️ Kämpfe bisher</span>
+          <span>
+            {mission.processedHours}/{piratenCheckCount} Checks
+            {cfg.winContainer ? ` · ${mission.combatWins || 0} gewonnen` : ''}
+          </span>
+        </div>
+      )}
       <div className="queue-item">
         <span>🚀 Flotte vor Ort</span>
         <span>

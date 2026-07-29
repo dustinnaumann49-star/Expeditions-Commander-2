@@ -272,6 +272,7 @@ export interface Mission {
   teile: { waffen: number; schild: number; panzerung: number };
   sandronatorAlive: boolean;
   finalized: boolean;
+  combatWins?: number;
 }
 
 export interface CombatUnitResult {

@@ -1939,6 +1939,23 @@ client/
       `Zurückrufen` der Hoch-Mission wurden alle drei Buttons sofort wieder `disabled:false`.
       `tsc --noEmit` im Client kompiliert sauber.
 
+117. **Feature: Piraten-Sektor-Missionsstatus zeigt jetzt Kampf-Fortschritt an.** Nutzerwunsch:
+    vor einem Rückruf abwägen können, wie viele der Checks bereits stattgefunden haben (und wie
+    viele davon gewonnen wurden) - bisher zeigte `MissionStatus` (Sektor.tsx) nur die reine
+    Zeit-Fortschrittsanzeige (Anflug/Im Sektor/Rückflug in %), keine Kampf-Information.
+    - **Elite-Bollwerk bewusst ausgeschlossen** (Nutzer-Klarstellung): dort kommt ohnehin nach
+      jedem Check eine eigene Nachricht mit vollem Kampfbericht, zusätzliche Anzeige wäre
+      redundant. Der Fortschritt (`processedHours`/`piratenCheckCount`) wird dort bereits seit
+      längerem in `Multiplayer.tsx` angezeigt.
+    - **Neue Zeile** in `MissionStatus`, nur wenn `cfg.type === 'piraten'` und mindestens ein Check
+      gelaufen ist: "⚔️ Kämpfe bisher: {processedHours}/{piratenCheckCount} Checks · {combatWins}
+      gewonnen" (Gewinn-Anzahl nur bei den Container-Stufen Niedrig/Mittel/Hoch, erkannt an
+      `cfg.winContainer`, siehe Punkt 112). `Mission.combatWins` war serverseitig schon vorhanden
+      (treibt die Container-Belohnung), fehlte aber im Client-Typ (`types/game.ts`) - ergänzt.
+    - **Live verifiziert** (Dev-Server, Mission mit `processedHours:3`/`combatWins:2` direkt in der
+      DB geseedet): Zeile erscheint korrekt als "3/6 Checks · 2 gewonnen". `tsc --noEmit` im
+      Client kompiliert sauber.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
