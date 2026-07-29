@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { loadPlayerState, savePlayerState } from './state.js';
 import { tick, startBuild, startDefenseBuild, startResearch, buildImperator, startBuildingConstruction, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { sendFleet, recallMission } from './missions.js';
-import { openContainer, redeemRewardItem } from './inventory.js';
+import { openContainer, openAllContainers, redeemRewardItem } from './inventory.js';
 import { clearMessages } from './messages.js';
 import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
@@ -340,6 +340,12 @@ gameRouter.post('/inventory/open', (req: AuthedRequest, res) => {
   const { containerId } = req.body ?? {};
   if (typeof containerId !== 'string') return res.status(400).json({ error: 'containerId erforderlich.' });
   handleAction(req, res, (state) => openContainer(state, containerId));
+});
+
+gameRouter.post('/inventory/open-all', (req: AuthedRequest, res) => {
+  const { tier } = req.body ?? {};
+  if (tier !== 'silber' && tier !== 'gold' && tier !== 'elite') return res.status(400).json({ error: 'tier (silber|gold|elite) erforderlich.' });
+  handleAction(req, res, (state) => openAllContainers(state, tier));
 });
 
 gameRouter.post('/inventory/redeem', (req: AuthedRequest, res) => {

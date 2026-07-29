@@ -20,6 +20,7 @@ interface GameContextValue {
   sendMission: (sektorId: string, selection: Record<string, number>) => Promise<void>;
   recallMission: (missionId: string) => Promise<void>;
   openContainer: (containerId: string) => Promise<void>;
+  openAllContainers: (tier: 'silber' | 'gold' | 'elite') => Promise<void>;
   redeemRewardItem: (itemId: string) => Promise<void>;
   executeTrade: (amount: number, from: string, to: string) => Promise<void>;
   scrapShip: (shipId: string, qty: number) => Promise<void>;
@@ -207,6 +208,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     sendMission: (sektorId, selection) => run(() => api.sendMission(sektorId, selection)),
     recallMission: (missionId) => run(() => api.recallMission(missionId)),
     openContainer: (containerId) => run(() => api.openContainer(containerId)),
+    openAllContainers: (tier) => run(() => api.openAllContainers(tier)),
     redeemRewardItem: (itemId) => run(() => api.redeemRewardItem(itemId)),
     executeTrade: (amount, from, to) => run(() => api.executeTrade(amount, from, to)),
     scrapShip: (shipId, qty) => run(() => api.scrapShip(shipId, qty)),

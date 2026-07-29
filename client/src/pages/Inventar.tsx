@@ -41,7 +41,7 @@ function formatContainerReward(r: ContainerReward, shipName: (id: string) => str
 }
 
 export function InventarPage() {
-  const { gameData, state, openContainer, redeemRewardItem, error } = useGame();
+  const { gameData, state, openContainer, openAllContainers, redeemRewardItem, error } = useGame();
   if (!gameData || !state) return <PageSkeleton />;
   const shipName = (id: string) => gameData.ships.find((s) => s.id === id)?.name || id;
 
@@ -74,9 +74,16 @@ export function InventarPage() {
                     </span>
                     <div className="build-row">
                       <span></span>
-                      <button className="build-btn" onClick={() => openContainer(c.id)}>
-                        🗝️ Einen öffnen
-                      </button>
+                      <span>
+                        <button className="qty-btn" onClick={() => openContainer(c.id)}>
+                          🗝️ Einen öffnen
+                        </button>{' '}
+                        {c.count > 1 && (
+                          <button className="build-btn" onClick={() => openAllContainers(c.tier)}>
+                            📦 Alle {c.count} öffnen
+                          </button>
+                        )}
+                      </span>
                     </div>
                   </div>
                 );

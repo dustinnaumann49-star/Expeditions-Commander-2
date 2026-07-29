@@ -1,5 +1,5 @@
 import { CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS } from './data/economy.js';
-import type { ContainerCategoryDef, ContainerRewardDef } from './data/economy.js';
+import type { ContainerCategoryDef, ContainerRewardDef, ContainerTypeDef } from './data/economy.js';
 import { pushMessage } from './messages.js';
 import type { ActionResult } from './actions.js';
 import type { Container, ContainerReward, ContainerTier, PlayerState, RewardItem } from './types.js';
@@ -51,23 +51,18 @@ function rollContainerCategories(categories: ContainerCategoryDef[]): ContainerR
   return chosen.map((c) => c.rewards[Math.floor(Math.random() * c.rewards.length)]);
 }
 
-export function openContainer(state: PlayerState, containerId: string): ActionResult {
-  const idx = state.inventory.findIndex((c) => c.id === containerId && 'tier' in c);
-  if (idx === -1) return { ok: false, error: 'Container nicht gefunden.' };
-  const container = state.inventory[idx] as Container;
-  const config = CONTAINER_TYPES[container.tier];
-  if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
-  if (container.count <= 0) return { ok: false, error: 'Kein Container dieser Art mehr vorhanden.' };
-  if (container.tier === 'silber' || container.tier === 'gold' || container.tier === 'elite') {
-    state.stats.containersOpened[container.tier]++;
-  }
-
+// Wuerfelt EINE Container-Oeffnung aus und legt die Belohnungen direkt ins Inventar (gestapelt
+// nach stackKey, siehe RewardItem) - ausgelagert aus openContainer(), damit openAllContainers()
+// (Nutzerentscheidung: bei Raid-Belohnungen von bis zu 120 Containern auf einmal ist Einzeln-Klicken
+// nicht mehr praktikabel) dieselbe Ziehungs-/Stapel-Logik in einer Schleife wiederverwenden kann,
+// ohne pro Container eine eigene Nachricht zu verschicken.
+function rollAndApplyContainer(state: PlayerState, tier: ContainerTier, config: ContainerTypeDef): { labels: string[]; jackpotHit: boolean } {
   const selected = rollContainerCategories(config.categories);
 
   // Jackpot: zusaetzlich zu den normalen Picks, mit kleiner Chance (siehe JACKPOT_CHANCE in
   // economy.ts) - ein Bonus obendrauf, kein Ersatz fuer einen der gewuerfelten Picks.
   const jackpotHit = Math.random() < JACKPOT_CHANCE;
-  const jackpotReward = jackpotHit ? JACKPOT_REWARDS[container.tier] : null;
+  const jackpotReward = jackpotHit ? JACKPOT_REWARDS[tier] : null;
   const allRewards = jackpotReward ? [...selected, jackpotReward] : selected;
 
   const labels: string[] = [];
@@ -92,11 +87,64 @@ export function openContainer(state: PlayerState, containerId: string): ActionRe
     }
     labels.push(reward.label);
   });
+  return { labels, jackpotHit };
+}
+
+export function openContainer(state: PlayerState, containerId: string): ActionResult {
+  const idx = state.inventory.findIndex((c) => c.id === containerId && 'tier' in c);
+  if (idx === -1) return { ok: false, error: 'Container nicht gefunden.' };
+  const container = state.inventory[idx] as Container;
+  const config = CONTAINER_TYPES[container.tier];
+  if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
+  if (container.count <= 0) return { ok: false, error: 'Kein Container dieser Art mehr vorhanden.' };
+  if (container.tier === 'silber' || container.tier === 'gold' || container.tier === 'elite') {
+    state.stats.containersOpened[container.tier]++;
+  }
+
+  const { labels, jackpotHit } = rollAndApplyContainer(state, container.tier, config);
 
   container.count -= 1;
   if (container.count <= 0) state.inventory.splice(idx, 1);
   const jackpotText = jackpotHit ? ' 🎰 JACKPOT! Eine zusätzliche Belohnung wartet im Inventar!' : '';
   pushMessage(state, 'farm', `📦 ${config.name} geöffnet! Ins Inventar gelegt: ${labels.join(', ')}. Du kannst sie jederzeit einzeln einlösen.${jackpotText}`);
+  return { ok: true };
+}
+
+// Oeffnet ALLE Container einer Stufe auf einmal (Nutzerentscheidung: bei den durch den Raid-Umbau
+// moeglichen Mengen - bis zu 120 Silber-Container aus einer einzigen perfekten Belagerung - ist
+// Einzeln-Oeffnen nicht mehr zumutbar). Jede Oeffnung wird weiterhin EINZELN gewuerfelt (kein
+// Batch-Rabatt/-Bonus, exakt dieselbe Ziehung wie beim Einzeln-Oeffnen), nur die Nachricht wird zu
+// EINER Zusammenfassung gebuendelt statt bis zu 120 Einzelnachrichten zu verschicken.
+export function openAllContainers(state: PlayerState, tier: ContainerTier): ActionResult {
+  const idx = state.inventory.findIndex((c) => 'tier' in c && (c as Container).tier === tier);
+  if (idx === -1) return { ok: false, error: 'Container nicht gefunden.' };
+  const container = state.inventory[idx] as Container;
+  const config = CONTAINER_TYPES[tier];
+  if (!config) return { ok: false, error: 'Unbekannter Container-Typ.' };
+  const totalToOpen = container.count;
+  if (totalToOpen <= 0) return { ok: false, error: 'Kein Container dieser Art mehr vorhanden.' };
+
+  const rewardCounts = new Map<string, number>();
+  let jackpotCount = 0;
+  for (let i = 0; i < totalToOpen; i++) {
+    const { labels, jackpotHit } = rollAndApplyContainer(state, tier, config);
+    labels.forEach((label) => rewardCounts.set(label, (rewardCounts.get(label) || 0) + 1));
+    if (jackpotHit) jackpotCount++;
+  }
+  if (tier === 'silber' || tier === 'gold' || tier === 'elite') {
+    state.stats.containersOpened[tier] += totalToOpen;
+  }
+  state.inventory.splice(idx, 1);
+
+  const summary = Array.from(rewardCounts.entries())
+    .map(([label, count]) => `${count}x ${label}`)
+    .join(', ');
+  const jackpotText = jackpotCount > 0 ? ` 🎰 ${jackpotCount}x JACKPOT!` : '';
+  pushMessage(
+    state,
+    'farm',
+    `📦 ${totalToOpen}x ${config.name} geöffnet! Ins Inventar gelegt: ${summary}. Du kannst sie jederzeit einzeln einlösen.${jackpotText}`
+  );
   return { ok: true };
 }
 

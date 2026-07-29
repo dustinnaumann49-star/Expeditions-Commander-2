@@ -76,6 +76,8 @@ export const api = {
     request<PlayerState>('/game/mission/recall', { method: 'POST', body: JSON.stringify({ missionId }) }),
   openContainer: (containerId: string) =>
     request<PlayerState>('/game/inventory/open', { method: 'POST', body: JSON.stringify({ containerId }) }),
+  openAllContainers: (tier: 'silber' | 'gold' | 'elite') =>
+    request<PlayerState>('/game/inventory/open-all', { method: 'POST', body: JSON.stringify({ tier }) }),
   redeemRewardItem: (itemId: string) =>
     request<PlayerState>('/game/inventory/redeem', { method: 'POST', body: JSON.stringify({ itemId }) }),
   executeTrade: (amount: number, from: string, to: string) =>
