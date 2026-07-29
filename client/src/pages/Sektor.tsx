@@ -21,6 +21,7 @@ function SektorCard({
   sektor,
   cfg,
   activeMission,
+  blockedByOtherWinContainer,
   availableIds,
   position,
   isSelected,
@@ -41,6 +42,7 @@ function SektorCard({
   sektor: GameData['sektoren'][number];
   cfg: GameData['sektorConfig'][string];
   activeMission: Mission | undefined;
+  blockedByOtherWinContainer: boolean;
   availableIds: string[];
   position: { system: number; position: number } | undefined;
   isSelected: boolean;
@@ -184,6 +186,13 @@ function SektorCard({
                 Entsenden
               </button>
             </div>
+          </>
+        ) : blockedByOtherWinContainer ? (
+          <>
+            <button className="build-btn" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+              Entsenden
+            </button>
+            <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar - erst zurückrufen oder abwarten.</p>
           </>
         ) : (
           <button className="build-btn" onClick={() => setSelectedSektor(sektor.id)}>
@@ -542,6 +551,14 @@ export function SektorPage() {
         {sektorenInTab.map((sektor) => {
           const cfg = gameData.sektorConfig[sektor.id];
           const activeMission = state.missions.find((m) => m.sektorId === sektor.id && !m.finalized);
+          // Piraten-Sektor Niedrig/Mittel/Hoch (erkannt an cfg.winContainer) sind gegenseitig
+          // exklusiv - Server lehnt das Senden ab, solange irgendeine ANDERE Stufe noch aktiv ist
+          // (siehe sendFleet() in missions.ts, README Punkt 112). Client spiegelt dieselbe Regel,
+          // damit der Button gar nicht erst anklickbar ist statt erst nach dem Senden abgelehnt zu
+          // werden.
+          const blockedByOtherWinContainer = Boolean(
+            cfg.winContainer && state.missions.some((m) => !m.finalized && m.sektorId !== sektor.id && gameData.sektorConfig[m.sektorId]?.winContainer)
+          );
           const availableIds = availableFleetForSektor(sektor.id, gameData.sektorConfig);
           const position = sektorPositions.find((p) => p.sektorId === sektor.id);
           const isSelected = selectedSektor === sektor.id;
@@ -552,6 +569,7 @@ export function SektorPage() {
               sektor={sektor}
               cfg={cfg}
               activeMission={activeMission}
+              blockedByOtherWinContainer={blockedByOtherWinContainer}
               availableIds={availableIds}
               position={position}
               isSelected={isSelected}

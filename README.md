@@ -1916,6 +1916,29 @@ client/
       gleichzeitigen Kämpfen, README Punkt 102/103) war eher auf mehr aktive Spieler ausgelegt.
     - Server neu gebaut (`tsc -p tsconfig.json`), kompiliert sauber.
 
+116. **Bugfix: "Entsenden"-Buttons der anderen Piraten-Sektor-Stufen blieben trotz aktiver Mission
+    anklickbar.** Nutzer-Beobachtung (Screenshot): mit aktiver Flotte in "Hoch" (16.270 Schiffe,
+    22h verbleibend) waren "Niedrig" und "Mittel" weiterhin rot/anklickbar, obwohl seit Punkt 112
+    nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar sein soll.
+    - **Root Cause**: die gegenseitige Exklusivität wurde bisher NUR serverseitig durchgesetzt
+      (`sendFleet()` in `missions.ts`, prüft `cfg.winContainer` gegen alle nicht-finalisierten
+      Missionen). `SektorCard` (Sektor.tsx) berechnete `activeMission` bisher ausschließlich pro
+      EIGENEM Sektor (`m.sektorId === sektor.id`) - eine aktive Mission in einem ANDEREN
+      Piraten-Sektor hatte auf die Karten der übrigen Stufen keinerlei Auswirkung, der Button blieb
+      normal klickbar und liess sich auch mit Flotte befüllen, erst beim tatsächlichen Senden kam
+      die (leicht zu übersehende) Serverfehlermeldung.
+    - **Fix**: neue Prop `blockedByOtherWinContainer` (Sektor.tsx, in der `sektorenInTab.map()`-
+      Schleife berechnet) - spiegelt exakt dieselbe Bedingung wie der Server (`cfg.winContainer &&
+      irgendeine andere nicht-finalisierte Mission mit `winContainer`-Sektor). Ist sie wahr UND
+      keine eigene Mission aktiv, zeigt die Karte einen deaktivierten Button (`disabled`, 50%
+      Opacity, `cursor:not-allowed`) mit Erklärtext statt des normalen "Entsenden"-Buttons.
+    - **Live verifiziert** (Dev-Server, Testaccount mit Flotte direkt in der DB geseedet): Flotte
+      nach "Hoch" gesendet - "Niedrig"/"Mittel" zeigten sofort `disabled:true`, Opacity 0,5,
+      `cursor:not-allowed` (per `getComputedStyle` bestätigt) + Hinweistext "Nur EINE
+      Piraten-Sektor-Stufe gleichzeitig beflogbar - erst zurückrufen oder abwarten.". Nach
+      `Zurückrufen` der Hoch-Mission wurden alle drei Buttons sofort wieder `disabled:false`.
+      `tsc --noEmit` im Client kompiliert sauber.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
