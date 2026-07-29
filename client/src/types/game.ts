@@ -353,7 +353,7 @@ export interface FarmDetail {
   resources: { metall: number; kristall: number; deuterium: number };
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
-  eliteContainers?: number;
+  winContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
   richFinds?: RichFindEntry[];
@@ -527,6 +527,7 @@ export interface SektorConfig {
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
   guaranteedEliteContainers?: number;
+  winContainer?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   multiplayerOnly?: boolean;
 }
 

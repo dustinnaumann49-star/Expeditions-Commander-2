@@ -13,7 +13,6 @@ import {
   ASTEROID_ESCORT_POWER_MAX,
   ASTEROID_ESCORT_KILL_REWARD,
   ASTEROID_RICH_FIND_CHANCE,
-  PIRATEN_RICH_FIND_CHANCE,
   COMBAT_SHIP_IDS,
   getEscalationMultiplier,
   ABBAU_BOOST_MULTIPLIER,
@@ -74,6 +73,12 @@ export function sendFleet(state: PlayerState, sektorId: string, selection: Recor
   }
   const cfg = SEKTOR_CONFIG[sektorId];
   if (!cfg) return { ok: false, error: 'Unbekannter Sektor.' };
+  // Nutzerentscheidung 29.07.2026: Piraten-Sektor Solo (Niedrig/Mittel/Hoch, erkennbar an
+  // cfg.winContainer, siehe sectors.ts) ist jetzt gegenseitig exklusiv - man muss sich fuer EINE
+  // Stufe entscheiden statt alle drei parallel zu befliegen.
+  if (cfg.winContainer && state.missions.some((m) => !m.finalized && SEKTOR_CONFIG[m.sektorId]?.winContainer)) {
+    return { ok: false, error: 'Es kann immer nur eine Piraten-Sektor-Stufe (Niedrig/Mittel/Hoch) gleichzeitig beflogen werden.' };
+  }
   if (cfg.multiplayerOnly) {
     return { ok: false, error: 'Dieser Sektor ist nur über gemeinsame Expeditionen mit anderen Spielern erreichbar (siehe Multiplayer-Tab).' };
   }
@@ -335,13 +340,8 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     return;
   }
 
-  // Piraten-Sektoren Mittel/Hoch (Balance-Umbau Juli 2026): dieselbe "reicher Fund"-Chance wie im
-  // Asteroiden-Feld, laeuft UNABHAENGIG vom checkChance-Wuerfel weiter unten (also auch in ruhigen
-  // Stunden ohne Piratenkontakt) - bewusst NUR Mittel/Hoch (nicht Niedrig, Elite-Bollwerk oder der
-  // Piratenadmiral, die ausserhalb dieses Balance-Umbaus liegen).
-  if (mission.sektorId === 'piraten_mittel' || mission.sektorId === 'piraten_hoch') {
-    runRichFindCheck(mission, PIRATEN_RICH_FIND_CHANCE);
-  }
+  // "Reicher Fund" entfaellt seit dem Umbau 29.07.2026 fuer Piraten-Sektor Solo (Niedrig/Mittel/
+  // Hoch) - es gibt kein mission.farmed mehr zum Verdoppeln (siehe winContainer in sectors.ts).
 
   if (Math.random() >= cfg.checkChance) {
     // Kein Feindkontakt in dieser Stunde - keine Zwischen-Nachricht mehr (Nutzerentscheidung,
@@ -512,6 +512,22 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(2)}]` : '';
   const fleetBonusText = fleetBonus > 1 ? ` [Großflotten-Bonus x${fleetBonus.toFixed(2)}]` : '';
 
+  // Piraten-Sektor Solo (Niedrig/Mittel/Hoch, Umbau 29.07.2026): einzige Belohnungsquelle ist jetzt
+  // ein fester Container-Betrag PRO GEWONNENEM CHECK (kein Streak-Bruch, kein Eskalations-Bonus,
+  // siehe winContainer in sectors.ts) - gezaehlt in mission.combatWins, ausgezahlt ERST bei
+  // Missionsende/Rueckruf (siehe finalizeMission()), analog zum Raid-Muster.
+  let containerWinText = '';
+  if (cfg.winContainer && anyNpcDestroyed) {
+    // Sandronator verdoppelt weiterhin die Ausbeute (vorher Beute/Teile, jetzt der Container-
+    // Betrag) - erreicht durch einen doppelten Sieg-Zaehler statt eines separaten Multiplikators,
+    // damit combatWins weiterhin eine reine Ganzzahl bleibt.
+    const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
+    mission.combatWins = (mission.combatWins || 0) + sandronatorBonus;
+    const tierLabel = cfg.winContainer.tier === 'elite' ? 'Elite' : cfg.winContainer.tier === 'gold' ? 'Gold' : 'Silber';
+    const sandronatorText = sandronatorBonus > 1 ? ' [Sandronator x2]' : '';
+    containerWinText = ` Kampf gewonnen - ${cfg.winContainer.count * sandronatorBonus}x ${tierLabel}-Container verdient${sandronatorText} (Gutschrift bei Rückkehr).`;
+  }
+
   let teileText = '';
   let gainedTeile: { waffen: number; schild: number; panzerung: number } | undefined;
   if (cfg.type === 'piraten' && cfg.teileCap) {
@@ -575,7 +591,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   const waveText = waveLabel ? ` [${waveLabel}]` : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
 
-  const hasRewards = lootGained || gainedTeile || captainContainerTier || captainDmGained > 0;
+  const hasRewards = lootGained || gainedTeile || captainContainerTier || captainDmGained > 0 || !!containerWinText;
 
   // Nutzerentscheidung: Piraten-Sektor-Kaempfe werden jetzt genau wie die Asteroiden-Eskorte
   // gesammelt (mission.skirmishLog) statt sofort als eigene Nachricht verschickt - EIN
@@ -584,7 +600,7 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   if (!mission.skirmishLog) mission.skirmishLog = [];
   mission.skirmishLog.push({
     hour: mission.processedHours,
-    outcome: `${outcome}${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${modifierText}${sandronatorText}`,
+    outcome: `${outcome}${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${containerWinText}${modifierText}${sandronatorText}`,
     roundsFought: result.roundsFought,
     npcResults,
     playerResults,
@@ -640,11 +656,12 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
   Object.entries(mission.ships).forEach(([id, c]) => {
     if (c > 0) state.fleet[id] = (state.fleet[id] || 0) + c;
   });
-  // Garantierte Elite-Container (Balance-Umbau Juli 2026, siehe SEKTOR_CONFIG-Kommentar in
-  // sectors.ts) - nur bei Piraten-Sektor Mittel/Hoch, ersetzt dort die vorherige Kapitaen-
-  // Zufallschance durch eine planbare Belohnung bei erfolgreicher Rueckkehr.
-  const guaranteedEliteContainers = cfgForStats?.guaranteedEliteContainers || 0;
-  if (guaranteedEliteContainers > 0) addContainers(state, 'elite', guaranteedEliteContainers);
+  // Piraten-Sektor Solo (Niedrig/Mittel/Hoch, Umbau 29.07.2026): einzige Belohnung ist der
+  // Container-Betrag aus mission.combatWins * winContainer.count, hier am Missionsende (oder bei
+  // Rueckruf, siehe recallMission()) auf einmal gutgeschrieben - analog zum Raid-Muster.
+  const winContainer = cfgForStats?.winContainer;
+  const totalWinContainers = winContainer ? (mission.combatWins || 0) * winContainer.count : 0;
+  if (winContainer && totalWinContainers > 0) addContainers(state, winContainer.tier, totalWinContainers);
   const detail: FarmDetail = {
     sektorName: mission.sektorId,
     resources: {
@@ -658,7 +675,7 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       schild: Math.floor(mission.teile.schild),
       panzerung: Math.floor(mission.teile.panzerung),
     },
-    eliteContainers: guaranteedEliteContainers > 0 ? guaranteedEliteContainers : undefined,
+    winContainers: winContainer && totalWinContainers > 0 ? { tier: winContainer.tier, count: totalWinContainers } : undefined,
     fleetReturned: { ...mission.ships },
     skirmishes: mission.skirmishLog,
     richFinds: mission.richFindLog,
@@ -687,7 +704,13 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
       details ? ` (${details})` : ''
     } - Details siehe unten.`;
   }
-  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${richFindText}${skirmishText}`, detail);
+  const winContainerText =
+    winContainer && totalWinContainers > 0
+      ? ` Belohnung: ${totalWinContainers}x ${
+          winContainer.tier === 'elite' ? 'Elite' : winContainer.tier === 'gold' ? 'Gold' : 'Silber'
+        }-Container (${mission.combatWins} gewonnene Kämpfe × ${winContainer.count}).`
+      : '';
+  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${richFindText}${skirmishText}${winContainerText}`, detail);
 }
 
 function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rueckflug' {

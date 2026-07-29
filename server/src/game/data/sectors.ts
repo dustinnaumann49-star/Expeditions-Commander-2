@@ -23,13 +23,13 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (25.000/h je Schiff) / Dunkle Materie bis 45",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"piraten_niedrig", name:"Sektor P9 – Piraten-Sektor (Niedrig)", img:"sektoren/piraten_niedrig.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte. Bis zu 8 Teile pro Kategorie (nur durch gewonnene Kämpfe erreichbar).",
+    typ:"Piraten-Basis (Geschützt)", zweck:"4x Silber-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 55% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Niedrig", level:"gruen" },
   { id:"piraten_mittel", name:"Sektor P9 – Piraten-Sektor (Mittel)", img:"sektoren/piraten_mittel.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 15 pro Kategorie, nur durch gewonnene Kämpfe erreichbar) - garantiert 1 Elite-Container bei Rückkehr. 8% Chance pro Check, die bisherige Beute dieser Mission zu verdoppeln.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"2x Gold-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 65% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Mittel", level:"gelb" },
   { id:"piraten_hoch", name:"Sektor P9 – Piraten-Sektor (Hoch)", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"Plündere Waffen-/Schild-/Panzerungs-Teile mit jeder Kampfflotte (bis zu 23 pro Kategorie, nur durch gewonnene Kämpfe erreichbar) - garantiert 3 Elite-Container bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. 8% Chance pro Check, die bisherige Beute dieser Mission zu verdoppeln.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"1x Elite-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 75% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
     typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 130% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Jederzeit per Rückruf abbrechbar - bereits gewonnene Kämpfe bleiben erhalten.",
@@ -58,6 +58,12 @@ export interface SektorConfig {
   // Piraten-Sektor: Mittel/Hoch ersetzen die Kapitaen-Zufallschance durch eine planbare, garantierte
   // Belohnung - siehe finalizeMission() in missions.ts).
   guaranteedEliteContainers?: number;
+  // Umbau 29.07.2026 (Nutzerentscheidung "Piraten-Sektor Solo nur noch EIN Container-Typ pro
+  // Stufe"): NUR bei piraten_niedrig/mittel/hoch genutzt - ersetzt lootBase/teileCap/captainChance/
+  // guaranteedEliteContainers KOMPLETT. Pro gewonnenem Check (mindestens ein Gegner vernichtet) gibt
+  // es `count` Container von `tier`, gezaehlt in `Mission.combatWins` und wie beim Raid ERST am
+  // Missionsende ausgezahlt (siehe finalizeMission() in missions.ts).
+  winContainer?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
   // (ersetzt die vorher feste MISSION_TRAVEL_MS, siehe sendFleet() in missions.ts). Fehlt bewusst
@@ -86,21 +92,20 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // bleibt bewusst unangetastet - weiterhin die sanfte Einstiegsstufe ohne Elite-Container.
   // Umbau 28.07.2026 (Nutzerentscheidung): Kampf-Checks laufen nicht mehr stuendlich, sondern alle
   // PIRATEN_CHECK_INTERVAL_MS (4h) ueber die volle MISSION_DURATION_MS (24h) - macht 6 Checks statt
-  // vorher 4. teileCap ist jetzt die EINZIGE Teile-Quelle (die vorherige zeitbasierte Hintergrund-
-  // Zuteilung in accrueFarming() wurde entfernt, siehe missions.ts) - auf 1,5x angehoben (analog zur
-  // Check-Anzahl 6/4), damit eine durchgehend siegreiche Flotte weiterhin denselben Gesamt-Teile-
-  // Ertrag pro Trip erreichen kann. lootBase (Rohstoff-Beute pro gewonnenem Check) bleibt UNVERAENDERT
-  // (Nutzerentscheidung: keine zusaetzliche Rohstoff-Inflation, gleiche Begruendung wie beim
-  // Asteroiden-Feld-Cap) - profitiert aber automatisch von den zusaetzlichen Checks pro Trip.
-  piraten_niedrig:  { checkChance:0.55, type:"piraten", teileCap:8, npcFloor:300000,
-    lootBase:{metall:3000, kristall:2000, deuterium:800}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    captainChance:0.05, captainContainerTier:"silber", captainDm:10, galaxyPosition:{system:10, position:5} },
-  piraten_mittel:   { checkChance:0.65, type:"piraten", teileCap:15, npcFloor:950000,
-    lootBase:{metall:6000, kristall:3800, deuterium:1600}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    guaranteedEliteContainers:1, galaxyPosition:{system:27, position:9} },
-  piraten_hoch:     { checkChance:0.75, type:"piraten", teileCap:23, npcFloor:2400000,
-    lootBase:{metall:10000, kristall:6500, deuterium:3000}, bonusLootChance:0.15, bonusLootMultiplier:3,
-    guaranteedEliteContainers:3, galaxyPosition:{system:45, position:3} },
+  // vorher 4.
+  // Umbau 29.07.2026 (Nutzerentscheidung, zweite Ueberarbeitung): Solo-Piraten-Sektor auf EINEN
+  // einzigen, reinen Container-Belohnungstyp pro Stufe reduziert (winContainer oben) - lootBase/
+  // teileCap/bonusLootChance/captainChance/guaranteedEliteContainers KOMPLETT entfernt, ersetzt
+  // durch 4x Silber (Niedrig) / 2x Gold (Mittel) / 1x Elite (Hoch) PRO GEWONNENEM CHECK, am
+  // Missionsende ausgezahlt. Zusaetzlich darf jetzt nur noch EINE der drei Stufen gleichzeitig
+  // beflogen werden (siehe sendFleet() in missions.ts) - man muss sich fuer Niedrig/Mittel/Hoch
+  // entscheiden statt alle drei parallel laufen zu lassen.
+  piraten_niedrig:  { checkChance:0.55, type:"piraten", npcFloor:300000,
+    winContainer:{tier:"silber", count:4}, galaxyPosition:{system:10, position:5} },
+  piraten_mittel:   { checkChance:0.65, type:"piraten", npcFloor:950000,
+    winContainer:{tier:"gold", count:2}, galaxyPosition:{system:27, position:9} },
+  piraten_hoch:     { checkChance:0.75, type:"piraten", npcFloor:2400000,
+    winContainer:{tier:"elite", count:1}, galaxyPosition:{system:45, position:3} },
   // resourceCapOverTime entfernt (Umbau 28.07.2026, Nutzerentscheidung "nicht mehr ueber Zeit,
   // sondern durch gewonnene Kaempfe") - lootBase (25M/15M/10M PRO gewonnenem Check) war ohnehin
   // schon die dominante Rohstoffquelle hier, der Wegfall des zeitbasierten Zusatz-Tricklers ist

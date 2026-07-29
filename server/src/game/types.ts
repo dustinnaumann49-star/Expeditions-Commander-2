@@ -341,6 +341,12 @@ export interface Mission {
   // Analog zu skirmishLog erst im Abschlussbericht bei Rueckkehr zugestellt statt als
   // Zwischen-Nachricht.
   richFindLog?: RichFindEntry[];
+  // Nur Piraten-Sektor Solo (niedrig/mittel/hoch, siehe SektorConfig.winContainer in sectors.ts):
+  // Gesamtzahl gewonnener Checks (mindestens ein Gegner vernichtet) UEBER DIE GESAMTE Mission -
+  // bricht NICHT bei einem Check ohne Sieg zurueck (anders als streakWins oben) - jeder Sieg zaehlt
+  // dauerhaft. Wird mit winContainer.count multipliziert und ERST bei Missionsende/Rueckruf als
+  // Container gutgeschrieben (siehe finalizeMission() in missions.ts, analog zum Raid-Muster).
+  combatWins?: number;
 }
 
 export interface RichFindEntry {
@@ -426,7 +432,9 @@ export interface FarmDetail {
   resources: { metall: number; kristall: number; deuterium: number };
   dm: number;
   teile: { waffen: number; schild: number; panzerung: number };
-  eliteContainers?: number; // garantierte Elite-Container bei Missionsende (siehe SEKTOR_CONFIG.guaranteedEliteContainers)
+  // Piraten-Sektor Solo (Niedrig/Mittel/Hoch, Umbau 29.07.2026): Container-Belohnung aus
+  // mission.combatWins * SEKTOR_CONFIG.winContainer.count, gutgeschrieben bei Missionsende/Rueckruf.
+  winContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
   richFinds?: RichFindEntry[];

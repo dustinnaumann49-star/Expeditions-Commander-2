@@ -309,10 +309,6 @@ export const ASTEROID_ESCORT_KILL_REWARD = { metall: 900000, kristall: 720000, d
 // der Mission bringt ein Treffer wenig, spaet einen grossen Bonus. Trifft NICHT dmFound (bleibt an
 // das bestehende dmCap-System gebunden).
 export const ASTEROID_RICH_FIND_CHANCE = 0.08;
-// Dieselbe Mechanik fuer Piraten-Sektor Mittel/Hoch (Nutzerentscheidung Juli 2026, Balance-Umbau -
-// siehe SEKTOR_CONFIG-Kommentar in sectors.ts), bewusst derselbe Wert wie beim Asteroiden-Feld fuer
-// ein konsistentes Spielgefuehl.
-export const PIRATEN_RICH_FIND_CHANCE = 0.08;
 
 export const MISSION_TRAVEL_MS = 60 * 1000;
 // Umbau 28.07.2026 (Nutzerentscheidung, Teil des Wochen-/Tages-Umbaus wie schon bei Raids):

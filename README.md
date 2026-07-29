@@ -1805,6 +1805,53 @@ client/
     Teile-Staffelung nach Kampfausgang (15%/8%/2%) und der RapidFire-Kontern-Hinweis wurden deshalb
     wieder ergänzt, nur kompakter formuliert als vorher.
 
+111. **Balance-Neukalibrierung: Schlachtkreuzer-Waffen angehoben, Antriebs-Geschwindigkeits-
+    Hierarchie korrigiert (Nutzerentscheidung, vollständige Schiffswerte-Neukalibrierung).**
+    Kosten/Nutzen-Analyse aller Schiffe ergab zwei Korrekturen:
+    - **Schlachtkreuzer**: 121 Kosten/Waffenpunkt war der klare Ausreißer gegenüber seinen
+      Nachbarn (57-90) und lieferte seine eigene Lore ("Feuerkraft eines Schlachtschiffs mit der
+      Wendigkeit eines Kreuzers") nicht. Waffen 7.000 → 12.000 (jetzt ~71 Kosten/Waffen).
+    - **Antriebs-Geschwindigkeit war invertiert**: Hyperraum-Schiffe (Schlachtkreuzer/Zerstörer/
+      Reaper/Salvendreadnought) waren langsamer als Impuls-Schiffe (Kreuzer), teils sogar langsamer
+      als Raketen-Schiffe. Neu sortiert: Rakete ≤12.500 (unverändert) < Impuls 9.000-15.000 <
+      Hyperraum 15.200-17.000 (normale Kampfschiffe). Bewusste Lore-Ausnahmen unverändert:
+      Imperator (100, "so langsam wie der Todesstern"), Sandronator (2.000, instabiler
+      Experimental-Antrieb). `speed` wirkt ausschließlich auf Galaxie-Flugzeiten (Kampfmechanik
+      nutzt die unabhängige Größenklasse), daher risikoarm. Live verifiziert.
+    - **Vorher verworfener Testlauf im selben Gespräch**: `STACK_AGGREGATE_THRESHOLD` versuchsweise
+      von 300 auf 800 angehoben (Annahme: seltenere Kämpfe durch den Raid-/Sektor-24h-Umbau würden
+      mehr Einzelschiff-Präzision ohne CPU-Risiko erlauben) - Live-Messung im Kampfsimulator
+      widerlegte das (5 Schiffstypen à 300/500/700 Stück ergaben ~1,7s/~3,8s/~6,9s PRO KAMPF, direkte
+      Wartezeit statt nur Hintergrundlast) - Wert bleibt bei 300.
+
+112. **Feature: Piraten-Sektor Solo (Niedrig/Mittel/Hoch) auf reine Container-Belohnung umgestellt,
+    nur noch EINE Stufe gleichzeitig beflogbar (Nutzerentscheidung).**
+    - **Gegenseitiger Ausschluss**: `sendFleet()` in `missions.ts` blockiert das Entsenden zu einer
+      der drei Stufen, solange irgendeine andere (erkannt an `SEKTOR_CONFIG[...].winContainer`)
+      noch aktiv ist - man muss sich für Niedrig/Mittel/Hoch entscheiden statt alle drei parallel
+      zu befliegen.
+    - **Belohnung komplett ersetzt**: `lootBase`/`teileCap`/`bonusLootChance`/`captainChance`/
+      `guaranteedEliteContainers` für diese drei Sektoren entfernt (bleiben bei `piraten_elite`
+      unverändert bestehen). Neues Feld `winContainer` in `SektorConfig` (sectors.ts): Niedrig 4x
+      Silber, Mittel 2x Gold, Hoch 1x Elite - PRO GEWONNENEM CHECK (mindestens ein Gegner
+      vernichtet), gezählt in `Mission.combatWins` (neues Feld, bricht anders als `streakWins`
+      NICHT bei einem Check ohne Sieg zurück), ausgezahlt ERST bei Missionsende/Rückruf - analog
+      zum Raid-Muster (Punkt 108).
+    - **Sandronator** verdoppelt weiterhin die Ausbeute, jetzt über einen doppelten Sieg-Zähler
+      (`combatWins += sandronatorAlive ? 2 : 1`) statt eines Ressourcen-Multiplikators.
+    - **FarmDetail.eliteContainers** (nur noch von `guaranteedEliteContainers` genutzt, jetzt
+      ungenutzt) durch generisches `winContainers: { tier, count }` ersetzt - Client
+      (`Nachrichten.tsx`) rendert Icon/Label je nach Tier statt fest auf Elite verdrahtet.
+    - **Tote Konfiguration entfernt**: `PIRATEN_RICH_FIND_CHANCE` (economy.ts) und der zugehörige
+      `runRichFindCheck()`-Aufruf für Mittel/Hoch in `missions.ts` - ohne `mission.farmed` (kein
+      lootBase mehr) gab es nichts mehr zu verdoppeln.
+    - **Info-Popup** (`SektorInfoBox` in Sektor.tsx) verzweigt jetzt zwischen dem neuen
+      Container-Block (Niedrig/Mittel/Hoch) und dem alten Eskalations-/Beute-Block (nur noch
+      `piraten_elite`); RapidFire-Kontern-Hinweis bleibt für beide Zweige gemeinsam sichtbar.
+    - **Live verifiziert** (Dev-Server): Info-Popup zeigt korrekte Container-Zahlen, gleichzeitiges
+      Senden zu einer zweiten Stufe wird mit klarer Fehlermeldung abgelehnt, Rückruf einer Mission
+      mit 3 gewonnenen Checks schrieb exakt 12 Silber-Container gut (3 × 4).
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

@@ -286,70 +286,68 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
             <strong style={{ color: 'var(--accent-kristall)' }}>{defenseFactor}%</strong> deiner Power zusätzlich
           </span>
         </div>
-        {cfg.captainChance ? (
-          <div className="info-row">
-            <span className="info-label">☠ Piratenkapitän</span>
-            <span className="info-value">
-              <strong style={{ color: 'var(--rf-gold)' }}>{(cfg.captainChance * 100).toFixed(0)}%</strong> Chance pro Kampf ·{' '}
-              <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
-              <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong> bei Sieg
-            </span>
-          </div>
-        ) : cfg.guaranteedEliteContainers ? (
-          <div className="info-row">
-            <span className="info-label">💎 Garantiert</span>
-            <span className="info-value">
-              <strong style={{ color: 'var(--rf-gold)' }}>{cfg.guaranteedEliteContainers}x Elite-Container</strong> bei Rückkehr ·{' '}
-              <strong style={{ color: 'var(--accent-dm)' }}>8%</strong>/Check Beute-Verdopplung
-            </span>
-          </div>
-        ) : null}
-        <div className="info-row">
-          <span className="info-label">📈 Sieges-Serie</span>
-          <span className="info-value">
-            {sektorId === 'piraten_elite' ? (
-              <>
-                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> pro Sieg in Folge (max.{' '}
-                <strong style={{ color: 'var(--accent-dm)' }}>8x</strong>)
-              </>
-            ) : (
-              <>
-                <strong style={{ color: 'var(--accent-deut)' }}>
-                  {sektorId === 'piraten_niedrig' ? '+10%' : sektorId === 'piraten_mittel' ? '+20%' : '+35%'}
+        {cfg.winContainer ? (
+          <>
+            <div className="info-row">
+              <span className="info-label">📦 Belohnung pro gewonnenem Kampf</span>
+              <span className="info-value">
+                <strong style={{ color: cfg.winContainer.tier === 'elite' ? 'var(--rf-gold)' : cfg.winContainer.tier === 'gold' ? 'var(--rf-gold)' : 'var(--accent-kristall)' }}>
+                  {cfg.winContainer.count}x {cfg.winContainer.tier === 'elite' ? 'Elite' : cfg.winContainer.tier === 'gold' ? 'Gold' : 'Silber'}-Container
                 </strong>{' '}
-                pro Sieg in Folge (max.{' '}
-                <strong style={{ color: 'var(--accent-deut)' }}>
-                  {sektorId === 'piraten_niedrig' ? '130%' : sektorId === 'piraten_mittel' ? '160%' : '205%'}
-                </strong>
-                )
-              </>
-            )}{' '}
-            - bricht bei einem Check ohne Sieg ab
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">💰 Beute pro Sieg</span>
-          <span className="info-value">
-            <strong style={{ color: 'var(--accent-metall)' }}>{cfg.lootBase?.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
-            <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
-            <strong style={{ color: 'var(--accent-deut)' }}>{cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium</strong> ·{' '}
-            {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% auf {cfg.bonusLootMultiplier}x
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">🔧 Teile pro Check (bis Cap {cfg.teileCap})</span>
-          <span className="info-value">
-            Klarer Sieg <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> · mit Verlusten{' '}
-            <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> · Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
-            Cap
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">⭐ Sandronator</span>
-          <span className="info-value">
-            <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> Beute und Teile, solange er überlebt
-          </span>
-        </div>
+                - sammelt sich über die ganze Mission, Gutschrift erst bei Rückkehr/Rückruf
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">⭐ Sandronator</span>
+              <span className="info-value">
+                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> die Container-Ausbeute, solange er überlebt
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            {cfg.captainChance ? (
+              <div className="info-row">
+                <span className="info-label">☠ Piratenkapitän</span>
+                <span className="info-value">
+                  <strong style={{ color: 'var(--rf-gold)' }}>{(cfg.captainChance * 100).toFixed(0)}%</strong> Chance pro Kampf ·{' '}
+                  <strong style={{ color: containerCfg?.color || 'var(--text)' }}>{containerCfg?.name}</strong> +{' '}
+                  <strong style={{ color: 'var(--accent-dm)' }}>{cfg.captainDm} DM</strong> bei Sieg
+                </span>
+              </div>
+            ) : null}
+            <div className="info-row">
+              <span className="info-label">📈 Sieges-Serie</span>
+              <span className="info-value">
+                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> pro Sieg in Folge (max.{' '}
+                <strong style={{ color: 'var(--accent-dm)' }}>8x</strong>) - bricht bei einem Check ohne Sieg ab
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">💰 Beute pro Sieg</span>
+              <span className="info-value">
+                <strong style={{ color: 'var(--accent-metall)' }}>{cfg.lootBase?.metall.toLocaleString('de-DE')} Metall</strong>,{' '}
+                <strong style={{ color: 'var(--accent-kristall)' }}>{cfg.lootBase?.kristall.toLocaleString('de-DE')} Kristall</strong>,{' '}
+                <strong style={{ color: 'var(--accent-deut)' }}>{cfg.lootBase?.deuterium.toLocaleString('de-DE')} Deuterium</strong> ·{' '}
+                {((cfg.bonusLootChance || 0) * 100).toFixed(0)}% auf {cfg.bonusLootMultiplier}x
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">🔧 Teile pro Check (bis Cap {cfg.teileCap})</span>
+              <span className="info-value">
+                Klarer Sieg <strong style={{ color: 'var(--accent-deut)' }}>15%</strong> · mit Verlusten{' '}
+                <strong style={{ color: 'var(--rf-gold)' }}>8%</strong> · Niederlage <strong style={{ color: 'var(--danger-bright)' }}>2%</strong> vom
+                Cap
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">⭐ Sandronator</span>
+              <span className="info-value">
+                <strong style={{ color: 'var(--accent-dm)' }}>Verdoppelt</strong> Beute und Teile, solange er überlebt
+              </span>
+            </div>
+          </>
+        )}
         <div className="info-row" style={{ borderBottom: 'none', fontSize: 11, color: 'var(--text-dim)' }}>
           <span className="info-label">💡 RapidFire-Kontern</span>
           <span className="info-value">

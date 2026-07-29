@@ -241,7 +241,11 @@ function farmRewardRows(detail: FarmDetail): [string, string][] {
   if (detail.teile.waffen) rows.push(['Waffen-Teile', detail.teile.waffen.toLocaleString('de-DE')]);
   if (detail.teile.schild) rows.push(['Schild-Teile', detail.teile.schild.toLocaleString('de-DE')]);
   if (detail.teile.panzerung) rows.push(['Panzerungs-Teile', detail.teile.panzerung.toLocaleString('de-DE')]);
-  if (detail.eliteContainers) rows.push(['💎 Elite-Container', detail.eliteContainers.toLocaleString('de-DE')]);
+  if (detail.winContainers) {
+    const icon = detail.winContainers.tier === 'elite' ? '💎' : detail.winContainers.tier === 'gold' ? '🏆' : '📦';
+    const label = detail.winContainers.tier === 'elite' ? 'Elite-Container' : detail.winContainers.tier === 'gold' ? 'Gold-Container' : 'Silber-Container';
+    rows.push([`${icon} ${label}`, detail.winContainers.count.toLocaleString('de-DE')]);
+  }
   return rows;
 }
 

@@ -10,6 +10,24 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '29.07.2026',
+    title: 'Piraten-Sektor: nur noch eine Stufe gleichzeitig, dafür klare Container-Belohnung',
+    changes: [
+      'Ihr müsst euch jetzt entscheiden: Niedrig, Mittel ODER Hoch - nicht mehr alle drei gleichzeitig beflogbar. Erst wenn eure Flotte zurück ist, könnt ihr die nächste Stufe starten.',
+      'Die Belohnung ist dafür glasklar: Niedrig gibt 4x Silber-Container pro gewonnenem Kampf, Mittel 2x Gold, Hoch 1x Elite-Container - alles gesammelt und bei Rückkehr auf einmal gutgeschrieben.',
+      'Der Sandronator verdoppelt weiterhin die Ausbeute, wenn er die ganze Mission überlebt.',
+    ],
+  },
+  {
+    date: '29.07.2026',
+    title: 'Schiffswerte überarbeitet',
+    changes: [
+      'Der Schlachtkreuzer war spürbar zu teuer für seine Waffenkraft - Waffenwert deutlich angehoben, jetzt im Rahmen der anderen Schiffe seiner Preisklasse.',
+      'Die Antriebs-Geschwindigkeiten waren verkehrt herum gestaffelt: Schiffe mit Hyperraumantrieb (Schlachtkreuzer, Zerstörer, Reaper, Salvendreadnought) waren teils langsamer als Schiffe mit einfacherem Antrieb. Jetzt gilt: Rakete < Impuls < Hyperraum, wie es sich gehört.',
+      'Imperator und Sandronator bleiben bewusst weiterhin extrem langsam - das ist Absicht, kein Bug.',
+    ],
+  },
+  {
+    date: '29.07.2026',
     title: 'Bugfix: hängengebliebene Raids',
     changes: [
       'Ein Raid, der genau während der Umstellung auf den neuen Wochen-Rhythmus lief, konnte dauerhaft bei der letzten Welle hängen bleiben, statt sich aufzulösen - behoben. Betroffene Raids lösen sich beim nächsten Login automatisch auf.',
