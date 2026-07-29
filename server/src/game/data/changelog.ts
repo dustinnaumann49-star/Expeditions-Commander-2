@@ -10,6 +10,21 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '29.07.2026',
+    title: 'Kampf-Fortschritt in Piraten-Sektor und Elite-Bollwerk jetzt sichtbar',
+    changes: [
+      'Piraten-Sektor (Solo): der Missionsstatus zeigt jetzt zusätzlich "⚔️ Kämpfe bisher: X/6 Checks · Y gewonnen" - vor einem Rückruf seht ihr auf einen Blick, ob sich das Weiterlaufenlassen noch lohnt.',
+      'Elite-Bollwerk: die Fortschrittsanzeige zeigt jetzt zusätzlich, wie viele der bisherigen Checks tatsächlich gewonnen wurden. Neuer Button "🚀 Flotten ansehen" zeigt während der laufenden Expedition die aktuelle (bereits um Verluste bereinigte) Flottenstärke aller Teilnehmer - auch das eine wichtige Entscheidungshilfe vor einem Rückruf.',
+    ],
+  },
+  {
+    date: '29.07.2026',
+    title: 'Bugfix: Piraten-Sektor-Buttons blieben trotz laufender Mission anklickbar',
+    changes: [
+      'Solange eine Flotte in Niedrig/Mittel/Hoch unterwegs war, sollten die anderen beiden Stufen gesperrt sein - der Button sah aber weiterhin normal anklickbar aus und ließ sich auch mit Schiffen befüllen, erst beim tatsächlichen Senden kam eine Fehlermeldung. Die gesperrten Buttons sind jetzt sichtbar ausgegraut, mit Hinweistext, warum gerade nicht gesendet werden kann.',
+    ],
+  },
+  {
+    date: '29.07.2026',
     title: 'Piraten-Sektor: nur noch eine Stufe gleichzeitig, dafür klare Container-Belohnung',
     changes: [
       'Ihr müsst euch jetzt entscheiden: Niedrig, Mittel ODER Hoch - nicht mehr alle drei gleichzeitig beflogbar. Erst wenn eure Flotte zurück ist, könnt ihr die nächste Stufe starten.',
