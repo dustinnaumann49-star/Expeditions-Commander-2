@@ -41,7 +41,6 @@ export function GalaxiePage() {
     incomingDeployments,
     galaxyEvents,
     parties,
-    users,
     refreshGalaxy,
     holdFleet,
     recallHold,
@@ -163,23 +162,6 @@ export function GalaxiePage() {
         )}
       </p>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
-
-      <div className="queue-box" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>🚩 {gameData.allianceName}</h3>
-        <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 6 }}>
-          Mitglieder: <strong style={{ color: 'var(--accent-deut)' }}>du</strong>
-          {users.map((u) => (
-            <span key={u.id}>
-              {', '}
-              {u.isBot && '🤖 '}
-              <strong style={{ color: 'var(--accent-kristall)' }}>{u.username}</strong>
-            </span>
-          ))}
-        </p>
-        <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-          Gegenseite: {gameData.pirateAllianceName} (kontrolliert alle noch nicht eroberten Piratenbasen)
-        </p>
-      </div>
 
       <div className="queue-box" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>

@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '29.07.2026',
+    title: 'Galaxie-Ansicht aufgeräumt',
+    changes: [
+      'Das "🚩 Sternenbund"-Kästchen oben auf der Galaxie-Seite (Mitgliederliste, Gegenseite "Piratenkonföderation") ist entfernt - es war rein dekorativ und hatte keinerlei Funktion.',
+    ],
+  },
+  {
+    date: '29.07.2026',
     title: 'Kampf-Fortschritt in Piraten-Sektor und Elite-Bollwerk jetzt sichtbar',
     changes: [
       'Piraten-Sektor (Solo): der Missionsstatus zeigt jetzt zusätzlich "⚔️ Kämpfe bisher: X/6 Checks · Y gewonnen" - vor einem Rückruf seht ihr auf einen Blick, ob sich das Weiterlaufenlassen noch lohnt.',

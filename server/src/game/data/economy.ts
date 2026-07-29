@@ -503,13 +503,6 @@ export const OUTPOST_PIRATE_ADVANTAGE_ROLL = [1.0, 1.15, 1.3, 1.4];
 // spuerbare, aber nicht garantierte Bedrohung (in Tests ca. 40-60% Siegchance fuer die Piraten).
 export const OUTPOST_PIRATE_CONCENTRATION_FACTOR = 1.4;
 
-// Rein kosmetische Allianz-Namen (Nutzerentscheidung Juli 2026) - "Allianz" existiert NICHT als
-// eigenes Datenmodell/eigene Logik, sondern ist nur die informelle Bezeichnung fuer "alle Nutzer
-// aus `users`" (Menschen + Bots) gegenueber der Piraten-Seite. Rein zur Anzeige (siehe
-// AllianceOverview-Panel in Galaxie.tsx) - KEIN Einfluss auf Mechanik/Berechtigungen.
-export const ALLIANCE_NAME = 'Sternenbund';
-export const PIRATE_ALLIANCE_NAME = 'Piratenkonföderation';
-
 // Raid-Wellensystem (Nutzerentscheidung): ein Raid ist nicht mehr EIN Kampf bei Ankunft, sondern
 // RAID_WAVE_COUNT einzelne Angriffswellen innerhalb eines RAID_ASSAULT_DURATION_MS-Fensters NACH
 // der Ankunft (Vorbereitungszeit/Flugzeit davor bleiben unveraendert, siehe RAID_PREP_MS in

@@ -1982,6 +1982,20 @@ client/
       statt der urspruenglich entsandten 100/50) pro Teilnehmer. `tsc`/`tsc --noEmit` in Server UND
       Client kompilieren sauber.
 
+119. **Cleanup: rein kosmetisches "Allianz"-Panel aus der Galaxie-Ansicht entfernt.** Nutzer-Hinweis
+    nach dem Forschungsbaum-Brainstorming: das "🚩 Sternenbund"-Panel in `Galaxie.tsx` (Mitglieder-
+    liste aller Nutzer + Bots, Gegenseite "Piratenkonföderation") hatte laut Code-Kommentar in
+    `economy.ts` NIE ein eigenes Datenmodell oder eigene Logik - rein kosmetische Anzeige von "alle
+    Nutzer aus `users`", kein Beitritt/Austritt, keine Mechanik.
+    - **Entfernt**: `ALLIANCE_NAME`/`PIRATE_ALLIANCE_NAME` (`economy.ts`), `allianceName`/
+      `pirateAllianceName` im `/data`-Bundle (`routes.ts`) und im Client-Typ (`types/game.ts`), das
+      Panel selbst inkl. der jetzt ungenutzten `users`-Destrukturierung in `Galaxie.tsx`
+      (`useGame()` selbst behält `users` weiterhin - wird u.a. in `Multiplayer.tsx` zum Einladen
+      gebraucht, nur die Galaxie-Seite nutzte es ausschließlich für dieses Panel).
+    - **Live verifiziert** (Dev-Server): Galaxie-Seite lädt fehlerfrei ohne das Panel, keine
+      Konsolen-Fehler. `tsc -p tsconfig.json` (Server) und `tsc --noEmit` (Client) kompilieren
+      sauber.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
