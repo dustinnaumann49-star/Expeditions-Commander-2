@@ -1714,6 +1714,97 @@ client/
       der Fix nicht pauschal alle Verluste senkt, sondern gezielt das gestaffelte
       Rückzugsverhalten wiederherstellt.
 
+106. **Balance: Zeitgutschein-Drop-Chance in Silber/Gold/Elite-Containern erhöht + Inventar zeigt
+    jetzt die reale Chance.** Nutzer-Feedback: Zeitgutscheine fühlten sich trotz eingetragener
+    15-20% Chance "zu selten" an.
+    - **Ursache**: `rollContainerCategories()` in `inventory.ts` normalisiert jede Öffnung auf
+      GENAU 2 Treffer - Ressourcen/Teile (60-80% Einzelchance) belegten dadurch fast immer beide
+      Slots, Zeitgutschein/Freischiff kamen real viel seltener zum Zug als ihr `chance`-Wert
+      suggerierte (exakte Berechnung per Enumeration aller Treffer-Kombinationen: Silber 20% Rohwert
+      ergab nur ~15% real, Gold 15%→~10%, Elite 10%→~7%).
+    - **Fix**: Rohwerte auf 38%/32%/23% angehoben, kalibriert auf ~28%/22%/16% reale Chance.
+    - **Zusatz-Fix**: `computeRealCategoryChances()` (economy.ts) berechnet die tatsächliche Chance
+      pro Kategorie exakt (gleicher Algorithmus wie die Ziehung selbst) und schreibt sie als
+      `realChance` auf jede Kategorie - die Inventar-Seite zeigt jetzt diesen Wert statt des rohen,
+      irreführenden `chance`-Werts.
+
+107. **Balance: Piratenbasen bekommen eine dauerhaft starke Garnison + Ressourcen-Cap, Booster
+    überarbeitet.** Folgefrage zur Autonomie-Entfernung (Punkt 98): "Piratenbasen brauchen starke
+    Flotte/Verteidigung, aber Ressourcen dürfen nicht unbegrenzt wachsen."
+    - **Garnison**: `SEED_FLEET`/`SEED_DEFENSE` in `pirateBaseState.ts` von 95 Schiffen/65
+      Verteidigungsanlagen auf ~5.300 Schiffe (gemischte Tier-Zusammensetzung, mehrere Typen über
+      `STACK_AGGREGATE_THRESHOLD`) + ~1.120 Verteidigungsanlagen angehoben - das ist jetzt die
+      DAUERHAFTE Stärke (Basen bauen nichts mehr selbst dazu). Floor-Up beim Laden hebt bereits
+      bestehende (schwächere) Basen nachträglich an, ohne sie je abzuschwächen.
+    - **Ressourcen-Cap**: `RESOURCE_CAP` in `pirateBaseState.ts` verhindert unbegrenztes Wachstum
+      (Basen produzieren weiter passiv, können aber seit Punkt 98 nichts mehr ausgeben). Erster Wurf
+      (15M/9M/4M) war zu niedrig - NICHT gegen die tatsächliche Produktionsrate gerechnet (Metallmine
+      Stufe 4 + `NPC_PRODUCTION_BONUS_MULTIPLIER` produziert ~87.800 Metall/h, der Cap war nach
+      ~7-9 Tagen erreicht). Nachkalibriert auf 44M/20M/6M (~3 Wochen ungebremstes Wachstum, im
+      Verhältnis der tatsächlichen Produktionsraten Metall:Kristall:Deuterium ≈ 7,3:3,3:1).
+    - **Booster**: Effekt und Kosten aller vier Booster erhöht (waren im Vergleich zu
+      Schiffs-/Verteidigungs-Modulen zu günstig): Bautempo/Forschungstempo -65% statt -50% (35 statt
+      20 DM), Kampf +35% statt +20% (55 statt 30 DM), Abbau +70% statt +50% (30 statt 15 DM).
+    - **Nebenbefund-Bugfix**: der Abbau-Booster war bisher ein Blindgänger - kaufbar, aber
+      `isBoosterActive(state, 'abbau')` wurde nirgends im Code abgefragt. Jetzt erstmals in
+      `miningBuildingMultiplier()` (actions.ts) und `miningMultiplier()` (missions.ts) verdrahtet.
+
+108. **Feature: Raid-Umbau von 2x/Tag auf 1x/Woche - 24h-Belagerung mit 12 Wellen.** Nutzerentscheidung:
+    passt besser zum tatsächlichen Spielrhythmus (teils mehrwöchige Abwesenheit) als starre tägliche
+    Zeitfenster.
+    - **Rhythmus**: beide Spieler starten jetzt Sonntag 0 Uhr deutscher Zeit (`RAID_SCHEDULE_BY_USERNAME`
+      in `economy.ts`, neuer `weekday`+`hour`-Typ statt der bisherigen Stunden-Arrays). Neue Funktionen
+      `nextWeeklyCheckpoint()`/`rollWeeklyCheckpoints()` ersetzen die stunden-basierten
+      `nextFixedCheckpoint()`/`rollFixedCheckpoints()`. Die ursprüngliche Stagger-Notwendigkeit
+      (Server-Absturz bei zeitgleichen Kampfaufloesungen) ist durch die Stack-Aggregat-Engine
+      entschärft, ein gemeinsamer Wochentag ist unproblematisch.
+    - **Dauer/Wellen**: `RAID_ASSAULT_DURATION_MS` 1h→24h, `RAID_WAVE_COUNT` 5→12 (`RAID_WAVE_FACTORS`
+      von 130-200% auf 130-300% verschärft, damit ein 12/12-Durchbruch bei der neuen Belohnungshöhe
+      kein Selbstläufer ist).
+    - **Belohnung**: bleibt EINE Abschluss-Belohnung am Ende (nicht pro Welle ausgezahlt), skaliert
+      aber jetzt linear mit JEDER gewonnenen Welle statt eines Fixbetrags nur bei perfekter
+      Verteidigung: `RAID_WAVE_WIN_SILBER`(10)/`GOLD`(6)/`ELITE`(2) pro Welle, macht bei 12/12 also
+      120 Silber + 72 Gold + 24 Elite-Container (vorher max. 70 Silber + 28 Gold bei 14 Raids/Woche).
+    - **Bugfix nach Deploy**: ein bereits VOR dem Umbau gespawnter Raid (5 `waveTimes`-Einträge) blieb
+      dauerhaft bei "Welle 5/5" hängen - Schleifen-/Abschluss-Bedingung in `raids.ts` verglich gegen
+      die GLOBALE `RAID_WAVE_COUNT`-Konstante (jetzt 12) statt gegen `raid.waveTimes.length`
+      (`raid.waveTimes[5]` ist `undefined`, `Date.now() >= undefined` ist immer `false`). Alle
+      Vergleiche nutzen jetzt `raid.waveTimes.length` - macht laufende Raids robust gegen künftige
+      Änderungen an der globalen Wellenzahl.
+
+109. **Feature: Asteroiden-Feld/Piraten-Sektor/Elite-Bollwerk auf 24h umgestellt, Rückruf ergänzt.**
+    - **Asteroiden-Feld**: `ASTEROID_MISSION_DURATION_MS` 12h→24h. `dmCap`/`farmRate` BEWUSST
+      unverändert (Nutzerentscheidung: kein Verdoppeln, sonst Ressourcen-/Massen-Schiffbau-Inflation)
+      - die Rate berechnet sich dynamisch aus der tatsächlichen Dauer (siehe `accrueFarming()` in
+      `missions.ts`) und wird dadurch automatisch langsamer statt höher.
+    - **Piraten-Sektor (Solo) + Elite-Bollwerk**: `MISSION_DURATION_MS` 4h→24h, Kampf-Checks laufen
+      nicht mehr stündlich, sondern alle `PIRATEN_CHECK_INTERVAL_MS` (4h) - macht 6 Checks
+      (`PIRATEN_CHECK_COUNT`) statt vorher 4. Die bisherige zeitbasierte Teile-/Ressourcen-Zuteilung
+      (teileCap-Accrual in `accrueFarming()`, `resourceCapOverTime` beim Elite-Bollwerk) wurde
+      KOMPLETT entfernt - Belohnung kommt jetzt ausschließlich durch gewonnene Kämpfe zustande.
+      `teileCap`-Werte um ~1,5x angehoben (mehr Kampf-Gelegenheiten pro Trip: 8/15/23/30 statt
+      5/10/15/20), `lootBase` bewusst unverändert (keine Rohstoff-Inflation, profitiert aber
+      automatisch von den zusätzlichen Checks pro Trip).
+    - **Neuer Rückruf für Elite-Bollwerk**: `recallGroupOperation()` in `groupOps.ts` (Route
+      `/party/recall`) - bei der jetzt 24h langen Bindung kann JEDER Teilnehmer jederzeit alle
+      zurückrufen (nicht auf den Ersteller beschränkt, anders als `cancelGroupOperation`), bereits
+      gewonnene Kämpfe bleiben erhalten. Solo-Piraten-Sektor nutzt weiterhin den bereits bestehenden
+      `recallMission()`.
+    - **Live verifiziert** (Dev-Server): 24h-Missionsdauer korrekt gesetzt, beide Rückruf-Wege
+      funktionieren fehlerfrei, Flotte kommt sofort zurück.
+    - **Offener Punkt**: `REWARD_ESCALATION` "double"-Modus beim Elite-Bollwerk skaliert mit 6 statt
+      vorher 4 Checks jetzt bis `2^6=64x` statt `2^4=16x` bei perfekter Serie - Nutzer beobachtet
+      Live-Läufe, noch nicht final als zu stark bestätigt (siehe Punkt weiter unten/Memory).
+
+110. **UI-Fix: Sektor-/Bollwerk-Info-Popups deutlich gekürzt.** Nutzer-Feedback: zu textlastig, viele
+    reine Flavour-Sätze ohne Entscheidungsrelevanz. `SektorInfoBox` (Sektor.tsx, wiederverwendet in
+    Multiplayer.tsx) gekürzt auf die für die Missionsplanung wichtigen Zahlen - rein beschreibende
+    Zeilen (Schiffsklassen-Pool-Text, "Zusammensetzung variiert", "unvorhersehbare Umstände")
+    entfernt. Nutzerkorrektur danach: die Kurzkarte (vorne, `zweck`-Text) bleibt wie sie ist, im
+    Popup aber die missionsrelevanten Details behalten - Sieges-Serie-Abbruchbedingung,
+    Teile-Staffelung nach Kampfausgang (15%/8%/2%) und der RapidFire-Kontern-Hinweis wurden deshalb
+    wieder ergänzt, nur kompakter formuliert als vorher.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`
@@ -2052,3 +2143,15 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
     `.stat-schild` → `rgb(76,227,238)`, `.stat-panzerung` → `rgb(185,207,230)`, `.stat-effective` →
     `rgb(82,240,122)`, alle `font-weight:700` - exakt wie in der CSS hinterlegt. Info-Popup zeigt
     Waffen/Schild/Panzerung inkl. Effektivwert-Hervorhebung korrekt an.
+- Zeitgutschein-Drop-Chance in Silber/Gold/Elite-Containern erhöht (20/15/10%→38/32/23% Rohwert,
+  ~28/22/16% real), Inventar zeigt jetzt die reale statt der rohen Chance (siehe Punkt 106).
+- Piratenbasen bekommen eine dauerhaft starke Garnison (~5.300 Schiffe + ~1.120 Verteidigungsanlagen)
+  und ein nachkalibriertes Ressourcen-Cap (44M/20M/6M, ~3 Wochen Wachstum); alle vier Booster
+  stärker und teurer gemacht, Abbau-Booster-Bugfix (war bisher wirkungslos) (siehe Punkt 107).
+- Raid-Umbau: 1x/Woche (Sonntag 0 Uhr) statt 2x/Tag, 24h-Belagerung mit 12 Wellen statt 1h/5 Wellen,
+  Belohnung skaliert linear mit jeder gewonnenen Welle (siehe Punkt 108).
+- Asteroiden-Feld/Piraten-Sektor/Elite-Bollwerk auf 24h umgestellt, Piraten-Sektor-Kämpfe laufen
+  alle 4h statt stündlich, zeitbasierte Teile-/Ressourcen-Zuteilung durch reine Kampf-Belohnung
+  ersetzt, neuer Rückruf für laufende Elite-Bollwerk-Expeditionen (siehe Punkt 109).
+- Sektor-/Bollwerk-Info-Popups deutlich gekürzt, missionsrelevante Details bleiben erhalten
+  (siehe Punkt 110).

@@ -9,6 +9,63 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '29.07.2026',
+    title: 'Bugfix: hängengebliebene Raids',
+    changes: [
+      'Ein Raid, der genau während der Umstellung auf den neuen Wochen-Rhythmus lief, konnte dauerhaft bei der letzten Welle hängen bleiben, statt sich aufzulösen - behoben. Betroffene Raids lösen sich beim nächsten Login automatisch auf.',
+    ],
+  },
+  {
+    date: '29.07.2026',
+    title: 'Sektor-/Bollwerk-Infofenster überarbeitet',
+    changes: [
+      'Die Info-Popups bei Asteroiden-Feld, Piraten-Sektor, Elite-Bollwerk und Piratenadmiral waren mit viel Fließtext überladen - deutlich gekürzt auf die Zahlen, die für die Missionsplanung wirklich zählen (Feindstärke, Belohnungen, Sieges-Serie, Teile-Chancen, RapidFire-Kontern).',
+    ],
+  },
+  {
+    date: '28.07.2026',
+    title: 'Asteroiden-Feld, Piraten-Sektor und Elite-Bollwerk laufen jetzt 24 Stunden',
+    changes: [
+      'Asteroiden-Feld: Einsatzdauer von 12 auf 24 Stunden verlängert.',
+      'Piraten-Sektor (Solo) und Elite-Bollwerk: Einsatzdauer von 4 auf 24 Stunden verlängert, dafür kämpft ihr nur noch alle 4 Stunden statt jede Stunde (6 Kämpfe pro Einsatz statt 4).',
+      'Teile gibt es bei Piraten-Sektor/Elite-Bollwerk jetzt ausschließlich durch gewonnene Kämpfe, nicht mehr zusätzlich passiv über die Zeit - dafür ist das Teile-Limit pro Einsatz spürbar höher als vorher.',
+      'Neu beim Elite-Bollwerk: jederzeit per Rückruf-Button abbrechbar - alle Teilnehmer kommen sofort zurück, bereits gewonnene Kämpfe bleiben erhalten. Praktisch, wenn die eigene Flotte schon angeschlagen ist und ihr kein Risiko mehr eingehen wollt.',
+    ],
+  },
+  {
+    date: '28.07.2026',
+    title: 'Raids laufen jetzt 1x pro Woche statt 2x täglich',
+    changes: [
+      'Neuer Rhythmus: Raids starten jetzt jeden Sonntag um 0 Uhr und dauern eine volle 24-Stunden-Belagerung mit 12 Angriffswellen (vorher 2x täglich, 1 Stunde mit 5 Wellen).',
+      'Belohnung steigt mit jeder einzelnen gewonnenen Welle: 10 Silber-, 6 Gold- und 2 Elite-Container pro Welle, am Ende der Belagerung ausgezahlt - bei einer perfekten 12/12-Verteidigung macht das 120 Silber-, 72 Gold- und 24 Elite-Container.',
+      'Dafür sind die Wellen jetzt auch deutlich härter, vor allem gegen Ende der Belagerung - ein makelloser Durchgang soll eine echte Leistung bleiben.',
+    ],
+  },
+  {
+    date: '28.07.2026',
+    title: 'Piratenbasen bewachen sich jetzt selbst deutlich stärker',
+    changes: [
+      'Die feste Garnison jeder Piratenbasis wurde massiv verstärkt (von rund 100 auf über 5.000 Schiffe plus über 1.000 Verteidigungsanlagen) - ein Angriff lohnt sich jetzt nur noch mit einer ernsthaften Flotte.',
+      'Die Ressourcen einer Piratenbasis wachsen weiterhin passiv, aber jetzt bis zu einer Obergrenze - danach lohnt sich ein Beutezug, ohne dass die Basis unbegrenzt reicher wird.',
+    ],
+  },
+  {
+    date: '28.07.2026',
+    title: 'Booster überarbeitet',
+    changes: [
+      'Alle vier Booster (Bautempo, Forschungstempo, Kampf, Abbau) wirken jetzt stärker, kosten dafür aber auch mehr Dunkle Materie.',
+      'Bugfix: der Abbau-Booster hat bisher trotz Kauf keinerlei Effekt gehabt - ab sofort wirkt er wie beworben auf eure Minen-Produktion.',
+    ],
+  },
+  {
+    date: '28.07.2026',
+    title: 'Zeitgutscheine droppen jetzt häufiger',
+    changes: [
+      'Die tatsächliche Chance auf einen Zeitgutschein aus Silber-/Gold-/Elite-Containern war durch die Ziehungs-Mechanik (immer genau 2 Treffer pro Öffnung) niedriger als der angezeigte Wert - behoben, Zeitgutscheine droppen jetzt spürbar häufiger.',
+      'Das Inventar zeigt bei jeder Container-Kategorie jetzt die tatsächliche Chance an, nicht mehr den irreführenden Rohwert.',
+    ],
+  },
+  {
     date: '28.07.2026',
     title: 'Bugfix: Massenflotten verloren viel zu viele Schiffe',
     changes: [
