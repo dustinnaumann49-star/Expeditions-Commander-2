@@ -817,6 +817,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const streakBefore = op.streakWins || 0;
   const escalationMultiplier = getEscalationMultiplier(op.sektorId!, streakBefore);
   op.streakWins = anyNpcDestroyed ? streakBefore + 1 : 0;
+  if (anyNpcDestroyed) op.totalWins = (op.totalWins || 0) + 1;
   const escalationText = escalationMultiplier > 1 ? ` [Serie x${escalationMultiplier.toFixed(0)}]` : '';
 
   const fleetBonusText = fleetBonus > 1 ? ` [Großflotten-Bonus x${fleetBonus.toFixed(2)}]` : '';

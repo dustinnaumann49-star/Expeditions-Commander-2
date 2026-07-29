@@ -596,6 +596,11 @@ export interface GroupOperation {
   // Analog zu Mission.streakWins (missions.ts), aber fuer die gesamte Elite-Bollwerk-Expedition -
   // treibt die Verdopplungs-Eskalation der Belohnungen an (siehe getEscalationMultiplier()).
   streakWins?: number;
+  // Kumulative Gesamtzahl gewonnener Checks ueber die GESAMTE Expedition (im Gegensatz zu
+  // streakWins reisst diese NICHT bei einem Check ohne vernichteten Gegner ab) - Nutzerwunsch:
+  // vor einem Rueckruf abschaetzen koennen, wie viele der bisherigen Checks tatsaechlich gewonnen
+  // wurden (README Punkt 118).
+  totalWins?: number;
   resultMessage?: string;
   resultDetail?: CombatDetail;
   // ===== Boss-Gefecht Piratenadmiral (Sektor P10, siehe README Punkt 76) =====

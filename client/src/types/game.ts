@@ -687,6 +687,7 @@ export interface GroupOperation {
   endTime?: number;
   returnTime?: number;
   processedHours?: number;
+  totalWins?: number;
   lastTick?: number | null;
   resultMessage?: string;
   resultDetail?: CombatDetail;

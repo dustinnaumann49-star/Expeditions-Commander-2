@@ -1956,6 +1956,32 @@ client/
       DB geseedet): Zeile erscheint korrekt als "3/6 Checks · 2 gewonnen". `tsc --noEmit` im
       Client kompiliert sauber.
 
+118. **Feature: Elite-Bollwerk bekommt Gesamt-Sieg-Zähler + Live-Flottenansicht während der
+    Expedition.** Direkte Folgefrage zu Punkt 117 - Nutzer-Klarstellung: Elite-Bollwerk hat
+    `checkChance:1` (garantierter Kampf bei JEDEM der 6 Checks, anders als Niedrig/Mittel/Hoch
+    solo mit 55-75%), Kampfberichte kommen also ohnehin schon zuverlässig als eigene Nachricht pro
+    Check - Punkt 117s Anzeige wäre hier redundant. Wichtiger: Einsicht in die AKTUELLE Flottenstärke
+    während die Expedition noch läuft, um vor einem Rückruf abzuwägen.
+    - **Neues Feld `GroupOperation.totalWins`** (`types.ts`, Server+Client) - kumulative Anzahl
+      GEWONNENER Checks über die gesamte Expedition, im Unterschied zu `streakWins` (aktuelle
+      Serie, reißt bei einem Check ohne vernichteten Gegner ab und treibt nur die
+      Belohnungs-Eskalation an). Wird in `runGroupHourlyCheck()` (groupOps.ts) neben `streakWins`
+      hochgezählt, wann immer `anyNpcDestroyed` zutrifft.
+    - **`Multiplayer.tsx`**: Fortschrittszeile erweitert auf "Fortschritt: X/6 Checks · Y gewonnen
+      · Rückkehr in ...". Neuer Button "🚀 Flotten ansehen" neben "Jetzt zurückrufen" öffnet ein
+      `InfoModal` mit den AKTUELLEN Schiffszahlen aller Teilnehmer (`op.participants[].ships` -
+      dieses Feld wird serverseitig bereits pro Check auf die tatsächlichen Überlebenden
+      aktualisiert, `p.ships[id] = survived` in `runGroupHourlyCheck()`, war also schon vorhanden,
+      nur bisher nirgends im Client angezeigt). Exakt dasselbe Live-Fleet-Prinzip wie der
+      "Details"-Button bei Solo-Missionen in `Sektor.tsx` (dort ebenfalls `mission.ships[id] =
+      survived` pro Check).
+    - **Live verifiziert** (Dev-Server, Solo-Elite-Bollwerk-Expedition gestartet, danach
+      `processedHours`/`totalWins`/`participants[0].ships` direkt in der `group_operations`-Tabelle
+      auf 3/2/{leicht:62, kreuzer:41} gesetzt): Fortschrittszeile zeigt korrekt "3/6 Checks (alle
+      4h) · 2 gewonnen", "Flotten ansehen"-Modal zeigt korrekt die reduzierten Stückzahlen (62/41
+      statt der urspruenglich entsandten 100/50) pro Teilnehmer. `tsc`/`tsc --noEmit` in Server UND
+      Client kompilieren sauber.
+
 ## Kurz-Changelog
 
 Stichpunkte, chronologisch, ohne Testdetails - für den vollen Kontext ggf. `git log`/`git blame`

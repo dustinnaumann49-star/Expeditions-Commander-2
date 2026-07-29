@@ -7,7 +7,7 @@ import { formatTime } from '../lib/format';
 import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
-import { InfoModal } from '../components/InfoModal';
+import { InfoModal, InfoTable } from '../components/InfoModal';
 import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import type { GameData, GroupOperation } from '../types/game';
 
@@ -93,6 +93,7 @@ function OpEntry({
   onStart,
   onRecall,
   onAdminDecide,
+  onShowFleet,
 }: {
   op: GroupOperation;
   gameData: GameData;
@@ -102,6 +103,7 @@ function OpEntry({
   onStart: (opId: string) => void;
   onRecall: (opId: string) => void;
   onAdminDecide: (opId: string, action: 'extract' | 'continue') => void;
+  onShowFleet: () => void;
 }) {
   const isCreator = op.creatorId === myUserId;
   const acceptedCount = op.participants.filter((p) => p.status === 'accepted').length;
@@ -130,11 +132,13 @@ function OpEntry({
       {op.sektorId !== 'piraten_admiral' && op.status === 'departed' && op.processedHours !== undefined && (
         <>
           <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-            Fortschritt: {op.processedHours}/{gameData.piratenCheckCount} Checks (alle 4h) ·{' '}
+            Fortschritt: {op.processedHours}/{gameData.piratenCheckCount} Checks (alle 4h) · {op.totalWins || 0} gewonnen ·{' '}
             {op.returnTime && now < op.returnTime ? `Rückkehr in ${formatTime(op.returnTime - now)}` : 'Kehrt bald zurück'}
           </p>
           <div className="build-row">
-            <span></span>
+            <button className="qty-btn" onClick={onShowFleet}>
+              🚀 Flotten ansehen
+            </button>
             <button className="qty-btn" onClick={() => onRecall(op.id)}>
               🔙 Jetzt zurückrufen
             </button>
@@ -244,6 +248,7 @@ function ExpeditionEventsView() {
   const [selection, setSelection] = useState<Record<string, number>>({});
   const [invitees, setInvitees] = useState<number[]>([]);
   const [respondSelections, setRespondSelections] = useState<Record<string, Record<string, number>>>({});
+  const [fleetOpId, setFleetOpId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const targetPosition = sektorPositions.find((p) => p.sektorId === sektorId) || null;
   const travelPreview = useGalaxyPreview(selection, targetPosition);
@@ -316,6 +321,7 @@ function ExpeditionEventsView() {
                       onStart={startParty}
                       onRecall={recallParty}
                       onAdminDecide={respondAdminEncounter}
+                      onShowFleet={() => setFleetOpId(op.id)}
                       key={op.id}
                     />
                   ))}
@@ -336,6 +342,7 @@ function ExpeditionEventsView() {
                       onStart={startParty}
                       onRecall={recallParty}
                       onAdminDecide={respondAdminEncounter}
+                      onShowFleet={() => setFleetOpId(op.id)}
                       key={op.id}
                     />
                   ))}
@@ -433,6 +440,29 @@ function ExpeditionEventsView() {
           <SektorInfoBox sektorId={sektorId} gameData={gameData} />
         </InfoModal>
       )}
+
+      {fleetOpId &&
+        (() => {
+          const op = parties.find((o) => o.id === fleetOpId);
+          if (!op) return null;
+          const opSektor = gameData.sektoren.find((s) => s.id === op.sektorId);
+          const accepted = op.participants.filter((p) => p.status === 'accepted');
+          return (
+            <InfoModal title={`🚀 Flotten vor Ort${opSektor ? ` – ${opSektor.name}` : ''}`} onClose={() => setFleetOpId(null)}>
+              {accepted.map((p) => {
+                const rows: [string, string][] = Object.entries(p.ships)
+                  .filter(([, c]) => c > 0)
+                  .map(([id, c]) => [shipName(gameData, id), `${c.toLocaleString('de-DE')} Stück`]);
+                return (
+                  <div key={p.userId} style={{ marginBottom: 12 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.username}</p>
+                    {rows.length > 0 ? <InfoTable rows={rows} /> : <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Keine Schiffe mehr übrig.</p>}
+                  </div>
+                );
+              })}
+            </InfoModal>
+          );
+        })()}
     </div>
   );
 }
