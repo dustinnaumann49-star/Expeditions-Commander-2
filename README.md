@@ -124,15 +124,18 @@ client/
   src/lib/multipliers.ts             ALLE Bauzeit-/Forschungszeit-/Produktions-Multiplikatoren -
                                       MUSS bei jeder Zeit-/Ertrags-Anzeige verwendet werden
   src/lib/useGalaxyPreview.ts        Debouncte Distanz-/Flugzeit-Vorschau
+  src/lib/useCountUp.ts              Animierter Zahlen-Countup (Ressourcen, Effektivwerte)
 
   src/components/ResourceBar.tsx     Kopfleiste: Ressourcen, Energie, Uhr, Warn-Badges
   src/components/BuildQueue.tsx      Fortschrittsbalken für Bau-Warteschlangen
   src/components/InfoModal.tsx       Popup mit vollem Detailwissen
+  src/components/LoreModal.tsx       Popup bei Klick auf Schiffs-/Verteidigungs-/Forschungsnamen
   src/components/ShipBuildCard.tsx / DefenseBuildCard.tsx   Wiederverwendbare Baukarten
   src/components/ShipModuleRow.tsx / DefenseModuleRow.tsx   Module, hängen per Verbindungslinie
                                       direkt unter der jeweiligen Baukarte (kein eigener Tab)
   src/components/StatValue.tsx       Waffen/Schild/Panzerung farbig, inkl. Effektivwert
   src/components/ErrorBoundary.tsx   Fängt Render-Fehler ab statt stillem Absturz
+  src/components/PageSkeleton.tsx    Lade-Platzhalter, solange gameData/state noch nicht da sind
   src/components/ProtectedRoute.tsx  Leitet zu /login um, falls nicht angemeldet
 
   src/pages/Login.tsx                Login/Registrierung
