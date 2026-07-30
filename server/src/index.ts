@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { authRouter } from './auth/routes.js';
 import { gameRouter } from './game/routes.js';
 import { runGlobalHeartbeat } from './game/heartbeat.js';
-import { removeBotUsers } from './db.js';
+import { ensureBotUsers } from './game/bot.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
@@ -48,19 +48,18 @@ app.get('/api/heartbeat', async (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/game', gameRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Expedition-Commander Server läuft auf Port ${PORT} (Commit ${deployedCommit})`);
 
-  // KI-Spieler-Accounts (KI-Vega/KI-Nyx) endgueltig entfernen (Nutzerentscheidung Juli 2026,
-  // CPU-Spitzen-Vorfall siehe README Punkt 97/98): waren die Hauptquelle der rechenintensiven
-  // Kaempfe im Heartbeat (Piratensektor-Missionen, Gruppen-Expeditionen, Basis-/Aussenposten-
-  // Angriffe rund um die Uhr ohne menschliche Entscheidungspause). Loescht Accounts + Spielstand,
-  // idempotent (macht nichts, falls schon entfernt).
+  // KI-Spieler-Accounts (KI-Vega/KI-Nyx) throttled wieder eingefuehrt (30.07.2026, siehe README
+  // Punkt 100) - waren nach dem CPU-Spitzen-Vorfall (Punkt 97/98) komplett entfernt worden, weil
+  // sie rund um die Uhr ohne menschliche Entscheidungspause echte Kaempfe im Heartbeat ausgeloest
+  // haben. Diesmal bewusst gedrosselt (siehe bot.ts, BOT_COMBAT_ACTION_CHANCE) statt 1:1
+  // zurueckgebaut. Idempotent (legt nur an, was noch fehlt).
   try {
-    const removed = removeBotUsers();
-    if (removed > 0) console.log(`${removed} KI-Spieler-Account(s) entfernt.`);
+    await ensureBotUsers();
   } catch (err) {
-    console.error('removeBotUsers-Fehler:', err);
+    console.error('ensureBotUsers-Fehler:', err);
   }
   // Angreifbare Piratenbasen einmalig anlegen, falls noch nicht vorhanden (siehe game/pirateBaseState.ts).
   try {

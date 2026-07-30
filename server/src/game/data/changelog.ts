@@ -10,6 +10,22 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '30.07.2026',
+    title: 'Piratenbasen wachsen wieder und greifen gelegentlich an',
+    changes: [
+      'Die 4 Piratenbasen bauen, forschen und schicken wieder Mining-Flotten los - wie ein echter Mitspieler.',
+      'Sie starten jetzt auch wieder eigene Angriffsflüge gegen Spieler, allerdings deutlich seltener als früher (im Schnitt nur noch 1-2 Angriffe pro Tag insgesamt, nicht pro Basis) - und nur, wenn ihre Flotte dem Ziel wirklich überlegen ist, statt sich blind zu verheizen.',
+    ],
+  },
+  {
+    date: '30.07.2026',
+    title: 'KI-Mitspieler (KI-Vega/KI-Nyx) sind zurück',
+    changes: [
+      'Die beiden KI-Mitspieler bauen, forschen und bewegen ihre Flotte wieder - dieses Mal aber deutlich zurückhaltender und seltener als früher.',
+      'Sie greifen Piratenbasen jetzt nur noch an, wenn ihre Flotte spürbar überlegen ist, spionieren sie außerdem aus und helfen euch mit einer haltenden Flotte gegen Raids.',
+    ],
+  },
+  {
+    date: '30.07.2026',
     title: 'Inventar: "Alle einlösen" für gestapelte Belohnungen',
     changes: [
       'Rohstoff-Fracht, Ausrüstungs-Teile und geschenkte Schiffe lassen sich jetzt mit einem Klick komplett auf einmal einlösen, statt jeden einzeln anklicken zu müssen.',

@@ -2229,6 +2229,92 @@ client/
       erwartungsgemäß keinen Batch-Button; direkter API-Aufruf gegen `/inventory/redeem-all` mit
       der Zeitgutschein-`itemId` wurde korrekt mit Fehlermeldung abgelehnt. `tsc`/`tsc --noEmit` in
       Server UND Client kompilieren sauber.
+126. **Feature: KI-Mitspieler (KI-Vega/KI-Nyx) throttled wieder eingeführt** (30.07.2026) - waren
+    seit dem CPU-Spitzen-Vorfall (Punkt 97/98, 28.07.2026) komplett entfernt. Das ist KEIN
+    Zurückrudern des Stabilitäts-Fixes, sondern eine bewusst gedrosselte Wiedereinführung derselben
+    Idee: KI-Spieler dürfen wieder einen Menschen imitieren (Wirtschaft/Forschung/Flottenbau,
+    `economyBotTurn.ts`), ihre **Flottenbewegung** bleibt aber stark eingegrenzt, um genau den
+    alten Vorfall nicht zu wiederholen.
+    - **Kosten-Analyse vor der Wiedereinführung im Code verifiziert**: die alte CPU-Last kam NICHT
+      von der Wirtschafts-Logik (billig, keine Kampf-Simulation) und auch nicht von Asteroiden-
+      Mining/Spionage/Halten bei Mitspielern (keine dieser drei löst selbst einen Kampf im
+      2-Worker-Pool `combatRunner.ts` aus - Mining-Sektoren haben `checkChance:0`, Spionage ist ein
+      reiner Bericht, Halten registriert nur eine Stationierung). Die tatsächliche Hauptquelle war
+      der Piratenbasis-Angriff (`maybeAttackPirateBase`) mit derselben `BOT_ACTION_CHANCE=0.3` pro
+      Heartbeat (alle 2 Min.) wie die harmlosen Aktionen - im Schnitt echter Kampf alle ~6-7 Min.
+      PRO Bot, rund um die Uhr.
+    - **`bot.ts`/`economyBotTurn.ts` aus der Git-Historie wiederhergestellt** (`28771d4~1`), dabei
+      gezielt angepasst: neue, eigene `BOT_COMBAT_ACTION_CHANCE = 0.05` (statt der gemeinsamen 0.3)
+      ausschließlich für `maybeAttackPirateBase` - senkt die erwartete Kampf-Frequenz auf ~alle 40
+      Min. pro Bot. Halten/Spionage bleiben bei der alten `BOT_ACTION_CHANCE = 0.3`, da beide keinen
+      Kampf auslösen. Gruppen-Expeditionen (`maybeHandleGroupOps`) bleiben unverändert auf
+      `piraten_elite` beschränkt (NICHT `piraten_admiral`, das wäre alle 10 Min. garantiert Kampf -
+      klar gefährlicher, wurde von der alten Bot-Logik auch nie genutzt).
+    - **Außenposten-Angriffe (`maybeAttackOutpost`) komplett entfernt statt gedrosselt** - das
+      Feature selbst existiert nicht mehr (`outposts.ts` war bereits vorher gelöscht worden).
+    - **`ensureBotUsers()` ersetzt `removeBotUsers()` beim Serverstart** (`index.ts`) -
+      `removeBotUsers()` bleibt als Funktion in `db.ts` erhalten (idempotent, ungenutzt), falls die
+      Bots aus Stabilitätsgründen erneut entfernt werden müssen. `runBotTurn()` wird im globalen
+      Heartbeat (`heartbeat.ts`) direkt nach `processRaidTimer()` nur für Nutzer mit `isBot`
+      aufgerufen - exakt an der Stelle wie vor der Entfernung.
+    - **NOCH NICHT LIVE VERIFIZIERT** (Stand dieses Commits): `tsc --noEmit` in `server/` kompiliert
+      sauber. Ob die Drosselung auf dem echten Server ausreicht, ist offen - nach dem Deploy die
+      Logs (Suche nach `dauerte`/`langsam` in `heartbeat.ts`) eine Weile beobachten. Falls trotzdem
+      Spitzen auftreten: `BOT_COMBAT_ACTION_CHANCE` in `bot.ts` weiter senken (einziger, leicht
+      auffindbarer Ort, analog zum `STACK_AGGREGATE_THRESHOLD`-Muster).
+    - **Debug-Seite für Einblick in KI-Bots/Piratenbasen ebenfalls wiederhergestellt** (siehe Punkt
+      95, war zusammen mit den Bots in Commit `6627e14` entfernt worden) - `pages/Debug.tsx`, `GET
+      /api/game/debug/npcs` in `routes.ts`, neue `DebugBotState`/`DebugPirateBaseState`-Typen in
+      `types/game.ts`, `api.getDebugNpcs()` in `client.ts`, Sidebar-Eintrag "Debug" in `App.tsx`.
+      Rein lesend wie vorher, unverändert 1:1 aus der Historie übernommen (keine Anpassungen nötig -
+      `listActivePirateBases()`/`nextOffensiveCheck`/`attacks` existierten unverändert weiter).
+      Live verifiziert (Dev-Server, Browser): zeigt beide KI-Mitspieler (Klasse, Ressourcen,
+      Warteschlangen, Flotte/Verteidigung/Gebäude/Forschung) sowie alle 4 aktiven Piratenbasen
+      korrekt an.
+127. **Piratenbasen-Wachstum UND Offensiv-KI throttled wieder eingeführt** (30.07.2026, direkter
+    Nachtrag zu Punkt 126 - Nutzer-Nachfrage "Piraten greifen auch wieder Basen an?" und, nach
+    einer ersten Version ohne Wachstum, Korrektur "Piraten sollen auch wachsen ... nur Angriffe
+    seltener"). War die ZWEITE Hauptquelle der CPU-Spitzen (README Punkt 98) neben den KI-
+    Mitspielern - anders als bei den Bots ist hier aber NICHT die Wirtschaft das Risiko (billig,
+    keine Kampf-Simulation), sondern ausschließlich die Offensiv-KI (echter Kampf pro Angriff).
+    - **Wachstum wieder aktiv** (`loadPirateBase()` in `pirateBaseState.ts`): ruft wieder
+      `runEconomyBotTurn()` auf, genau wie ein KI-Mitspieler (baut/forscht/produziert Schiffe &
+      Verteidigung, schickt Mining-Flotten in die kampffreien Asteroiden-Sektoren - siehe
+      `maybeSendMiningFleet()` in `economyBotTurn.ts`, `checkChance:0`). Ungedrosselt, weil
+      ungefährlich - keiner dieser Bausteine löst selbst Kampf aus.
+    - **Fixe Mindest-Garnison (`SEED_FLEET`/`SEED_DEFENSE`, README Punkt 107) bleibt als unterer
+      Boden bestehen** (Floor-Up bei jedem Laden) - Wachstum kann eine Basis nur STÄRKER machen als
+      diesen Mindestwert, nie schwächer. "Unzerstörbare Basis"-Design bleibt dadurch erhalten.
+    - **Offensiv-KI zurückgeholt, aber deutlich seltener als in der Historie**: Cooldown pro Basis
+      von vormals 12-24h auf **48-96h (2-4 Tage)** vervierfacht - bei 4 aktiven Basen im Schnitt nur
+      noch ~1-2 Angriffe/Tag INSGESAMT statt pro Basis. Grund: erste Testversion löste bei alten
+      (Bestands-)Basen sofort einen Angriff aus (`nextOffensiveCheck` war noch nie gesetzt = "sofort
+      fällig") - jetzt wird bei einer frischen/gerade reaktivierten Basis stattdessen der ERSTE
+      Cooldown gewürfelt statt sofort anzugreifen, damit die Basis erst wachsen kann
+      (`runPirateBaseOffensiveTurn()`).
+    - **Ziel-Pool**: alle echten Nutzer (Menschen + KI-Mitspieler-Bots), niemals andere
+      Piratenbasen. Einmal pro Heartbeat-Durchlauf für ALLE aktiven Basen (`heartbeat.ts`,
+      `runAllPirateBaseOffensiveTurns()`), global wie Galaxie-Ereignisse/Stationen.
+    - **Abwägungs-Logik ergänzt** (dritte Korrektur derselben Wiedereinführung, Nutzerentscheidung
+      30.07.2026: "sie müssen abwägen können, ob sich ein Angriff lohnt") - sowohl die
+      Piratenbasen-Offensiv-KI (`runPirateBaseOffensiveTurn()`) als auch KI-Mitspieler beim
+      Piratenbasis-Angriff (`maybeAttackPirateBase()` in `bot.ts`) vergleichen jetzt VOR dem Start
+      die grobe Gesamtstärke (`combatFleetPowerBase()`, Waffen+Schild+Panzerung summiert - dieselbe
+      Näherung wie bei `PirateBaseSummary.power`/den alten Außenposten-Zielstärken) der geplanten
+      Angriffsflotte gegen die des Ziels (Flotte + Verteidigung daheim). Nur bei einem klaren
+      Vorteil (`PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN`/`ATTACK_POWER_SAFETY_MARGIN` = 1,15, kein
+      knapper Münzwurf) wird tatsächlich angegriffen - sonst wächst die Flotte beim nächsten Zug
+      erst weiter, statt sich in einem aussichtslosen Gefecht zu verheizen. Beide Konstanten liegen
+      bewusst getrennt (in `bot.ts`/`pirateBaseState.ts`), aktuell auf demselben Wert. Basis-
+      Angriffsanteil (`PIRATE_BASE_OFFENSIVE_FLEET_SHARE`) dabei von 20% auf 35% angehoben, da ein zu
+      knapper Anteil den Vorteils-Check sonst dauerhaft verfehlen würde, sobald das Ziel selbst
+      wächst.
+    - **Live verifiziert** (Dev-Server): Wachstum bestätigt (Bau-/Forschungs-/Gebäude-Warteschlangen
+      füllen sich pro Heartbeat), ein Angriff erfolgreich ausgelöst und beim Zielspieler als Warnung
+      zugestellt, `tsc --noEmit` sauber. Frequenz selbst (die neuen 48-96h) UND die neue
+      Abwägungs-Logik noch nicht über mehrere Tage live beobachtet - bei Bedarf
+      `PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN/MAX_MS`/`*_ATTACK_POWER_SAFETY_MARGIN` in
+      `pirateBaseState.ts` bzw. `bot.ts` weiter anpassen (leicht auffindbare Orte).
 
 ## Kurz-Changelog
 
@@ -2580,3 +2666,8 @@ verwenden. Die spielerlesbare Version derselben Ereignisse steht in
   ersetzt, neuer Rückruf für laufende Elite-Bollwerk-Expeditionen (siehe Punkt 109).
 - Sektor-/Bollwerk-Info-Popups deutlich gekürzt, missionsrelevante Details bleiben erhalten
   (siehe Punkt 110).
+- KI-Mitspieler (KI-Vega/KI-Nyx) throttled wieder eingeführt nach dem CPU-Spitzen-Vorfall - eigene,
+  niedrigere Kampf-Aktionschance statt der alten gemeinsamen Chance (siehe Punkt 126).
+- Piratenbasen-Wachstum und -Offensiv-KI ebenfalls throttled wieder eingeführt - Wachstum
+  ungedrosselt (ungefährlich), Angriffs-Cooldown auf 48-96h vervierfacht, Angriffe (Basen UND
+  Bots) erst nach einer Stärke-Abwägung gegen das Ziel statt blind (siehe Punkt 127).

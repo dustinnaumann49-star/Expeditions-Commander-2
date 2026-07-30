@@ -5,8 +5,9 @@ import { processMissions } from './missions.js';
 import { processRaidTimer } from './raids.js';
 import { processAllDepartedGroupOperations } from './groupOps.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
-import { processPirateAttacks } from './pirateBaseState.js';
+import { processPirateAttacks, runAllPirateBaseOffensiveTurns } from './pirateBaseState.js';
 import { runStationHeartbeatTick } from './stations.js';
+import { runBotTurn } from './bot.js';
 
 /**
  * Globaler Sweep UNABHAENGIG von jedem konkret eingeloggten Nutzer - im Unterschied zu einem
@@ -71,6 +72,11 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       await processPirateAttacks(state);
       await processMissions(state);
       await processRaidTimer(state);
+      // KI-Mitspieler (KI-Vega/KI-Nyx, siehe bot.ts) throttled wieder eingefuehrt (README Punkt
+      // 100) - bewusst NACH der normalen Zeit-Verarbeitung, damit runBotTurn() auf einem bereits
+      // aktuellen Zustand (Ressourcen/Missionen/Raids) entscheidet, genau wie ein Mensch, der
+      // gerade eingeloggt ist.
+      if (u.isBot) await runBotTurn(state, users);
       savePlayerState(state);
       const userTickMs = Date.now() - userTickStart;
       if (userTickMs > SLOW_USER_TICK_MS) {
@@ -105,11 +111,22 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     console.error('runGlobalHeartbeat: Fehler bei runStationHeartbeatTick:', err);
   }
 
-  // Piratenbasen wachsen NICHT MEHR eigenstaendig und greifen auch nicht mehr selbst an
-  // (Nutzerentscheidung, CPU-Spitzen-Vorfall siehe README Punkt 97/98 - war neben den KI-
-  // Mitspielern die zweite Hauptquelle der rechenintensiven Kaempfe im Heartbeat). Basen bleiben
-  // ueber processPirateAttacks() oben weiterhin von Spielern angreifbar, aber ohne jede
-  // Eigeninitiative. Aussenposten-Feature komplett entfernt (siehe README).
+  // Piratenbasen-Offensiv-KI throttled wieder eingefuehrt (README Punkt 127) - Basen wachsen
+  // weiterhin NICHT eigenstaendig (siehe pirateBaseState.ts), greifen aber wieder mit eigenem,
+  // per-Basis-Cooldown (12-24h) selbst an. EINMAL pro Heartbeat-Durchlauf fuer ALLE aktiven Basen,
+  // Ziel-Pool sind alle echten Nutzer (Menschen + Bots) - global wie Galaxie-Ereignisse/Stationen,
+  // nicht an einen einzelnen Nutzer der Schleife oben gebunden.
+  try {
+    const offensiveStart = Date.now();
+    await runAllPirateBaseOffensiveTurns(users.map((u) => u.id));
+    const offensiveMs = Date.now() - offensiveStart;
+    if (offensiveMs > SLOW_PHASE_MS) {
+      console.warn(`runGlobalHeartbeat: runAllPirateBaseOffensiveTurns() dauerte ${offensiveMs}ms`);
+    }
+  } catch (err) {
+    errors++;
+    console.error('runGlobalHeartbeat: Fehler bei runAllPirateBaseOffensiveTurns:', err);
+  }
 
   // Gruppen-Expeditionen sind bereits nutzerunabhaengig ausgelegt (siehe groupOps.ts) - ein
   // einziger Durchlauf mit einem beliebigen Nutzer als Anker-Zustand deckt ALLE laufenden
