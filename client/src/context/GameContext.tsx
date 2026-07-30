@@ -178,26 +178,47 @@ export function GameProvider({ children }: { children: ReactNode }) {
     refreshRaids();
     refreshGalaxy();
     refreshAlliance();
-    const interval = setInterval(() => {
+
+    function pollTick() {
       api.getState().then(applyState).catch(() => {});
       refreshUsers();
       refreshParties();
       refreshRaids();
       refreshGalaxy();
       refreshAlliance();
-    }, 3000);
-    // Wenn der Tab aus dem Hintergrund zurueckkommt (Browser drosseln Timer dort teils stark),
-    // sofort nachziehen statt bis zu 5s auf den naechsten Poll zu warten - wichtig fuer den
-    // Online/Offline-Status anderer Spieler.
+    }
+
+    // Pollt NUR, waehrend der Tab sichtbar ist (Nutzerentscheidung 30.07.2026: 6 parallele
+    // Anfragen + Ressourcen-Countup-Animationen alle 3s auch im Hintergrund-Tab kosteten
+    // spuerbar CPU/Akku, ohne dass jemand hinschaute). Einziger Nebeneffekt: der eigene
+    // Online-Status (last_seen, siehe db.ts ONLINE_THRESHOLD_MS) faellt fuer Mitspieler nach
+    // spaetestens 15s auf "Offline", solange der Tab im Hintergrund ist - Spiellogik selbst
+    // laeuft serverseitig unabhaengig vom Client-Polling weiter (siehe heartbeat.ts).
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (interval) return;
+      interval = setInterval(pollTick, 3000);
+    };
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    if (document.visibilityState === 'visible') startPolling();
+
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        api.getState().then(applyState).catch(() => {});
-        refreshUsers();
+        pollTick(); // sofort nachziehen statt bis zu 3s auf den naechsten Poll zu warten
+        startPolling();
+      } else {
+        stopPolling();
       }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      clearInterval(interval);
+      stopPolling();
       document.removeEventListener('visibilitychange', onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
