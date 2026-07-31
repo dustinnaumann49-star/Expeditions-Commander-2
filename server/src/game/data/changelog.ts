@@ -9,6 +9,22 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '31.07.2026',
+    title: 'Allianz-Station: Bau-Verlauf',
+    changes: [
+      'Neuer Kasten "Bau-Verlauf" auf der Allianz-Seite: zeigt, welches Mitglied welches Gebäude/Modul auf welche Stufe gebracht hat und wann - so bleibt nachvollziehbar, wer zum gemeinsamen Fortschritt beigetragen hat.',
+      'Erscheint erst, sobald der erste Bauauftrag nach diesem Update abgeschlossen wurde - für bereits erledigte Baustufen gibt es leider keine rückwirkenden Einträge.',
+    ],
+  },
+  {
+    date: '31.07.2026',
+    title: 'Piratenbasen/KI-Mitspieler: keine Mining-Flotten mehr, dafür stärkere Minen',
+    changes: [
+      'Piratenbasen und KI-Mitspieler bauen und verschicken keine Mining-Schiffe mehr - das führte zu einer unbeabsichtigten festen Obergrenze und war so nie beabsichtigt.',
+      'Als Ausgleich liefern ihre Minen jetzt deutlich mehr Ertrag (statt 50% Bonus jetzt das 6-fache) - sie sollen trotzdem mit echten Spielern mithalten können, obwohl sie keine Container/Missions-Beute sammeln.',
+    ],
+  },
+  {
     date: '30.07.2026',
     title: 'Piratenbasen wachsen wieder und greifen gelegentlich an',
     changes: [

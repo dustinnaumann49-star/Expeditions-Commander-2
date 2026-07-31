@@ -349,7 +349,9 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Komplett EIGENE Produktions-/Kosten-/Energie-Formeln (`stations.ts`, kein Spieler-Forschungs-
   Bezug - wessen Forschung sollte bei einer gemeinsamen Station gelten?). Ressourcen gemeinsam
   gelagert, Self-Service Einzahlen/Abheben ohne Genehmigungsschritt. Passive Produktion läuft
-  sowohl lazy beim Laden als auch über den globalen Heartbeat.
+  sowohl lazy beim Laden als auch über den globalen Heartbeat. Jeder abgeschlossene Bauauftrag
+  wird protokolliert (`station.buildLog`, wer/was/welche Stufe/wann, auf 50 Einträge gedeckelt,
+  neueste zuerst) - sichtbar auf der Allianz-Seite, sobald mind. 1 Eintrag existiert.
 
 ### KI-Spieler & Piratenbasen
 
@@ -388,6 +390,11 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - Debug-Seite (`pages/Debug.tsx`, `GET /api/game/debug/npcs`) zeigt vollen Zustand aller Bots und
   Piratenbasen (Flotte/Verteidigung/Gebäude/Forschung/Warteschlangen) - unbedenklich in einem
   reinen 2-Spieler-Koop-Spiel ohne PvP.
+- Bots/Piratenbasen bauen/schicken KEINE Mining-Schiffe zu Asteroiden-Sektoren (`economyBotTurn.ts`)
+  - eine frühere feste 50er-Obergrenze war nie so beabsichtigt und wurde ersatzlos entfernt.
+  Stattdessen gleicht `NPC_PRODUCTION_BONUS_MULTIPLIER` (`economy.ts`, 1,5x → 6x angehoben, Juli
+  2026) den fehlenden Container-/Missions-Ertrag echter Spieler direkt über die passive
+  Minen-Produktion aus.
 
 ### Klassensystem
 
@@ -477,3 +484,6 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
 - Diverse UI-Fixes: Popup-Stacking-Context, Forschungsbaum-Mobilscroll, Info-Popup-Zeilenumbruch,
   Piraten-Sektor-Button-Sperre bei aktiver Mission, gekürzte Sektor-Info-Popups.
 - Feature: "Alle einlösen" für gestapelte Inventar-Belohnungen (außer Zeit-Gutscheine).
+- Feature: Bau-Verlauf für Allianz-Station (wer/was/welche Stufe/wann, auf 50 Einträge gedeckelt).
+- Fix: Mining-Schiffe/-Flüge bei Bots/Piratenbasen komplett entfernt (war nie so beabsichtigt),
+  `NPC_PRODUCTION_BONUS_MULTIPLIER` als Ausgleich von 1,5x auf 6x angehoben.
