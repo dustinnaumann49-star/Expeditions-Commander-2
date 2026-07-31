@@ -11,6 +11,10 @@ import type { Alliance, AllianceMember, BuildingModuleDefinition, GalaxyPosition
 // bewusst komplett von der Heimatbasis-Wirtschaft entkoppelt ist (siehe Datei-Kommentar oben).
 const STATION_MAX_BUILD_SLOTS = 1;
 
+// Deckelt station.buildLog (Nutzerwunsch Juli 2026, Nachvollziehbarkeit wer/was/wann gebaut hat) -
+// neueste Eintraege zuerst (unshift), aeltere werden ab dieser Laenge verworfen.
+const STATION_BUILD_LOG_MAX = 50;
+
 function newId(prefix: string): string {
   return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
@@ -33,16 +37,30 @@ export function findMyAlliance(userId: number): Alliance | undefined {
     .find((a) => a.members.some((m) => m.userId === userId));
 }
 
+// Migriert Bestandsstationen (vor Einfuehrung von buildLog/userId auf Queue-Eintraegen, siehe
+// STATION_BUILD_LOG_MAX unten) - fehlende Felder werden defensiv aufgefuellt statt einen Crash
+// beim Laden alter gespeicherter Stationen zu riskieren.
+function parseStation(json: string): Station {
+  const station = JSON.parse(json) as Station;
+  if (!station.buildLog) station.buildLog = [];
+  station.buildQueue = (station.buildQueue || []).map((job) => ({
+    ...job,
+    userId: job.userId ?? -1,
+    username: job.username ?? 'Unbekannt',
+  }));
+  return station;
+}
+
 export function loadStation(id: string): Station | undefined {
   const json = getStationJson(id);
-  return json ? (JSON.parse(json) as Station) : undefined;
+  return json ? parseStation(json) : undefined;
 }
 export function saveStation(station: Station): void {
   saveStationJson(station.id, station.allianceId, JSON.stringify(station));
 }
 export function findStationByAllianceId(allianceId: string): Station | undefined {
   return listStationsJson()
-    .map((j) => JSON.parse(j) as Station)
+    .map((j) => parseStation(j))
     .find((s) => s.allianceId === allianceId);
 }
 
@@ -145,6 +163,7 @@ export function foundStation(state: PlayerState, target: GalaxyPosition): Action
     buildings: {},
     buildingModules: {},
     buildQueue: [],
+    buildLog: [],
     resources: { metall: 0, kristall: 0, deuterium: 0 },
     lastTick: now,
     createdAt: now,
@@ -299,8 +318,19 @@ function processStationTick(station: Station): void {
 
   station.buildQueue = station.buildQueue.filter((job) => {
     if (job.endTime > now) return true;
-    if (job.buildingId) station.buildings[job.buildingId] = (station.buildings[job.buildingId] || 0) + 1;
-    else if (job.moduleId) station.buildingModules[job.moduleId] = (station.buildingModules[job.moduleId] || 0) + 1;
+    let newLevel: number;
+    if (job.buildingId) newLevel = station.buildings[job.buildingId] = (station.buildings[job.buildingId] || 0) + 1;
+    else if (job.moduleId) newLevel = station.buildingModules[job.moduleId] = (station.buildingModules[job.moduleId] || 0) + 1;
+    else return false;
+    station.buildLog.unshift({
+      userId: job.userId,
+      username: job.username,
+      buildingId: job.buildingId,
+      moduleId: job.moduleId,
+      level: newLevel,
+      completedAt: now,
+    });
+    if (station.buildLog.length > STATION_BUILD_LOG_MAX) station.buildLog.length = STATION_BUILD_LOG_MAX;
     return false;
   });
 
@@ -324,7 +354,7 @@ function loadStationWithTick(id: string): Station | undefined {
 // niemand die Allianz-Seite geoeffnet hat (identisches Prinzip wie bei Piratenbasen/Raids).
 export function runStationHeartbeatTick(): void {
   listStationsJson().forEach((j) => {
-    const station = JSON.parse(j) as Station;
+    const station = parseStation(j);
     processStationTick(station);
     saveStation(station);
   });
@@ -362,7 +392,13 @@ export function startStationBuildingConstruction(state: PlayerState, stationId: 
   station.resources.deuterium -= cost.deuterium;
 
   const now = Date.now();
-  station.buildQueue.push({ buildingId, startTime: now, endTime: now + stationBuildingTimeMs(station, building, currentLevel + 1) });
+  station.buildQueue.push({
+    buildingId,
+    startTime: now,
+    endTime: now + stationBuildingTimeMs(station, building, currentLevel + 1),
+    userId: state.userId,
+    username: me.username,
+  });
   saveStation(station);
   return { ok: true };
 }
@@ -403,7 +439,13 @@ export function startStationModuleUpgrade(state: PlayerState, stationId: string,
   station.resources.deuterium -= cost.deuterium;
 
   const now = Date.now();
-  station.buildQueue.push({ moduleId, startTime: now, endTime: now + stationModuleTimeMs(station, mod, currentLevel + 1) });
+  station.buildQueue.push({
+    moduleId,
+    startTime: now,
+    endTime: now + stationModuleTimeMs(station, mod, currentLevel + 1),
+    userId: state.userId,
+    username: me.username,
+  });
   saveStation(station);
   return { ok: true };
 }

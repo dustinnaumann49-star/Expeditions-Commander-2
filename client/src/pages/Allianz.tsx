@@ -337,6 +337,25 @@ export function AllianzPage() {
                     </div>
                   </div>
 
+                  {station.buildLog.length > 0 && (
+                    <div className="queue-box" style={{ maxWidth: 480, marginBottom: 16 }}>
+                      <h3 style={{ fontSize: 14, marginBottom: 8 }}>📜 Bau-Verlauf</h3>
+                      <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {station.buildLog.map((entry, i) => {
+                          const name = entry.buildingId
+                            ? gameData.stationBuildings.find((b) => b.id === entry.buildingId)?.name || entry.buildingId
+                            : gameData.stationBuildingModules.find((m) => m.id === entry.moduleId)?.name || entry.moduleId;
+                          return (
+                            <p key={i} style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                              <strong style={{ color: 'var(--text)' }}>{entry.username}</strong> · {name} → Stufe {entry.level} ·{' '}
+                              {new Date(entry.completedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="build-row" style={{ marginBottom: 12 }}>
                     {([1, 2, 3] as const).map((tier) => {
                       const locked = tier > station.tier;

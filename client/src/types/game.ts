@@ -735,7 +735,8 @@ export interface Station {
   tier: 1 | 2 | 3;
   buildings: Record<string, number>;
   buildingModules: Record<string, number>;
-  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number }[];
+  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number; userId: number; username: string }[];
+  buildLog: { userId: number; username: string; buildingId?: string; moduleId?: string; level: number; completedAt: number }[];
   resources: { metall: number; kristall: number; deuterium: number };
   lastTick: number;
   createdAt: number;

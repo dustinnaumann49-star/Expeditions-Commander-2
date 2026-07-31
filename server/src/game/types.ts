@@ -665,7 +665,11 @@ export interface Station {
   tier: 1 | 2 | 3; // hoechste FREIGESCHALTETE Stufe - Produktion zaehlt kumulativ ALLE Stufen <= tier
   buildings: Record<string, number>; // Gebaeude-Id (z.B. "v1_metallmine") -> Stufe
   buildingModules: Record<string, number>; // Modul-Id -> Stufe
-  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number }[];
+  buildQueue: { buildingId?: string; moduleId?: string; startTime: number; endTime: number; userId: number; username: string }[];
+  // Verlauf abgeschlossener Bauauftraege (wer/was/welche Stufe/wann) - Nutzerwunsch Juli 2026, damit
+  // nachvollziehbar bleibt, welches Allianzmitglied welchen Fortschritt beigetragen hat. Auf
+  // STATION_BUILD_LOG_MAX Eintraege gedeckelt (siehe stations.ts), neueste zuerst.
+  buildLog: { userId: number; username: string; buildingId?: string; moduleId?: string; level: number; completedAt: number }[];
   resources: { metall: number; kristall: number; deuterium: number };
   lastTick: number;
   createdAt: number;
