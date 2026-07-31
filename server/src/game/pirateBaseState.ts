@@ -23,7 +23,7 @@ import type { ActionResult } from './actions.js';
 
 // ========== PIRATENBASEN: WACHSEN "GENAU WIE EIN SPIELER" (ANGREIFBAR) ==========
 // Nutzerentscheidung (Juli 2026): Piratenbasen bekommen einen vollwertigen PlayerState - eigene
-// Wirtschaft, Forschung, Gebaeude, Flotten-/Verteidigungsbau, Asteroiden-Mining, genau wie ein
+// Wirtschaft, Forschung, Gebaeude, Flotten-/Verteidigungsbau, genau wie ein
 // KI-Mitspieler (siehe economyBotTurn.ts/runEconomyTick() in actions.ts, beide auch von bot.ts
 // genutzt). KEINE kuenstlichen Obergrenzen mehr - Wachstum ist nur durch dieselben
 // wirtschaftlichen Grenzen begrenzt wie bei einem echten Spieler (Energie, Bauslots,
@@ -148,8 +148,9 @@ function migrateLegacyBase(raw: any, id: string): PirateBaseState {
 // Heartbeat fuer ALLE aktiven Basen (siehe listActivePirateBases(), aufgerufen aus heartbeat.ts ueber
 // runAllPirateBaseOffensiveTurns()) - Basen wachsen throttled wieder eigenstaendig (30.07.2026,
 // README Punkt 127, Korrektur derselben Wiedereinfuehrung wie die KI-Mitspieler): bauen/forschen/
-// minen genau wie ein KI-Mitspieler (runEconomyBotTurn(), inkl. Asteroiden-Mining-Fluegen in
-// bekannte, KAMPFFREIE Sektoren - siehe maybeSendMiningFleet() in economyBotTurn.ts). Bewusst
+// minen genau wie ein KI-Mitspieler (runEconomyBotTurn() in economyBotTurn.ts - baut/forscht/
+// verteidigt, aber OHNE Asteroiden-Mining-Fluege, siehe NPC_PRODUCTION_BONUS_MULTIPLIER in
+// economy.ts fuer den stattdessen erhoehten Minen-Produktions-Ausgleich). Bewusst
 // UNGEDROSSELT (wie bei den Bots) - loest selbst NIE Kampf aus, nur die Offensiv-KI unten tut das,
 // und die ist ueber einen langen Cooldown stark gedrosselt.
 export async function loadPirateBase(id: string): Promise<PirateBaseState | null> {

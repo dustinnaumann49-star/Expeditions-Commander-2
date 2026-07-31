@@ -1,24 +1,24 @@
 import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyFactor } from './actions.js';
 import { RESEARCH } from './data/research.js';
-import { SEKTOR_CONFIG } from './data/sectors.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS } from './data/combatConstants.js';
-import { sendFleet } from './missions.js';
 import { setPlayerClass } from './classActions.js';
 import type { PlayerState } from './types.js';
 
 // Wirtschafts-Entscheidungslogik, GETRENNT von bot.ts ausgelagert (Nutzerentscheidung Juli 2026:
 // Piratenbasen wachsen jetzt "genau wie ein Spieler" - eigene Wirtschaft/Forschung/Flotten-
-// /Verteidigungsbau/Asteroiden-Mining, siehe pirateBaseState.ts) - DIESE Datei importiert bewusst
+// /Verteidigungsbau, siehe pirateBaseState.ts) - DIESE Datei importiert bewusst
 // NICHT aus bot.ts oder pirateBaseState.ts, damit beide sie gefahrlos importieren koennen, ohne
 // einen Zirkelimport zu erzeugen (bot.ts -> pirateBaseState.ts existiert bereits fuer
 // startPirateBaseAttack(), pirateBaseState.ts -> bot.ts haette das geschlossen).
 // Jeder Baustein nutzt EXAKT dieselben Aktionsfunktionen wie ein menschlicher Spieler ueber die
 // UI - keine Sonderkonditionen, keine abweichenden Kosten/Bauzeiten/Flugzeiten, KEINE kuenstlichen
 // Obergrenzen (Wachstum ist nur durch dieselben wirtschaftlichen Grenzen wie bei einem Spieler
-// begrenzt: Energie, Bauslots, Ressourcenertrag).
+// begrenzt: Energie, Bauslots, Ressourcenertrag). Baut/schickt bewusst KEINE Mining-Schiffe zu
+// Asteroiden-Sektoren (Nutzerentscheidung Juli 2026, entfernt - siehe NPC_PRODUCTION_BONUS_MULTIPLIER
+// in economy.ts fuer den stattdessen erhoehten Minen-Produktions-Ausgleich).
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
 const DEFENSE_IDS = [
@@ -65,9 +65,6 @@ function countInFleetOrQueue(state: PlayerState, shipId: string): number {
 
 function maybeBuildShips(state: PlayerState): void {
   if (state.buildQueue.length >= MAX_BUILD_SLOTS) return;
-  const miningInFleetOrQueue = countInFleetOrQueue(state, 'mining');
-  // Wirtschaft zuerst - genug Mining-Schiffe fuer eigenstaendiges Wachstum?
-  if (miningInFleetOrQueue < 50 && startBuild(state, 'mining', 10).ok) return;
   // Kampfschiffe gemischt aufbauen statt immer denselben (guenstigsten) Typ zuerst zu versuchen -
   // der Typ mit dem aktuell geringsten Bestand (Flotte + Warteschlange) kommt zuerst dran. Das
   // ergibt von selbst eine durchmischte Flotte statt einer reinen Masse des billigsten Schiffs;
@@ -127,22 +124,13 @@ function maybeBuildModules(state: PlayerState): void {
   }
 }
 
-function maybeSendMiningFleet(state: PlayerState): void {
-  const asteroidIds = ['asteroid_niedrig', 'asteroid_mittel', 'asteroid_hoch'];
-  if (state.missions.some((m) => asteroidIds.includes(m.sektorId) && !m.finalized)) return;
-  const miningAvail = state.fleet.mining || 0;
-  if (miningAvail < 10) return;
-  const sektorId = miningAvail >= 200 ? 'asteroid_hoch' : miningAvail >= 80 ? 'asteroid_mittel' : 'asteroid_niedrig';
-  const cfg = SEKTOR_CONFIG[sektorId];
-  const qty = cfg?.miningCap ? Math.min(miningAvail, cfg.miningCap) : miningAvail;
-  sendFleet(state, sektorId, { mining: qty });
-}
-
 /**
- * Buendelt die reine Wirtschafts-Entscheidungslogik (Gebaeude/Forschung/Schiffe/Verteidigung/
- * Asteroiden-Mining) - genutzt sowohl von KI-Mitspielern (bot.ts, zusaetzlich zu deren
- * Mitspieler-Interaktionen wie Halten/Gruppen-Expeditionen) als auch von Piratenbasen
- * (pirateBaseState.ts, OHNE jede Mitspieler-Interaktion).
+ * Buendelt die reine Wirtschafts-Entscheidungslogik (Gebaeude/Forschung/Schiffe/Verteidigung) -
+ * genutzt sowohl von KI-Mitspielern (bot.ts, zusaetzlich zu deren Mitspieler-Interaktionen wie
+ * Halten/Gruppen-Expeditionen) als auch von Piratenbasen (pirateBaseState.ts, OHNE jede
+ * Mitspieler-Interaktion). Baut/schickt bewusst KEINE Mining-Schiffe zu Asteroiden-Sektoren mehr
+ * (Nutzerentscheidung Juli 2026, entfernt - siehe NPC_PRODUCTION_BONUS_MULTIPLIER in economy.ts
+ * fuer den stattdessen erhoehten Minen-Produktions-Ausgleich).
  */
 export function runEconomyBotTurn(state: PlayerState): void {
   maybeChooseClass(state);
@@ -151,5 +139,4 @@ export function runEconomyBotTurn(state: PlayerState): void {
   maybeStartResearch(state);
   maybeBuildShips(state);
   maybeBuildDefense(state);
-  maybeSendMiningFleet(state);
 }

@@ -599,10 +599,18 @@ export function rollGalaxyEventReward(type: string): { metall: number; kristall:
 // zusaetzliche Wartezeit/Cooldown noetig, die DM-Kosten allein bremsen Spam ausreichend.
 export const RELOCATE_BASE_COST_DM = 300;
 
-// ===== KI-Wachstums-Ausgleich (Nutzerentscheidung Juli 2026) =====
+// ===== KI-Wachstums-Ausgleich (Nutzerentscheidung Juli 2026, angehoben) =====
 // Bots/Piratenbasen wirtschaften nie so effizient wie ein Mensch mit vollem Ueberblick (verpasste
 // Bau-Slots, suboptimale Prioritaeten) - moderater Bonus auf die passive Minen-Produktion GLEICHT
 // DAS AUS, ersetzt aber nicht die Verhaltens-Fixes selbst (Modul-KI, seltenere Offensiv-Angriffe,
 // siehe economyBotTurn.ts/pirateBaseState.ts). Gilt NUR fuer NPC-Zustaende (siehe isNpcState() in
 // actions.ts), niemals fuer echte Spieler.
-export const NPC_PRODUCTION_BONUS_MULTIPLIER = 1.5;
+// Von 1.5x auf 6x angehoben (Nutzerentscheidung Juli 2026): Asteroiden-Mining (Mining-Schiffe
+// bauen/losschicken) wurde fuer Bots/Piratenbasen komplett entfernt (siehe economyBotTurn.ts,
+// war fehleranfaellig und unpassend kalibriert). Echte Spieler sammeln zusaetzlich zur passiven
+// Minen-Produktion ueber Zeit erhebliche Mengen ueber Container/Missionen/Raids an (allein ein
+// Gold-Container gibt ~29M/23M/19M Metall/Kristall/Deuterium, Elite ~52M/44M/37M, siehe
+// CONTAINER_TYPES oben) - Bots/Piratenbasen haben KEINEN Zugang zu dieser Beute-Mechanik, der
+// Multiplikator muss den kompletten Ausgleich daher allein ueber die Minen-Produktion leisten,
+// nicht nur den Wegfall des Mining-Schiff-Ertrags. 2.5x war dafuer zu niedrig angesetzt.
+export const NPC_PRODUCTION_BONUS_MULTIPLIER = 6;
