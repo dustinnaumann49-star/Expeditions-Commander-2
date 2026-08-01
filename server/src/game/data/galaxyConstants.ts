@@ -84,6 +84,12 @@ export const SPY_PROBE_TRAVEL_MS = 5 * 60 * 1000;
 // statt der ueblichen distanzbasierten galaxyFuelCost()-Formel.
 export const SPY_PROBE_FUEL_COST_PER_PROBE = 50;
 
+// Globaler Multiplikator auf galaxyFuelCost() (Nutzerentscheidung: Treibstoffkosten waren
+// "ein Witz" im Verhaeltnis zu typischen Deuterium-Bestaenden) - erhoeht den Verbrauch bei
+// Galaxie-Fluegen (Missionen, Halten, Rendezvous etc.) deutlich, ohne die Basisformel selbst
+// oder einzelne Schiffs-fuelConsumption-Werte anzufassen.
+export const GALAXY_FUEL_COST_MULTIPLIER = 5;
+
 // Piraten spionieren umgekehrt auch Spieler aus (Nutzerentscheidung: "Piraten und KI bots
 // spionieren auch") - bewusst leichtgewichtig als periodischer Hintergrund-Check (kein eigenes
 // Flug-/Ankunfts-Modell wie bei Spieler-Sonden, siehe maybeGeneratePirateSpyReport() in

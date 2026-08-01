@@ -7,6 +7,7 @@ import {
   GALAXY_SAME_SYSTEM_FACTOR,
   GALAXY_DIFF_SYSTEM_BASE,
   GALAXY_DIFF_SYSTEM_FACTOR,
+  GALAXY_FUEL_COST_MULTIPLIER,
 } from './data/galaxyConstants.js';
 import { findShip } from './combat.js';
 import { CLASS_KANONIER_FLEET_SPEED_MULTIPLIER, CLASS_KOMMANDANT_FLEET_SPEED_MULTIPLIER } from './data/classes.js';
@@ -105,7 +106,7 @@ export function galaxyFuelCost(ships: Record<string, number>, distance: number, 
     if (ship) total += count * (ship.fuelConsumption || 0);
   });
   const economyFuel = state?.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_FUEL_MULTIPLIER : 1;
-  return Math.ceil(total * (distance / 1000) * economyFuel);
+  return Math.ceil(total * (distance / 1000) * economyFuel * GALAXY_FUEL_COST_MULTIPLIER);
 }
 
 // ========== GALAXIE-UEBERSICHT ==========
