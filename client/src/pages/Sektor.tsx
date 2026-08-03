@@ -118,7 +118,7 @@ function SektorCard({
                       {shipName(gameData, id)} (verfügbar: {avail}
                       {cap ? `, max ${cap}` : ''})
                     </span>
-                    <span className="qty-row" style={{ flexWrap: 'nowrap', gap: 2 }}>
+                    <span className="qty-row" style={{ flexWrap: 'wrap', gap: '2px 4px', justifyContent: 'space-between' }}>
                       <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 1000) }))}>-1k</button>
                       <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 100) }))}>-100</button>
                       <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>-10</button>
