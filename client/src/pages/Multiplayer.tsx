@@ -52,17 +52,15 @@ function FleetPicker({
         <span>
           {shipName(gameData, id)} (verfügbar: {avail})
         </span>
-        <span className="qty-row" style={{ flexWrap: 'nowrap' }}>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>
-            -10
-          </button>
-          <span style={{ padding: '0 6px' }}>{qty}</span>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>
-            +10
-          </button>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>
-            Alle
-          </button>
+        <span className="qty-row" style={{ flexWrap: 'nowrap', gap: 2 }}>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 1000) }))}>-1k</button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 100) }))}>-100</button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>-10</button>
+          <span style={{ padding: '0 4px', fontSize: 11 }}>{qty}</span>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>+10</button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 100) }))}>+100</button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 1000) }))}>+1k</button>
+          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>Alle</button>
         </span>
       </div>
     );
