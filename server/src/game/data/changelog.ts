@@ -9,6 +9,14 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '03.08.2026',
+    title: 'Fix: Schaden ausgeteilt / Schüsse-Treffer bei großen Flotten',
+    changes: [
+      'Im Kampfbericht zeigte "Schaden ausgeteilt" und "Schüsse/Treffer" bei größeren Flotten fälschlich 0 an, obwohl klar sichtbar Schaden gemacht wurde (z.B. gegnerische Verluste) - "Schaden erlitten" war davon nicht betroffen und stimmte immer.',
+      'Ursache war eine interne Verwechslung bei der Zuordnung der Statistik zum jeweiligen Flotten-Besitzer bei Mehrspieler-Kämpfen mit großen Flotten - behoben, die Werte werden jetzt wieder korrekt angezeigt.',
+    ],
+  },
+  {
     date: '31.07.2026',
     title: 'Allianz-Station: Bau-Verlauf',
     changes: [

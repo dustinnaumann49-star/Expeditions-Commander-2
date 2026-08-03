@@ -242,7 +242,10 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Zielerfassung jeden präsenten anfälligen Typ - extreme Waffenwerte, wenig Schild/Panzerung,
   RF-immun. MÜSSEN aus jeder Piraten-/NPC-Flottengenerierung ausgeschlossen werden.
 - Kampf-Statistiken sind besitzer-bewusst indiziert (`` `${ownerKey}:${typeId}` ``), sonst zeigen
-  zwei Teilnehmer mit demselben Schiffstyp identische aggregierte Werte.
+  zwei Teilnehmer mit demselben Schiffstyp identische aggregierte Werte. Gilt auch für den
+  Aggregat-Schützen-Pfad (`fireShotsAggregateShooters()`) - dort MUSS `aggStatKey(stack)` statt
+  `stack.typeId` verwendet werden, sonst landen `shotsFired`/`hits`/`crits`/`dmgDealt` unter dem
+  falschen Schlüssel und zeigen im Kampfbericht 0 an (Fix vom 03.08.2026).
 - Präzision/Schild-Regen sind größenabhängig (kleine Schiffe treffen besser, laden schlechter).
 - Kampfbericht führt `dmgDealt` und `dmgTaken` getrennt - eine niedrige "erlitten"-Zahl ist starke,
   nicht schwache Feuerkraft.

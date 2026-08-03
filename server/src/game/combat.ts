@@ -1312,7 +1312,8 @@ function fireShotsAggregateShooters(
     totalShots = Math.max(count, Math.min(count * MAX_SHOTS_PER_UNIT, totalShots));
     if (totalAliveTargets <= 0 || totalShots <= 0) return;
 
-    shooterStats.shotsFired[stack.typeId] = (shooterStats.shotsFired[stack.typeId] || 0) + totalShots;
+    const shooterKey = aggStatKey(stack);
+    shooterStats.shotsFired[shooterKey] = (shooterStats.shotsFired[shooterKey] || 0) + totalShots;
 
     // Schuesse proportional auf die Ziel-"Eimer" verteilen: normale Einzel-Pool (ein Eimer) +
     // jedes gegnerische Aggregat (je ein Eimer) - gewichtet nach lebender Stueckzahl.
@@ -1333,19 +1334,19 @@ function fireShotsAggregateShooters(
         for (let i = 0; i < shotsAtBucket && pool.size > 0; i++) {
           const target = pickRandom(pool.array);
           if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, stack.typeId)) continue;
-          shooterStats.hits[stack.typeId] = (shooterStats.hits[stack.typeId] || 0) + 1;
+          shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + 1;
           const isCrit = critChance > 0 && Math.random() < critChance;
-          if (isCrit) shooterStats.crits[stack.typeId] = (shooterStats.crits[stack.typeId] || 0) + 1;
+          if (isCrit) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + 1;
           const dmg = stack.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
-          shooterStats.dmgDealt[stack.typeId] = (shooterStats.dmgDealt[stack.typeId] || 0) + dmg;
+          shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dmg;
           applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, 0, targetsSharedShieldPool, (u) => pool.remove(u), undefined);
         }
       } else if (bucket.agg) {
         const hits = sampleBinomial(shotsAtBucket, precision * (1 - getEvasionChance(researchTarget, !applyPlayerResearch, bucket.agg.typeId, stack.typeId)));
         const crits = sampleBinomial(hits, critChance);
         if (hits > 0) {
-          shooterStats.hits[stack.typeId] = (shooterStats.hits[stack.typeId] || 0) + hits;
-          if (crits > 0) shooterStats.crits[stack.typeId] = (shooterStats.crits[stack.typeId] || 0) + crits;
+          shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + hits;
+          if (crits > 0) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + crits;
           const dealt = applyAggregateDamage(
             bucket.agg,
             hits,
@@ -1355,7 +1356,7 @@ function fireShotsAggregateShooters(
             shieldDmgTakenTarget,
             aggStatKey(bucket.agg)
           );
-          shooterStats.dmgDealt[stack.typeId] = (shooterStats.dmgDealt[stack.typeId] || 0) + dealt;
+          shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dealt;
         }
       }
     });
