@@ -247,6 +247,12 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   `stack.typeId` verwendet werden, sonst landen `shotsFired`/`hits`/`crits`/`dmgDealt` unter dem
   falschen Schlüssel und zeigen im Kampfbericht 0 an (Fix vom 03.08.2026).
 - Präzision/Schild-Regen sind größenabhängig (kleine Schiffe treffen besser, laden schlechter).
+- `SHIELD_REGEN_MAX` (`combatConstants.ts`) von 0.80 auf 0.50 gesenkt, `schildregeneration.
+  effectPerLevel` (`research.ts`) von 0.06 auf 0.035 (Nutzerentscheidung 03.08.2026): bei
+  Max-Forschung (Stufe 10) ergab BASE+Forschungsbonus allein schon 0.80 - GENAU der alte Deckel,
+  noch vor dem größenabhängigen Modifikator. Große Schiffe/Verteidigung luden dadurch 80% des
+  fehlenden Schildes JEDE Runde wieder auf, Kämpfe zogen sich bis ans `MAX_ROUNDS`-Limit (100).
+  Jetzt max. 50% Regen pro Runde bei Max-Forschung.
 - Kampfbericht führt `dmgDealt` und `dmgTaken` getrennt - eine niedrige "erlitten"-Zahl ist starke,
   nicht schwache Feuerkraft.
 - Wellen-Vielfalt: drei Zusammensetzungs-Profile (`pickWaveProfile()`), Wellen-Ausreißer, seltene

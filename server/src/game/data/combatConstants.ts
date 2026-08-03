@@ -302,7 +302,16 @@ export const MAX_RESEARCH_LEVEL = 10;
 // pro Zweig, wie besprochen.
 export const PARENT_UNLOCK_LEVEL = 3;
 export const SHIELD_REGEN_BASE = 0.20;
-export const SHIELD_REGEN_MAX = 0.80;
+// Von 0.80 auf 0.50 gesenkt (Nutzerentscheidung 03.08.2026, Balance-Feedback "Kaempfe ziehen sich
+// bei starken/vielen Flotten bis ans 100-Runden-Limit"): bei Max-Forschung (schildregeneration
+// Stufe 10) allein ergab BASE+Forschungsbonus schon 0.80 - GENAU der alte Deckel, noch VOR dem
+// schiffstyp-abhaengigen SHIELD_REGEN_MODIFIER. Jedes groessere Schiff/jede Verteidigungsanlage
+// (positiver Modifikator) lud dadurch 80% des fehlenden Schildes JEDE Runde wieder auf - Kaempfe
+// zwischen aehnlich starken Flotten konnten so kaum noch entschieden werden, bevor das
+// Runden-Limit griff. Zusammen mit der Absenkung von schildregeneration.effectPerLevel
+// (0.06 -> 0.035 in data/research.ts) sinkt die Regenrate bei Max-Forschung fuer grosse
+// Schiffe/Verteidigung von 80% auf 50% pro Runde.
+export const SHIELD_REGEN_MAX = 0.50;
 export const PRECISION_BASE = 0.40;
 export const PRECISION_MAX_PLAYER = 0.60;
 export const DEFENSE_REPAIR_PERCENT = 0.70;

@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '03.08.2026',
+    title: 'Balance: Schild-Regeneration gesenkt',
+    changes: [
+      'Kämpfe zogen sich vor allem bei hoher Forschung und großen Flotten teils bis ans 100-Runden-Limit, weil sich Schilde zwischen den Runden extrem stark aufgeladen haben - bei maximaler Schild-Regeneration-Forschung erreichten große Schiffe und Verteidigungsanlagen 80% Aufladung pro Runde.',
+      'Die maximale Aufladung pro Runde wurde von 80% auf 50% gesenkt (Forschungsstufen selbst geben jetzt ebenfalls etwas weniger pro Stufe) - Kämpfe sollten dadurch spürbar schneller entschieden werden, besonders bei weit ausgebauter Forschung.',
+    ],
+  },
+  {
+    date: '03.08.2026',
     title: 'Fix: Schaden ausgeteilt / Schüsse-Treffer bei großen Flotten',
     changes: [
       'Im Kampfbericht zeigte "Schaden ausgeteilt" und "Schüsse/Treffer" bei größeren Flotten fälschlich 0 an, obwohl klar sichtbar Schaden gemacht wurde (z.B. gegnerische Verluste) - "Schaden erlitten" war davon nicht betroffen und stimmte immer.',
