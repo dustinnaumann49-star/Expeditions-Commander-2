@@ -481,7 +481,14 @@
   .info-list-value{
     color: var(--text); font-size: 13px; text-align: right; line-height: 1.5; flex: 1 1 auto; min-width: 0;
   }
-  .combat-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  /* Nutzer-Fund 04.08.2026 (Mobil-Fix): 9 Spalten inkl. langer Header ("Schaden ausgeteilt",
+     "Schüsse/Treffer") quetschten sich auf schmalen Handy-Bildschirmen mit width:100% auf ein
+     Minimum zusammen und wurden dadurch praktisch unlesbar ("verschwindet fast vollständig").
+     `display:block` + `overflow-x:auto` machen die Tabelle bei Bedarf seitlich scrollbar statt sie
+     zu quetschen - betrifft ALLE `.combat-table`-Vorkommen im Kampfbericht (7 Stellen in
+     Nachrichten.tsx), da der Fix zentral hier sitzt statt an jeder Stelle einzeln. Auf breiten
+     Bildschirmen ohne Effekt (kein Scrollbalken, solange die Tabelle in die Breite passt). */
+  .combat-table{ width:100%; border-collapse:collapse; font-size:13px; display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .combat-table th{
     padding:8px 6px; border-bottom:2px solid var(--border-bright);
     color:var(--accent-kristall); font-weight:600;
@@ -724,4 +731,10 @@
       text-align:center;
      }
      .inventory-grid{ grid-template-columns:1fr; }
+
+    /* Mindestbreite, damit die 9 Spalten NICHT gequetscht werden, bevor der Scrollbalken greift
+       (siehe .combat-table oben) - Wert grob aus den laengsten Headern/Werten ueberschlagen. */
+    .combat-table{ min-width: 720px; font-size: 12px; }
+    .combat-table th, .combat-table td{ padding: 6px 8px; }
+    #modal-box{ padding: 14px; }
 }

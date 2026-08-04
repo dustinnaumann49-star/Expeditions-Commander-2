@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Fix: Kampfberichte auf dem Handy unlesbar',
+    changes: [
+      'Die Tabellen in den Kampfberichten (Schaden, Verluste, Schild-Werte je Schiffstyp) quetschten sich auf schmalen Handy-Bildschirmen bis zur Unlesbarkeit zusammen. Sie lassen sich jetzt bei Bedarf seitlich durchscrollen, statt gestaucht zu werden - auf dem Desktop ändert sich dadurch nichts.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Statistik komplett überarbeitet',
     changes: [
       'Die Statistik-Seite zeigt jetzt nur noch drei Werte, die auch wirklich in die Punktzahl einfließen: Schiff/Verteidigungs-Punkte, Forschungs/Gebäude-Punkte und zerstörte Piraten. Alle anderen Zähler (Piraten-Sektor-Siege, Elite-Bollwerk-Checks, Raid-Abwehr, Container, erbeutete Ressourcen, eigene Verluste, Asteroiden-Einsätze) sind raus - sie trugen ohnehin kaum oder gar nicht zur Punktzahl bei und machten die Seite nur unübersichtlich.',

@@ -552,6 +552,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Button statt einer Reihe von `-1k/-100/-10/+10/+100/+1k`-Buttons (nahm bei vielen Schiffstypen zu
   viel Platz weg) - 0 wird dabei als leeres Feld dargestellt (`value={qty === 0 ? '' : qty}`),
   wodurch sich auch ein bereits gesetzter Wert einfach ueberschreiben laesst.
+- Kampfbericht-Tabellen (`.combat-table`, 9 Spalten inkl. langer Header wie "Schaden ausgeteilt",
+  7 Vorkommen in `Nachrichten.tsx`) quetschten sich auf Mobilgeraeten mit `width:100%` bis zur
+  Unlesbarkeit zusammen (Nutzer-Fund 04.08.2026: "verschwindet fast vollständig"). Fix zentral in
+  der CSS-Klasse (nicht an jeder der 7 Stellen einzeln): `display:block; overflow-x:auto` macht die
+  Tabelle bei Bedarf seitlich scrollbar statt sie zu quetschen, `min-width:720px` im
+  Mobil-Breakpoint (`@media max-width:768px`) verhindert, dass die Spalten trotzdem zusammenlaufen,
+  bevor der Scrollbalken greift. Auf breiten Bildschirmen ohne jeden Effekt (kein Scrollbalken,
+  solange die Tabelle in die verfuegbare Breite passt).
 
 ### Bilder
 
@@ -627,3 +635,5 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Gebäude-Punkte, zerstörte Piraten). Alte, bei Verlusten sinkende Gesamtmacht-Punktzahl komplett
   durch kumulative, nie sinkende Ressourcenausgaben-Punkte ersetzt; Missionen/Elite-Bollwerk/Raid-
   Abwehr aus der Punktzahl entfernt (waren gegenüber ressourcenbasierten Werten unsichtbar klein).
+- Fix: Kampfbericht-Tabellen auf Mobilgeräten quetschten sich bis zur Unlesbarkeit zusammen -
+  scrollen jetzt bei Bedarf seitlich statt die Spalten zu stauchen.
