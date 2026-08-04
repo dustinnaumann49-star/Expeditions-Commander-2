@@ -12,7 +12,7 @@ import {
   RAID_WAVE_COUNT,
   RAID_ASSAULT_DURATION_MS,
   RAID_WAVE_JITTER_FACTOR,
-  RAID_WAVE_FACTORS,
+  RAID_WAVE_ROLL,
   RAID_WAVE_WIN_SILBER,
   RAID_WAVE_WIN_GOLD,
   RAID_WAVE_WIN_ELITE,
@@ -27,6 +27,7 @@ import {
   pickWaveProfile,
   rollBattleModifier,
   fleetSizeRewardMultiplier,
+  pick503020,
 } from './combat.js';
 import type { OwnedFleetContribution } from './combat.js';
 import { runCombatInWorker, runMultiOwnerCombatInWorker } from './combatRunner.js';
@@ -338,7 +339,7 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   // RAID_MIN_TARGET_POWER wirkt hier als Untergrenze fuer die kombinierte Basis-Macht SELBST
   // (nicht mehr pro Welle geteilt, siehe economy.ts) - schuetzt Accounts ohne nennenswerte Flotte/
   // Verteidigung davor, quasi wirkungslose Raids zu bekommen.
-  const waveFactor = RAID_WAVE_FACTORS[Math.min(raid.wavesProcessed, RAID_WAVE_FACTORS.length - 1)];
+  const waveFactor = pick503020(RAID_WAVE_ROLL);
   const waveTargetPower = Math.max(combinedPower, RAID_MIN_TARGET_POWER) * waveFactor;
   const profile = pickWaveProfile('raid');
   const battleModifier = rollBattleModifier('raid');

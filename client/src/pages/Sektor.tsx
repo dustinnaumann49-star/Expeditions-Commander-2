@@ -255,7 +255,10 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
   if (sektorId.startsWith('piraten_')) {
     const shipTags = gameData.ships.filter((s) => !s.specialOnly && !s.unique && s.id !== 'mining' && s.id !== 'begleitschiff');
     const rollTable = gameData.piratenMultiplierRoll[sektorId] || [];
-    const multiplierRollText = rollTable.map((v) => Math.round(v * 100) + '%').join(' / ');
+    const rollChances = ['50%', '30%', '20%'];
+    const multiplierRollText = rollTable
+      .map((v, i) => `${(Array.isArray(v) ? `${Math.round(v[0] * 100)}-${Math.round(v[1] * 100)}%` : Math.round(v * 100) + '%')} (${rollChances[i]})`)
+      .join(' / ');
     const defenseFactor = sektorId === 'piraten_niedrig' ? 5 : sektorId === 'piraten_mittel' ? 10 : 15;
     const containerCfg = cfg.captainContainerTier ? gameData.containerTypes[cfg.captainContainerTier] : null;
 
@@ -304,6 +307,18 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
                 - sammelt sich über die ganze Mission, Gutschrift erst bei Rückkehr/Rückruf
               </span>
             </div>
+            {cfg.winResources ? (
+              <div className="info-row">
+                <span className="info-label">💰 Ressourcen-Paket pro gewonnenem Kampf</span>
+                <span className="info-value">
+                  <strong style={{ color: 'var(--accent-metall)' }}>
+                    {cfg.winResources.metall.toLocaleString('de-DE')} Metall, {cfg.winResources.kristall.toLocaleString('de-DE')} Kristall,{' '}
+                    {cfg.winResources.deuterium.toLocaleString('de-DE')} Deuterium
+                  </strong>{' '}
+                  - gleicher Rhythmus wie die Container
+                </span>
+              </div>
+            ) : null}
             <div className="info-row">
               <span className="info-label">⭐ Sandronator</span>
               <span className="info-value">

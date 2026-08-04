@@ -1,8 +1,10 @@
-import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyFactor } from './actions.js';
+import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
+import { SHIPS } from './data/ships.js';
+import { DEFENSES } from './data/defenses.js';
 import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS } from './data/combatConstants.js';
 import { setPlayerClass } from './classActions.js';
 import type { PlayerState } from './types.js';
@@ -27,6 +29,33 @@ const DEFENSE_IDS = [
 ];
 const MINE_IDS = ['metallmine', 'kristallmine', 'deuteriummine'];
 
+function totalCost(cost?: { metall: number; kristall: number; deuterium: number }): number {
+  if (!cost) return 0;
+  return cost.metall + cost.kristall + cost.deuterium;
+}
+
+// Guenstigster-zuerst-Reihenfolge (Nutzerentscheidung, Neugestaltung "Ueberarbeitung KI-Bots &
+// Piratenbasen" 04.08.2026) - dient als FALLBACK, wenn das eigentliche Bauvorhaben (siehe
+// maybeBuildShips/-Defense unten) fuer JEDEN Typ zu teuer war, damit der Zug nicht leer endet.
+const COMBAT_SHIP_IDS_BY_COST = [...COMBAT_SHIP_IDS].sort(
+  (a, b) => totalCost(SHIPS.find((s) => s.id === a)?.cost) - totalCost(SHIPS.find((s) => s.id === b)?.cost)
+);
+const DEFENSE_IDS_BY_COST = [...DEFENSE_IDS].sort(
+  (a, b) => totalCost(DEFENSES.find((d) => d.id === a)?.cost) - totalCost(DEFENSES.find((d) => d.id === b)?.cost)
+);
+
+// Vorausschauende Energie-Reserve (Nutzerentscheidung, Neugestaltung 04.08.2026): energyFactor()
+// aus actions.ts deckelt bei 1.0 und zeigt einen Engpass daher erst, wenn er bereits eingetreten
+// ist (Minen bereits gedrosselt). Diese Funktion nutzt die UNGEDECKELTE Produktions-/Verbrauchs-
+// Ratio mit 15% Sicherheitsmarge, damit das Solarkraftwerk VOR dem tatsaechlichen Energiemangel
+// priorisiert wird, nicht erst danach.
+const ENERGY_SAFETY_MARGIN = 1.15;
+function hasEnergyHeadroom(state: PlayerState): boolean {
+  const consumed = energyConsumed(state);
+  if (consumed <= 0) return true;
+  return energyProduced(state) / consumed >= ENERGY_SAFETY_MARGIN;
+}
+
 // Ein echter Spieler MUSS vor jedem anderen Zugriff eine Klasse waehlen (siehe App.tsx-Gate) -
 // Bots/Piratenbasen durchlaufen dieses UI-Gate nie, wuerden aber ohne diesen Baustein fuer immer
 // bei playerClass:null bleiben und dadurch nie von Klassen-Boni profitieren. Einmalige, zufaellige
@@ -39,8 +68,10 @@ export function maybeChooseClass(state: PlayerState): void {
 
 function maybeBuildBuilding(state: PlayerState): void {
   if (state.buildingQueue.length > 0) return;
-  // Energie-Engpass zuerst beheben, sonst drosseln sich die Minen selbst aus.
-  if (energyFactor(state) < 1 && startBuildingConstruction(state, 'solarkraftwerk').ok) return;
+  // Solarkraftwerk IMMER vorausschauend priorisieren, sobald die Energiereserve knapp wird (siehe
+  // hasEnergyHeadroom oben) - nicht erst reaktiv, wenn der Energiehaushalt bereits im Minus ist und
+  // die Minen sich dadurch schon selbst gedrosselt haben.
+  if (!hasEnergyHeadroom(state) && startBuildingConstruction(state, 'solarkraftwerk').ok) return;
   // Minen ausbalanciert ausbauen: die aktuell niedrigste Stufe zuerst.
   const sortedMines = [...MINE_IDS].sort((a, b) => (state.buildings[a] || 0) - (state.buildings[b] || 0));
   for (const id of sortedMines) {
@@ -74,6 +105,12 @@ function maybeBuildShips(state: PlayerState): void {
   for (const id of sortedCombatIds) {
     if (startBuild(state, id, 5).ok) return;
   }
+  // Flexibler Fallback (Nutzerentscheidung, Neugestaltung 04.08.2026): das eigentliche Bauvorhaben
+  // (5 Stueck) war fuer JEDEN Typ zu teuer - statt den Zug leer enden zu lassen, auf eine kleinere,
+  // bezahlbare Alternative ausweichen (guenstigster Typ zuerst, jeweils nur 1 Stueck).
+  for (const id of COMBAT_SHIP_IDS_BY_COST) {
+    if (startBuild(state, id, 1).ok) return;
+  }
 }
 
 function countDefenseInStockOrQueue(state: PlayerState, defId: string): number {
@@ -89,6 +126,11 @@ function maybeBuildDefense(state: PlayerState): void {
   const sortedDefenseIds = [...DEFENSE_IDS].sort((a, b) => countDefenseInStockOrQueue(state, a) - countDefenseInStockOrQueue(state, b));
   for (const id of sortedDefenseIds) {
     if (startDefenseBuild(state, id, 10).ok) return;
+  }
+  // Flexibler Fallback, analog zu maybeBuildShips oben: 10 Stueck war fuer JEDEN Typ zu teuer ->
+  // guenstigste Anlage zuerst, jeweils nur 1 Stueck.
+  for (const id of DEFENSE_IDS_BY_COST) {
+    if (startDefenseBuild(state, id, 1).ok) return;
   }
 }
 

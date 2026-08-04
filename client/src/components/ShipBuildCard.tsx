@@ -11,6 +11,7 @@ import {
   getShieldRegenRate,
   getEvasionChance,
   getCritChance,
+  getCritDamageMultiplier,
   driveTypeLabel,
   getEffectiveShipStats,
 } from '../lib/combatInfo';
@@ -183,7 +184,7 @@ export function shipInfoRows(gameData: GameData, state: PlayerState, ship: ShipD
     ['Ziel für RapidFire?', targeted ? '⚠ Ja, andere Einheiten können dieses Schiff gezielt anvisieren' : 'Nein'],
     ['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`],
     ['💨 Ausweichen', evasion > 0 ? `${(evasion * 100).toFixed(0)}% Chance, einem Treffer zu entgehen` : 'Zu schwerfällig zum Ausweichen'],
-    ['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`],
+    ['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${getCritDamageMultiplier(gameData, ship.id)}× Schaden`],
     ['🛡️ Schild-Regeneration', `${(shieldRegen * 100).toFixed(0)}% pro Runde`],
     ...(ship.unique
       ? ([['Status', `★ Einzigartig - nur 1 Exemplar möglich${bestand >= 1 ? ' (bereits vorhanden)' : ''}`]] as [string, React.ReactNode][])

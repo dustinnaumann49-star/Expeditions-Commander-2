@@ -4,7 +4,8 @@ import { RESEARCH } from './data/research.js';
 import {
   RAPIDFIRE,
   ZIELERFASSUNG_BASE,
-  SHIELD_REGEN_BASE,
+  SHIELD_REGEN_BASE_BY_CLASS,
+  SHIELD_REGEN_DEFAULT_BASE,
   SHIELD_REGEN_MAX,
   PRECISION_BASE,
   PRECISION_MAX_PLAYER,
@@ -13,7 +14,6 @@ import {
   EXPLOSION_CHANCE_EXPONENT,
   MULTI_TARGET_VOLLEY_SHIPS,
   PRECISION_MODIFIER,
-  SHIELD_REGEN_MODIFIER,
   EVASION_BASE,
   EVASION_MAX,
   EVASION_MAX_SIZE_MISMATCH,
@@ -21,7 +21,8 @@ import {
   SIZE_MISMATCH_EVASION_BONUS,
   CRIT_CHANCE_BASE,
   CRIT_CHANCE_MAX,
-  CRIT_DAMAGE_MULTIPLIER,
+  CRIT_DAMAGE_MULTIPLIER_BY_CLASS,
+  CRIT_DAMAGE_DEFAULT_MULTIPLIER,
   PIRATE_RESEARCH_SHARE,
   WAVE_PROFILE_WEIGHTS,
   WAVE_OUTLIER_CHANCE,
@@ -157,14 +158,14 @@ export function getDurchschlagFraction(research: Record<string, number>): number
   return Math.min(1, fraction);
 }
 
-// Schild-Regeneration ist jetzt einheitsabhaengig: grosse Schiffe/Verteidigungsanlagen haben mehr
-// Energiereserven und laden deutlich staerker auf als kleine, wendige Jaeger (SHIELD_REGEN_MODIFIER).
+// Schild-Regeneration ist klassenabhaengig: jede Schiffsklasse hat einen festen Basiswert
+// (SHIELD_REGEN_BASE_BY_CLASS), auf den nur noch der Forschungsbonus addiert wird.
 export function getShieldRegenRate(research: Record<string, number>, typeId?: string): number {
   const level = research.schildregeneration || 0;
   const tech = RESEARCH.find((r) => r.id === 'schildregeneration');
-  const bonus = level * (tech ? tech.effectPerLevel : 0.06);
-  const sizeMod = typeId ? SHIELD_REGEN_MODIFIER[typeId] || 0 : 0;
-  return Math.max(0, Math.min(SHIELD_REGEN_MAX, SHIELD_REGEN_BASE + bonus + sizeMod));
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  const base = typeId ? SHIELD_REGEN_BASE_BY_CLASS[typeId] ?? SHIELD_REGEN_DEFAULT_BASE : SHIELD_REGEN_DEFAULT_BASE;
+  return Math.max(0, Math.min(SHIELD_REGEN_MAX, base + bonus));
 }
 
 // Praezision ist jetzt einheitsabhaengig: kleine, wendige Schiffe kaempfen nah am Feind und treffen
@@ -212,6 +213,11 @@ export function getCritChance(research: Record<string, number>, applyPlayerResea
   const tech = RESEARCH.find((r) => r.id === 'kritischetreffer');
   const bonus = level * (tech ? tech.effectPerLevel : 0.015);
   return Math.min(CRIT_CHANCE_MAX, base + bonus);
+}
+
+// Klassenabhaengiger Kritischer-Schaden-Multiplikator des SCHUETZEN (siehe CRIT_DAMAGE_MULTIPLIER_BY_CLASS).
+export function getCritDamageMultiplier(typeId: string): number {
+  return CRIT_DAMAGE_MULTIPLIER_BY_CLASS[typeId] ?? CRIT_DAMAGE_DEFAULT_MULTIPLIER;
 }
 
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gleichmaessig verteilt auf alle NICHT-Kuppel-
@@ -460,13 +466,35 @@ export interface RolledWave {
   outlier: 'schwach' | 'stark' | null;
 }
 
+type RollTableEntry = number | [number, number];
+
+function resolveRollEntry(entry: RollTableEntry): number {
+  return Array.isArray(entry) ? entry[0] + Math.random() * (entry[1] - entry[0]) : entry;
+}
+
+// 50/30/20-Zufallsprinzip (Nutzerentscheidung, Neugestaltung 04.08.2026): jeder einzelne
+// Kampf-Check wuerfelt mit fester Gewichtung (50% / 30% / 20%) einen der drei Tabellenwerte, statt
+// gleichverteilt (je 1/3) wie vorher - siehe PIRATEN_MULTIPLIER_ROLL/RAID_WAVE_FACTORS. Der dritte
+// Eintrag kann eine Spanne [min, max] sein (z.B. piraten_hoch), wird dann gleichverteilt darin
+// gewuerfelt.
+export function pick503020(table: RollTableEntry[]): number {
+  const roll = Math.random();
+  const entry = roll < 0.5 ? table[0] : roll < 0.8 ? table[1] : table[2];
+  return resolveRollEntry(entry);
+}
+
 /**
  * Wie rollMultiplier (Zufallswert aus der 3-Werte-Tabelle des Sektors/Kontexts), aber mit
  * zusaetzlicher, kontextabhaengiger Chance auf einen deutlichen AUSREISSER nach oben oder unten -
  * verhindert, dass sich Begegnungen immer nur zwischen denselben drei Werten bewegen.
+ * Nutzt das 50/30/20-Gewichtungsprinzip (pick503020) fuer alle Kontexte AUSSER dem Piratenadmiral
+ * (P10, contextKey 'piraten_admiral') - der bleibt bewusst bei der alten Gleichverteilung, siehe
+ * Plan "Der Piratenadmiral bleibt von dieser Aenderung unberuehrt".
  */
-export function rollMultiplierWithOutlier(table: number[], contextKey: string): RolledWave {
-  const base = table[Math.floor(Math.random() * table.length)];
+export function rollMultiplierWithOutlier(table: RollTableEntry[], contextKey: string): RolledWave {
+  const base = contextKey === 'piraten_admiral'
+    ? resolveRollEntry(table[Math.floor(Math.random() * table.length)])
+    : pick503020(table);
   const outlierChance = WAVE_OUTLIER_CHANCE[contextKey] || 0;
   if (Math.random() < outlierChance) {
     const isHigh = Math.random() < 0.5;
@@ -664,11 +692,12 @@ function applyAggregateDamage(
   dmgPerHit: number,
   dmgTakenTarget: Record<string, number>,
   shieldDmgTakenTarget: Record<string, number>,
-  statKeyStr: string
+  statKeyStr: string,
+  shooterTypeId?: string
 ): number {
   if (hits <= 0) return 0;
   const normalHits = hits - crits;
-  let totalDmg = normalHits * dmgPerHit + crits * dmgPerHit * CRIT_DAMAGE_MULTIPLIER;
+  let totalDmg = normalHits * dmgPerHit + crits * dmgPerHit * (shooterTypeId ? getCritDamageMultiplier(shooterTypeId) : CRIT_DAMAGE_DEFAULT_MULTIPLIER);
   const dealt = totalDmg;
   const shieldAbsorbed = Math.min(totalDmg, stack.shieldPoolCur);
   stack.shieldPoolCur -= shieldAbsorbed;
@@ -1040,8 +1069,8 @@ function applyAggregateHit(
     if (remainingDmg <= 0) return;
   }
   // WICHTIG: `dmg` ist bereits der fertige, ggf. kritisch multiplizierte Schaden (siehe Aufrufer in
-  // fireShots() - `dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1)`). applyAggregateDamage()
-  // multipliziert bei crits>0 SELBST nochmal mit CRIT_DAMAGE_MULTIPLIER - crits hier immer auf 0
+  // fireShots() - `dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1)`).
+  // applyAggregateDamage() multipliziert bei crits>0 SELBST nochmal - crits hier immer auf 0
   // lassen, sonst wird ein kritischer Treffer VIERFACH statt doppelt gezaehlt (Bug, gefunden nach
   // Nutzer-Feedback "fast die ganze Flotte vernichtet" - einzelne NPC-Schuetzen landeten dadurch
   // stark ueberhoehten Schaden gegen Aggregat-Stapel).
@@ -1169,7 +1198,7 @@ function fireShots(
           anyHit = true;
           const isCrit = critChance > 0 && Math.random() < critChance;
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
-          const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
           applyHitToTarget(vt, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, vt.typeId, applyPlayerResearch);
@@ -1190,7 +1219,7 @@ function fireShots(
           anyHit = true;
           const isCrit = critChance > 0 && Math.random() < critChance;
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
-          const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
           applyAggregateHit(va, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, va.typeId, applyPlayerResearch);
@@ -1215,7 +1244,7 @@ function fireShots(
         shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
         const isCrit = critChance > 0 && Math.random() < critChance;
         if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
-        const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+        const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
         shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
         applyAggregateHit(targetAgg, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
         const hitRfChance = getRapidFireChance(shooter.typeId, targetAgg.typeId, applyPlayerResearch);
@@ -1240,7 +1269,7 @@ function fireShots(
       shooterStats.hits[statKey(shooter)] = (shooterStats.hits[statKey(shooter)] || 0) + 1;
       const isCrit = critChance > 0 && Math.random() < critChance;
       if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
-      const dmg = shooter.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+      const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
       shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
       applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
       const hitRfChance = getRapidFireChance(shooter.typeId, target.typeId, applyPlayerResearch);
@@ -1337,7 +1366,7 @@ function fireShotsAggregateShooters(
           shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + 1;
           const isCrit = critChance > 0 && Math.random() < critChance;
           if (isCrit) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + 1;
-          const dmg = stack.waffen * (isCrit ? CRIT_DAMAGE_MULTIPLIER : 1);
+          const dmg = stack.waffen * (isCrit ? getCritDamageMultiplier(stack.typeId) : 1);
           shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dmg;
           applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, 0, targetsSharedShieldPool, (u) => pool.remove(u), undefined);
         }
@@ -1354,7 +1383,8 @@ function fireShotsAggregateShooters(
             stack.waffen,
             dmgTakenTarget,
             shieldDmgTakenTarget,
-            aggStatKey(bucket.agg)
+            aggStatKey(bucket.agg),
+            stack.typeId
           );
           shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dealt;
         }

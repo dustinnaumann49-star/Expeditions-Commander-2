@@ -8,6 +8,7 @@ import {
   getShieldRegenRate,
   getZielerfassungAccuracy,
   getCritChance,
+  getCritDamageMultiplier,
   getEffectiveDefenseStats,
 } from '../lib/combatInfo';
 import { StatValue } from './StatValue';
@@ -177,7 +178,7 @@ export function defenseInfoRows(gameData: GameData, state: PlayerState, def: Def
   const hasWeapon = def.stats.waffen > 0;
   if (hasWeapon) {
     rows.push(['🎯 Präzision', `${(precision * 100).toFixed(0)}% Trefferchance`]);
-    rows.push(['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`]);
+    rows.push(['💥 Kritische Treffer', `${(critChance * 100).toFixed(0)}% Chance auf ${getCritDamageMultiplier(gameData, def.id)}× Schaden`]);
   }
   rows.push(['💨 Ausweichen', 'Unbeweglich – kann nicht ausweichen']);
   if (def.isDome) {

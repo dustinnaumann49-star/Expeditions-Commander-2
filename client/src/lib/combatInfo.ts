@@ -51,14 +51,14 @@ export function getZielerfassungAccuracy(gameData: GameData, research: Record<st
   return Math.min(1, base + bonus);
 }
 
-// Spiegelt server/src/game/combat.ts's getShieldRegenRate() - beruecksichtigt jetzt die
-// Groessen-Modifikatoren (grosse Einheiten laden staerker auf, kleine schwaecher).
+// Spiegelt server/src/game/combat.ts's getShieldRegenRate() - klassenabhaengiger Basiswert plus
+// Forschungsbonus.
 export function getShieldRegenRate(gameData: GameData, research: Record<string, number>, typeId?: string): number {
   const level = research.schildregeneration || 0;
   const tech = gameData.research.find((r) => r.id === 'schildregeneration');
-  const bonus = level * (tech ? tech.effectPerLevel : 0.06);
-  const sizeMod = typeId ? gameData.shieldRegenModifier[typeId] || 0 : 0;
-  return Math.max(0, Math.min(gameData.shieldRegenMax, gameData.shieldRegenBase + bonus + sizeMod));
+  const bonus = level * (tech ? tech.effectPerLevel : 0.015);
+  const base = typeId ? gameData.shieldRegenBaseByClass[typeId] ?? gameData.shieldRegenDefaultBase : gameData.shieldRegenDefaultBase;
+  return Math.max(0, Math.min(gameData.shieldRegenMax, base + bonus));
 }
 
 // Spiegelt server/src/game/combat.ts's getPrecisionChance() - kleine Schiffe treffen besser.
@@ -87,6 +87,11 @@ export function getCritChance(gameData: GameData, research: Record<string, numbe
   const tech = gameData.research.find((r) => r.id === 'kritischetreffer');
   const bonus = level * (tech ? tech.effectPerLevel : 0.015);
   return Math.min(gameData.critChanceMax, base + bonus);
+}
+
+// Spiegelt server/src/game/combat.ts's getCritDamageMultiplier()
+export function getCritDamageMultiplier(gameData: GameData, typeId: string): number {
+  return gameData.critDamageMultiplierByClass[typeId] ?? gameData.critDamageDefaultMultiplier;
 }
 
 export function schildMultiplier(gameData: GameData, research: Record<string, number>): number {

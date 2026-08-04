@@ -527,8 +527,9 @@ export interface SektorConfig {
   captainChance?: number;
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
-  guaranteedEliteContainers?: number;
+  guaranteedContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number }[];
   winContainer?: { tier: 'silber' | 'gold' | 'elite'; count: number };
+  winResources?: { metall: number; kristall: number; deuterium: number };
   multiplayerOnly?: boolean;
 }
 
@@ -591,7 +592,7 @@ export interface GameData {
   galaxyPositions: number;
   sektoren: SektorDefinition[];
   sektorConfig: Record<string, SektorConfig>;
-  piratenMultiplierRoll: Record<string, number[]>;
+  piratenMultiplierRoll: Record<string, (number | [number, number])[]>;
   boosters: BoosterDefinition[];
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
@@ -604,18 +605,19 @@ export interface GameData {
   zielerfassungBase: Record<string, number>;
   multiTargetVolleyShips: string[];
   precisionModifier: Record<string, number>;
-  shieldRegenModifier: Record<string, number>;
+  shieldRegenBaseByClass: Record<string, number>;
+  shieldRegenDefaultBase: number;
   evasionBase: Record<string, number>;
   evasionMax: number;
   critChanceBase: Record<string, number>;
   critChanceMax: number;
-  critDamageMultiplier: number;
+  critDamageMultiplierByClass: Record<string, number>;
+  critDamageDefaultMultiplier: number;
   maxResearchLevel: number;
   parentUnlockLevel: number;
   maxBuildSlots: number;
   maxDefenseSlots: number;
   maxResearchSlots: number;
-  shieldRegenBase: number;
   shieldRegenMax: number;
   precisionBase: number;
   precisionMaxPlayer: number;

@@ -13,6 +13,7 @@ import {
   generateAdmiralEncounter,
   pickWaveProfile,
   rollMultiplierWithOutlier,
+  pick503020,
   rollBattleModifier,
   fleetSizeRewardMultiplier,
 } from './combat.js';
@@ -708,7 +709,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   const surpriseAllowed = !op.eliteSurpriseUsed;
   const { multiplier: rolledMultiplier, outlier } = surpriseAllowed
     ? rollMultiplierWithOutlier(table, op.sektorId!)
-    : { multiplier: table[Math.floor(Math.random() * table.length)], outlier: null as 'schwach' | 'stark' | null };
+    : { multiplier: pick503020(table), outlier: null as 'schwach' | 'stark' | null };
   const targetPower = Math.max(totalSentPower * rolledMultiplier, cfg.npcFloor || 0);
   const profile = pickWaveProfile(op.sektorId!);
   const battleModifier = surpriseAllowed ? rollBattleModifier(op.sektorId!) : null;
@@ -852,6 +853,20 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
   }
 
+  // Garantierte Container-Ausschuettung pro ueberstandenem Check (siehe guaranteedContainers in
+  // sectors.ts) - unabhaengig von der Zufalls-Kapitaen-Mechanik unten, jeder Teilnehmer bekommt ALLE
+  // gelisteten Tiers bei jedem gewonnenen Check.
+  let guaranteedContainerText = '';
+  if (anyNpcDestroyed && cfg.guaranteedContainers && cfg.guaranteedContainers.length > 0) {
+    accepted.forEach((p) => {
+      cfg.guaranteedContainers!.forEach((gc) => addContainers(participantStates.get(p.userId)!, gc.tier, gc.count));
+    });
+    const parts = cfg.guaranteedContainers.map(
+      (gc) => `${gc.count}x ${gc.tier === 'elite' ? 'Elite' : gc.tier === 'gold' ? 'Gold' : 'Silber'}-Container`
+    );
+    guaranteedContainerText = ` Jeder Teilnehmer erhält ${parts.join(', ')}.`;
+  }
+
   const captainResult = npcResults.find((r) => r.isCaptain);
   let captainText = '';
   if (captainResult) {
@@ -878,7 +893,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       : 'Feindkontakt - keine nennenswerte Wirkung';
   const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${teileGainText}${captainText}${modifierText}`;
+  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${teileGainText}${guaranteedContainerText}${captainText}${modifierText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,

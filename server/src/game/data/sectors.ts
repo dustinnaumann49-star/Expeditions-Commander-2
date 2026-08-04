@@ -23,13 +23,13 @@ export const SEKTOREN: SektorDefinition[] =
     typ:"Asteroiden-Feld (Groß)", zweck:"Sicherer Abbau mit Mining-Schiffen (25.000/h je Schiff) / Dunkle Materie bis 45",
     aktivitaet:"Keine Feindkontakte", gefahr:"Sicher", level:"gruen" },
   { id:"piraten_niedrig", name:"Sektor P9 – Piraten-Sektor (Niedrig)", img:"sektoren/piraten_niedrig.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"4x Silber-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"4x Silber-Container + Ressourcen-Paket pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 55% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Niedrig", level:"gruen" },
   { id:"piraten_mittel", name:"Sektor P9 – Piraten-Sektor (Mittel)", img:"sektoren/piraten_mittel.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"2x Gold-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"2x Gold-Container + Ressourcen-Paket pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 65% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Mittel", level:"gelb" },
   { id:"piraten_hoch", name:"Sektor P9 – Piraten-Sektor (Hoch)", img:"sektoren/piraten_hoch.png",
-    typ:"Piraten-Basis (Geschützt)", zweck:"1x Elite-Container pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
+    typ:"Piraten-Basis (Geschützt)", zweck:"1x Elite-Container + Ressourcen-Paket pro gewonnenem Kampf, ausgezahlt bei Rückkehr. Gegner können hier auch stärker sein als die eigene Flotte. Nur EINE Piraten-Sektor-Stufe gleichzeitig beflogbar.",
     aktivitaet:"Piraten-Chance 75% pro Check (alle 4h, 24h Gesamtdauer)", gefahr:"Hoch", level:"rot" },
   { id:"piraten_elite", name:"Sektor P9 – Elite-Bollwerk", img:"sektoren/piraten_hoch.png",
     typ:"Piraten-Hochburg (Nur Multiplayer)", zweck:"Nur gemeinsam mit verbündeten Spielern erreichbar. Piraten skalieren mit durchschnittlich 130% der kombinierten Flottenstärke aller Teilnehmer, mit spürbarer Schwankung von Kampf zu Kampf. Jederzeit per Rückruf abbrechbar - bereits gewonnene Kämpfe bleiben erhalten.",
@@ -54,16 +54,25 @@ export interface SektorConfig {
   captainChance?: number;
   captainContainerTier?: 'silber' | 'gold' | 'elite';
   captainDm?: number;
-  // Garantierte Elite-Container bei Missionsende (Nutzerentscheidung Juli 2026, Balance-Umbau
-  // Piraten-Sektor: Mittel/Hoch ersetzen die Kapitaen-Zufallschance durch eine planbare, garantierte
-  // Belohnung - siehe finalizeMission() in missions.ts).
-  guaranteedEliteContainers?: number;
+  // Garantierte Container-Ausschuettung PRO UEBERSTANDENEM CHECK (Nutzerentscheidung, Neugestaltung
+  // "Belohnungs-Balance" 04.08.2026, bisher nur beim Elite-Bollwerk genutzt) - unabhaengig von der
+  // Zufalls-Kapitaen-Mechanik (captainChance), jeder Teilnehmer bekommt ALLE gelisteten Tiers bei
+  // jedem Check mit mindestens einem vernichteten Gegner, siehe runGroupOperationCheck() in
+  // groupOps.ts. Rundet das "Ende-Erlebnis" nach einer erfolgreich ueberstandenen 24h-Expedition
+  // planbar ab.
+  guaranteedContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number }[];
   // Umbau 29.07.2026 (Nutzerentscheidung "Piraten-Sektor Solo nur noch EIN Container-Typ pro
   // Stufe"): NUR bei piraten_niedrig/mittel/hoch genutzt - ersetzt lootBase/teileCap/captainChance/
   // guaranteedEliteContainers KOMPLETT. Pro gewonnenem Check (mindestens ein Gegner vernichtet) gibt
   // es `count` Container von `tier`, gezaehlt in `Mission.combatWins` und wie beim Raid ERST am
   // Missionsende ausgezahlt (siehe finalizeMission() in missions.ts).
   winContainer?: { tier: 'silber' | 'gold' | 'elite'; count: number };
+  // Skalierendes Ressourcen-Paket PRO GEWONNENEM CHECK, zusaetzlich zu winContainer (Nutzerentscheidung,
+  // Neugestaltung "Belohnungs-Balance" 04.08.2026): faengt das durch die 50/30/20-Feindstaerke-Neugestaltung
+  // (siehe PIRATEN_MULTIPLIER_ROLL) deutlich gestiegene Risiko der 20%-Spitzen ab - reiner Container-Loot
+  // allein fuehlte sich bei einem verlorenen Kampf ohne jeden Ressourcen-Ausgleich zu hart an. Ausgezahlt
+  // genauso wie winContainer erst am Missionsende (siehe finalizeMission() in missions.ts).
+  winResources?: { metall: number; kristall: number; deuterium: number };
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
   // (ersetzt die vorher feste MISSION_TRAVEL_MS, siehe sendFleet() in missions.ts). Fehlt bewusst
@@ -101,11 +110,14 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // beflogen werden (siehe sendFleet() in missions.ts) - man muss sich fuer Niedrig/Mittel/Hoch
   // entscheiden statt alle drei parallel laufen zu lassen.
   piraten_niedrig:  { checkChance:0.55, type:"piraten", npcFloor:300000,
-    winContainer:{tier:"silber", count:4}, galaxyPosition:{system:10, position:5} },
+    winContainer:{tier:"silber", count:4}, winResources:{metall:800000, kristall:500000, deuterium:200000},
+    galaxyPosition:{system:10, position:5} },
   piraten_mittel:   { checkChance:0.65, type:"piraten", npcFloor:950000,
-    winContainer:{tier:"gold", count:2}, galaxyPosition:{system:27, position:9} },
+    winContainer:{tier:"gold", count:2}, winResources:{metall:2000000, kristall:1200000, deuterium:600000},
+    galaxyPosition:{system:27, position:9} },
   piraten_hoch:     { checkChance:0.75, type:"piraten", npcFloor:2400000,
-    winContainer:{tier:"elite", count:1}, galaxyPosition:{system:45, position:3} },
+    winContainer:{tier:"elite", count:1}, winResources:{metall:5000000, kristall:3000000, deuterium:1500000},
+    galaxyPosition:{system:45, position:3} },
   // resourceCapOverTime entfernt (Umbau 28.07.2026, Nutzerentscheidung "nicht mehr ueber Zeit,
   // sondern durch gewonnene Kaempfe") - lootBase (25M/15M/10M PRO gewonnenem Check) war ohnehin
   // schon die dominante Rohstoffquelle hier, der Wegfall des zeitbasierten Zusatz-Tricklers ist
@@ -113,6 +125,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
+    guaranteedContainers:[{tier:"silber", count:4}, {tier:"gold", count:3}, {tier:"elite", count:2}],
     multiplayerOnly:true,
     galaxyPosition:{system:37, position:5} },
   // Boss-Gefecht (Punkt 76, siehe README): NUTZT SEKTOR_CONFIG nur fuer Anzeige-Zwecke/
@@ -125,22 +138,20 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
     multiplayerOnly:true, galaxyPosition:{system:50, position:1} }
 };
 
-// Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power. Niedrig bleibt bewusst klar
-// unter der eigenen Staerke (Einstiegsstufe). Mittel wurde angehoben (spuerbar mehr Gegenwehr,
-// aber weiterhin sicher unter 100%). Hoch kann seit der Balance-Anpassung (Juli 2026) auch UEBER
-// die eigene Flottenstaerke gehen (bis 125%) - die staerkste Solo-Stufe soll echte Gefahr bedeuten
-// koennen, nicht nur einen Gleichstand. Das Multiplayer-exklusive Elite-Bollwerk wurde im selben
-// Zug nachgezogen (115-145% statt vorher 105-135%) - durch die Hoch-Anhebung war der Abstand
-// zwischen staerkster Solo-Stufe und Elite-Bollwerk zu klein geworden, Elite soll spuerbar die
-// haerteste Stufe bleiben (durchschnittlich 130% der KOMBINIERTEN Flottenstaerke aller
-// Teilnehmer).
-// Mittel/Hoch angehoben (Balance-Umbau Juli 2026, siehe Kommentar bei SEKTOR_CONFIG oben) - im
-// Gegenzug fuer die garantierten Elite-Container sollen diese beiden Stufen spuerbar mehr
-// Gegenwehr leisten als vorher.
-export const PIRATEN_MULTIPLIER_ROLL: Record<string, number[]> =
+// Feindstaerke der Piraten-Sektoren als Anteil deiner eigenen Power - ein Eintrag pro Bucket im
+// 50/30/20-Zufallssystem (Nutzerentscheidung, Neugestaltung "Dynamische Zufalls-Kampfskalierung"
+// 04.08.2026): [50%-Chance-Wert, 30%-Chance-Wert, 20%-Chance-Wert]. Bei jedem einzelnen Kampf-Check
+// wird EINER der drei Werte gemaess dieser festen Gewichtung gewuerfelt (siehe pick503020() in
+// combat.ts), statt wie vorher gleichverteilt (je 1/3) - macht Kaempfe deutlich unberechenbarer,
+// ohne die grobe Haerte-Reihenfolge der Stufen zu aendern. Der dritte Wert bei "Hoch" ist bewusst
+// eine SPANNE ([min, max], gleichverteilt gewuerfelt) statt eines festen Werts - "der spuerbare
+// Haertegrad fuer Solo-Spieler" (Nutzer-Formulierung) fuer die seltenste, extremste Ueberraschung.
+// Der Piratenadmiral (P10) bleibt von dieser Aenderung unberuehrt (eigene Boss-Mechanik, siehe
+// ADMIRAL_MULTIPLIER_ROLL in combatConstants.ts, weiterhin gleichverteilt gewuerfelt).
+export const PIRATEN_MULTIPLIER_ROLL: Record<string, [number, number, number | [number, number]]> =
 {
-  piraten_niedrig: [0.15, 0.175, 0.20],
-  piraten_mittel:  [0.65, 0.75, 0.85],
-  piraten_hoch:    [1.20, 1.35, 1.55],
-  piraten_elite:   [1.15, 1.30, 1.45]
+  piraten_niedrig: [0.50, 0.80, 1.00],
+  piraten_mittel:  [0.80, 1.10, 1.40],
+  piraten_hoch:    [1.00, 1.50, [1.50, 2.00]],
+  piraten_elite:   [1.30, 1.80, 2.50]
 };

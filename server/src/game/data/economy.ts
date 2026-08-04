@@ -524,13 +524,16 @@ export const RAID_WAVE_JITTER_FACTOR = 0.25;
 // Feindstaerke pro Welle, MULTIPLIZIERT mit der aktuellen VERTEIDIGUNGSANLAGEN+FLOTTE-Staerke
 // (siehe RAID_FLEET_POWER_WEIGHT/RAID_DEFENSE_POWER_WEIGHT in raids.ts) - bewusste Abkehr von der
 // sonstigen Entkopplungs-Regel (README Punkt 22/45): hier soll eine staerkere Verteidigung den
-// Angriff gezielt mitwachsen lassen. Laenge MUSS RAID_WAVE_COUNT entsprechen.
-// Umbau 28.07.2026 (Nutzerentscheidung "die Wellen staerker machen", direkte Folge der massiv
-// erhoehten Pro-Welle-Belohnung RAID_WAVE_WIN_* unten - eine 12/12-Vollverteidigung darf bei einem
-// derart lohnenden Preis kein Selbstlaeufer sein): Kurve von vorher 130-200% (5 Wellen) auf jetzt
-// 130-300% ueber 12 Wellen gestreckt - die ersten Wellen bleiben aehnlich wie vorher zu bewaeltigen,
-// die spaeten Wellen einer 24h-Belagerung werden aber deutlich haerter als alles, was es bisher gab.
-export const RAID_WAVE_FACTORS = [1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.7, 3.0];
+// Angriff gezielt mitwachsen lassen.
+// 04.08.2026 (Nutzerentscheidung, Neugestaltung "Raid-Events (Massive Bedrohung & 50/30/20
+// Prinzip)"): die vorherige FESTE, ueber 12 Wellen deterministisch eskalierende Kurve
+// (130% -> 300%) wurde ersetzt durch dasselbe 50/30/20-Zufallsprinzip wie bei den Piraten-Sektoren
+// (siehe PIRATEN_MULTIPLIER_ROLL in sectors.ts, pick503020() in combat.ts) - JEDE der
+// RAID_WAVE_COUNT Wellen wuerfelt jetzt unabhaengig einen der drei Werte: 50% Chance (Schwerer
+// Ansturm, 120%), 30% Chance (Schwere Angriffswelle, 170%), 20% Chance (Verheerender Durchbruch,
+// 230%-250%, Spanne gleichverteilt gewuerfelt) - macht Raids unberechenbar statt vorhersehbar
+// eskalierend, wie im Plan gefordert.
+export const RAID_WAVE_ROLL: [number, number, [number, number]] = [1.20, 1.70, [2.30, 2.50]];
 
 // Container-Menge PRO GEWONNENER WELLE (Nutzerentscheidung 28.07.2026, ersetzt die vorherige
 // FIXE Abschluss-Belohnung von 5 Silber+2 Gold+RAID_PERFECT_ELITE_CHANCE nur bei perfekter

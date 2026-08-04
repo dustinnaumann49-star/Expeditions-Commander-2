@@ -1,13 +1,18 @@
 // RapidFire-Werte: RAPIDFIRE[angreiferId][zielId] = RF-Wert. Folgeschuss-Chance = (RF-1)/RF.
-export const RAPIDFIRE: Record<string, Record<string, number>> = 
+// RF-Neuordnung (Nutzerentscheidung, 04.08.2026): jedes Standard-Kampfschiff bekommt genau EINE
+// klare Rolle in einer sauberen Stein-Schere-Papier-Kette (Schwerer Jaeger > Leichter Jaeger >
+// Kreuzer > Schwerer Jaeger > Schlachtschiff > Kreuzer > Schlachtkreuzer > Schlachtschiff >
+// Zerstoerer > Schlachtkreuzer > Reaper > Zerstoerer), statt mehrerer ueberlappender Ziele pro
+// Schiffstyp. Begleitschiffe/Mining-Schiffe (sandronator) sind bewusst von militaerischem
+// RapidFire ausgenommen (Versorgungsrolle). Bomber bleibt reiner Bunkerbrecher gegen stationaere
+// Verteidigung (nur noch die drei "leichten" Anlagen, nicht mehr die schweren Geschuetze).
+// Spezialschiffe (Salven-Klassen, Imperator) und Spezialverteidigung (Sentinel-/Ultimate-Kanone)
+// behalten ihre bestehenden Mehrfachziel-Sonderrechte unveraendert (siehe MULTI_TARGET_VOLLEY_SHIPS).
+export const RAPIDFIRE: Record<string, Record<string, number>> =
 {
   leicht: {},
   schwer: {
     leicht: 3
-  },
-  begleitschiff: {
-    leicht: 6,
-    schwer: 4
   },
   kreuzer: {
     schwer: 4
@@ -16,19 +21,13 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     kreuzer: 5
   },
   schlachtkreuzer: {
-    leicht: 3,
-    schwer: 4,
-    kreuzer: 4,
-    schlachtschiff: 7
+    schlachtschiff: 5
   },
   zerstoerer: {
-    schlachtkreuzer: 2,
-    bomber: 5
+    schlachtkreuzer: 5
   },
   reaper: {
-    zerstoerer: 3,
-    schlachtkreuzer: 4,
-    bomber: 4
+    zerstoerer: 4
   },
   // Boss-Gefecht (Punkt 76): "RapidFire-Waechter" gegen Jaeger-Klasse - bestraft Masse an
   // kleinen Schiffen ganz natuerlich ueber die bestehende RapidFire-Mechanik, keine Sonderregel.
@@ -36,13 +35,12 @@ export const RAPIDFIRE: Record<string, Record<string, number>> =
     leicht: 10,
     schwer: 8
   },
+  // Bunkerbrecher-Rolle: nur noch die drei leichten/mittleren Verteidigungsanlagen, keine schweren
+  // Geschuetze (Ionengeschuetz/Gausskanone/Plasmawerfer) mehr.
   bomber: {
     raketenwerfer: 20,
     leichteslaser: 20,
-    schwereslaser: 10,
-    ionengeschuetz: 10,
-    gausskanone: 5,
-    plasmawerfer: 5
+    schwereslaser: 10
   },
   imperator: {
     leicht: 5, schwer: 5, kreuzer: 5, schlachtschiff: 5, bomber: 5, schlachtkreuzer: 7, zerstoerer: 7, reaper: 4,
@@ -165,32 +163,48 @@ export const PRECISION_MODIFIER: Record<string, number> = {
   ultimatekanone: -0.12,
 };
 
-// Aufschlag auf die Basis-Schild-Regeneration (SHIELD_REGEN_BASE). Positiv = laedt schneller auf.
-export const SHIELD_REGEN_MODIFIER: Record<string, number> = {
-  leicht: -0.12,
-  schwer: -0.08,
-  salvenjaeger: -0.08,
-  sandronator: -0.05,
-  begleitschiff: -0.05,
-  kreuzer: -0.02,
-  salvenkreuzer: 0.04,
-  schlachtschiff: 0.10,
-  bomber: 0.12,
-  schlachtkreuzer: 0.14,
-  salvendreadnought: 0.16,
-  zerstoerer: 0.18,
-  reaper: 0.20,
-  imperator: 0.25,
-  // Alle Verteidigungsanlagen haengen an der Basis-Energie -> einheitlich starke Aufladung
-  raketenwerfer: 0.25,
-  leichteslaser: 0.25,
-  schwereslaser: 0.25,
-  ionengeschuetz: 0.25,
-  gausskanone: 0.25,
-  plasmawerfer: 0.25,
-  sentinelkanone: 0.25,
-  ultimatekanone: 0.25,
+// Klassenspezifische Schild-Regeneration-Basiswerte (Nutzerentscheidung, Neugestaltung 04.08.2026):
+// abgeloest die vorherige globale Pauschale (SHIELD_REGEN_BASE) + additiven Klassen-Modifikator
+// durch feste, klassenabhaengige Basiswerte, auf die NUR noch der Forschungsbonus (siehe
+// getShieldRegenRate() in combat.ts, effectPerLevel in data/research.ts) addiert wird. Bei
+// maximaler Forschung (Stufe 10, 1,5%/Stufe = +15%) ergeben sich damit klar gestaffelte
+// Endwerte: Jaeger-Klasse 20%, Kreuzer-Klasse 30%, Elite-Klasse 50%, Spezialschiffe/Imperator/
+// Verteidigungsanlagen 80% (= exakt SHIELD_REGEN_MAX, der globale Deckel greift also nur noch bei
+// dieser obersten Stufe). Begleitschiff/Sandronator (reine Versorgungsschiffe) auf Jaeger-Niveau,
+// Verteidigungsanlagen auf Spezial-Niveau (waren vorher ohnehin mit demselben Modifikator wie der
+// Imperator gleichgestellt).
+export const SHIELD_REGEN_BASE_BY_CLASS: Record<string, number> = {
+  // Jaeger-Klasse
+  leicht: 0.05,
+  schwer: 0.05,
+  begleitschiff: 0.05,
+  sandronator: 0.05,
+  // Kreuzer-Klasse
+  kreuzer: 0.15,
+  schlachtschiff: 0.15,
+  bomber: 0.15,
+  // Elite-Klasse
+  schlachtkreuzer: 0.35,
+  zerstoerer: 0.35,
+  reaper: 0.35,
+  // Spezialschiffe & Imperator
+  salvenjaeger: 0.65,
+  salvenkreuzer: 0.65,
+  salvendreadnought: 0.65,
+  imperator: 0.65,
+  // Verteidigungsanlagen haengen an der Basis-Energie -> Spezial-Niveau
+  raketenwerfer: 0.65,
+  leichteslaser: 0.65,
+  schwereslaser: 0.65,
+  ionengeschuetz: 0.65,
+  gausskanone: 0.65,
+  plasmawerfer: 0.65,
+  sentinelkanone: 0.65,
+  ultimatekanone: 0.65,
 };
+// Default fuer den gemeinsamen Kuppel-Schild-Pool (kein eigener typeId, siehe poolRegen in
+// combat.ts) - Verteidigungs-Niveau, da Kuppeln selbst Verteidigungsanlagen sind.
+export const SHIELD_REGEN_DEFAULT_BASE = 0.65;
 
 // Basis-Ausweichchance: Wahrscheinlichkeit, einem Treffer komplett zu entgehen. Spiegelbild zur
 // Praezision - kleine, wendige Schiffe sind schwerer zu treffen. Unbewegliche Verteidigungsanlagen
@@ -280,7 +294,44 @@ export const CRIT_CHANCE_BASE: Record<string, number> = {
   ultimatekanone: 0.18,
 };
 export const CRIT_CHANCE_MAX = 0.35;
-export const CRIT_DAMAGE_MULTIPLIER = 2;
+// Kritischer Schaden ist jetzt klassenabhaengig gestaffelt (Nutzerentscheidung, Neugestaltung
+// 04.08.2026) statt eines starren globalen Multiplikators (vorher immer 2x fuer alle Typen). Die
+// Krit-CHANCE (siehe CRIT_CHANCE_BASE oben) bleibt davon unberuehrt. Innerhalb einer Klasse mit
+// mehreren Schiffstypen ("1,5x bis 2x" etc.) steigt der Wert mit der Schiffsgroesse innerhalb der
+// Klasse. Verteidigungsanlagen wurden nicht explizit im Plan genannt und analog zu ihrer
+// CRIT_CHANCE_BASE-Staerke eingeordnet (schwach -> Jaeger-Niveau, mittel -> Kreuzer-Niveau,
+// stark -> Elite-Niveau, Ultimate-Kanone -> Spezial-Niveau).
+export const CRIT_DAMAGE_MULTIPLIER_BY_CLASS: Record<string, number> = {
+  // Jaeger-Klasse: 1,5x bis 2x
+  leicht: 1.5,
+  schwer: 2.0,
+  begleitschiff: 1.5,
+  sandronator: 1.5,
+  raketenwerfer: 1.5,
+  leichteslaser: 1.5,
+  // Kreuzer-Klasse: 2x bis 2,5x
+  kreuzer: 2.0,
+  schlachtschiff: 2.25,
+  bomber: 2.5,
+  schwereslaser: 2.0,
+  ionengeschuetz: 2.25,
+  sentinelkanone: 2.0,
+  // Elite-Klasse: 3x
+  schlachtkreuzer: 3.0,
+  zerstoerer: 3.0,
+  reaper: 3.0,
+  gausskanone: 3.0,
+  plasmawerfer: 3.0,
+  piratenadmiral: 3.0,
+  // Spezialschiffe & Imperator: 3,5x bis max. 4x
+  salvenjaeger: 3.5,
+  salvenkreuzer: 3.75,
+  salvendreadnought: 4.0,
+  imperator: 4.0,
+  ultimatekanone: 3.5,
+};
+// Fallback fuer nicht gelistete Typen (unveraendert am alten globalen Wert).
+export const CRIT_DAMAGE_DEFAULT_MULTIPLIER = 2;
 
 // Piraten/NPCs bekamen urspruenglich GAR KEINE Forschung (Praezision/Ausweichen/Kritische Treffer/
 // Zielerfassung/Schild-Regeneration/Durchschlag sowie die Waffen-/Schild-/Panzerung-Multiplikatoren
@@ -301,17 +352,11 @@ export const MAX_RESEARCH_LEVEL = 10;
 // ResearchDefinition.parentId in types.ts) - bewusst ein einziger globaler Wert statt individuell
 // pro Zweig, wie besprochen.
 export const PARENT_UNLOCK_LEVEL = 3;
-export const SHIELD_REGEN_BASE = 0.20;
-// Von 0.80 auf 0.50 gesenkt (Nutzerentscheidung 03.08.2026, Balance-Feedback "Kaempfe ziehen sich
-// bei starken/vielen Flotten bis ans 100-Runden-Limit"): bei Max-Forschung (schildregeneration
-// Stufe 10) allein ergab BASE+Forschungsbonus schon 0.80 - GENAU der alte Deckel, noch VOR dem
-// schiffstyp-abhaengigen SHIELD_REGEN_MODIFIER. Jedes groessere Schiff/jede Verteidigungsanlage
-// (positiver Modifikator) lud dadurch 80% des fehlenden Schildes JEDE Runde wieder auf - Kaempfe
-// zwischen aehnlich starken Flotten konnten so kaum noch entschieden werden, bevor das
-// Runden-Limit griff. Zusammen mit der Absenkung von schildregeneration.effectPerLevel
-// (0.06 -> 0.035 in data/research.ts) sinkt die Regenrate bei Max-Forschung fuer grosse
-// Schiffe/Verteidigung von 80% auf 50% pro Runde.
-export const SHIELD_REGEN_MAX = 0.50;
+// 04.08.2026 (Nutzerentscheidung, Neugestaltung siehe SHIELD_REGEN_BASE_BY_CLASS oben): Deckel auf
+// 0.80 gesetzt, damit er exakt vom obersten Klassen-Endwert (Spezialschiffe/Imperator/
+// Verteidigungsanlagen bei Max-Forschung) erreicht, aber nicht ueberschritten wird - fuer alle
+// niedrigeren Klassen (Jaeger 20%, Kreuzer 30%, Elite 50%) greift der Deckel praktisch nie.
+export const SHIELD_REGEN_MAX = 0.80;
 export const PRECISION_BASE = 0.40;
 export const PRECISION_MAX_PLAYER = 0.60;
 export const DEFENSE_REPAIR_PERCENT = 0.70;
@@ -485,13 +530,17 @@ export const RAID_MULTIPLIER_ROLL = [0.90, 1.00, 1.10];
 // Tabelle), je Kontext-Schluessel. Beim Elite-Bollwerk gilt zusaetzlich eine Kappung auf maximal
 // 1x pro GESAMTER Expedition (nicht pro Einzel-Check) - sonst wuerde sich das Risiko ueber die 4
 // Stunden-Checks unfair aufsummieren, siehe `eliteSurpriseUsed` in groupOps.ts.
-// Balance-Anpassung (Juli 2026): Ausreisser-Chancen fuer niedrig/mittel/hoch angehoben - mehr
-// spuerbare Abwechslung von Kampf zu Kampf, nicht nur eine flache Erwartungswert-Rechnung.
+// 04.08.2026 (Nutzerentscheidung, Neugestaltung "Dynamische Zufalls-Kampfskalierung"): fuer alle
+// Piraten-Sektoren auf 0 gesetzt - der "20% Chance: Extremer Ueberraschungs-Hammer"-Bucket im
+// neuen 50/30/20-System (siehe PIRATEN_MULTIPLIER_ROLL) UEBERNIMMT jetzt genau die Rolle, die
+// vorher dieser separate Ausreisser-Wurf hatte. Ein zusaetzlicher Ausreisser ON TOP des ohnehin
+// schon extremen 20%-Buckets (bei piraten_hoch/elite bis 200%/250%) wuerde die im Plan als
+// bewusste Obergrenze genannten Werte ueberschreiten.
 export const WAVE_OUTLIER_CHANCE: Record<string, number> = {
-  piraten_niedrig: 0.06,
-  piraten_mittel: 0.12,
-  piraten_hoch: 0.20,
-  piraten_elite: 0.10,
+  piraten_niedrig: 0,
+  piraten_mittel: 0,
+  piraten_hoch: 0,
+  piraten_elite: 0,
   raid: 0.06,
 };
 export const WAVE_OUTLIER_LOW_FACTOR = 0.6;

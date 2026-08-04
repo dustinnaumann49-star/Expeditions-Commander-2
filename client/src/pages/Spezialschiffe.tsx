@@ -13,6 +13,7 @@ import {
   getShieldRegenRate,
   getEvasionChance,
   getCritChance,
+  getCritDamageMultiplier,
   driveTypeLabel,
   getEffectiveShipStats,
 } from '../lib/combatInfo';
@@ -156,7 +157,7 @@ export function SpezialschiffePage() {
                   ? `${(getEvasionChance(gameData, state.research, imperator.id) * 100).toFixed(0)}% Chance, einem Treffer zu entgehen`
                   : 'Zu schwerfällig zum Ausweichen',
               ],
-              ['💥 Kritische Treffer', `${(getCritChance(gameData, state.research, imperator.id) * 100).toFixed(0)}% Chance auf ${gameData.critDamageMultiplier}× Schaden`],
+              ['💥 Kritische Treffer', `${(getCritChance(gameData, state.research, imperator.id) * 100).toFixed(0)}% Chance auf ${getCritDamageMultiplier(gameData, imperator.id)}× Schaden`],
               ['🛡️ Schild-Regeneration', `${(getShieldRegenRate(gameData, state.research, imperator.id) * 100).toFixed(0)}% pro Runde`],
               ['Limit', `${imperatorBestand}/${imperator.maxCount} gebaut${imperatorLimitReached ? ' – Limit erreicht' : ''}`],
             ]}

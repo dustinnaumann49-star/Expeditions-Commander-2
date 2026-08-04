@@ -662,12 +662,28 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
   const winContainer = cfgForStats?.winContainer;
   const totalWinContainers = winContainer ? (mission.combatWins || 0) * winContainer.count : 0;
   if (winContainer && totalWinContainers > 0) addContainers(state, winContainer.tier, totalWinContainers);
+  // Skalierendes Ressourcen-Paket pro gewonnenem Check (siehe winResources in sectors.ts) -
+  // zusaetzlich zum Container-Loot, faengt das Risiko der 50/30/20-Feindstaerke-Spitzen ab.
+  const winResources = cfgForStats?.winResources;
+  const combatWinsForResources = mission.combatWins || 0;
+  const totalWinResources = winResources && combatWinsForResources > 0
+    ? {
+        metall: winResources.metall * combatWinsForResources,
+        kristall: winResources.kristall * combatWinsForResources,
+        deuterium: winResources.deuterium * combatWinsForResources,
+      }
+    : null;
+  if (totalWinResources) {
+    state.resources.metall += totalWinResources.metall;
+    state.resources.kristall += totalWinResources.kristall;
+    state.resources.deuterium += totalWinResources.deuterium;
+  }
   const detail: FarmDetail = {
     sektorName: mission.sektorId,
     resources: {
-      metall: Math.floor(mission.farmed.metall),
-      kristall: Math.floor(mission.farmed.kristall),
-      deuterium: Math.floor(mission.farmed.deuterium),
+      metall: Math.floor(mission.farmed.metall + (totalWinResources?.metall || 0)),
+      kristall: Math.floor(mission.farmed.kristall + (totalWinResources?.kristall || 0)),
+      deuterium: Math.floor(mission.farmed.deuterium + (totalWinResources?.deuterium || 0)),
     },
     dm: Math.floor(mission.dmFound),
     teile: {
@@ -710,7 +726,17 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
           winContainer.tier === 'elite' ? 'Elite' : winContainer.tier === 'gold' ? 'Gold' : 'Silber'
         }-Container (${mission.combatWins} gewonnene Kämpfe × ${winContainer.count}).`
       : '';
-  pushMessage(state, 'farm', `Flotte aus ${mission.sektorId} zurückgekehrt.${richFindText}${skirmishText}${winContainerText}`, detail);
+  const winResourcesText = totalWinResources
+    ? ` Zusätzlich ${Math.floor(totalWinResources.metall).toLocaleString('de-DE')} Metall, ${Math.floor(
+        totalWinResources.kristall
+      ).toLocaleString('de-DE')} Kristall, ${Math.floor(totalWinResources.deuterium).toLocaleString('de-DE')} Deuterium erbeutet.`
+    : '';
+  pushMessage(
+    state,
+    'farm',
+    `Flotte aus ${mission.sektorId} zurückgekehrt.${richFindText}${skirmishText}${winContainerText}${winResourcesText}`,
+    detail
+  );
 }
 
 function missionPhase(mission: Mission, now: number): 'anflug' | 'sektor' | 'rueckflug' {

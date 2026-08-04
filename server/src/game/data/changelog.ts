@@ -9,6 +9,20 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '04.08.2026',
+    title: 'Großes Kampf- und Balance-Update',
+    changes: [
+      'Schild-Regeneration: statt einer globalen Pauschale hat jetzt jede Schiffsklasse einen eigenen Basiswert (Jäger 5%, Kreuzer-Klasse 15%, Elite-Klasse 35%, Spezialschiffe/Imperator 65%) - mit voller Forschung kommen Jäger auf 20%, Kreuzer-Klasse auf 30%, Elite-Klasse auf 50% und Spezialschiffe/Imperator auf 80% pro Runde.',
+      'RapidFire neu geordnet: klare Stein-Schere-Papier-Kette (Schwerer Jäger > Leichter Jäger, Kreuzer > Schwerer Jäger, Schlachtschiff > Kreuzer, Schlachtkreuzer > Schlachtschiff, Zerstörer > Schlachtkreuzer, Reaper > Zerstörer). Begleitschiffe sind jetzt von RapidFire ausgenommen, Bomber bleibt reiner Bunkerbrecher gegen die leichteren Verteidigungsanlagen.',
+      'Kritischer Schaden ist jetzt klassenabhängig statt immer 2x: Jäger 1,5-2x, Kreuzer-Klasse 2-2,5x, Elite-Klasse 3x, Spezialschiffe/Imperator 3,5-4x. Die Krit-Chance selbst ist unverändert.',
+      'Piraten-Sektoren und das Elite-Bollwerk würfeln die Feindstärke jetzt nach einem festen 50/30/20-Prinzip statt gleichverteilt: 50% Chance auf normalen Druck, 30% Chance auf eine starke Welle, 20% Chance auf einen extremen Überraschungs-Hammer - macht jeden einzelnen Kampf-Check unberechenbarer. Die Sektoren selbst wurden dafür insgesamt deutlich härter.',
+      'Als Ausgleich für die härteren Piraten-Sektoren (Niedrig/Mittel/Hoch) gibt es jetzt zusätzlich zu den Containern ein festes, skalierendes Ressourcen-Paket pro gewonnenem Kampf.',
+      'Elite-Bollwerk: garantiert 4x Silber-, 3x Gold- und 2x Elite-Container pro überstandenem Check, zusätzlich zur bestehenden Zufallschance auf den Piratenkapitän.',
+      'Raid-Wellen gegen die Heimatbasis nutzen jetzt ebenfalls das 50/30/20-Prinzip (120% / 170% / 230-250% der eigenen Macht) statt einer vorhersehbaren, über die 12 Wellen ansteigenden Kurve.',
+      'KI-Mitspieler und Piratenbasen bauen jetzt vorausschauender: das Solarkraftwerk wird schon priorisiert, bevor der Energiehaushalt tatsächlich ins Minus rutscht, und wenn das eigentliche Bauvorhaben (Schiffe/Verteidigung) zu teuer ist, wird auf eine kleinere, bezahlbare Alternative ausgewichen statt den Zug leer verstreichen zu lassen.',
+    ],
+  },
+  {
     date: '03.08.2026',
     title: 'Balance: Schild-Regeneration gesenkt',
     changes: [
