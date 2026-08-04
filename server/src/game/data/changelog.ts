@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Fix: Flottenauswahl auf Galaxie-Seite vereinheitlicht',
+    changes: [
+      'Die Flottenauswahl beim Angriff auf Piratenbasen, bei Spionagesonden, beim Bergen von Galaxie-Ereignissen und beim Flotte-Halten bei Mitspielern nutzte noch die alte Button-Reihe statt des neuen Eingabefelds + "Alle"-Button, das schon bei Missionen und Gruppen-Expeditionen eingeführt wurde. Jetzt einheitlich überall dasselbe Eingabefeld.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Fix: Kampfberichte auf dem Handy unlesbar',
     changes: [
       'Die Tabellen in den Kampfberichten (Schaden, Verluste, Schild-Werte je Schiffstyp) quetschten sich auf schmalen Handy-Bildschirmen bis zur Unlesbarkeit zusammen. Sie lassen sich jetzt bei Bedarf seitlich durchscrollen, statt gestaucht zu werden - auf dem Desktop ändert sich dadurch nichts.',

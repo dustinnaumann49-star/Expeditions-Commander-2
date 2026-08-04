@@ -365,17 +365,29 @@ export function GalaxiePage() {
             ) : (
               <div className="queue-item">
                 <span>Spionagesonde (verfügbar: {state.fleet.spionagesonde})</span>
-                <span className="qty-row">
-                  <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, spionagesonde: Math.max(0, (p.spionagesonde || 0) - 1) }))}>
-                    -1
-                  </button>
-                  <span style={{ padding: '0 6px' }}>{probeQty}</span>
-                  <button
-                    className="qty-btn"
-                    onClick={() => setSelection((p) => ({ ...p, spionagesonde: Math.min(state.fleet.spionagesonde || 0, (p.spionagesonde || 0) + 1) }))}
-                  >
-                    +1
-                  </button>
+                {/* Eingabefeld + "Alle"-Button statt Button-Reihe (Nutzerentscheidung 04.08.2026,
+                    Konsistenz-Fix - siehe FleetPicker in Multiplayer.tsx/Sektor.tsx fuer dieselbe
+                    Umstellung samt Begruendung). 0 wird als leeres Feld dargestellt. */}
+                <span className="qty-row" style={{ gap: 6, alignItems: 'center' }}>
+                  <input
+                    className="qty-input"
+                    type="number"
+                    min={0}
+                    max={state.fleet.spionagesonde || 0}
+                    placeholder="0"
+                    value={probeQty === 0 ? '' : probeQty}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const avail = state.fleet.spionagesonde || 0;
+                      if (raw === '') {
+                        setSelection((p) => ({ ...p, spionagesonde: 0 }));
+                        return;
+                      }
+                      const n = parseInt(raw, 10);
+                      if (Number.isNaN(n)) return;
+                      setSelection((p) => ({ ...p, spionagesonde: Math.max(0, Math.min(avail, n)) }));
+                    }}
+                  />
                   <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, spionagesonde: state.fleet.spionagesonde || 0 }))}>
                     Alle
                   </button>
@@ -393,20 +405,25 @@ export function GalaxiePage() {
                   <span>
                     {s.name} (verfügbar: {avail}, Speed: {s.speed.toLocaleString('de-DE')})
                   </span>
-                  <span className="qty-row">
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.max(0, (p[s.id] || 0) - 10) }))}>
-                      -10
-                    </button>
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.max(0, (p[s.id] || 0) - 1) }))}>
-                      -1
-                    </button>
-                    <span style={{ padding: '0 6px' }}>{qty}</span>
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.min(avail, (p[s.id] || 0) + 1) }))}>
-                      +1
-                    </button>
-                    <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: Math.min(avail, (p[s.id] || 0) + 10) }))}>
-                      +10
-                    </button>
+                  <span className="qty-row" style={{ gap: 6, alignItems: 'center' }}>
+                    <input
+                      className="qty-input"
+                      type="number"
+                      min={0}
+                      max={avail}
+                      placeholder="0"
+                      value={qty === 0 ? '' : qty}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setSelection((p) => ({ ...p, [s.id]: 0 }));
+                          return;
+                        }
+                        const n = parseInt(raw, 10);
+                        if (Number.isNaN(n)) return;
+                        setSelection((p) => ({ ...p, [s.id]: Math.max(0, Math.min(avail, n)) }));
+                      }}
+                    />
                     <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [s.id]: avail }))}>
                       Alle
                     </button>

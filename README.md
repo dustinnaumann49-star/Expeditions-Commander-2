@@ -548,10 +548,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   loeschen, ohne ihn erst zu markieren (Nutzerentscheidung 04.08.2026). Bau-Karten
   (`ShipBuildCard.tsx`/`DefenseBuildCard.tsx`) klemmen einen leeren/ungueltigen Wert erst
   `onBlur()` auf mindestens 1. Die Flottenauswahl (`FleetPicker` in `Multiplayer.tsx`,
-  Sende-Formular in `Sektor.tsx`) nutzt seit demselben Datum ein einzelnes Eingabefeld + "Alle"-
-  Button statt einer Reihe von `-1k/-100/-10/+10/+100/+1k`-Buttons (nahm bei vielen Schiffstypen zu
-  viel Platz weg) - 0 wird dabei als leeres Feld dargestellt (`value={qty === 0 ? '' : qty}`),
-  wodurch sich auch ein bereits gesetzter Wert einfach ueberschreiben laesst.
+  Sende-Formular in `Sektor.tsx`, sowie der Ziel-Dialog in `Galaxie.tsx` fuer Piratenbasis-Angriff/
+  Spionagesonden/Galaxie-Ereignis-Bergung/Flotte-Halten - alle vier teilen sich dort denselben
+  `ownedShips.map()`-Codepfad, ein Fix deckt sie alle ab) nutzt seit demselben Datum ein einzelnes
+  Eingabefeld + "Alle"-Button statt einer Reihe von `-1k/-100/-10/+10/+100/+1k`- bzw. in
+  `Galaxie.tsx` `-10/-1/+1/+10`-Buttons (nahm bei vielen Schiffstypen zu viel Platz weg,
+  uneinheitlich zu den bereits umgestellten Seiten) - 0 wird dabei als leeres Feld dargestellt
+  (`value={qty === 0 ? '' : qty}`), wodurch sich auch ein bereits gesetzter Wert einfach
+  ueberschreiben laesst.
 - Kampfbericht-Tabellen (`.combat-table`, 9 Spalten inkl. langer Header wie "Schaden ausgeteilt",
   7 Vorkommen in `Nachrichten.tsx`) quetschten sich auf Mobilgeraeten mit `width:100%` bis zur
   Unlesbarkeit zusammen (Nutzer-Fund 04.08.2026: "verschwindet fast vollständig"). Fix zentral in
@@ -637,3 +641,5 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Abwehr aus der Punktzahl entfernt (waren gegenüber ressourcenbasierten Werten unsichtbar klein).
 - Fix: Kampfbericht-Tabellen auf Mobilgeräten quetschten sich bis zur Unlesbarkeit zusammen -
   scrollen jetzt bei Bedarf seitlich statt die Spalten zu stauchen.
+- Fix: Flottenauswahl beim Piratenbasis-Angriff/Spionage/Galaxie-Ereignis/Flotte-Halten (Galaxie-
+  Seite) auf dasselbe Eingabefeld + "Alle"-Button-Muster wie Multiplayer/Sektor umgestellt.
