@@ -9,6 +9,13 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '05.08.2026',
+    title: 'Fix: Piraten-Sektor Hoch und Elite-Bollwerk waren zu stark',
+    changes: [
+      'Beim letzten Kampf-Update wurde die Gegnerstärke im Piraten-Sektor Hoch und im Elite-Bollwerk versehentlich zu hoch angesetzt - Spielertests zeigten Totalverluste der eigenen Flotte selbst bei gut ausgebauter Forschung und Modulen. Die Gegnerstärke wurde in beiden Sektoren jetzt spürbar gesenkt, sodass sie wieder eine faire Siegchance bieten, ohne die Herausforderung komplett zu verlieren. Das Elite-Bollwerk bleibt dabei weiterhin die schwerste Stufe.',
+    ],
+  },
+  {
     date: '04.08.2026',
     title: 'Fix: Fehlende Nachricht bei Totalverlust der Flotte',
     changes: [

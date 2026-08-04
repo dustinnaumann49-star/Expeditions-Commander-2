@@ -148,10 +148,24 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
 // Haertegrad fuer Solo-Spieler" (Nutzer-Formulierung) fuer die seltenste, extremste Ueberraschung.
 // Der Piratenadmiral (P10) bleibt von dieser Aenderung unberuehrt (eigene Boss-Mechanik, siehe
 // ADMIRAL_MULTIPLIER_ROLL in combatConstants.ts, weiterhin gleichverteilt gewuerfelt).
+// Korrektur 05.08.2026 (Nutzerentscheidung, ungetestet zu hart angesetzt beim Umbau 04.08.2026):
+// piraten_hoch von [1.00, 1.50, [1.50, 2.00]] auf [0.70, 0.95, [0.95, 1.20]] gesenkt - Simulation
+// (siehe simulateCombat() in simulator.ts) zeigte bei den alten Werten selbst bei komplett
+// maximierter Forschung/Modulen nur 25% Siegchance bei ø 67% Flottenverlust; Spieler mit
+// schwaecherem Ausbau (Forschung/Module nicht maximal) hatten praktisch 0% Siegchance und ø 96%
+// Verlust, was zu ungewollten Totalverlusten fuehrte (siehe Beschwerde-Faelle). Ausloeser war der
+// Umbau von RapidFire/Krit-Schaden/Schild-Regen im selben Commit, der "Hoch" zusaetzlich zur
+// Multiplier-Tabelle haerter machte - ein reines Zuruecksetzen der Tabelle auf den Vor-Umbau-Stand
+// [1.20, 1.35, 1.55] reichte in der Simulation NICHT aus (weiterhin 0% Siegchance bei Max-Ausbau).
+// Gleiche Korrektur am selben Tag auch fuer piraten_elite (Elite-Bollwerk): von [1.30, 1.80, 2.50]
+// auf [0.90, 1.20, 1.55] gesenkt - Simulation zeigte 0% Siegchance bei ø 83% Verlust selbst bei
+// Max-Ausbau (schwaecher ausgebaute Teilnehmer: 0% Siegchance, ø 97% Verlust). Bewusst weiterhin
+// etwas haerter angesetzt als piraten_hoch (Elite-Bollwerk bleibt die Top-Stufe mit den besten
+// Belohnungen: garantierte Container + bis zu 64x Perfect-Streak-Bonus, siehe economy.ts).
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, [number, number, number | [number, number]]> =
 {
   piraten_niedrig: [0.50, 0.80, 1.00],
   piraten_mittel:  [0.80, 1.10, 1.40],
-  piraten_hoch:    [1.00, 1.50, [1.50, 2.00]],
-  piraten_elite:   [1.30, 1.80, 2.50]
+  piraten_hoch:    [0.70, 0.95, [0.95, 1.20]],
+  piraten_elite:   [0.90, 1.20, 1.55]
 };
