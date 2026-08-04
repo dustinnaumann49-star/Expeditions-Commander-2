@@ -336,6 +336,20 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   verschicken - EIN gemeinsamer Bericht bei Rückkehr, jeder Check aufklappbar. Raids nutzen
   dasselbe Prinzip über `RaidState.waveLog`. Elite-Bollwerk/Piratenadmiral NICHT - deren Berichte
   bleiben pro Check einzeln.
+- **Bugfix (Nutzer-Fund 04.08.2026): `processMissions()` bekam Fehler-Isolation pro Mission.**
+  Bisher lief `processMissions()` (missions.ts) OHNE try/catch pro Mission - eine Exception
+  IRGENDWO in `tickMission()` (z.B. im Kampf-Worker bei einem Check, der die komplette
+  verbleibende Flotte in einem Schlag ausloescht) warf den GESAMTEN Tick ab, BEVOR
+  `savePlayerState()` erreicht wurde. Da `mission.ships`/gepushte Nachrichten/`skirmishLog`-
+  Eintraege bis dahin nur im Speicher standen, gingen sie beim naechsten Laden wieder verloren -
+  konkret gemeldet als "komplette Flotte im Piraten-Sektor Hoch verloren, aber KEINE Nachricht
+  erhalten". Jetzt analog zu den anderen Cross-User-Sweeps (`processAllDepartedGroupOperations()`
+  in groupOps.ts, raids.ts, events.ts, heartbeat.ts) mit try/catch pro Mission isoliert - ein
+  Fehler bei einer Mission reisst weder andere Missionen desselben Nutzers noch den Rest von
+  `tick()` mit, UND wird jetzt geloggt (`processMissions: Fehler bei Mission ...`) statt komplett
+  spurlos zu verschwinden. Die eigentliche Ursache des urspruenglichen Crashs ist damit noch nicht
+  gefunden (keine Server-Logs vom Vorfall verfuegbar) - beim naechsten Auftreten sollte die
+  Fehlermeldung jetzt aber in den Coolify-Logs auftauchen und die Root-Cause-Suche ermoeglichen.
 - Piraten-Sektor Solo (Niedrig/Mittel/Hoch): nur EINE Stufe gleichzeitig beflogbar (serverseitig
   UND clientseitig geblockt). Container-Belohnung (`winContainer` in `SektorConfig`) pro
   gewonnenem Check (`Mission.combatWins`), ausgezahlt erst bei Rückkehr - kein `lootBase` mehr.
@@ -679,3 +693,7 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
 - Feature: Elite-Bollwerk/Piratenadmiral-Gruppenoperationen starten automatisch, sobald alle
   eingeladenen Flotten eingetroffen sind - kein manueller Klick mehr noetig (Button bleibt als
   Option, um vor vollstaendiger Antwort aller Eingeladenen zu starten).
+- Fix: `processMissions()` fehlte Fehler-Isolation pro Mission - eine Exception in EINER Mission
+  konnte den gesamten Tick abwerfen und dadurch bereits gepushte Nachrichten/Fortschritt spurlos
+  verschwinden lassen (Nutzer-Fund: Flotte im Piraten-Sektor Hoch komplett verloren, keine
+  Nachricht erhalten).

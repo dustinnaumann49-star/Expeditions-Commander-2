@@ -801,7 +801,21 @@ async function tickMission(state: PlayerState, mission: Mission, now: number) {
 export async function processMissions(state: PlayerState) {
   const now = Date.now();
   for (const m of state.missions) {
-    await tickMission(state, m, now);
+    // Fehler-Isolation PRO MISSION (Nutzer-Fund 04.08.2026: Totalverlust der Flotte im Piraten-
+    // Sektor "Hoch" ohne jede Nachricht) - dasselbe Prinzip wie bei den anderen Cross-User-Sweeps
+    // (groupOps.ts processAllDepartedGroupOperations(), raids.ts, events.ts, heartbeat.ts), das
+    // hier bisher FEHLTE. Ohne try/catch wirft eine Exception irgendwo in tickMission() (z.B. im
+    // Kampf-Worker bei einem Check, der die komplette verbleibende Flotte in einem Schlag
+    // ausloescht) den GESAMTEN Tick ab, BEVOR savePlayerState() erreicht wird - dadurch gehen alle
+    // bereits im Speicher vorgenommenen Aenderungen verloren, inklusive einer bereits gepushten
+    // Kampf-Nachricht und des bereits auf 0 gesetzten mission.ships (die Mission "haengt" danach
+    // scheinbar folgenlos, der Spieler bekommt nie eine Nachricht). Ein Fehler bei EINER Mission
+    // soll die anderen Missionen desselben Nutzers (und den Rest von tick()) nicht mitreissen.
+    try {
+      await tickMission(state, m, now);
+    } catch (err) {
+      console.error(`processMissions: Fehler bei Mission ${m.id} (${m.sektorId}, Nutzer ${state.userId}):`, err);
+    }
   }
   state.missions = state.missions.filter((m) => !m.finalized);
 }

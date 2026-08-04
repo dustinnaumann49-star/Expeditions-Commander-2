@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Fix: Fehlende Nachricht bei Totalverlust der Flotte',
+    changes: [
+      'Ein Nutzer meldete: komplette Flotte im Piraten-Sektor Hoch verloren, aber keinerlei Nachricht/Kampfbericht erhalten. Ursache: ein Fehler bei einem einzelnen Kampf-Check konnte in seltenen Fällen die komplette Verarbeitung abbrechen, bevor der bereits erstellte Bericht gespeichert wurde - er ging dadurch spurlos verloren. Fehler bei einer Mission wirken sich jetzt nicht mehr auf andere Missionen oder bereits erstellte Nachrichten aus.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Feature: Elite-Bollwerk/Piratenadmiral starten automatisch',
     changes: [
       'Gemeinsame Expeditionen (Elite-Bollwerk, Piratenadmiral) mussten bisher immer manuell vom Ersteller per "Jetzt starten" losgeschickt werden - selbst wenn alle eingeladenen Flotten längst eingetroffen waren. Sobald alle Eingeladenen geantwortet haben und ihre Flotten bei dir angekommen sind, startet der gemeinsame Weiterflug jetzt automatisch, auch wenn du gerade nicht online bist.',
