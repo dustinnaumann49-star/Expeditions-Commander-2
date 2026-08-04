@@ -123,6 +123,8 @@ export function defaultPlayerStats() {
     containersOpened: { silber: 0, gold: 0, elite: 0 },
     researchCompleted: 0,
     shipsBuilt: 0,
+    resourcesSpentShipsDefense: 0,
+    resourcesSpentResearchBuildings: 0,
   };
 }
 

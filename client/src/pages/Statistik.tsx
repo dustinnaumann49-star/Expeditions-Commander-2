@@ -39,21 +39,17 @@ export function StatistikPage() {
 
   const me = leaderboard.find((e) => e.userId === state.userId);
 
-  const STAT_ROWS: [string, (s: LeaderboardEntry['stats']) => string | number][] = [
-    ['🌑 Piraten-Sektor Niedrig – Siege', (s) => s.missionsNiedrig],
-    ['🌒 Piraten-Sektor Mittel – Siege', (s) => s.missionsMittel],
-    ['🌕 Piraten-Sektor Hoch – Siege', (s) => s.missionsHoch],
-    ['⛏️ Asteroiden-Einsätze', (s) => s.asteroidMissions],
-    ['🛡️ Elite-Bollwerk – gewonnene Checks', (s) => s.eliteBollwerkChecks],
-    ['🏠 Raids vollständig abgewehrt', (s) => s.raidsRepelledFull],
-    ['🏚️ Raids teilweise abgewehrt', (s) => s.raidsRepelledPartial],
-    ['☠ Piratenkapitäne besiegt', (s) => s.captainsDefeated],
-    ['💥 Feinde vernichtet', (s) => s.enemiesDestroyed.toLocaleString('de-DE')],
-    ['💔 Eigene Schiffe verloren', (s) => s.ownShipsLost.toLocaleString('de-DE')],
-    ['💰 Ressourcen erbeutet (gesamt)', (s) => s.resourcesLooted.toLocaleString('de-DE')],
-    ['📦 Container geöffnet (Silber/Gold/Elite)', (s) => `${s.containersOpened.silber} / ${s.containersOpened.gold} / ${s.containersOpened.elite}`],
-    ['🔬 Forschungen abgeschlossen', (s) => s.researchCompleted],
-    ['🚀 Schiffe gebaut', (s) => s.shipsBuilt.toLocaleString('de-DE')],
+  // Statistik-Neugestaltung (Nutzerentscheidung 04.08.2026): nur noch punkte-relevante Werte -
+  // Schiff/Verteidigungs- und Forschungs/Gebäude-Punkte kommen direkt vorberechnet vom Server
+  // (siehe shipsDefensePoints/researchBuildingsPoints in stats.ts, ersetzt die vorherige
+  // Gesamtmacht-basierte Punktzahl, die bei Kampfverlusten wieder sank). "Feinde vernichtet"
+  // bewusst unverändert als Rohzähler (nicht als Punktzahl) belassen. Piraten-Sektor-Siege/Elite-
+  // Bollwerk-Checks/Raid-Abwehr/Container/erbeutete Ressourcen/eigene Verluste sind nicht mehr Teil
+  // der Punktzahl (siehe POINT_WEIGHTS-Kommentar in stats.ts) und daher hier entfernt.
+  const STAT_ROWS: [string, (e: LeaderboardEntry) => string | number][] = [
+    ['🚀🏰 Schiff/Verteidigungs-Punkte', (e) => e.shipsDefensePoints.toLocaleString('de-DE')],
+    ['🔬🏗️ Forschungs/Gebäude-Punkte', (e) => e.researchBuildingsPoints.toLocaleString('de-DE')],
+    ['💥 Zerstörte Piraten', (e) => e.stats.enemiesDestroyed.toLocaleString('de-DE')],
   ];
 
   return (
@@ -70,7 +66,7 @@ export function StatistikPage() {
             {STAT_ROWS.map(([label, fn]) => (
               <div className="info-list-row" key={label}>
                 <span className="info-list-label">{label}</span>
-                <span className="info-list-value">{fn(me.stats)}</span>
+                <span className="info-list-value">{fn(me)}</span>
               </div>
             ))}
           </div>

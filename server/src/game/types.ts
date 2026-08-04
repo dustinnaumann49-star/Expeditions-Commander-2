@@ -703,6 +703,14 @@ export interface PlayerStats {
   containersOpened: { silber: number; gold: number; elite: number };
   researchCompleted: number;
   shipsBuilt: number;
+  // Kumulative Ressourcenausgaben (Nutzerentscheidung 04.08.2026, Statistik-Neugestaltung) - anders
+  // als calculateFleetPowerPoints() (ALTE, jetzt entfernte Punkte-Quelle: aktueller Flottenbestand,
+  // sank bei Verlusten) zaehlt hier die HISTORISCHE Investition, sinkt also NIE. Jeweils Summe aus
+  // Metall+Kristall+Deuterium, direkt an den Ressourcen-Abzugsstellen in actions.ts hochgezaehlt.
+  // "Schiff/Verteidigungs-Punkte" und "Forschungs/Gebaeude-Punkte" sind bewusst je EINE gemeinsame
+  // Kategorie (Nutzerentscheidung) statt vier einzelner Werte.
+  resourcesSpentShipsDefense: number; // Schiffe + Schiffs-Module + Verteidigung + Verteidigungs-Module
+  resourcesSpentResearchBuildings: number; // Forschung + Gebaeude + Gebaeude-Module
 }
 
 // Klassensystem: jeder Spieler waehlt einmalig eine Klasse (kostenlos), kann sie danach jederzeit

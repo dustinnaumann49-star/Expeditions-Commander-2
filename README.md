@@ -507,10 +507,29 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - "Feinde vernichtet" fließt gestaffelt nach Gegnerwert in die Punktzahl ein (Baukosten-basiert,
   `getUnitPointValue()`), nicht pauschal 1 Punkt/Einheit - neue Schiffe/Verteidigung brauchen
   keine manuelle Pflege. `enemiesDestroyedByType` treibt die Punkteberechnung, der rohe
-  `enemiesDestroyed`-Zähler bleibt nur für die Statistik-Anzeige.
-- "Gesamtmacht" (aktuelle Flotte/Verteidigung, `calculateFleetPowerPoints()`) fließt zusätzlich
-  ein - einzige Kategorie, die bei Verlust wieder SINKEN kann. Forschung/Container/Ressourcen-
-  Beute/eigene Verluste bewusst NICHT in der Punktzahl.
+  `enemiesDestroyed`-Zähler bleibt nur für die Statistik-Anzeige (unverändert seit Juli 2026).
+- Statistik-Neugestaltung (Nutzerentscheidung 04.08.2026, `stats.ts`/`Statistik.tsx`): die alte
+  "Gesamtmacht" (aktuelle Flotte/Verteidigung, `calculateFleetPowerPoints()`, sank bei
+  Kampfverlusten wieder) wurde KOMPLETT ersetzt durch zwei kumulative Ausgaben-Kategorien, die nie
+  sinken - `resourcesSpentShipsDefense`/`resourcesSpentResearchBuildings` (Summe Metall+Kristall+
+  Deuterium, PlayerStats) werden an den 7 Ressourcen-Abzugsstellen in `actions.ts` hochgezählt
+  (Schiffe/Schiffs-Module/Verteidigung/Verteidigungs-Module → ships-defense, Gebäude/Gebäude-
+  Module/Forschung → research-buildings) und über `shipsDefensePoints()`/`researchBuildingsPoints()`
+  mit derselben Skalierung wie Gegner-Punkte (`UNIT_POINT_COST_SCALE = 100000`) in Punkte
+  umgerechnet. Gebäude sind bewusst mit in die zweite Kategorie gemischt, NICHT Forschung/Module
+  allein, weil Gebäude (anders als Forschung/Module, Stufe-10-Deckel) unbegrenzt ausbaubar sind -
+  die Kategorie bleibt dadurch auch für Spieler mit komplett maxierter Forschung/Modulen sinnvoll
+  wachsend. `POINT_WEIGHTS` (Missionen/Elite-Bollwerk-Checks/Raid-Abwehr) wurde komplett aus
+  `calculatePoints()` entfernt (Nutzer-Beobachtung am echten Spielstand: selbst nach starkem
+  Hochskalieren blieben diese Kategorien gegenüber der ressourcenbasierten Punktzahl im
+  Millionen-Bereich unsichtbar) - die zugrundeliegenden `PlayerStats`-Rohzähler bleiben bestehen
+  (weiterhin von `missions.ts`/`raids.ts`/`groupOps.ts` befüllt), fließen aber nicht mehr in die
+  Punktzahl ein und wurden von der Statistik-Seite entfernt. Container/erbeutete Ressourcen/eigene
+  Verluste/Asteroiden-Einsätze bleiben weiterhin außen vor (Glück/Fleiß, keine Investition) und
+  sind ebenfalls nicht mehr auf der Seite gelistet - sie zeigt jetzt bewusst NUR noch die drei
+  tatsächlich punkte-relevanten Werte (Schiff/Verteidigung, Forschung/Gebäude, zerstörte Piraten).
+  `LeaderboardEntry` liefert `shipsDefensePoints`/`researchBuildingsPoints` vorberechnet mit, damit
+  der Client `UNIT_POINT_COST_SCALE` nicht selbst duplizieren muss.
 
 ### Frontend-Konventionen
 
@@ -604,3 +623,7 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Forschung/Klasse/Modul/Booster wie viel beitragen). Dabei Fix: Kampf-Booster wurde im Client noch
   mit dem alten +20% statt korrektem +35% angezeigt (reiner Anzeigefehler, Kampf lief serverseitig
   immer korrekt) - `kampfBoostMultiplier` kommt jetzt vom Server statt hartcodiert zu sein.
+- Statistik-Neugestaltung: nur noch punkte-relevante Werte (Schiff/Verteidigungs-Punkte, Forschungs/
+  Gebäude-Punkte, zerstörte Piraten). Alte, bei Verlusten sinkende Gesamtmacht-Punktzahl komplett
+  durch kumulative, nie sinkende Ressourcenausgaben-Punkte ersetzt; Missionen/Elite-Bollwerk/Raid-
+  Abwehr aus der Punktzahl entfernt (waren gegenüber ressourcenbasierten Werten unsichtbar klein).

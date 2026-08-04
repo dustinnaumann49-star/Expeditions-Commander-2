@@ -500,6 +500,7 @@ export function startBuild(state: PlayerState, shipId: string, qty: number): Act
   state.resources.metall -= effectiveCost.metall * effectiveQty;
   state.resources.kristall -= effectiveCost.kristall * effectiveQty;
   state.resources.deuterium -= effectiveCost.deuterium * effectiveQty;
+  state.stats.resourcesSpentShipsDefense += (effectiveCost.metall + effectiveCost.kristall + effectiveCost.deuterium) * effectiveQty;
 
   const now = Date.now();
   let startTime = now;
@@ -536,6 +537,7 @@ export function startDefenseBuild(state: PlayerState, defId: string, qty: number
   state.resources.metall -= effectiveCost.metall * qty;
   state.resources.kristall -= effectiveCost.kristall * qty;
   state.resources.deuterium -= effectiveCost.deuterium * qty;
+  state.stats.resourcesSpentShipsDefense += (effectiveCost.metall + effectiveCost.kristall + effectiveCost.deuterium) * qty;
 
   const now = Date.now();
   let startTime = now;
@@ -565,6 +567,7 @@ export function startBuildingConstruction(state: PlayerState, buildingId: string
   state.resources.metall -= cost.metall;
   state.resources.kristall -= cost.kristall;
   state.resources.deuterium -= cost.deuterium;
+  state.stats.resourcesSpentResearchBuildings += cost.metall + cost.kristall + cost.deuterium;
 
   const now = Date.now();
   const duration = buildingTimeForLevel(state, building, nextLevel);
@@ -613,6 +616,7 @@ export function startModuleUpgrade(state: PlayerState, moduleId: string): Action
   state.resources.metall -= cost.metall;
   state.resources.kristall -= cost.kristall;
   state.resources.deuterium -= cost.deuterium;
+  state.stats.resourcesSpentResearchBuildings += cost.metall + cost.kristall + cost.deuterium;
 
   const now = Date.now();
   const duration = moduleTimeForLevel(state, mod, nextLevel);
@@ -656,6 +660,7 @@ export function startShipModuleUpgrade(state: PlayerState, moduleId: string): Ac
   state.resources.metall -= cost.metall;
   state.resources.kristall -= cost.kristall;
   state.resources.deuterium -= cost.deuterium;
+  state.stats.resourcesSpentShipsDefense += cost.metall + cost.kristall + cost.deuterium;
 
   const now = Date.now();
   const duration = shipModuleTimeForLevel(state, mod, nextLevel);
@@ -701,6 +706,7 @@ export function startDefenseModuleUpgrade(state: PlayerState, moduleId: string):
   state.resources.metall -= cost.metall;
   state.resources.kristall -= cost.kristall;
   state.resources.deuterium -= cost.deuterium;
+  state.stats.resourcesSpentShipsDefense += cost.metall + cost.kristall + cost.deuterium;
 
   const now = Date.now();
   const duration = defenseModuleTimeForLevel(state, mod, nextLevel);
@@ -755,6 +761,7 @@ export function startResearch(state: PlayerState, techId: string): ActionResult 
   state.resources.metall -= cost.metall;
   state.resources.kristall -= cost.kristall;
   state.resources.deuterium -= cost.deuterium;
+  state.stats.resourcesSpentResearchBuildings += cost.metall + cost.kristall + cost.deuterium;
 
   const now = Date.now();
   const duration = researchTimeForLevel(state, tech, nextLevel);

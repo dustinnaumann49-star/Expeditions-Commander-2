@@ -1,20 +1,22 @@
 import { listAllUsers } from '../db.js';
 import { loadPlayerState } from './state.js';
-import { getUnitPointValue } from './combat.js';
-import type { PlayerStats, PlayerState } from './types.js';
+import { getUnitPointValue, UNIT_POINT_COST_SCALE } from './combat.js';
+import type { PlayerStats } from './types.js';
 
 // Punkte werden NIE direkt gespeichert, nur aus den rohen Zaehlern (PlayerStats) berechnet - so
 // laesst sich die Gewichtung hier jederzeit anpassen, ohne bestehende Spielstaende migrieren zu
 // muessen (die Rohwerte bleiben unveraendert korrekt, nur die daraus abgeleitete Punktzahl aendert
 // sich beim naechsten Aufruf automatisch).
-export const POINT_WEIGHTS = {
-  missionNiedrig: 10,
-  missionMittel: 25,
-  missionHoch: 50,
-  eliteBollwerkCheck: 150,
-  raidRepelledFull: 40,
-  raidRepelledPartial: 15,
-};
+//
+// 04.08.2026 (Nutzerentscheidung, Statistik-Neugestaltung): Missionen/Elite-Bollwerk-Checks/Raid-
+// Abwehr NICHT MEHR Teil der Punktzahl (POINT_WEIGHTS entfernt). Live-Beobachtung am echten
+// Spielstand zeigte: selbst nach kraeftigem Hochskalieren blieben diese Kategorien gegenueber der
+// ressourcenbasierten Punktzahl (Millionen-Bereich) komplett unsichtbar/bedeutungslos - eine
+// Rundungsungenauigkeit im Vergleich zur restlichen Punktzahl, kein Fixpunkt-Gewicht haette daran
+// etwas geaendert. Bleiben als reine PlayerStats-Rohzaehler fuer eigene Zwecke bestehen (siehe
+// missions.ts/raids.ts/groupOps.ts), fliessen aber nicht mehr in calculatePoints() ein und werden
+// auf der Statistik-Seite nicht mehr angezeigt - die Seite zeigt nur noch tatsaechlich
+// punkte-relevante Werte.
 
 // Nutzerentscheidung (Juli 2026): "Feinde vernichtet" zaehlte bisher pauschal 1 Punkt pro Einheit,
 // egal ob Leichter Jaeger oder Reaper - jetzt gestaffelt nach Gegnerwert (siehe getUnitPointValue()
@@ -45,39 +47,26 @@ export function recordEnemyKills(stats: PlayerStats, lossesById: Record<string, 
   });
 }
 
-// "Gesamtmacht"-Anteil der Punktzahl (Nutzerentscheidung Juli 2026): anders als die restlichen,
-// rein additiven Kategorien liest dieser Teil die AKTUELLE Flotte/Verteidigung direkt aus dem
-// PlayerState (nicht aus PlayerStats) - er KANN also wieder sinken, wenn Schiffe verloren oder
-// verschrottet werden, waehrend alle anderen Kategorien nur wachsen. Bewusst so gewaehlt (statt
-// z.B. `stats.shipsBuilt`, das nie sinkt): "Gesamtmacht" soll die tatsaechlich JETZT vorhandene
-// Staerke widerspiegeln, nicht die historische Investition. Nutzt dieselbe kostenbasierte
-// Gewichtung wie vernichtete Gegner (siehe getUnitPointValue()).
-export function calculateFleetPowerPoints(state: PlayerState): number {
-  let total = 0;
-  Object.entries(state.fleet || {}).forEach(([id, count]) => {
-    if (count > 0) total += count * getUnitPointValue(id);
-  });
-  Object.entries(state.defense || {}).forEach(([id, count]) => {
-    if (count > 0) total += count * getUnitPointValue(id);
-  });
-  return total;
+// Ressourcenausgaben-Punkte (Nutzerentscheidung 04.08.2026, ersetzt die vorherige
+// calculateFleetPowerPoints() komplett): Schiff/Verteidigungs-Punkte und Forschungs/Gebaeude-
+// Punkte werden aus den KUMULATIVEN Ausgaben (PlayerStats.resourcesSpentShipsDefense/
+// -ResearchBuildings, siehe actions.ts) berechnet, NICHT aus dem aktuellen Bestand - anders als
+// die alte Gesamtmacht-Punktzahl sinken sie also NIE, auch nicht bei Kampfverlusten. Gleiche
+// Skalierung wie vernichtete Gegner (UNIT_POINT_COST_SCALE), damit alle kostenbasierten
+// Punktkategorien vergleichbar bleiben.
+export function shipsDefensePoints(stats: PlayerStats): number {
+  return Math.round((stats.resourcesSpentShipsDefense || 0) / UNIT_POINT_COST_SCALE);
+}
+export function researchBuildingsPoints(stats: PlayerStats): number {
+  return Math.round((stats.resourcesSpentResearchBuildings || 0) / UNIT_POINT_COST_SCALE);
 }
 
-// Nutzerentscheidung (Juli 2026): Forschung fliesst BEWUSST NICHT in die Punktzahl ein - jeder
-// Forschungszweig ist auf Stufe 10 gedeckelt, irgendwann hat jeder Spieler alles fertig, dann
-// unterscheidet der Wert Spieler nicht mehr voneinander und traegt nichts zu einer wachsenden
-// "Gesamtmacht" bei. Ebenso aussen vor: geoeffnete Container/erbeutete Ressourcen (Glueck/Fleiss,
-// keine Kampfkraft) und verlorene eigene Schiffe (kein Gewinn).
+// Punktzahl besteht bewusst NUR noch aus kostenbasierten Kategorien (Nutzerentscheidung
+// 04.08.2026, Statistik-Neugestaltung - siehe Kommentar bei POINT_WEIGHTS oben): Schiff/
+// Verteidigungs-Ausgaben, Forschungs/Gebaeude-Ausgaben, vernichtete Gegner. Geoeffnete Container/
+// erbeutete Ressourcen (Glueck/Fleiss, keine Investition) bleiben weiterhin aussen vor.
 export function calculatePoints(stats: PlayerStats): number {
-  return (
-    stats.missionsNiedrig * POINT_WEIGHTS.missionNiedrig +
-    stats.missionsMittel * POINT_WEIGHTS.missionMittel +
-    stats.missionsHoch * POINT_WEIGHTS.missionHoch +
-    stats.eliteBollwerkChecks * POINT_WEIGHTS.eliteBollwerkCheck +
-    stats.raidsRepelledFull * POINT_WEIGHTS.raidRepelledFull +
-    stats.raidsRepelledPartial * POINT_WEIGHTS.raidRepelledPartial +
-    enemyDestroyedPoints(stats)
-  );
+  return shipsDefensePoints(stats) + researchBuildingsPoints(stats) + enemyDestroyedPoints(stats);
 }
 
 export interface LeaderboardEntry {
@@ -85,6 +74,11 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   stats: PlayerStats;
+  // Vorberechnete Teil-Punktzahlen (Nutzerentscheidung 04.08.2026) - der Client zeigt diese direkt
+  // auf der Statistik-Seite an, statt UNIT_POINT_COST_SCALE fuer eine eigene Berechnung dupliziert
+  // an den Client exponieren zu muessen.
+  shipsDefensePoints: number;
+  researchBuildingsPoints: number;
 }
 
 // Bestenliste ueber ALLE registrierten Nutzer (bei 2-5 Spielern performance-technisch unproblematisch,
@@ -93,8 +87,15 @@ export function getLeaderboard(): LeaderboardEntry[] {
   const users = listAllUsers();
   const entries: LeaderboardEntry[] = users.map((u) => {
     const state = loadPlayerState(u.id);
-    const points = calculatePoints(state.stats) + calculateFleetPowerPoints(state);
-    return { userId: u.id, username: u.username, points, stats: state.stats };
+    const points = calculatePoints(state.stats);
+    return {
+      userId: u.id,
+      username: u.username,
+      points,
+      stats: state.stats,
+      shipsDefensePoints: shipsDefensePoints(state.stats),
+      researchBuildingsPoints: researchBuildingsPoints(state.stats),
+    };
   });
   return entries.sort((a, b) => b.points - a.points);
 }

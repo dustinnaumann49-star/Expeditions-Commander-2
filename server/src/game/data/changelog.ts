@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Statistik komplett überarbeitet',
+    changes: [
+      'Die Statistik-Seite zeigt jetzt nur noch drei Werte, die auch wirklich in die Punktzahl einfließen: Schiff/Verteidigungs-Punkte, Forschungs/Gebäude-Punkte und zerstörte Piraten. Alle anderen Zähler (Piraten-Sektor-Siege, Elite-Bollwerk-Checks, Raid-Abwehr, Container, erbeutete Ressourcen, eigene Verluste, Asteroiden-Einsätze) sind raus - sie trugen ohnehin kaum oder gar nicht zur Punktzahl bei und machten die Seite nur unübersichtlich.',
+      'Schiff/Verteidigungs-Punkte und Forschungs/Gebäude-Punkte sind neu: sie messen, wie viele Ressourcen insgesamt in Schiffe/Verteidigung bzw. Forschung/Gebäude investiert wurden - und sinken NIE, auch nicht nach Verlusten im Kampf. Die alte "Gesamtmacht"-Punktzahl (aktueller Flottenbestand, sank bei jedem Verlust) fällt damit komplett weg.',
+      'Da diese Ausgaben-Statistik neu eingeführt wurde, starten alle Spieler bei diesen zwei Kategorien bei 0 - vergangene Investitionen lassen sich leider nicht rückwirkend erfassen. Zerstörte Piraten bleiben davon unberührt und zählen wie gewohnt weiter.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Feature: Bonus-Aufschlüsselung bei Waffen/Schild/Panzerung',
     changes: [
       'Auf den Bau-Karten (Schiffe, Verteidigung, Imperator) zeigt der grün hervorgehobene Effektivwert von Waffen/Schild/Panzerung jetzt beim Drüberfahren mit der Maus (oder Antippen auf dem Handy) genau auf, welche einzelnen Boni ihn zusammensetzen - Forschung, Klassen-Bonus, Schiffs-/Verteidigungs-Modul und aktiver Kampf-Booster, jeweils mit dem Prozentsatz.',

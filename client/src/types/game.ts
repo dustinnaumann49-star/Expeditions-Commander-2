@@ -452,6 +452,8 @@ export interface PlayerStats {
   containersOpened: { silber: number; gold: number; elite: number };
   researchCompleted: number;
   shipsBuilt: number;
+  resourcesSpentShipsDefense: number;
+  resourcesSpentResearchBuildings: number;
 }
 
 export interface LeaderboardEntry {
@@ -459,6 +461,8 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   stats: PlayerStats;
+  shipsDefensePoints: number;
+  researchBuildingsPoints: number;
 }
 
 export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
