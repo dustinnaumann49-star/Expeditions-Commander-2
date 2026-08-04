@@ -228,6 +228,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Klassen; Salvenschiffe sind komplett RF-immun. NPC-RF gegen `leicht`/`schwer` ist halbiert
   (`NPC_RF_VS_JAEGER_FACTOR = 0.5`), damit eigene Jäger nicht unabhängig von der Stückzahl fast
   immer zuerst sterben.
+- RapidFire-Neuordnung (Nutzerentscheidung 04.08.2026, `combatConstants.ts`): saubere
+  Stein-Schere-Papier-Kette der Standard-Kampfschiffe (Schwerer Jäger → Leichter Jäger, Kreuzer →
+  Schwerer Jäger, Schlachtschiff → Kreuzer, Schlachtkreuzer → Schlachtschiff, Zerstörer →
+  Schlachtkreuzer, Reaper → Zerstörer), ersetzt die vorherigen überlappenden Mehrfachziele.
+  Begleitschiff komplett aus `RAPIDFIRE` entfernt (Versorgungsrolle, kein militärisches RF mehr).
+  Bomber bleibt Bunkerbrecher, aber nur noch gegen Raketenwerfer/Leichtes/Schweres Lasergeschütz
+  (Ionengeschütz/Gausskanone/Plasmawerfer entfernt). Spezialschiffe/-verteidigung behalten ihre
+  Mehrfachziel-Sonderrechte unverändert.
 - Größenklassen-Ausweichbonus (`SHIP_SIZE_CLASS`/`SIZE_MISMATCH_EVASION_BONUS`): Jäger bekommen
   +45, Kreuzer +18 Prozentpunkte Ausweichchance gegen große/Elite-/Spezialschiffe (nicht
   umgekehrt) - gibt kleinen Schiffen eine Tank-/Ausweich-Rolle statt reiner Bedeutungslosigkeit.
@@ -247,12 +255,18 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   `stack.typeId` verwendet werden, sonst landen `shotsFired`/`hits`/`crits`/`dmgDealt` unter dem
   falschen Schlüssel und zeigen im Kampfbericht 0 an (Fix vom 03.08.2026).
 - Präzision/Schild-Regen sind größenabhängig (kleine Schiffe treffen besser, laden schlechter).
-- `SHIELD_REGEN_MAX` (`combatConstants.ts`) von 0.80 auf 0.50 gesenkt, `schildregeneration.
-  effectPerLevel` (`research.ts`) von 0.06 auf 0.035 (Nutzerentscheidung 03.08.2026): bei
-  Max-Forschung (Stufe 10) ergab BASE+Forschungsbonus allein schon 0.80 - GENAU der alte Deckel,
-  noch vor dem größenabhängigen Modifikator. Große Schiffe/Verteidigung luden dadurch 80% des
-  fehlenden Schildes JEDE Runde wieder auf, Kämpfe zogen sich bis ans `MAX_ROUNDS`-Limit (100).
-  Jetzt max. 50% Regen pro Runde bei Max-Forschung.
+- Schild-Regeneration auf klassenspezifische Basiswerte umgestellt (Nutzerentscheidung 04.08.2026,
+  `SHIELD_REGEN_BASE_BY_CLASS` in `combatConstants.ts`, löst die vorherige globale Pauschale
+  `SHIELD_REGEN_BASE` + additiven `SHIELD_REGEN_MODIFIER` ab): Jäger-Klasse 5%, Kreuzer-Klasse 15%,
+  Elite-Klasse 35%, Spezialschiffe/Imperator/Verteidigungsanlagen 65% Basiswert, jeweils PLUS
+  Forschungsbonus (`schildregeneration.effectPerLevel` in `research.ts`, 1,5%/Stufe, max. Stufe 10
+  = +15%). `SHIELD_REGEN_MAX` (globaler Deckel) auf 0.80 angehoben - greift dadurch praktisch nur
+  noch bei der obersten Klasse (65%+15% = exakt 80%), alle anderen Klassen liegen deutlich darunter.
+- Kritischer Schaden ebenfalls klassenabhängig gestaffelt (Nutzerentscheidung 04.08.2026,
+  `CRIT_DAMAGE_MULTIPLIER_BY_CLASS`/`getCritDamageMultiplier()` in `combat.ts`, löst den vorherigen
+  starren globalen `CRIT_DAMAGE_MULTIPLIER = 2` ab): Jäger 1,5-2x, Kreuzer-Klasse 2-2,5x,
+  Elite-Klasse 3x, Spezialschiffe/Imperator 3,5-4x. Die Krit-CHANCE (`CRIT_CHANCE_BASE`) ist davon
+  unberührt. Verteidigungsanlagen wurden analog zu ihrer `CRIT_CHANCE_BASE`-Stärke eingeordnet.
 - Kampfbericht führt `dmgDealt` und `dmgTaken` getrennt - eine niedrige "erlitten"-Zahl ist starke,
   nicht schwache Feuerkraft.
 - Wellen-Vielfalt: drei Zusammensetzungs-Profile (`pickWaveProfile()`), Wellen-Ausreißer, seltene
@@ -296,11 +310,31 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   dasselbe Prinzip über `RaidState.waveLog`. Elite-Bollwerk/Piratenadmiral NICHT - deren Berichte
   bleiben pro Check einzeln.
 - Piraten-Sektor Solo (Niedrig/Mittel/Hoch): nur EINE Stufe gleichzeitig beflogbar (serverseitig
-  UND clientseitig geblockt). Reine Container-Belohnung (`winContainer` in `SektorConfig`) pro
+  UND clientseitig geblockt). Container-Belohnung (`winContainer` in `SektorConfig`) pro
   gewonnenem Check (`Mission.combatWins`), ausgezahlt erst bei Rückkehr - kein `lootBase` mehr.
+  Seit 04.08.2026 zusätzlich ein festes `winResources`-Ressourcenpaket pro gewonnenem Check
+  (Niedrig 800k/500k/200k, Mittel 2M/1,2M/600k, Hoch 5M/3M/1,5M Metall/Kristall/Deuterium,
+  `finalizeMission()` in `missions.ts`) - Ausgleich für die durch das 50/30/20-System (siehe unten)
+  gestiegene Feindstärke dieser Stufen. Sandronator (x2) wirkt automatisch auch hier, da beide
+  Belohnungen an `Mission.combatWins` hängen.
+- Feindstärke der Piraten-Sektoren/Elite-Bollwerk/Raids folgt seit 04.08.2026 einem festen
+  50/30/20-Zufallsprinzip statt Gleichverteilung (`pick503020()`/`rollMultiplierWithOutlier()` in
+  `combat.ts`): jeder einzelne Kampf-Check würfelt mit 50%/30%/20%-Gewichtung einen von drei
+  Tabellenwerten (`PIRATEN_MULTIPLIER_ROLL` in `sectors.ts`, `RAID_WAVE_ROLL` in `economy.ts`,
+  ersetzt die alte 12-Wellen-Eskalationskurve `RAID_WAVE_FACTORS`). Der dritte Bucket kann eine
+  Spanne `[min, max]` sein (z.B. `piraten_hoch`: 150-200%), wird dann gleichverteilt darin
+  gewürfelt. Der Piratenadmiral (P10) ist bewusst ausgenommen (`contextKey === 'piraten_admiral'`
+  bleibt bei alter Gleichverteilung, eigene Boss-Mechanik). Der alte separate
+  `WAVE_OUTLIER_CHANCE`-Ausreißer-Wurf wurde für alle `piraten_*`-Sektoren auf 0 gesetzt (würde
+  sich sonst mit dem neuen 20%-Extrem-Bucket überschneiden), für `raid` unverändert gelassen
+  (dort ohnehin nie aktiv genutzt).
 - Elite-Bollwerk: Beute verdoppelt sich pro Sieg in Folge (`streakWins`), bei perfekter Serie über
   alle 6 Checks zusätzlicher Abschluss-Bonus (Gesamtausbeute nochmal verdoppelt). Solo nutzbar
-  (0 Eingeladene = Ersteller allein).
+  (0 Eingeladene = Ersteller allein). Seit 04.08.2026 zusätzlich `guaranteedContainers` in
+  `SektorConfig` (`sectors.ts`): 4x Silber + 3x Gold + 2x Elite-Container GARANTIERT pro
+  überstandenem Check (mind. ein Gegner vernichtet), unabhängig von der Zufalls-Kapitän-Mechanik
+  (`captainChance`) - jeder Teilnehmer bekommt die volle Menge, siehe
+  `runGroupOperationCheck()` in `groupOps.ts`.
 - Piratenadmiral (`piraten_admiral`): ein starker Boss + kleine Eskorte statt Massenwellen, mit
   Extraktions-Entscheidung ("Beute sichern" oder "weitermachen") statt reinem Durchhalte-Check.
   Bis zu 6 Kämpfe im 10-Min-Abstand, Admiral wird pro Check stärker. Nur Kreuzer-Klasse+ zugelassen
@@ -404,6 +438,15 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Stattdessen gleicht `NPC_PRODUCTION_BONUS_MULTIPLIER` (`economy.ts`, 1,5x → 6x angehoben, Juli
   2026) den fehlenden Container-/Missions-Ertrag echter Spieler direkt über die passive
   Minen-Produktion aus.
+- `economyBotTurn.ts` überarbeitet (Nutzerentscheidung 04.08.2026), da die 6-fache Minenproduktion
+  oft verpuffte: Solarkraftwerk wird jetzt VORAUSSCHAUEND priorisiert (`hasEnergyHeadroom()`,
+  15% Sicherheitsmarge auf der UNGEDECKELTEN Produktions-/Verbrauchs-Ratio aus `energyProduced()`/
+  `energyConsumed()`), statt erst reaktiv bei `energyFactor(state) < 1` - `energyFactor()` selbst
+  deckelt bei 1.0 und zeigt einen Engpass daher erst nach dessen Eintreten. `maybeBuildShips()`/
+  `maybeBuildDefense()` weichen jetzt zusätzlich auf eine kleinere, bezahlbare Alternative aus
+  (guenstigster Typ zuerst, 1 statt der eigentlich angepeilten 5/10 Stück -
+  `COMBAT_SHIP_IDS_BY_COST`/`DEFENSE_IDS_BY_COST`), statt den Zug leer enden zu lassen, wenn das
+  eigentliche Bauvorhaben für JEDEN Typ zu teuer war.
 
 ### Klassensystem
 
@@ -496,3 +539,10 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
 - Feature: Bau-Verlauf für Allianz-Station (wer/was/welche Stufe/wann, auf 50 Einträge gedeckelt).
 - Fix: Mining-Schiffe/-Flüge bei Bots/Piratenbasen komplett entfernt (war nie so beabsichtigt),
   `NPC_PRODUCTION_BONUS_MULTIPLIER` als Ausgleich von 1,5x auf 6x angehoben.
+- Großes Kampf-/Balance-Update (04.08.2026): Schild-Regeneration und kritischer Schaden auf
+  klassenspezifische Basiswerte umgestellt (löst globale Pauschalen ab), RapidFire-Matrix auf eine
+  saubere Stein-Schere-Papier-Kette neu geordnet, Piraten-Sektoren/Elite-Bollwerk/Raids auf ein
+  50/30/20-Zufallsprinzip für die Feindstärke umgestellt (deutlich härter, dafür unberechenbarer),
+  skalierendes Ressourcenpaket für Solo-Piraten-Sektoren und garantierte Container (4x Silber/3x
+  Gold/2x Elite pro Check) fürs Elite-Bollwerk ergänzt, `economyBotTurn.ts` auf vorausschauendes
+  Energie-Management und flexible Bau-Fallbacks umgestellt.
