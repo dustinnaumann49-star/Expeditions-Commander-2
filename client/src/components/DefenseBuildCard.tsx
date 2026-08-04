@@ -10,6 +10,7 @@ import {
   getCritChance,
   getCritDamageMultiplier,
   getEffectiveDefenseStats,
+  getDefenseStatBreakdown,
 } from '../lib/combatInfo';
 import { StatValue } from './StatValue';
 import type { DefenseDefinition, GameData, PlayerState } from '../types/game';
@@ -88,7 +89,16 @@ export function DefenseBuildCard({
           {def.maxCount ? `/${def.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {def.stats.waffen > 0 && <StatValue label="Waffen" icon="⚔️" base={def.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />}
+          {def.stats.waffen > 0 && (
+            <StatValue
+              label="Waffen"
+              icon="⚔️"
+              base={def.stats.waffen}
+              effective={effStats.waffen}
+              colorClass="stat-waffen"
+              breakdown={getDefenseStatBreakdown(gameData, state, def, 'waffen')}
+            />
+          )}
           {/* Kuppeln: Schild laeuft komplett ueber den gemeinsamen Kuppel-Pool (computeDomeSharedPool),
               der Effektivwert hier waere immer 0 und damit irrefuehrend - Basiswert bleibt stehen. */}
           <StatValue
@@ -97,8 +107,16 @@ export function DefenseBuildCard({
             base={def.stats.schild}
             effective={def.isDome ? def.stats.schild : effStats.schild}
             colorClass="stat-schild"
+            breakdown={getDefenseStatBreakdown(gameData, state, def, 'schild')}
           />
-          <StatValue label="Panzerung" icon="🧱" base={def.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />
+          <StatValue
+            label="Panzerung"
+            icon="🧱"
+            base={def.stats.panzerung}
+            effective={effStats.panzerung}
+            colorClass="stat-panzerung"
+            breakdown={getDefenseStatBreakdown(gameData, state, def, 'panzerung')}
+          />
         </div>
 
         <div className="ship-cost">
@@ -151,13 +169,43 @@ export function defenseInfoRows(gameData: GameData, state: PlayerState, def: Def
   const effStats = getEffectiveDefenseStats(gameData, state, def);
   const rows: [string, React.ReactNode][] = [];
   if (def.stats.waffen > 0) {
-    rows.push(['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={def.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />]);
+    rows.push([
+      'Waffen',
+      <StatValue
+        key="waffen"
+        label=""
+        icon="⚔️"
+        base={def.stats.waffen}
+        effective={effStats.waffen}
+        colorClass="stat-waffen"
+        breakdown={getDefenseStatBreakdown(gameData, state, def, 'waffen')}
+      />,
+    ]);
   }
   rows.push([
     'Schild',
-    <StatValue key="schild" label="" icon="🛡️" base={def.stats.schild} effective={def.isDome ? def.stats.schild : effStats.schild} colorClass="stat-schild" />,
+    <StatValue
+      key="schild"
+      label=""
+      icon="🛡️"
+      base={def.stats.schild}
+      effective={def.isDome ? def.stats.schild : effStats.schild}
+      colorClass="stat-schild"
+      breakdown={getDefenseStatBreakdown(gameData, state, def, 'schild')}
+    />,
   ]);
-  rows.push(['Panzerung', <StatValue key="panzerung" label="" icon="🧱" base={def.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />]);
+  rows.push([
+    'Panzerung',
+    <StatValue
+      key="panzerung"
+      label=""
+      icon="🧱"
+      base={def.stats.panzerung}
+      effective={effStats.panzerung}
+      colorClass="stat-panzerung"
+      breakdown={getDefenseStatBreakdown(gameData, state, def, 'panzerung')}
+    />,
+  ]);
   rows.push(['RapidFire', rfDisplay || 'Kein RapidFire']);
   if (defAccuracy > 0) rows.push(['Zielerfassung', `${(defAccuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]);
   if (isVolleyDefense) {

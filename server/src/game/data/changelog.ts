@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Feature: Bonus-Aufschlüsselung bei Waffen/Schild/Panzerung',
+    changes: [
+      'Auf den Bau-Karten (Schiffe, Verteidigung, Imperator) zeigt der grün hervorgehobene Effektivwert von Waffen/Schild/Panzerung jetzt beim Drüberfahren mit der Maus (oder Antippen auf dem Handy) genau auf, welche einzelnen Boni ihn zusammensetzen - Forschung, Klassen-Bonus, Schiffs-/Verteidigungs-Modul und aktiver Kampf-Booster, jeweils mit dem Prozentsatz.',
+      'Dabei aufgefallen und behoben: der aktive Kampf-Booster wurde bei der Anzeige des Effektivwerts noch mit dem alten Bonus (+20%) statt dem aktuellen (+35%) berechnet - reiner Anzeigefehler, im tatsächlichen Kampf war der Booster immer korrekt mit +35% wirksam.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Feature: Booster direkt für 7 oder 30 Tage kaufen',
     changes: [
       'Im Shop lässt sich bei jedem Booster (Bautempo, Forschungstempo, Kampf, Abbau) jetzt per Dropdown die Laufzeit wählen - 24 Stunden wie bisher, oder direkt 7 bzw. 30 Tage am Stück. Der Preis passt sich automatisch an und ist gegenüber täglichem Einzelkauf günstiger (7 Tage kosten nur das 6-fache statt 7-fache, 30 Tage nur das 20-fache statt 30-fache des 24h-Preises).',

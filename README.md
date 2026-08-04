@@ -273,6 +273,21 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Kampf-Modifikatoren (Nebel/Ionensturm/usw.) - nie vorher in der UI angekündigt.
 - Kampfsimulator (`simulator.ts`, `/game/simulate`) verändert NIE den Spielstand, nutzt aber
   exakt dieselbe Engine wie der echte Ablauf und erlaubt auch nicht besessene Schiffe.
+- Bonus-Aufschlüsselung (Nutzerentscheidung 04.08.2026, `StatValue.tsx`/`getShipStatBreakdown()`/
+  `getDefenseStatBreakdown()` in `combatInfo.ts`): Hover (Desktop) oder Tap (Mobil, kein Hover
+  verfügbar) auf den grünen Effektivwert einer Waffen-/Schild-/Panzerungs-Zeile zeigt ein Popover
+  mit den einzelnen aktiven Boni (Forschung, Klassen-Bonus, Schiffs-/Verteidigungs-Modul,
+  Kampf-Booster) samt jeweiligem Prozentsatz - Boni mit 0/neutralem Effekt werden nicht gelistet.
+  Popover schließt sich bei Klick/Tap außerhalb (`document`-Listener in `StatValue.tsx`, da Mobil
+  kein `MouseLeave` hat). Dabei auffiel und mitbehoben: `combatInfo.ts` hatte den Kampf-Booster-
+  Multiplikator noch mit dem alten Wert `1.2` hartcodiert (drei Stellen: `getEffectiveShipStats()`/
+  `getEffectiveDefenseStats()`/`computeDomeSharedPool()`), obwohl er serverseitig am 28.07.2026 auf
+  `KAMPF_BOOST_MULTIPLIER = 1.35` angehoben wurde (`data/economy.ts`) - der Client zeigte dadurch
+  bei aktivem Kampf-Booster einen zu NIEDRIGEN Effektivwert an (reiner Anzeigefehler, der
+  tatsächliche Kampf lief serverseitig immer korrekt mit 1.35). Jetzt wird `KAMPF_BOOST_MULTIPLIER`
+  über `/game/data` als `gameData.kampfBoostMultiplier` an den Client durchgereicht statt dort ein
+  zweites Mal hartcodiert zu werden - verhindert dasselbe Auseinanderlaufen bei künftigen
+  Balance-Anpassungen dieser Konstante.
 - `loadPlayerState()` migriert fehlende Felder in bestehenden Spielständen automatisch
   (`state.ts`) - bei jedem neuen `PlayerState`-Feld hier eine Migrationszeile ergänzen.
 
@@ -573,3 +588,7 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Schiffstypen).
 - Feature: Shop-Booster direkt für 7 oder 30 Tage kaufbar (Dropdown pro Booster-Karte, Preis passt
   sich mit Mengenrabatt an), statt nur einzeln für 24h - siehe `BOOSTER_DURATION_OPTIONS`.
+- Feature: Bonus-Aufschlüsselung per Hover/Tap auf Waffen-/Schild-/Panzerungs-Effektivwerte (welche
+  Forschung/Klasse/Modul/Booster wie viel beitragen). Dabei Fix: Kampf-Booster wurde im Client noch
+  mit dem alten +20% statt korrektem +35% angezeigt (reiner Anzeigefehler, Kampf lief serverseitig
+  immer korrekt) - `kampfBoostMultiplier` kommt jetzt vom Server statt hartcodiert zu sein.

@@ -14,6 +14,7 @@ import {
   getCritDamageMultiplier,
   driveTypeLabel,
   getEffectiveShipStats,
+  getShipStatBreakdown,
 } from '../lib/combatInfo';
 import { StatValue } from './StatValue';
 import type { GameData, PlayerState, ShipDefinition, GroupOperation } from '../types/game';
@@ -110,9 +111,32 @@ export function ShipBuildCard({
           {ship.maxCount ? `/${ship.maxCount}` : ''}
         </p>
         <div className="ship-stats">
-          {ship.stats.waffen > 0 && <StatValue label="Waffen" icon="⚔️" base={ship.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />}
-          <StatValue label="Schild" icon="🛡️" base={ship.stats.schild} effective={effStats.schild} colorClass="stat-schild" />
-          <StatValue label="Panzerung" icon="🧱" base={ship.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />
+          {ship.stats.waffen > 0 && (
+            <StatValue
+              label="Waffen"
+              icon="⚔️"
+              base={ship.stats.waffen}
+              effective={effStats.waffen}
+              colorClass="stat-waffen"
+              breakdown={getShipStatBreakdown(gameData, state, ship, 'waffen')}
+            />
+          )}
+          <StatValue
+            label="Schild"
+            icon="🛡️"
+            base={ship.stats.schild}
+            effective={effStats.schild}
+            colorClass="stat-schild"
+            breakdown={getShipStatBreakdown(gameData, state, ship, 'schild')}
+          />
+          <StatValue
+            label="Panzerung"
+            icon="🧱"
+            base={ship.stats.panzerung}
+            effective={effStats.panzerung}
+            colorClass="stat-panzerung"
+            breakdown={getShipStatBreakdown(gameData, state, ship, 'panzerung')}
+          />
         </div>
 
         {ship.cost && (
@@ -176,13 +200,45 @@ export function shipInfoRows(gameData: GameData, state: PlayerState, ship: ShipD
   const effStats = getEffectiveShipStats(gameData, state, ship);
   const rows: [string, React.ReactNode][] = [
     ...(ship.stats.waffen > 0
-      ? ([['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={ship.stats.waffen} effective={effStats.waffen} colorClass="stat-waffen" />]] as [
-          string,
-          React.ReactNode
-        ][])
+      ? ([
+          [
+            'Waffen',
+            <StatValue
+              key="waffen"
+              label=""
+              icon="⚔️"
+              base={ship.stats.waffen}
+              effective={effStats.waffen}
+              colorClass="stat-waffen"
+              breakdown={getShipStatBreakdown(gameData, state, ship, 'waffen')}
+            />,
+          ],
+        ] as [string, React.ReactNode][])
       : []),
-    ['Schild', <StatValue key="schild" label="" icon="🛡️" base={ship.stats.schild} effective={effStats.schild} colorClass="stat-schild" />],
-    ['Panzerung', <StatValue key="panzerung" label="" icon="🧱" base={ship.stats.panzerung} effective={effStats.panzerung} colorClass="stat-panzerung" />],
+    [
+      'Schild',
+      <StatValue
+        key="schild"
+        label=""
+        icon="🛡️"
+        base={ship.stats.schild}
+        effective={effStats.schild}
+        colorClass="stat-schild"
+        breakdown={getShipStatBreakdown(gameData, state, ship, 'schild')}
+      />,
+    ],
+    [
+      'Panzerung',
+      <StatValue
+        key="panzerung"
+        label=""
+        icon="🧱"
+        base={ship.stats.panzerung}
+        effective={effStats.panzerung}
+        colorClass="stat-panzerung"
+        breakdown={getShipStatBreakdown(gameData, state, ship, 'panzerung')}
+      />,
+    ],
     ['🚀 Geschwindigkeit', `${ship.speed.toLocaleString('de-DE')} (${driveTypeLabel(ship.driveType)})`],
     ['RapidFire', rfDisplay || 'Kein RapidFire (Basis-Schiff)'],
     ...(accuracy > 0 ? ([['Zielerfassung', `${(accuracy * 100).toFixed(0)}% Chance, gezielt ein RF-Ziel anzuvisieren`]] as [string, React.ReactNode][]) : []),

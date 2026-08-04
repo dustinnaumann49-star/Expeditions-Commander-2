@@ -16,6 +16,7 @@ import {
   getCritDamageMultiplier,
   driveTypeLabel,
   getEffectiveShipStats,
+  getShipStatBreakdown,
 } from '../lib/combatInfo';
 import { StatValue } from '../components/StatValue';
 
@@ -79,9 +80,30 @@ export function SpezialschiffePage() {
                   Bestand: {imperatorBestand}/{imperator.maxCount}
                 </p>
                 <div className="ship-stats">
-                  <StatValue label="Waffen" icon="⚔️" base={imperator.stats.waffen} effective={imperatorEffStats!.waffen} colorClass="stat-waffen" />
-                  <StatValue label="Schild" icon="🛡️" base={imperator.stats.schild} effective={imperatorEffStats!.schild} colorClass="stat-schild" />
-                  <StatValue label="Panzerung" icon="🧱" base={imperator.stats.panzerung} effective={imperatorEffStats!.panzerung} colorClass="stat-panzerung" />
+                  <StatValue
+                    label="Waffen"
+                    icon="⚔️"
+                    base={imperator.stats.waffen}
+                    effective={imperatorEffStats!.waffen}
+                    colorClass="stat-waffen"
+                    breakdown={getShipStatBreakdown(gameData, state, imperator, 'waffen')}
+                  />
+                  <StatValue
+                    label="Schild"
+                    icon="🛡️"
+                    base={imperator.stats.schild}
+                    effective={imperatorEffStats!.schild}
+                    colorClass="stat-schild"
+                    breakdown={getShipStatBreakdown(gameData, state, imperator, 'schild')}
+                  />
+                  <StatValue
+                    label="Panzerung"
+                    icon="🧱"
+                    base={imperator.stats.panzerung}
+                    effective={imperatorEffStats!.panzerung}
+                    colorClass="stat-panzerung"
+                    breakdown={getShipStatBreakdown(gameData, state, imperator, 'panzerung')}
+                  />
                 </div>
                 <div className="ship-cost">
                   Kosten: {teileCost.waffen} Waffen-Teile, {teileCost.schild} Schild-Teile, {teileCost.panzerung} Panzerungs-Teile
@@ -127,11 +149,41 @@ export function SpezialschiffePage() {
         <InfoModal title={imperator.name} onClose={() => setShowImperatorInfo(false)}>
           <InfoTable
             rows={[
-              ['Waffen', <StatValue key="waffen" label="" icon="⚔️" base={imperator.stats.waffen} effective={imperatorEffStats!.waffen} colorClass="stat-waffen" />],
-              ['Schild', <StatValue key="schild" label="" icon="🛡️" base={imperator.stats.schild} effective={imperatorEffStats!.schild} colorClass="stat-schild" />],
+              [
+                'Waffen',
+                <StatValue
+                  key="waffen"
+                  label=""
+                  icon="⚔️"
+                  base={imperator.stats.waffen}
+                  effective={imperatorEffStats!.waffen}
+                  colorClass="stat-waffen"
+                  breakdown={getShipStatBreakdown(gameData, state, imperator, 'waffen')}
+                />,
+              ],
+              [
+                'Schild',
+                <StatValue
+                  key="schild"
+                  label=""
+                  icon="🛡️"
+                  base={imperator.stats.schild}
+                  effective={imperatorEffStats!.schild}
+                  colorClass="stat-schild"
+                  breakdown={getShipStatBreakdown(gameData, state, imperator, 'schild')}
+                />,
+              ],
               [
                 'Panzerung',
-                <StatValue key="panzerung" label="" icon="🧱" base={imperator.stats.panzerung} effective={imperatorEffStats!.panzerung} colorClass="stat-panzerung" />,
+                <StatValue
+                  key="panzerung"
+                  label=""
+                  icon="🧱"
+                  base={imperator.stats.panzerung}
+                  effective={imperatorEffStats!.panzerung}
+                  colorClass="stat-panzerung"
+                  breakdown={getShipStatBreakdown(gameData, state, imperator, 'panzerung')}
+                />,
               ],
               ['Waffen-Teile (vorhanden)', `${Math.floor(state.teile.waffen)} / ${teileCost!.waffen} (${pct(state.teile.waffen, teileCost!.waffen)}%)`],
               ['Schild-Teile (vorhanden)', `${Math.floor(state.teile.schild)} / ${teileCost!.schild} (${pct(state.teile.schild, teileCost!.schild)}%)`],

@@ -128,7 +128,7 @@ export function getEffectiveShipStats(
   state: PlayerState,
   ship: ShipDefinition
 ): { waffen: number; schild: number; panzerung: number } {
-  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
   const classMult = classCombatMultipliers(state.playerClass);
   const waffenModule = 1 + (state.shipModules[`${ship.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
   const schildModule = 1 + (state.shipModules[`${ship.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
@@ -147,7 +147,7 @@ export function getEffectiveDefenseStats(
   state: PlayerState,
   def: DefenseDefinition
 ): { waffen: number; schild: number; panzerung: number } {
-  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
   const classMult = classCombatMultipliers(state.playerClass);
   const ownSchild = def.isDome ? 0 : def.stats.schild;
   const waffenModule = 1 + (state.shipModules[`${def.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
@@ -160,6 +160,73 @@ export function getEffectiveDefenseStats(
   };
 }
 
+// Bonus-Aufschlüsselung fuer die "Basiswert (Effektivwert)"-Anzeige (Nutzerentscheidung 04.08.2026):
+// zeigt beim Hover/Tap auf den gruenen Effektivwert, WELCHE einzelnen Boni ihn zusammensetzen
+// (Forschung/Klasse/Modul/Kampf-Booster), statt nur das Endergebnis. Nur die tatsaechlich aktiven
+// Boni werden gelistet - ein Stat ohne jede Forschung/Modul/Klassen-Bonus liefert eine leere Liste.
+export interface StatBonusLine {
+  label: string;
+  percent: string;
+}
+
+function formatBonusPercent(mult: number): string {
+  const pct = Math.round((mult - 1) * 1000) / 10;
+  return `${pct >= 0 ? '+' : ''}${pct}%`;
+}
+
+function statBonusLines(
+  gameData: GameData,
+  state: PlayerState,
+  typeId: string,
+  statKey: 'waffen' | 'schild' | 'panzerung',
+  ownStat: number
+): StatBonusLine[] {
+  if (ownStat <= 0) return [];
+  const lines: StatBonusLine[] = [];
+  const researchMult =
+    statKey === 'waffen'
+      ? waffenMultiplier(gameData, state.research)
+      : statKey === 'schild'
+      ? schildMultiplier(gameData, state.research)
+      : panzerungMultiplier(gameData, state.research);
+  const researchLevel = state.research[statKey] || 0;
+  if (researchLevel > 0) lines.push({ label: `🔬 Forschung (Stufe ${researchLevel})`, percent: formatBonusPercent(researchMult) });
+
+  const classMult = classCombatMultipliers(state.playerClass)[statKey];
+  if (classMult !== 1) lines.push({ label: '🎖️ Klassen-Bonus', percent: formatBonusPercent(classMult) });
+
+  const moduleLevel = state.shipModules[`${typeId}_${statKey}`] || 0;
+  if (moduleLevel > 0) {
+    const moduleMult = 1 + moduleLevel * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
+    lines.push({ label: `⚙️ Modul (Stufe ${moduleLevel})`, percent: formatBonusPercent(moduleMult) });
+  }
+
+  if (isBoosterActive(state, 'kampf')) {
+    lines.push({ label: '⚡ Kampf-Booster (aktiv)', percent: formatBonusPercent(gameData.kampfBoostMultiplier) });
+  }
+
+  return lines;
+}
+
+export function getShipStatBreakdown(
+  gameData: GameData,
+  state: PlayerState,
+  ship: ShipDefinition,
+  statKey: 'waffen' | 'schild' | 'panzerung'
+): StatBonusLine[] {
+  return statBonusLines(gameData, state, ship.id, statKey, ship.stats[statKey]);
+}
+
+export function getDefenseStatBreakdown(
+  gameData: GameData,
+  state: PlayerState,
+  def: DefenseDefinition,
+  statKey: 'waffen' | 'schild' | 'panzerung'
+): StatBonusLine[] {
+  const ownStat = statKey === 'schild' && def.isDome ? 0 : def.stats[statKey];
+  return statBonusLines(gameData, state, def.id, statKey, ownStat);
+}
+
 // Schildkuppel-Bonus: Summe aller Kuppel-Schildwerte, gemeinsamer Pool statt Pro-Anlage-Verteilung.
 // Spiegelt server/src/game/combat.ts's computeDomeSharedPool() 1:1 - inkl. Klassen-Bonus (z.B.
 // Bollwerks +50% Schild), 24h-Kampf-Booster und Schild-Modulen (Kuppeln melden in
@@ -168,7 +235,7 @@ export function computeDomeSharedPool(
   gameData: GameData,
   state: PlayerState,
 ): number {
-  const kampfBoost = isBoosterActive(state, 'kampf') ? 1.2 : 1;
+  const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
   const classSchildMult = getClassSchildMultiplier(state.playerClass);
   let total = 0;
   gameData.defenses.forEach((d) => {

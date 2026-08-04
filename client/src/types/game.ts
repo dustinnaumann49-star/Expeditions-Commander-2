@@ -601,6 +601,7 @@ export interface GameData {
   piratenMultiplierRoll: Record<string, (number | [number, number])[]>;
   boosters: BoosterDefinition[];
   boosterDurationOptions: BoosterDurationOption[];
+  kampfBoostMultiplier: number;
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
   containerJackpotChance: number;
