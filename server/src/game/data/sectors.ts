@@ -162,10 +162,16 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
 // Max-Ausbau (schwaecher ausgebaute Teilnehmer: 0% Siegchance, ø 97% Verlust). Bewusst weiterhin
 // etwas haerter angesetzt als piraten_hoch (Elite-Bollwerk bleibt die Top-Stufe mit den besten
 // Belohnungen: garantierte Container + bis zu 64x Perfect-Streak-Bonus, siehe economy.ts).
+// Nachtrag 05.08.2026 (Nutzer-Fund): durch die Hoch-Korrektur oben lag piraten_mittel [0.80, 1.10,
+// 1.40] danach ueber piraten_hoch [0.70, 0.95, 0.95-1.20] - die Haerte-Reihenfolge Niedrig < Mittel
+// < Hoch < Elite war gebrochen. Niedrig auf [0.35, 0.50, 0.65] und Mittel auf [0.55, 0.75, 0.90]
+// gesenkt, damit wieder jede Stufe strikt unter der naechsthoeheren liegt. Simulation bestaetigt
+// die Reihenfolge bleibt sinnvoll gestaffelt: Niedrig praktisch risikofrei (auch ganz ohne
+// Forschung/Module ø 1% Verlust), Mittel gut machbar (58-100% Siegchance je nach Ausbau).
 export const PIRATEN_MULTIPLIER_ROLL: Record<string, [number, number, number | [number, number]]> =
 {
-  piraten_niedrig: [0.50, 0.80, 1.00],
-  piraten_mittel:  [0.80, 1.10, 1.40],
+  piraten_niedrig: [0.35, 0.50, 0.65],
+  piraten_mittel:  [0.55, 0.75, 0.90],
   piraten_hoch:    [0.70, 0.95, [0.95, 1.20]],
   piraten_elite:   [0.90, 1.20, 1.55]
 };

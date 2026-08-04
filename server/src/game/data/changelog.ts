@@ -10,9 +10,10 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
-    title: 'Fix: Piraten-Sektor Hoch und Elite-Bollwerk waren zu stark',
+    title: 'Fix: Gegnerstärke in allen Piraten-Sektoren korrigiert',
     changes: [
-      'Beim letzten Kampf-Update wurde die Gegnerstärke im Piraten-Sektor Hoch und im Elite-Bollwerk versehentlich zu hoch angesetzt - Spielertests zeigten Totalverluste der eigenen Flotte selbst bei gut ausgebauter Forschung und Modulen. Die Gegnerstärke wurde in beiden Sektoren jetzt spürbar gesenkt, sodass sie wieder eine faire Siegchance bieten, ohne die Herausforderung komplett zu verlieren. Das Elite-Bollwerk bleibt dabei weiterhin die schwerste Stufe.',
+      'Beim letzten Kampf-Update wurde die Gegnerstärke im Piraten-Sektor Hoch und im Elite-Bollwerk versehentlich zu hoch angesetzt - Spielertests zeigten Totalverluste der eigenen Flotte selbst bei gut ausgebauter Forschung und Modulen. Die Gegnerstärke wurde in beiden Sektoren jetzt spürbar gesenkt, sodass sie wieder eine faire Siegchance bieten, ohne die Herausforderung komplett zu verlieren.',
+      'Dabei ist aufgefallen, dass Piraten-Sektor Hoch danach leichter war als Mittel - das ist jetzt auch behoben, Niedrig und Mittel wurden passend mit abgesenkt. Die Schwierigkeit steigt jetzt wieder sauber von Niedrig über Mittel und Hoch bis zum Elite-Bollwerk als schwerster Stufe.',
     ],
   },
   {

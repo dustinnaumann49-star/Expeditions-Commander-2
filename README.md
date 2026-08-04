@@ -363,12 +363,34 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   `combat.ts`): jeder einzelne Kampf-Check würfelt mit 50%/30%/20%-Gewichtung einen von drei
   Tabellenwerten (`PIRATEN_MULTIPLIER_ROLL` in `sectors.ts`, `RAID_WAVE_ROLL` in `economy.ts`,
   ersetzt die alte 12-Wellen-Eskalationskurve `RAID_WAVE_FACTORS`). Der dritte Bucket kann eine
-  Spanne `[min, max]` sein (z.B. `piraten_hoch`: 150-200%), wird dann gleichverteilt darin
-  gewürfelt. Der Piratenadmiral (P10) ist bewusst ausgenommen (`contextKey === 'piraten_admiral'`
-  bleibt bei alter Gleichverteilung, eigene Boss-Mechanik). Der alte separate
-  `WAVE_OUTLIER_CHANCE`-Ausreißer-Wurf wurde für alle `piraten_*`-Sektoren auf 0 gesetzt (würde
-  sich sonst mit dem neuen 20%-Extrem-Bucket überschneiden), für `raid` unverändert gelassen
-  (dort ohnehin nie aktiv genutzt).
+  Spanne `[min, max]` sein, wird dann gleichverteilt darin gewürfelt. Der Piratenadmiral (P10) ist
+  bewusst ausgenommen (`contextKey === 'piraten_admiral'` bleibt bei alter Gleichverteilung, eigene
+  Boss-Mechanik). Der alte separate `WAVE_OUTLIER_CHANCE`-Ausreißer-Wurf wurde für alle
+  `piraten_*`-Sektoren auf 0 gesetzt (würde sich sonst mit dem neuen 20%-Extrem-Bucket
+  überschneiden), für `raid` unverändert gelassen (dort ohnehin nie aktiv genutzt).
+- Korrektur 05.08.2026 (Nutzerentscheidung): das 04.08.2026-Update hatte `piraten_hoch` (150-200%)
+  und `piraten_elite` (130-250%) ungetestet zu hart angesetzt - Simulation über `simulateCombat()`
+  (`simulator.ts`) zeigte selbst bei komplett maximierter Forschung/Modulen nur 0-25% Siegchance bei
+  ø 67-97% Flottenverlust, was zu ungewollten Totalverlusten führte (konkreter Fall: komplette
+  Flotte im Piraten-Sektor Hoch solo verloren). Ein reines Zurücksetzen auf den Vor-Update-Stand
+  reichte NICHT (die RapidFire-/Krit-/Schild-Regen-Änderungen desselben Commits machten die
+  Sektoren zusätzlich zur Tabelle härter) - beide Tabellen mussten unter den Vor-Update-Stand
+  gesenkt werden: `piraten_hoch` auf `[0.70, 0.95, 0.95-1.20]`, `piraten_elite` auf
+  `[0.90, 1.20, 1.55]` (bleibt bewusst etwas härter als Hoch, da Top-Stufe mit garantierten
+  Containern + bis zu 64x Perfect-Streak-Bonus). Dabei zunächst übersehen (Nutzer-Fund): die
+  abgesenkte `piraten_hoch`-Tabelle lag danach UNTER der unveränderten `piraten_mittel`-Tabelle
+  (`[0.80, 1.10, 1.40]`) - die Härte-Reihenfolge Niedrig < Mittel < Hoch < Elite war dadurch
+  gebrochen. Ebenfalls im selben Aufwasch korrigiert: `piraten_niedrig` auf `[0.35, 0.50, 0.65]`
+  und `piraten_mittel` auf `[0.55, 0.75, 0.90]` gesenkt, damit jede Stufe wieder strikt unter der
+  naechsthoeheren liegt. Simulierte Endwerte: Niedrig praktisch risikofrei in jeder Ausbaustufe
+  (ø 0-1% Verlust), Mittel gut machbar (67-100% Siegchance), Hoch fordernd (0% Siegchance ohne
+  Ausbau, 67% bei Max-Ausbau), Elite bleibt die haerteste Stufe (0% ohne Ausbau, 42% bei Max-Ausbau,
+  vereinzelt Totalverlust moeglich). Elite-Bollwerk-Besonderheit weiterhin unverändert: Piraten
+  bekommen dort den GRUPPEN-DURCHSCHNITT der Forschung aller Teilnehmer
+  (`computePirateResearch()` in `combat.ts`), wodurch schwächer ausgebaute Mitspieler in gemischten
+  Gruppen strukturell benachteiligt werden (kämpfen effektiv über ihrem eigenen Forschungsniveau) -
+  laut Nutzerentscheidung bewusst so belassen (Ausbau-Anreiz), nur die absolute Härte wurde
+  korrigiert.
 - Elite-Bollwerk: Beute verdoppelt sich pro Sieg in Folge (`streakWins`), bei perfekter Serie über
   alle 6 Checks zusätzlicher Abschluss-Bonus (Gesamtausbeute nochmal verdoppelt). Solo nutzbar
   (0 Eingeladene = Ersteller allein). Seit 04.08.2026 zusätzlich `guaranteedContainers` in
