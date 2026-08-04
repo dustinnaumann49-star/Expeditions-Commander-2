@@ -288,6 +288,18 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   über `/game/data` als `gameData.kampfBoostMultiplier` an den Client durchgereicht statt dort ein
   zweites Mal hartcodiert zu werden - verhindert dasselbe Auseinanderlaufen bei künftigen
   Balance-Anpassungen dieser Konstante.
+  **Nachtrag (Bugfix noch am selben Tag, Nutzer-Fund):** das Popover war urspruenglich ein
+  normales, absolut positioniertes Kind-Element innerhalb der jeweiligen `.ship-card`. `.ship-card`
+  hat aber `overflow:hidden` (noetig fuer die abgerundeten Bild-Ecken UND den Hover-Zoom-Effekt des
+  Karten-Bilds) - bei weiter rechts stehenden Stats (Panzerung ist ueblicherweise der dritte/rechte
+  Wert der Zeile, mit wenig Platz bis zum rechten Kartenrand) ragte das Popover ueber den Rand
+  hinaus und wurde dadurch fast komplett unsichtbar ("verschwindet"). Behoben durch ein
+  React-Portal (`createPortal`, direkt nach `<body>` gerendert, `position:fixed` mit per
+  `getBoundingClientRect()` berechneter Position) - das Popover ist dadurch komplett unabhaengig
+  von jedem `overflow:hidden` einer Elternkarte. Zusaetzlich eine kurze Schliess-Verzoegerung
+  (150ms, `scheduleClose()`/`cancelClose()`) beim Wechsel von Trigger zu Popover, da beide jetzt
+  getrennte DOM-Teilbaeume sind und ein sofortiges `mouseleave` beim Ueberqueren der Luecke
+  dazwischen das Popover sonst faelschlich geschlossen haette.
 - `loadPlayerState()` migriert fehlende Felder in bestehenden Spielständen automatisch
   (`state.ts`) - bei jedem neuen `PlayerState`-Feld hier eine Migrationszeile ergänzen.
 

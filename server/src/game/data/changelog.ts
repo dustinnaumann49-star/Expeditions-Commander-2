@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     changes: [
       'Auf den Bau-Karten (Schiffe, Verteidigung, Imperator) zeigt der grün hervorgehobene Effektivwert von Waffen/Schild/Panzerung jetzt beim Drüberfahren mit der Maus (oder Antippen auf dem Handy) genau auf, welche einzelnen Boni ihn zusammensetzen - Forschung, Klassen-Bonus, Schiffs-/Verteidigungs-Modul und aktiver Kampf-Booster, jeweils mit dem Prozentsatz.',
       'Dabei aufgefallen und behoben: der aktive Kampf-Booster wurde bei der Anzeige des Effektivwerts noch mit dem alten Bonus (+20%) statt dem aktuellen (+35%) berechnet - reiner Anzeigefehler, im tatsächlichen Kampf war der Booster immer korrekt mit +35% wirksam.',
+      'Fix (Nutzer-Fund): das Popup verschwand teils bei der Panzerung, weil es dort über den rechten Rand der Bau-Karte hinausragte und dadurch abgeschnitten wurde - taucht jetzt unabhängig von der Kartengröße immer vollständig auf.',
     ],
   },
   {

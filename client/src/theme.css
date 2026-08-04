@@ -407,11 +407,16 @@
     text-shadow: 0 0 8px rgba(82,240,122,0.5);
   }
   /* Bonus-Aufschluesselung per Hover/Tap auf den Effektivwert (Nutzerentscheidung 04.08.2026) -
-     zeigt einzeln, was Forschung/Klasse/Modul/Kampf-Booster jeweils beitragen. z-index hoch genug
-     fuer die Darstellung ueber Bau-Karten/InfoModal-Zeilen; `white-space: nowrap` pro Zeile,
-     Popover selbst darf umbrechen falls der Bildschirm schmal ist. */
+     zeigt einzeln, was Forschung/Klasse/Modul/Kampf-Booster jeweils beitragen. Wird per React-
+     Portal direkt in <body> gerendert (StatValue.tsx) statt als normales Kind-Element - `position`/
+     `top`/`left` kommen dadurch als Inline-Style (berechnet aus der Trigger-Position), hier nur
+     noch das Aussehen. Grund: `.ship-card` hat `overflow:hidden` (noetig fuer abgerundete
+     Bild-Ecken/Hover-Zoom) und schnitt das Popover bei weiter rechts stehenden Stats (Panzerung)
+     ab, bevor es ueber ein Portal aus der Karte "ausbrach". z-index hoch genug fuer die Darstellung
+     ueber allem; `white-space: nowrap` pro Zeile, Popover selbst darf umbrechen falls der
+     Bildschirm schmal ist. */
   .stat-breakdown-popover{
-    position:absolute; left:0; top:calc(100% + 6px); z-index:50;
+    z-index:200;
     display:flex; flex-direction:column; gap:4px;
     background: var(--panel-bg, #14181f); border:1px solid var(--border, #2a3040);
     border-radius:8px; padding:8px 10px; min-width:200px;
