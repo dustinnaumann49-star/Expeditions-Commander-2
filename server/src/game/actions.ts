@@ -12,7 +12,7 @@ import { processGalaxyDeployments } from './galaxy.js';
 import { processSpyMissions, maybeGeneratePirateSpyReport } from './spyMissions.js';
 import { processEventTrips } from './galaxyEvents.js';
 import { processRaidTimer, processOverdueRaidsForOtherUsers, processOverdueRaidSpawnsForOtherUsers } from './raids.js';
-import { processAllDepartedGroupOperations, listMyGroupOperations } from './groupOps.js';
+import { processAllDepartedGroupOperations, autoStartReadyGroupOperations, listMyGroupOperations } from './groupOps.js';
 import { CLASS_KANONIER_SHIP_COST_MULTIPLIER, CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER, CLASS_KOMMANDANT_SHIP_DEFENSE_COST_MULTIPLIER } from './data/classes.js';
 import { ECONOMY_INGENIEUR_BAUZEIT_MULTIPLIER, ECONOMY_PROSPEKTOR_MINING_MULTIPLIER } from './data/economyClasses.js';
 import { isBoosterActive } from './boosterUtil.js';
@@ -441,6 +441,7 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   await processOverdueRaidSpawnsForOtherUsers(state);
   const t5 = Date.now();
   await processAllDepartedGroupOperations(state);
+  await autoStartReadyGroupOperations(state);
   const t6 = Date.now();
   const phases: [string, number][] = [
     ['runEconomyTick', t1 - t0],

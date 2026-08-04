@@ -398,8 +398,9 @@ function ExpeditionEventsView() {
         <div className="queue-box">
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Deine Flotte für diese Expedition</h3>
           <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
-            Eingeladene Spieler fliegen mit ihrer gewählten Flotte zuerst zu dir - erst wenn alle bei dir eingetroffen sind, kannst du gemeinsam
-            {sektorId === 'piraten_admiral' ? ' zum Piratenadmiral weiterstarten.' : ' zum Elite-Bollwerk weiterstarten.'}
+            Eingeladene Spieler fliegen mit ihrer gewählten Flotte zuerst zu dir - sobald alle geantwortet haben und ihre Flotten bei dir
+            eingetroffen sind, startet der gemeinsame Weiterflug{sektorId === 'piraten_admiral' ? ' zum Piratenadmiral' : ' zum Elite-Bollwerk'}{' '}
+            automatisch. Du kannst aber auch jederzeit selbst früher starten (z.B. wenn jemand nicht mehr reagiert).
           </p>
           <p style={{ fontSize: 12, color: 'var(--accent-deut)', marginBottom: 8 }}>
             Niemanden einladen? Kein Problem - lass die Liste unten leer und starte danach unter "Meine Operationen" sofort solo, ganz ohne zu

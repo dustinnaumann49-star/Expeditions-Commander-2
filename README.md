@@ -434,6 +434,22 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Flugzeit nach fester Vorbereitungszeit (60 Min.).
 - Elite-Bollwerk-Rendezvous: Teilnehmer fliegen erst zum Ersteller, Start blockiert bis alle da
   sind, dann gemeinsam weiter (Geschwindigkeit = langsamstes Schiff über alle Flotten).
+  Auto-Start (Nutzerentscheidung 04.08.2026, `autoStartReadyGroupOperations()` in `groupOps.ts`):
+  vorher musste der Ersteller IMMER manuell auf "Jetzt starten" klicken, selbst wenn alle
+  eingeladenen Flotten laengst eingetroffen waren. Startet jetzt automatisch, sobald ALLE
+  Einladungen beantwortet sind (niemand mehr `'pending'` - sonst wuerde bereits bei der ERSTEN
+  Ankunft losgeflogen, obwohl noch jemand ueberlegt) UND mindestens ein Nicht-Ersteller
+  beigetreten ist (sonst wuerde eine Operation ohne jeden Mitspieler sofort "solo" losgeschickt,
+  sobald alle abgelehnt haben - bleibt bewusst ein manueller Klick) UND alle angenommenen Flotten
+  eingetroffen sind. Kernlogik aus dem bisherigen `startGroupOperation()` in
+  `performGroupOperationStart()` extrahiert (gemeinsam genutzt von manuellem UND automatischem
+  Pfad, keine Code-Duplizierung) - der manuelle "Jetzt starten"-Button bleibt bestehen (Ersteller
+  kann so weiterhin VOR vollstaendiger Antwort aller Eingeladenen starten, z.B. wenn jemand nicht
+  mehr reagiert; automatischer Start wartet auf vollstaendig aufgeloeste Einladungsliste). Laeuft
+  global bei jedem Heartbeat/Tick, analog zu `processAllDepartedGroupOperations()` (dieselben
+  beiden Aufrufstellen: `heartbeat.ts`, `actions.ts` `tick()`). Der Ersteller bekommt bei
+  automatischem Start eine Nachricht (beim manuellen Start nicht noetig, sieht das Ergebnis
+  ohnehin sofort in der UI).
 - Galaxie-Ereignisse (Wrack/Handelskonvoi): zufällig, max. 2 gleichzeitig aktiv, einfacher
   Rundflug ohne Verlustrisiko (kostet bei Verpassen nur Flugzeit).
 - Heimatbasis verlegen: `RELOCATE_BASE_COST_DM` (300 DM), sofortige Wirkung, kein Flug.
@@ -660,3 +676,6 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Seite) auf dasselbe Eingabefeld + "Alle"-Button-Muster wie Multiplayer/Sektor umgestellt.
 - Feature: "Frischling-Bonus" - 3x Asteroiden-Mining-Ertrag automatisch fuer die ersten 7 Tage
   nach Konto-Erstellung, fuer jeden neuen Account (nicht nur beim geplanten Finale-Neustart).
+- Feature: Elite-Bollwerk/Piratenadmiral-Gruppenoperationen starten automatisch, sobald alle
+  eingeladenen Flotten eingetroffen sind - kein manueller Klick mehr noetig (Button bleibt als
+  Option, um vor vollstaendiger Antwort aller Eingeladenen zu starten).

@@ -260,12 +260,13 @@ function contributionsFromParticipants(op: GroupOperation, participantStates: Ma
     });
 }
 
-export async function startGroupOperation(state: PlayerState, opId: string): Promise<ActionResult> {
-  const op = loadOp(opId);
-  if (!op) return { ok: false, error: 'Operation nicht gefunden.' };
-  if (op.creatorId !== state.userId) return { ok: false, error: 'Nur der Ersteller kann starten.' };
-  if (op.status !== 'inviting') return { ok: false, error: 'Diese Operation wurde bereits gestartet.' };
-
+// Enthaelt die eigentliche Start-Logik, OHNE die Ersteller-/Status-Pruefung - gemeinsam genutzt
+// von startGroupOperation() (manueller Klick, siehe Pruefungen dort) und
+// autoStartReadyGroupOperations() (automatischer Start, Nutzerentscheidung 04.08.2026, siehe
+// unten). `auto` steuert nur, ob der Ersteller selbst eine Nachricht bekommt - beim manuellen
+// Start sieht er das Ergebnis ohnehin sofort in der UI, beim automatischen Start (er muss dafuer
+// nicht online sein) ist die Nachricht der einzige Hinweis.
+async function performGroupOperationStart(state: PlayerState, op: GroupOperation, auto = false): Promise<ActionResult> {
   const accepted = op.participants.filter((p) => p.status === 'accepted');
 
   // Rendezvous-Pflicht: ALLE angenommenen Flotten (ausser der des Erstellers selbst) muessen erst
@@ -323,13 +324,54 @@ export async function startGroupOperation(state: PlayerState, opId: string): Pro
   saveOp(op);
 
   accepted.forEach((p) => {
-    if (p.userId !== state.userId) {
-      const pState = participantStates.get(p.userId)!;
-      pushMessage(pState, 'farm', `Gemeinsame Expedition nach ${op.sektorId} gestartet - deine Flotte ist mit unterwegs.`);
-      savePlayerState(pState);
+    if (p.userId === state.userId) {
+      if (auto) pushMessage(state, 'farm', `Gemeinsame Expedition nach ${op.sektorId} automatisch gestartet - alle Flotten waren eingetroffen.`);
+      return;
     }
+    const pState = participantStates.get(p.userId)!;
+    pushMessage(pState, 'farm', `Gemeinsame Expedition nach ${op.sektorId} gestartet - deine Flotte ist mit unterwegs.`);
+    savePlayerState(pState);
   });
   return { ok: true };
+}
+
+export async function startGroupOperation(state: PlayerState, opId: string): Promise<ActionResult> {
+  const op = loadOp(opId);
+  if (!op) return { ok: false, error: 'Operation nicht gefunden.' };
+  if (op.creatorId !== state.userId) return { ok: false, error: 'Nur der Ersteller kann starten.' };
+  if (op.status !== 'inviting') return { ok: false, error: 'Diese Operation wurde bereits gestartet.' };
+  return performGroupOperationStart(state, op);
+}
+
+// Automatischer Start (Nutzerentscheidung 04.08.2026): bisher musste der Ersteller IMMER manuell
+// auf "Jetzt starten" klicken, selbst wenn alle eingeladenen Flotten laengst eingetroffen waren -
+// unpraktisch, wenn der Ersteller gerade nicht am Rechner/Handy sitzt. Startet automatisch, sobald
+// ALLE Einladungen beantwortet sind (niemand mehr "pending" - sonst wuerde bereits beim Eintreffen
+// der ERSTEN Flotte automatisch losgeflogen, obwohl noch jemand ueberlegt) UND mindestens ein
+// Nicht-Ersteller beigetreten ist (sonst wuerde eine Operation ohne jeden Mitspieler sofort "solo"
+// losgeschickt, sobald alle Einladungen abgelehnt wurden - das soll weiterhin ein bewusster
+// manueller Klick bleiben) UND alle angenommenen Flotten beim Ersteller eingetroffen sind. Laeuft
+// global fuer ALLE Nutzer bei jedem Heartbeat/Tick, analog zu processAllDepartedGroupOperations().
+export async function autoStartReadyGroupOperations(currentState: PlayerState): Promise<void> {
+  const ops = listGroupOperationsJson()
+    .map((j) => JSON.parse(j) as GroupOperation)
+    .filter((op) => op.kind === 'expedition' && op.status === 'inviting');
+
+  const now = Date.now();
+  for (const op of ops) {
+    try {
+      if (op.participants.some((p) => p.status === 'pending')) continue;
+      const acceptedNonCreator = op.participants.filter((p) => p.status === 'accepted' && !p.isCreator);
+      if (acceptedNonCreator.length === 0) continue;
+      const stillTraveling = acceptedNonCreator.some((p) => p.rendezvousArrivalTime === undefined || p.rendezvousArrivalTime > now);
+      if (stillTraveling) continue;
+      const creatorState = op.creatorId === currentState.userId ? currentState : loadPlayerState(op.creatorId);
+      const result = await performGroupOperationStart(creatorState, op, true);
+      if (result.ok && op.creatorId !== currentState.userId) savePlayerState(creatorState);
+    } catch (err) {
+      console.error(`autoStartReadyGroupOperations: Fehler bei Operation ${op.id}:`, err);
+    }
+  }
 }
 
 // ========== EXPEDITIONS-FORTSCHRITT ==========

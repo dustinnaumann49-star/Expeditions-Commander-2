@@ -3,7 +3,7 @@ import { loadPlayerState, savePlayerState } from './state.js';
 import { tick } from './actions.js';
 import { processMissions } from './missions.js';
 import { processRaidTimer } from './raids.js';
-import { processAllDepartedGroupOperations } from './groupOps.js';
+import { processAllDepartedGroupOperations, autoStartReadyGroupOperations } from './groupOps.js';
 import { maybeSpawnGalaxyEvent } from './galaxyEvents.js';
 import { processPirateAttacks, runAllPirateBaseOffensiveTurns } from './pirateBaseState.js';
 import { runStationHeartbeatTick } from './stations.js';
@@ -136,6 +136,7 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
     try {
       const anchorState = loadPlayerState(users[0].id);
       await processAllDepartedGroupOperations(anchorState);
+      await autoStartReadyGroupOperations(anchorState);
       savePlayerState(anchorState);
     } catch (err) {
       errors++;

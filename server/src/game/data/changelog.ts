@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Feature: Elite-Bollwerk/Piratenadmiral starten automatisch',
+    changes: [
+      'Gemeinsame Expeditionen (Elite-Bollwerk, Piratenadmiral) mussten bisher immer manuell vom Ersteller per "Jetzt starten" losgeschickt werden - selbst wenn alle eingeladenen Flotten längst eingetroffen waren. Sobald alle Eingeladenen geantwortet haben und ihre Flotten bei dir angekommen sind, startet der gemeinsame Weiterflug jetzt automatisch, auch wenn du gerade nicht online bist.',
+      'Der "Jetzt starten"-Button bleibt weiterhin verfügbar, falls du schon vorher loslegen willst (z.B. wenn jemand nicht mehr antwortet).',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Feature: Frischling-Bonus für neue Accounts',
     changes: [
       'Jeder neue Account bekommt in den ersten 7 Tagen nach der Registrierung automatisch das 3-fache an Ressourcen beim Asteroiden-Mining - kein Kauf, keine Aktivierung nötig, gilt einfach für alle Mining-Schiffe. Solange der Bonus aktiv ist, zeigt ein Hinweis auf der Sektor-Seite an, wie viel Zeit noch bleibt.',
