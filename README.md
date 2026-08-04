@@ -486,6 +486,16 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Einsetzen, inkl. aller Client-Kopien).
 - Ein einziges, festes Hintergrundbild für die gesamte App - ein Per-Route-System wurde nach
   wiederholten Ladeproblemen zurückgebaut, kein neuer Anlauf ohne Absprache.
+- Mengen-Eingabefelder (`.qty-input`, Bau-Karten UND Flottenauswahl) erlauben einen leeren
+  Zwischenzustand waehrend des Tippens (`value === ''` statt sofort auf einen Mindest-/Default-
+  Wert zu klemmen) - sonst laesst sich ein vorbelegter Wert auf Mobilgeraeten nicht per Backspace
+  loeschen, ohne ihn erst zu markieren (Nutzerentscheidung 04.08.2026). Bau-Karten
+  (`ShipBuildCard.tsx`/`DefenseBuildCard.tsx`) klemmen einen leeren/ungueltigen Wert erst
+  `onBlur()` auf mindestens 1. Die Flottenauswahl (`FleetPicker` in `Multiplayer.tsx`,
+  Sende-Formular in `Sektor.tsx`) nutzt seit demselben Datum ein einzelnes Eingabefeld + "Alle"-
+  Button statt einer Reihe von `-1k/-100/-10/+10/+100/+1k`-Buttons (nahm bei vielen Schiffstypen zu
+  viel Platz weg) - 0 wird dabei als leeres Feld dargestellt (`value={qty === 0 ? '' : qty}`),
+  wodurch sich auch ein bereits gesetzter Wert einfach ueberschreiben laesst.
 
 ### Bilder
 
@@ -546,3 +556,8 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   skalierendes Ressourcenpaket für Solo-Piraten-Sektoren und garantierte Container (4x Silber/3x
   Gold/2x Elite pro Check) fürs Elite-Bollwerk ergänzt, `economyBotTurn.ts` auf vorausschauendes
   Energie-Management und flexible Bau-Fallbacks umgestellt.
+- Fix: Mengen-Eingabefelder (Bau-Karten UND Flottenauswahl) lassen sich jetzt komplett leeren statt
+  bei jedem Tastendruck auf einen Mindestwert zurückzuschnappen - wichtig für Mobil-Eingabe.
+  Flottenauswahl (Multiplayer/Sektor-Entsenden) zusätzlich von einer Reihe `-1k/.../+1k`-Buttons
+  auf ein einzelnes Eingabefeld + "Alle"-Button umgestellt (Platz-/Übersichts-Fix bei vielen
+  Schiffstypen).

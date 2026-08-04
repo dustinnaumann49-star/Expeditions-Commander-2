@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Fix: Mengen-Eingabefelder & übersichtlichere Flottenauswahl',
+    changes: [
+      'Mengenfelder beim Bauen von Schiffen/Verteidigung ließen sich nicht mehr leeren, sobald einmal eine Zahl drinstand - man musste sie erst markieren, bevor man eine neue Menge eintippen konnte (besonders lästig auf dem Handy). Das Feld kann jetzt beim Eintippen kurz leer sein, ohne sofort auf 1 zurückzuspringen.',
+      'Die Flottenauswahl beim Entsenden (Sektor-Missionen, Gruppen-Expeditionen) hatte pro Schiffstyp eine ganze Reihe an Buttons (-1k/-100/-10/+10/+100/+1k/Alle) - bei vielen Schiffstypen wurde das schnell unübersichtlich und nahm viel Platz weg. Ersetzt durch ein einzelnes Eingabefeld pro Schiffstyp plus "Alle"-Button - Menge direkt eintippen statt sich hochzuklicken.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Großes Kampf- und Balance-Update',
     changes: [
       'Schild-Regeneration: statt einer globalen Pauschale hat jetzt jede Schiffsklasse einen eigenen Basiswert (Jäger 5%, Kreuzer-Klasse 15%, Elite-Klasse 35%, Spezialschiffe/Imperator 65%) - mit voller Forschung kommen Jäger auf 20%, Kreuzer-Klasse auf 30%, Elite-Klasse auf 50% und Spezialschiffe/Imperator auf 80% pro Runde.',

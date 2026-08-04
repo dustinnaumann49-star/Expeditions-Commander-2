@@ -118,14 +118,28 @@ function SektorCard({
                       {shipName(gameData, id)} (verfügbar: {avail}
                       {cap ? `, max ${cap}` : ''})
                     </span>
-                    <span className="qty-row" style={{ flexWrap: 'wrap', gap: '2px 4px', justifyContent: 'space-between' }}>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 1000) }))}>-1k</button>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 100) }))}>-100</button>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>-10</button>
-                      <span style={{ padding: '0 4px', fontSize: 11 }}>{qty}</span>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 10) }))}>+10</button>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 100) }))}>+100</button>
-                      <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(maxSendable, (p[id] || 0) + 1000) }))}>+1k</button>
+                    {/* Direktes Eingabefeld statt +/- Buttons-Reihe (Nutzerentscheidung, Platz-/
+                        Übersichts-Fix 04.08.2026) - siehe FleetPicker in Multiplayer.tsx fuer dieselbe
+                        Umstellung samt Begruendung. */}
+                    <span className="qty-row" style={{ gap: 6, alignItems: 'center' }}>
+                      <input
+                        className="qty-input"
+                        type="number"
+                        min={0}
+                        max={maxSendable}
+                        placeholder="0"
+                        value={qty === 0 ? '' : qty}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            setSelection((p) => ({ ...p, [id]: 0 }));
+                            return;
+                          }
+                          const n = parseInt(raw, 10);
+                          if (Number.isNaN(n)) return;
+                          setSelection((p) => ({ ...p, [id]: Math.max(0, Math.min(maxSendable, n)) }));
+                        }}
+                      />
                       <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: maxSendable }))}>Alle</button>
                     </span>
                   </div>

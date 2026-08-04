@@ -52,14 +52,29 @@ function FleetPicker({
         <span>
           {shipName(gameData, id)} (verfügbar: {avail})
         </span>
-        <span className="qty-row" style={{ flexWrap: 'wrap', gap: '2px 4px', justifyContent: 'space-between' }}>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 1000) }))}>-1k</button>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 100) }))}>-100</button>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.max(0, (p[id] || 0) - 10) }))}>-10</button>
-          <span style={{ padding: '0 4px', fontSize: 11 }}>{qty}</span>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 10) }))}>+10</button>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 100) }))}>+100</button>
-          <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: Math.min(avail, (p[id] || 0) + 1000) }))}>+1k</button>
+        {/* Direktes Eingabefeld statt +/- Buttons-Reihe (Nutzerentscheidung, Platz-/Übersichts-Fix
+            04.08.2026) - bei 0 leer statt "0" angezeigt, damit sich ein bereits gesetzter Wert per
+            Backspace komplett leeren laesst, ohne ihn erst markieren zu muessen (analog zum
+            Mengenfeld in ShipBuildCard.tsx/DefenseBuildCard.tsx). */}
+        <span className="qty-row" style={{ gap: 6, alignItems: 'center' }}>
+          <input
+            className="qty-input"
+            type="number"
+            min={0}
+            max={avail}
+            placeholder="0"
+            value={qty === 0 ? '' : qty}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === '') {
+                setSelection((p) => ({ ...p, [id]: 0 }));
+                return;
+              }
+              const n = parseInt(raw, 10);
+              if (Number.isNaN(n)) return;
+              setSelection((p) => ({ ...p, [id]: Math.max(0, Math.min(avail, n)) }));
+            }}
+          />
           <button className="qty-btn" onClick={() => setSelection((p) => ({ ...p, [id]: avail }))}>Alle</button>
         </span>
       </div>
