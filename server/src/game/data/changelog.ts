@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Feature: Frischling-Bonus für neue Accounts',
+    changes: [
+      'Jeder neue Account bekommt in den ersten 7 Tagen nach der Registrierung automatisch das 3-fache an Ressourcen beim Asteroiden-Mining - kein Kauf, keine Aktivierung nötig, gilt einfach für alle Mining-Schiffe. Solange der Bonus aktiv ist, zeigt ein Hinweis auf der Sektor-Seite an, wie viel Zeit noch bleibt.',
+      'Gedacht als Starthilfe, damit man den wirtschaftlichen Rückstand gegenüber länger aktiven Mitspielern schneller aufholen kann - gilt für jeden neuen Account, nicht nur einmalig bei einem eventuellen Server-Neustart.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Fix: Flottenauswahl auf Galaxie-Seite vereinheitlicht',
     changes: [
       'Die Flottenauswahl beim Angriff auf Piratenbasen, bei Spionagesonden, beim Bergen von Galaxie-Ereignissen und beim Flotte-Halten bei Mitspielern nutzte noch die alte Button-Reihe statt des neuen Eingabefelds + "Alle"-Button, das schon bei Missionen und Gruppen-Expeditionen eingeführt wurde. Jetzt einheitlich überall dasselbe Eingabefeld.',

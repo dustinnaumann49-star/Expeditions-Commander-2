@@ -470,6 +470,7 @@ export type EconomyClass = 'schmuggler' | 'ingenieur' | 'prospektor';
 
 export interface PlayerState {
   userId: number;
+  createdAt: number;
   playerClass: PlayerClass | null;
   economyClass: EconomyClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };
@@ -606,6 +607,8 @@ export interface GameData {
   boosters: BoosterDefinition[];
   boosterDurationOptions: BoosterDurationOption[];
   kampfBoostMultiplier: number;
+  noviceBonusMultiplier: number;
+  noviceBonusWindowMs: number;
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
   containerJackpotChance: number;

@@ -16,6 +16,8 @@ import {
   COMBAT_SHIP_IDS,
   getEscalationMultiplier,
   ABBAU_BOOST_MULTIPLIER,
+  NOVICE_BONUS_MULTIPLIER,
+  NOVICE_BONUS_WINDOW_MS,
 } from './data/economy.js';
 import {
   getEffectiveStats,
@@ -42,6 +44,15 @@ import { BATTLE_MODIFIER_LABELS } from './data/combatConstants.js';
 import { ECONOMY_PROSPEKTOR_MINING_MULTIPLIER, ECONOMY_PROSPEKTOR_DM_RATE_MULTIPLIER } from './data/economyClasses.js';
 import type { CombatUnitResult, ContainerTier, FarmDetail, Mission, PlayerState } from './types.js';
 
+// "Frischling-Bonus" (Nutzerentscheidung 04.08.2026, siehe NOVICE_BONUS_MULTIPLIER/-WINDOW_MS in
+// data/economy.ts): true fuer die ersten NOVICE_BONUS_WINDOW_MS (7 Tage) nach Konto-Erstellung.
+// `state.createdAt` ist bei sehr alten, vor dieser Aenderung migrierten Accounts ggf. 0 (kein
+// bekanntes Erstellungsdatum) - `|| 0` faengt das ab, `0` liegt automatisch ausserhalb des
+// Fensters, kein Bonus.
+export function isNoviceAccount(state: PlayerState): boolean {
+  return Date.now() - (state.createdAt || 0) < NOVICE_BONUS_WINDOW_MS;
+}
+
 export function miningMultiplier(state: PlayerState): number {
   // Basis-Mining-Forschung (RESEARCH[4] = "mining", 0.10 Effekt/Stufe) wirkt weiterhin auf
   // BEIDES (Schiffe UND Minen-Gebaeude, siehe Punkt 58/actions.ts miningBuildingMultiplier) -
@@ -54,7 +65,8 @@ export function miningMultiplier(state: PlayerState): number {
   // Abbau-Booster (Nutzer-Fund 28.07.2026: war bisher nirgends verdrahtet, siehe Kommentar bei
   // ABBAU_BOOST_MULTIPLIER in economy.ts) - wirkt hier UND in actions.ts miningBuildingMultiplier().
   const booster = isBoosterActive(state, 'abbau') ? ABBAU_BOOST_MULTIPLIER : 1;
-  return base * specific * economy * booster;
+  const novice = isNoviceAccount(state) ? NOVICE_BONUS_MULTIPLIER : 1;
+  return base * specific * economy * booster * novice;
 }
 
 // ========== FLOTTE ENTSENDEN ==========

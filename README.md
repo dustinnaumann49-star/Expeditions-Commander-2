@@ -389,6 +389,21 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   normalen Bauplätzen. Verteidigungs-Modul-Stufen leben in derselben Map wie Schiffs-Module.
 - Zeit-Gutscheine sind pro Bereich getrennt (Schiffe/Verteidigung/Gebäude/Forschung) - Schiffe/
   Verteidigung wirken auf ALLE belegten Lanes, Gebäude/Forschung auf ihren einen bzw. alle Slots.
+- "Frischling-Bonus" (Nutzerentscheidung 04.08.2026, `NOVICE_BONUS_MULTIPLIER`/`-WINDOW_MS` in
+  `data/economy.ts`): 3x Asteroiden-Mining-Ertrag in den ersten 7 Tagen nach Konto-Erstellung,
+  automatisch fuer JEDEN neuen Account (nicht an einen manuell zu setzenden Stichtag gekoppelt -
+  Nutzerentscheidung, damit auch spaeter neu hinzukommende Mitspieler profitieren, nicht nur beim
+  geplanten Finale-Neustart). `PlayerState.createdAt` wird bei `defaultPlayerState()` auf
+  `Date.now()` gesetzt; Bestandsspieler von VOR dieser Aenderung bekommen es beim naechsten Laden
+  aus `users.created_at` nachgetragen (`loadPlayerState()` in `state.ts`), NICHT auf `Date.now()`,
+  sonst wuerden alte Accounts faelschlich wieder als "neu" gelten. `isNoviceAccount()`/
+  `miningMultiplier()` in `missions.ts` pruefen rein per Timestamp-Vergleich (`Date.now() -
+  createdAt < NOVICE_BONUS_WINDOW_MS`), kein Scheduler/Cron noetig - analog zum bestehenden
+  Booster-Ablauf-Muster (`isBoosterActive()` in `boosterUtil.ts`). Sichtbar als Banner auf der
+  Sektor-Seite, solange aktiv (`gameData.noviceBonusMultiplier`/`-WindowMs`, keine hartcodierten
+  Werte im Client). Wirkt NUR auf Mining-Schiffe (`accrueFarming()`/`miningMultiplier()` in
+  missions.ts), NICHT auf Minen-Gebaeude (`miningBuildingMultiplier()` in actions.ts) - bewusste
+  Entscheidung, da der Plan explizit "Asteroidenfeld"-Ertrag meinte.
 - Imperator: Waffen 500.000 / Schild 400.000 / Panzerung 3.000.000 (`ships.ts`) - bewusst
   panzerungslastig, zäher Brocken statt Ein-Schlag-Gewinner. Baulimit 2, eigene Spezialteile-
   Kosten. Zählt zur Heimatverteidigung bei Raids (`HOME_DEFENSE_SHIP_IDS`).
@@ -643,3 +658,5 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   scrollen jetzt bei Bedarf seitlich statt die Spalten zu stauchen.
 - Fix: Flottenauswahl beim Piratenbasis-Angriff/Spionage/Galaxie-Ereignis/Flotte-Halten (Galaxie-
   Seite) auf dasselbe Eingabefeld + "Alle"-Button-Muster wie Multiplayer/Sektor umgestellt.
+- Feature: "Frischling-Bonus" - 3x Asteroiden-Mining-Ertrag automatisch fuer die ersten 7 Tage
+  nach Konto-Erstellung, fuer jeden neuen Account (nicht nur beim geplanten Finale-Neustart).

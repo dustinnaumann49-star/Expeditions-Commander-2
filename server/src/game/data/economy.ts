@@ -21,6 +21,14 @@ export const KAMPF_BOOST_MULTIPLIER = 1.35; // Waffen/Schild/Panzerung +35%
 // actions.ts, miningMultiplier() in missions.ts), daher direkt mit dem neuen, staerkeren Wert.
 export const ABBAU_BOOST_MULTIPLIER = 1.7; // Mining-Rate +70%
 
+// "Frischling-Bonus" (Nutzerentscheidung 04.08.2026): 3x Asteroiden-Mining-Ertrag in den ersten 7
+// Tagen nach Konto-Erstellung - automatisch fuer JEDEN neuen Account (nicht nur beim naechsten
+// Server-Neustart/Wipe), damit neue Mitspieler (z.B. beim geplanten Finale-Reset, aber auch
+// generell) den Wirtschafts-Rueckstand gegenueber laenger aktiven Accounts schneller aufholen
+// koennen. Siehe miningMultiplier() in missions.ts, PlayerState.createdAt in types.ts/state.ts.
+export const NOVICE_BONUS_MULTIPLIER = 3;
+export const NOVICE_BONUS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const BOOSTERS: BoosterDefinition[] =
 [
   { id:"bautempo", name:"Bautempo-Boost", desc:"Schiffsbauzeit -65% für 24h", img:"booster/bautempo.png", cost:35, durationHours:24 },

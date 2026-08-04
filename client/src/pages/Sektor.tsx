@@ -563,6 +563,23 @@ export function SektorPage() {
         </div>
       )}
 
+      {(() => {
+        // "Frischling-Bonus" (Nutzerentscheidung 04.08.2026): 3x Asteroiden-Mining-Ertrag in den
+        // ersten 7 Tagen nach Konto-Erstellung - siehe isNoviceAccount()/miningMultiplier() in
+        // missions.ts. Restzeit hier nur zur Anzeige neu berechnet, die tatsaechliche Wirkung
+        // laeuft serverseitig rein ueber state.createdAt.
+        const remaining = gameData.noviceBonusWindowMs - (now - state.createdAt);
+        if (remaining <= 0) return null;
+        return (
+          <div className="queue-box" style={{ borderColor: 'var(--accent-deut)', marginBottom: 16 }}>
+            <strong style={{ color: 'var(--accent-deut)' }}>
+              ⭐ Frischling-Bonus aktiv: {gameData.noviceBonusMultiplier}x Ertrag beim Asteroiden-Mining
+            </strong>
+            <p style={{ fontSize: 13, marginTop: 4 }}>Noch {formatTime(remaining)} - gilt automatisch für alle Mining-Schiffe, kein Kauf nötig.</p>
+          </div>
+        );
+      })()}
+
       {state.presets.length > 0 && (
         <div className="queue-box" style={{ marginBottom: 16 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Gespeicherte Flotten-Vorlagen</h3>

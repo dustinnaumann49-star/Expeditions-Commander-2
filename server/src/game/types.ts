@@ -731,6 +731,11 @@ export type EconomyClass = 'schmuggler' | 'ingenieur' | 'prospektor';
 
 export interface PlayerState {
   userId: number;
+  // Unix-ms-Timestamp der Konto-Erstellung (Nutzerentscheidung 04.08.2026, "Frischling-Bonus" -
+  // siehe NOVICE_BONUS_MULTIPLIER/-WINDOW_MS in data/economy.ts, miningMultiplier() in
+  // missions.ts). Beim Laden aus users.created_at uebernommen (siehe loadPlayerState() in
+  // state.ts) statt bei jedem Tick per DB-Abfrage nachzuschauen.
+  createdAt: number;
   playerClass: PlayerClass | null;
   economyClass: EconomyClass | null;
   resources: { metall: number; kristall: number; deuterium: number; dm: number };

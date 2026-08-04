@@ -64,6 +64,7 @@ export function defaultPlayerState(userId: number): PlayerState {
 
   return {
     userId,
+    createdAt: Date.now(),
     playerClass: null,
     economyClass: null,
     // Bewusst grosszuegig bemessen: reicht fuer eine komplette Mining-Flotte (700) + Begleitschutz (1500)
@@ -211,6 +212,15 @@ export function loadPlayerState(userId: number): PlayerState {
     parsed.nextRaidCheck = nextWeeklyCheckpoint(Date.now(), raidScheduleForUser(userId));
   }
   if (!parsed.buildingQueue) parsed.buildingQueue = [];
+  // "Frischling-Bonus" (Nutzerentscheidung 04.08.2026, siehe NOVICE_BONUS_MULTIPLIER in
+  // data/economy.ts, miningMultiplier() in missions.ts) - fuer Bestandsspieler von VOR dieser
+  // Aenderung aus der echten Konto-Erstellung (users.created_at) nachgetragen, NICHT auf
+  // Date.now() gesetzt, sonst wuerden alte Accounts beim naechsten Login faelschlich wieder als
+  // "neu" gelten und den Bonus nochmal bekommen.
+  if (!parsed.createdAt) {
+    const user = getUserById(parsed.userId);
+    parsed.createdAt = user ? user.created_at : 0;
+  }
   // Galaxie-Position nachruesten (existierte vor Einfuehrung dieses Systems nicht) - betrifft
   // ALLE bereits registrierten Spieler, bekommen beim naechsten Laden eine zufaellige freie
   // Position zugewiesen (siehe README).
