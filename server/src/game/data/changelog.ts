@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '04.08.2026',
+    title: 'Feature: Booster direkt für 7 oder 30 Tage kaufen',
+    changes: [
+      'Im Shop lässt sich bei jedem Booster (Bautempo, Forschungstempo, Kampf, Abbau) jetzt per Dropdown die Laufzeit wählen - 24 Stunden wie bisher, oder direkt 7 bzw. 30 Tage am Stück. Der Preis passt sich automatisch an und ist gegenüber täglichem Einzelkauf günstiger (7 Tage kosten nur das 6-fache statt 7-fache, 30 Tage nur das 20-fache statt 30-fache des 24h-Preises).',
+      'Wird ein Booster nachgekauft, während der vorherige noch läuft, hängt sich die neue Laufzeit wie gewohnt an die verbleibende Restzeit an.',
+    ],
+  },
+  {
+    date: '04.08.2026',
     title: 'Fix: Mengen-Eingabefelder & übersichtlichere Flottenauswahl',
     changes: [
       'Mengenfelder beim Bauen von Schiffen/Verteidigung ließen sich nicht mehr leeren, sobald einmal eine Zahl drinstand - man musste sie erst markieren, bevor man eine neue Menge eintippen konnte (besonders lästig auf dem Handy). Das Feld kann jetzt beim Eintippen kurz leer sein, ohne sofort auf 1 zurückzuspringen.',

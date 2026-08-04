@@ -1,5 +1,5 @@
 import { findShip, findDefense } from './combat.js';
-import { TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, BOOSTERS, SHOP_VOUCHERS } from './data/economy.js';
+import { TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, BOOSTERS, BOOSTER_DURATION_OPTIONS, SHOP_VOUCHERS } from './data/economy.js';
 import {
   ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER,
   ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER,
@@ -71,17 +71,28 @@ export function scrapDefense(state: PlayerState, defId: string, qty: number): Ac
 
 // ========== SHOP: BOOSTER + ZEIT-GUTSCHEINE ==========
 
-export function buyBooster(state: PlayerState, boosterId: string): ActionResult {
+// `durationHours` (Nutzerentscheidung 04.08.2026): optionaler Parameter, ueber den 7-/30-Tage-
+// Kaeufe ausgewaehlt werden - MUSS exakt einem Eintrag aus BOOSTER_DURATION_OPTIONS entsprechen
+// (serverseitig geprueft, der Client kann sich keinen eigenen Preis/keine eigene Laufzeit
+// ausdenken). Fehlt der Parameter, greift wie bisher der 24h-Basispreis. Wirkt auf DIESELBE
+// Booster-ID/denselben Ablauf-Zeitstempel wie ein normaler 24h-Kauf (siehe Stacking-Logik unten) -
+// kein neuer Effekt-Code noetig, isBoosterActive() etc. bleiben unveraendert.
+export function buyBooster(state: PlayerState, boosterId: string, durationHours?: number): ActionResult {
   const booster = BOOSTERS.find((b) => b.id === boosterId);
   if (!booster) return { ok: false, error: 'Unbekannter Booster.' };
+  const durationOption = durationHours === undefined
+    ? BOOSTER_DURATION_OPTIONS[0]
+    : BOOSTER_DURATION_OPTIONS.find((o) => o.hours === durationHours);
+  if (!durationOption) return { ok: false, error: 'Ungültige Booster-Laufzeit.' };
   // Wirtschafts-Klasse "Schmuggler" (Nutzerentscheidung Juli 2026) - guenstigere Booster.
-  const cost = Math.round(booster.cost * (state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1));
+  const economyMult = state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1;
+  const cost = Math.round(booster.cost * durationOption.costMultiplier * economyMult);
   if (state.resources.dm < cost) return { ok: false, error: 'Nicht genug Dunkle Materie.' };
   state.resources.dm -= cost;
   const now = Date.now();
   const currentExpiry = state.activeBoosters[boosterId] || now;
   const base = currentExpiry > now ? currentExpiry : now;
-  state.activeBoosters[boosterId] = base + booster.durationHours * 3600 * 1000;
+  state.activeBoosters[boosterId] = base + durationOption.hours * 3600 * 1000;
   return { ok: true };
 }
 

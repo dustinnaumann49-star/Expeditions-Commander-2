@@ -542,6 +542,12 @@ export interface BoosterDefinition {
   durationHours: number;
 }
 
+export interface BoosterDurationOption {
+  hours: number;
+  label: string;
+  costMultiplier: number;
+}
+
 export interface VoucherDefinition {
   id: string;
   label: string;
@@ -594,6 +600,7 @@ export interface GameData {
   sektorConfig: Record<string, SektorConfig>;
   piratenMultiplierRoll: Record<string, (number | [number, number])[]>;
   boosters: BoosterDefinition[];
+  boosterDurationOptions: BoosterDurationOption[];
   vouchers: VoucherDefinition[];
   containerTypes: Record<string, ContainerTypeDef>;
   containerJackpotChance: number;

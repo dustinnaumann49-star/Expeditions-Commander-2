@@ -88,8 +88,8 @@ export const api = {
     request<PlayerState>('/game/scrap/ship', { method: 'POST', body: JSON.stringify({ shipId, qty }) }),
   scrapDefense: (defId: string, qty: number) =>
     request<PlayerState>('/game/scrap/defense', { method: 'POST', body: JSON.stringify({ defId, qty }) }),
-  buyBooster: (boosterId: string) =>
-    request<PlayerState>('/game/shop/booster', { method: 'POST', body: JSON.stringify({ boosterId }) }),
+  buyBooster: (boosterId: string, durationHours?: number) =>
+    request<PlayerState>('/game/shop/booster', { method: 'POST', body: JSON.stringify({ boosterId, durationHours }) }),
   buyVoucher: (voucherId: string) =>
     request<PlayerState>('/game/shop/voucher', { method: 'POST', body: JSON.stringify({ voucherId }) }),
   setClass: (classId: string) =>

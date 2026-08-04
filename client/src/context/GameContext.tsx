@@ -26,7 +26,7 @@ interface GameContextValue {
   executeTrade: (amount: number, from: string, to: string) => Promise<void>;
   scrapShip: (shipId: string, qty: number) => Promise<void>;
   scrapDefense: (defId: string, qty: number) => Promise<void>;
-  buyBooster: (boosterId: string) => Promise<void>;
+  buyBooster: (boosterId: string, durationHours?: number) => Promise<void>;
   buyVoucher: (voucherId: string) => Promise<void>;
   setPlayerClass: (classId: string) => Promise<void>;
   setEconomyClass: (classId: string) => Promise<void>;
@@ -272,7 +272,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     executeTrade: (amount, from, to) => run(() => api.executeTrade(amount, from, to)),
     scrapShip: (shipId, qty) => run(() => api.scrapShip(shipId, qty)),
     scrapDefense: (defId, qty) => run(() => api.scrapDefense(defId, qty)),
-    buyBooster: (boosterId) => run(() => api.buyBooster(boosterId)),
+    buyBooster: (boosterId, durationHours) => run(() => api.buyBooster(boosterId, durationHours)),
     buyVoucher: (voucherId) => run(() => api.buyVoucher(voucherId)),
     setPlayerClass: (classId) => run(() => api.setClass(classId)),
     setEconomyClass: (classId) => run(() => api.setEconomyClass(classId)),

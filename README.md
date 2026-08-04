@@ -365,6 +365,16 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - Imperator: Waffen 500.000 / Schild 400.000 / Panzerung 3.000.000 (`ships.ts`) - bewusst
   panzerungslastig, zäher Brocken statt Ein-Schlag-Gewinner. Baulimit 2, eigene Spezialteile-
   Kosten. Zählt zur Heimatverteidigung bei Raids (`HOME_DEFENSE_SHIP_IDS`).
+- Shop-Booster (Bautempo/Forschungstempo/Kampf/Abbau, `data/economy.ts`) haben pro
+  `BoosterDefinition` weiterhin einen 24h-Basispreis/-Laufzeit, kaufbar aber seit 04.08.2026 auch
+  direkt für 7 oder 30 Tage am Stück (`BOOSTER_DURATION_OPTIONS`, Dropdown auf der Shop-Seite) -
+  mit Mengenrabatt gegenüber taeglichem Einzelkauf (Multiplikator 6x/20x statt linear 7x/30x).
+  `buyBooster(state, boosterId, durationHours?)` validiert `durationHours` serverseitig gegen
+  `BOOSTER_DURATION_OPTIONS` (Client kann sich keinen eigenen Preis ausdenken) und wirkt weiterhin
+  auf DIESELBE Booster-ID/denselben `state.activeBoosters`-Ablauf-Zeitstempel wie ein 24h-Kauf -
+  kein neuer Effekt-Code in `isBoosterActive()`/den Wirkungsstellen nötig, nur die Kaufseite wurde
+  erweitert. Bestehendes Stacking-Verhalten (neue Laufzeit wird an die Restzeit angehängt statt sie
+  zu überschreiben) gilt unverändert auch für 7d/30d-Käufe.
 
 ### Galaxie & Multiplayer
 
@@ -561,3 +571,5 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   Flottenauswahl (Multiplayer/Sektor-Entsenden) zusätzlich von einer Reihe `-1k/.../+1k`-Buttons
   auf ein einzelnes Eingabefeld + "Alle"-Button umgestellt (Platz-/Übersichts-Fix bei vielen
   Schiffstypen).
+- Feature: Shop-Booster direkt für 7 oder 30 Tage kaufbar (Dropdown pro Booster-Karte, Preis passt
+  sich mit Mengenrabatt an), statt nur einzeln für 24h - siehe `BOOSTER_DURATION_OPTIONS`.

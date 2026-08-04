@@ -41,8 +41,11 @@ export function getEffectiveScrapRefundRate(gameData: GameData, state: PlayerSta
   return state.economyClass === 'schmuggler' ? gameData.scrapRefundRate * ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER : gameData.scrapRefundRate;
 }
 
-export function getEffectiveBoosterCost(baseCost: number, state: PlayerState): number {
-  return Math.round(baseCost * (state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1));
+// `durationCostMultiplier` (Nutzerentscheidung 04.08.2026, siehe BOOSTER_DURATION_OPTIONS in
+// server/src/game/data/economy.ts): Standard 1 = 24h-Basispreis, 6/20 fuer 7/30 Tage. Nur fuer die
+// Anzeige - die tatsaechliche Preisberechnung/Pruefung passiert serverseitig in buyBooster().
+export function getEffectiveBoosterCost(baseCost: number, state: PlayerState, durationCostMultiplier = 1): number {
+  return Math.round(baseCost * durationCostMultiplier * (state.economyClass === 'schmuggler' ? ECONOMY_SCHMUGGLER_BOOSTER_COST_MULTIPLIER : 1));
 }
 
 export function isBoosterActive(state: PlayerState, boosterId: string): boolean {

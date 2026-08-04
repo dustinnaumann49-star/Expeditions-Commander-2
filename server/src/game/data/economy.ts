@@ -29,6 +29,26 @@ export const BOOSTERS: BoosterDefinition[] =
   { id:"abbau", name:"Abbau-Boost", desc:"Mining-Rate +70% für 24h", img:"booster/abbau.png", cost:30, durationHours:24 }
 ];
 
+// Kauf-Laufzeiten fuer Booster (Nutzerentscheidung 04.08.2026): statt nur der festen 24h-Laufzeit
+// (BoosterDefinition.durationHours/-cost bleiben der 24h-Basispreis) kann jetzt direkt 7 oder 30
+// Tage am Stueck gekauft werden - spart gegenueber taeglichem Nachkauf Klicks UND bekommt einen
+// Mengenrabatt (rechnerisch waeren 7 bzw. 30 Einzelkaeufe 7x/30x so teuer). `costMultiplier` wird
+// serverseitig in buyBooster() auf booster.cost angewendet - der Client zeigt nur den bereits
+// vorgerechneten Preis, entscheidet aber NICHT selbst darueber (Manipulationsschutz). Wirkt genau
+// wie ein 24h-Kauf, nur mit laengerer Laufzeit - state.activeBoosters speichert weiterhin nur EINEN
+// Ablauf-Zeitstempel pro Booster-ID, unabhaengig von der gewaehlten Kauf-Laufzeit (siehe Stacking-
+// Verhalten in buyBooster()).
+export interface BoosterDurationOption {
+  hours: number;
+  label: string;
+  costMultiplier: number;
+}
+export const BOOSTER_DURATION_OPTIONS: BoosterDurationOption[] = [
+  { hours: 24, label: '24 Stunden', costMultiplier: 1 },
+  { hours: 24 * 7, label: '7 Tage', costMultiplier: 6 },
+  { hours: 24 * 30, label: '30 Tage', costMultiplier: 20 },
+];
+
 export interface VoucherDefinition {
   id: string;
   label: string;
