@@ -62,14 +62,20 @@ export function ShipBuildCard({
   onOpenLore: () => void;
   onOpenInfo: () => void;
 }) {
-  const [qty, setQty] = useState(10);
+  // Erlaubt einen leeren Zwischenzustand beim Tippen (Nutzerentscheidung, Mobil-Fix 04.08.2026):
+  // vorher schnappte das Feld bei jedem Tastendruck sofort auf mindestens 1 zurueck, wodurch sich
+  // der Vorbelegungswert (z.B. "10") nie einfach loeschen liess, ohne ihn erst zu markieren -
+  // Nutzer mussten den kompletten Wert markieren statt einfach loszutippen. onBlur() unten stellt
+  // sicher, dass beim Verlassen des Feldes trotzdem nie ein leerer/ungueltiger Wert stehen bleibt.
+  const [qty, setQty] = useState<number | ''>(10);
   const { parties } = useGame();
   const bauzeitMult = getBauzeitMultiplier(gameData, state);
   const costMult = getShipCostMultiplier(state);
 
   const bestand = countShipEverywhere(state, ship.id, parties);
   const frei = ship.maxCount ? ship.maxCount - bestand : Infinity;
-  const capQty = ship.unique ? 1 : ship.maxCount ? Math.max(0, Math.min(qty, frei)) : qty;
+  const numericQty = qty === '' ? 0 : qty;
+  const capQty = ship.unique ? 1 : ship.maxCount ? Math.max(0, Math.min(numericQty, frei)) : numericQty;
   const alreadyExists = ship.unique && bestand >= 1;
   const totalCost = ship.cost
     ? {
@@ -132,7 +138,16 @@ export function ShipBuildCard({
               min={1}
               max={ship.maxCount ? frei : undefined}
               value={qty}
-              onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === '') {
+                  setQty('');
+                  return;
+                }
+                const n = parseInt(raw, 10);
+                setQty(Number.isNaN(n) ? '' : Math.max(0, n));
+              }}
+              onBlur={() => setQty((q) => (q === '' || q < 1 ? 1 : q))}
             />
           </div>
         )}

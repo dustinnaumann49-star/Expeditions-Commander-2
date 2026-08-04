@@ -49,13 +49,15 @@ export function DefenseBuildCard({
   onOpenLore: () => void;
   onOpenInfo: () => void;
 }) {
-  const [qty, setQty] = useState(10);
+  // Erlaubt einen leeren Zwischenzustand beim Tippen, siehe ShipBuildCard.tsx fuer die Begruendung.
+  const [qty, setQty] = useState<number | ''>(10);
   const bauzeitMult = getDefenseBauzeitMultiplier(gameData, state);
   const costMult = getDefenseCostMultiplier(state);
 
   const bestand = countDefenseEverywhere(state, def.id);
   const frei = def.maxCount ? def.maxCount - bestand : Infinity;
-  const capQty = Math.max(0, Math.min(qty, frei));
+  const numericQty = qty === '' ? 0 : qty;
+  const capQty = Math.max(0, Math.min(numericQty, frei));
   const totalCost = {
     metall: def.cost.metall * costMult * capQty,
     kristall: def.cost.kristall * costMult * capQty,
@@ -116,7 +118,16 @@ export function DefenseBuildCard({
             min={1}
             max={def.maxCount ? frei : undefined}
             value={qty}
-            onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === '') {
+                setQty('');
+                return;
+              }
+              const n = parseInt(raw, 10);
+              setQty(Number.isNaN(n) ? '' : Math.max(0, n));
+            }}
+            onBlur={() => setQty((q) => (q === '' || q < 1 ? 1 : q))}
           />
         </div>
         <div className="build-row">
