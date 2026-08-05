@@ -367,7 +367,15 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   ersetzt die alte 12-Wellen-Eskalationskurve `RAID_WAVE_FACTORS`). Der dritte Bucket kann eine
   Spanne `[min, max]` sein, wird dann gleichverteilt darin gewürfelt. Der Piratenadmiral (P10) ist
   bewusst ausgenommen (`contextKey === 'piraten_admiral'` bleibt bei alter Gleichverteilung, eigene
-  Boss-Mechanik). Der alte separate `WAVE_OUTLIER_CHANCE`-Ausreißer-Wurf wurde für alle
+  Boss-Mechanik). Korrektur 05.08.2026 (Nutzer-Fund): der Kampfbericht zeigte bisher bei
+  `piraten_niedrig/mittel/hoch` und `piraten_elite` IMMER nur "Normale Welle" an, egal welcher der
+  drei 50/30/20-Werte tatsächlich gewürfelt wurde - der separate Ausreißer-Wurf steht bei allen
+  `piraten_*`-Kontexten auf 0% (siehe unten), lieferte also nie ein unterscheidbares Label. Berichte
+  (Piraten-Sektor-Skirmish in `missions.ts`, Elite-Bollwerk-Check und Piratenadmiral-Check in
+  `groupOps.ts`, Raid-Welle in `raids.ts`) zeigen jetzt stattdessen die tatsächlich angewendete
+  Feindstärke in Prozent der eigenen (Kombinat-)Flottenmacht an (z.B. `[Feindstärke 155%]`) -
+  dadurch im Nachhinein nachvollziehbar, ob ein schlechtes Ergebnis am oberen 20%-Bucket lag oder
+  nicht. Der alte separate `WAVE_OUTLIER_CHANCE`-Ausreißer-Wurf wurde für alle
   `piraten_*`-Sektoren auf 0 gesetzt (würde sich sonst mit dem neuen 20%-Extrem-Bucket
   überschneiden), für `raid` unverändert gelassen (dort ohnehin nie aktiv genutzt).
 - Korrektur 05.08.2026 (Nutzerentscheidung): das 04.08.2026-Update hatte `piraten_hoch` (150-200%)

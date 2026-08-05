@@ -373,7 +373,13 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   // frueher zurueck), daher wird hier IMMER die Wuerfel-Tabelle verwendet, kein Fallback noetig.
   const table = PIRATEN_MULTIPLIER_ROLL[mission.sektorId];
   const { multiplier: rolledMultiplier, outlier } = rollMultiplierWithOutlier(table, mission.sektorId);
-  const waveLabel = outlier === 'stark' ? '⚠ Ungewöhnlich starke Welle' : outlier === 'schwach' ? 'Auffällig schwache Welle' : 'Normale Welle';
+  // Nutzer-Fund 05.08.2026: der Bericht zeigte bisher NUR "Normale Welle" fuer jeden Check, egal
+  // welcher der drei 50/30/20-Werte tatsaechlich gewuerfelt wurde (der separate Ausreisser-Wurf
+  // steht bei allen piraten_*-Sektoren auf 0%, siehe WAVE_OUTLIER_CHANCE in combatConstants.ts) -
+  // dadurch liess sich aus dem Bericht selbst nie nachvollziehen, ob ein harter oder ein leichter
+  // Check getroffen wurde. Zeigt jetzt immer die tatsaechlich angewendete Feindstaerke in Prozent
+  // der eigenen Flottenmacht an.
+  const waveLabel = `Feindstärke ${Math.round(rolledMultiplier * 100)}%${outlier === 'stark' ? ' ⚠ Ausreißer stark' : outlier === 'schwach' ? ' (Ausreißer schwach)' : ''}`;
   const targetPower = Math.max(sentPower * rolledMultiplier, cfg.npcFloor || 0);
   const profile = pickWaveProfile(mission.sektorId);
   const battleModifier = rollBattleModifier(mission.sektorId);

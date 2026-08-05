@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Feature: Angewandte Feindstärke im Kampfbericht sichtbar',
+    changes: [
+      'Piraten-Sektor-, Elite-Bollwerk-, Piratenadmiral- und Raid-Berichte zeigen jetzt an, welche Feindstärke (in % der eigenen Flottenmacht) bei diesem Check tatsächlich gewürfelt wurde - bisher stand dort nur "Normale Welle", egal ob der leichte, mittlere oder harte der drei möglichen Werte getroffen wurde. Damit lässt sich im Nachhinein nachvollziehen, ob ein Kampf schlicht Pech mit der Würfelung war.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Fix: Elite-Bollwerk benachteiligte schwächer ausgebaute Mitspieler',
     changes: [
       'Im Elite-Bollwerk wurden die Piraten bisher auf den Forschungs-DURCHSCHNITT aller Teilnehmer hochskaliert - dadurch kämpfte, wer in der Gruppe weniger Forschung hatte, gegen Gegner, die stärker waren als der eigene Ausbau, während besser ausgebaute Mitspieler entsprechend im Vorteil waren. Live-Berichte zeigten dadurch etwa doppelt so hohe Flottenverluste für den schwächer ausgebauten Teilnehmer. Die Piraten orientieren sich jetzt am NIEDRIGSTEN Forschungsstand der Gruppe - niemand kämpft dadurch mehr schlechter, als er es auch alleine tun würde, wer besser ausgebaut ist profitiert weiterhin voll von seinem Vorsprung.',

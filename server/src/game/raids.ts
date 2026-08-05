@@ -471,7 +471,10 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-  const outcome = waveWon ? `Welle ${waveNumber}/${raid.waveTimes.length} abgewehrt – Angreifer vernichtet` : `Welle ${waveNumber}/${raid.waveTimes.length} – Angreifer teilweise durchgekommen`;
+  // Nutzer-Fund 05.08.2026 (analog zu missions.ts/groupOps.ts): zeigt jetzt die tatsaechlich
+  // angewendete Feindstaerke dieser Welle in Prozent der eigenen kombinierten Heimatmacht.
+  const waveStrengthText = ` [Feindstärke ${Math.round(waveFactor * 100)}%]`;
+  const outcome = waveWon ? `Welle ${waveNumber}/${raid.waveTimes.length} abgewehrt – Angreifer vernichtet${waveStrengthText}` : `Welle ${waveNumber}/${raid.waveTimes.length} – Angreifer teilweise durchgekommen${waveStrengthText}`;
 
   // Nutzerentscheidung (Juli 2026): keine Zwischen-Nachricht mehr pro Welle (weder fuer den
   // Verteidiger noch fuer Verstaerker/haltende Flotten) - stattdessen EIN Eintrag in

@@ -526,11 +526,15 @@ async function runAdminCheck(
   const bossDestroyed = (result.survivorsB[ADMIRAL_BOSS_ID] || 0) <= 0;
   const playerRetreated = !!result.retreated;
   const checkNr = checksElapsed + 1;
+  // Nutzer-Fund 05.08.2026 (analog zu missions.ts/groupOps.ts-Elite-Bollwerk/raids.ts): zeigt die
+  // tatsaechlich angewendete Basis-Feindstaerke dieses Checks (VOR der zusaetzlichen "Eskalierende
+  // Wut"-Multiplikation ueber checksElapsed, die separat ueber den Check-Zaehler ablesbar ist).
+  const strengthText = ` [Feindstärke ${Math.round(rolledMultiplier * 100)}%]`;
   const outcome = bossDestroyed
-    ? 'Piratenadmiral vernichtet'
+    ? `Piratenadmiral vernichtet${strengthText}`
     : playerRetreated
-    ? 'Rückzug nach hohen Verlusten'
-    : 'Check überstanden - der Admiral kämpft weiter';
+    ? `Rückzug nach hohen Verlusten${strengthText}`
+    : `Check überstanden - der Admiral kämpft weiter${strengthText}`;
   const detail: CombatDetail = {
     sektorName: `Sektor P10 – Piratenadmiral (Check ${checkNr}/${ADMIRAL_TOTAL_CHECKS})`,
     outcome,
@@ -933,7 +937,12 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
       : anyNpcDestroyed
       ? 'Feindkontakt - Piraten erlitten Verluste'
       : 'Feindkontakt - keine nennenswerte Wirkung';
-  const waveText = outlier === 'stark' ? ' [⚠ Ungewöhnlich starke Welle]' : outlier === 'schwach' ? ' [Auffällig schwache Welle]' : '';
+  // Nutzer-Fund 05.08.2026 (analog zu missions.ts): zeigt jetzt immer die tatsaechlich angewendete
+  // Feindstaerke in Prozent der kombinierten Teilnehmer-Flottenmacht, statt nur bei einem
+  // (bei piraten_elite ohnehin fast nie ausgeloesten) Ausreisser ueberhaupt etwas anzuzeigen.
+  const waveText = ` [Feindstärke ${Math.round(rolledMultiplier * 100)}%${
+    outlier === 'stark' ? ' ⚠ Ausreißer stark' : outlier === 'schwach' ? ', Ausreißer schwach' : ''
+  }]`;
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${teileGainText}${guaranteedContainerText}${captainText}${modifierText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
