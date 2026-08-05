@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Fix: Elite-Bollwerk-Belohnung im Kampfbericht korrekt angezeigt',
+    changes: [
+      'Die "Belohnungen"-Anzeige im Elite-Bollwerk-Kampfbericht zeigte fälschlich immer die unskalierten Basiswerte (25M/15M/10M) an, statt der tatsächlich gutgeschriebenen Menge inklusive Sieg-Serie-Bonus und dem zusätzlichen Ressourcen-Bonus. Die tatsächliche Gutschrift war davon nicht betroffen - reiner Anzeigefehler, jetzt behoben.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Feature: Teile beim Schrotthändler in Ressourcen umwandeln',
     changes: [
       'Waffen-/Schild-/Panzerungs-Teile aus Piraten-Sektor/Elite-Bollwerk/Containern hatten bisher nur einen einzigen Nutzen: den Bau des Imperators (maximal 6 Stück). Überschüssige Teile stapelten sich danach nutzlos. Beim Schrotthändler gibt es jetzt eine neue Sektion "Teile umwandeln" - jedes Teil lässt sich in Metall/Kristall/Deuterium umwandeln (verlustbehaftet, kein 1:1-Tausch, ähnlich der bestehenden Schiffs-/Verteidigungs-Verschrottung).',

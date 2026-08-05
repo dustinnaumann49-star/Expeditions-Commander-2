@@ -887,9 +887,16 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     });
     teileGainText = ' Jeder Teilnehmer erhält den vollen Teile-Bonus.';
   }
+  // Nutzer-Fund 05.08.2026: `loot`/winResources-Betraege wurden bisher nur innerhalb ihres
+  // jeweiligen if-Blocks berechnet und waren daher fuer die "rewards"-Zusammenfassung weiter unten
+  // nicht sichtbar - die zeigte stattdessen faelschlich die UNSKALIERTEN cfg.lootBase-Basiswerte an
+  // (ohne Sieg-Serie-Eskalation, ohne den neuen winResources-Bonus). Deshalb hier auf Funktions-
+  // Ebene deklariert, damit die tatsaechlich gutgeschriebenen Betraege unten korrekt angezeigt
+  // werden koennen - die eigentliche Gutschrift selbst (p.farmed) war davon nie betroffen.
+  let loot = { metall: 0, kristall: 0, deuterium: 0 };
   let lootText = '';
   if (anyNpcDestroyed && cfg.lootBase) {
-    const loot = {
+    loot = {
       metall: Math.round(cfg.lootBase.metall * escalationMultiplier * fleetBonus),
       kristall: Math.round(cfg.lootBase.kristall * escalationMultiplier * fleetBonus),
       deuterium: Math.round(cfg.lootBase.deuterium * escalationMultiplier * fleetBonus),
@@ -912,8 +919,10 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   // Sieg-Serie) abfedert, ohne die durch REWARD_ESCALATION ohnehin schon exponentiell wachsende
   // Spaetphase einer langen Serie weiter aufzublaehen. Analoges Feld bei Solo-Piraten-Sektoren
   // (siehe finalizeMission() in missions.ts), hier aber PRO CHECK statt am Missionsende gesammelt.
+  let winResourcesAmount = { metall: 0, kristall: 0, deuterium: 0 };
   let winResourcesText = '';
   if (anyNpcDestroyed && cfg.winResources) {
+    winResourcesAmount = cfg.winResources;
     accepted.forEach((p) => {
       if (!p.farmed) return;
       p.farmed.metall += cfg.winResources!.metall;
@@ -972,7 +981,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   }]`;
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
   const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${winResourcesText}${teileGainText}${guaranteedContainerText}${captainText}${modifierText}`;
-  const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
+  const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.winResources || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
     outcome,
@@ -982,9 +991,12 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     replay: result.replay,
     rewards: hasRewards
       ? {
-          metall: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.metall : undefined,
-          kristall: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.kristall : undefined,
-          deuterium: anyNpcDestroyed && cfg.lootBase ? cfg.lootBase.deuterium : undefined,
+          // Nutzer-Fund 05.08.2026: zeigt jetzt die TATSAECHLICH gutgeschriebenen Betraege
+          // (Sieg-Serie-Eskalation + Großflotten-Bonus + flacher winResources-Bonus), nicht mehr
+          // die unskalierten cfg.lootBase-Basiswerte.
+          metall: anyNpcDestroyed && (cfg.lootBase || cfg.winResources) ? loot.metall + winResourcesAmount.metall : undefined,
+          kristall: anyNpcDestroyed && (cfg.lootBase || cfg.winResources) ? loot.kristall + winResourcesAmount.kristall : undefined,
+          deuterium: anyNpcDestroyed && (cfg.lootBase || cfg.winResources) ? loot.deuterium + winResourcesAmount.deuterium : undefined,
           teileWaffen: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
           teileSchild: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
           teilePanzerung: anyNpcDestroyed && cfg.teileCap ? Math.round(cfg.teileCap * 0.1) : undefined,
