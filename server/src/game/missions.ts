@@ -395,10 +395,14 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     // Balance-Anpassung (Juli 2026): mittel/hoch angehoben, damit die Verteidigungsanlagen der
     // NPCs auf den schwereren Stufen spuerbar mehr Gegenwehr leisten (siehe simulator.ts fuer den
     // exakt gespiegelten Wert, MUSS synchron bleiben, siehe README).
+    // Korrektur 05.08.2026 (Nutzer-Fund, siehe groupOps.ts fuer dieselbe Korrektur bei
+    // piraten_elite): 0.20 bei Hoch liess die NPC-Verteidigung bei ueblichen Flottengroessen auf
+    // mehrere Milliarden Panzerung/Schild anwachsen - praktisch unzerstoerbar trotz Schild-Regen-
+    // Staffelung. Auf 0.15 gesenkt.
     let defenseFactor = 0;
     if (mission.sektorId === 'piraten_niedrig') defenseFactor = 0.05;
     else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.12;
-    else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.20;
+    else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.15;
     npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
   } else {
     npcShips = generatePiratenFleet(targetPower, 0, profile) || generateFallbackFleet(targetPower, profile);

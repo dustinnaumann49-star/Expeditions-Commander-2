@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Fix: Feindstärke in Piraten-Sektor Hoch und Elite-Bollwerk gesenkt',
+    changes: [
+      'Zwei Ursachen dafür gefunden, dass die Verteidigungsanlagen der Piraten in Piraten-Sektor Hoch und Elite-Bollwerk trotz hohem ausgeteiltem Schaden praktisch unzerstörbar wirkten: Erstens hatten alle Verteidigungsanlagen (vom günstigen Raketenwerfer bis zur teuren Plasmawerfer) denselben sehr hohen Schild-Regenerationswert - jetzt nach Anlagen-Tier gestaffelt, wie es bei Schiffen schon der Fall war. Zweitens spawnte an diesen beiden Stufen einfach zu viel Verteidigung auf einmal - die Menge wurde jetzt gesenkt.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Feature: Angewandte Feindstärke im Kampfbericht sichtbar',
     changes: [
       'Piraten-Sektor-, Elite-Bollwerk-, Piratenadmiral- und Raid-Berichte zeigen jetzt an, welche Feindstärke (in % der eigenen Flottenmacht) bei diesem Check tatsächlich gewürfelt wurde - bisher stand dort nur "Normale Welle", egal ob der leichte, mittlere oder harte der drei möglichen Werte getroffen wurde. Damit lässt sich im Nachhinein nachvollziehen, ob ein Kampf schlicht Pech mit der Würfelung war.',

@@ -192,14 +192,24 @@ export const SHIELD_REGEN_BASE_BY_CLASS: Record<string, number> = {
   salvenkreuzer: 0.65,
   salvendreadnought: 0.65,
   imperator: 0.65,
-  // Verteidigungsanlagen haengen an der Basis-Energie -> Spezial-Niveau
-  raketenwerfer: 0.65,
-  leichteslaser: 0.65,
-  schwereslaser: 0.65,
-  ionengeschuetz: 0.65,
-  gausskanone: 0.65,
+  // Korrektur 05.08.2026 (Nutzer-Fund): Verteidigungsanlagen sassen bisher PAUSCHAL alle auf
+  // Spezialschiff-Niveau (0.65), unabhaengig von Anlagen-Tier - dadurch regenerierte selbst der
+  // billigste Raketenwerfer seinen Schild genauso schnell wie der teuerste Plasmawerfer. Sichtbare
+  // Folge im Elite-Bollwerk: massenhaft gespawnte NPC-Billig-Verteidigung (Raketenwerfer/Leichtes
+  // Lasergeschuetz) war trotz hohem ausgeteiltem Schaden NICHT kleinzukriegen (0 Verluste ueber
+  // mehrere Checks), waehrend umgekehrt beim Raid-Event die eigene guenstige Verteidigung genauso
+  // unverhaeltnismaessig gut hielt. Jetzt analog zu den Schiffs-Klassen gestaffelt (Reihenfolge nach
+  // Bauzeit/Kosten in defenses.ts): Raketenwerfer/Leichtes Lasergeschuetz auf Jaeger-Niveau,
+  // Schweres Lasergeschuetz/Sentinel-Kanone auf Kreuzer-Niveau, Ionengeschuetz/Gauss-Kanone auf
+  // Elite-Niveau, Plasmawerfer/Ultimate-Kanone (teuerste, seltenste Anlagen) bleiben auf
+  // Spezialschiff-Niveau. Schildkuppeln (siehe SHIELD_REGEN_DEFAULT_BASE) bewusst unveraendert.
+  raketenwerfer: 0.05,
+  leichteslaser: 0.05,
+  schwereslaser: 0.15,
+  sentinelkanone: 0.15,
+  ionengeschuetz: 0.35,
+  gausskanone: 0.35,
   plasmawerfer: 0.65,
-  sentinelkanone: 0.65,
   ultimatekanone: 0.65,
 };
 // Default fuer den gemeinsamen Kuppel-Schild-Pool (kein eigener typeId, siehe poolRegen in

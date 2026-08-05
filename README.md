@@ -260,10 +260,20 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - Schild-Regeneration auf klassenspezifische Basiswerte umgestellt (Nutzerentscheidung 04.08.2026,
   `SHIELD_REGEN_BASE_BY_CLASS` in `combatConstants.ts`, löst die vorherige globale Pauschale
   `SHIELD_REGEN_BASE` + additiven `SHIELD_REGEN_MODIFIER` ab): Jäger-Klasse 5%, Kreuzer-Klasse 15%,
-  Elite-Klasse 35%, Spezialschiffe/Imperator/Verteidigungsanlagen 65% Basiswert, jeweils PLUS
-  Forschungsbonus (`schildregeneration.effectPerLevel` in `research.ts`, 1,5%/Stufe, max. Stufe 10
-  = +15%). `SHIELD_REGEN_MAX` (globaler Deckel) auf 0.80 angehoben - greift dadurch praktisch nur
-  noch bei der obersten Klasse (65%+15% = exakt 80%), alle anderen Klassen liegen deutlich darunter.
+  Elite-Klasse 35%, Spezialschiffe/Imperator 65% Basiswert, jeweils PLUS Forschungsbonus
+  (`schildregeneration.effectPerLevel` in `research.ts`, 1,5%/Stufe, max. Stufe 10 = +15%).
+  `SHIELD_REGEN_MAX` (globaler Deckel) auf 0.80 angehoben - greift dadurch praktisch nur noch bei
+  der obersten Klasse (65%+15% = exakt 80%), alle anderen Klassen liegen deutlich darunter.
+  Korrektur 05.08.2026 (Nutzer-Fund): Verteidigungsanlagen sassen ursprünglich PAUSCHAL alle auf
+  Spezialschiff-Niveau (65%), unabhängig vom Anlagen-Tier - dadurch regenerierte selbst der
+  billigste Raketenwerfer seinen Schild genauso schnell wie der teuerste Plasmawerfer. Jetzt
+  analog zu Schiffen gestaffelt: Raketenwerfer/Leichtes Lasergeschütz 5% (Jäger-Niveau), Schweres
+  Lasergeschütz/Sentinel-Kanone 15% (Kreuzer-Niveau), Ionengeschütz/Gauß-Kanone 35% (Elite-Niveau),
+  Plasmawerfer/Ultimate-Kanone bleiben bei 65% (Spezial-Niveau). Schildkuppeln (eigener Pool,
+  `SHIELD_REGEN_DEFAULT_BASE`) bewusst unverändert. Simulation mit echten Elite-Bollwerk-
+  Kampfdaten zeigte danach aber nur einen kleinen Effekt (der größte NPC-Verteidigungs-Stapel ging
+  von 0% auf ø 13% Verlust, der Rest blieb bei 0%) - der eigentliche Haupttreiber war die schiere
+  Menge an gespawnter NPC-Verteidigung (siehe `defenseFactor`-Korrektur weiter unten).
 - Kritischer Schaden ebenfalls klassenabhängig gestaffelt (Nutzerentscheidung 04.08.2026,
   `CRIT_DAMAGE_MULTIPLIER_BY_CLASS`/`getCritDamageMultiplier()` in `combat.ts`, löst den vorherigen
   starren globalen `CRIT_DAMAGE_MULTIPLIER = 2` ab): Jäger 1,5-2x, Kreuzer-Klasse 2-2,5x,
@@ -406,6 +416,19 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Beteiligten pro Forschungs-Zweig - kein Teilnehmer kämpft dadurch mehr schlechter, als er es
   solo auf seinem eigenen Stand täte, wer besser ausgebaut ist profitiert weiterhin vom eigenen
   Vorsprung.
+- Korrektur 05.08.2026 (Nutzer-Fund): `defenseFactor` (Anteil der NPC-Verteidigung an der
+  kombinierten Flottenstärke, siehe `generateDefenseFleet()`-Aufrufe in `missions.ts`/
+  `simulator.ts`/`groupOps.ts`) lag bei Hoch UND Elite-Bollwerk bei 0.20 - bei den ueblichen
+  Flottengroessen dieser Stufen wuchs die gespawnte NPC-Verteidigung dadurch auf mehrere
+  Milliarden Panzerung/Schild an und war trotz der Schild-Regen-Staffelung oben (siehe
+  Kampfsystem-Abschnitt) faktisch unzerstoerbar (0% Verluste ueber mehrere echte Checks, Live-
+  Bericht). Da `defenses.ts`-Basiswerte von NPC- UND eigener Heimatverteidigung geteilt werden,
+  waere eine Absenkung der Basiswerte selbst auch die bereits als gut befundene Raid-Balance
+  (siehe unten) angefasst haetten - stattdessen bewusst nur die gespawnte MENGE gesenkt (trifft
+  ausschliesslich die NPC-Seite): `piraten_hoch` auf 0.15, `piraten_elite` auf 0.18 (bleibt hoeher/
+  haerter zu knacken als Hoch, analog zur uebrigen Haerte-Reihenfolge). Simulation mit echten
+  Check-2-Flottenwerten: 0.20 -> ø 7% Verteidigungs-Verlust, 0.18 -> ø 10%, 0.15 -> ø 14%, MUSS in
+  allen drei Dateien synchron bleiben.
 - Elite-Bollwerk: Beute verdoppelt sich pro Sieg in Folge (`streakWins`), bei perfekter Serie über
   alle 6 Checks zusätzlicher Abschluss-Bonus (Gesamtausbeute nochmal verdoppelt). Solo nutzbar
   (0 Eingeladene = Ersteller allein). Seit 04.08.2026 zusätzlich `guaranteedContainers` in

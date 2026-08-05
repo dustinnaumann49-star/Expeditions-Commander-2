@@ -63,11 +63,14 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
   const sentPower = combatFleetPowerBase(ships);
   const table = PIRATEN_MULTIPLIER_ROLL[sektorId];
 
+  // Korrektur 05.08.2026 (Nutzer-Fund, siehe missions.ts/groupOps.ts fuer dieselbe Korrektur):
+  // Hoch/Elite von 0.20 gesenkt, machte NPC-Verteidigung praktisch unzerstoerbar. MUSS mit
+  // missions.ts synchron bleiben (siehe README).
   let defenseFactor = 0;
   if (sektorId === 'piraten_niedrig') defenseFactor = 0.05;
   else if (sektorId === 'piraten_mittel') defenseFactor = 0.12;
-  else if (sektorId === 'piraten_hoch') defenseFactor = 0.20;
-  else if (sektorId === 'piraten_elite') defenseFactor = 0.2;
+  else if (sektorId === 'piraten_hoch') defenseFactor = 0.15;
+  else if (sektorId === 'piraten_elite') defenseFactor = 0.18;
 
   const startedAt = Date.now();
   let runs = 0;

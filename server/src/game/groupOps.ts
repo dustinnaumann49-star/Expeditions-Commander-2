@@ -765,8 +765,15 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   // statt tatsaechlichem Forschungsstand, Mechanismus bleibt fuer spaeter unveraendert bestehen.
   const spionageMax = 0;
   const npcShips = generatePiratenFleet(targetPower, spionageMax, profile);
+  // Korrektur 05.08.2026 (Nutzer-Fund): 0.2 bei piraten_elite fuehrte dazu, dass die gespawnte NPC-
+  // Verteidigung bei den ueblichen Flottengroessen im Elite-Bollwerk in Summe mehrere Milliarden
+  // Panzerung/Schild erreichte - selbst nach der Schild-Regen-Staffelung (siehe
+  // SHIELD_REGEN_BASE_BY_CLASS) blieb die Verteidigung dadurch praktisch unzerstoerbar (0%
+  // Verluste ueber mehrere echte Checks hinweg, siehe Live-Bericht). Simulation mit den echten
+  // Check-2-Flottenwerten zeigte: 0.20 -> nur ø 7% Verteidigungs-Verlust, 0.18 -> ø 10%,
+  // 0.14 -> ø 16%. Auf 0.18 gesenkt (haerteste Stufe bleibt bewusst am schwersten zu knacken).
   const defenseFactor =
-    op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.2 : 0.15;
+    op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.18 : 0.15;
   let npcDefenses = generateDefenseFleet(totalSentPower * defenseFactor, spionageMax);
 
   const captainSpawned = cfg.captainChance && Math.random() < cfg.captainChance;
