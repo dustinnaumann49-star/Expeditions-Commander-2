@@ -1,5 +1,5 @@
 import { findShip, findDefense } from './combat.js';
-import { TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, BOOSTERS, BOOSTER_DURATION_OPTIONS, SHOP_VOUCHERS } from './data/economy.js';
+import { TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, BOOSTERS, BOOSTER_DURATION_OPTIONS, SHOP_VOUCHERS, TEILE_CONVERT_RESOURCES } from './data/economy.js';
 import {
   ECONOMY_SCHMUGGLER_TRADE_FEE_MULTIPLIER,
   ECONOMY_SCHMUGGLER_SCRAP_REFUND_MULTIPLIER,
@@ -66,6 +66,24 @@ export function scrapDefense(state: PlayerState, defId: string, qty: number): Ac
   state.resources.metall += Math.round(def.cost.metall * rate * effectiveQty);
   state.resources.kristall += Math.round(def.cost.kristall * rate * effectiveQty);
   state.resources.deuterium += Math.round(def.cost.deuterium * rate * effectiveQty);
+  return { ok: true };
+}
+
+// ========== TEILE-UMWANDLUNG (05.08.2026, Nutzerentscheidung) ==========
+// Einziger Verbrauch von Waffen-/Schild-/Panzerungs-Teilen war bisher der Imperator (max. 6
+// Stueck) - ueberschuessige Teile aus Containern stapelten sich sonst nutzlos. Analog zu
+// scrapShip()/scrapDefense() oben: verlustbehaftete Umwandlung, kein 1:1-Tausch (siehe
+// TEILE_CONVERT_RESOURCES in economy.ts fuer die Rate-Begruendung).
+export function convertTeile(state: PlayerState, part: 'waffen' | 'schild' | 'panzerung', qty: number): ActionResult {
+  if (part !== 'waffen' && part !== 'schild' && part !== 'panzerung') return { ok: false, error: 'Unbekannte Teile-Sorte.' };
+  if (qty <= 0) return { ok: false, error: 'Bitte eine gültige Anzahl angeben.' };
+  const owned = state.teile[part] || 0;
+  const effectiveQty = Math.min(qty, Math.floor(owned));
+  if (effectiveQty <= 0) return { ok: false, error: 'Keine Teile dieser Sorte vorhanden.' };
+  state.teile[part] -= effectiveQty;
+  state.resources.metall += TEILE_CONVERT_RESOURCES.metall * effectiveQty;
+  state.resources.kristall += TEILE_CONVERT_RESOURCES.kristall * effectiveQty;
+  state.resources.deuterium += TEILE_CONVERT_RESOURCES.deuterium * effectiveQty;
   return { ok: true };
 }
 

@@ -543,6 +543,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - Imperator: Waffen 500.000 / Schild 400.000 / Panzerung 3.000.000 (`ships.ts`) - bewusst
   panzerungslastig, zäher Brocken statt Ein-Schlag-Gewinner. Baulimit 2, eigene Spezialteile-
   Kosten. Zählt zur Heimatverteidigung bei Raids (`HOME_DEFENSE_SHIP_IDS`).
+- Teile-Umwandlung (05.08.2026, Nutzerentscheidung): bis dahin war der Imperator (max. 6 Stück,
+  1000 Teile je Sorte) der EINZIGE Verbrauch für Waffen-/Schild-/Panzerungs-Teile - Container-Teile
+  sind uncapped, überschüssige Teile stapelten sich also dauerhaft nutzlos. Neue Sektion "Teile
+  umwandeln" auf der Schrotthändler-Seite (`convertTeile()` in `economyActions.ts`, Route
+  `/teile/convert`), analog zu `scrapShip()`/`scrapDefense()`: bewusst VERLUSTBEHAFTET (kein
+  1:1-Tausch), Rate `TEILE_CONVERT_RESOURCES` in `economy.ts` = 100.000 Metall/70.000 Kristall/
+  40.000 Deuterium pro Teil (jede Sorte gleich, ca. 45-55% des aus Container-Belohnungen
+  hochgerechneten "fairen" Werts eines Teils, ~375.000-493.000).
 - Shop-Booster (Bautempo/Forschungstempo/Kampf/Abbau, `data/economy.ts`) haben pro
   `BoosterDefinition` weiterhin einen 24h-Basispreis/-Laufzeit, kaufbar aber seit 04.08.2026 auch
   direkt für 7 oder 30 Tage am Stück (`BOOSTER_DURATION_OPTIONS`, Dropdown auf der Shop-Seite) -

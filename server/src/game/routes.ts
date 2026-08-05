@@ -19,7 +19,7 @@ import { listActiveGalaxyEvents, startEventClaim } from './galaxyEvents.js';
 import { listActivePirateBaseSummaries, listActivePirateBases, startPirateBaseAttack, processPirateAttacks } from './pirateBaseState.js';
 import { startSpyProbe } from './spyMissions.js';
 import { listAllUsers } from '../db.js';
-import { executeTrade, scrapShip, scrapDefense, buyBooster, buyVoucher } from './economyActions.js';
+import { executeTrade, scrapShip, scrapDefense, convertTeile, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass, setEconomyClass } from './classActions.js';
 import { PLAYER_CLASSES, CLASS_CHANGE_COST_DM } from './data/classes.js';
 import { ECONOMY_CLASSES, ECONOMY_CLASS_CHANGE_COST_DM } from './data/economyClasses.js';
@@ -32,7 +32,7 @@ import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_BASES, SPY_PROBE_TRAVEL_MS, SPY_PROBE_FUEL_COST_PER_PROBE } from './data/galaxyConstants.js';
 import { SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
-import { BOOSTERS, BOOSTER_DURATION_OPTIONS, KAMPF_BOOST_MULTIPLIER, NOVICE_BONUS_MULTIPLIER, NOVICE_BONUS_WINDOW_MS, SHOP_VOUCHERS, CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM, PIRATEN_CHECK_COUNT } from './data/economy.js';
+import { BOOSTERS, BOOSTER_DURATION_OPTIONS, KAMPF_BOOST_MULTIPLIER, NOVICE_BONUS_MULTIPLIER, NOVICE_BONUS_WINDOW_MS, SHOP_VOUCHERS, CONTAINER_TYPES, JACKPOT_CHANCE, JACKPOT_REWARDS, TRADE_VALUE, TRADE_FEE, SCRAP_REFUND_RATE, TEILE_CONVERT_RESOURCES, ASTEROID_ESCORT_POWER_MIN, ASTEROID_ESCORT_POWER_MAX, ASTEROID_ESCORT_KILL_REWARD, GALAXY_EVENT_TYPES, RELOCATE_BASE_COST_DM, PIRATEN_CHECK_COUNT } from './data/economy.js';
 import { RAPIDFIRE, ZIELERFASSUNG_BASE, MAX_RESEARCH_LEVEL, PARENT_UNLOCK_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS, SHIELD_REGEN_BASE_BY_CLASS, SHIELD_REGEN_DEFAULT_BASE, SHIELD_REGEN_MAX, PRECISION_BASE, PRECISION_MAX_PLAYER, DEFENSE_REPAIR_PERCENT, MULTI_TARGET_VOLLEY_SHIPS, PRECISION_MODIFIER, EVASION_BASE, EVASION_MAX, CRIT_CHANCE_BASE, CRIT_CHANCE_MAX, CRIT_DAMAGE_MULTIPLIER_BY_CLASS, CRIT_DAMAGE_DEFAULT_MULTIPLIER, ADMIRAL_ALLOWED_SHIP_IDS } from './data/combatConstants.js';
 import { CHANGELOG } from './data/changelog.js';
 import { getLeaderboard } from './stats.js';
@@ -99,6 +99,7 @@ gameRouter.get('/data', (_req, res) => {
     asteroidEscortKillReward: ASTEROID_ESCORT_KILL_REWARD,
     changelog: CHANGELOG,
     scrapRefundRate: SCRAP_REFUND_RATE,
+    teileConvertResources: TEILE_CONVERT_RESOURCES,
     playerClasses: PLAYER_CLASSES,
     classChangeCostDm: CLASS_CHANGE_COST_DM,
     economyClasses: ECONOMY_CLASSES,
@@ -421,6 +422,14 @@ gameRouter.post('/scrap/defense', (req: AuthedRequest, res) => {
     return res.status(400).json({ error: 'defId und qty erforderlich.' });
   }
   handleAction(req, res, (state) => scrapDefense(state, defId, qty));
+});
+
+gameRouter.post('/teile/convert', (req: AuthedRequest, res) => {
+  const { part, qty } = req.body ?? {};
+  if (typeof part !== 'string' || typeof qty !== 'number') {
+    return res.status(400).json({ error: 'part und qty erforderlich.' });
+  }
+  handleAction(req, res, (state) => convertTeile(state, part as 'waffen' | 'schild' | 'panzerung', qty));
 });
 
 // ---- Shop ----

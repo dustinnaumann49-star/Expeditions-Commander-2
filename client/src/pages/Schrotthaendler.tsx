@@ -3,16 +3,32 @@ import { useGame } from '../context/GameContext';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { getEffectiveScrapRefundRate } from '../lib/multipliers';
 
+const TEILE_LABELS: Record<'waffen' | 'schild' | 'panzerung', string> = {
+  waffen: 'Waffen-Teile',
+  schild: 'Schild-Teile',
+  panzerung: 'Panzerungs-Teile',
+};
+
 export function SchrotthaendlerPage() {
-  const { gameData, state, scrapShip, scrapDefense, error } = useGame();
+  const { gameData, state, scrapShip, scrapDefense, convertTeile, error } = useGame();
   const [qtyShip, setQtyShip] = useState<Record<string, number>>({});
   const [qtyDef, setQtyDef] = useState<Record<string, number>>({});
+  const [qtyTeile, setQtyTeile] = useState<Record<string, number>>({});
 
   if (!gameData || !state) return <PageSkeleton />;
   const rate = getEffectiveScrapRefundRate(gameData, state);
+  const teileRate = gameData.teileConvertResources;
 
   const ownedShips = gameData.ships.filter((s) => !s.specialOnly && (state.fleet[s.id] || 0) > 0);
   const ownedDefs = gameData.defenses.filter((d) => (state.defense[d.id] || 0) > 0);
+  const teileEntries = (['waffen', 'schild', 'panzerung'] as const).filter((p) => Math.floor(state.teile[p]) > 0);
+
+  function teileRefundText(qty: number): string {
+    if (qty <= 0) return '';
+    return `${(teileRate.metall * qty).toLocaleString('de-DE')} Metall, ${(teileRate.kristall * qty).toLocaleString('de-DE')} Kristall, ${(
+      teileRate.deuterium * qty
+    ).toLocaleString('de-DE')} Deuterium`;
+  }
 
   function refundText(cost: { metall: number; kristall: number; deuterium: number } | undefined, qty: number): string {
     if (!cost || qty <= 0) return '';
@@ -103,6 +119,51 @@ export function SchrotthaendlerPage() {
                     <span></span>
                     <button className="build-btn" onClick={() => scrapDefense(d.id, qty)}>
                       Verschrotten
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <h3 style={{ fontSize: 14, marginBottom: 8, marginTop: 24 }}>Teile umwandeln</h3>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12 }}>
+        1 Teil = {teileRate.metall.toLocaleString('de-DE')} Metall, {teileRate.kristall.toLocaleString('de-DE')} Kristall,{' '}
+        {teileRate.deuterium.toLocaleString('de-DE')} Deuterium.
+      </p>
+      {teileEntries.length === 0 ? (
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine Teile vorhanden.</p>
+      ) : (
+        <div className="ship-grid">
+          {teileEntries.map((part) => {
+            const owned = Math.floor(state.teile[part]);
+            const qty = qtyTeile[part] ?? owned;
+            return (
+              <div className="ship-card" key={part}>
+                <div className="ship-info">
+                  <h3>{TEILE_LABELS[part]}</h3>
+                  <p className="detail-sub">Bestand: {owned.toLocaleString('de-DE')}</p>
+                  <div className="qty-row">
+                    <input
+                      className="qty-input"
+                      type="number"
+                      min={1}
+                      max={owned}
+                      value={qty}
+                      onChange={(e) => setQtyTeile((p) => ({ ...p, [part]: parseInt(e.target.value) || 0 }))}
+                      style={{ width: 90 }}
+                    />
+                    <button className="qty-btn" onClick={() => setQtyTeile((p) => ({ ...p, [part]: owned }))}>
+                      Alle
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--accent-deut)' }}>Erstattung: {teileRefundText(qty)}</p>
+                  <div className="build-row">
+                    <span></span>
+                    <button className="build-btn" onClick={() => convertTeile(part, qty)}>
+                      Umwandeln
                     </button>
                   </div>
                 </div>

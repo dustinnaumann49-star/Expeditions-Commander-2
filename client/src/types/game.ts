@@ -621,6 +621,7 @@ export interface GameData {
   tradeValue: Record<string, number>;
   tradeFee: number;
   scrapRefundRate: number;
+  teileConvertResources: { metall: number; kristall: number; deuterium: number };
   rapidfire: Record<string, Record<string, number>>;
   zielerfassungBase: Record<string, number>;
   multiTargetVolleyShips: string[];

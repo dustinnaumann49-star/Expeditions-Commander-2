@@ -435,6 +435,18 @@ export const SCRAP_REFUND_RATE = 0.3;
 export const TRADE_VALUE: Record<string, number> = { metall: 1, kristall: 1.5, deuterium: 3 };
 export const TRADE_FEE = 0.2;
 
+// Teile-Umwandlung (05.08.2026, Nutzerentscheidung): Waffen-/Schild-/Panzerungs-Teile hatten
+// bisher als einzigen Verbrauch den Imperator (max. 6 Stueck, 1000 Teile je Sorte) - ueberschuessige
+// Teile aus Containern (uncapped, siehe CONTAINER_TYPES oben) stapelten sich danach dauerhaft ohne
+// jeden Nutzen. Bewusst VERLUSTBEHAFTET angesetzt (analog SCRAP_REFUND_RATE oben, kein 1:1-Tausch):
+// aus Container-Werten hochgerechnet liegt der implizite "faire" Wert eines Teils bei ca.
+// 375.000-493.000 Ressourcen (Silber-/Gold-/Elite-Container geben ENTWEDER Ressourcen ODER Teile
+// als einen von zwei zufaelligen Treffern, beide Kategorien sollten also aehnlich wertvoll sein).
+// 210.000 gesamt (~45-55% davon) verhindert, dass Teile-Farmen zum vollwertigen Ressourcen-Ersatz
+// wird, gibt ueberschuessigen Teilen aber einen sinnvollen Nutzen. Gleiche Rate fuer alle drei
+// Teile-Sorten (Waffen/Schild/Panzerung).
+export const TEILE_CONVERT_RESOURCES = { metall: 100000, kristall: 70000, deuterium: 40000 };
+
 export const COMBAT_SHIP_IDS = [
   'leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber',
   'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator',

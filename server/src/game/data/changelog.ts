@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Feature: Teile beim Schrotthändler in Ressourcen umwandeln',
+    changes: [
+      'Waffen-/Schild-/Panzerungs-Teile aus Piraten-Sektor/Elite-Bollwerk/Containern hatten bisher nur einen einzigen Nutzen: den Bau des Imperators (maximal 6 Stück). Überschüssige Teile stapelten sich danach nutzlos. Beim Schrotthändler gibt es jetzt eine neue Sektion "Teile umwandeln" - jedes Teil lässt sich in Metall/Kristall/Deuterium umwandeln (verlustbehaftet, kein 1:1-Tausch, ähnlich der bestehenden Schiffs-/Verteidigungs-Verschrottung).',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Feature: Wöchentlicher Event-Kalender',
     changes: [
       'Neuer fester Wochenrhythmus mit automatischen, kostenlosen Bonus-Tagen für alle Spieler: Montag+Freitag +100% Belohnung im Piraten-Sektor (Niedrig/Mittel/Hoch), Dienstag+Donnerstag +100% Ressourcen im Asteroiden-Feld, Mittwoch+Sonntag Raid-Event (jetzt 2x statt 1x pro Woche), Samstag kostenloser Bauzeit-Bonus für Schiffe/Verteidigung/Gebäude/Forschung.',
