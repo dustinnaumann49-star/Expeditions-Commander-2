@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Fix: Elite-Bollwerk-Belohnung deutlich angehoben',
+    changes: [
+      'Live-Auswertung mehrerer echter Expeditionen zeigte: die üblichen Flottenverluste im Elite-Bollwerk kosteten beim Wiederaufbau deutlich mehr Ressourcen, als die Expedition an Metall/Kristall/Deuterium einbrachte - unterm Strich ein Verlustgeschäft, selbst bei gewonnenen Kämpfen. Die Grundbelohnung pro gewonnenem Check wurde jetzt vervierfacht, damit sich das Risiko wieder lohnt.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Feature: V2/V3-Gebäudestufen für die Heimatbasis',
     changes: [
       'Metallmine, Kristallmine, Deuterium-Synthetisierer, Solarkraftwerk, Roboterfabrik und Nanitenfabrik bekommen jetzt zwei weitere Ausbaustufen (V2/V3) - jede mit höherem Basisertrag, aber auch höheren Kosten/Bauzeiten (V2: 2x Kosten/1,3x Bauzeit/1,5x Ertrag, V3: 4x/1,6x/2,5x, jeweils relativ zu V1). Gedacht für alle, die bei V1 schon sehr hohe Stufen erreicht haben und dort kaum noch spürbaren Fortschritt sehen.',

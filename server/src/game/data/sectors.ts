@@ -122,8 +122,15 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // sondern durch gewonnene Kaempfe") - lootBase (25M/15M/10M PRO gewonnenem Check) war ohnehin
   // schon die dominante Rohstoffquelle hier, der Wegfall des zeitbasierten Zusatz-Tricklers ist
   // gegenueber den 6 potenziellen lootBase-Ausschuettungen pro Trip vernachlaessigbar.
+  // lootBase Korrektur 05.08.2026 (Nutzer-Fund): Live-Auswertung von 3 echten Checks zeigte, dass
+  // die Wiederaufbaukosten der ueblichen Flottenverluste (bei zwei Teilnehmern zusammen ueber
+  // 6 Mrd. Metall allein) die alte lootBase (25M/15M/10M PRO Teilnehmer) plus garantierte
+  // Container um ein Vielfaches uebersteigen - das Elite-Bollwerk war dadurch ein reiner
+  // Netto-Ressourcenverlust, sobald man die Flotte wieder auffuellen musste. Auf 100M/60M/40M
+  // (4x) angehoben, damit sich die Expedition wirtschaftlich wieder lohnt, ohne an der
+  // Kampf-Schwierigkeit selbst (siehe PIRATEN_MULTIPLIER_ROLL oben) etwas zu aendern.
   piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000,
-    lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    lootBase:{metall:100000000, kristall:60000000, deuterium:40000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     guaranteedContainers:[{tier:"silber", count:4}, {tier:"gold", count:3}, {tier:"elite", count:2}],
     multiplayerOnly:true,

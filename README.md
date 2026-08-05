@@ -437,6 +437,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   überstandenem Check (mind. ein Gegner vernichtet), unabhängig von der Zufalls-Kapitän-Mechanik
   (`captainChance`) - jeder Teilnehmer bekommt die volle Menge, siehe
   `runGroupOperationCheck()` in `groupOps.ts`.
+- Korrektur 05.08.2026 (Nutzer-Fund): `lootBase` von `piraten_elite` (25M/15M/10M Metall/Kristall/
+  Deuterium PRO Teilnehmer PRO gewonnenem Check) reichte nicht annähernd, um die üblichen
+  Flottenverluste wirtschaftlich auszugleichen - Live-Auswertung dreier echter Checks zeigte
+  Wiederaufbaukosten der Verluste (beide Teilnehmer zusammen) im zweistelligen Milliarden-Bereich,
+  während die Belohnung (lootBase + garantierte Container) nur einen Bruchteil davon deckte. Auf
+  `100M/60M/40M` (4x) angehoben, damit die Expedition wirtschaftlich wieder trägt, ohne die
+  Kampf-Schwierigkeit selbst anzufassen (siehe `PIRATEN_MULTIPLIER_ROLL`/`defenseFactor`-Korrektur
+  weiter oben - das war ein separates Problem).
 - Piratenadmiral (`piraten_admiral`): ein starker Boss + kleine Eskorte statt Massenwellen, mit
   Extraktions-Entscheidung ("Beute sichern" oder "weitermachen") statt reinem Durchhalte-Check.
   Bis zu 6 Kämpfe im 10-Min-Abstand, Admiral wird pro Check stärker. Nur Kreuzer-Klasse+ zugelassen
