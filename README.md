@@ -217,8 +217,10 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Spieler-Forschung (`combatFleetPowerBase()`) - Piraten/Raids/Multiplayer-Sektoren profitieren
   nicht davon. Eigene Kampfleistung bleibt regulär forschungsabhängig.
 - Piraten/NPCs bekommen `PIRATE_RESEARCH_SHARE` (aktuell 100%) der Forschungseffekte
-  (`computePirateResearch()` in `combat.ts`) - bei Mehrspieler-Kämpfen der Durchschnitt aller
-  Beteiligten. Klassen-Bonus/Module/Kampf-Booster bleiben exklusiv beim Spieler.
+  (`computePirateResearch()` in `combat.ts`) - bei Mehrspieler-Kämpfen (Elite-Bollwerk, Raid mit
+  Verstärkung) das MINIMUM aller Beteiligten pro Forschungs-Zweig (Korrektur 05.08.2026, vorher
+  Durchschnitt - siehe Kampfsystem-Historie unten). Klassen-Bonus/Module/Kampf-Booster bleiben
+  exklusiv beim Spieler.
 - Gestaffelter Einzelschiff-Rückzug (`UNIT_RETREAT_THRESHOLD = 0.3`): jedes Schiff auf Seite A
   entscheidet einzeln anhand seines eigenen HP-Anteils, kein Alles-oder-Nichts mehr. Gilt NICHT für
   Heimverteidigung bei Raids (`allowRetreat:false`). `result.retreated` ist NICHT mehr automatisch
@@ -385,12 +387,17 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   naechsthoeheren liegt. Simulierte Endwerte: Niedrig praktisch risikofrei in jeder Ausbaustufe
   (ø 0-1% Verlust), Mittel gut machbar (67-100% Siegchance), Hoch fordernd (0% Siegchance ohne
   Ausbau, 67% bei Max-Ausbau), Elite bleibt die haerteste Stufe (0% ohne Ausbau, 42% bei Max-Ausbau,
-  vereinzelt Totalverlust moeglich). Elite-Bollwerk-Besonderheit weiterhin unverändert: Piraten
-  bekommen dort den GRUPPEN-DURCHSCHNITT der Forschung aller Teilnehmer
-  (`computePirateResearch()` in `combat.ts`), wodurch schwächer ausgebaute Mitspieler in gemischten
-  Gruppen strukturell benachteiligt werden (kämpfen effektiv über ihrem eigenen Forschungsniveau) -
-  laut Nutzerentscheidung bewusst so belassen (Ausbau-Anreiz), nur die absolute Härte wurde
-  korrigiert.
+  vereinzelt Totalverlust moeglich). Elite-Bollwerk-Besonderheit zunächst unverändert belassen
+  (Piraten bekamen den GRUPPEN-DURCHSCHNITT der Forschung aller Teilnehmer via
+  `computePirateResearch()`), dann per Livetest widerlegt: ein Nutzer-Paar mit stark
+  unterschiedlichem Forschungsstand (Level 2 vs. 10) zeigte im echten Elite-Bollwerk-Kampf beim
+  schwächer ausgebauten Teilnehmer etwa DOPPELT so hohe Verlustquoten wie beim stärkeren, bei
+  praktisch identischen Schiffstypen - der Nutzer wollte das ursprünglich als Ausbau-Anreiz
+  behalten, empfand die reale Auswirkung dann aber als zu hart fürs Spielgefühl des schwächeren
+  Mitspielers. `computePirateResearch()` nutzt seitdem das MINIMUM statt den Durchschnitt aller
+  Beteiligten pro Forschungs-Zweig - kein Teilnehmer kämpft dadurch mehr schlechter, als er es
+  solo auf seinem eigenen Stand täte, wer besser ausgebaut ist profitiert weiterhin vom eigenen
+  Vorsprung.
 - Elite-Bollwerk: Beute verdoppelt sich pro Sieg in Folge (`streakWins`), bei perfekter Serie über
   alle 6 Checks zusätzlicher Abschluss-Bonus (Gesamtausbeute nochmal verdoppelt). Solo nutzbar
   (0 Eingeladene = Ersteller allein). Seit 04.08.2026 zusätzlich `guaranteedContainers` in

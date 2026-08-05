@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Fix: Elite-Bollwerk benachteiligte schwächer ausgebaute Mitspieler',
+    changes: [
+      'Im Elite-Bollwerk wurden die Piraten bisher auf den Forschungs-DURCHSCHNITT aller Teilnehmer hochskaliert - dadurch kämpfte, wer in der Gruppe weniger Forschung hatte, gegen Gegner, die stärker waren als der eigene Ausbau, während besser ausgebaute Mitspieler entsprechend im Vorteil waren. Live-Berichte zeigten dadurch etwa doppelt so hohe Flottenverluste für den schwächer ausgebauten Teilnehmer. Die Piraten orientieren sich jetzt am NIEDRIGSTEN Forschungsstand der Gruppe - niemand kämpft dadurch mehr schlechter, als er es auch alleine tun würde, wer besser ausgebaut ist profitiert weiterhin voll von seinem Vorsprung.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Fix: Gegnerstärke in allen Piraten-Sektoren korrigiert',
     changes: [
       'Beim letzten Kampf-Update wurde die Gegnerstärke im Piraten-Sektor Hoch und im Elite-Bollwerk versehentlich zu hoch angesetzt - Spielertests zeigten Totalverluste der eigenen Flotte selbst bei gut ausgebauter Forschung und Modulen. Die Gegnerstärke wurde in beiden Sektoren jetzt spürbar gesenkt, sodass sie wieder eine faire Siegchance bieten, ohne die Herausforderung komplett zu verlieren.',

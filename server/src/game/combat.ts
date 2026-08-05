@@ -752,25 +752,31 @@ export interface OwnedFleetContribution {
   shipModules?: Record<string, number>; // eigene Schiffs-Module des Beitragenden, siehe data/shipModules.ts
 }
 
-// Liefert das "Piraten-Forschungsobjekt": PIRATE_RESEARCH_SHARE (50%) des relevanten
+// Liefert das "Piraten-Forschungsobjekt": PIRATE_RESEARCH_SHARE (100%) des relevanten
 // Forschungsstands, NIE Klassen-Bonus/Module/Kampf-Booster (die betreffen nur getEffectiveStats(),
 // nicht dieses research-Objekt). Bei mehreren Beitragenden (contributions, z.B. Elite-Bollwerk
-// oder Raid mit Verstaerkung/haltenden Flotten) zaehlt der DURCHSCHNITT aller Beteiligten
-// (Nutzerentscheidung) - fehlt einer Contribution die eigene research (sollte praktisch nie
-// vorkommen), faellt sie auf die uebergebene Basis-`research` zurueck, analog zu
-// buildUnitsMultiOwner() oben.
+// oder Raid mit Verstaerkung/haltenden Flotten) zaehlt seit 05.08.2026 das MINIMUM aller
+// Beteiligten pro Forschungs-Zweig (Nutzerentscheidung, Korrektur einer frueheren Entscheidung:
+// vorher zaehlte der DURCHSCHNITT, wodurch der schwaecher ausgebaute Teilnehmer effektiv UEBER
+// seinem eigenen Forschungsniveau kaempfen musste, waehrend der staerkere Teilnehmer entsprechend
+// darunter kaempfte - Livetest zeigte dabei etwa doppelt so hohe Verlustquoten fuer den
+// schwaecheren Mitspieler bei praktisch identischen Schiffstypen. Das MINIMUM stellt sicher, dass
+// KEIN Teilnehmer schlechter dasteht als bei einem Solo-Kampf auf seinem eigenen Stand - der
+// staerker ausgebaute Teilnehmer profitiert weiterhin voll von seinem Vorsprung, der schwaechere
+// wird nicht mehr zusaetzlich dafuer bestraft, dass jemand anderes in der Gruppe weiter ist) -
+// fehlt einer Contribution die eigene research (sollte praktisch nie vorkommen), faellt sie auf
+// die uebergebene Basis-`research` zurueck, analog zu buildUnitsMultiOwner() oben.
 export function computePirateResearch(research: Record<string, number>, contributions?: OwnedFleetContribution[]): Record<string, number> {
   let source = research;
   if (contributions && contributions.length > 0) {
     const researches = contributions.map((c) => c.research || research);
     const keys = new Set<string>();
     researches.forEach((r) => Object.keys(r).forEach((k) => keys.add(k)));
-    const avg: Record<string, number> = {};
+    const min: Record<string, number> = {};
     keys.forEach((k) => {
-      const sum = researches.reduce((acc, r) => acc + (r[k] || 0), 0);
-      avg[k] = sum / researches.length;
+      min[k] = Math.min(...researches.map((r) => r[k] || 0));
     });
-    source = avg;
+    source = min;
   }
   const scaled: Record<string, number> = {};
   Object.keys(source).forEach((k) => (scaled[k] = (source[k] || 0) * PIRATE_RESEARCH_SHARE));
