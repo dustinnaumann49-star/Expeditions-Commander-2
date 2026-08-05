@@ -122,15 +122,25 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // sondern durch gewonnene Kaempfe") - lootBase (25M/15M/10M PRO gewonnenem Check) war ohnehin
   // schon die dominante Rohstoffquelle hier, der Wegfall des zeitbasierten Zusatz-Tricklers ist
   // gegenueber den 6 potenziellen lootBase-Ausschuettungen pro Trip vernachlaessigbar.
-  // lootBase Korrektur 05.08.2026 (Nutzer-Fund): Live-Auswertung von 3 echten Checks zeigte, dass
-  // die Wiederaufbaukosten der ueblichen Flottenverluste (bei zwei Teilnehmern zusammen ueber
-  // 6 Mrd. Metall allein) die alte lootBase (25M/15M/10M PRO Teilnehmer) plus garantierte
-  // Container um ein Vielfaches uebersteigen - das Elite-Bollwerk war dadurch ein reiner
-  // Netto-Ressourcenverlust, sobald man die Flotte wieder auffuellen musste. Auf 100M/60M/40M
-  // (4x) angehoben, damit sich die Expedition wirtschaftlich wieder lohnt, ohne an der
-  // Kampf-Schwierigkeit selbst (siehe PIRATEN_MULTIPLIER_ROLL oben) etwas zu aendern.
+  // Korrektur 05.08.2026 (Nutzer-Fund, dann per Nutzer-Gegenpruefung REVIDIERT): lootBase zunaechst
+  // versucht auf das 4x anzuheben (100M/60M/40M) - Nutzer wies zurecht darauf hin, dass lootBase
+  // bereits durch REWARD_ESCALATION ("double"-Modus, siehe economy.ts) pro Sieg in Folge
+  // verdoppelt wird UND der Reset-Trigger ("kein einziger Gegner vernichtet") eine sehr niedrige
+  // Huerde ist - bei einer typischen durchgehenden Serie ueber alle 6 Checks ergeben sich
+  // Multiplikatoren 1x/2x/4x/8x/16x/32x (Summe 63x) PLUS eine komplette Verdopplung der
+  // Gesamtausbeute am Ende ("Perfekte Serie"-Bonus). Schon mit der ALTEN Basis (25M/15M/10M) kam
+  // dadurch bei einer durchgehenden Serie ~6,3 Mrd. PRO SPIELER zusammen - die 4x-Erhoehung haette
+  // daraus ~25 Mrd. gemacht, weit ueber das Ziel hinausgeschossen. lootBase daher UNVERAENDERT
+  // gelassen - das eigentliche Problem war die VERTEILUNG (Check 1-2 mit niedrigem Streak tragen
+  // die hoechsten Verluste, bekommen aber die kleinste Belohnung), nicht die Gesamtsumme. Siehe
+  // winResources unten fuer die tatsaechliche Korrektur (flacher, NICHT eskalierender Bonus).
   piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000,
-    lootBase:{metall:100000000, kristall:60000000, deuterium:40000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
+    // Flacher Ausgleichs-Bonus PRO gewonnenem Check (Nutzerentscheidung 05.08.2026), NICHT von der
+    // Sieg-Serie-Eskalation betroffen (siehe runGroupHourlyCheck() in groupOps.ts - wird separat
+    // von lootBase addiert) - gleicht gezielt die fruehen, noch nicht eskalierten Checks aus, ohne
+    // die ohnehin schon exponentiell wachsende Spaetphase weiter aufzublaehen.
+    winResources:{metall:300000000, kristall:180000000, deuterium:120000000},
     captainChance:0.15, captainContainerTier:"elite", captainDm:50,
     guaranteedContainers:[{tier:"silber", count:4}, {tier:"gold", count:3}, {tier:"elite", count:2}],
     multiplayerOnly:true,

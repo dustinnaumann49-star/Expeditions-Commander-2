@@ -437,14 +437,24 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   überstandenem Check (mind. ein Gegner vernichtet), unabhängig von der Zufalls-Kapitän-Mechanik
   (`captainChance`) - jeder Teilnehmer bekommt die volle Menge, siehe
   `runGroupOperationCheck()` in `groupOps.ts`.
-- Korrektur 05.08.2026 (Nutzer-Fund): `lootBase` von `piraten_elite` (25M/15M/10M Metall/Kristall/
-  Deuterium PRO Teilnehmer PRO gewonnenem Check) reichte nicht annähernd, um die üblichen
-  Flottenverluste wirtschaftlich auszugleichen - Live-Auswertung dreier echter Checks zeigte
-  Wiederaufbaukosten der Verluste (beide Teilnehmer zusammen) im zweistelligen Milliarden-Bereich,
-  während die Belohnung (lootBase + garantierte Container) nur einen Bruchteil davon deckte. Auf
-  `100M/60M/40M` (4x) angehoben, damit die Expedition wirtschaftlich wieder trägt, ohne die
-  Kampf-Schwierigkeit selbst anzufassen (siehe `PIRATEN_MULTIPLIER_ROLL`/`defenseFactor`-Korrektur
-  weiter oben - das war ein separates Problem).
+- Korrektur 05.08.2026 (Nutzer-Fund, dann per Nutzer-Gegenprüfung REVIDIERT): `lootBase` von
+  `piraten_elite` (25M/15M/10M PRO Teilnehmer PRO gewonnenem Check) schien nicht auszureichen, um
+  die üblichen Flottenverluste wirtschaftlich auszugleichen - Live-Auswertung dreier echter Checks
+  zeigte Wiederaufbaukosten im zweistelligen Milliarden-Bereich (beide Teilnehmer zusammen).
+  Zunächst versucht, `lootBase` selbst um das 4x anzuheben - Nutzer wies zurecht darauf hin, dass
+  `lootBase` bereits durch `REWARD_ESCALATION` (`double`-Modus, siehe `economy.ts`) PRO SIEG IN
+  FOLGE verdoppelt wird und der Reset-Trigger ("kein einziger Gegner vernichtet") eine sehr
+  niedrige Hürde ist - bei einer typischen durchgehenden 6-Check-Serie ergeben sich dadurch schon
+  mit der ALTEN Basis Multiplikatoren 1x/2x/4x/8x/16x/32x (Summe 63x) PLUS eine komplette
+  Verdopplung der Gesamtausbeute am Ende ("Perfekte Serie"-Bonus) - macht rechnerisch bereits
+  ~6,3 Mrd. pro Spieler, eine 4x-Basis-Erhöhung hätte daraus ~25 Mrd. gemacht (weit über das Ziel
+  hinausgeschossen). `lootBase` daher UNVERÄNDERT gelassen. Stattdessen neues Feld `winResources`
+  (300M/180M/120M, analog zum gleichnamigen Solo-Sektor-Feld, aber hier PRO CHECK statt am
+  Missionsende gesammelt) in `runGroupHourlyCheck()` (`groupOps.ts`) ergänzt - bewusst NICHT mit
+  `escalationMultiplier`/`fleetBonus` multipliziert, gleicht dadurch gezielt die frühen, noch
+  nicht eskalierten Checks aus, ohne die exponentiell wachsende Spätphase weiter aufzublähen.
+  Kampf-Schwierigkeit selbst unangetastet (siehe `PIRATEN_MULTIPLIER_ROLL`/`defenseFactor`-
+  Korrektur weiter oben - das war ein separates Problem).
 - Piratenadmiral (`piraten_admiral`): ein starker Boss + kleine Eskorte statt Massenwellen, mit
   Extraktions-Entscheidung ("Beute sichern" oder "weitermachen") statt reinem Durchhalte-Check.
   Bis zu 6 Kämpfe im 10-Min-Abstand, Admiral wird pro Check stärker. Nur Kreuzer-Klasse+ zugelassen

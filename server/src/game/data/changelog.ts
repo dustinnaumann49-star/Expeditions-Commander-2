@@ -10,9 +10,9 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
-    title: 'Fix: Elite-Bollwerk-Belohnung deutlich angehoben',
+    title: 'Fix: Elite-Bollwerk-Belohnung in frühen Checks angehoben',
     changes: [
-      'Live-Auswertung mehrerer echter Expeditionen zeigte: die üblichen Flottenverluste im Elite-Bollwerk kosteten beim Wiederaufbau deutlich mehr Ressourcen, als die Expedition an Metall/Kristall/Deuterium einbrachte - unterm Strich ein Verlustgeschäft, selbst bei gewonnenen Kämpfen. Die Grundbelohnung pro gewonnenem Check wurde jetzt vervierfacht, damit sich das Risiko wieder lohnt.',
+      'Live-Auswertung mehrerer echter Expeditionen zeigte: die üblichen Flottenverluste im Elite-Bollwerk kosteten beim Wiederaufbau deutlich mehr Ressourcen, als die Expedition einbrachte - vor allem in den ersten Checks, bevor sich der Sieg-Serie-Bonus aufgebaut hat. Es gibt jetzt zusätzlich zur bestehenden (mit der Serie eskalierenden) Beute einen festen Ressourcen-Bonus pro gewonnenem Check, der gerade die frühen, noch nicht eskalierten Checks spürbar aufwertet.',
     ],
   },
   {

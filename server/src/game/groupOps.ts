@@ -906,6 +906,26 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     )} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
   }
 
+  // Flacher Ausgleichs-Bonus PRO gewonnenem Check (Nutzerentscheidung 05.08.2026, siehe
+  // winResources in sectors.ts) - bewusst NICHT mit escalationMultiplier/fleetBonus multipliziert
+  // (im Unterschied zu lootBase oben), damit er speziell die fruehen Checks (noch niedrige
+  // Sieg-Serie) abfedert, ohne die durch REWARD_ESCALATION ohnehin schon exponentiell wachsende
+  // Spaetphase einer langen Serie weiter aufzublaehen. Analoges Feld bei Solo-Piraten-Sektoren
+  // (siehe finalizeMission() in missions.ts), hier aber PRO CHECK statt am Missionsende gesammelt.
+  let winResourcesText = '';
+  if (anyNpcDestroyed && cfg.winResources) {
+    accepted.forEach((p) => {
+      if (!p.farmed) return;
+      p.farmed.metall += cfg.winResources!.metall;
+      p.farmed.kristall += cfg.winResources!.kristall;
+      p.farmed.deuterium += cfg.winResources!.deuterium;
+      participantStates.get(p.userId)!.stats.resourcesLooted += cfg.winResources!.metall + cfg.winResources!.kristall + cfg.winResources!.deuterium;
+    });
+    winResourcesText = ` Zusätzlich ${cfg.winResources.metall.toLocaleString('de-DE')} Metall, ${cfg.winResources.kristall.toLocaleString(
+      'de-DE'
+    )} Kristall, ${cfg.winResources.deuterium.toLocaleString('de-DE')} Deuterium.`;
+  }
+
   // Garantierte Container-Ausschuettung pro ueberstandenem Check (siehe guaranteedContainers in
   // sectors.ts) - unabhaengig von der Zufalls-Kapitaen-Mechanik unten, jeder Teilnehmer bekommt ALLE
   // gelisteten Tiers bei jedem gewonnenen Check.
@@ -951,7 +971,7 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     outlier === 'stark' ? ' ⚠ Ausreißer stark' : outlier === 'schwach' ? ', Ausreißer schwach' : ''
   }]`;
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
-  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${teileGainText}${guaranteedContainerText}${captainText}${modifierText}`;
+  const messageText = `Gemeinsame Expedition ${op.sektorId}${waveText} (mit ${teilnehmerListe}), Check ${op.processedHours}/${PIRATEN_CHECK_COUNT}: ${outcome}.${lootText}${winResourcesText}${teileGainText}${guaranteedContainerText}${captainText}${modifierText}`;
   const hasRewards = (anyNpcDestroyed && (cfg.lootBase || cfg.teileCap)) || captainResult?.destroyed;
   const detail: CombatDetail = {
     sektorName: `${op.sektorId} (gemeinsam: ${teilnehmerListe})`,
