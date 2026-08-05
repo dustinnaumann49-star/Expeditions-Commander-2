@@ -94,7 +94,8 @@ server/
   src/game/data/defenseModules.ts    Verteidigungs-Module (Waffen/Schild/Panzerung)
   src/game/data/research.ts          Forschungsbaum
   src/game/data/sectors.ts           SEKTOREN, SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL
-  src/game/data/economy.ts           Booster, Gutscheine, Container, Raid-Konstanten, Checkpoints
+  src/game/data/economy.ts           Booster, Gutscheine, Container, Raid-Konstanten, Checkpoints,
+                                      woechentlicher Event-Kalender (WEEKLY_EVENTS)
   src/game/data/combatConstants.ts   RAPIDFIRE-Tabelle, ZIELERFASSUNG_BASE, MAX_*-Konstanten,
                                       STACK_AGGREGATE_THRESHOLD_BY_TYPE
   src/game/data/galaxyConstants.ts   Galaxie-Größe, Distanz-/Flugzeit-Konstanten, Piratenbasen
@@ -207,10 +208,35 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   Sommer-/Winterzeit automatisch). Beim Prüfen immer zuerst testen, ob der GESPEICHERTE Wert
   fällig ist, bevor er weitergerückt wird.
 - Raid-Zeiten sind fest und pro Spieler hinterlegt (`RAID_SCHEDULE_BY_USERNAME` in `economy.ts`):
-  aktuell 1x/Woche, Sonntag 0 Uhr deutscher Zeit, garantiert (Chance 1.0) für beide bekannten
-  Nutzernamen. Unbekannte Namen fallen auf den allgemeinen Rhythmus mit `RAID_SPAWN_CHANCE` zurück.
+  seit 05.08.2026 2x/Woche (Mittwoch + Sonntag, jeweils 0 Uhr deutscher Zeit, siehe
+  Event-Kalender unten), garantiert (Chance 1.0) für beide bekannten Nutzernamen. Unbekannte Namen
+  fallen auf den allgemeinen Rhythmus mit `RAID_SPAWN_CHANCE` zurück. `RaidScheduleSpec` ist jetzt
+  ein ARRAY pro Nutzer (`nextWeeklyCheckpoint()`/`rollWeeklyCheckpoints()` in `economy.ts` wählen
+  jeweils den frühesten Checkpoint über alle Einträge) - kein neues `PlayerState`-Feld nötig,
+  `state.nextRaidCheck` bleibt ein einzelner Zeitstempel für den jeweils nächsten Termin.
 - Globale Warn-Hinweise für laufende Raids in `ResourceBar.tsx` (`.alert-badge`), Klick führt per
   Query-Parameter direkt zum passenden Tab.
+- **Wöchentlicher Event-Kalender** (05.08.2026, Nutzerentscheidung): automatische, KOSTENLOSE
+  Bonus-Tage für ALLE Spieler gleichzeitig - im Unterschied zu den gekauften Boostern
+  (`isBoosterActive()`/`state.activeBoosters`) braucht das KEINEN Speicherzustand, der aktive
+  Zustand ergibt sich rein aus der aktuellen Berliner Uhrzeit (`berlinWeekday()`/
+  `isWeeklyEventActive()`/`WEEKLY_EVENTS` in `economy.ts`, Client-Mirror in `lib/multipliers.ts`
+  mit `serverNow()` statt `Date.now()`). Gilt automatisch für den vollen Kalendertag
+  (00:00-24:00), endet von selbst beim Tageswechsel:
+  - Montag + Freitag: +100% Belohnung im Solo-Piraten-Sektor (Niedrig/Mittel/Hoch) -
+    verdoppelt den linearen `mission.combatWins`-Zähler (siehe `missions.ts`), bewusst NICHT
+    Elite-Bollwerk/Piratenadmiral (die nutzen eine exponentielle Serien-Eskalation, siehe
+    `REWARD_ESCALATION` - ein zusätzliches x2 dort hätte dasselbe Explosions-Risiko wie die
+    ursprünglich fehlgeschlagene lootBase-Vervierfachung beim Elite-Bollwerk, siehe oben).
+  - Dienstag + Donnerstag: +100% Ressourcen im Asteroiden-Feld (`ASTEROID_EVENT_MULTIPLIER` in
+    `miningMultiplier()`, `missions.ts`) - NUR Asteroiden-Feld-Missionen, nicht die
+    Heimatbasis-Minen.
+  - Mittwoch + Sonntag: Raid-Event (siehe oben, echtes 2. wöchentliches Vorkommen).
+  - Samstag: kostenloser Bauzeit-Bonus (`WEEKLY_BAUZEIT_EVENT_FACTOR = 0.75`, -25%) für
+    Schiffe/Verteidigung/Gebäude (`baseTimeMultiplier()`) UND Forschung
+    (`researchTimeMultiplier()`) - bewusst schwächer als der gekaufte bautempo-/
+    forschungstempo-Booster (-65%), damit sich ein Kauf weiterhin lohnt.
+  - Anzeige: `WeeklyEventBanner.tsx` (Sektor-/Shop-Seite) zeigt den/die heute aktiven Event(s) an.
 
 ### Kampfsystem
 

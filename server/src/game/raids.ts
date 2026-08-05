@@ -145,11 +145,11 @@ function notifyRaidLaunchIfDue(state: PlayerState): void {
 // Ermittelt fuer einen Nutzer seinen woechentlichen Raid-Rhythmus (siehe RAID_SCHEDULE_BY_USERNAME) -
 // Chance 1.0 (immer) fuer die beiden namentlich zugewiesenen Spieler, RAID_FALLBACK_SCHEDULE MIT
 // RAID_SPAWN_CHANCE-Wuerfeln fuer unbekannte/zukuenftige Nutzernamen.
-function getRaidSchedule(userId: number): { spec: { weekday: number; hour: number }; chance: number } {
+function getRaidSchedule(userId: number): { specs: { weekday: number; hour: number }[]; chance: number } {
   const user = getUserById(userId);
-  const fixedSpec = user ? RAID_SCHEDULE_BY_USERNAME[user.username] : undefined;
-  if (fixedSpec) return { spec: fixedSpec, chance: 1 };
-  return { spec: RAID_FALLBACK_SCHEDULE, chance: RAID_SPAWN_CHANCE };
+  const fixedSpecs = user ? RAID_SCHEDULE_BY_USERNAME[user.username] : undefined;
+  if (fixedSpecs) return { specs: fixedSpecs, chance: 1 };
+  return { specs: RAID_FALLBACK_SCHEDULE, chance: RAID_SPAWN_CHANCE };
 }
 
 // Heimatverteidigung (Raids) MUSS zusaetzlich zu COMBAT_SHIP_IDS auch den Imperator einschliessen -
@@ -182,7 +182,7 @@ export async function processRaidTimer(state: PlayerState) {
   if (now < state.nextRaidCheck) return;
 
   const schedule = getRaidSchedule(state.userId);
-  state.nextRaidCheck = rollWeeklyCheckpoints(state.nextRaidCheck, now, schedule.chance, (checkpointTime) => spawnRaidAt(state, checkpointTime), schedule.spec);
+  state.nextRaidCheck = rollWeeklyCheckpoints(state.nextRaidCheck, now, schedule.chance, (checkpointTime) => spawnRaidAt(state, checkpointTime), schedule.specs);
 }
 
 /**
@@ -241,7 +241,7 @@ export async function processOverdueRaidSpawnsForOtherUsers(currentState: Player
         now,
         schedule.chance,
         (checkpointTime) => spawnRaidAt(otherState, checkpointTime),
-        schedule.spec
+        schedule.specs
       );
       savePlayerState(otherState);
     } catch (err) {

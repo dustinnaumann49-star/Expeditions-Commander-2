@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Feature: Wöchentlicher Event-Kalender',
+    changes: [
+      'Neuer fester Wochenrhythmus mit automatischen, kostenlosen Bonus-Tagen für alle Spieler: Montag+Freitag +100% Belohnung im Piraten-Sektor (Niedrig/Mittel/Hoch), Dienstag+Donnerstag +100% Ressourcen im Asteroiden-Feld, Mittwoch+Sonntag Raid-Event (jetzt 2x statt 1x pro Woche), Samstag kostenloser Bauzeit-Bonus für Schiffe/Verteidigung/Gebäude/Forschung.',
+      'Der heute aktive Bonus wird jetzt oben auf der Sektor- und Shop-Seite angezeigt.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Fix: Elite-Bollwerk-Belohnung in frühen Checks angehoben',
     changes: [
       'Live-Auswertung mehrerer echter Expeditionen zeigte: die üblichen Flottenverluste im Elite-Bollwerk kosteten beim Wiederaufbau deutlich mehr Ressourcen, als die Expedition einbrachte - vor allem in den ersten Checks, bevor sich der Sieg-Serie-Bonus aufgebaut hat. Es gibt jetzt zusätzlich zur bestehenden (mit der Serie eskalierenden) Beute einen festen Ressourcen-Bonus pro gewonnenem Check, der gerade die frühen, noch nicht eskalierten Checks spürbar aufwertet.',

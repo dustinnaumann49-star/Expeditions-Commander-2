@@ -7,6 +7,7 @@ import { InfoModal, InfoTable } from '../components/InfoModal';
 import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
 import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import { SimulatorView } from './Simulator';
+import { WeeklyEventBanner } from '../components/WeeklyEventBanner';
 import type { GameData, Mission } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
@@ -548,6 +549,7 @@ export function SektorPage() {
     <div>
       <h2 style={{ marginBottom: 16 }}>Sektor</h2>
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
+      <WeeklyEventBanner />
 
       {state.raid && (
         <div className="queue-box" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>

@@ -4,6 +4,7 @@ import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { getEffectiveBoosterCost } from '../lib/multipliers';
+import { WeeklyEventBanner } from '../components/WeeklyEventBanner';
 
 function ShopBoosterView() {
   const { gameData, state, buyBooster, buyVoucher, error } = useGame();
@@ -84,6 +85,7 @@ export function ShopPage() {
   return (
     <div>
       <h2 style={{ marginBottom: 16 }}>Shop</h2>
+      <WeeklyEventBanner />
       <ShopBoosterView />
     </div>
   );

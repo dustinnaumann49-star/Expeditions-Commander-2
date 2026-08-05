@@ -1,6 +1,35 @@
 import { serverNow } from './serverTime';
 import type { GameData, PlayerState } from '../types/game';
 
+// ===== Woechentlicher Event-Kalender (05.08.2026) - spiegelt server/src/game/data/economy.ts
+// (berlinWeekday()/WEEKLY_EVENTS/isWeeklyEventActive()) 1:1, nutzt aber serverNow() statt
+// Date.now() (skew-korrigierte Client-Zeit, siehe serverTime.ts) =====
+const BERLIN_TZ = 'Europe/Berlin';
+function berlinOffsetHours(utcMs: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: BERLIN_TZ, timeZoneName: 'shortOffset' }).formatToParts(new Date(utcMs));
+  const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT+1';
+  const match = tzPart.match(/GMT([+-]\d+)/);
+  return match ? parseInt(match[1], 10) : 1;
+}
+export function berlinWeekday(utcMs: number = serverNow()): number {
+  const offset = berlinOffsetHours(utcMs);
+  return new Date(utcMs + offset * 3600 * 1000).getUTCDay();
+}
+export interface WeeklyEventDefinition { id: string; weekdays: number[]; label: string }
+export const WEEKLY_EVENTS: WeeklyEventDefinition[] = [
+  { id: 'piraten_bonus', weekdays: [1, 5], label: 'Piraten-Sektor: +100% Belohnung (Niedrig/Mittel/Hoch)' },
+  { id: 'asteroid_bonus', weekdays: [2, 4], label: 'Asteroiden-Feld: +100% Ressourcen' },
+  { id: 'raid_event', weekdays: [3, 0], label: 'Raid-Event' },
+  { id: 'bauzeit_bonus', weekdays: [6], label: 'Bauzeit-Bonus (Schiffe/Verteidigung/Gebäude/Forschung)' },
+];
+export function isWeeklyEventActive(id: string, utcMs: number = serverNow()): boolean {
+  const def = WEEKLY_EVENTS.find((e) => e.id === id);
+  if (!def) return false;
+  return def.weekdays.includes(berlinWeekday(utcMs));
+}
+const ASTEROID_EVENT_MULTIPLIER = 2.0;
+const WEEKLY_BAUZEIT_EVENT_FACTOR = 0.75;
+
 // Spiegelt server/src/game/data/classes.ts 1:1 - Werte muessen bei Aenderung dort synchron
 // gehalten werden, sonst zeigt die UI falsche Kosten an (README Punkt 1 gilt analog auch fuer
 // Klassen-Multiplikatoren, nicht nur Zeit-Anzeigen). Getrennt nach Schiffen und Verteidigung:
@@ -58,6 +87,7 @@ function baseTimeMultiplier(gameData: GameData, state: PlayerState): number {
   const effectPerLevel = tech ? tech.effectPerLevel : 0.05;
   let m = Math.max(0.3, 1 - (state.research.bauzeit || 0) * effectPerLevel);
   if (isBoosterActive(state, 'bautempo')) m *= 0.5;
+  if (isWeeklyEventActive('bauzeit_bonus')) m *= WEEKLY_BAUZEIT_EVENT_FACTOR;
   return m;
 }
 
@@ -161,7 +191,10 @@ export function getMiningMultiplier(state: PlayerState): number {
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
   const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
-  return base * specific * economy;
+  // Woechentlicher Event-Kalender (05.08.2026): +100% Asteroiden-Feld-Ertrag Di/Do (nur
+  // Asteroiden-Feld-Missionen, NICHT die Heimatbasis-Minen - siehe getMiningBuildingMultiplier()).
+  const weeklyEvent = isWeeklyEventActive('asteroid_bonus') ? ASTEROID_EVENT_MULTIPLIER : 1;
+  return base * specific * economy * weeklyEvent;
 }
 
 export function getMiningBuildingMultiplier(state: PlayerState): number {
@@ -216,5 +249,7 @@ export function getMineOutputPerHour(gameData: GameData, state: PlayerState, bui
 // "forschungstempo"-Booster halbiert die Forschungszeit, es gibt keine Forschung, die sich selbst
 // beschleunigt.
 export function getForschungszeitMultiplier(state: PlayerState): number {
-  return isBoosterActive(state, 'forschungstempo') ? 0.5 : 1;
+  const booster = isBoosterActive(state, 'forschungstempo') ? 0.5 : 1;
+  const weeklyEvent = isWeeklyEventActive('bauzeit_bonus') ? WEEKLY_BAUZEIT_EVENT_FACTOR : 1;
+  return booster * weeklyEvent;
 }

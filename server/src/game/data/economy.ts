@@ -299,11 +299,16 @@ export interface RaidScheduleSpec { weekday: number; hour: number } // weekday: 
 // jetzt Sekundenbruchteile statt Minuten, siehe README Punkt 103) - gemeinsamer Wochentag ist daher
 // unproblematisch. Die beiden echten Spieler bekommen Chance 1.0 (garantiert, kein Wuerfeln), der
 // Fallback fuer unbekannte Namen wuerfelt weiterhin gegen RAID_SPAWN_CHANCE.
-export const RAID_SCHEDULE_BY_USERNAME: Record<string, RaidScheduleSpec> = {
-  ShadowEagle: { weekday: 0, hour: 0 },
-  SchnelleRatte: { weekday: 0, hour: 0 },
+// Erweiterung 05.08.2026 (Nutzerentscheidung, woechentlicher Event-Kalender siehe WEEKLY_EVENTS
+// unten): JEDER Eintrag ist jetzt ein ARRAY von Zeitpunkten statt eines einzelnen - Mittwoch UND
+// Sonntag statt nur Sonntag (echtes zweites woechentliches Raid-Vorkommen, verdoppelt bewusst die
+// Haeufigkeit). nextWeeklyCheckpoint()/rollWeeklyCheckpoints() unten sind darauf ausgelegt, ueber
+// mehrere Spec-Eintraege hinweg jeweils den NAECHSTEN (fruehesten) Checkpoint zu waehlen.
+export const RAID_SCHEDULE_BY_USERNAME: Record<string, RaidScheduleSpec[]> = {
+  ShadowEagle: [{ weekday: 3, hour: 0 }, { weekday: 0, hour: 0 }],
+  SchnelleRatte: [{ weekday: 3, hour: 0 }, { weekday: 0, hour: 0 }],
 };
-export const RAID_FALLBACK_SCHEDULE: RaidScheduleSpec = { weekday: 0, hour: 0 };
+export const RAID_FALLBACK_SCHEDULE: RaidScheduleSpec[] = [{ weekday: 3, hour: 0 }, { weekday: 0, hour: 0 }];
 
 const BERLIN_TZ = 'Europe/Berlin';
 
@@ -319,6 +324,50 @@ function berlinOffsetHours(utcMs: number): number {
   const match = tzPart.match(/GMT([+-]\d+)/);
   return match ? parseInt(match[1], 10) : 1;
 }
+
+// Liefert den aktuellen Wochentag in Berliner Ortszeit (0=Sonntag..6=Samstag) - gleicher
+// "pseudo-Berlin"-Trick wie nextWeeklyCheckpoint() unten (Zeitstempel um den Offset verschieben,
+// dann UTC-Getter nutzen), aber als eigenstaendige, exportierte Funktion fuer den woechentlichen
+// Event-Kalender (WEEKLY_EVENTS unten), der KEINEN Bezug zu einem einzelnen Spieler-Raid-Rhythmus
+// hat.
+export function berlinWeekday(utcMs: number = Date.now()): number {
+  const offset = berlinOffsetHours(utcMs);
+  return new Date(utcMs + offset * 3600 * 1000).getUTCDay();
+}
+
+// ===== Woechentlicher Event-Kalender (05.08.2026, Nutzerentscheidung) =====
+// Automatische, KOSTENLOSE Bonus-Tage fuer ALLE Spieler gleichzeitig - im Unterschied zu den
+// gekauften Boostern (siehe boosterUtil.ts/isBoosterActive()) braucht das KEINEN Speicherzustand:
+// der aktive Zustand ergibt sich rein aus der aktuellen Berliner Uhrzeit, gilt automatisch fuer
+// den vollen Kalendertag (00:00-24:00) und endet von selbst beim naechsten Tageswechsel.
+export interface WeeklyEventDefinition {
+  id: string;
+  weekdays: number[]; // 0=Sonntag..6=Samstag
+  label: string;
+}
+export const WEEKLY_EVENTS: WeeklyEventDefinition[] = [
+  { id: 'piraten_bonus', weekdays: [1, 5], label: 'Piraten-Sektor: +100% Belohnung (Niedrig/Mittel/Hoch)' },
+  { id: 'asteroid_bonus', weekdays: [2, 4], label: 'Asteroiden-Feld: +100% Ressourcen' },
+  { id: 'raid_event', weekdays: [3, 0], label: 'Raid-Event' },
+  { id: 'bauzeit_bonus', weekdays: [6], label: 'Bauzeit-Bonus (Schiffe/Verteidigung/Gebäude/Forschung)' },
+];
+
+export function isWeeklyEventActive(id: string, utcMs: number = Date.now()): boolean {
+  const def = WEEKLY_EVENTS.find((e) => e.id === id);
+  if (!def) return false;
+  return def.weekdays.includes(berlinWeekday(utcMs));
+}
+
+// +100% Ressourcen im Asteroiden-Feld (Di/Do), siehe miningMultiplier() in missions.ts.
+export const ASTEROID_EVENT_MULTIPLIER = 2.0;
+// Verdoppelt den combatWins-Zaehler der Solo-Piraten-Sektoren (Mo/Fr) - bewusst NICHT als
+// weiterer multiplikativer Faktor auf REWARD_ESCALATION, sondern auf den linearen Sieg-Zaehler
+// selbst (siehe missions.ts), da Niedrig/Mittel/Hoch keine exponentielle Serien-Eskalation nutzen.
+export const PIRATEN_EVENT_BONUS_MULTIPLIER = 2;
+// -25% Bauzeit am Samstag, fuer ALLE Bauarten gleichzeitig (siehe baseTimeMultiplier()/
+// researchTimeMultiplier() in actions.ts) - bewusst schwaecher als der gekaufte bautempo-/
+// forschungstempo-Booster (0.35 = -65%), damit sich ein Kauf weiterhin lohnt.
+export const WEEKLY_BAUZEIT_EVENT_FACTOR = 0.75;
 
 // RAID_WARNING_MS wurde durch RAID_PREP_MS (galaxyConstants.ts) ersetzt - Raids haben jetzt eine
 // echte, distanzabhaengige Flugzeit von einer zufaelligen Piratenbasis statt einer festen
@@ -393,12 +442,12 @@ export const COMBAT_SHIP_IDS = [
 ];
 
 // Liefert den naechsten woechentlichen Checkpoint (fester Wochentag+Uhrzeit, Server-Ortszeit) NACH
-// "now". Ersetzt die vorherige rein stunden-basierte nextFixedCheckpoint()/RAID_CHECK_HOURS_LOCAL
-// (Umbau auf 1x/Woche, siehe RAID_SCHEDULE_BY_USERNAME oben). Arbeitet in einem "pseudo-Berlin"-
-// Datumsrahmen (now um den aktuellen Offset verschoben, sodass UTC-Getter/Setter direkt die
-// Berliner Ortszeit-Felder liefern) - dieselbe Toleranz gegenueber dem Sommer-/Winterzeit-Wechsel
-// wie beim Rest der Datei (berlinOffsetHours() wird frisch pro Aufruf ermittelt).
-export function nextWeeklyCheckpoint(now: number, spec: RaidScheduleSpec): number {
+// "now" fuer EINEN einzelnen Spec-Eintrag - interne Hilfsfunktion, siehe nextWeeklyCheckpoint()
+// unten fuer die oeffentliche Multi-Spec-Version. Arbeitet in einem "pseudo-Berlin"-Datumsrahmen
+// (now um den aktuellen Offset verschoben, sodass UTC-Getter/Setter direkt die Berliner
+// Ortszeit-Felder liefern) - dieselbe Toleranz gegenueber dem Sommer-/Winterzeit-Wechsel wie beim
+// Rest der Datei (berlinOffsetHours() wird frisch pro Aufruf ermittelt).
+function nextWeeklyCheckpointSingle(now: number, spec: RaidScheduleSpec): number {
   const offset = berlinOffsetHours(now);
   const pseudoNow = new Date(now + offset * 3600 * 1000);
   const d = new Date(pseudoNow);
@@ -407,6 +456,14 @@ export function nextWeeklyCheckpoint(now: number, spec: RaidScheduleSpec): numbe
   d.setUTCDate(d.getUTCDate() + dayDiff);
   if (d.getTime() <= pseudoNow.getTime()) d.setUTCDate(d.getUTCDate() + 7);
   return d.getTime() - offset * 3600 * 1000;
+}
+
+// Oeffentliche Multi-Spec-Version (05.08.2026, Nutzerentscheidung: zweiter woechentlicher
+// Raid-Tag) - akzeptiert mehrere Wochentag+Uhrzeit-Eintraege (z.B. Mittwoch UND Sonntag) und
+// liefert jeweils den FRUEHESTEN der einzelnen naechsten Checkpoints. Ersetzt die vorherige
+// Einzel-Spec-Signatur ueberall (Aufrufer uebergeben jetzt immer ein Array).
+export function nextWeeklyCheckpoint(now: number, specs: RaidScheduleSpec[]): number {
+  return Math.min(...specs.map((spec) => nextWeeklyCheckpointSingle(now, spec)));
 }
 
 // Sicherheitsnetz gegen (praktisch unmoegliche) Endlosschleifen bei extrem alten/verwaisten
@@ -429,7 +486,7 @@ export function rollWeeklyCheckpoints(
   now: number,
   spawnChance: number,
   onSuccess: (checkpointTime: number) => void,
-  spec: RaidScheduleSpec
+  specs: RaidScheduleSpec[]
 ): number {
   let checkpoint = lastCheck;
   for (let i = 0; i < MAX_BACKFILL_WEEKLY_CHECKPOINTS; i++) {
@@ -439,12 +496,12 @@ export function rollWeeklyCheckpoints(
     if (checkpoint > now) return checkpoint;
     if (Math.random() < spawnChance) {
       onSuccess(checkpoint);
-      return nextWeeklyCheckpoint(checkpoint, spec);
+      return nextWeeklyCheckpoint(checkpoint, specs);
     }
-    checkpoint = nextWeeklyCheckpoint(checkpoint, spec);
+    checkpoint = nextWeeklyCheckpoint(checkpoint, specs);
   }
   // Sicherheitsnetz gegriffen (extrem lange Abwesenheit) - Rest ueberspringen statt zu haengen.
-  return nextWeeklyCheckpoint(now, spec);
+  return nextWeeklyCheckpoint(now, specs);
 }
 
 // ===== Belohnungs-Eskalation pro ueberlebtem Stunden-Check (Piraten-Sektoren + Elite-Bollwerk) =====

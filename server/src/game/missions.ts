@@ -18,6 +18,9 @@ import {
   ABBAU_BOOST_MULTIPLIER,
   NOVICE_BONUS_MULTIPLIER,
   NOVICE_BONUS_WINDOW_MS,
+  isWeeklyEventActive,
+  ASTEROID_EVENT_MULTIPLIER,
+  PIRATEN_EVENT_BONUS_MULTIPLIER,
 } from './data/economy.js';
 import {
   getEffectiveStats,
@@ -66,7 +69,10 @@ export function miningMultiplier(state: PlayerState): number {
   // ABBAU_BOOST_MULTIPLIER in economy.ts) - wirkt hier UND in actions.ts miningBuildingMultiplier().
   const booster = isBoosterActive(state, 'abbau') ? ABBAU_BOOST_MULTIPLIER : 1;
   const novice = isNoviceAccount(state) ? NOVICE_BONUS_MULTIPLIER : 1;
-  return base * specific * economy * booster * novice;
+  // Woechentlicher Event-Kalender (05.08.2026, Nutzerentscheidung): +100% Asteroiden-Feld-Ertrag
+  // Dienstag/Donnerstag, siehe WEEKLY_EVENTS in economy.ts - automatisch, kein Kauf noetig.
+  const weeklyEvent = isWeeklyEventActive('asteroid_bonus') ? ASTEROID_EVENT_MULTIPLIER : 1;
+  return base * specific * economy * booster * novice * weeklyEvent;
 }
 
 // ========== FLOTTE ENTSENDEN ==========
@@ -544,10 +550,16 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     // Betrag) - erreicht durch einen doppelten Sieg-Zaehler statt eines separaten Multiplikators,
     // damit combatWins weiterhin eine reine Ganzzahl bleibt.
     const sandronatorBonus = mission.sandronatorAlive ? 2 : 1;
-    mission.combatWins = (mission.combatWins || 0) + sandronatorBonus;
+    // Woechentlicher Event-Kalender (05.08.2026, Nutzerentscheidung): +100% Belohnung im Solo-
+    // Piraten-Sektor Montag/Freitag (siehe WEEKLY_EVENTS in economy.ts) - bewusst NUR hier auf
+    // dem linearen combatWins-Zaehler verdoppelt (Niedrig/Mittel/Hoch nutzen KEINE exponentielle
+    // Serien-Eskalation wie Elite-Bollwerk, siehe REWARD_ESCALATION - daher hier unbedenklich).
+    const eventBonus = isWeeklyEventActive('piraten_bonus') ? PIRATEN_EVENT_BONUS_MULTIPLIER : 1;
+    mission.combatWins = (mission.combatWins || 0) + sandronatorBonus * eventBonus;
     const tierLabel = cfg.winContainer.tier === 'elite' ? 'Elite' : cfg.winContainer.tier === 'gold' ? 'Gold' : 'Silber';
     const sandronatorText = sandronatorBonus > 1 ? ' [Sandronator x2]' : '';
-    containerWinText = ` Kampf gewonnen - ${cfg.winContainer.count * sandronatorBonus}x ${tierLabel}-Container verdient${sandronatorText} (Gutschrift bei Rückkehr).`;
+    const eventText = eventBonus > 1 ? ' [Wochenend-Bonus x2]' : '';
+    containerWinText = ` Kampf gewonnen - ${cfg.winContainer.count * sandronatorBonus * eventBonus}x ${tierLabel}-Container verdient${sandronatorText}${eventText} (Gutschrift bei Rückkehr).`;
   }
 
   let teileText = '';
