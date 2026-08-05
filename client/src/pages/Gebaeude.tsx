@@ -174,6 +174,7 @@ export function GebaeudePage() {
   const [loreTarget, setLoreTarget] = useState<{ kind: 'building'; id: string } | null>(null);
   const [infoBuildingId, setInfoBuildingId] = useState<string | null>(null);
   const [infoModule, setInfoModule] = useState<BuildingModuleDefinition | null>(null);
+  const [selectedTier, setSelectedTier] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
     const i = setInterval(() => forceTick((n) => n + 1), 500);
@@ -184,8 +185,15 @@ export function GebaeudePage() {
 
   const now = Date.now();
   const busy = state.buildingQueue.length >= gameData.maxBuildingSlots;
-  const energyProduced = state.energyProduced ?? getEnergyProduced(gameData, state);
-  const energyConsumed = state.energyConsumed ?? getEnergyConsumed(gameData, state);
+  const buildingTier = state.buildingTier || 1;
+  // V2/V3-Stufen (05.08.2026): Energie ist pro Stufe isoliert - fuer die aktuell gewaehlte Stufe
+  // bevorzugt der Server-Wert (state.energyByTier), sonst client-seitig nachgerechnet.
+  const tierEnergy = state.energyByTier?.[selectedTier] ?? {
+    produced: getEnergyProduced(gameData, state, selectedTier),
+    consumed: getEnergyConsumed(gameData, state, selectedTier),
+  };
+  const energyProduced = tierEnergy.produced;
+  const energyConsumed = tierEnergy.consumed;
   const energyDeficit = energyConsumed > energyProduced;
   const infoBuilding = infoBuildingId ? gameData.buildings.find((b) => b.id === infoBuildingId) : null;
 
@@ -209,16 +217,51 @@ export function GebaeudePage() {
         />
       </div>
 
-      <div className="queue-box" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Energieversorgung</h3>
-        <p style={{ fontSize: 13, color: energyDeficit ? 'var(--danger)' : 'var(--text-dim)' }}>
-          Erzeugt: {Math.floor(energyProduced).toLocaleString('de-DE')} / Verbraucht: {Math.floor(energyConsumed).toLocaleString('de-DE')}
-          {energyDeficit && ' – Energiedefizit: Minen produzieren gedrosselt!'}
-        </p>
+      <div className="build-row" style={{ marginBottom: 12 }}>
+        {([1, 2, 3] as const).map((tier) => {
+          const locked = tier > buildingTier;
+          return (
+            <button
+              key={tier}
+              className={selectedTier === tier ? 'build-btn' : 'qty-btn'}
+              disabled={locked}
+              onClick={() => setSelectedTier(tier)}
+              title={
+                locked
+                  ? tier === 2
+                    ? 'Erst freigeschaltet, sobald Metallmine Stufe 36, Kristallmine Stufe 32 und Deuterium-Synthetisierer Stufe 30 erreicht haben.'
+                    : 'Erst freigeschaltet, sobald die V2-Minen Stufe 36/32/30 erreicht haben.'
+                  : undefined
+              }
+            >
+              V{tier}
+              {locked ? ' 🔒' : ''}
+            </button>
+          );
+        })}
       </div>
 
+      {selectedTier > buildingTier ? (
+        <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+          Noch nicht freigeschaltet -{' '}
+          {selectedTier === 2
+            ? 'Metallmine muss Stufe 36, Kristallmine Stufe 32 und Deuterium-Synthetisierer Stufe 30 erreichen.'
+            : 'die V2-Minen müssen Stufe 36/32/30 erreichen.'}
+        </p>
+      ) : (
+        <>
+          <div className="queue-box" style={{ marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, marginBottom: 8 }}>Energieversorgung V{selectedTier}</h3>
+            <p style={{ fontSize: 13, color: energyDeficit ? 'var(--danger)' : 'var(--text-dim)' }}>
+              Erzeugt: {Math.floor(energyProduced).toLocaleString('de-DE')} / Verbraucht: {Math.floor(energyConsumed).toLocaleString('de-DE')}
+              {energyDeficit && ' – Energiedefizit: Minen produzieren gedrosselt!'}
+            </p>
+          </div>
+
       <div className="ship-grid">
-        {gameData.buildings.map((building) => {
+        {gameData.buildings
+          .filter((b) => (b.tier ?? 1) === selectedTier)
+          .map((building) => {
           const level = state.buildings[building.id] || 0;
           const nextLevel = level + 1;
           const cost = buildingCostForLevel(building, nextLevel);
@@ -300,6 +343,8 @@ export function GebaeudePage() {
           );
         })}
       </div>
+        </>
+      )}
 
       {infoBuilding &&
         (() => {

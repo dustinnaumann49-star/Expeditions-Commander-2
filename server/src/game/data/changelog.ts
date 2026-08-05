@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '05.08.2026',
+    title: 'Feature: V2/V3-Gebäudestufen für die Heimatbasis',
+    changes: [
+      'Metallmine, Kristallmine, Deuterium-Synthetisierer, Solarkraftwerk, Roboterfabrik und Nanitenfabrik bekommen jetzt zwei weitere Ausbaustufen (V2/V3) - jede mit höherem Basisertrag, aber auch höheren Kosten/Bauzeiten (V2: 2x Kosten/1,3x Bauzeit/1,5x Ertrag, V3: 4x/1,6x/2,5x, jeweils relativ zu V1). Gedacht für alle, die bei V1 schon sehr hohe Stufen erreicht haben und dort kaum noch spürbaren Fortschritt sehen.',
+      'V2 schaltet sich frei, sobald Metallmine, Kristallmine und Deuterium-Synthetisierer (V1) die Stufen 36/32/30 erreicht haben. V3 entsprechend, sobald die V2-Minen dieselben Stufen erreichen. Wie schon V1 bleiben auch V2 und V3 unbegrenzt ausbaubar - nur die Schiffs-/Verteidigungsmodule bleiben weiterhin bei Stufe 10 gedeckelt.',
+      'Produktion aller freigeschalteten Stufen zählt zusammen, aber Energie (Solarkraftwerk) und Bau-Beschleunigung (Roboterfabrik/Nanitenfabrik) wirken pro Stufe getrennt - ein spät gebautes V3-Solarkraftwerk versorgt nicht rückwirkend V1/V2-Minen mit Energie.',
+    ],
+  },
+  {
+    date: '05.08.2026',
     title: 'Fix: Feindstärke in Piraten-Sektor Hoch und Elite-Bollwerk gesenkt',
     changes: [
       'Zwei Ursachen dafür gefunden, dass die Verteidigungsanlagen der Piraten in Piraten-Sektor Hoch und Elite-Bollwerk trotz hohem ausgeteiltem Schaden praktisch unzerstörbar wirkten: Erstens hatten alle Verteidigungsanlagen (vom günstigen Raketenwerfer bis zur teuren Plasmawerfer) denselben sehr hohen Schild-Regenerationswert - jetzt nach Anlagen-Tier gestaffelt, wie es bei Schiffen schon der Fall war. Zweitens spawnte an diesen beiden Stufen einfach zu viel Verteidigung auf einmal - die Menge wurde jetzt gesenkt.',

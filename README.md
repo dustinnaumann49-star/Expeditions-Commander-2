@@ -98,7 +98,8 @@ server/
   src/game/data/combatConstants.ts   RAPIDFIRE-Tabelle, ZIELERFASSUNG_BASE, MAX_*-Konstanten,
                                       STACK_AGGREGATE_THRESHOLD_BY_TYPE
   src/game/data/galaxyConstants.ts   Galaxie-Größe, Distanz-/Flugzeit-Konstanten, Piratenbasen
-  src/game/data/buildings.ts         Gebäudedaten (Minen, Solarkraftwerk, Roboter-/Nanitenfabrik)
+  src/game/data/buildings.ts         Gebäudedaten (Minen, Solarkraftwerk, Roboter-/Nanitenfabrik),
+                                      seit 05.08.2026 V1/V2/V3 (siehe HOME_TIER_UNLOCK_LEVELS)
   src/game/data/buildingModules.ts   Gebäude-Module
   src/game/data/shipModules.ts       Schiffs-Module (generiert, 13 Schiffe x 4 Module)
   src/game/data/changelog.ts         Spielerlesbare Update-Historie (Im-Spiel-Updates-Seite)
@@ -451,9 +452,26 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 ### Wirtschaft: Gebäude, Forschungsbaum, Module
 
 - Sechs Gebäude (Minen, Solarkraftwerk, Roboter-/Nanitenfabrik), EIN globaler Bauslot für alle
-  zusammen. Minen verbrauchen Energie, fehlt sie wird die Produktion ALLER Minen gemeinsam
-  gedrosselt (`energyFactor()`, nie ein Bonus bei Überschuss). Roboter-/Nanitenfabrik verkürzen
-  Bauzeiten multiplikativ pro Stufe (stapeln sich).
+  zusammen. Minen verbrauchen Energie, fehlt sie wird die Produktion ALLER Minen DERSELBEN Stufe
+  gemeinsam gedrosselt (`energyFactor(state, tier)`, nie ein Bonus bei Überschuss). Roboter-/
+  Nanitenfabrik verkürzen Bauzeiten multiplikativ pro Stufe (stapeln sich), ebenfalls pro
+  Gebäude-Tier isoliert (siehe unten).
+- Heimatbasis-Gebäude V1/V2/V3 (05.08.2026, Nutzerentscheidung, analog zur Allianz-Station):
+  V1 behält die bestehenden, unpräfixierten IDs (`metallmine` usw.) für Kompatibilität mit
+  bestehenden Spielständen, V2/V3 sind neue `v2_`/`v3_`-Einträge in `BUILDINGS`
+  (`data/buildings.ts`). Anders als bei der Station gibt es KEIN `maxLevel` (alle drei Stufen
+  bleiben wie bisher unbegrenzt ausbaubar) - stattdessen feste Freischalt-Schwellen
+  (`HOME_TIER_UNLOCK_LEVELS`): V2 ab Metallmine/Kristallmine/Deuterium-Synthetisierer (V1) Stufe
+  36/32/30, V3 ab denselben Schwellen bei den V2-Minen. `state.buildingTier` (1-3) speichert die
+  höchste freigeschaltete Stufe, `checkHomeBuildingTierUnlock()` in `actions.ts` prüft das bei
+  jedem Tick. Kosten/Bauzeit/Ertrag: V2 = 2x/1,3x/1,5x, V3 = 4x/1,6x/2,5x relativ zu V1 bei
+  Stufe 1 (identische Multiplikatoren wie bei der Allianz-Station). Produktion zählt KUMULATIV
+  über alle freigeschalteten Stufen (`accrueBuildingProduction()` summiert über ALLE
+  `BUILDINGS`-Einträge), Energie- und Bauzeit-Faktor bleiben PRO STUFE ISOLIERT (ein spät gebautes
+  V3-Solarkraftwerk versorgt nicht rückwirkend V1/V2-Minen). Gebäude-Module (Fördereffizienz usw.)
+  existieren bislang nur für V1 - für V2/V3 liefert die Modul-Suche einfach `1` (kein Effekt),
+  kein Fehler. Client-UI (`Gebaeude.tsx`): Tab-Leiste V1/V2/V3 mit 🔒 bei gesperrter Stufe,
+  spiegelt exakt das Tier-Tab-Muster der Allianz-Station (`Allianz.tsx`).
 - Forschungsbaum: 4 Hauptbereiche (waffen/verteidigung/antrieb/wirtschaft), eigene Untertabs,
   Voraussetzungs-Schwelle Stufe 3 pro Eltern-Kind-Verbindung, `MAX_RESEARCH_LEVEL = 10`.
 - Gebäude-/Schiffs-/Verteidigungs-Module: je 2-3 (Gebäude) bzw. 4 (Schiffe: Waffen/Schild/

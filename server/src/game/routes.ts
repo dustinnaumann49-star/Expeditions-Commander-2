@@ -130,7 +130,20 @@ gameRouter.get('/state', async (req: AuthedRequest, res) => {
     if (tickMs > SLOW_TICK_MS) {
       console.warn(`GET /game/state: langsamer tick() fuer Nutzer ${req.userId}: ${tickMs}ms`);
     }
-    res.json({ ...state, serverTime: Date.now(), energyProduced: energyProduced(state), energyConsumed: energyConsumed(state) });
+    res.json({
+      ...state,
+      serverTime: Date.now(),
+      energyProduced: energyProduced(state),
+      energyConsumed: energyConsumed(state),
+      // V2/V3-Stufen (05.08.2026): Energie ist pro Stufe isoliert (siehe energyFactor() in
+      // actions.ts) - der Client braucht die Werte je Tier fuer die Basis-Seite, die
+      // Top-Level-Felder oben bleiben bewusst V1-only (ResourceBar zeigt weiterhin nur V1).
+      energyByTier: {
+        1: { produced: energyProduced(state, 1), consumed: energyConsumed(state, 1) },
+        2: { produced: energyProduced(state, 2), consumed: energyConsumed(state, 2) },
+        3: { produced: energyProduced(state, 3), consumed: energyConsumed(state, 3) },
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Interner Fehler beim Laden des Spielzustands.' });
@@ -157,7 +170,20 @@ async function handleAction(req: AuthedRequest, res: Response, action: (state: P
     if (actionMs > SLOW_TICK_MS) {
       console.warn(`handleAction: langsame Aktion fuer Nutzer ${req.userId}: ${actionMs}ms`);
     }
-    res.json({ ...state, serverTime: Date.now(), energyProduced: energyProduced(state), energyConsumed: energyConsumed(state) });
+    res.json({
+      ...state,
+      serverTime: Date.now(),
+      energyProduced: energyProduced(state),
+      energyConsumed: energyConsumed(state),
+      // V2/V3-Stufen (05.08.2026): Energie ist pro Stufe isoliert (siehe energyFactor() in
+      // actions.ts) - der Client braucht die Werte je Tier fuer die Basis-Seite, die
+      // Top-Level-Felder oben bleiben bewusst V1-only (ResourceBar zeigt weiterhin nur V1).
+      energyByTier: {
+        1: { produced: energyProduced(state, 1), consumed: energyConsumed(state, 1) },
+        2: { produced: energyProduced(state, 2), consumed: energyConsumed(state, 2) },
+        3: { produced: energyProduced(state, 3), consumed: energyConsumed(state, 3) },
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Interner Fehler bei der Verarbeitung.' });

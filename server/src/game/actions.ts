@@ -1,7 +1,7 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { RESEARCH } from './data/research.js';
-import { BUILDINGS, findBuilding } from './data/buildings.js';
+import { BUILDINGS, findBuilding, buildingsForTier, HOME_TIER_UNLOCK_LEVELS } from './data/buildings.js';
 import { BUILDING_MODULES, findBuildingModule } from './data/buildingModules.js';
 import { SHIP_MODULES, findShipModule } from './data/shipModules.js';
 import { DEFENSE_MODULES, findDefenseModule } from './data/defenseModules.js';
@@ -44,16 +44,25 @@ function baseTimeMultiplier(state: PlayerState): number {
 // sich. Gebaeude werden deutlich staerker beschleunigt (25%/50% pro Stufe) als Schiffe/
 // Verteidigung (1%/2% pro Stufe), da fuer Gebaeude ohnehin nur ein einziger globaler Bauslot
 // existiert.
-function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefense'): number {
-  const roboterLevel = state.buildings?.roboterfabrik || 0;
-  const naniteLevel = state.buildings?.nanitenfabrik || 0;
+// `tier` (05.08.2026, V2/V3-Stufen): NUR fuer target 'building' relevant - jede Stufe wird durch
+// ihre EIGENE Roboterfabrik/Nanitenfabrik beschleunigt (analog stationBauzeitFactorForTier() in
+// stations.ts), ein spaet gebautes V3-Paar hilft nicht rueckwirkend V1/V2-Gebaeuden. Fuer
+// 'shipDefense' bleibt es bei den V1-Fabriken (Schiffe/Verteidigung sind nicht tier-gebunden).
+function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefense', tier: 1 | 2 | 3 = 1): number {
+  const effectiveTier = target === 'building' ? tier : 1;
+  const roboterId = effectiveTier === 1 ? 'roboterfabrik' : `v${effectiveTier}_roboterfabrik`;
+  const naniteId = effectiveTier === 1 ? 'nanitenfabrik' : `v${effectiveTier}_nanitenfabrik`;
+  const roboterLevel = state.buildings?.[roboterId] || 0;
+  const naniteLevel = state.buildings?.[naniteId] || 0;
   let factor =
     target === 'building' ? Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel) : Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
   // Module "Verstaerkte Automatisierung" (Roboterfabrik/Nanitenfabrik) verstaerken den
   // bestehenden Stufen-Effekt zusaetzlich, OHNE dass die Fabrik selbst weiter ausgebaut werden
-  // muss - stapelt multiplikativ mit dem obigen Basiswert.
-  factor *= moduleReductionFactor(state, 'roboterfabrik_verstaerkte_automatisierung');
-  factor *= moduleReductionFactor(state, 'nanitenfabrik_verstaerkte_automatisierung');
+  // muss - stapelt multiplikativ mit dem obigen Basiswert. Existiert bislang nur fuer V1
+  // (`roboterfabrik_verstaerkte_automatisierung`), fuer V2/V3 liefert moduleReductionFactor() bei
+  // fehlendem Modul einfach 1 zurueck (kein Fehler, kein Effekt).
+  factor *= moduleReductionFactor(state, `${roboterId}_verstaerkte_automatisierung`);
+  factor *= moduleReductionFactor(state, `${naniteId}_verstaerkte_automatisierung`);
   return factor;
 }
 
@@ -137,8 +146,9 @@ export function defenseBauzeitMultiplier(state: PlayerState): number {
 // "buildtime_self"-Modul ein (siehe BUILDING_SELF_BUILDTIME_MODULE) - wirkt NUR auf die
 // Bauzeit fuer weitere Ausbaustufen GENAU DIESES Gebaeudes, nicht auf andere.
 export function gebaeudeBauzeitMultiplier(state: PlayerState, buildingId?: string): number {
+  const tier = buildingId ? findBuilding(buildingId)?.tier ?? 1 : 1;
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building') * specific * economyBauzeitMultiplier(state);
+  let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building', tier) * specific * economyBauzeitMultiplier(state);
   const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
   if (selfModuleId) m *= moduleReductionFactor(state, selfModuleId);
   return m;
@@ -222,34 +232,38 @@ function countDefenseEverywhere(state: PlayerState, defId: string): number {
 // sie. Reicht die Energie nicht, wird die Produktion ALLER Minen anteilig gedrosselt (nie mehr
 // als 100%, kein Energie-Ueberschuss-Bonus).
 
-const MINE_BUILDING_IDS = ['metallmine', 'kristallmine', 'deuteriummine'] as const;
+const MINE_KINDS = ['mine_metall', 'mine_kristall', 'mine_deuterium'] as const;
 
+// V2/V3-Stufen (05.08.2026): Energie bleibt PRO STUFE ISOLIERT (analog stationEnergyFactorForTier()
+// in stations.ts) - ein spaet gebautes V3-Solarkraftwerk versorgt nicht rueckwirkend V1/V2-Minen
+// mit Energie. Jede Stufe ist wirtschaftlich in sich geschlossen.
 function levelScaledValue(base: number, level: number): number {
   return level > 0 ? base * level * Math.pow(1.1, level) : 0;
 }
 
-export function energyProduced(state: PlayerState): number {
-  const solar = findBuilding('solarkraftwerk');
+export function energyProduced(state: PlayerState, tier: 1 | 2 | 3 = 1): number {
+  const solar = buildingsForTier(tier).find((b) => b.kind === 'energie');
   if (!solar) return 0;
-  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
-  return base * moduleBoostFactor(state, 'solarkraftwerk_ertragssteigerung');
+  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings[solar.id] || 0);
+  const moduleId = tier === 1 ? 'solarkraftwerk_ertragssteigerung' : `${solar.id}_ertragssteigerung`;
+  return base * moduleBoostFactor(state, moduleId);
 }
 
-export function energyConsumed(state: PlayerState): number {
+export function energyConsumed(state: PlayerState, tier: 1 | 2 | 3 = 1): number {
   let total = 0;
-  MINE_BUILDING_IDS.forEach((id) => {
-    const building = findBuilding(id);
-    if (!building) return;
-    const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
-    total += base * moduleReductionFactor(state, MINE_ENERGY_MODULE[id]);
+  buildingsForTier(tier).forEach((building) => {
+    if (!(MINE_KINDS as readonly string[]).includes(building.kind)) return;
+    const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[building.id] || 0);
+    const moduleId = tier === 1 ? MINE_ENERGY_MODULE[building.id] : `${building.id}_energiesparmodul`;
+    total += base * moduleReductionFactor(state, moduleId);
   });
   return total;
 }
 
-export function energyFactor(state: PlayerState): number {
-  const consumed = energyConsumed(state);
+export function energyFactor(state: PlayerState, tier: 1 | 2 | 3 = 1): number {
+  const consumed = energyConsumed(state, tier);
   if (consumed <= 0) return 1;
-  return Math.min(1, energyProduced(state) / consumed);
+  return Math.min(1, energyProduced(state, tier) / consumed);
 }
 
 // Basis-Mining-Forschung (research.mining) wirkt weiterhin auf BEIDES (Schiffe UND Minen-
@@ -265,23 +279,46 @@ function miningBuildingMultiplier(state: PlayerState): number {
 }
 
 // Ertrag einer Mine in Ressourcen/Stunde, inkl. Energiefaktor, Mining-Forschung und dem
-// gebaeudeeigenen "Foerdereffizienz"-Modul.
+// gebaeudeeigenen "Foerdereffizienz"-Modul. Energiefaktor wird anhand der EIGENEN Stufe des
+// Gebaeudes berechnet (V2/V3-Minen haengen am Energiefaktor ihrer eigenen Stufe, siehe oben).
 export function mineOutputPerHour(state: PlayerState, buildingId: string): number {
   const building = findBuilding(buildingId);
   if (!building || !building.baseOutput) return 0;
+  const tier = building.tier ?? 1;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  const moduleId = MINE_OUTPUT_MODULE[buildingId];
+  const moduleId = tier === 1 ? MINE_OUTPUT_MODULE[buildingId] : `${buildingId}_foerdereffizienz`;
   const moduleFactor = moduleId ? moduleBoostFactor(state, moduleId) : 1;
-  return base * energyFactor(state) * miningBuildingMultiplier(state) * moduleFactor;
+  return base * energyFactor(state, tier) * miningBuildingMultiplier(state) * moduleFactor;
 }
 
 // Rechnet die seit dem letzten tick() vergangene Zeit als passive Minen-Produktion hoch.
+// V2/V3-Stufen (05.08.2026): summiert JETZT ueber ALLE Gebaeude-Eintraege (alle Stufen) statt nur
+// die drei V1-Minen - Produktion zaehlt kumulativ ueber alle freigeschalteten Stufen (analog
+// accrueStationProduction() in stations.ts). Noch nicht freigeschaltete V2/V3-Minen haben immer
+// Level 0 (koennen nicht gebaut werden, siehe startBuildingConstruction), tragen also ohnehin
+// nichts bei.
 export function accrueBuildingProduction(state: PlayerState, deltaSec: number): void {
   if (deltaSec <= 0) return;
   const npcBonus = isNpcState(state) ? NPC_PRODUCTION_BONUS_MULTIPLIER : 1;
-  state.resources.metall += (mineOutputPerHour(state, 'metallmine') / 3600) * deltaSec * npcBonus;
-  state.resources.kristall += (mineOutputPerHour(state, 'kristallmine') / 3600) * deltaSec * npcBonus;
-  state.resources.deuterium += (mineOutputPerHour(state, 'deuteriummine') / 3600) * deltaSec * npcBonus;
+  BUILDINGS.forEach((building) => {
+    if (!building.baseOutput) return;
+    const gain = (mineOutputPerHour(state, building.id) / 3600) * deltaSec * npcBonus;
+    if (building.kind === 'mine_metall') state.resources.metall += gain;
+    else if (building.kind === 'mine_kristall') state.resources.kristall += gain;
+    else if (building.kind === 'mine_deuterium') state.resources.deuterium += gain;
+  });
+}
+
+// Schaltet die naechste Heimatbasis-Gebaeude-Stufe frei, sobald alle Minen DIESER Stufe ihre
+// HOME_TIER_UNLOCK_LEVELS-Schwelle erreicht haben (05.08.2026, Nutzerentscheidung) - analog
+// checkTierUnlock() in stations.ts, aber gegen feste Schwellenwerte statt einem gemeinsamen
+// maxLevel, da Heimatbasis-Gebaeude bewusst unbegrenzt bleiben.
+export function checkHomeBuildingTierUnlock(state: PlayerState): void {
+  if (!state.buildingTier) state.buildingTier = 1;
+  if (state.buildingTier >= 3) return;
+  const thresholds = HOME_TIER_UNLOCK_LEVELS[state.buildingTier as 1 | 2];
+  const allMet = Object.entries(thresholds).every(([id, lvl]) => (state.buildings[id] || 0) >= lvl);
+  if (allMet) state.buildingTier = (state.buildingTier + 1) as 1 | 2 | 3;
 }
 
 function buildingCostForLevel(building: BuildingDefinition, level: number): ResourceCost {
@@ -341,6 +378,7 @@ export async function runEconomyTick(state: PlayerState): Promise<void> {
     return true;
   });
   state.buildingQueue = stillBuildingBuildings;
+  checkHomeBuildingTierUnlock(state);
 
   // Schiffsmodul-Warteschlange abarbeiten (bis zu MAX_SHIP_MODULE_SLOTS parallele Eintraege) -
   // eigene Slots, unabhaengig von der normalen Schiffs-Bauschlange (buildQueue).
@@ -556,6 +594,10 @@ export function startDefenseBuild(state: PlayerState, defId: string, qty: number
 export function startBuildingConstruction(state: PlayerState, buildingId: string): ActionResult {
   const building = findBuilding(buildingId);
   if (!building) return { ok: false, error: 'Unbekanntes Gebäude.' };
+  const requiredTier = building.tier ?? 1;
+  if (requiredTier > (state.buildingTier || 1)) {
+    return { ok: false, error: `Diese Stufe ist noch nicht freigeschaltet - Metallmine, Kristallmine und Deuterium-Synthetisierer der Vorstufe müssen zuerst die nötigen Level erreichen.` };
+  }
   if (state.buildingQueue.length >= MAX_BUILDING_SLOTS) {
     return { ok: false, error: 'Es kann immer nur ein Gebäude gleichzeitig gebaut werden.' };
   }

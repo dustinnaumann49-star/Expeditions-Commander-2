@@ -64,13 +64,17 @@ function baseTimeMultiplier(gameData: GameData, state: PlayerState): number {
 // Spiegelt server/src/game/actions.ts's roboterNaniteFactor() 1:1 - kompoundierend (nicht
 // linear) pro Stufe, damit Bauzeiten nie negativ/Null werden. Gebaeude werden staerker
 // beschleunigt (25%/50% pro Stufe) als Schiffe/Verteidigung (1%/2% pro Stufe).
-function roboterNaniteFactor(gameData: GameData, state: PlayerState, target: 'building' | 'shipDefense'): number {
-  const roboterLevel = state.buildings?.roboterfabrik || 0;
-  const naniteLevel = state.buildings?.nanitenfabrik || 0;
+// `tier` (05.08.2026, V2/V3-Stufen): nur fuer target 'building' relevant, siehe Server-Pendant.
+function roboterNaniteFactor(gameData: GameData, state: PlayerState, target: 'building' | 'shipDefense', tier: 1 | 2 | 3 = 1): number {
+  const effectiveTier = target === 'building' ? tier : 1;
+  const roboterId = effectiveTier === 1 ? 'roboterfabrik' : `v${effectiveTier}_roboterfabrik`;
+  const naniteId = effectiveTier === 1 ? 'nanitenfabrik' : `v${effectiveTier}_nanitenfabrik`;
+  const roboterLevel = state.buildings?.[roboterId] || 0;
+  const naniteLevel = state.buildings?.[naniteId] || 0;
   let factor =
     target === 'building' ? Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel) : Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
-  factor *= moduleReductionFactor(gameData, state, 'roboterfabrik_verstaerkte_automatisierung');
-  factor *= moduleReductionFactor(gameData, state, 'nanitenfabrik_verstaerkte_automatisierung');
+  factor *= moduleReductionFactor(gameData, state, `${roboterId}_verstaerkte_automatisierung`);
+  factor *= moduleReductionFactor(gameData, state, `${naniteId}_verstaerkte_automatisierung`);
   return factor;
 }
 
@@ -100,8 +104,9 @@ export function getDefenseBauzeitMultiplier(gameData: GameData, state: PlayerSta
 // Spiegelt server/src/game/actions.ts's gebaeudeBauzeitMultiplier() 1:1 - fuer die Bauzeit-Anzeige
 // auf der Gebaeude-Seite ("Bauzeit: Gebaeude" stapelt zusaetzlich zur Basis).
 export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerState, buildingId?: string): number {
+  const tier = buildingId ? gameData.buildings.find((b) => b.id === buildingId)?.tier ?? 1 : 1;
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
-  let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building') * specific * economyBauzeitMultiplier(state);
+  let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building', tier) * specific * economyBauzeitMultiplier(state);
   const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
   if (selfModuleId) m *= moduleReductionFactor(gameData, state, selfModuleId);
   return m;
@@ -166,37 +171,43 @@ export function getMiningBuildingMultiplier(state: PlayerState): number {
   return base * specific * economy;
 }
 
-export function getEnergyProduced(gameData: GameData, state: PlayerState): number {
-  const solar = gameData.buildings.find((b) => b.id === 'solarkraftwerk');
+const MINE_KINDS = ['mine_metall', 'mine_kristall', 'mine_deuterium'] as const;
+
+// V2/V3-Stufen (05.08.2026): Energie bleibt PRO STUFE ISOLIERT (spiegelt Server 1:1).
+export function getEnergyProduced(gameData: GameData, state: PlayerState, tier: 1 | 2 | 3 = 1): number {
+  const solar = gameData.buildings.find((b) => (b.tier ?? 1) === tier && b.kind === 'energie');
   if (!solar) return 0;
-  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings.solarkraftwerk || 0);
-  return base * moduleBoostFactor(gameData, state, 'solarkraftwerk_ertragssteigerung');
+  const base = levelScaledValue(solar.baseEnergyOutput || 0, state.buildings[solar.id] || 0);
+  const moduleId = tier === 1 ? 'solarkraftwerk_ertragssteigerung' : `${solar.id}_ertragssteigerung`;
+  return base * moduleBoostFactor(gameData, state, moduleId);
 }
 
-export function getEnergyConsumed(gameData: GameData, state: PlayerState): number {
+export function getEnergyConsumed(gameData: GameData, state: PlayerState, tier: 1 | 2 | 3 = 1): number {
   let total = 0;
-  ['metallmine', 'kristallmine', 'deuteriummine'].forEach((id) => {
-    const building = gameData.buildings.find((b) => b.id === id);
-    if (!building) return;
-    const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[id] || 0);
-    total += base * moduleReductionFactor(gameData, state, MINE_ENERGY_MODULE[id]);
-  });
+  gameData.buildings
+    .filter((b) => (b.tier ?? 1) === tier && (MINE_KINDS as readonly string[]).includes(b.kind))
+    .forEach((building) => {
+      const base = levelScaledValue(building.baseEnergyUse || 0, state.buildings[building.id] || 0);
+      const moduleId = tier === 1 ? MINE_ENERGY_MODULE[building.id] : `${building.id}_energiesparmodul`;
+      total += base * moduleReductionFactor(gameData, state, moduleId);
+    });
   return total;
 }
 
-export function getEnergyFactor(gameData: GameData, state: PlayerState): number {
-  const consumed = getEnergyConsumed(gameData, state);
+export function getEnergyFactor(gameData: GameData, state: PlayerState, tier: 1 | 2 | 3 = 1): number {
+  const consumed = getEnergyConsumed(gameData, state, tier);
   if (consumed <= 0) return 1;
-  return Math.min(1, getEnergyProduced(gameData, state) / consumed);
+  return Math.min(1, getEnergyProduced(gameData, state, tier) / consumed);
 }
 
 export function getMineOutputPerHour(gameData: GameData, state: PlayerState, buildingId: string): number {
   const building = gameData.buildings.find((b) => b.id === buildingId);
   if (!building || !building.baseOutput) return 0;
+  const tier = building.tier ?? 1;
   const base = levelScaledValue(building.baseOutput, state.buildings[buildingId] || 0);
-  const moduleId = MINE_OUTPUT_MODULE[buildingId];
+  const moduleId = tier === 1 ? MINE_OUTPUT_MODULE[buildingId] : `${buildingId}_foerdereffizienz`;
   const moduleFactor = moduleId ? moduleBoostFactor(gameData, state, moduleId) : 1;
-  return base * getEnergyFactor(gameData, state) * getMiningBuildingMultiplier(state) * moduleFactor;
+  return base * getEnergyFactor(gameData, state, tier) * getMiningBuildingMultiplier(state) * moduleFactor;
 }
 
 

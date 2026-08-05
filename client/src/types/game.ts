@@ -174,6 +174,8 @@ export interface BuildingDefinition {
   baseOutput?: number;
   baseEnergyUse?: number;
   baseEnergyOutput?: number;
+  tier?: 1 | 2 | 3;
+  maxLevel?: number;
 }
 
 export interface BuildingModuleDefinition {
@@ -481,6 +483,7 @@ export interface PlayerState {
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
   buildings: Record<string, number>;
+  buildingTier: 1 | 2 | 3;
   buildingModules: Record<string, number>;
   buildingQueue: BuildJob[];
   shipModules: Record<string, number>;
@@ -503,6 +506,8 @@ export interface PlayerState {
   serverTime?: number;
   energyProduced?: number;
   energyConsumed?: number;
+  // V2/V3-Stufen (05.08.2026): Energie ist pro Gebaeude-Stufe isoliert, siehe routes.ts.
+  energyByTier?: Record<1 | 2 | 3, { produced: number; consumed: number }>;
   stats: PlayerStats;
 }
 

@@ -81,6 +81,7 @@ export function defaultPlayerState(userId: number): PlayerState {
     defenseQueue: [],
     researchQueue: [],
     buildings,
+    buildingTier: 1,
     buildingModules,
     buildingQueue: [],
     shipModules,
@@ -155,6 +156,9 @@ export function loadPlayerState(userId: number): PlayerState {
   BUILDINGS.forEach((b) => {
     if (parsed.buildings[b.id] === undefined) parsed.buildings[b.id] = 0;
   });
+  // Gebaeude-Stufe nachruesten (05.08.2026, V2/V3-System existierte vorher nicht) - Default 1
+  // (nur V1 freigeschaltet), gleiches Migrationsmuster wie oben.
+  if (parsed.buildingTier === undefined) parsed.buildingTier = 1;
   // Gebaeude-Module nachruesten (gleiches Migrationsmuster wie oben).
   if (!parsed.buildingModules) parsed.buildingModules = {} as Record<string, number>;
   BUILDING_MODULES.forEach((m) => {

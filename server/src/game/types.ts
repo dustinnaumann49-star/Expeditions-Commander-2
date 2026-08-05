@@ -197,6 +197,13 @@ export interface BuildingDefinition {
   baseOutput?: number; // Ressourcenertrag/Stunde bei Stufe 1 (nur Minen)
   baseEnergyUse?: number; // Energieverbrauch bei Stufe 1 (nur Minen)
   baseEnergyOutput?: number; // Energieertrag bei Stufe 1 (nur Solarkraftwerk)
+  // V2/V3-Stufen (05.08.2026, Nutzerentscheidung, analog zur Allianz-Station in
+  // data/stationBuildings.ts): default 1 fuer die urspruenglichen 6 Gebaeude. Anders als bei der
+  // Station bleibt maxLevel bei ALLEN Stufen unbegrenzt (undefined) - die Freischaltung der
+  // naechsten Stufe haengt stattdessen an HOME_TIER_UNLOCK_LEVELS (siehe data/buildings.ts), nicht
+  // an einem gemeinsamen Level-Cap.
+  tier?: 1 | 2 | 3;
+  maxLevel?: number;
 }
 
 // Allianz-Station-Gebaeude (siehe data/stationBuildings.ts, game/stations.ts) - eigenstaendige,
@@ -746,6 +753,10 @@ export interface PlayerState {
   defenseQueue: BuildJob[];
   researchQueue: ResearchJob[];
   buildings: Record<string, number>;
+  // Hoechste freigeschaltete Gebaeude-Stufe der Heimatbasis (05.08.2026, Nutzerentscheidung,
+  // analog Station.tier) - V2/V3-Gebaeude koennen erst ab entsprechendem buildingTier gebaut
+  // werden, siehe checkHomeBuildingTierUnlock()/HOME_TIER_UNLOCK_LEVELS in actions.ts/buildings.ts.
+  buildingTier: 1 | 2 | 3;
   buildingModules: Record<string, number>; // moduleId -> Stufe (siehe BuildingModuleDefinition)
   // Gebaeude teilen sich EINEN globalen Bauslot (anders als Schiffe/Verteidigung) - siehe README.
   // Immer hoechstens ein Eintrag, aber als Array modelliert, damit sich BuildQueue.tsx (Lane-
