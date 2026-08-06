@@ -189,19 +189,25 @@ function levelScaledValue(base: number, level: number): number {
 // `gameData` optional (Nutzer-Wunsch 06.08.2026: Sektor-Info soll den WIRKLICH aktuell geltenden
 // Ertrag zeigen, inkl. Frischling-Bonus) - ohne gameData faellt der Frischling-Anteil einfach weg
 // (z.B. fuer Aufrufer, die nur die reinen Forschungs-/Klassen-/Event-Faktoren brauchen).
+// Spiegelt server/src/game/missions.ts's miningMultiplier() 1:1.
+const ABBAU_BOOST_MULTIPLIER = 1.7;
+
 export function getMiningMultiplier(state: PlayerState, gameData?: GameData): number {
   // Basis (research.mining) wirkt auf BEIDES, "Mining-Boost: Schiffe" stapelt NUR fuer
   // Mining-Schiffe obendrauf (Pendant fuer Gebaeude: getMiningBuildingMultiplier()).
   const base = 1 + (state.research.mining || 0) * 0.1;
   const specific = 1 + (state.research.mining_schiffe || 0) * 0.05;
   const economy = state.economyClass === 'prospektor' ? ECONOMY_PROSPEKTOR_MINING_MULTIPLIER : 1;
+  // Abbau-Booster (Shop, siehe boosterUtil.ts) - fehlte hier bisher (Nutzer-Fund 06.08.2026),
+  // obwohl der Server ihn in miningMultiplier() laengst beruecksichtigt.
+  const booster = isBoosterActive(state, 'abbau') ? ABBAU_BOOST_MULTIPLIER : 1;
   // Woechentlicher Event-Kalender (05.08.2026): +100% Asteroiden-Feld-Ertrag Di/Do (nur
   // Asteroiden-Feld-Missionen, NICHT die Heimatbasis-Minen - siehe getMiningBuildingMultiplier()).
   const weeklyEvent = isWeeklyEventActive('asteroid_bonus') ? ASTEROID_EVENT_MULTIPLIER : 1;
   // Frischling-Bonus (04.08.2026, siehe isNoviceAccount()/NOVICE_BONUS_MULTIPLIER in economy.ts) -
   // erste NOVICE_BONUS_WINDOW_MS (7 Tage) nach Konto-Erstellung, spiegelt gameData.noviceBonus*.
   const novice = gameData && Date.now() - (state.createdAt || 0) < gameData.noviceBonusWindowMs ? gameData.noviceBonusMultiplier : 1;
-  return base * specific * economy * weeklyEvent * novice;
+  return base * specific * economy * booster * weeklyEvent * novice;
 }
 
 export function getMiningBuildingMultiplier(state: PlayerState): number {
