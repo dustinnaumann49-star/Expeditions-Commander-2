@@ -27,8 +27,9 @@ export function isWeeklyEventActive(id: string, utcMs: number = serverNow()): bo
   if (!def) return false;
   return def.weekdays.includes(berlinWeekday(utcMs));
 }
-const ASTEROID_EVENT_MULTIPLIER = 2.0;
+export const ASTEROID_EVENT_MULTIPLIER = 2.0;
 const WEEKLY_BAUZEIT_EVENT_FACTOR = 0.75;
+export const PIRATEN_EVENT_BONUS_MULTIPLIER = 2;
 
 // Spiegelt server/src/game/data/classes.ts 1:1 - Werte muessen bei Aenderung dort synchron
 // gehalten werden, sonst zeigt die UI falsche Kosten an (README Punkt 1 gilt analog auch fuer
@@ -185,7 +186,10 @@ function levelScaledValue(base: number, level: number): number {
   return level > 0 ? base * level * Math.pow(1.1, level) : 0;
 }
 
-export function getMiningMultiplier(state: PlayerState): number {
+// `gameData` optional (Nutzer-Wunsch 06.08.2026: Sektor-Info soll den WIRKLICH aktuell geltenden
+// Ertrag zeigen, inkl. Frischling-Bonus) - ohne gameData faellt der Frischling-Anteil einfach weg
+// (z.B. fuer Aufrufer, die nur die reinen Forschungs-/Klassen-/Event-Faktoren brauchen).
+export function getMiningMultiplier(state: PlayerState, gameData?: GameData): number {
   // Basis (research.mining) wirkt auf BEIDES, "Mining-Boost: Schiffe" stapelt NUR fuer
   // Mining-Schiffe obendrauf (Pendant fuer Gebaeude: getMiningBuildingMultiplier()).
   const base = 1 + (state.research.mining || 0) * 0.1;
@@ -194,7 +198,10 @@ export function getMiningMultiplier(state: PlayerState): number {
   // Woechentlicher Event-Kalender (05.08.2026): +100% Asteroiden-Feld-Ertrag Di/Do (nur
   // Asteroiden-Feld-Missionen, NICHT die Heimatbasis-Minen - siehe getMiningBuildingMultiplier()).
   const weeklyEvent = isWeeklyEventActive('asteroid_bonus') ? ASTEROID_EVENT_MULTIPLIER : 1;
-  return base * specific * economy * weeklyEvent;
+  // Frischling-Bonus (04.08.2026, siehe isNoviceAccount()/NOVICE_BONUS_MULTIPLIER in economy.ts) -
+  // erste NOVICE_BONUS_WINDOW_MS (7 Tage) nach Konto-Erstellung, spiegelt gameData.noviceBonus*.
+  const novice = gameData && Date.now() - (state.createdAt || 0) < gameData.noviceBonusWindowMs ? gameData.noviceBonusMultiplier : 1;
+  return base * specific * economy * weeklyEvent * novice;
 }
 
 export function getMiningBuildingMultiplier(state: PlayerState): number {

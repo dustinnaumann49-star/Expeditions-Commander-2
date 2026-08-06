@@ -9,6 +9,13 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '06.08.2026',
+    title: 'Feature: Aktuelle Erträge/Belohnungen direkt im Sektor sichtbar',
+    changes: [
+      'Asteroiden-Feld- und Piraten-Sektor-Karten zeigen jetzt zusätzlich den WIRKLICH aktuell geltenden Wert an - inklusive Forschung, Wirtschafts-Klasse, Frischling-Bonus und dem wöchentlichen Event-Bonus. Vorher stand dort immer nur der Basiswert, auch an Bonus-Tagen.',
+    ],
+  },
+  {
     date: '05.08.2026',
     title: 'Fix: Elite-Bollwerk-Belohnung im Kampfbericht korrekt angezeigt',
     changes: [

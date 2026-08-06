@@ -8,7 +8,8 @@ import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
 import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import { SimulatorView } from './Simulator';
 import { WeeklyEventBanner } from '../components/WeeklyEventBanner';
-import type { GameData, Mission } from '../types/game';
+import { getMiningMultiplier, isWeeklyEventActive, PIRATEN_EVENT_BONUS_MULTIPLIER } from '../lib/multipliers';
+import type { GameData, Mission, PlayerState } from '../types/game';
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper', 'sandronator', 'salvenjaeger', 'salvenkreuzer', 'salvendreadnought'];
 
@@ -39,6 +40,7 @@ function SektorCard({
   setFleetMissionId,
   setInfoSektorId,
   gameData,
+  state,
 }: {
   sektor: GameData['sektoren'][number];
   cfg: GameData['sektorConfig'][string];
@@ -60,6 +62,7 @@ function SektorCard({
   setFleetMissionId: (id: string | null) => void;
   setInfoSektorId: (id: string | null) => void;
   gameData: GameData;
+  state: PlayerState;
 }) {
   // Eigene Komponenteninstanz pro Karte - WICHTIG fuer die Hook-Regeln: die Anzahl der Sektoren
   // pro Tab variiert (3 Asteroiden-Sektoren, aber 4 Piraten-Sektoren, da piraten_elite mit
@@ -80,6 +83,19 @@ function SektorCard({
         <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
           Typ: {sektor.typ} · {sektor.zweck}
         </p>
+        {cfg.type === 'asteroid' && cfg.farmRate && (
+          <p style={{ fontSize: 12, color: 'var(--accent-deut)' }}>
+            ⚡ Aktuell: {Math.round(cfg.farmRate * getMiningMultiplier(state, gameData)).toLocaleString('de-DE')}/h je Schiff
+            {' '}(inkl. Forschung/Klasse/Frischling-Bonus/Event)
+          </p>
+        )}
+        {cfg.type === 'piraten' && cfg.winContainer && (
+          <p style={{ fontSize: 12, color: 'var(--accent-deut)' }}>
+            ⚡ Aktuell: {cfg.winContainer.count * (isWeeklyEventActive('piraten_bonus') ? PIRATEN_EVENT_BONUS_MULTIPLIER : 1)}x{' '}
+            {cfg.winContainer.tier === 'elite' ? 'Elite' : cfg.winContainer.tier === 'gold' ? 'Gold' : 'Silber'}-Container pro Sieg
+            {isWeeklyEventActive('piraten_bonus') ? ' (Event-Bonus +100%)' : ''}
+          </p>
+        )}
         {position && (
           <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
             📍 Position 1:{position.system}:{position.position}
@@ -653,6 +669,7 @@ export function SektorPage() {
               setFleetMissionId={setFleetMissionId}
               setInfoSektorId={setInfoSektorId}
               gameData={gameData}
+              state={state}
             />
           );
         })}

@@ -237,6 +237,13 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
     (`researchTimeMultiplier()`) - bewusst schwächer als der gekaufte bautempo-/
     forschungstempo-Booster (-65%), damit sich ein Kauf weiterhin lohnt.
   - Anzeige: `WeeklyEventBanner.tsx` (Sektor-/Shop-Seite) zeigt den/die heute aktiven Event(s) an.
+  - Korrektur 06.08.2026 (Nutzer-Fund): die Sektor-Karten zeigten fest den Basiswert
+    (`farmRate`/`winContainer.count`) an, auch wenn ein Bonus aktiv war - Nutzer fragte, ob der
+    tatsächlich geltende Wert stattdessen live angezeigt werden könnte, inklusive ALLER Faktoren
+    (Forschung/Wirtschafts-Klasse/Frischling-Bonus/Event), nicht nur des Event-Bonus. `Sektor.tsx`
+    zeigt jetzt zusätzlich eine "⚡ Aktuell:"-Zeile mit dem live berechneten Wert
+    (`getMiningMultiplier(state, gameData)` in `lib/multipliers.ts`, jetzt inkl. Frischling-Bonus -
+    vorher nur Forschung/Klasse/Event) bzw. der event-angepassten Container-Anzahl.
 
 ### Kampfsystem
 
