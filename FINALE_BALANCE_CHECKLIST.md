@@ -34,12 +34,13 @@ wie "teuer" sich Kampfverluste in Session 2/3 anfühlen).
 - OFFEN, verschoben auf Session 4: reine Schiffsbalance untereinander (Tier-Progression,
   RapidFire-Kette, Rollen der Schiffsklassen), Sandronator/Piratenadmiral
 
-**Session 4 - Multiplayer & Rest**
-- Allianz-Station (V1/V2/V3) - diese Session nicht angefasst, Abgleich mit neuem
-  Heimatbasis-System sinnvoll
-- Galaxie-Ereignisse, Piratenbasen-Angriffe, Spionage
-- Statistik/Punktesystem
-- Zum Schluss: Gesamt-Konsistenz-Check (README/Changelog vollständig? Nichts vergessen?)
+**Session 4 - Multiplayer & Rest** (ERLEDIGT 08.08.2026, Ergebnis am Ende dieser Datei)
+- Allianz-Station (V1/V2/V3) - GEPRUEFT (Befund 1-3)
+- Galaxie-Ereignisse, Piratenbasen-Angriffe, Spionage - GEPRUEFT (Befund 6, 10)
+- Statistik/Punktesystem - GEPRUEFT (Befund 9)
+- Piratenadmiral (Eskalation/Extraktion/Boss-Skalierung) - GEPRUEFT (Befund 4-5)
+- Nachtrag aus Session 3: reine Schiffsbalance untereinander - GEPRUEFT (Befund 7-8)
+- Gesamt-Konsistenz-Check (README/Changelog) - ERLEDIGT, siehe eigenen Abschnitt dort
 
 ## ✅ Diese Session bereits geprüft + gefixt (nicht erneut von vorne prüfen)
 
@@ -1356,3 +1357,652 @@ Spiel klar sein, dass V2/V3 ein Prestige-Ziel und keine Investition sind.
   Booster-Multiplikatoren 1:1 (README Punkt 1).
 - **Module, Klasse und Booster erscheinen NICHT in `combatFleetPowerBase()`** (Session-2-Befund 1) -
   jede Aussage ueber ihren Nutzen muss das mitdenken, sonst wird ihr Wert systematisch unterschaetzt.
+
+---
+
+# Session 4 - Multiplayer & Rest: Analyse-Ergebnis (08.08.2026)
+
+Umfang laut Session-Aufteilung oben: Allianz-Station V1/V2/V3, Galaxie-Ereignisse,
+Piratenbasen-Angriffe, Spionage, Statistik/Punktesystem, der in Session 2 unangetastet gebliebene
+Piratenadmiral, der aus Session 3 verschobene Nachtrag "reine Schiffsbalance untereinander" sowie
+zum Abschluss der Gesamt-Konsistenz-Check.
+
+## Methodik (fuer Reproduzierbarkeit)
+
+Alle Betraege in **Wert-Einheiten** (`metall*1 + kristall*1.5 + deuterium*3`, entspricht
+`TRADE_VALUE`), wie in Session 1-3. Einnahmen-Baseline unveraendert aus Session-3-Befund 1:
+**21,69 Mrd Wert/Tag**, DM 1.088/Tag. Skripte und Rohausgaben: `balance/session4-simulation/`
+(eigene README dort). `lib4.mjs` ist eine unveraenderte Kopie von `session2-simulation/lib.mjs`.
+
+Drei methodische Punkte, die diese Session von den vorherigen unterscheidet:
+
+1. **Duelle bei gleichem Ressourceneinsatz** (`run_ships.mjs`) laufen mit Forschung 0, ohne
+   Booster/Klasse/Module und mit `allowRetreat: false`. Damit misst die Matrix die reine
+   Basiswert-Relation der Schiffe zueinander - unabhaengig vom Ausbaustand. Session-3-Befund 3 hat
+   dieselben Schiffe gegen einen MIT der eigenen Macht skalierten Sektor gemessen; beide Zahlen
+   widersprechen sich nicht, sie beantworten verschiedene Fragen (siehe Befund 7).
+2. **Piratenbasen haben eine FESTE Garnison** (kein `PIRATEN_MULTIPLIER_ROLL`). Hier entscheidet
+   die absolute Flottengroesse, nicht das Verhaeltnis - das dreht die Risiko-Aussage aus Session 2/3
+   genau um (Befund 6).
+3. **Admiral-Serien** wurden mit einem Verlust-Kriterium (45 % Wertverlust je Check) statt
+   `result.retreated` gerechnet. Mit dem heutigen Code endet praktisch jeder Durchlauf in Check 1
+   (Session-2-Befund 2), die Eskalationskurve waere andernfalls gar nicht messbar. Die Zahlen in
+   Befund 4 gelten also fuer den Zustand NACH dem dort empfohlenen Fix; ohne ihn sind
+   Eskalation/Extraktion weiterhin toter Code.
+
+Stichprobengroessen: 4 Duelle je Paarung (56 Paarungen), 6 komplette Admiral-Serien je Szenario,
+3 Piratenbasen-Angriffe je Flottengroesse. Station/Galaxie-Ereignisse/Spionage/Punkte sind reine
+Arithmetik ohne Kampfsimulation.
+
+## Befund 1 (HOCH): Allianz-Station - jede Ausbaustufe ist unwirtschaftlicher als die vorherige
+
+**Dateien:** `data/stationBuildings.ts`, `game/stations.ts`, `data/buildings.ts`
+
+Vollausbau (alle drei Minen jeder Stufe auf dem Cap 30, Solarkraftwerk bedarfsdeckend, ohne
+Module):
+
+| Stufe | Kosten | Ertrag | Amortisation |
+|---|---|---|---|
+| V1 | 79,74 Mrd | 0,38 Mrd/Tag | 210 Tage |
+| V2 | 159,49 Mrd | 0,56 Mrd/Tag | 285 Tage |
+| V3 | 318,97 Mrd | 0,94 Mrd/Tag | 339 Tage |
+| **Summe** | **558,20 Mrd** | **1,88 Mrd/Tag** | **297 Tage** |
+
+Ursache ist die gewaehlte Stufen-Relation selbst: V2 = 2x Kosten fuer 1,5x Ertrag, V3 = 4x Kosten
+fuer 2,5x Ertrag - bei identischem Level-Cap. Damit sinkt die Kosteneffizienz pro Stufe um 25 %
+bzw. 37,5 %, ohne dass ein Gegenwert dafuer existiert. Dieselben Multiplikatoren gelten auch fuer
+die Heimatbasis (`buildings.ts`), dort federt der fehlende Level-Cap das ab: die naechste V1-Stufe
+wird noch schneller unwirtschaftlich (Metallmine Stufe 36 = 710 Tage, Stufe 40 = 2.574 Tage
+Amortisation), sodass der Wechsel auf V2 trotz schlechterer Relation die bessere Option bleibt.
+An der Station mit Cap 30 fehlt dieser Vergleichspunkt komplett.
+
+Zur Einordnung: 1,88 Mrd/Tag sind 8,7 % der Einnahmen-Baseline - fuer die GESAMTE Allianz, nicht
+pro Spieler. 558 Mrd Kosten entsprechen 26 Tagen Einnahmen eines einzelnen Spielers.
+
+**Bewertung:** Als Wirtschaftsgebaeude ist die Station die mit Abstand schlechteste Investition des
+Spiels (Verteidigung amortisiert laut Session-3-Befund 4 in unter einer Woche). Als **Ressourcen-
+Senke** ist sie dagegen genau das, was Session-3-Befund 1 gefordert hat: 558 Mrd sind 35 % aller
+uebrigen einmaligen Senken des Spiels zusammen und verlaengern die "74 Tage bis alles gekauft ist"
+auf ca. 100 Tage.
+
+**Empfehlung:** Die Station bewusst als Senke belassen und NICHT ueber den Ertrag rechtfertigen -
+dann aber die Stufen-Relation glattziehen, damit V2/V3 nicht schlechter sind als V1 (z.B. V2 =
+2x Kosten / 2x Ertrag, V3 = 4x / 4x). Alternativ die Ertragsseite ganz aufgeben und der Station
+einen nicht-wirtschaftlichen Nutzen geben (gemeinsamer Bau-Slot, Flotten-Stuetzpunkt, Bonus auf
+Gruppen-Operationen) - dann waere sie kein direkter Konkurrent zur Heimatbasis mehr.
+
+## Befund 2 (HOCH): Die Stufen-Freischaltung der Station erzwingt genau die beiden unwirtschaftlichsten Gebaeude
+
+**Dateien:** `data/stationBuildings.ts`, `game/stations.ts` (`checkTierUnlock()`)
+
+Kosten bis Level 30 gegen Wert-Ertrag, V1:
+
+| Gebaeude | Kosten bis 30 | Ertrag/h | Wert-Ertrag/h | Kosten je Wert-Ertrag |
+|---|---|---|---|---|
+| Metallmine | 4,48 Mrd | 5,2 Mio | 5,2 Mio | 1x |
+| Kristallmine | 17,17 Mrd | 3,5 Mio | 5,2 Mio | 3,8x |
+| Deuterium-Synthetisierer | 31,02 Mrd | 1,7 Mio | 5,2 Mio | **6,9x** |
+| Solarkraftwerk (Stufe 36 noetig) | 27,08 Mrd | - | 0 | - |
+
+Alle drei Minen liefern bei Level 30 exakt denselben Wert-Ertrag, kosten aber das 1-/3,8-/6,9-fache.
+`checkTierUnlock()` verlangt trotzdem ALLE drei auf dem Cap, bevor die naechste Stufe aufgeht - der
+guenstigste Weg zum gleichen Ertrag ist damit blockiert. Das ist Session-1-Befund 2
+("Metallmine + Haendler dominiert Kristall/Deuterium") an der Station wortgleich reproduziert, hier
+zusaetzlich verschaerft durch den Zwang.
+
+Nebenbefund: Das Solarkraftwerk ist das einzige Stations-Gebaeude ohne `maxLevel` und muss auf
+Stufe 36 (pro Stufe getrennt!), um den Energiebedarf von drei Minen auf Level 30 zu decken.
+**190 Mrd = 34 % der gesamten Stationskosten sind Solarkraftwerke** - ein Posten, der in der
+Ertragstabelle nirgends auftaucht.
+
+**Empfehlung:** Entweder die Freischaltung auf die Metallmine + eine frei waehlbare zweite Mine
+reduzieren, oder Kristall-/Deuterium-Kostenkurve (`costGrowth` 1.6 gegen 1.55, plus deutlich
+hoehere `baseCost`) an den Wert-Ertrag angleichen. Die zweite Variante ist die saubere, weil sie
+denselben Fehler auch an der Heimatbasis behebt.
+
+## Befund 3 (MITTEL): Die Bauzeit der Station ist ein Schalter, keine Kurve
+
+**Dateien:** `game/stations.ts` (`stationBauzeitFactorForTier()`, `STATION_MAX_BUILD_SLOTS`)
+
+Roh, ohne Fabriken, betraegt die Bauzeit fuer den Vollausbau **10.028 Tage (27,5 Jahre)** - bei
+**einem einzigen Bau-Slot fuer die gesamte Allianz**. Die Station kennt weder Bauzeit-Forschung
+noch Booster noch den Samstags-Event-Bonus; einziger Hebel sind ihre eigenen Fabriken:
+
+| Hebel | Kosten | Faktor | Restbauzeit V1 |
+|---|---|---|---|
+| Roboterfabrik Stufe 10 | 0,01 Mrd | 5,6e-2 | 564,7 Tage |
+| Roboterfabrik Stufe 15 | 0,23 Mrd | 1,3e-2 | 134,0 Tage |
+| Roboterfabrik Stufe 20 | 4,99 Mrd | 3,2e-3 | 31,8 Tage |
+| Nanitenfabrik Stufe 10 | 0,79 Mrd | 9,8e-4 | - |
+
+Roboter 15 + Nanit 10 zusammen kosten rund 1 Mrd und druecken den Faktor auf 1,3e-5 - die Bauzeit
+faellt damit auf praktisch null. Es gibt an der Station keine Voraussetzungspruefung fuer die
+Nanitenfabrik (anders als bei den Freischalt-Schwellen der Minen), sie ist ab Stufe 1 fuer 0,78 Mio
+Wert baubar. Bauzeit ist an der Station deshalb entweder ein absoluter Blocker (vor den Fabriken)
+oder voellig bedeutungslos (danach), dazwischen liegt fast nichts.
+
+**Nebenbefund:** Die Stations-Module haben `requiredBuildingLevel: 20` bei einem `maxLevel` von 30 -
+das Modul wird erst nach zwei Dritteln der Ausbaustrecke sichtbar. Zugleich sind die Module mit
+Abstand die beste Investition an der Station: **alle neun Foerdereffizienz-Module auf Stufe 10
+kosten 16,87 Mrd und bringen +50 % Ertrag (+0,94 Mrd/Tag) - 17,9 Tage Amortisation** gegen 297 Tage
+fuer die Gebaeude selbst. Ein Faktor 17 zwischen zwei Ausbauwegen desselben Gebaeudes.
+
+**Empfehlung:** Fabrik-Stufen an eine Voraussetzung binden (analog `PARENT_UNLOCK_LEVEL`) oder ihren
+Effekt pro Stufe deutlich senken, sonst bleibt die gesamte Bauzeit-Mechanik der Station wirkungslos.
+`requiredBuildingLevel` fuer Stations-Module auf 10 senken (Cap-Verhaeltnis 30 statt 100 bei der
+Heimatbasis), und die Modul-Kosten gegen die Gebaeude-Kosten anheben.
+
+## Befund 4 (HOCH): Piratenadmiral - die Belohnung liegt zwei Groessenordnungen unter den Verlusten
+
+**Dateien:** `data/combatConstants.ts` (`ADMIRAL_*`), `game/groupOps.ts` (`runAdminCheck()`,
+`finalizeAdminEncounter()`)
+
+Komplette 6-Check-Serien, Verluste ueber alle Checks mitgeschleppt, 6 Serien je Zeile:
+
+| Szenario | Flottenwert | Checks | Boss faellt | Flottenverlust | Belohnung | Netto |
+|---|---|---|---|---|---|---|
+| voll / reale Flotte | 26,7 Mrd | 1,0 | 50 % | 10,21 Mrd | 0,45 Mrd | **-9,76 Mrd** |
+| voll / grosse Flotte | 3,52 Mrd | 1,0 | 100 % | 0,39 Mrd | 0,90 Mrd | +0,51 Mrd |
+| voll / kleine Flotte | 0,25 Mrd | 1,0 | 100 % | 0,04 Mrd | 0,90 Mrd | +0,86 Mrd |
+| mittel / grosse Flotte | 3,52 Mrd | 1,0 | 0 % | 2,33 Mrd | 0,00 Mrd | -2,33 Mrd |
+| voll ohne Boost / gross | 3,52 Mrd | 1,0 | 100 % | 0,77 Mrd | 0,90 Mrd | +0,13 Mrd |
+
+Die Belohnungskurve ist **absolut fix** und kennt die Flottengroesse nicht:
+
+| Nach Check | Feindstaerke-Faktor | Extraktion |
+|---|---|---|
+| 1 | 1,00x | 0,06 Mrd |
+| 3 | 1,32x | 0,09 Mrd |
+| 6 | 2,01x | 0,14 Mrd |
+| Sieg | - | 0,90 Mrd + 200 DM |
+
+Das ist Session-3-Befund 2 in seiner extremsten Auspraegung: die maximale Extraktion nach einer
+vollen Stunde entspricht **4 % des eingesetzten Flottenwerts**, die Sieg-Praemie 25,5 % - beim
+realen Flottenwert sind es 0,5 % bzw. 3,4 %. Zum Vergleich: eine Elite-Bollwerk-Serie bringt
+32,60 Mrd, ein einzelner Raid-Tag 6,31 Mrd. **P10 ist damit der einzige Inhalt des Spiels, bei dem
+sich die Teilnahme mit wachsender Flotte in einen sicheren Verlust verwandelt** - und zwar in einen
+Verlust in der Groessenordnung eines halben Tages Gesamteinnahmen.
+
+Die Eskalation selbst ist nicht das Problem: ueber 6 Checks waechst der Gegner um 2,01x, die
+Belohnung um 2,54x - das Verhaeltnis stimmt. Nur ist die Basis, auf der es steht, bedeutungslos.
+Session-2-Befund 7 hat die P10-Belohnung bereits als "weit unter allem anderen" markiert; diese
+Session ergaenzt die Zahl dahinter und die Erkenntnis, dass die Extraktions-Mechanik nicht nur
+mechanisch unerreichbar (Session-2-Befund 2), sondern auch nach dem Fix wirtschaftlich sinnlos
+bliebe.
+
+**Empfehlung, in dieser Reihenfolge:**
+1. Session-2-Befund 2 zuerst umsetzen (Verlust-Kriterium statt `result.retreated`), sonst ist jede
+   Belohnungsaenderung wirkungslos.
+2. `ADMIRAL_EXTRACTION_BASE`/`-GROWTH` an die eingesetzte Flottenmacht koppeln statt sie fest zu
+   halten - dasselbe Prinzip, das die Sektoren ueber `lootBase` x Feindstaerke schon nutzen.
+   Zielgroesse: eine volle Serie sollte in der Naehe einer Elite-Bollwerk-Serie liegen, da sie
+   dieselbe Flotte bindet.
+3. Erst danach die Sieg-Praemie neu setzen. Sie muss deutlich ueber der maximalen Extraktion liegen,
+   sonst gibt es keinen Grund weiterzumachen.
+
+## Befund 5 (HOCH, mechanisch): Der Overkill-Schutz kippt an der Aggregations-Schwelle - ein Schiff mehr kann aus 42 % Verlust einen Totalverlust machen
+
+**Dateien:** `game/combat.ts` (`applyAggregateDamage()` Zeile 688, `applyHitToTarget()` Zeile 923,
+`buildUnits()` Zeile 714), `data/combatConstants.ts` (`STACK_AGGREGATE_THRESHOLD_BY_TYPE`),
+`generateAdmiralEncounter()` (`ADMIRAL_STAT_SHARE = 0.55`)
+
+**Korrektur einer frueheren Fassung dieses Befundes.** Die erste Version hier behauptete, die
+Konzentration von 55 % der Feindstaerke auf eine Einheit lasse den Boss-Schaden im Overkill
+verpuffen (53-72x Ueberschuss je Schuss). Das gilt NUR fuer Einzel-Einheiten. Die Messung dazu
+(`run_admiral_rebalance.mjs`, Abschnitt A) zeigte das Gegenteil des Erwarteten und fuehrte auf die
+tatsaechliche Ursache:
+
+`applyHitToTarget()` (Einzel-Einheiten) verwirft Ueberschuss-Schaden bis auf die
+Durchschlags-Kaskade (max. 5 Ziele). `applyAggregateDamage()` (Stapel oberhalb der Schwelle) zieht
+den Schaden dagegen **direkt vom gemeinsamen HP-Pool ab - ohne jeden Overkill-Verlust**. Ein Stapel
+verliert damit exakt `Schaden / Panzerung` Einheiten pro Treffer, egal wie gross der Einzelschaden ist.
+
+Gemessen (1 Gegner mit Admiral-Profil, 280 Mio Waffen, gegen reine Kreuzer-Flotten, 6 Laeufe je
+Zeile, Schwelle Kreuzer = 100):
+
+| Kreuzer | aggregiert | Runden | Verlust | Verlust % |
+|---|---|---|---|---|
+| 90 | nein | 100,0 | 36,3 | 40,4 % |
+| 99 | nein | 100,0 | 41,7 | 42,1 % |
+| **101** | **ja** | **2,8** | **101,0** | **100 %** |
+| 150 | ja | 2,5 | 150,0 | 100 % |
+| 400 | ja | 2,5 | 400,0 | 100 % |
+
+**99 Kreuzer ueberstehen 100 Runden mit 42 % Verlust. 101 Kreuzer sind nach 2,8 Runden restlos
+vernichtet.** Ein einziges zusaetzliches Schiff kippt den Ausgang vollstaendig. Dieselbe Schwelle
+existiert fuer jede Klasse (Jaeger 500, Kreuzer-Klasse 100, Elite-Klasse 50, Verteidigung ohne
+`maxCount` 100).
+
+Die Konsequenz fuer P10 ist genau umgekehrt zur ersten Fassung: die Boss-Konzentration ist gegen
+jede realistisch grosse Flotte **voll wirksam**, nicht wirkungslos. Das bestaetigt die Messung
+ueber komplette Serien (Profil voll, 5 Serien je Zelle, Verlust-Kriterium 45 %):
+
+| Flotte | `ADMIRAL_STAT_SHARE` | Sieg | Verlust brutto | Verlust netto (nach 30 % Bergung) |
+|---|---|---|---|---|
+| gross | 0,55 | 100 % | 0,59 Mrd | 0,41 Mrd |
+| gross | 0,35 | 100 % | 0,53 Mrd | 0,37 Mrd |
+| gross | 0,25 | 100 % | 0,43 Mrd | 0,30 Mrd |
+| real | 0,55 | 60 % | **8,89 Mrd** | 6,23 Mrd |
+| real | 0,35 | 100 % | 4,82 Mrd | 3,38 Mrd |
+| real | 0,25 | 100 % | **3,05 Mrd** | 2,13 Mrd |
+
+Der Boss-Anteil allein macht beim realen Flottenwert einen Faktor 2,9 im Verlust und den
+Unterschied zwischen 60 % und 100 % Siegchance aus.
+
+**Nebenbefund: das RapidFire des Bosses ist im eigenen Sektor unerreichbar.**
+`RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` - beide Typen stehen nicht in
+`ADMIRAL_ALLOWED_SHIP_IDS` und koennen P10 gar nicht betreten. Der als "RapidFire-Waechter gegen
+Jaeger-Klasse" dokumentierte Anti-Massen-Mechanismus des Bosses hat also **null erreichbare Ziele**.
+Der Boss ist zudem nicht in `MULTI_TARGET_VOLLEY_SHIPS`. Seine gesamte Wirkung haengt damit an
+einem einzigen, sehr hohen Waffenwert - und der wirkt nur deshalb, weil Aggregat-Stapel keinen
+Overkill-Schutz haben.
+
+**Empfehlung:**
+1. `ADMIRAL_STAT_SHARE` auf 0,25-0,30 senken (gemessen: Verlust real 8,89 → ca. 3-4 Mrd,
+   Siegchance 60 % → 100 %).
+2. Dem Boss stattdessen eine erreichbare Anti-Massen-Mechanik geben: `piratenadmiral` in
+   `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen und sein `RAPIDFIRE` auf die tatsaechlich zugelassenen
+   Klassen umstellen (`kreuzer`/`schlachtschiff`/`bomber`/`schlachtkreuzer`/`zerstoerer`/`reaper`).
+   Damit traegt der Boss-Charakter wieder ueber eine Mechanik statt ueber eine rohe Zahl.
+3. Die Aggregations-Schwelle selbst ist der groessere, sektoruebergreifende Punkt: solange
+   Aggregat-Stapel keinen Overkill-Schutz haben, ist jede Einheit mit sehr hohem Einzelschaden
+   gegen grosse Flotten ueberproportional stark und gegen kleine fast wirkungslos. Sauberste
+   Loesung waere, `applyAggregateDamage()` den Schaden pro TREFFER auf `hpMax + shieldMax` einer
+   Einheit zu deckeln (plus Durchschlags-Anteil), damit Stapel und Einzel-Einheiten dieselbe Regel
+   sehen. Das beruehrt jeden Kampf im Spiel und gehoert deshalb zuerst isoliert getestet - siehe
+   `run_aggregate_threshold.mjs` als Regressionstest.
+
+## Befund 6 (MITTEL): Piratenbasen haben eine feste Garnison - das Risiko ist genau invertiert
+
+**Dateien:** `game/pirateBaseState.ts` (`SEED_FLEET`, `SEED_DEFENSE`, `RESOURCE_CAP`,
+`PIRATE_BASE_LOOT_PERCENT`), `data/economy.ts` (`NPC_PRODUCTION_BONUS_MULTIPLIER`)
+
+Die Garnison ist mit 6.420 Einheiten (2,70 Mrd Wert / 2,08 Mrd BasePower) fest und waechst nur
+nach oben - es gibt keine Skalierung an der angreifenden Flotte. Ergebnis, 3 Angriffe je Zeile:
+
+| Angreifende Flotte | Flottenwert | Verlust | Verlust % | Max. Beute | Netto |
+|---|---|---|---|---|---|
+| klein (Aufbau) | 0,37 Mrd | 0,33 Mrd | **89,6 %** | 32,2 Mio | -0,30 Mrd |
+| gross | 4,23 Mrd | 0,02 Mrd | 0,5 % | 32,2 Mio | +0,01 Mrd |
+| real (Session 3) | 31,57 Mrd | 0,00 Mrd | **0,0 %** | 32,2 Mio | +0,03 Mrd |
+| nur Jaeger (gleicher Wert wie "gross") | 5,58 Mrd | 0,01 Mrd | 0,2 % | 32,2 Mio | +0,02 Mrd |
+
+Der Inhalt ist damit fuer eine kleine Flotte unspielbar und fuer eine entwickelte Flotte
+risikofrei-bedeutungslos: **32,2 Mio Wert sind 0,15 % eines Tageseinkommens.** Ueber alle vier
+aktiven Basen zusammen waechst nur ein Wert von 56,3 Mio/Tag nach (0,3 % der Baseline).
+
+**Zusaetzlicher Fund - `RESOURCE_CAP` ist gegen einen veralteten Multiplikator kalibriert:** der
+Kommentar an der Konstante rechnet ausdruecklich mit `NPC_PRODUCTION_BONUS_MULTIPLIER = 1.5` und
+zielt auf "~3 Wochen (504h) ungebremstes Wachstum". Der Multiplikator steht inzwischen auf **6**.
+Gemessen (Energiefaktor 0,797 der Seed-Gebaeude beruecksichtigt): der Deckel ist in **6,5 Tagen**
+erreicht, nicht in 21. Ab dann waechst die Basis wirtschaftlich gar nicht mehr.
+
+**Empfehlung:** Beides zusammen anfassen, sonst verschiebt man nur das Problem.
+- Garnison an der angreifenden Flotte skalieren (Muster: `OUTPOST_MULTIPLIER_ROLL` aus dem
+  entfernten Aussenposten-System bzw. `PIRATEN_MULTIPLIER_ROLL`), `SEED_FLEET` als Untergrenze
+  behalten. Damit wird die Basis fuer kleine Flotten ueberhaupt erst angreifbar.
+- Beute an die tatsaechlich vernichtete Garnison koppeln statt an einen festen Prozentsatz des
+  Lagers - das ist exakt die in Session-3-Befund 2 bereits beschlossene Mechanik, sie gehoert hier
+  genauso hin.
+- `RESOURCE_CAP` gegen den heutigen Multiplikator neu rechnen (Faktor 4 zu hoch angesetzte
+  Fuellzeit).
+
+## Befund 7 (MITTEL): Die Tier-Progression der Schiffe ist wirtschaftlich invertiert
+
+**Dateien:** `data/ships.ts`, `data/combatConstants.ts` (`RAPIDFIRE`)
+
+Duelle bei gleichem Ressourceneinsatz (600 Mio Wert je Seite, Basiswerte, kein Rueckzug),
+uebriggebliebener Wert A minus B in Mio:
+
+| A \ B | leicht | schwer | kreuzer | schlachtsch. | bomber | schlachtkr. | zerstoerer | reaper |
+|---|---|---|---|---|---|---|---|---|
+| Leichter Jaeger | - | -31 | +176 | +234 | +558 | +557 | +449 | +425 |
+| Schwerer Jaeger | +86 | - | +147 | +250 | +564 | +554 | +494 | +471 |
+| Kreuzer | -170 | -78 | - | -157 | +368 | +330 | +194 | +157 |
+| Schlachtschiff | -234 | -251 | +169 | - | +451 | +302 | +270 | +229 |
+| Bomber | -558 | -563 | -363 | -449 | - | -120 | -251 | -311 |
+| Schlachtkreuzer | -556 | -553 | -326 | -299 | +130 | - | -418 | -242 |
+| Zerstoerer | -448 | -494 | -190 | -261 | +261 | +416 | - | -366 |
+| Reaper | -424 | -467 | -149 | -220 | +318 | +239 | +378 | - |
+
+Rangfolge nach durchschnittlichem Netto-Rest: Schwerer Jaeger (+366 Mio), Leichter Jaeger (+338),
+Schlachtschiff (+134), Kreuzer (+92), Reaper (-47), Zerstoerer (-155), Schlachtkreuzer (-323),
+Bomber (-374). **Tier 1 und 2 schlagen Tier 5 bis 7 bei gleichem Ressourceneinsatz deutlich.**
+
+Zwei Ursachen, die sich addieren:
+- **Wert je Machtpunkt:** Leichter Jaeger 1,11, Schwerer Jaeger 1,18, Schlachtschiff 1,10 gegen
+  Schlachtkreuzer 1,89, Bomber 1,73, Zerstoerer 1,60, Reaper 1,59. Hoehere Tiers kosten 45-70 %
+  mehr pro Machtpunkt.
+- **Jede Einheit feuert einmal pro Runde**, unabhaengig von ihrer Groesse. Mehr, billigere Einheiten
+  bedeuten mehr Schuesse - der Vorteil aus Punkt 1 wird dadurch nicht ausgeglichen, sondern
+  verdoppelt.
+
+RapidFire ist das einzige Gegengewicht und reicht nicht: der Kreuzer hat RapidFire 4 gegen den
+Schweren Jaeger und **verliert das Duell trotzdem** (-78 Mio).
+
+**Nebenbefund - die RapidFire-"Kette" ist linear, nicht zyklisch.** Der Kommentar in
+`combatConstants.ts` beschreibt sie als "sauberes Stein-Schere-Papier", tatsaechlich ist sie eine
+Einbahnstrasse: `leicht: {}` hat gar kein Ziel, und Bomber wie Reaper werden von **keinem**
+Standard-Kampfschiff gekontert (nur von Spezialschiffen, Spezialverteidigung und dem Imperator).
+Der Kreis schliesst sich also an keiner Stelle. Auch der README-Satz "Jaeger schlagen Zerstoerer/
+Reaper, weil die kein RapidFire gegen Jaeger haben; Schlachtkreuzer und Imperator zerlegen Jaeger
+dank RapidFire wieder" trifft nur zur Haelfte zu: der Schlachtkreuzer hat gar kein RapidFire gegen
+Jaeger und verliert gegen sie mit -553 bis -556 Mio.
+
+**Wichtige Einschraenkung, damit das nicht falsch umgesetzt wird:** In allen Inhalten mit
+macht-skalierter Gegnerflotte (Solo-Sektoren, Elite-Bollwerk, Raid, Admiral) hebt sich der Effekt
+weitgehend auf - billige Schiffe liefern mehr `combatFleetPowerBase()` pro Wert und erzeugen damit
+auch einen entsprechend staerkeren Gegner. Genau deshalb kommt Session-3-Befund 3 dort zu einem
+anderen Bild. Voll wirksam ist der Vorteil bei allen Gegnern mit FESTER Staerke - also bei
+Piratenbasen (Befund 6) und in jedem kuenftigen PvP-artigen Inhalt.
+
+**Empfehlung:** Vor einer Aenderung entscheiden, welche der beiden Messungen die Zielgroesse ist.
+Wenn die Tier-Progression eine Bedeutung haben soll, ist der sauberste Hebel die Angleichung von
+Wert je Machtpunkt ueber alle Tiers (Zielkorridor ca. 1,1-1,3) - das ist eine reine Kostenaenderung
+an vier Schiffen und beruehrt keine Mechanik. RapidFire-Werte anzuheben wuerde dagegen die
+Sektor-Balance (Session 2) mitverschieben.
+
+## Befund 8 (MITTEL): Der Sandronator ist ein reiner Malus
+
+**Dateien:** `data/ships.ts`
+
+| | Wert/Stk | Waffen | Schild | Panzerung | Bauzeit | Speed |
+|---|---|---|---|---|---|---|
+| Sandronator | 0,97 Mio | 1.750 | 550 | 105.000 | 3.000 | 2.000 |
+| Kreuzer | 0,66 Mio | 7.200 | 900 | 486.000 | 32 | 15.000 |
+
+Der Sandronator kostet das 1,48-fache eines Kreuzers bei 0,24x Waffen und 0,22x Panzerung, bei
+94-facher Bauzeit. Duelle bei gleichem Wert: **0 % Siegquote gegen Leichte Jaeger, Kreuzer UND
+Reaper**, jeweils Totalverlust bei praktisch unbeschaedigtem Gegner. Kosten je Waffenpunkt: 557
+gegen 68-133 bei den Standard-Schiffen.
+
+Dazu kommt ein Effekt, der ueber die reinen Kampfwerte hinausgeht: mit `speed: 2000` ist er das
+mit Abstand langsamste Schiff (naechstlangsames Kampfschiff: Bomber mit 9.000), und
+`galaxyFleetSpeed()` richtet sich nach dem langsamsten Schiff der Flotte. **Ein einziger
+mitgenommener Sandronator vervierfacht bis versechsfacht die Flugzeit der gesamten Flotte** zu
+Galaxie-Zielen, Piratenbasen und Sektoren. Er ist damit nicht nur schwach, sondern aktiv schaedlich.
+
+Sein einziger dokumentierter Nutzen ist der Mining-Bonus (`sandronatorBonus` in `missions.ts`) -
+und Mining-Missionen sind der eine Fall, in dem die Flugzeit kaum stoert.
+
+**Empfehlung:** Entweder als reines Wirtschaftsschiff deklarieren (Kampfwerte irrelevant, Info-Popup
+entsprechend, Ausschluss aus Kampfflotten-Vorlagen) - oder die Kampfwerte auf sein Tier 5,5 heben.
+Der aktuelle Zustand ist ein Lore-Einzelstueck, das jeden bestraft, der es einsetzt, ohne dass das
+irgendwo steht. Der Speed-Wert sollte in jedem Fall angehoben werden, weil er eine Flotten-weite
+Nebenwirkung hat.
+
+## Befund 9 (MITTEL): Das Punktesystem misst Einnahmen, nicht Leistung - und ist um 43 % aufblasbar
+
+**Dateien:** `game/stats.ts`, `game/actions.ts` (Zeilen 551/588/622/671/715/761/816),
+`data/economy.ts` (`SCRAP_REFUND_RATE`)
+
+`calculatePoints()` besteht aus `resourcesSpentShipsDefense` + `resourcesSpentResearchBuildings`
+(beide kumulativ, sinken nie) + vernichtete Gegner. Da Session-3-Befund 1 zeigt, dass Ressourcen
+kein Engpass sind und Schiffe unbegrenzt baubar bleiben, ist die Punktzahl damit im Wesentlichen
+**eine Funktion der kumulierten Einnahmen**, nicht der Spielleistung - wer alles in Schiffe steckt,
+fuehrt automatisch. Bei 21,69 Mrd/Tag und `UNIT_POINT_COST_SCALE = 100000` sind das rund
+217.000 Punkte pro Tag allein aus dem Bauen.
+
+Konkret ausnutzbar: **Verschrotten senkt die Zaehler nicht.** Mit `SCRAP_REFUND_RATE = 0.3`
+liefert die Schleife Bauen -> Verschrotten -> Bauen aus derselben Ressourcenmenge
+1/(1-0,3) = **1,43x Punkte**. Kein Exploit mit Spielauswirkung, aber die Bestenliste ist damit
+manipulierbar, und der Aufwand ist ein paar Klicks.
+
+**Empfehlung:** Beim Verschrotten den erstatteten Betrag von `resourcesSpentShipsDefense` abziehen
+(eine Zeile in `scrapUnits()`). Falls die Bestenliste mehr als Einnahmen abbilden soll, waere die
+naheliegende Ergaenzung eine Kategorie, die nicht mit Ressourcen kaufbar ist - Forschungsstufen
+sind bereits enthalten, gewonnene Elite-Serien/Admiral-Siege waeren die Kandidaten (sie wurden
+04.08.2026 bewusst entfernt, weil sie neben den Millionen-Werten unsichtbar blieben; mit einem
+eigenen, nicht kostenbasierten Gewicht waere das loesbar).
+
+## Befund 10 (NIEDRIG): Galaxie-Ereignisse und Spionage sind wirtschaftlich Deko
+
+**Dateien:** `data/economy.ts` (`GALAXY_EVENT_*`), `game/galaxyEvents.ts`, `game/spyMissions.ts`,
+`data/galaxyConstants.ts` (`SPY_PROBE_*`)
+
+**Galaxie-Ereignisse:** Erwartungswert Wrack 11,45 Mio Wert, Handelskonvoi 6,05 Mio + 25 DM. Bei
+`GALAXY_EVENT_SPAWN_CHANCE = 0.005` pro Heartbeat (720/Tag) und `MAX_ACTIVE = 2` sind das rund
+3,6 Ereignisse/Tag, also **ca. 31 Mio Wert/Tag (0,14 % der Baseline) und ~45 DM/Tag (4,1 % des
+DM-Zuflusses)**. Das ist als "Grund, in die Galaxie-Ansicht zu schauen" ausdruecklich so gewollt
+(Kommentar in `economy.ts`) und braucht keine Korrektur - es sollte nur nicht mit einer
+Wirtschaftsfunktion verwechselt werden. Einzige Auffaelligkeit: der Bergungsflug hat kein
+Mindest-Flottenkriterium, ein einzelner Leichter Jaeger genuegt (Treibstoff ~76 Deuterium), waehrend
+der Versand der kompletten Realflotte 9,28 Mio Deuterium = 27,8 Mio Wert kosten und die Beute damit
+aufzehren wuerde. Ein Hinweis in der UI waere sinnvoller als eine Regel.
+
+**Toter Code:** `GalaxyEvent.claimedBy` wird an zwei Stellen GELESEN
+(`startEventClaim()`/`processEventTrips()`), aber **nirgends gesetzt** - Ereignisse werden bei
+Ankunft direkt geloescht. Das Feld ist wirkungslos, der zugehoerige Typ-Kommentar in `types.ts`
+("wird gesetzt, sobald eine Flotte dort ankommt") beschreibt Verhalten, das es nicht gibt.
+
+**Spionage:** `startSpyProbe()` nimmt eine Menge `qty` entgegen, prueft sie und zieht Sonden und
+Treibstoff ab - **auf den Bericht hat sie keinerlei Einfluss**. `buildSpyReport()` haengt allein an
+`research.spionage`. Da die Sonde nie verloren geht, reicht dauerhaft eine einzige; jede weitere
+mitgeschickte Sonde ist reine Verschwendung. Entweder `qty` entfernen oder den Detailgrad
+tatsaechlich an die Sondenzahl koppeln (z.B. Streuungsfaktor sinkt mit der Anzahl) - die zweite
+Variante wuerde der Spionagesonde ueberhaupt erst eine Bauentscheidung geben.
+
+## Befund 11 (NIEDRIG, toter Code): Reste des entfernten Aussenposten-Systems
+
+**Dateien:** `data/economy.ts` (Zeilen 555-601), `data/galaxyConstants.ts` (Zeilen 52-66),
+`game/galaxyPositions.ts`, `data/combatConstants.ts` (Zeile 530)
+
+`game/outposts.ts` existiert nicht mehr, der README-Verlauf fuehrt das Feature korrekt als
+"inzwischen komplett entfernt". Im Code leben aber weiter:
+- `OUTPOST_TIER_TARGET_POWER`, `OUTPOST_MULTIPLIER_ROLL`, `OUTPOST_SPEED_BONUS_PER_OUTPOST`,
+  `OUTPOST_PIRATE_ATTACK_COOLDOWN_MIN/MAX_MS`, `OUTPOST_PIRATE_ADVANTAGE_ROLL`,
+  `OUTPOST_PIRATE_CONCENTRATION_FACTOR` (rund 50 Zeilen inkl. Kommentaren)
+- `OUTPOST_POSITIONS`/`OUTPOST_TIERS`/`OUTPOST_IDS`
+- ein `outpost`-Eintrag in der Wellenprofil-Tabelle in `combatConstants.ts`
+- **wirksam:** `galaxyPositions.ts` reserviert weiterhin die 6 Aussenposten-Positionen als belegt.
+  Sie sind damit fuer Allianz-Stationen, Umzuege und Galaxie-Ereignisse gesperrt, ohne dass in der
+  Galaxie-Ansicht irgendetwas dort zu sehen waere - 6 von 450 Positionen sind unsichtbar tot.
+
+Kein Balance-Problem, aber die einzige Stelle im Projekt, an der der Code der README-Beschreibung
+widerspricht.
+
+**Empfehlung:** Konstanten und die Reservierung ersatzlos entfernen. `OUTPOST_MULTIPLIER_ROLL`
+vorher sichern, falls Befund 6 (Piratenbasen-Skalierung) umgesetzt wird - die Werte sind fuer genau
+diesen Zweck kalibriert worden.
+
+## Gesamt-Konsistenz-Check (Abschluss der vier Sessions)
+
+**README (`README.md`, 836 Zeilen):** inhaltlich auf dem Stand des Codes. Alle Session-4-Themen sind
+abgedeckt (Allianz-Station, Piratenbasen, Spionage, Galaxie-Ereignisse, Statistik/Punkte, P10).
+Drei Abweichungen:
+1. Der Verlauf fuehrt die Aussenposten als "komplett entfernt" - im Code stehen sie noch (Befund 11).
+2. Der Abschnitt zur RapidFire-Kette beschreibt ein Stein-Schere-Papier, das es nicht gibt
+   (Befund 7), inkl. der falschen Aussage zum Schlachtkreuzer gegen Jaeger.
+3. Der aus Session 3 gemeldete Punkt bleibt offen: der dort genannte Zielkorridor "ca. 65 Kosten je
+   Waffenpunkt, Schiffe bei ~57-90" ist ueberholt (real 68-133 bei Schiffen, 397-623 bei
+   Spezialschiffen, 557 beim Sandronator). Der Satz steht in der aktuellen README nicht mehr wort-
+   gleich, die Zahlenbasis fehlt aber ersatzlos - beim Umsetzen von Befund 7 gehoert sie dorthin.
+
+**Changelog (`data/changelog.ts`, 1.150 Zeilen):** neuester Eintrag 06.08.2026, luecken-
+los rueckwaerts. Die Session-1-bis-3-Analysen haben noch zu keinem Eintrag gefuehrt - korrekt, da
+bisher nichts umgesetzt wurde. Bei der Umsetzungs-Session ist zu beachten, dass Balance-Aenderungen
+dieser Groessenordnung (Sektor-Ertraege, Schiffskosten, P10) fuer Spieler sichtbar sind und einen
+Eintrag brauchen.
+
+**Balance-Ordner:** `balance/session2-simulation/` enthaelt inzwischen die Skripte BEIDER Sessions
+(2 und 3), und die README darin ist die Session-3-README, die auf ein nicht existierendes
+`balance/session3-simulation/` verweist. Die in Session 3 dokumentierten Pfade stimmen dadurch
+nicht. Session 4 liegt sauber in `balance/session4-simulation/`.
+
+**Offene Punkte der Eingangs-Checkliste, die auch nach vier Sessions offen bleiben:**
+- Raid-Frequenz-Verdopplung ueber mehrere echte Wochen (Punkt 1) - nur live beobachtbar.
+- Komplette 6-Check-Elite-Serie live (Punkt 2) - in Session 3 gerechnet, nicht gespielt.
+- `STACK_AGGREGATE_THRESHOLD` (Punkt 4) - inzwischen pro Klasse gestaffelt, die urspruengliche
+  Frage "weiter anheben?" ist damit gegenstandslos geworden; Punkt kann gestrichen werden.
+- Mission-Crash-Ursache (Punkt 5) - weiterhin ohne Logs nicht auffindbar.
+- NPC-Verteidigung ausserhalb des Elite-Bollwerks (Punkt 6) - fuer P10 in Befund 5 mitbeantwortet
+  (dort traegt die Eskorte, keine Verteidigungsanlagen); fuer Raids offen.
+
+## Reihenfolge fuer die Umsetzungs-Session
+
+1. **Session-2-Befund 2 zuerst** (Admiral-Verlustkriterium). Ohne ihn sind Befund 4 und 5 nicht
+   testbar, weil Check 2 nie erreicht wird.
+2. **Befund 4 + 5 zusammen** (P10-Belohnung an die Flottenmacht koppeln, Boss-Konzentration senken).
+   Beide betreffen denselben Kampf; einzeln kalibriert man gegen einen sich mitbewegenden Gegner.
+3. **Befund 6** (Piratenbasen skalieren + Beute an vernichtete Garnison koppeln + `RESOURCE_CAP`
+   nachrechnen). Nutzt dieselbe Mechanik wie die bereits beschlossene Sektor-Aenderung aus
+   Session-3-Befund 2 und sollte gemeinsam mit ihr umgesetzt werden.
+4. **Befund 7** (Wert je Machtpunkt der Tiers 5-7 angleichen). Muss NACH den Sektor-Aenderungen aus
+   Session 3 kommen, sonst misst man gegen eine Ertragsbasis, die sich danach verschiebt.
+5. **Befund 1 + 2 + 3** (Station: Stufen-Relation, Freischalt-Zwang, Fabrik-/Modul-Schwellen).
+   Unabhaengig vom Rest, kann jederzeit dazwischen.
+6. **Kleinkram am Ende:** Befund 8 (Sandronator-Speed), Befund 9 (Verschrottung vom Punktzaehler
+   abziehen), Befund 10 (`claimedBy` und `qty` bereinigen), Befund 11 (Aussenposten-Reste).
+
+## Zu beachten bei jeder Multiplayer-/Rest-Aenderung
+
+- **Feste Gegnerstaerke und feste Belohnung sind dasselbe Problem aus zwei Richtungen.** Piratenbasen
+  haben beides fest (Befund 6), P10 hat die Belohnung fest (Befund 4). In beiden Faellen entsteht
+  ein Fenster, ausserhalb dessen der Inhalt entweder unspielbar oder bedeutungslos ist. Bei jedem
+  neuen Inhalt zuerst pruefen, welche der beiden Seiten mitwaechst.
+- **Ein hoher Einzelschaden wirkt gegen grosse Flotten voll und gegen kleine kaum** - genau
+  umgekehrt zur Intuition. Aggregat-Stapel (oberhalb `STACK_AGGREGATE_THRESHOLD_BY_TYPE`) haben
+  KEINEN Overkill-Schutz, Einzel-Einheiten schon (Befund 5). Jede neue Einheit mit sehr hohem
+  Waffenwert deshalb zwingend an beiden Seiten der Schwelle testen
+  (`run_aggregate_threshold.mjs`).
+- **Die Station ist von der Spieler-Wirtschaft vollstaendig entkoppelt** - keine Mining-Forschung,
+  keine Klasse, keine Booster, kein Wochen-Event, eigener Bau-Slot, eigener Energie-Haushalt pro
+  Stufe. Jede Zahl, die von der Heimatbasis uebernommen wird, wirkt dort also schwaecher als dort.
+- **Jede neue Schiffs-Kostenaenderung an zwei Messungen pruefen**: Duell bei gleichem Wert
+  (`run_ships.mjs`) UND macht-skalierter Sektor (`run_ship_value.mjs` aus Session 3). Die beiden
+  koennen gegenlaeufig ausschlagen (Befund 7).
+- **`speed` ist eine Flotten-weite Eigenschaft**, weil `galaxyFleetSpeed()` das langsamste Schiff
+  nimmt. Ein einzelner Ausreisser nach unten wirkt auf jede Flotte, in der er mitfliegt (Befund 8).
+
+## Nachtrag Session 4: Konkreter Umbau-Vorschlag Piratenadmiral (Stand 08.08.2026)
+
+Nutzerentscheidung im Anschluss an diese Session: **(1)** der Piratenadmiral wird angepasst - er
+wurde seit dem Einbau des Features nie getestet und nie nachjustiert; **(2)** alle Ertragsrechnungen
+laufen ab jetzt gegen die Oekonomie NACH den Session-3-Aenderungen (Wrack-Bergung 30 %, Beute
+proportional zur vernichteten Feindmacht), da diese Basis fuer alles Weitere gebraucht wird.
+
+Alle Zahlen unten sind gegen diese neue Basis gerechnet (`run_admiral_rebalance.mjs`).
+
+### Messgrundlage
+
+Vernichtete Feindmacht und Netto-Verlust (nach 30 % Bergung) je kompletter Serie, Profil voll,
+Verlust-Kriterium 45 %, 5 Serien je Zelle:
+
+| Flotte | Boss-Anteil | vernichtete Feindmacht | Netto-Verlust | K fuer Netto = 0 |
+|---|---|---|---|---|
+| gross (3,52 Mrd Wert) | 0,55 | 2,66 Mrd | 0,41 Mrd | 0,155 |
+| gross | 0,35 | 3,08 Mrd | 0,37 Mrd | 0,120 |
+| gross | 0,25 | 2,74 Mrd | 0,30 Mrd | 0,110 |
+| real (26,7 Mrd Wert) | 0,55 | 16,60 Mrd | 6,23 Mrd | 0,375 |
+| real | 0,35 | 20,88 Mrd | 3,38 Mrd | 0,162 |
+| real | 0,25 | 20,19 Mrd | 2,13 Mrd | 0,106 |
+
+`K` = Wert-Einheiten Belohnung je vernichtetem Machtpunkt. Bei Boss-Anteil 0,25-0,35 liegt der
+Break-Even fuer BEIDE Flottengroessen bei K ≈ 0,11-0,16 - die proportionale Beute traegt sich also
+ueber die Flottengroessen hinweg von selbst, ohne Sonderregel. Bei 0,55 zerfaellt das (0,110 gegen
+0,375), weil die grosse Flotte dort ueberproportional verliert.
+
+### Die entscheidende offene Frage: Wiederholbarkeit
+
+**P10 hat aktuell keinen Cooldown und kein Teilnahmelimit.** `createGroupOperation()` prueft nur
+Sektor, Schiffstypen und Bestand. Anflug (System 50:1) plus bis zu 6 Checks ergeben rund 2 Stunden
+pro Durchlauf, also theoretisch bis zu 12 Durchlaeufe/Tag. Das ist der Grund, warum die
+Belohnungshoehe NICHT allein aus der Serie heraus bestimmt werden kann:
+
+| K | Netto je Durchlauf (reale Flotte, Anteil 0,25) | bei 12 Durchlaeufen/Tag |
+|---|---|---|
+| 0,5 | +7,96 Mrd | +95,5 Mrd/Tag (4,4x die gesamte Baseline) |
+| 1,0 | +18,06 Mrd | +216,7 Mrd/Tag (10x) |
+
+Dasselbe gilt fuer `ADMIRAL_VICTORY_DM = 200`: bei 12 Durchlaeufen waeren das 2.400 DM/Tag gegen
+1.088 DM/Tag aus dem gesamten uebrigen Spiel (Session-3-Baseline) - der DM-Ueberschuss aus
+Session-3-Befund 6 (Faktor 10,5) wuerde sich noch einmal verdreifachen.
+
+Zwei saubere Varianten, die Entscheidung gehoert vor die Umsetzung:
+
+**Variante A - P10 bleibt frei wiederholbar.** Belohnung so bemessen, dass ein Durchlauf in der
+Groessenordnung einer Stunde normalem Spielertrag liegt (Baseline 21,69 Mrd/Tag ≈ 0,9 Mrd/h).
+- `K ≈ 0,15` (Netto real ca. +1,0 Mrd, Netto gross ca. +0,1 Mrd je Durchlauf)
+- Sieg-Bonus: +50 % auf die angesammelte Beute statt eines festen Betrags
+- `ADMIRAL_VICTORY_DM` auf 15-20 senken
+- Konsequenz: P10 ist ein normaler, wiederholbarer Inhalt ohne Ereignis-Charakter.
+
+**Variante B - P10 bekommt einen Cooldown (Empfehlung).** Ein Durchlauf je Teilnehmer und Tag,
+dafuer eine Belohnung mit Gewicht.
+- `K ≈ 0,5` (Netto real ca. +8 Mrd, Netto gross ca. +1,1 Mrd je Durchlauf) - liegt damit zwischen
+  einem Raid-Tag (6,31 Mrd) und einer Elite-Serie (32,60 Mrd), passend zu 2 h gebundener Flotte
+  gegen 24 h beim Bollwerk
+- Sieg-Bonus: +50 % auf die angesammelte Beute
+- `ADMIRAL_VICTORY_DM` bei 200 belassen (dann +200 DM/Tag statt +2.400)
+- Konsequenz: P10 wird das, was der Sektortext verspricht - ein Ereignis, keine Farm-Route.
+
+### Vorgeschlagene Aenderungen im Detail (beide Varianten, nur `K`/DM unterscheiden sich)
+
+1. **Verlust-Kriterium** (`groupOps.ts`, `runAdminCheck()`): `result.retreated` durch den Anteil
+   tatsaechlich verlorener Einheiten ersetzen, Schwelle 45 % je Check. Ohne diesen Schritt ist der
+   Rest wirkungslos (Session-2-Befund 2). Neue Konstante `ADMIRAL_DEFEAT_LOSS_SHARE = 0.45`.
+2. **Boss-Anteil** (`combat.ts`): `ADMIRAL_STAT_SHARE` 0,55 → 0,30. Messgrundlage siehe Befund 5.
+3. **Boss-Mechanik statt Boss-Zahl** (`combatConstants.ts`): `piratenadmiral` in
+   `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen, `RAPIDFIRE.piratenadmiral` von `{leicht, schwer}` (im
+   Sektor unerreichbar) auf die zugelassenen Klassen umstellen, Vorschlag
+   `{ kreuzer: 5, schlachtschiff: 5, bomber: 5, schlachtkreuzer: 4, zerstoerer: 4, reaper: 3 }`.
+   Danach zwingend gegenmessen - die Mehrfachziel-Salve wirkt zusammen mit dem fehlenden
+   Overkill-Schutz der Aggregat-Stapel potenziell sehr stark.
+4. **Belohnung proportional** (`combatConstants.ts`/`groupOps.ts`): `ADMIRAL_EXTRACTION_BASE` und
+   `ADMIRAL_EXTRACTION_GROWTH_PER_CHECK` entfallen, ersetzt durch
+   `ADMIRAL_LOOT_PER_DESTROYED_POWER = K`. Die je Check vernichtete Feindmacht wird auf der
+   `GroupOperation` mitgefuehrt und bei Extraktion/Sieg ausgezahlt.
+   Die Eskalation braucht dadurch keinen eigenen Belohnungs-Aufschlag mehr: jeder weitere Check
+   bringt automatisch mehr vernichtete Macht (Gegner waechst mit 1,15^n) und riskiert zugleich die
+   noch ungesicherte Beute - das ist genau die Entscheidung, die der Sektortext beschreibt.
+5. **Sieg-Bonus** (`combatConstants.ts`): `ADMIRAL_VICTORY_BONUS` (fester Betrag) → Faktor 1,5 auf
+   die angesammelte Beute. `ADMIRAL_VICTORY_DM` je nach Variante.
+6. **Niederlage** (`groupOps.ts`, `finalizeAdminEncounter()`): aktuell verfaellt bei `defeat` die
+   Beute ALLER bereits ueberstandenen Checks. Zusammen mit dem Flottenverlust ist das eine doppelte
+   Bestrafung (Session-2-Befund 2 hat das bereits angemerkt). Vorschlag: bei Niederlage 50 % der
+   angesammelten Beute auszahlen statt 0 - die Extraktions-Entscheidung bleibt dadurch trotzdem
+   sinnvoll, weil Weitermachen die Haelfte riskiert.
+
+### Was nach der Umsetzung gemessen werden muss
+
+- `run_admiral_rebalance.mjs` erneut, mit den neuen Konstanten und ueber alle vier Ausbau-Profile
+  (nicht nur `voll`) - die 45-%-Schwelle ist gegen `voll` kalibriert und kann bei `mittel`/
+  `schwach` zu frueh greifen.
+- `run_aggregate_threshold.mjs` gegen den Boss MIT Mehrfachziel-Salve - siehe Punkt 3.
+- Erreichte Check-Tiefe: Ziel ist, dass eine gut ausgebaute Flotte typischerweise bei Check 3-5
+  vor der Entscheidung steht, nicht schon in Check 1 fertig ist (heute: 1,0 Checks in allen
+  gemessenen Szenarien).
+
+## Offene Entscheidungen aus Session 4 (fuer den Gesamt-Durchgang)
+
+Nichts davon blockiert die Analyse - alle Punkte blockieren aber die jeweilige Umsetzung. Bewusst
+hier gebuendelt, damit sie beim Zusammenfassungs-Durchgang an einer Stelle stehen.
+
+1. **P10-Wiederholbarkeit (blockiert den kompletten Admiral-Umbau).** Variante A (frei
+   wiederholbar, `K ≈ 0,15`, `ADMIRAL_VICTORY_DM` 15-20) oder Variante B (ein Durchlauf pro Tag,
+   `K ≈ 0,5`, DM bei 200). Details und Zahlen im Nachtrag oben. Ohne diese Entscheidung laesst sich
+   die Belohnungshoehe nicht bestimmen, weil ohne Cooldown bis zu 12 Durchlaeufe/Tag moeglich sind.
+2. **Overkill-Deckel fuer Aggregat-Stapel** (Befund 5). Betrifft JEDEN Kampf im Spiel, nicht nur
+   P10 - deshalb eine eigene Entscheidung: Schwellen-Sprung so lassen (dann muss jede Einheit mit
+   hohem Einzelschaden gegen beide Seiten der Schwelle getestet werden) oder
+   `applyAggregateDamage()` auf `hpMax + shieldMax` je Treffer deckeln (dann verhalten sich Stapel
+   und Einzel-Einheiten gleich, aber alle bisherigen Balance-Messungen mit grossen Flotten
+   verschieben sich).
+3. **Allianz-Station: Rolle** (Befund 1). Stufen-Relation glattziehen (V2 = 2x/2x, V3 = 4x/4x) und
+   die Station als Wirtschaftsgebaeude behalten - oder die Ertragsseite bewusst aufgeben und ihr
+   einen nicht-wirtschaftlichen Nutzen geben (gemeinsamer Bau-Slot, Bonus auf Gruppen-Operationen).
+4. **Allianz-Station: Freischaltung** (Befund 2). Zwang auf alle drei Minen lockern - oder die
+   Kosten-/Ertragskurve von Kristall- und Deuteriummine angleichen (behebt denselben Fehler auch an
+   der Heimatbasis, Session-1-Befund 2).
+5. **Schiffs-Tiers** (Befund 7). Wert je Machtpunkt ueber alle Tiers angleichen (Zielkorridor
+   1,1-1,3, reine Kostenaenderung an vier Schiffen) - oder die Rollen-Abhaengigkeit bewusst
+   beibehalten und im Info-Popup sichtbar machen.
+6. **Sandronator** (Befund 8). Als reines Wirtschaftsschiff deklarieren - oder Kampfwerte auf sein
+   Tier 5,5 heben. Der `speed`-Wert (2.000, bremst die ganze Flotte) sollte in beiden Faellen hoch.
+7. **Piratenbasen-Zielgroesse** (Befund 6). Dass die Garnison mitskalieren muss, ist klar; offen ist,
+   auf welchem Niveau eine Basis liegen soll - zwischen Solo-Sektor Hoch und Elite-Bollwerk, oder
+   bewusst darunter als Nebeninhalt.
+
+Aus Session 3 zusaetzlich weiterhin offen: linearer gegen degressiven Exponenten bei der
+machtproportionalen Beute (dort in Befund 2 dokumentiert). Die Entscheidung wirkt direkt auf
+Punkt 1 dieser Liste mit, da P10 dieselbe Mechanik nutzen soll.
