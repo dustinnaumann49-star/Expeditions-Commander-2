@@ -1,0 +1,65 @@
+=== 1. Station: eine Stufe (V1/V2/V3) komplett auf Level 30 ===
+
+--- V1 ---
+  Metallmine (V1)                  Kosten bis 30:   4.48 Mrd  Bauzeit roh:    483.8 d  Ertrag/h:    5.2 Mio
+  Kristallmine (V1)                Kosten bis 30:  17.17 Mrd  Bauzeit roh:    564.4 d  Ertrag/h:    3.5 Mio
+  Deuterium-Synthetisierer (V1)    Kosten bis 30:  31.02 Mrd  Bauzeit roh:    645.0 d  Ertrag/h:    1.7 Mio
+  Solarkraftwerk (V1)              benoetigte Stufe: 36 (Bedarf 1.3 Mio Energie)  Kosten: 27.08 Mrd  Bauzeit roh: 878.1 d
+  => V1 Summe: Kosten 79.74 Mrd, Bauzeit roh 2571.4 d, Ertrag 0.38 Mrd Wert/Tag
+
+--- V2 ---
+  Metallmine (V2)                  Kosten bis 30:   8.95 Mrd  Bauzeit roh:    628.9 d  Ertrag/h:    7.9 Mio
+  Kristallmine (V2)                Kosten bis 30:  34.34 Mrd  Bauzeit roh:    733.7 d  Ertrag/h:    5.3 Mio
+  Deuterium-Synthetisierer (V2)    Kosten bis 30:  62.03 Mrd  Bauzeit roh:    838.6 d  Ertrag/h:    2.6 Mio
+  Solarkraftwerk (V2)              benoetigte Stufe: 36 (Bedarf 2.0 Mio Energie)  Kosten: 54.17 Mrd  Bauzeit roh: 1141.6 d
+  => V2 Summe: Kosten 159.49 Mrd, Bauzeit roh 3342.8 d, Ertrag 0.56 Mrd Wert/Tag
+
+--- V3 ---
+  Metallmine (V3)                  Kosten bis 30:  17.90 Mrd  Bauzeit roh:    774.1 d  Ertrag/h:   13.1 Mio
+  Kristallmine (V3)                Kosten bis 30:  68.68 Mrd  Bauzeit roh:    903.1 d  Ertrag/h:    8.8 Mio
+  Deuterium-Synthetisierer (V3)    Kosten bis 30: 124.06 Mrd  Bauzeit roh:   1032.1 d  Ertrag/h:    4.3 Mio
+  Solarkraftwerk (V3)              benoetigte Stufe: 36 (Bedarf 3.3 Mio Energie)  Kosten: 108.33 Mrd  Bauzeit roh: 1405.0 d
+  => V3 Summe: Kosten 318.97 Mrd, Bauzeit roh 4114.2 d, Ertrag 0.94 Mrd Wert/Tag
+
+STATION VOLLAUSBAU (V1+V2+V3, alle Minen 30, Solar bedarfsdeckend, OHNE Module/Fabriken):
+  Kosten:  558.20 Mrd
+  Ertrag:  1.88 Mrd Wert/Tag  (26.2 Mio M / 17.5 Mio K / 8.6 Mio D pro Stunde)
+  Bauzeit ROH (ohne Roboter/Nanit, 1 Bau-Slot fuer die ganze Allianz): 10028.4 d = 27.5 Jahre
+  Amortisation gegen die eigenen Kosten: 296.7 Tage
+  Anteil an der Einnahmen-Baseline (21,69 Mrd/Tag, Session 3): 8.7 %
+
+=== 2. Wirkung der Foerdereffizienz-Module (Stufe 10 = +50%) ===
+
+  Alle 9 Foerdereffizienz-Module auf 10: 16.87 Mrd, Mehrertrag +50% = 0.94 Mrd/Tag
+  Amortisation: 17.9 Tage
+  ACHTUNG requiredBuildingLevel=20 bei Minen mit maxLevel 30 -> Modul erst ab 2/3 der Ausbaustrecke nutzbar.
+
+=== 3. Bauzeit-Hebel: Roboter-/Nanitenfabrik der Station ===
+
+  Roboterfabrik V1 Stufe  5: Faktor 2.37e-1  Kosten     0.00 Mrd  Restbauzeit V1-Minen 2379.8 d
+  Roboterfabrik V1 Stufe 10: Faktor 5.63e-2  Kosten     0.01 Mrd  Restbauzeit V1-Minen 564.7 d
+  Roboterfabrik V1 Stufe 15: Faktor 1.34e-2  Kosten     0.23 Mrd  Restbauzeit V1-Minen 134.0 d
+  Roboterfabrik V1 Stufe 20: Faktor 3.17e-3  Kosten     4.99 Mrd  Restbauzeit V1-Minen 31.8 d
+  Roboterfabrik V1 Stufe 24: Faktor 1.00e-3  Kosten    58.50 Mrd  Restbauzeit V1-Minen 10.1 d
+  Roboterfabrik V1 Stufe 30: Faktor 1.79e-4  Kosten  2345.11 Mrd  Restbauzeit V1-Minen 1.8 d
+  Nanitenfabrik V1 Stufe  5: Faktor 3.13e-2  Kosten     0.02 Mrd
+  Nanitenfabrik V1 Stufe 10: Faktor 9.77e-4  Kosten     0.79 Mrd
+  Nanitenfabrik V1 Stufe 15: Faktor 3.05e-5  Kosten    25.39 Mrd
+  Nanitenfabrik V1 Stufe 20: Faktor 9.54e-7  Kosten   812.65 Mrd
+
+=== 4. Vergleich Heimatbasis (gleiche Basiswerte, KEIN Cap) ===
+
+  Metallmine                     Stufe 36: Kosten   62.06 Mrd, Ertrag/h 11.1 Mio
+  Kristallmine                   Stufe 32: Kosten   43.95 Mrd, Ertrag/h 4.5 Mio
+  Deuterium-Synthetisierer       Stufe 30: Kosten   31.02 Mrd, Ertrag/h 1.7 Mio
+  Heimatbasis V1 auf Freischaltschwelle (36/32/30): 137.03 Mrd Kosten, 0.55 Mrd Wert/Tag
+  Station V1 auf Cap 30/30/30: siehe oben; Station-Minen bekommen KEINE Mining-Forschung/
+  Klasse/Booster (stations.ts), Heimatbasis-Minen schon -> gleicher Level = weniger Ertrag.
+
+=== 5. Level-Cap-Vergleich: was kostet die naechste Stufe? ===
+
+  Metallmine Stufe 30: Kosten    1.59 Mrd  Mehrertrag   15.2 Mio/Tag  Amortisation 104 Tage
+  Metallmine Stufe 31: Kosten    2.46 Mrd  Mehrertrag   17.2 Mio/Tag  Amortisation 143 Tage
+  Metallmine Stufe 33: Kosten    5.91 Mrd  Mehrertrag   21.8 Mio/Tag  Amortisation 271 Tage
+  Metallmine Stufe 36: Kosten   22.02 Mrd  Mehrertrag   31.0 Mio/Tag  Amortisation 710 Tage
+  Metallmine Stufe 40: Kosten  127.11 Mrd  Mehrertrag   49.4 Mio/Tag  Amortisation 2574 Tage

@@ -1,0 +1,71 @@
+=== 1. Tier-Progression: Kosten, Macht, Bauzeit (Basiswerte, ohne Forschung/Module) ===
+
+Typ                Tier   Wert/Stk    Waffen  Schild   Panzerung   Power  Wert/Power  Wert/Waffen  Bauzeit  Speed
+Leichter Jäger         1       0.14M     1500     300     120000     122k       1.11           90        4  12500
+Schwerer Jäger         2       0.29M     3600     600     240000     244k       1.18           80       18  10000
+Kreuzer                3       0.66M     7200     900     486000     494k       1.33           91       32  15000
+Schlachtschiff         4       0.94M    14000    2800     840000     857k       1.10           68       60  13500
+Bomber               4.5       1.59M    12000    6000     900000     918k       1.73          133       74   9000
+Schlachtkreuzer        5       1.35M    12000    4000     700000     716k       1.89          113       88  17000
+Zerstörer              6       1.44M    16000    4000     880000     900k       1.60           90      116  15500
+Reaper                 7       1.36M    16800    4200     840000     861k       1.59           81      144  16500
+Sandronator          5.5       0.97M     1750     550     105000     107k       9.09          557     3000   2000
+Mining-Schiff          0       0.02M        0    2200      50500      53k       0.39            -       10   7500
+Begleitschiff        0.5       0.03M      350      60       8500       9k       3.37           86     6.67  12000
+Spionagesonde       0.25       0.02M        0      10        500       1k      45.10            -        5 100000
+Imperator             99       0.00M   500000  400000    3000000    3900k          -            -    86400    100
+Salvenjäger          2.5       4.30M     9000     250      70000      79k      54.26          478       30  12500
+Salvenkreuzer        3.5      12.70M    32000    1200     250000     283k      44.84          397       60  13500
+Salvendreadnought    5.5      32.40M    52000    2200     500000     554k      58.46          623      120  15200
+
+=== 2. RapidFire-Kette: wer kontert wen? ===
+
+Leichter Jäger     greift an: -                                  | wird gekontert von: schwer x3, piratenadmiral x10, imperator x5, raketenwerfer x4, leichteslaser x5, salvenjaeger x6, sentinelkanone x6
+Schwerer Jäger     greift an: leicht x3                          | wird gekontert von: kreuzer x4, piratenadmiral x8, imperator x5, leichteslaser x3, schwereslaser x4, salvenjaeger x5, sentinelkanone x5
+Kreuzer            greift an: schwer x4                          | wird gekontert von: schlachtschiff x5, imperator x5, schwereslaser x3, gausskanone x4, salvenkreuzer x6, ultimatekanone x6
+Schlachtschiff     greift an: kreuzer x5                         | wird gekontert von: schlachtkreuzer x5, imperator x5, gausskanone x3, salvenkreuzer x5, ultimatekanone x5
+Bomber             greift an: -                                  | wird gekontert von: imperator x5, salvenkreuzer x5, ultimatekanone x5
+Schlachtkreuzer    greift an: schlachtschiff x5                  | wird gekontert von: zerstoerer x5, imperator x7, ionengeschuetz x3, salvendreadnought x5, ultimatekanone x5
+Zerstörer          greift an: schlachtkreuzer x5                 | wird gekontert von: reaper x4, imperator x7, plasmawerfer x4, salvendreadnought x5, ultimatekanone x5
+Reaper             greift an: zerstoerer x4                      | wird gekontert von: imperator x4, plasmawerfer x3, salvendreadnought x4, ultimatekanone x4
+
+=== 3. Duelle bei GLEICHEM Wert (600 Mio je Seite, Basiswerte, kein Rueckzug) ===
+
+A \ B              Leichter Schwerer  Kreuzer Schlacht   Bomber Schlacht Zerstöre   Reaper
+Leichter Jäger         -        -32M    +176M    +234M    +557M    +557M    +449M    +424M
+Schwerer Jäger         +85M     -       +148M    +254M    +563M    +555M    +496M    +472M
+Kreuzer               -172M     -78M     -       -162M    +366M    +326M    +195M    +152M
+Schlachtschiff        -233M    -249M    +166M     -       +451M    +303M    +270M    +236M
+Bomber                -558M    -563M    -361M    -443M     -       -123M    -246M    -310M
+Schlachtkreuzer       -556M    -553M    -326M    -298M    +131M     -       -409M    -235M
+Zerstörer             -445M    -494M    -188M    -259M    +254M    +422M     -       -370M
+Reaper                -423M    -469M    -148M    -220M    +315M    +238M    +386M     -   
+(Zahl = uebriggebliebener Wert A minus B, positiv = A gewinnt)
+
+=== 4. Netto-Bilanz je Typ ueber alle Gegner ===
+
+ 1. Schwerer Jäger        367.7 Mio Netto-Rest im Schnitt
+ 2. Leichter Jäger        337.9 Mio Netto-Rest im Schnitt
+ 3. Schlachtschiff        134.9 Mio Netto-Rest im Schnitt
+ 4. Kreuzer                89.5 Mio Netto-Rest im Schnitt
+ 5. Reaper                -46.0 Mio Netto-Rest im Schnitt
+ 6. Zerstörer            -154.3 Mio Netto-Rest im Schnitt
+ 7. Schlachtkreuzer      -320.7 Mio Netto-Rest im Schnitt
+ 8. Bomber               -372.0 Mio Netto-Rest im Schnitt
+
+=== 5. Sandronator gegen die Standard-Schiffe (gleicher Wert) ===
+
+Sandronator: Wert 0.97 Mio, Waffen 1750, Schild 550, Panzerung 105000, Bauzeit 3000, Speed 2000, unique=true
+Kreuzer    : Wert 0.66 Mio, Waffen 7200, Schild 900, Panzerung 486000, Bauzeit 32, Speed 15000
+-> Sandronator kostet 1.48x den Kreuzer bei 0.24x Waffen / 0.22x Panzerung und 94x Bauzeit.
+  Sandronator (615 Stk) vs Leichter Jäger (4444 Stk): Rest A 0M / Rest B 597M, Siegquote A 0.0%
+  Sandronator (615 Stk) vs Kreuzer (913 Stk): Rest A 0M / Rest B 596M, Siegquote A 0.0%
+  Sandronator (615 Stk) vs Reaper (439 Stk): Rest A 0M / Rest B 599M, Siegquote A 0.0%
+
+=== 6. Spezialschiffe als Beimischung: RapidFire-Abdeckung ===
+
+Von Standard-Kampfschiffen NICHT per RapidFire gekonterte Typen: Bomber, Reaper
+  Salvenjäger          kontert: Leichter Jäger, Schwerer Jäger
+  Salvenkreuzer        kontert: Kreuzer, Schlachtschiff, Bomber
+  Salvendreadnought    kontert: Schlachtkreuzer, Zerstörer, Reaper
+  Imperator            kontert: Leichter Jäger, Schwerer Jäger, Kreuzer, Schlachtschiff, Bomber, Schlachtkreuzer, Zerstörer, Reaper

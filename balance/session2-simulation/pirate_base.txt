@@ -1,0 +1,21 @@
+=== 1. Garnison und Beute-Deckel ===
+
+  Garnison (Mindestbestand, waechst nur nach oben): 6420 Einheiten
+  Garnisons-Wert: 2.70 Mrd, BasePower: 2.08 Mrd
+  Maximale Beute pro Angriff (35% des vollen Ressourcen-Deckels): 32.2 Mio Wert
+
+=== 2. Wie schnell fuellt sich der Deckel? ===
+
+  Energiefaktor der Seed-Gebaeude: 0.797 (7613 erzeugt / 9557 benoetigt)
+  metall          279.933/h -> Deckel 44.000.000 erreicht nach 6.5 Tagen
+  kristall        127.878/h -> Deckel 20.000.000 erreicht nach 6.5 Tagen
+  deuterium        38.173/h -> Deckel 6.000.000 erreicht nach 6.5 Tagen
+  Nachwachsender Wert pro Basis und Tag: 14.1 Mio -> 4 aktive Basen = 56.3 Mio/Tag = 0.3% der Einnahmen-Baseline
+
+=== 3. Angriffe: Verlust gegen Beute ===
+
+Flotte                     Wert       Verlust      Verlust%   Beute(max)   Netto
+klein (Aufbau)              0.37 Mrd     0.33 Mrd       89.6%     32.2 Mio  -0.30 Mrd
+gross                       4.23 Mrd     0.02 Mrd        0.5%     32.2 Mio   0.01 Mrd
+real (Session 3)           31.57 Mrd     0.00 Mrd        0.0%     32.2 Mio   0.03 Mrd
+nur Jaeger (gleicher Wert wie gross)  5.58 Mrd     0.01 Mrd        0.2%     32.2 Mio   0.02 Mrd

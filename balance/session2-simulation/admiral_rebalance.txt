@@ -1,0 +1,37 @@
+=== A. Boss-Anteil (ADMIRAL_STAT_SHARE): wie stark aendert sich der Ausgang? ===
+(Verlust-Kriterium 45 % Wertverlust je Check, Profil voll, 5 Serien je Zelle)
+
+Flotte  Anteil  Checks  Sieg   Verlust brutto  Verlust netto(-30%)  vernichtete Feindmacht
+gross    0.55     1.0 100.0%        0.59 Mrd             0.41 Mrd                2.66 Mrd
+gross    0.35     1.0 100.0%        0.53 Mrd             0.37 Mrd                3.08 Mrd
+gross    0.25     1.0 100.0%        0.43 Mrd             0.30 Mrd                2.74 Mrd
+real     0.55     1.0  60.0%        8.89 Mrd             6.23 Mrd               16.60 Mrd
+real     0.35     1.0 100.0%        4.82 Mrd             3.38 Mrd               20.88 Mrd
+real     0.25     1.0 100.0%        3.05 Mrd             2.13 Mrd               20.19 Mrd
+
+=== B. Machtproportionale Belohnung: welcher Koeffizient trifft welches Ziel? ===
+
+Bezugsgroessen: Elite-Bollwerk-Serie 32,60 Mrd (24h), Raid-Tag 6,31 Mrd, Tagesbaseline 21,69 Mrd.
+Belohnung = vernichtete Feindmacht x K (Wert-Einheiten je Machtpunkt).
+
+Flotte  Anteil  vernichtete Macht  Netto-Verlust  K fuer Netto=0  K fuer Netto=+50% Verlust
+gross    0.55           2.66 Mrd       0.41 Mrd           0.155                      0.232
+gross    0.35           3.08 Mrd       0.37 Mrd           0.120                      0.180
+gross    0.25           2.74 Mrd       0.30 Mrd           0.110                      0.165
+real     0.55          16.60 Mrd       6.23 Mrd           0.375                      0.563
+real     0.35          20.88 Mrd       3.38 Mrd           0.162                      0.243
+real     0.25          20.19 Mrd       2.13 Mrd           0.106                      0.158
+
+=== C. Gegenprobe: was liefert ein fester Koeffizient ueber alle Flottengroessen? ===
+
+  K =  0.5  Netto -> gross:0.55: 0.92 Mrd   gross:0.35: 1.17 Mrd   gross:0.25: 1.07 Mrd   real:0.55: 2.07 Mrd   real:0.35: 7.06 Mrd   real:0.25: 7.96 Mrd
+  K =  1.0  Netto -> gross:0.55: 2.25 Mrd   gross:0.35: 2.71 Mrd   gross:0.25: 2.44 Mrd   real:0.55: 10.37 Mrd   real:0.35: 17.50 Mrd   real:0.25: 18.06 Mrd
+  K =  1.5  Netto -> gross:0.55: 3.58 Mrd   gross:0.35: 4.25 Mrd   gross:0.25: 3.81 Mrd   real:0.55: 18.67 Mrd   real:0.35: 27.94 Mrd   real:0.25: 28.16 Mrd
+  K =  2.0  Netto -> gross:0.55: 4.90 Mrd   gross:0.35: 5.79 Mrd   gross:0.25: 5.18 Mrd   real:0.55: 26.97 Mrd   real:0.35: 38.38 Mrd   real:0.25: 38.25 Mrd
+
+=== D. Boss-RapidFire laeuft ins Leere ===
+
+  RAPIDFIRE.piratenadmiral: {"leicht":10,"schwer":8}
+  ADMIRAL_ALLOWED_SHIP_IDS: kreuzer, schlachtschiff, bomber, schlachtkreuzer, zerstoerer, reaper, sandronator, salvenkreuzer, salvendreadnought, imperator
+  -> im Sektor tatsaechlich erreichbare RapidFire-Ziele: KEINE
+  -> Boss ist auch nicht in MULTI_TARGET_VOLLEY_SHIPS: {}

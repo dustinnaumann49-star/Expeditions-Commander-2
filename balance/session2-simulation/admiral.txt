@@ -1,29 +1,36 @@
-=== Belohnungstabelle (Wert-Einheiten) ===
-Abzug nach Check 1: 56.0 Mio
-Abzug nach Check 2: 73.3 Mio
-Abzug nach Check 3: 90.5 Mio
-Abzug nach Check 4: 107.8 Mio
-Abzug nach Check 5: 125.0 Mio
-Abzug nach Check 6: 142.3 Mio
-Sieg-Praemie: 900.0 Mio + 200 DM
+=== 1. Belohnungskurve (fest, unabhaengig von Flottengroesse) ===
 
-=== Ergebnis ueber 20 komplette Begegnungen je Szenario (immer bis Check 6 durchgespielt) ===
-Szenario | Sieg% | Rueckzug(=Totalverlust der Beute)% | 6 Checks ohne Sieg% | oCheck bei Rueckzug | oRestflotte nach 6 Checks
-1 Spieler voll (gross) | 85 | 15 | 0 | 1.0 | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 3/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.34 / - / - / - / - / -
-2 Spieler voll (gross) | 85 | 15 | 0 | 1.0 | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 3/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.38 / - / - / - / - / -
-2 Spieler voll+mittel | 100 | 0 | 0 | - | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 0/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.26 / - / - / - / - / -
-1 Spieler voll (klein) | 100 | 0 | 0 | - | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 0/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.28 / - / - / - / - / -
-1 Spieler mittel (gross) | 15 | 85 | 0 | 1.0 | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 17/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.28 / - / - / - / - / -
-1 Spieler voll OHNE Kampf-Boost | 35 | 65 | 0 | 1.0 | -
-   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 13/0/0/0/0/0
-   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.30 / - / - / - / - / -
+  Check 1: Feindstaerke-Faktor 1.00x   Extraktion nach 1 Check(s): 0.06 Mrd
+  Check 2: Feindstaerke-Faktor 1.15x   Extraktion nach 2 Check(s): 0.07 Mrd
+  Check 3: Feindstaerke-Faktor 1.32x   Extraktion nach 3 Check(s): 0.09 Mrd
+  Check 4: Feindstaerke-Faktor 1.52x   Extraktion nach 4 Check(s): 0.11 Mrd
+  Check 5: Feindstaerke-Faktor 1.75x   Extraktion nach 5 Check(s): 0.13 Mrd
+  Check 6: Feindstaerke-Faktor 2.01x   Extraktion nach 6 Check(s): 0.14 Mrd
+  Sieg-Praemie: 0.90 Mrd + 200 DM
+  Eskalation ueber 6 Checks: 2.01x, Belohnung waechst dabei nur 2.54x
+
+=== 2. Boss-Konzentration: wie viel Schaden verpufft im Overkill? ===
+
+  Flotte gross (2.11 Mrd BasePower), Feindstaerke 110%: Boss Waffen 0.18 Mrd, Panzerung 1.03 Mrd -> ein Schuss trifft imperator (3.4 Mio HP), Ueberschuss 53x
+  Flotte gross (2.11 Mrd BasePower), Feindstaerke 130%: Boss Waffen 0.21 Mrd, Panzerung 1.22 Mrd -> ein Schuss trifft imperator (3.4 Mio HP), Ueberschuss 62x
+  Flotte gross (2.11 Mrd BasePower), Feindstaerke 150%: Boss Waffen 0.24 Mrd, Panzerung 1.41 Mrd -> ein Schuss trifft imperator (3.4 Mio HP), Ueberschuss 72x
+  Flotte klein (0.17 Mrd BasePower), Feindstaerke 110%: Boss Waffen 0.01 Mrd, Panzerung 0.09 Mrd -> ein Schuss trifft zerstoerer (0.9 Mio HP), Ueberschuss 17x
+  Flotte klein (0.17 Mrd BasePower), Feindstaerke 130%: Boss Waffen 0.02 Mrd, Panzerung 0.10 Mrd -> ein Schuss trifft zerstoerer (0.9 Mio HP), Ueberschuss 20x
+  Flotte klein (0.17 Mrd BasePower), Feindstaerke 150%: Boss Waffen 0.02 Mrd, Panzerung 0.12 Mrd -> ein Schuss trifft zerstoerer (0.9 Mio HP), Ueberschuss 23x
+  (Ueberschuss wird nur ueber die Durchschlags-Kaskade weitergereicht, max. 5 Ziele, Anteil = Durchschlag-Forschung.)
+
+=== 3. Komplette Serien (Verluste werden ueber die Checks mitgeschleppt) ===
+
+Szenario                     Checks bis Ende  Boss faellt  Flottenverlust  Belohnung  Netto
+voll / reale Flotte                    1.0        50.0%       10.21 Mrd   0.45 Mrd  -9.76 Mrd
+voll / grosse Flotte                   1.0       100.0%        0.39 Mrd   0.90 Mrd   0.51 Mrd
+voll / kleine Flotte                   1.0       100.0%        0.04 Mrd   0.90 Mrd   0.86 Mrd
+mittel / grosse Flotte                 1.0         0.0%        2.33 Mrd   0.00 Mrd  -2.33 Mrd
+voll ohne Boost / gross                1.0       100.0%        0.77 Mrd   0.90 Mrd   0.13 Mrd
+
+=== 4. Vergleich: dieselbe Flotte, aber Belohnung gegen Flottenwert ===
+
+  Wert FLEET_ADMIRAL: 3.52 Mrd, BasePower 2.11 Mrd
+  Wert FLEET_ADMIRAL_SMALL: 0.25 Mrd, BasePower 0.17 Mrd
+  Maximale Extraktion (6 Checks): 0.14 Mrd - entspricht 4.0% des grossen Flottenwerts
+  Sieg-Praemie: 0.90 Mrd - entspricht 25.5% des grossen Flottenwerts
