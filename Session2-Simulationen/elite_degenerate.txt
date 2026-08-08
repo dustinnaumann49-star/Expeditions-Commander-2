@@ -1,0 +1,3 @@
+Konstellation | Sieg% | Verlust Hauptspieler%
+allein voll | 100 | 2.43
+voll + Mitspieler mit 1 Jaeger und Forschung 0 | 100 | 0.13

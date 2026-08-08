@@ -1,0 +1,29 @@
+=== Belohnungstabelle (Wert-Einheiten) ===
+Abzug nach Check 1: 56.0 Mio
+Abzug nach Check 2: 73.3 Mio
+Abzug nach Check 3: 90.5 Mio
+Abzug nach Check 4: 107.8 Mio
+Abzug nach Check 5: 125.0 Mio
+Abzug nach Check 6: 142.3 Mio
+Sieg-Praemie: 900.0 Mio + 200 DM
+
+=== Ergebnis ueber 20 komplette Begegnungen je Szenario (immer bis Check 6 durchgespielt) ===
+Szenario | Sieg% | Rueckzug(=Totalverlust der Beute)% | 6 Checks ohne Sieg% | oCheck bei Rueckzug | oRestflotte nach 6 Checks
+1 Spieler voll (gross) | 85 | 15 | 0 | 1.0 | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 3/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.34 / - / - / - / - / -
+2 Spieler voll (gross) | 85 | 15 | 0 | 1.0 | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 3/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.38 / - / - / - / - / -
+2 Spieler voll+mittel | 100 | 0 | 0 | - | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 0/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.26 / - / - / - / - / -
+1 Spieler voll (klein) | 100 | 0 | 0 | - | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 0/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.28 / - / - / - / - / -
+1 Spieler mittel (gross) | 15 | 85 | 0 | 1.0 | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 17/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.28 / - / - / - / - / -
+1 Spieler voll OHNE Kampf-Boost | 35 | 65 | 0 | 1.0 | -
+   erreicht je Check: 20/0/0/0/0/0   Rueckzug je Check: 13/0/0/0/0/0
+   effektive Feindstaerke vs. AKTUELLE Flotte je Check: 1.30 / - / - / - / - / -
