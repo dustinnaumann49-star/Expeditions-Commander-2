@@ -1,0 +1,172 @@
+===== 0. BAUZEIT-MULTIPLIKATOREN =====
+voll    Schiffe/Vert. 6.683e-2   Gebaeude 8.062e-8   Forschung 0.3500
+mittel  Schiffe/Vert. 1.702e-1   Gebaeude 3.665e-4   Forschung 0.3500
+frueh   Schiffe/Vert. 1.000e+0   Gebaeude 1.000e+0   Forschung 1.0000
+voll + Samstag: Schiffe 5.012e-2
+voll + Gebaeude-Automatisierungsmodul 10: 5.643e-8
+
+===== 1. SCHIFFE: Kosten / Power / Bauzeit =====
+id                       Wert       Power     P/W  K/Waffe   Bauzeit      voll   Wert/h voll    max
+leicht                135.0 k     121.8 k    0.90     90.0        4s     0.27s      1.82 Mrd      -
+schwer                288.0 k     244.2 k    0.85     80.0       18s     1.20s     861.9 Mio      -
+kreuzer               657.0 k     494.1 k    0.75     91.3       32s     2.14s      1.11 Mrd      -
+schlachtschiff        945.0 k     856.8 k    0.91     67.5       60s     4.01s     848.4 Mio      -
+bomber                1.6 Mio     918.0 k    0.58    132.5       74s     4.95s      1.16 Mrd      -
+schlachtkreuzer       1.4 Mio     716.0 k    0.53    112.5       88s     5.88s     826.4 Mio      -
+zerstoerer            1.4 Mio     900.0 k    0.63     90.0      116s     7.75s     668.7 Mio      -
+reaper                1.4 Mio     861.0 k    0.63     81.3      144s     9.62s     510.6 Mio      -
+sandronator           975.0 k     107.3 k    0.11    557.1     3000s      3.3m      17.5 Mio      -
+begleitschiff          30.0 k       8.9 k    0.30     85.7     6.67s     0.45s     242.3 Mio      -
+imperator                 NaN     3.9 Mio     NaN      NaN    86400s     96.2m           NaN      6
+salvenjaeger          4.3 Mio     634.0 k    0.15    477.8       30s     2.00s      7.72 Mrd    150
+salvenkreuzer        12.7 Mio     2.3 Mio    0.18    396.9       60s     4.01s     11.40 Mrd     90
+salvendreadnought    32.4 Mio     4.4 Mio    0.14    623.1      120s     8.02s     14.54 Mrd     30
+
+===== 2. VERTEIDIGUNG: Kosten / Power / Bauzeit =====
+id                       Wert       Power     P/W  K/Waffe   Bauzeit      voll   Wert/h voll    max
+raketenwerfer          50.0 k      70.2 k    1.40     64.9    25.71s     1.72s     104.8 Mio      -
+leichteslaser          45.0 k      55.9 k    1.24     72.6    35.45s     2.37s      68.4 Mio      -
+schwereslaser         144.0 k     179.6 k    1.25     73.1    64.67s     4.32s     119.9 Mio      -
+gausskanone           485.0 k     518.5 k    1.07     85.2   123.11s     8.23s     212.2 Mio      -
+ionengeschuetz        456.0 k     470.0 k    1.03     88.2   103.63s     6.93s     237.0 Mio      -
+plasmawerfer          1.3 Mio     1.1 Mio    0.85    107.5      240s    16.04s     289.5 Mio      -
+kleineschildkuppel     25.0 k      28.0 k    1.12        -    12.73s     0.85s     105.8 Mio      1
+grosseschildkuppel    125.0 k     140.0 k    1.12        -    16.36s     1.09s     411.6 Mio      1
+sentinelkanone        1.1 Mio     608.0 k    0.57    134.4       70s     4.68s     827.3 Mio    150
+ultimatekanone        4.0 Mio     2.0 Mio    0.49    144.6      150s    10.02s      1.45 Mrd     60
+gigantschildkuppel    900.0 k     700.0 k    0.78        -       30s     2.00s      1.62 Mrd      1
+
+===== 3. FORSCHUNG: Kosten/Zeit bis Stufe 10 =====
+id                       Kost L10  Kost kum.   Zeit L10  Zeit kum.  kum. Boost
+waffen                   32.7 Mio   73.4 Mio     34.4 d     90.8 d      31.8 d
+schild                   36.2 Mio   81.2 Mio     34.4 d     90.8 d      31.8 d
+panzerung                31.7 Mio   71.2 Mio     34.4 d     90.8 d      31.8 d
+bauzeit                  41.2 Mio   92.3 Mio     40.1 d    105.9 d      37.1 d
+mining                   42.6 Mio   95.7 Mio     45.8 d    121.1 d      42.4 d
+spionage                 55.0 Mio  123.5 Mio     51.5 d    136.2 d      47.7 d
+zielerfassung            41.7 Mio   93.5 Mio     40.1 d    105.9 d      37.1 d
+durchschlag              41.7 Mio   93.5 Mio     40.1 d    105.9 d      37.1 d
+schildregeneration       43.6 Mio   97.9 Mio     42.9 d    113.5 d      39.7 d
+praezision               41.2 Mio   92.3 Mio     37.2 d     98.4 d      34.4 d
+ausweichen               46.6 Mio  104.6 Mio     40.1 d    105.9 d      37.1 d
+kritischetreffer         54.5 Mio  122.4 Mio     42.9 d    113.5 d      39.7 d
+antrieb                  46.6 Mio  104.6 Mio     45.8 d    121.1 d      42.4 d
+raketenantrieb           35.7 Mio   80.1 Mio     40.1 d    105.9 d      37.1 d
+impulsantrieb            43.6 Mio   97.9 Mio     42.9 d    113.5 d      39.7 d
+hyperraumantrieb         57.0 Mio  128.0 Mio     48.7 d    128.6 d      45.0 d
+mining_schiffe           43.1 Mio   96.8 Mio     42.9 d    113.5 d      39.7 d
+mining_minen             43.1 Mio   96.8 Mio     42.9 d    113.5 d      39.7 d
+bauzeit_gebaeude         43.6 Mio   97.9 Mio     42.9 d    113.5 d      39.7 d
+bauzeit_schiffe          43.6 Mio   97.9 Mio     42.9 d    113.5 d      39.7 d
+bauzeit_verteidigung     43.6 Mio   97.9 Mio     42.9 d    113.5 d      39.7 d
+
+ALLE 21 Forschungen auf Stufe 10:
+  Kosten gesamt: 2.04 Mrd Wert-Einheiten
+  Zeit gesamt (seriell, ohne Booster): 2315.2 d
+  Zeit gesamt mit Forschungstempo-Booster (x0.35): 810.3 d
+  bei 4 parallelen Slots (ideal): 202.6 d
+  davon nur die 9 Kampfforschungen: 830.0 Mio Wert, 320.4 d (mit Booster, seriell) / 80.1 d bei 4 Slots
+
+===== 4. SCHIFFS-/VERTEIDIGUNGS-MODULE: Vollausbau Stufe 10 =====
+Modul-Satz              Kost/Linie     3 Kampf  4 (inkl.Antr)  Zeit/Linie voll Break-even Stk
+leicht                    59.0 Mio   176.9 Mio      235.8 Mio            0.2 h          4.367
+schwer                   125.8 Mio   377.3 Mio      503.1 Mio            0.9 h          4.367
+kreuzer                  286.9 Mio   860.8 Mio       1.15 Mrd            1.6 h          4.367
+schlachtschiff           412.7 Mio    1.24 Mrd       1.65 Mrd            3.0 h          4.367
+bomber                   694.4 Mio    2.08 Mrd       2.78 Mrd            3.7 h          4.367
+schlachtkreuzer          589.6 Mio    1.77 Mrd       2.36 Mrd            4.3 h          4.367
+zerstoerer               628.9 Mio    1.89 Mrd       2.52 Mrd            5.7 h          4.367
+reaper                   596.1 Mio    1.79 Mrd       2.38 Mrd            7.1 h          4.367
+sandronator              425.8 Mio    1.28 Mrd       1.70 Mrd            6.2 d          4.367
+salvenjaeger              1.88 Mrd    5.63 Mrd       7.51 Mrd            1.5 h          4.367
+salvenkreuzer             5.55 Mrd   16.64 Mrd      22.19 Mrd            3.0 h          4.367
+salvendreadnought        14.15 Mrd   42.45 Mrd      56.60 Mrd            5.9 h          4.367
+imperator                10.10 Mrd   30.30 Mrd      40.40 Mrd            4.4 d              -
+--- Verteidigung ---
+raketenwerfer             21.8 Mio    65.5 Mio                           1.3 h          4.367
+leichteslaser             19.7 Mio    59.0 Mio                           1.8 h          4.367
+schwereslaser             62.9 Mio   188.7 Mio                           3.2 h          4.367
+gausskanone              211.8 Mio   635.4 Mio                           6.1 h          4.367
+ionengeschuetz           199.1 Mio   597.4 Mio                           5.1 h          4.367
+plasmawerfer             563.4 Mio    1.69 Mrd                          11.9 h          4.367
+kleineschildkuppel        10.9 Mio    21.8 Mio                           0.6 h          2.911
+grosseschildkuppel        54.6 Mio   109.2 Mio                           0.8 h          2.911
+sentinelkanone           469.5 Mio    1.41 Mrd                           3.5 h          4.367
+ultimatekanone            1.77 Mrd    5.31 Mrd                           7.4 h          4.367
+gigantschildkuppel       393.0 Mio   786.1 Mio                           1.5 h          2.911
+
+===== 5. GEBAEUDE: Ausbaukurve =====
+Tier 1 bis 36/32/30 + Solar 38: Invest 197.97 Mrd | Ertrag/Tag 554.4 Mio | Amortisation 357 Tage | Bauzeit roh 6086.7 d / voll 0.0 h
+Tier 2 bis 36/32/30 + Solar 38: Invest 395.94 Mrd | Ertrag/Tag 831.6 Mio | Amortisation 476 Tage | Bauzeit roh 7912.7 d / voll 0.0 h
+Tier 3 bis 36/32/30 + Solar 38: Invest 791.87 Mrd | Ertrag/Tag 1.39 Mrd | Amortisation 571 Tage | Bauzeit roh 9738.7 d / voll 0.0 h
+
+Metallmine V1 Einzelstufen (Kosten der Stufe / +Ertrag/Tag / Amortisation dieser Stufe):
+  Stufe 20:   19.8 Mio | +  4.4 Mio/Tag | 5 Tage
+  Stufe 25:  177.5 Mio | +  8.3 Mio/Tag | 21 Tage
+  Stufe 30:   1.59 Mrd | + 15.2 Mio/Tag | 104 Tage
+  Stufe 33:   5.91 Mrd | + 21.8 Mio/Tag | 271 Tage
+  Stufe 36:  22.02 Mrd | + 31.0 Mio/Tag | 710 Tage
+  Stufe 40: 127.11 Mrd | + 49.4 Mio/Tag | 2574 Tage
+  Stufe 45:   1.14 Bio | + 87.5 Mio/Tag | 13001 Tage
+
+Gebaeude-Module Vollausbau (Stufe 10):
+  Summe aller 15 Gebaeude-Module auf Stufe 10: 44.38 Mrd
+
+===== 6. EINNAHMEN-BASELINE (aus Session 1/2) =====
+  Raid (Mi+So, 12/12)                        6.31 Mrd/Tag
+  Elite-Bollwerk (32,60 Mrd je Serie, alle 3 Tage)  10.87 Mrd/Tag
+  Solo-Piraten Hoch (24h)                    1.13 Mrd/Tag
+  Asteroiden (3 Felder, ohne Frischling)     2.83 Mrd/Tag
+  Heimatbasis V1 voll (36/32/30)            554.0 Mio/Tag
+  SUMME (alles parallel)                    21.69 Mrd/Tag
+  ohne Elite-Bollwerk                       10.82 Mrd/Tag
+
+===== 7. AUSGABE-KAPAZITAET vs EINNAHMEN =====
+Profil voll (Multiplikator 6.68e-2), 3 Bau-Lanes:
+   leicht                  323.208 Stk/Tag/Lane -> 130.90 Mrd Wert/Tag (3 Lanes)
+   kreuzer                  40.401 Stk/Tag/Lane ->  79.63 Mrd Wert/Tag (3 Lanes)
+   reaper                    8.978 Stk/Tag/Lane ->  36.76 Mrd Wert/Tag (3 Lanes)
+   salvendreadnought        10.774 Stk/Tag/Lane ->   1.05 Bio Wert/Tag (3 Lanes)
+Profil mittel (Multiplikator 1.70e-1), 3 Bau-Lanes:
+   leicht                  126.878 Stk/Tag/Lane ->  51.39 Mrd Wert/Tag (3 Lanes)
+   kreuzer                  15.860 Stk/Tag/Lane ->  31.26 Mrd Wert/Tag (3 Lanes)
+   reaper                    3.524 Stk/Tag/Lane ->  14.43 Mrd Wert/Tag (3 Lanes)
+   salvendreadnought         4.229 Stk/Tag/Lane -> 411.08 Mrd Wert/Tag (3 Lanes)
+Profil frueh (Multiplikator 1.00e+0), 3 Bau-Lanes:
+   leicht                   21.600 Stk/Tag/Lane ->   8.75 Mrd Wert/Tag (3 Lanes)
+   kreuzer                   2.700 Stk/Tag/Lane ->   5.32 Mrd Wert/Tag (3 Lanes)
+   reaper                      600 Stk/Tag/Lane ->   2.46 Mrd Wert/Tag (3 Lanes)
+   salvendreadnought           720 Stk/Tag/Lane ->  69.98 Mrd Wert/Tag (3 Lanes)
+
+===== 8. IMPERATOR (Kosten ueber TEILE_CONVERT_RESOURCES bewertet) =====
+  1 Teil = 325.0 k Wert-Einheiten -> 3.000 Teile = 975.0 Mio pro Imperator
+  Power 3.9 Mio -> P/W 0.0040 (Leichter Jaeger: 0.90, Faktor 225x schlechter)
+  Bauzeit 86400s = 1.0 Tage roh, 1.6 h im Profil voll
+  maxCount 6 -> Vollausbau 5.85 Mrd bzw. 18000 Teile
+
+===== 9. ALLE RESSOURCEN-SENKEN DES SPIELS =====
+  Gebaeude V1+V2+V3 bis 36/32/30 (+Solar/Fabriken)     1.39 Bio
+  Alle Schiffs-Module Stufe 10 (4 Linien)            141.97 Mrd
+  Alle Verteidigungs-Module Stufe 10                  10.87 Mrd
+  Alle Gebaeude-Module Stufe 10                       44.38 Mrd
+  Alle 21 Forschungen Stufe 10                         2.04 Mrd
+  Alle limitierten Einheiten am maxCount               9.01 Mrd
+  SUMME (einmalig, ohne unbegrenzten Schiffbau)        1.60 Bio
+  bei 21.69 Mrd/Tag Einnahmen: 74 Tage bis alles gekauft ist
+  ohne Elite-Bollwerk (10.82 Mrd/Tag): 148 Tage
+
+===== 10. DM-HAUSHALT (Session-2-Befund 4 korrigiert) =====
+  + Raid-Container (Mi+So)                595 DM/Tag
+  + Solo-Piraten Mittel                   151 DM/Tag
+  + Asteroiden (3 Felder)                  90 DM/Tag
+  + Raid-Bergung                            6 DM/Tag
+  + Elite-Serie (737, alle 3 Tage)        246 DM/Tag
+  = SUMME                                1088 DM/Tag
+  - alle 4 Booster dauerhaft (30-Tage)    103 DM/Tag  (24h-Tarif: 155)
+  - nur Kampf-Booster (30-Tage)            37 DM/Tag
+  Ueberschuss: 985 DM/Tag = Faktor 10.5 ueber der groessten laufenden Senke
+
+===== 11. MODUL-AMORTISATION (Zahlen aus run_invest_roi.mjs) =====
+  Modulsatz (3 Kampf-Linien) fuer alle Typen der Referenzflotte: 99.57 Mrd
+  piraten_hoch: Verlust 4.17% -> 2.17% = 123.6 Mio gespart pro 24h-Trip -> Amortisation 806 Tage
+  piraten_elite: Verlust 7% -> 3.83% = 195.9 Mio gespart pro 24h-Trip -> Amortisation 508 Tage

@@ -1,0 +1,27 @@
+Referenzflotte FLEET_LARGE: Wert 6.18 Mrd, BasePower 2.72 Mrd
+
+===== A) MODUL-STUFEN (Forschung 10, Kanonier, Kampf-Booster aktiv) =====
+Modulstufe         hoch Sieg%/Verlust%      elite Sieg%/Verlust%
+Stufe 0                   100% / 4.33%              100% / 7.50%
+Stufe 3                   100% / 3.83%              100% / 7.17%
+Stufe 5                   100% / 3.00%              100% / 5.00%
+Stufe 8                   100% / 2.50%              100% / 4.50%
+Stufe 10                  100% / 1.83%              100% / 3.83%
+
+===== B) FORSCHUNGSSTUFEN (Module 0, keine Klasse, KEIN Kampf-Booster) =====
+Forschung          hoch Sieg%/Verlust%      elite Sieg%/Verlust%
+Stufe 0                    0% / 39.83%               0% / 46.67%
+Stufe 2                   24% / 37.67%               0% / 45.00%
+Stufe 4                   56% / 27.00%               6% / 39.17%
+Stufe 6                   81% / 21.50%              33% / 35.67%
+Stufe 8                   86% / 19.67%              43% / 32.17%
+Stufe 10                  86% / 20.17%              47% / 31.33%
+
+===== C) EINZELHEBEL bei Forschung 10 / Module 0 =====
+Hebel                                hoch Sieg%/Verlust%      elite Sieg%/Verlust%
+nichts                                      86% / 18.33%              40% / 34.50%
++Kampf-Booster (35 DM/Tag)                   99% / 8.67%              95% / 17.83%
++Kanonier (500 DM einmalig)                 100% / 7.83%              96% / 14.17%
++Bollwerk                                   93% / 12.50%              67% / 21.50%
++Kommandant                                  99% / 9.83%              88% / 17.83%
++Module 10                                  95% / 11.17%              95% / 17.00%

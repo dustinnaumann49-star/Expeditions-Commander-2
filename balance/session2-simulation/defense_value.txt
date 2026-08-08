@@ -1,0 +1,8 @@
+Flotte FLEET_LARGE: 6.18 Mrd Wert. Belohnung bei 12/12: 22.07 Mrd (fix, unabhaengig von der Verteidigung)
+
+Verteidigung          Invest  oWellen  perfekt%  Verlust Vert.  Verlust Flotte   Netto/Raid
+0x                  0.00 Mrd     12.0      100%          0 Mio         586 Mio    21.49 Mrd
+0.1x                0.04 Mrd     12.0      100%          2 Mio         483 Mio    21.59 Mrd
+0.25x               0.11 Mrd     12.0      100%          3 Mio         330 Mio    21.74 Mrd
+1x                  0.43 Mrd     12.0      100%          1 Mio         129 Mio    21.94 Mrd
+3x                  1.06 Mrd     12.0      100%          0 Mio          55 Mio    22.02 Mrd

@@ -1,0 +1,36 @@
+===== A) Gleich-WERT-Flotten (600 Mio Wert je Typ), Sektor piraten_hoch, Profil voll =====
+Typ                      Stk        Wert   BasePower   Sieg%  Verlust%   Wertverlust  Runden
+leicht                  4444      600 Mio    541.3 Mio     100       2.3       14.0 Mio      29
+schwer                  2083      600 Mio    508.7 Mio     100       1.7       10.0 Mio      21
+kreuzer                  913      600 Mio    451.1 Mio     100       6.7       40.0 Mio      25
+schlachtschiff           634      599 Mio    543.2 Mio     100      11.3       67.9 Mio      36
+bomber                   377      599 Mio    346.1 Mio     100       1.7       10.0 Mio      40
+schlachtkreuzer          444      599 Mio    317.9 Mio     100       5.2       31.0 Mio      30
+zerstoerer               416      599 Mio    374.4 Mio      97      13.0       77.9 Mio      33
+reaper                   439      599 Mio    378.0 Mio     100       1.7       10.0 Mio      27
+salvenjaeger             139      598 Mio     88.1 Mio      71      42.5      254.0 Mio      15
+salvenkreuzer             47      597 Mio    106.5 Mio      14      93.8      560.1 Mio      20
+salvendreadnought         18      583 Mio     79.8 Mio      33      70.3      410.2 Mio      20
+
+===== B) Grenznutzen: FLEET_SMALL + 1.5 Mrd Wert in je einem Typ, Sektor piraten_hoch =====
+Referenz  : Wert 372 Mio, BasePower 284.5 Mio -> Sieg 100%, Verlust 1.7%, Wertverlust 6.2 Mio
++Typ                     Stk   BasePower   Sieg%  Verlust%   Wertverlust
+leicht                 11111   1637.8 Mio     100       3.5       65.5 Mio
+schwer                  5208   1556.3 Mio     100       2.3       43.7 Mio
+kreuzer                 2283   1412.6 Mio     100       4.5       84.2 Mio
+schlachtschiff          1587   1644.3 Mio     100       9.5      177.8 Mio
+bomber                   943   1150.2 Mio     100       4.3       81.1 Mio
+schlachtkreuzer         1111   1080.0 Mio     100       3.3       62.4 Mio
+zerstoerer              1041   1221.4 Mio     100       5.3       99.8 Mio
+reaper                  1098   1229.9 Mio     100       3.7       68.6 Mio
+salvenjaeger             150    379.6 Mio     100       2.2       22.0 Mio
+salvenkreuzer             90    488.4 Mio     100       2.2       32.8 Mio
+salvendreadnought         30    417.5 Mio     100       0.8       11.2 Mio
+
+===== C) Identische Zusammensetzung, skaliert - Sektor piraten_hoch =====
+ Faktor      Stk        Wert   BasePower   Sieg%  Verlust%   Wertverlust
+  0.25x     1584    2.05 Mrd     0.68 Mrd     100       0.0          0 Mio
+     1x     6332    6.18 Mrd     2.72 Mrd     100       2.0        124 Mio
+     2x    12664   12.35 Mrd     5.44 Mrd     100       2.3        288 Mio
+     4x    25316   22.43 Mrd    10.83 Mrd     100       2.5        561 Mio
+     8x    50526   37.15 Mrd    21.34 Mrd     100       3.0       1114 Mio

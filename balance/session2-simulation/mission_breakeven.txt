@@ -1,0 +1,9 @@
+=== Komplette 24h-Missionen (6 Checks, checkChance 0.75), Sektor piraten_hoch, Profil voll, 10 Missionen je Zelle ===
+ Faktor   Flottenwert   Siege    Belohnung      Verlust        NETTO  Verlust%
+  0.25x      2.05 Mrd     4.5     1.13 Mrd     0.02 Mrd     1.12 Mrd      0.8%
+   0.5x      3.09 Mrd     4.3     1.08 Mrd     0.09 Mrd     0.99 Mrd      2.8%
+     1x      6.18 Mrd     4.4     1.11 Mrd     0.16 Mrd     0.95 Mrd      2.5%
+     2x     12.35 Mrd     4.1     1.03 Mrd     0.22 Mrd     0.81 Mrd      1.8%
+     4x     22.43 Mrd     4.6     1.16 Mrd     0.55 Mrd     0.60 Mrd      2.5%
+     8x     37.15 Mrd     3.8     0.96 Mrd     1.15 Mrd    -0.20 Mrd      3.1%
+    16x     66.33 Mrd     4.4     1.11 Mrd     3.87 Mrd    -2.76 Mrd      5.8%

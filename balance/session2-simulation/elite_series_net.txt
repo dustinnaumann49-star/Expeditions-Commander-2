@@ -1,0 +1,21 @@
+=== Elite-Bollwerk, komplette 6-Check-Serie, Profil voll, 6 Serien je Zelle ===
+Belohnung bei perfekter Serie (Session-2-Befund 5): 32.60 Mrd je Spieler
+
+ Faktor   Flottenwert  Checks      Verlust  Verlust%        NETTO
+  0.25x      2.05 Mrd     6.0     0.05 Mrd      2.2%    32.55 Mrd
+     1x      6.18 Mrd     6.0     0.36 Mrd      5.8%    32.24 Mrd
+     2x     12.35 Mrd     6.0     0.87 Mrd      7.1%    31.73 Mrd
+     4x     22.43 Mrd     6.0     1.67 Mrd      7.5%    30.93 Mrd
+     8x     37.15 Mrd     6.0     3.91 Mrd     10.5%    28.69 Mrd
+    16x     66.33 Mrd     6.0    10.74 Mrd     16.2%    21.86 Mrd
+
+=== Elite-Bollwerk, komplette 6-Check-Serie, Profil mittel, 4 Serien je Zelle ===
+Belohnung bei perfekter Serie (Session-2-Befund 5): 32.60 Mrd je Spieler
+
+ Faktor   Flottenwert  Checks      Verlust  Verlust%        NETTO
+  0.25x      2.05 Mrd     6.0     0.06 Mrd      3.0%    32.54 Mrd
+     1x      6.18 Mrd     6.0     0.71 Mrd     11.5%    31.89 Mrd
+     2x     12.35 Mrd     6.0     1.02 Mrd      8.2%    31.58 Mrd
+     4x     22.43 Mrd     6.0     2.85 Mrd     12.7%    29.75 Mrd
+     8x     37.15 Mrd     6.0     6.82 Mrd     18.4%    25.78 Mrd
+    16x     66.33 Mrd     6.0    22.83 Mrd     34.4%     9.77 Mrd
