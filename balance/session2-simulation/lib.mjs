@@ -1,4 +1,4 @@
-const D = '/home/claude/repo/server/dist/game';
+const D = '../../server/dist/game';
 export const combat = await import(`${D}/combat.js`);
 export const simulator = await import(`${D}/simulator.js`);
 export const runner = await import(`${D}/combatRunner.js`);
