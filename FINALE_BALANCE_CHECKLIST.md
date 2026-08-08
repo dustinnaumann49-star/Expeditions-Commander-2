@@ -25,11 +25,14 @@ wie "teuer" sich Kampfverluste in Session 2/3 anfühlen).
   (Eskalation, Extraktions-Mechanik, Boss-Skalierung)
 - Raid-Event - neue 2x/Woche-Frequenz über mehrere echte Wochen beobachten
 
-**Session 3 - Schiffe, Verteidigung & Module**
-- Schiffsbalance (Tier-Progression, RapidFire-Kette, Spezialschiffe/Sandronator/Imperator)
-- Verteidigungsanlagen (Kosten/Werte-Progression, Sentinel-/Ultimate-Kanone)
-- Kampf-Klassen (Kanonier/Bollwerk/Kommandant) - gleich attraktiv?
-- Schiffs-/Verteidigungs-Module (Stufe-10-Deckel, Kosten)
+**Session 3 - Wirtschaft/Ausbau** (ERLEDIGT 08.08.2026, Ergebnis am Ende dieser Datei)
+- Baukosten/Bauzeiten Schiffe + Verteidigung gegen die tatsaechlichen Einnahmen - GEPRUEFT
+- Forschungskosten und -zeiten - GEPRUEFT
+- Schiffs-/Verteidigungs-/Gebaeude-Modulkosten (Stufe-10-Deckel) - GEPRUEFT
+- Gebaeude-Ausbaukurve V1/V2/V3 - GEPRUEFT
+- Kampf-Klassen (Kanonier/Bollwerk/Kommandant) als Investitionsentscheidung - GEPRUEFT
+- OFFEN, verschoben auf Session 4: reine Schiffsbalance untereinander (Tier-Progression,
+  RapidFire-Kette, Rollen der Schiffsklassen), Sandronator/Piratenadmiral
 
 **Session 4 - Multiplayer & Rest**
 - Allianz-Station (V1/V2/V3) - diese Session nicht angefasst, Abgleich mit neuem
@@ -858,3 +861,498 @@ richtige Hebel (sie tragen die eigentliche Risiko/Ertrag-Entscheidung), nicht di
   das ist dieselbe Lektion wie in der Vorsession, hier aber zusaetzlich hintereinandergeschaltet.
 - **Ressourcen in Wert-Einheiten vergleichen** (`TRADE_VALUE`) und Container-DM nicht vergessen -
   genau dieser Posten fehlte in der Session-1-DM-Bilanz (Befund 4).
+
+---
+
+# Session 3 - Wirtschaft/Ausbau: Analyse-Ergebnis (08.08.2026)
+
+**Status: REINE ANALYSE, KEINE CODEAENDERUNG.** Aufgebaut wie die Session-1/2-Abschnitte oben,
+damit eine spaetere Umsetzungs-Session direkt loslegen kann, ohne die Zahlen neu herzuleiten.
+
+Analysierter Stand: Commit `235347c` (Sammel-Commit des hochgeladenen Repos). Wie schon in
+Session 2 enthaelt die Git-Historie nur einen einzigen Commit, ein Diff gegen den Session-1/2-Stand
+war daher nicht moeglich. Stichproben (`roboterNaniteFactor()` ohne Untergrenze, tote
+`lootBase`/`teileCap`-Pfade in den Solo-Sektoren) zeigen den Code unveraendert.
+
+**Zuschnitt dieser Session (weicht bewusst von der Aufteilung ganz oben ab):** die Liste oben
+definiert Session 3 als "Schiffe, Verteidigung & Module" inklusive reiner Kampfbalance. Geprueft
+wurde hier stattdessen die **Kosten-/Zeit-/Amortisationsseite** des gesamten Ausbaus: Baukosten und
+Bauzeiten von Schiffen und Verteidigungsanlagen gegen die tatsaechlichen Einnahmen, Forschungskosten
+und -zeiten, Schiffs-/Verteidigungs-/Gebaeude-Modulkosten, Gebaeude-Ausbaukurve, Kampf-Klassen als
+Investitionsentscheidung, DM-Haushalt.
+NICHT geprueft (bleibt offen fuer Session 4 oder einen Nachtrag): reine Schiff-gegen-Schiff-Balance
+(RapidFire-Kette, Tier-Progression, Rollen der einzelnen Schiffsklassen untereinander),
+Allianz-Station, Aussenposten, Galaxie-Ereignisse, Piratenbasen, Spionage, Statistik.
+
+## Methodik (fuer Reproduzierbarkeit)
+
+Alle Betraege in **Wert-Einheiten** (`metall*1 + kristall*1.5 + deuterium*3`, entspricht
+`TRADE_VALUE`), wie in Session 1/2. Container mit den Session-1-Erwartungswerten (Silber 60,1 Mio /
+Gold 127,2 Mio / Elite 237,6 Mio; DM-Anteil Gold 19,4 / Elite 28,6). Teile mit
+`TEILE_CONVERT_RESOURCES` = 325.000 Wert je Teil; der Imperator hat keine `cost`, er wird durchgehend
+ueber diesen Teile-Gegenwert bewertet (3.000 Teile = 975 Mio).
+
+Skripte und Rohausgaben: `balance/session3-simulation/` (eigene README dort). `lib3.mjs` ist eine
+unveraenderte Kopie von `session2-simulation/lib.mjs`, dieselben vier Ausbau-Profile und
+Referenzflotten.
+
+**Wichtigster methodischer Unterschied zu Session 2:** `simulateCombat()` betrachtet immer nur EINEN
+Check. Fuer die Ertragsrechnung wurden `runHourlyCheck()` (Solo) bzw. der Elite-Bollwerk-Ablauf
+zusaetzlich ueber eine KOMPLETTE 24h-Mission repliziert, mit ueber alle Checks mitgeschleppten
+Verlusten (`run_mission_breakeven.mjs`, `run_elite_series_net.mjs`, `run_real_fleet.mjs`). Erst
+dadurch wird der Netto-Ertrag sichtbar - genau daran haengt Befund 2. Wer kuenftig Belohnungen
+bewertet, muss diesen Weg nehmen; ein Einzelcheck unterschaetzt die Verluste um den Faktor der
+Checkanzahl.
+
+Stichprobengroessen: 72 Laeufe je Zelle (Gleich-Wert-/Modul-/Forschungsvergleiche), 10 komplette
+24h-Missionen je Flottengroesse, 6 bzw. 4 komplette Elite-Serien je Zelle, 8 komplette Raids
+(je 12 Wellen) je Verteidigungsstufe.
+
+### Einnahmen-Baseline (korrigiert)
+
+Session 1/2 sind teilweise von einer taeglichen Elite-Serie ausgegangen. Nutzerangabe: das
+Elite-Bollwerk wird real **alle 2-4 Tage** gestartet, im Mittel alle 3 Tage. Damit:
+
+| Quelle | Wert/Tag |
+|---|---|
+| Elite-Bollwerk (32,60 Mrd je Serie, alle 3 Tage) | 10,87 Mrd |
+| Raid (Mi+So, 12/12) | 6,31 Mrd |
+| Asteroiden (3 Felder, ohne Frischling-Bonus) | 2,83 Mrd |
+| Solo-Piraten Hoch (24h) | 1,13 Mrd |
+| Heimatbasis V1 voll (36/32/30) | 0,55 Mrd |
+| **Summe** | **21,69 Mrd** |
+| ohne Elite-Bollwerk | 10,82 Mrd |
+
+DM: 1.088/Tag (Raid-Container 595, Solo-Piraten 151, Elite-Serie 246, Asteroiden 90, Raid-Bergung 6).
+
+**Anmerkung zu einer Ungenauigkeit in Session 1:** in der Tabelle zu Befund 1 dort ist die Spalte
+`winResources` (7,1 / 21,8 / 63,0 Mio) bereits mit der erwarteten Anzahl gewonnener Checks
+multipliziert, waehrend die Nachbarspalten pro Check gelten. Die Spalte "Summe/Sieg" und die
+Tagesertraege sind korrekt; nur diese eine Spalte mischt die Bezugsgroesse. Pro Check betraegt
+`winResources` 2,15 / 5,60 / 14,00 Mio.
+
+### Vier Grundsatzentscheidungen des Nutzers (im Rahmen dieser Session getroffen)
+
+1. **Es soll einen Ressourcen-Engpass geben** (siehe Befund 1).
+2. **Flottenwachstum soll belohnt werden** - ausdruecklich NICHT ueber geringere Verluste oder
+   schwaechere Gegner, sondern ueber hoehere Belohnung; ein Teil der Verluste soll wieder
+   hereingeholt werden koennen (siehe Befund 2).
+3. **Wrack-Bergung: 30 %** des Wertes der eigenen verlorenen Schiffe kommt zurueck.
+4. **Beute proportional zur tatsaechlich vernichteten Feindmacht**, linear ("du pluenderst, was du
+   zerstoert hast"). Der Gegenvorschlag eines degressiven Exponenten ist als Alternative
+   dokumentiert (Befund 2), Entscheidung dazu beim Gesamt-Durchgang.
+
+## Befund 1 (HOCH): Ressourcen sind kein Engpass - das gesamte Ausbau-Angebot kostet 74 Tage Einnahmen
+
+**Dateien:** `data/buildings.ts`, `data/shipModules.ts`, `data/defenseModules.ts`,
+`data/buildingModules.ts`, `data/research.ts`
+
+Alle einmaligen Ressourcen-Senken des Spiels, vollstaendig ausgebaut:
+
+| Senke | Wert |
+|---|---|
+| Gebaeude V1+V2+V3 bis 36/32/30 inkl. Solar/Fabriken | 1,39 Bio |
+| Alle Schiffs-Module Stufe 10 (4 Linien je Typ) | 141,97 Mrd |
+| Alle Gebaeude-Module Stufe 10 | 44,38 Mrd |
+| Alle Verteidigungs-Module Stufe 10 | 10,87 Mrd |
+| Alle limitierten Einheiten am maxCount | 9,01 Mrd |
+| Alle 21 Forschungen Stufe 10 | 2,04 Mrd |
+| **Summe** | **1,60 Bio** |
+
+Bei 21,69 Mrd/Tag ist damit nach **74 Tagen** alles gekauft (ohne Elite-Bollwerk: 148 Tage). Zum
+Vergleich: der Forschungs-Clock laeuft 203 Tage (Befund 5). Die Ressourcen-Wirtschaft ist also rund
+2,7x schneller erschoepft als die Zeit-Wirtschaft.
+
+Danach existiert **keine Senke mehr**, die etwas zurueckgibt:
+- Minenstufen jenseits der Freischaltschwelle: Metallmine Stufe 40 kostet 127,11 Mrd fuer
+  +49,4 Mio/Tag = 2.574 Tage Amortisation, Stufe 45 kostet 1,14 Bio fuer 13.001 Tage.
+- Unbegrenzter Schiffbau: liefert keinen Ertrag (Befund 2) und erhoeht ab einer bestimmten
+  Groesse sogar die Kosten.
+- Kein Lagerkapazitaets-System (Session-1-Befund 7), Ressourcen stapeln unbegrenzt.
+
+**Empfehlung (Entscheidung 1 ist getroffen: Engpass ja):** Der Hebel liegt NICHT bei den Baukosten -
+87 % der Senke sind Gebaeude, und die lassen sich nicht um Faktor 3-4 verteuern, ohne die
+Ausbaukurve zu zerstoeren (Session-1-Befund 4). Drei Ansaetze, in dieser Reihenfolge:
+- (a) **Flottenverluste zur wiederkehrenden Senke machen.** Mit der in Befund 2 empfohlenen
+  Mechanik bleiben 70 % jedes Verlusts dauerhaft weg, und zwar skalierend mit der Flottengroesse.
+  Das ist die einzige Senke im Spiel, die mit dem Fortschritt mitwaechst statt einmalig zu sein.
+- (b) **Raid-Ertrag halbieren** (`RAID_WAVE_WIN_*` 10/6/2 -> 5/3/1, Session-2-Empfehlung):
+  -3,16 Mrd/Tag ohne jeden Spielbarkeitsverlust, da 12/12 fuer jeden ausgebauten Account der
+  Normalfall ist und der Raid ohne Flottenbindung und ohne Entscheidung passiert.
+- (c) Erst danach ueber Kostenerhoehungen nachdenken - vorher misst man gegen die falsche Baseline.
+
+## Befund 2 (HOCH, zentral): Jeder Sektor hat eine Flottengroesse, ab der er sich nicht mehr lohnt
+
+**Dateien:** `game/missions.ts` (`runHourlyCheck()` Zeile 375-377, 572, 589),
+`game/combat.ts` (`fleetSizeRewardMultiplier()` Zeile 525), `data/sectors.ts`,
+`data/combatConstants.ts` (`FLEET_SIZE_BONUS_CAP`, `FLEET_SIZE_BONUS_RATE`)
+
+Die Belohnung eines Sektors ist fest, die Verluste skalieren mit der Flotte. Komplette
+24h-Missionen, Solo-Sektor Hoch, Profil voll, 10 Missionen je Zeile:
+
+| Flottenwert | Siege | Belohnung | Verlust | Netto |
+|---|---|---|---|---|
+| 2,05 Mrd | 4,5 | 1,13 Mrd | 0,02 Mrd | **+1,12 Mrd** |
+| 6,18 Mrd | 4,4 | 1,11 Mrd | 0,16 Mrd | **+0,95 Mrd** |
+| 12,35 Mrd | 4,1 | 1,03 Mrd | 0,22 Mrd | **+0,81 Mrd** |
+| 22,43 Mrd | 4,6 | 1,16 Mrd | 0,55 Mrd | **+0,60 Mrd** |
+| 37,15 Mrd | 3,8 | 0,96 Mrd | 1,15 Mrd | **-0,20 Mrd** |
+| 66,33 Mrd | 4,4 | 1,11 Mrd | 3,87 Mrd | **-2,76 Mrd** |
+
+Die Belohnung ist ueber den gesamten Bereich flach. Der reine Kampfausgang bleibt dabei unauffaellig
+(100 % Siegquote, 2-6 % Verlust je Check) - das Problem wird erst in der Wert-Bilanz sichtbar,
+weshalb es in Session 2 nicht auffiel.
+
+**Technische Ursache:** `fleetSizeRewardMultiplier()` existiert und ist genau fuer diesen Zweck
+gebaut. Sie wird in `missions.ts:377` berechnet, aber ausschliesslich auf `teileCap` (Zeile 572) und
+`lootBase` (Zeile 589) angewendet - **beide Felder gibt es bei `piraten_niedrig/mittel/hoch` seit dem
+Umbau 29.07.2026 nicht mehr** (Session-1-Befund 6). Der Grossflotten-Bonus ist in den Solo-Sektoren
+damit vollstaendig tote Logik; `winContainer` und `winResources` werden nur mit `combatWins`
+multipliziert. Beim Elite-Bollwerk (`groupOps.ts:749`) wird er angewendet, haengt dort aber an
+`npcFloor` (3 Mio) und liegt deshalb immer am +50-%-Deckel (Session-2-Befund 5).
+
+**Gemessen an der realen Flotte des Nutzers** (31.276 Schiffe, 34,99 Mrd Wert, 18,58 Mrd BasePower -
+das 5,7-fache der Referenzflotte; Zusammensetzung siehe `run_real_fleet.mjs`):
+
+| Einsatz | Belohnung | Verlust | Netto heute | Netto mit 30 % Bergung |
+|---|---|---|---|---|
+| Solo Hoch 24h (voll) | 1,11 Mrd | 1,65 Mrd | **-0,55 Mrd** | -0,05 Mrd |
+| Solo Hoch 24h (mittel) | 1,11 Mrd | 2,57 Mrd | **-1,47 Mrd** | -0,69 Mrd |
+| Elite-Serie (voll) | 32,60 Mrd | 4,73 Mrd | +27,87 Mrd | +29,29 Mrd |
+| Elite-Serie (mittel) | 32,60 Mrd | 9,40 Mrd | +23,20 Mrd | +26,02 Mrd |
+
+Die Solo-Piraten-Sektoren sind fuer diese Flotte **bereits jetzt tote Inhalte** - rational fliegt man
+sie nicht mehr. Das Elite-Bollwerk hat denselben strukturellen Defekt, nur mit weit hoeherem
+Kipppunkt (rechnerisch ~150 Mrd Flottenwert bei Profil voll, ~90 Mrd bei mittel).
+
+**Empfehlung (Entscheidungen 2-4 sind getroffen):**
+1. **Wrack-Bergung 30 %** des Wertes der eigenen verlorenen Schiffe als Ressourcen zurueck (analog
+   `SCRAP_REFUND_RATE`). Skaliert per Konstruktion exakt mit den Verlusten, kann nie mehr
+   zurueckgeben als verloren ging. Alleine reicht sie nicht: sie verschiebt den Kipppunkt nur von
+   ~7-facher auf ~9-fache Referenzflotte.
+2. **Beute proportional zur tatsaechlich vernichteten Feindmacht** (linear). Weil der Gegner ohnehin
+   mit der eigenen Macht skaliert, waechst die Belohnung damit automatisch mit der Flotte, ohne eine
+   neue Kurve einzufuehren. Kalibrierung: die reale Flotte vernichtet pro 24h-Mission 83,62 Mrd
+   Feindmacht (Basiswerte), die Referenzflotte geschaetzt 12,2 Mrd. Damit die Referenzflotte ihre
+   heutige Belohnung behaelt, ergibt sich ein Faktor von **rund 0,091 Wert-Einheiten je Punkt
+   vernichteter Feindmacht**. Der Wert fuer die Referenzflotte ist hochgerechnet, nicht gemessen -
+   **in der Umsetzungs-Session direkt messen**, bevor er festgeschrieben wird.
+3. `fleetSizeRewardMultiplier()` wird durch (2) fachlich ersetzt. Entweder entfernen oder auf
+   `winContainer`/`winResources` umhaengen - der jetzige Zustand (Berechnung ohne Wirkung) darf
+   nicht bleiben.
+
+**Dokumentierte Alternative zur Linearitaet (Entscheidung offen, fuer den Gesamt-Durchgang):** rein
+linear bedeutet, dass der Netto-Ertrag schneller waechst als die Flotte, weil die Verluste der
+kleinere Posten sind:
+
+| Flottenwert | Beute linear | Verlust | Netto |
+|---|---|---|---|
+| 6,18 Mrd | 1,04 Mrd | 0,16 Mrd | +0,88 Mrd |
+| 34,99 Mrd | 7,61 Mrd | 1,65 Mrd | +5,96 Mrd |
+| 66,33 Mrd | 15,9 Mrd | 3,87 Mrd | +12,1 Mrd |
+
+Zehnfacher Flottenwert -> 13,7-facher Netto-Ertrag, rund 17 % Tagesrendite auf den Flottenwert; eine
+reinvestierte Flotte verdoppelt sich damit etwa alle fuenf Tage. Ueber Wochen unproblematisch, ueber
+Monate laeuft es weg und arbeitet gegen Befund 1. Alternative: derselbe Mechanismus mit
+**Exponent ~0,85** (`Beute = Basis * (vernichtete Feindmacht / Referenz)^0,85`) - fuehlt sich im
+Spiel linear an, waechst aber degressiv:
+
+| Flottenwert | Beute (^0,85) | Netto mit 30 % Bergung |
+|---|---|---|
+| 6,18 Mrd | 1,11 Mrd | +0,99 Mrd |
+| 34,99 Mrd | 5,53 Mrd | +4,38 Mrd |
+| 66,33 Mrd | 10,9 Mrd | +8,2 Mrd |
+
+**Achtung bei der Umsetzung:** `PIRATEN_EVENT_BONUS_MULTIPLIER` (Mo/Fr) verdoppelt bereits
+`combatWins` und damit die Container-Anzahl (`missions.ts:558`). Jede neue Belohnungs-Skalierung
+multipliziert sich darauf - die Kombination vor der Kalibrierung vollstaendig durchrechnen (Lektion
+der Vorsession zur Eskalationskurve, hier zum dritten Mal einschlaegig).
+
+## Befund 3 (HOCH): Bei gleichem Ressourceneinsatz unterscheidet sich der Kampfwert der Schiffe um Faktor 7
+
+**Dateien:** `data/ships.ts`, `data/combatConstants.ts` (`MULTI_TARGET_POWER_CORRECTION`)
+
+Je 600 Mio Wert in einem einzigen Schiffstyp, Sektor Hoch, Profil voll, 72 Laeufe je Zeile:
+
+| Typ | Stueck | BasePower | Sieg | Verlust | Wertverlust |
+|---|---|---|---|---|---|
+| schwer | 2.083 | 508,7 Mio | 100 % | 1,7 % | 10,0 Mio |
+| bomber | 377 | 346,1 Mio | 100 % | 1,7 % | 10,0 Mio |
+| reaper | 439 | 378,0 Mio | 100 % | 1,7 % | 10,0 Mio |
+| leicht | 4.444 | 541,3 Mio | 100 % | 2,3 % | 14,0 Mio |
+| schlachtkreuzer | 444 | 317,9 Mio | 100 % | 5,2 % | 31,0 Mio |
+| kreuzer | 913 | 451,1 Mio | 100 % | 6,7 % | 40,0 Mio |
+| schlachtschiff | 634 | 543,2 Mio | 100 % | 11,3 % | 67,9 Mio |
+| zerstoerer | 416 | 374,4 Mio | 97 % | 13,0 % | 77,9 Mio |
+| salvenjaeger | 139 | 88,1 Mio | 71 % | 42,5 % | 254,0 Mio |
+| salvendreadnought | 18 | 79,8 Mio | 33 % | 70,3 % | 410,2 Mio |
+| salvenkreuzer | 47 | 106,5 Mio | 14 % | 93,8 % | 560,1 Mio |
+
+Die Salvenschiffe brechen als reine Einzeltyp-Flotte zusammen: `MULTI_TARGET_POWER_CORRECTION = 8`
+laesst sie einen achtfach staerkeren Gegner erzeugen, ihre Panzerung traegt das nicht. **Als
+Beimischung in eine gemischte Flotte sind sie dagegen die beste Ergaenzung ueberhaupt** (Grenznutzen
+gegen FLEET_SMALL: Salvendreadnought 0,8 %, Salvenjaeger 2,2 %, Salvenkreuzer 2,2 % Verlust gegen
+3,5 % bei Leichten Jaegern). Sie sind reine Rollen-Einheiten, keine eigenstaendige Flotte - das steht
+nirgends.
+
+Kosten pro Waffenpunkt: Schiffe 67,5 (schlachtschiff) bis 132,5 (bomber), Verteidigung 64,9
+(raketenwerfer) bis 144,6 (ultimatekanone), Spezialschiffe 397-623, Sandronator 557.
+**README Punkt 17 nennt als Zielkorridor noch "ca. 65, Schiffe liegen bei ~57-90" - das ist
+ueberholt.** Entweder den Korridor nachziehen oder die Werte neu ausrichten.
+
+**Empfehlung:** Vor jeder Kostenanpassung an einzelnen Schiffen entscheiden, ob die Kosten die
+gemessene Kampfleistung abbilden sollen (dann muessen Schlachtschiff und Zerstoerer deutlich
+guenstiger oder besser werden) oder ob die Rollen-Abhaengigkeit bewusst bleibt (dann gehoert sie ins
+Info-Popup, analog zur Mehrfachziel-Salve nach README Punkt 24). Die reine Schiff-gegen-Schiff-
+Balance dahinter (RapidFire-Kette) wurde in dieser Session NICHT geprueft.
+
+## Befund 4 (HOCH): Verteidigungsanlagen sind die einzige Investition mit klarer Amortisation
+
+**Dateien:** `game/raids.ts` (`resolveOneWave()` Zeile 302-328, `RAID_FLEET_POWER_WEIGHT` 0.7 /
+`RAID_DEFENSE_POWER_WEIGHT` 0.3), `data/defenses.ts`, `data/combatConstants.ts`
+(`DEFENSE_REPAIR_PERCENT`)
+
+8 komplette Raids (je 12 Wellen) je Zeile, Flotte konstant FLEET_LARGE, nur die
+Verteidigungs-Investition variiert:
+
+| Verteidigung | Invest | Wellen gewonnen | perfekt | Verlust Verteidigung | Verlust Flotte |
+|---|---|---|---|---|---|
+| keine | 0 | 12,0 | 100 % | - | 683 Mio |
+| 0,1x | 0,04 Mrd | 12,0 | 100 % | 1 Mio | 477 Mio |
+| 0,25x | 0,11 Mrd | 12,0 | 100 % | 2 Mio | 307 Mio |
+| 1x | 0,43 Mrd | 12,0 | 100 % | 0 Mio | 127 Mio |
+| 3x | 1,06 Mrd | 12,0 | 100 % | 0 Mio | 69 Mio |
+
+12/12 wird **auch voellig ohne Verteidigungsanlagen** erreicht - sie sind fuer den Ausgang nicht
+noetig. Ihr Nutzen liegt woanders: 1,06 Mrd Investition senken den Flottenverlust um 614 Mio **pro
+Raid**, bei zwei Raids pro Woche ist sie in unter einer Woche zurueckverdient. Nichts anderes im
+Spiel hat diese Rendite (Module: 508-806 Tage, Befund 6).
+
+Ursachen: Verteidigung liefert 1,03-1,40 Power je Wert-Einheit gegen 0,53-0,91 bei Schiffen, geht
+aber nur mit Gewicht 0,3 in die Wellenskalierung ein (Schiffe 0,7) - effektiver Hebel rund 3,6x.
+Dazu kommt `DEFENSE_REPAIR_PERCENT = 0.7` plus der Kuppel-Pool, wodurch die Verteidigung selbst
+praktisch nichts verliert (0-2 Mio je Raid).
+
+**Nebenbefund (mechanische Inkonsistenz):** `resolveOneWave()` summiert die Basiswerte in
+`raids.ts:319-327` von Hand, **ohne** `MULTI_TARGET_POWER_CORRECTION` - anders als
+`combatFleetPowerBase()`. Sentinel-Kanone, Ultimate-Kanone und alle Salvenschiffe zaehlen zu Hause
+dadurch nur mit einem Achtel ihrer sonst angesetzten Macht. Wer genau in diese Einheiten investiert,
+bekommt also die schwaechsten Wellen bei der staerksten Abwehr. Entweder die Korrektur auch hier
+anwenden oder bewusst dokumentieren.
+
+## Befund 5 (HOCH): Forschung ist der einzige echte Engpass - und 60 % ihrer Laufzeit ist wirkungslos
+
+**Dateien:** `data/research.ts` (`costGrowth` 1.8, `timeGrowth` 1.6), `game/actions.ts`
+(`researchTimeMultiplier()` Zeile 161, `researchCostForLevel()`/`researchTimeForLevel()` Zeile 771-782)
+
+- **Kosten aller 21 Forschungen auf Stufe 10: 2,04 Mrd** = etwa zwei Stunden Einnahmen. Die
+  teuerste Einzelstufe im ganzen Baum (Hyperraumantrieb Stufe 10) kostet 57,0 Mio - 0,26 % eines
+  Tagesertrags. Forschungskosten sind faktisch kein Faktor.
+- **Zeit dagegen: 2.315 Tage seriell roh, 810 Tage mit dauerhaftem Forschungstempo-Booster, 203 Tage
+  bei idealer Auslastung aller 4 Slots.** Nur die 9 Kampfforschungen: 320 Tage seriell, 80 Tage bei
+  4 Slots.
+- `researchTimeMultiplier()` kennt ausschliesslich den Booster (0,35) und das Samstags-Event (0,75).
+  **Keine Forschung verkuerzt Forschung** - anders als bei Bauzeiten gibt es hier keinen
+  Selbstverstaerkungspfad, nur DM.
+
+Wirkung, isoliert gemessen (Module 0, keine Klasse, kein Kampf-Booster, FLEET_LARGE):
+
+| Forschungsstufe | Hoch: Sieg / Verlust | Elite: Sieg / Verlust |
+|---|---|---|
+| 0 | 0 % / 39,83 % | 0 % / 46,67 % |
+| 2 | 24 % / 37,67 % | 0 % / 45,00 % |
+| 4 | 56 % / 27,00 % | 6 % / 39,17 % |
+| 6 | 81 % / 21,50 % | 33 % / 35,67 % |
+| 8 | 86 % / 19,67 % | 43 % / 32,17 % |
+| 10 | 86 % / 20,17 % | 47 % / 31,33 % |
+
+Die Kurve saettigt bei Stufe 8; der Sprung 8->10 liegt im Rauschen. Wegen `timeGrowth = 1.6` machen
+die Stufen 9 und 10 aber **61,5 %** der Gesamtzeit eines Zweigs aus ((1,6^8-1)/(1,6^10-1) = 0,385).
+Mehr als die Haelfte des gesamten Forschungs-Clocks ist damit reine Wartezeit ohne messbaren Effekt.
+
+**Empfehlung:** `timeGrowth` senken (1,6 -> ca. 1,4 halbiert die Endstufen-Zeit), ODER die
+Effektkurve nach oben strecken, damit die Stufen 9/10 ueberhaupt etwas liefern, ODER die Endstufen
+streichen. Nichts davon beruehrt die Kosten - die sind an dieser Stelle irrelevant und koennten
+umgekehrt problemlos angehoben werden, falls Befund 1 zusaetzliche Senken braucht.
+
+## Befund 6 (MITTEL): DM-Hebel schlagen Ressourcen-Hebel um Groessenordnungen
+
+**Dateien:** `data/economy.ts` (`BOOSTERS`, `BOOSTER_DURATION_OPTIONS`), `data/classes.ts`,
+`data/shipModules.ts`, `data/defenseModules.ts`
+
+Einzelhebel bei Forschung 10 / Module 0, FLEET_LARGE, 72 Laeufe je Zeile:
+
+| Hebel | Kosten | Hoch: Sieg / Verlust | Elite: Sieg / Verlust |
+|---|---|---|---|
+| nichts | - | 86 % / 18,33 % | 40 % / 34,50 % |
+| + Kampf-Booster | 37 DM/Tag | 99 % / 8,67 % | 95 % / 17,83 % |
+| + Kanonier | 500 DM einmalig | 100 % / 7,83 % | 96 % / 14,17 % |
+| + Kommandant | 500 DM einmalig | 99 % / 9,83 % | 88 % / 17,83 % |
+| + Bollwerk | 500 DM einmalig | 93 % / 12,50 % | 67 % / 21,50 % |
+| + Module Stufe 10 | ~99,6 Mrd Ressourcen | 95 % / 11,17 % | 95 % / 17,00 % |
+
+**Ein einmaliger 500-DM-Klassenwechsel schlaegt den kompletten Modulbaum.** Der DM-Haushalt traegt
+das muehelos: 1.088 DM/Tag Einnahmen gegen 103 DM/Tag groesste laufende Senke (alle vier Booster im
+30-Tage-Tarif) = Faktor 10,5.
+
+Modul-Amortisation ueber eingesparte Flottenverluste (Modulsatz fuer alle Typen der Referenzflotte:
+99,57 Mrd): Sektor Hoch 4,17 % -> 2,17 % Verlust = 123,6 Mio je 24h-Trip = **806 Tage**;
+Elite 7,00 % -> 3,83 % = 195,9 Mio = **508 Tage**.
+
+Modul-Break-even gegen "einfach mehr Schiffe bauen" ist eine **Konstante von 4.367 Einheiten** je Typ
+(2.911 bei Kuppeln, die kein Waffen-Modul haben) - unabhaengig vom Schiffstyp, weil sich
+`MODULE_COST_MULTIPLIER = 8`, `costGrowth = 1.35`, `maxLevel = 10` und 3 %/Stufe zu einem festen
+Verhaeltnis kuerzen. Fuer jede Einheit mit `maxCount` (Salvenschiffe 30-150, Ultimate-Kanone 60,
+Imperator 6) ist dieser Break-even per Definition unerreichbar.
+
+Dem steht ein Argument gegenueber, das im Code nirgends steht: **Module erhoehen die Gegnerskalierung
+nicht** (Session-2-Befund 1 - `combatFleetPowerBase()` sieht weder Module noch Klasse noch Booster).
+Das ist ihr eigentlicher Wert und der Grund, warum sie trotz der Zahlen oben nicht wertlos sind.
+
+**Empfehlung:** Wenn Module eine sinnvolle Investition sein sollen, muessen entweder die Kosten
+deutlich sinken (Groessenordnung Faktor 3-5) oder ihr Effekt pro Stufe steigen. Die Alternative ist,
+sie bewusst als Endgame-Prestige zu fuehren und das zu dokumentieren. In jedem Fall gehoert die
+Kombination "DM-Hebel gegen Ressourcen-Hebel" mit Befund 1 zusammen entschieden - solange DM im
+Ueberfluss vorhanden ist, ist jede Ressourcen-Investition die schlechtere Wahl.
+
+## Befund 7 (MITTEL): Bauzeit ist bei Schiffen/Verteidigung keine Schranke
+
+**Dateien:** `game/actions.ts` (`bauzeitMultiplier()`, `defenseBauzeitMultiplier()`,
+`roboterNaniteFactor()`), Spiegel in `client/src/lib/multipliers.ts`
+
+Multiplikator-Kette (Profil voll: Bauzeit-Forschung 10, Bauzeit-Schiffe 10, Roboterfabrik 20,
+Nanitenfabrik 12, Bautempo-Booster, Ingenieur):
+`0,5 x 0,7 x 0,35 x 0,85 x 0,642 = 6,68e-2`, mit Samstags-Event 5,01e-2.
+
+Ausgabe-Kapazitaet bei 3 Bau-Lanes:
+
+| Profil | Multiplikator | Leichte Jaeger | Kreuzer | Reaper |
+|---|---|---|---|---|
+| voll | 6,68e-2 | 43,7 Mrd Wert/Tag | 26,6 Mrd | 36,8 Mrd |
+| mittel | 1,70e-1 | 51,4 Mrd | 31,3 Mrd | 14,4 Mrd |
+| frueh (alles 0) | 1,00 | 8,75 Mrd | 5,32 Mrd | 2,46 Mrd |
+
+Selbst voellig ohne jede Bauzeit-Investition liegt die Kapazitaet ueber den Tageseinnahmen ohne
+Elite-Bollwerk (10,82 Mrd). Der Engpass ist immer der Ressourcenbestand, nie die Werft.
+
+Darauf zielen trotzdem: vier Forschungszweige (`bauzeit` 105,9 d + `bauzeit_schiffe`/
+`bauzeit_verteidigung`/`bauzeit_gebaeude` je 113,5 d = **446 Tage Forschungszeit**), sechs
+Zeit-Gutscheine (150/300 DM), das Samstags-Bauzeit-Event und die komplette Ingenieur-Klasse.
+
+Fuer Gebaeude ist es noch extremer und bestaetigt Session-1-Befund 3 mit hoeheren Fabrikstufen:
+Multiplikator **8,06e-8**, mit dem Automatisierungs-Modul 5,64e-8.
+
+**Empfehlung:** Bauzeit als Balance-Groesse entweder ernst nehmen (Untergrenze fuer Gebaeude nach
+Session-1-Befund 3, und die Schiffs-Bauzeiten so anheben, dass sie bei grossen Stueckzahlen wieder
+spuerbar werden) oder die darauf zielenden Systeme zusammenstreichen. Der jetzige Zustand kostet
+Forschungszeit, Shop-Platz und eine Klassen-Faehigkeit fuer einen Effekt, den niemand spuert.
+
+## Befund 8 (MITTEL): Die drei Kampf-Klassen sind nicht gleichwertig
+
+**Dateien:** `data/classes.ts`
+
+Verlust bei Forschung 10 / Module 0 (aus Befund 6): Kanonier 7,83 % (Hoch) / 14,17 % (Elite),
+Kommandant 9,83 / 17,83, Bollwerk 12,50 / 21,50.
+
+Bollwerks wirtschaftlicher Ausgleich verpufft, weil er in der Kategorie ohne Verluste landet:
+- `CLASS_BOLLWERK_DEFENSE_COST_MULTIPLIER = 0.75` auf eine typische Verteidigungs-Investition von
+  1,06 Mrd = 265 Mio, einmalig.
+- `CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT = 0.9` statt 0,7 - bei 0-2 Mio Verteidigungsverlust je Raid
+  (Befund 4) sind das unter 1 Mio je Raid.
+
+Kanonier liefert dagegen 4,7 Prozentpunkte weniger Flottenverlust bei **jedem** 24h-Einsatz, bei der
+Referenzflotte rund 290 Mio pro Tag, dazu -10 % Schiffs-Baukosten auf die groessere der beiden
+Kostenkategorien.
+
+**Empfehlung:** Bollwerks Ausgleich muss dorthin, wo Verluste tatsaechlich entstehen (eigene Flotte),
+nicht in die Verteidigung. Zum Beispiel: der Bollwerk-Reparaturbonus greift auch fuer die eigene
+Flotte nach Missionen, oder die Wrack-Bergung aus Befund 2 faellt fuer Bollwerk hoeher aus. Erst
+danach die Prozentwerte feinjustieren - die reine Werte-Anhebung wuerde nur den Kanonier-Vorsprung
+nachbauen.
+
+## Befund 9 (MITTEL): Gebaeude sind 87 % der Ressourcen-Senke und liefern 6 % der Einnahmen
+
+**Dateien:** `data/buildings.ts`, `data/buildingModules.ts`, `game/actions.ts`
+(`mineOutputPerHour()`, `roboterNaniteFactor()`)
+
+| Stufe | Invest bis 36/32/30 + Solar 38 | Ertrag/Tag | Amortisation |
+|---|---|---|---|
+| V1 | 197,97 Mrd | 554,4 Mio | 357 Tage |
+| V2 (zusaetzlich) | 395,94 Mrd | +831,6 Mio | 476 Tage |
+| V3 (zusaetzlich) | 791,87 Mrd | +1,39 Mrd | 571 Tage |
+| **alle drei** | **1,39 Bio** | **2,78 Mrd** | **499 Tage** |
+
+Bei 21,69 Mrd/Tag Gesamteinnahmen liefern alle drei vollstaendig ausgebauten Stufen zusammen
+**6,4 % der Einnahmen** - fuer 87 % aller Ressourcen-Senken des Spiels. Die Amortisation
+**verschlechtert** sich mit jeder neu freigeschalteten Stufe (357 -> 476 -> 571 Tage), obwohl V2/V3
+als Fortschritt praesentiert werden. Die Multiplikatoren (V2: 2x Kosten / 1,5x Ertrag, V3: 4x Kosten
+/ 2,5x Ertrag) sind genau die Ursache.
+
+**Zusaetzlicher Fund:** `BUILDING_MODULES` referenziert ausschliesslich V1-IDs (`metallmine`,
+`kristallmine`, ...). `mineOutputPerHour()` und `roboterNaniteFactor()` bilden fuer Tier 2/3 zwar
+IDs wie `v2_metallmine_foerdereffizienz` - die existieren aber nicht, `moduleBoostFactor()` liefert
+still 1 zurueck. **V2- und V3-Gebaeude haben dauerhaft keine Foerdereffizienz-, Energiespar- und
+Automatisierungsmodule.** Kein Fehler zur Laufzeit, aber eine Luecke: die 15 Gebaeude-Module
+(44,38 Mrd Vollausbau) wirken nur auf die schwaechste der drei Stufen.
+
+**Empfehlung:** Zusammen mit Session-1-Befund 4 entscheiden. Wenn Minen ein eigenstaendiger
+Wirtschaftszweig sein sollen, muessen die V2/V3-Ertragsmultiplikatoren ueber den Kostenmultiplikatoren
+liegen (heute 1,5 gegen 2,0 bzw. 2,5 gegen 4,0) und die Module fuer V2/V3 nachgezogen werden. Wenn
+Minen eine Beute-Senke bleiben (Session-1-Befund 4a), ist die Kurve in Ordnung - dann sollte aber im
+Spiel klar sein, dass V2/V3 ein Prestige-Ziel und keine Investition sind.
+
+## Befund 10 (NIEDRIG): kleinere Beobachtungen
+
+- **Der Imperator ist rechnerisch die schlechteste Einheit im Spiel.** Ueber den Teile-Gegenwert
+  bewertet (3.000 Teile x 325.000 = 975 Mio) liefert er 0,0040 Power je Wert-Einheit gegen 0,90 beim
+  Leichten Jaeger - Faktor 225. Sein Wert liegt ausschliesslich in RapidFire und Zaehigkeit, nicht in
+  der Power. Das ist vermutlich gewollt (Prestige-Einheit), sollte aber bewusst so entschieden sein,
+  bevor an den Teile-Kosten gedreht wird.
+- **`MAX_PLAYER_SHIPS = 100.000`** wirkt genau gegen die kosteneffizienteste Strategie (viele
+  guenstige Schiffe). Bei Leichten Jaegern entspricht der Deckel 13,5 Bio Wert und greift damit
+  praktisch nie - er ist aber die einzige Bremse, die ueberhaupt existiert.
+- **Der Kampf-Booster ist im Kostenvergleich der zweitstaerkste Einzelhebel des Spiels** (Befund 6).
+  Session-1-Befund 5 und Session-2-Befund 1 sind damit auch aus der Kostenperspektive bestaetigt:
+  37 DM/Tag ersetzen rund 100 Mrd Modulkosten.
+- **Der Wrack-Bergungs-Mechanismus aus Befund 2 existiert im Ansatz bereits** als
+  `RAID_SALVAGE_DM_PER_KILL`/`RAID_SALVAGE_DM_MAX` (Bergung nach Raids, aber in DM und gedeckelt bei
+  20). Bei der Umsetzung pruefen, ob beide zusammengefuehrt werden koennen, statt zwei getrennte
+  Bergungssysteme zu fuehren.
+- **Verteidigungs-Module sind mit 10,87 Mrd fuer den kompletten Baum die guenstigste Modul-Kategorie**
+  (Schiffs-Module 141,97 Mrd) - und sie wirken auf die Kategorie mit der besten Rendite (Befund 4).
+  Falls Module ueberhaupt attraktiv gemacht werden sollen, ist das die Stelle mit dem besten
+  Verhaeltnis.
+
+## Reihenfolge fuer die Umsetzungs-Session
+
+1. **Zuerst umsetzen (Entscheidungen liegen vor, blockiert alles Weitere):**
+   - Befund 2: Wrack-Bergung 30 % + Beute proportional zur vernichteten Feindmacht. Dabei
+     `fleetSizeRewardMultiplier()` aufloesen (heute Berechnung ohne Wirkung) und die Kalibrierung
+     der Referenz-Feindmacht **messen statt hochrechnen**.
+   - Offen bleibt nur: linear oder Exponent 0,85 (Tabellen in Befund 2).
+2. **Direkt danach, weil es an Befund 2 haengt:** Befund 1 (b), Raid-Ertrag halbieren - sonst
+   verschiebt die neue Beute-Skalierung die Einnahmen weiter nach oben, bevor eine Senke greift.
+3. **Ohne weitere Entscheidung sofort machbar:**
+   - Befund 4, Nebenbefund: `MULTI_TARGET_POWER_CORRECTION` in `resolveOneWave()` nachziehen.
+   - Befund 9: Gebaeude-Module fuer V2/V3 ergaenzen (oder die IDs bewusst dokumentieren).
+   - Befund 3: README Punkt 17 (Kosten/Waffenpunkt-Korridor) an die tatsaechlichen Werte anpassen.
+4. **Danach die Zahlen-Feinjustierung:** Befund 5 (Forschungs-`timeGrowth`), Befund 6 (Modulkosten
+   gegen DM-Hebel), Befund 8 (Bollwerk-Ausgleich), Befund 7 (Bauzeit-Systeme). Alle vier lassen sich
+   vor den Punkten 1-2 nicht sinnvoll kalibrieren, weil sich die Ertragsbasis mitverschiebt.
+
+## Zu beachten bei jeder Wirtschafts-/Ausbau-Aenderung
+
+- **Ertraege NIE an einem Einzelcheck bewerten.** `simulateCombat()` zeigt nur einen Check; die
+  Verluste einer kompletten 24h-Mission liegen um den Faktor der Checkanzahl hoeher. Der gesamte
+  Befund 2 wurde in Session 2 genau deshalb uebersehen.
+- **Immer die Wert-Bilanz rechnen, nicht die Verlustquote.** 2 % Verlust sind bei 6 Mrd Flottenwert
+  belanglos und bei 66 Mrd toedlich - die Prozentzahl allein sagt nichts.
+- **Vor jeder Simulation `npx tsc`** im Server ausfuehren, der Kampf-Worker laedt aus `dist/`
+  (README Punkt 9).
+- **Drei Multiplikatoren hintereinander pruefen**, bevor an einem Basiswert gedreht wird:
+  `getEscalationMultiplier()`, `completionMultiplier = 2` (Elite) und
+  `PIRATEN_EVENT_BONUS_MULTIPLIER` (Mo/Fr, verdoppelt `combatWins` und damit die Container-Anzahl).
+- **Client-Spiegel nicht vergessen:** `client/src/lib/multipliers.ts` spiegelt Bauzeit-, Klassen- und
+  Booster-Multiplikatoren 1:1 (README Punkt 1).
+- **Module, Klasse und Booster erscheinen NICHT in `combatFleetPowerBase()`** (Session-2-Befund 1) -
+  jede Aussage ueber ihren Nutzen muss das mitdenken, sonst wird ihr Wert systematisch unterschaetzt.
