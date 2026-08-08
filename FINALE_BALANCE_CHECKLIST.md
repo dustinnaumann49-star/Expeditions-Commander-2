@@ -377,3 +377,484 @@ Auch dieser Befund ist unabhaengig von allen Grundsatzentscheidungen sofort umse
   gilt hier besonders fuer Elite-Bollwerk mit `mode: 'double'`).
 - Ressourcen fuer Vergleiche in Wert-Einheiten umrechnen (`TRADE_VALUE`), sonst wirken
   Deuterium-lastige Belohnungen systematisch zu klein.
+
+---
+
+# Session 2 - Kampf (PvE): Analyse-Ergebnis (08.08.2026)
+
+**Status: REINE ANALYSE, KEINE CODEAENDERUNG.** Aufgebaut wie der Session-1-Abschnitt oben, damit
+eine spaetere Umsetzungs-Session direkt loslegen kann, ohne die Zahlen neu herzuleiten.
+
+Analysierter Stand: der als Sammel-Commit `ee863a6` hochgeladene Repo-Stand. **Achtung:** Session 1
+nennt Commit `b4d8181` (06.08.2026); die Git-Historie des hochgeladenen Repos enthaelt nur einen
+einzigen Commit, ein Diff gegen den Session-1-Stand war daher nicht moeglich. Stichproben (u.a.
+`roboterNaniteFactor()` ohne Untergrenze, Befund 3 aus Session 1) zeigen den Code unveraendert -
+die Baseline ist damit vergleichbar, aber nicht per Git verifiziert.
+
+Geprueft: Solo-Piraten-Sektoren Niedrig/Mittel/Hoch, Elite-Bollwerk (inkl. voller 6-Check-Serie),
+Piratenadmiral P10 (Eskalation, Extraktions-Mechanik, Boss-Skalierung), Raid-Wellensystem und die
+neue 2x/Woche-Frequenz, sowie die offenen Punkte 1, 2, 3 und 6 der Liste oben.
+NICHT geprueft (bleibt Session 3/4): Schiffsbalance untereinander, Verteidigungsanlagen ausserhalb
+des Raid-Kontexts, Kampf-Klassen, Module, Allianz-Station, Aussenposten, Galaxie-Ereignisse,
+Piratenbasen, Spionage, Statistik.
+
+## Methodik (fuer Reproduzierbarkeit)
+
+Alle Kampfzahlen stammen aus der ECHTEN Engine, nicht aus einer Nachbildung: `simulateCombat()`
+(`game/simulator.ts`) fuer die vier Piraten-Sektoren, und fuer Piratenadmiral/Raid/Elite-Bollwerk
+direkte Replikationen von `runAdminCheck()`, `resolveOneWave()` bzw. `runGroupHourlyCheck()` gegen
+`runCombatInWorker()`/`runMultiOwnerCombatInWorker()`. Der Server wurde dafuer mit `tsc` gebaut
+(der Kampf-Worker laeuft immer aus `dist/`, siehe README Punkt 9).
+
+Stichprobengroessen: 96 Laeufe je Sektor/Profil/Flotten-Zelle (3.072 gesamt), 120 komplette
+Piratenadmiral-Begegnungen, 120 einzelne P10-Check-1-Diagnoselaeufe, 40 komplette Raids
+(je 12 Wellen), 40 Laeufe je Zelle im Multiplikator-Sweep.
+
+Vier Ausbau-Profile (alle vier Kampf-Forschungen + Waffen/Schild/Panzerung auf derselben Stufe):
+
+| Profil | Forschung | Module | Klasse | Kampf-Booster |
+|---|---|---|---|---|
+| **voll** | 10 | 10 (+30%) | Kanonier | aktiv |
+| **voll ohne Boost** | 10 | 10 | Kanonier | inaktiv |
+| **mittel** | 6 | 5 (+15%) | Kanonier | aktiv |
+| **schwach** | 3 | 0 | keine | aktiv |
+
+Referenzflotten: "gross" = 2,72 Mrd Basis-Power (gemischt, inkl. 2 Imperator/20 Salvenkreuzer/
+10 Salvendreadnought), "klein" = 0,28 Mrd. Ressourcenwerte wie in Session 1 in **Wert-Einheiten**
+(`metall*1 + kristall*1.5 + deuterium*3`), Container mit den Session-1-Erwartungswerten
+(Silber 60,1 Mio / Gold 127,2 Mio / Elite 237,6 Mio; DM-Anteil Gold 19,4 / Elite 28,6).
+
+## Befund 1 (HOCH, Baseline fuer alles Weitere): Die nominale Feindstaerke ist nicht die reale
+
+**Dateien:** `game/combat.ts` (`combatFleetPowerBase()` Zeile 366, `getEffectiveStats()` Zeile 280),
+`game/combat.worker.ts` (`statsFnBFor()`), `data/combatConstants.ts` (`PIRATE_RESEARCH_SHARE`)
+
+`combatFleetPowerBase()` summiert **rohe `baseStats()`** - ohne Forschung, ohne Kampf-Booster, ohne
+Klasse, ohne Module. Genau dieser Wert ist die Bezugsgroesse fuer `PIRATEN_MULTIPLIER_ROLL`,
+`ADMIRAL_MULTIPLIER_ROLL`, `RAID_WAVE_ROLL` und `defenseFactor`. Im Kampf selbst treten dagegen an:
+
+- **Spieler-Einheit:** `base x Forschung x 1,35 (Kampf-Booster) x Klasse x Module (bis 1,30)`
+- **NPC-Einheit:** `base x Forschung` (ueber `computePirateResearch()`, `PIRATE_RESEARCH_SHARE = 1.0`)
+  - **nie** Booster, Klasse oder Module
+
+Die Forschung kuerzt sich also exakt heraus. Was bleibt, ist ein reiner, unkompensierter
+Spielervorteil:
+
+| Nominale Feindstaerke | real (Booster + Module 10) | zusaetzlich mit Kanonier (Waffen) |
+|---|---|---|
+| 100% | **57%** | 28% |
+| 120% (Hoch, Spitzenwert) | **68%** | 34% |
+| 155% (Elite, Spitzenwert) | **88%** | 44% |
+
+Das ist die technische Ursache hinter Session-1-Befund 5: der +35%-Kampf-Booster ist keine
+Kaufentscheidung mehr, sondern die **faktische Balance-Grundlage**. Messbar an der Verlustquote -
+das Abschalten des Booster verdoppelt sie durchgaengig:
+
+| Sektor | voll | voll ohne Boost |
+|---|---|---|
+| Niedrig | 1,0% | 1,5% |
+| Mittel | 2,0% | 3,6% |
+| Hoch | 2,1% | 4,5% |
+| Elite | 4,1% | 9,1% |
+
+**Bewertung:** Jede Zahl in `PIRATEN_MULTIPLIER_ROLL`/`ADMIRAL_MULTIPLIER_ROLL`/`RAID_WAVE_ROLL`
+bedeutet real etwa die Haelfte dessen, was sie aussagt. Die Kampfbericht-Anzeige
+("[Feindstärke 95%]") verstaerkt das Missverstaendnis, weil sie den nominalen Wert zeigt.
+
+**Empfehlung (eine Richtung waehlen):**
+- (a) `combatFleetPowerBase()` um Booster/Klasse/Module erweitern, damit die Skalierung wieder das
+  misst, was tatsaechlich antritt. Nebenwirkung: Module/Klasse verlieren einen Teil ihres
+  spuerbaren Nutzens, weil der Gegner mitwaechst - dafuer bleiben die Prozentwerte ehrlich.
+- (b) Die Tabellen so lassen, aber die dokumentierte/angezeigte Bedeutung korrigieren und die
+  Werte bewusst auf das neue Niveau anheben (siehe Referenztabelle in Befund 3).
+- (c) Session-1-Empfehlung umsetzen (Booster teurer machen) - hilft, loest den strukturellen
+  Teil (Module/Klasse) aber nicht.
+
+Empfohlen wird (b) in Kombination mit der Session-1-Massnahme: (a) ist der groessere Eingriff und
+entwertet nachtraeglich Investitionen, die Spieler bereits getaetigt haben.
+
+## Befund 2 (HOCH, mechanischer Fehler): Der Piratenadmiral hat faktisch nur EINEN Check
+
+**Dateien:** `game/groupOps.ts` (`runAdminCheck()` Zeile 527), `game/combat.ts` (`runRounds()`,
+`UNIT_RETREAT_THRESHOLD` Zeile 1469)
+
+`runAdminCheck()` wertet aus:
+
+```
+const playerRetreated = !!result.retreated;
+...
+if (bossDestroyed)   -> victory
+if (playerRetreated) -> defeat (KEINE Belohnung, auch nicht fuer bereits ueberstandene Checks)
+sonst                -> Extraktions-Entscheidung, naechster Check
+```
+
+Der Kommentar darueber (Zeile 406-410) begruendet das mit *"die eigene Flotte musste sich NICHT
+zurueckziehen (siehe RETREAT_THRESHOLD, combat.ts)"*. **Diese Konstante existiert nicht mehr.**
+Seit der Umstellung auf den gestaffelten Einzelschiff-Rueckzug (Juli 2026) wird `retreated`
+gesetzt, sobald **ein einziges Schiff** unter `UNIT_RETREAT_THRESHOLD = 0.3` seiner Panzerung
+faellt und sich absetzt - nicht mehr, wenn die halbe Flotte weg ist. `simulateCombat()` faengt
+genau das ab (Zeile 123-128: nur zaehlen, wenn kein voller Sieg vorliegt), `runAdminCheck()` nicht.
+
+Gemessen (je 30 Laeufe, nur Check 1, Eskalation also noch 1,0):
+
+| Fall | Boss vernichtet | `retreated` gesetzt | Boss tot UND `retreated` | oVerlust bei "Niederlage" |
+|---|---|---|---|---|
+| voll / grosse Flotte | 93% | 83% | 77% | 63,3% |
+| voll / kleine Flotte | 100% | 77% | 77% | - |
+| mittel / grosse Flotte | 17% | 100% | 17% | 61,3% |
+| voll ohne Boost | 40% | 100% | 40% | 64,2% |
+
+Das Flag ist also in 77-100% ALLER Kaempfe gesetzt, auch in den gewonnenen. Da `bossDestroyed`
+zuerst geprueft wird, faellt das bei einem Sieg nicht auf - aber jeder Kampf, in dem der Boss
+ueberlebt, endet praktisch zwangslaeufig sofort als Niederlage.
+
+Ueber 120 komplette Begegnungen (6 Szenarien x 20) wurde **Check 2 kein einziges Mal erreicht**:
+
+| Szenario | Sieg in Check 1 | Niederlage in Check 1 | Check 2 erreicht |
+|---|---|---|---|
+| 1 Spieler voll | 85% | 15% | 0/20 |
+| 2 Spieler voll | 85% | 15% | 0/20 |
+| 2 Spieler voll+mittel | 100% | 0% | 0/20 |
+| 1 Spieler voll (kleine Flotte) | 100% | 0% | 0/20 |
+| 1 Spieler mittel | 15% | 85% | 0/20 |
+| 1 Spieler voll ohne Boost | 35% | 65% | 0/20 |
+
+Rechnerisch aus der Diagnosetabelle bleibt bei "voll" ein Restfenster von ca. **1%** fuer
+"Boss ueberlebt UND kein Schiff zieht sich zurueck"; bei "mittel"/"ohne Boost" ist es 0%.
+
+**Konsequenz:** Damit sind komplett wirkungslos: `ADMIRAL_ESCALATION_PER_CHECK` (+15%/Check),
+`ADMIRAL_TOTAL_CHECKS = 6`, `ADMIRAL_CHECK_INTERVAL_MS`, die gesamte Extraktions-Entscheidung
+(`respondAdminEncounter()`, `adminAwaitingDecision`), `ADMIRAL_EXTRACTION_GROWTH_PER_CHECK` und
+der eingefrorene `contributedPower` (Befund 8). Das beworbene Kernfeature des Sektors
+("Beute sichern und abziehen, oder weitermachen") ist im Spiel nicht erreichbar. Der Sektor ist
+ein einzelner Alles-oder-Nichts-Kampf, bei dem eine Niederlage im Schnitt 62% der eingesetzten
+Flotte kostet und **null** Belohnung bringt.
+
+**Empfehlung:** `runAdminCheck()` braucht ein eigenes Verlust-Kriterium statt `result.retreated`.
+Naheliegend und mit vorhandenen Daten sofort berechenbar: Anteil der tatsaechlich verlorenen
+Einheiten ueber `result.survivorsByOwner` gegen die entsandte Stueckzahl, z.B. Niederlage ab 40-50%
+Gesamtverlust in einem Check. Dabei gleich pruefen, ob eine Niederlage wirklich auch die bereits
+ueberstandenen Checks entwerten soll (aktuell ja, siehe `reward` bleibt 0 bei `outcome === 'defeat'`) -
+das ist zusammen mit dem 62%-Flottenverlust eine sehr harte Doppelbestrafung.
+
+## Befund 3 (HOCH): Solo-Sektoren und Elite-Bollwerk sind risikoseitig geloest
+
+**Dateien:** `data/sectors.ts` (`PIRATEN_MULTIPLIER_ROLL`, `npcFloor`), `game/simulator.ts`
+
+96 Laeufe je Zelle, Angaben als **Siegchance / oFlottenverlust**:
+
+| Flotte | Profil | Niedrig | Mittel | Hoch | Elite |
+|---|---|---|---|---|---|
+| gross | voll | 100% / 1,0% | 100% / 2,0% | 100% / 2,1% | 100% / 4,1% |
+| gross | voll ohne Boost | 100% / 1,5% | 100% / 3,6% | 100% / 4,5% | 100% / 9,1% |
+| gross | mittel | 100% / 1,5% | 100% / 3,5% | 100% / 3,5% | 100% / 6,1% |
+| gross | schwach | 100% / 5,4% | 89% / 12,5% | 91% / 16,8% | 53% / 28,0% |
+| klein | voll | 100% / 0,0% | 100% / 0,4% | 100% / 1,5% | 100% / 3,0% |
+| klein | mittel | 100% / 0,0% | 100% / 0,1% | 100% / 1,3% | 100% / 4,3% |
+| klein | schwach | 100% / 0,4% | 100% / 5,5% | 92% / 13,5% | 46% / 41,4% |
+
+Die im Juli/August muehsam wiederhergestellte Haerte-Reihenfolge **Niedrig < Mittel < Hoch < Elite
+ist intakt** - der Punkt "verifizieren, nicht neu suchen" aus der Liste oben ist damit erledigt.
+Praktisch relevant ist sie aber nicht mehr: bei Vollausbau trennen Mittel und Hoch **0,1
+Prozentpunkte** Verlust. Zusammen mit Session-1-Befund 1 (Mittel und Hoch sind auch wirtschaftlich
+gleichwertig, Hoch bringt pro Sieg sogar weniger) hat das Solo-Stufensystem fuer entwickelte
+Accounts weder auf der Risiko- noch auf der Belohnungsseite eine Funktion.
+
+Nur das Profil "schwach" (Forschung 3, keine Module, keine Klasse) sieht ueberhaupt Risiko - und
+selbst dort gab es in **allen 3.072 Laeufen keinen einzigen Totalverlust**. Das ist strukturell so:
+bei `allowRetreat = true` saettigt der Verlust durch den gestaffelten Rueckzug bei ca. 47-48%.
+Ein Wipe auf einer Offensiv-Mission ist mechanisch praktisch ausgeschlossen.
+
+Multiplikator-Sweep gegen die grosse Flotte (40 Laeufe je Zelle, `defenseFactor` 0,15), um zu
+zeigen, wo die Schwelle ueberhaupt liegt:
+
+| nominale Feindstaerke | voll: Sieg / Verlust | mittel: Sieg / Verlust |
+|---|---|---|
+| 200% | 100% / 11,3% | 90% / 18,8% |
+| 250% | 93% / 16,7% | 80% / 30,2% |
+| 300% | 95% / 22,5% | 38% / 43,2% |
+| 350% | 88% / 30,7% | 0% / 47,4% |
+| 400% | 38% / 44,0% | 0% / 47,5% |
+
+Die aktuelle Obergrenze ueber alle Sektoren ist 155% (Elite). Bis zur ersten spuerbaren Huerde
+fehlt also grob **Faktor 2**. Die Kante ist ausserdem sehr scharf (350% -> 400% kippt von 88% auf
+38% Siegchance) - das spricht dafuer, die Werte in kleinen Schritten anzuheben und nach jedem
+Schritt neu zu simulieren, statt einmal grob zu springen.
+
+**Empfehlung:** Nur EINE Groesse gleichzeitig anfassen. Entweder `PIRATEN_MULTIPLIER_ROLL`
+schrittweise Richtung 200-250% (Hoch) bzw. 250-300% (Elite) anheben, ODER zuerst Befund 1 (a)
+umsetzen - beides zusammen wuerde die Sektoren sofort unspielbar machen (nominal 250% waeren nach
+(a) auch real 250%, was laut Sweep bereits fuer "mittel" 30% Verlust bedeutet).
+
+## Befund 4 (HOCH): Die Raid-Frequenzverdopplung macht Raids zur groessten Einnahmequelle des Spiels
+
+**Dateien:** `data/economy.ts` (`RAID_SCHEDULE_BY_USERNAME`, `RAID_FALLBACK_SCHEDULE`,
+`RAID_WAVE_WIN_SILBER/GOLD/ELITE`, `RAID_WAVE_ROLL`), `game/raids.ts` (`resolveOneWave()`)
+
+Damit ist der offene Punkt 1 der Liste oben beantwortet - allerdings anders als erwartet: die Frage
+war "verdoppelt sich die Wiederaufbaulast spuerbar?". Die Antwort ist **nein**, und genau das ist
+das Problem.
+
+40 komplette Raids (je 12 Wellen), Verluste kumulativ ueber die Wellen, Verteidigung nach jeder
+Welle zu 70% repariert (`DEFENSE_REPAIR_PERCENT`):
+
+| Fall | oWellen gewonnen | perfekt 12/12 | oFlottenverlust | oVerteidigungsverlust |
+|---|---|---|---|---|
+| voll / grosse Flotte + volle Verteidigung | 12,0 | 100% | 10,2% | 0,1% |
+| voll ohne Kampf-Booster | 12,0 | 100% | 21,7% | 1,2% |
+| mittel / grosse Flotte | 12,0 | 100% | 20,1% | 0,8% |
+| voll / kleine Flotte + kleine Verteidigung | 12,0 | 100% | 14,6% | 92,0% |
+| schwach / kleine Flotte | 10,6 | 0% | 100,0% | 78,7% |
+
+Die perfekte Abwehr ist fuer jeden halbwegs ausgebauten Account der **Normalfall**, nicht die
+Ausnahme. Damit greift `RAID_LOOT_PERCENT` (25% Ressourcendiebstahl bei nicht-perfekter Abwehr)
+praktisch nie.
+
+Ursache ist strukturell: `resolveOneWave()` rechnet `combinedPower` **pro Welle neu** aus der
+bereits dezimierten Flotte + Verteidigung. Wer Schiffe verliert, bekommt automatisch schwaechere
+Folgewellen. Der Raid korrigiert sich selbst nach unten und kann deshalb kaum scheitern - sichtbar
+im letzten Fall: 100% Flottenverlust, trotzdem 10,6 von 12 Wellen gewonnen.
+
+**Belohnung** bei 12/12 (Container-EV aus Session 1):
+
+| | pro Raid | pro Woche (Mi+So) | pro Tag |
+|---|---|---|---|
+| Container | 120 Silber, 72 Gold, 24 Elite | doppelt | - |
+| Wert-Einheiten | **22,07 Mrd** | **44,15 Mrd** | **6,31 Mrd** |
+| Dunkle Materie (aus den Containern) | 2.083 | **4.166** | **595** |
+| Bergungs-DM (`RAID_SALVAGE_DM_MAX`) | 20 | 40 | 6 |
+
+Zum Vergleich aus Session 1: voll ausgebaute Heimatbasis 0,55 Mrd/Tag, Solo-Piraten-Sektor Hoch
+1,13 Mrd/Tag, Asteroiden bis 8,5 Mrd/Tag (Frischling-Stapelung). Der Raid liefert **6,31 Mrd/Tag
+ohne jede Flottenbindung, ohne Flugzeit, ohne Entscheidung** - er passiert einfach.
+
+**Wichtige Korrektur zu Session-1-Befund 5:** dort ist unter "Einnahmen pro Tag" nur die
+Raid-Bergung mit "max. 20 DM pro Raid" gelistet. Die **DM in den 72 Gold- und 24 Elite-Containern
+pro Raid fehlt komplett** - das sind 595 DM/Tag und damit der mit Abstand groesste DM-Posten im
+Spiel, gegen eine groesste laufende Senke von 103 DM/Tag (alle vier Booster dauerhaft). Der
+DM-Ueberschuss ist also nicht "deutlich ueber den Senken", sondern liegt bei etwa **Faktor 7**.
+Damit ist auch Befund 1 dieser Session doppelt zementiert: der Kampf-Booster ist trivial
+finanzierbar.
+
+**Empfehlung:** Die Frequenzverdopplung wurde offenbar rein als Kalender-Eintrag umgesetzt
+(`RAID_SCHEDULE_BY_USERNAME` von einem auf zwei Zeitpunkte), ohne `RAID_WAVE_WIN_*` gegenzurechnen -
+die Kommentare dort begruenden 10/6/2 noch mit "nur noch 1x/Woche pruefbar". Konsistent waere,
+`RAID_WAVE_WIN_*` zu halbieren (5/3/1), womit die Wochensumme wieder auf dem Stand vor der
+Verdopplung liegt und die hoehere Frequenz das liefert, wofuer sie gedacht war: mehr Ereignisse,
+nicht mehr Ertrag. Unabhaengig davon sollte die Selbstabschwaechung (`combinedPower` pro Welle neu)
+ueberdacht werden - ein Schnappschuss der ersten Welle (analog zu `raid.initialCombinedPower`, das
+fuer den Flottenbonus bereits existiert) wuerde Raids ueberhaupt erst verlierbar machen.
+
+## Befund 5 (MITTEL): Die "Perfekte Serie" des Elite-Bollwerks ist der Normalfall, nicht der Ausnahmefall
+
+**Dateien:** `data/sectors.ts` (`piraten_elite`), `data/economy.ts` (`REWARD_ESCALATION`),
+`game/groupOps.ts` (`runGroupHourlyCheck()`, `finalizeGroupExpedition()` Zeile 1033)
+
+Damit sind die offenen Punkte 2 und 3 der Liste oben beantwortet. Volle 6-Check-Serie, pro Spieler,
+in Wert-Einheiten:
+
+| Check | Eskalation | lootBase-Anteil | winResources (flach) | garantierte Container |
+|---|---|---|---|---|
+| 1 | x1 | 116,3 Mio | 930,0 Mio | 1.097,2 Mio |
+| 2 | x2 | 232,5 Mio | 930,0 Mio | 1.097,2 Mio |
+| 3 | x4 | 465,0 Mio | 930,0 Mio | 1.097,2 Mio |
+| 4 | x8 | 930,0 Mio | 930,0 Mio | 1.097,2 Mio |
+| 5 | x16 | 1.860,0 Mio | 930,0 Mio | 1.097,2 Mio |
+| 6 | x32 | 3.720,0 Mio | 930,0 Mio | 1.097,2 Mio |
+
+- Ressourcen ohne Perfekt-Bonus: 12,90 Mrd
+- Ressourcen **mit** Perfekt-Bonus (x2 auf die Gesamtausbeute): 25,81 Mrd
+- Garantierte Container ueber 6 Checks: 6,58 Mrd + 692 DM
+- Kapitaen-Erwartungswert (15% x 6): 213,8 Mio + 45 DM
+- **Gesamt pro Spieler pro 24h-Serie: 32,60 Mrd + 737 DM**
+
+Zur Einordnung von Punkt 3 der Liste ("2^6 = 64x - zu extrem?"): der Multiplikator selbst laeuft
+nur bis x32 (der Streak-Stand VOR dem Check zaehlt, Check 6 = 5 Vorsiege). Die eigentliche Frage
+ist eine andere: **die Serie bricht praktisch nie ab.** Ausloeser fuer den Reset ist
+`anyNpcDestroyed === false`, also "kein einziger Gegner vernichtet". Bei einer gemessenen Siegquote
+von 100% ueber alle Profile ausser "schwach" (Befund 3) ist die perfekte Serie damit der
+Standardausgang - und mit ihr der zusaetzliche `completionMultiplier = 2`. Die Kommentare im Code
+behandeln beides noch als Ausnahmefall ("Belohnung dafuer, die volle, sehr harte 24-Stunden-
+Expedition ohne einen einzigen Rueckschlag durchzustehen").
+
+Nebenbefund: der `fleetSizeRewardMultiplier()` ist **immer** am Cap. Er erreicht +50% bei
+`sentPower / npcFloor >= 100`, also ab 300 Mio Power gegen `npcFloor = 3.000.000` - schon die
+kleine Referenzflotte (284 Mio) liegt praktisch dort. Er ist damit kein Anreiz fuer grosse Flotten,
+sondern eine konstante +50%-Belohnung. Dasselbe gilt fuer `npcFloor` als Untergrenze: bei 2,72 Mrd
+Flottenpower ist er um Faktor 900 unterschritten und ohne jede Wirkung.
+
+**Empfehlung:** Bevor an `lootBase`/`winResources` gedreht wird, zuerst entscheiden, ob die
+Perfekt-Serie ein Ausnahme-Bonus bleiben soll. Wenn ja, braucht sie eine echte Abbruchbedingung
+(z.B. Reset schon bei einem Check mit ueberlebenden Gegnern statt bei "gar kein Gegner vernichtet").
+Wenn nein, gehoert der `completionMultiplier` in die Basiswerte eingerechnet und entfernt - sonst
+wird bei jeder kuenftigen Belohnungsanpassung faktisch gegen den doppelten Wert gerechnet (genau
+die Lektion aus der Vorsession, siehe "Werkzeuge" oben).
+
+## Befund 6 (MITTEL, ausnutzbar): Ein schwacher Mitspieler macht das Elite-Bollwerk leichter statt schwerer
+
+**Dateien:** `game/combat.ts` (`computePirateResearch()` Zeile 769), `game/groupOps.ts`
+(`contributionsFromParticipants()`)
+
+`computePirateResearch()` nimmt seit 05.08.2026 bewusst das **Minimum** aller Teilnehmer-
+Forschungsstaende (statt des Durchschnitts) - die Begruendung dort ist richtig und der Fix war
+notwendig. Die Nebenwirkung wurde dabei aber nicht mitbedacht: die NPC-Werte haengen an DIESEM
+Minimum, waehrend die NPC-**Stueckzahl** an der kombinierten Flottenmacht haengt. Ein Teilnehmer mit
+niedriger Forschung senkt also die Staerke jeder einzelnen Gegner-Einheit fuer die GESAMTE Gruppe.
+
+Gemessen (15 Laeufe je Konstellation, Verlust des voll ausgebauten Hauptspielers):
+
+| Konstellation | Sieg | Verlust Hauptspieler |
+|---|---|---|
+| voll allein | 100% | 2,43% |
+| 2x voll | 100% | 3,0% |
+| voll + mittel | 100% | 1,8% |
+| voll + schwach (grosse Flotte) | 100% | 1,7% |
+| voll + schwach (kleine Flotte) | 100% | 0,5% |
+| **voll + Mitspieler mit 1 Leichtem Jaeger und Forschung 0** | 100% | **0,13%** |
+
+Der letzte Fall ist der degenerierte Extremfall: ein einzelner Jaeger von einem Account ohne
+Forschung senkt den Verlust des Hauptspielers um Faktor **19**. Zusammen mit README-Punkt 5
+(Belohnungen werden NIE geteilt, jeder Teilnehmer bekommt die volle Ausschuettung) ergibt sich
+daraus die klar dominante Strategie: **immer die maximal moegliche Gruppe mitnehmen, und darin
+bevorzugt den am wenigsten entwickelten Spieler.** Dieser bekommt fuer ein einziges Schiff die
+vollen 32,60 Mrd + 737 DM aus Befund 5.
+
+Bei zwei aktiven Spielern ist der Schaden aktuell begrenzt, aber es ist eine Zeitbombe fuer jeden
+weiteren Account (auch die Bots, siehe `bot.ts`).
+
+**Empfehlung:** Die NPC-Stats sollten an derselben Groesse haengen wie die NPC-Menge. Naheliegend:
+Forschungs-Minimum **pro Beitragendem** anwenden statt global - jede NPC-Einheit trifft die
+Spielereinheit, gegen die sie schiesst, ohnehin einzeln (`rollHit()` liest bereits die Forschung
+des jeweiligen Ziels). Alternativ das Minimum mit dem Machtanteil des jeweiligen Teilnehmers
+gewichten, damit ein 1-Schiff-Beitrag das Minimum nicht mehr bestimmen kann.
+
+## Befund 7 (MITTEL): Die P10-Belohnung liegt weit unter allem anderen im Spiel
+
+**Dateien:** `data/combatConstants.ts` (`ADMIRAL_EXTRACTION_*`, `ADMIRAL_VICTORY_*`)
+
+In Wert-Einheiten:
+
+| Ausgang | Wert | DM |
+|---|---|---|
+| Abzug nach Check 1 | 56,0 Mio | 0 |
+| Abzug nach Check 2 | 73,3 Mio | 0 |
+| Abzug nach Check 3 | 90,5 Mio | 0 |
+| Abzug nach Check 4 | 107,8 Mio | 0 |
+| Abzug nach Check 5 | 125,0 Mio | 0 |
+| Abzug nach Check 6 | 142,3 Mio | 0 |
+| **Sieg ueber den Admiral** | **900,0 Mio** | **200** |
+
+Vergleichswerte: EIN gewonnener Check im Solo-Sektor Hoch bringt 251,6 Mio (Session-1-Befund 1),
+ein einzelner Elite-Container 237,6 Mio. Die komplette 6-Check-Extraktion des Boss-Gefechts liegt
+also **unter einem einzigen Solo-Check** - und da sie wegen Befund 2 ohnehin unerreichbar ist, ist
+der einzige real vorkommende Ausgang der Sieg mit 900,0 Mio.
+
+Pro Zeit gerechnet (Flugzeit mit der Referenzflotte 3,8h hin, Rueckflug wird gar nicht simuliert,
+siehe Befund 8): rund 225 Mio/h. Das Elite-Bollwerk liefert mit derselben Flotte ca. 980 Mio/h.
+Der Piratenadmiral ist damit bei etwa **Faktor 4 schlechter** - bei deutlich hoeherem Risiko
+(15-85% Niederlagequote je nach Ausbau, im Verlustfall im Schnitt 62% Flottenverlust und null
+Ertrag).
+
+Einzige echte Staerke ist der DM-Bonus: 200 DM sind laut Sektor-Beschreibung exklusiv. Gemessen an
+Befund 4 (595 DM/Tag allein aus Raids) ist aber auch das kein ausreichender Anreiz mehr.
+
+**Empfehlung:** Zuerst Befund 2 fixen - ohne funktionierende Mehrfach-Checks laesst sich die
+Belohnungskurve gar nicht sinnvoll bewerten, weil `ADMIRAL_EXTRACTION_GROWTH_PER_CHECK` nie greift.
+Danach neu messen. Falls die Belohnung dann immer noch nicht traegt: die Extraktionswerte sind der
+richtige Hebel (sie tragen die eigentliche Risiko/Ertrag-Entscheidung), nicht die Siegpraemie.
+
+## Befund 8 (NIEDRIG, toter Code und Inkonsistenzen rund um P10)
+
+**Dateien:** `data/combatConstants.ts`, `game/groupOps.ts`, `game/combat.ts`
+
+- **`ADMIRAL_ESCORT_BASE` ist toter Code.** Nirgends importiert (geprueft ueber das gesamte Repo).
+  Der Kommentar dort beschreibt eine *"feste Eskorte-Grundzusammensetzung (KEINE Macht-Skalierung
+  anhand der Spieler-Flotte, bewusst anders als bei den normalen Piraten-Sektoren)"* - tatsaechlich
+  erzeugt `generateAdmiralEncounter()` die Eskorte ueber `generateCappedFleet(escortPower, ...)`,
+  also **voll machtskaliert**. Entweder den Code an den Kommentar anpassen oder umgekehrt.
+- **`contributedPower` wird eingefroren.** `runAdminCheck()` (Zeile 442) summiert
+  `p.contributedPower`, das nur einmal beim Start gesetzt wird (Zeile 285). Die Ueberlebenden
+  werden dagegen pro Check zurueckgeschrieben (`p.ships[id] = survived`, Zeile 522). Der
+  Elite-Bollwerk-Pfad macht es richtig (`combatFleetPowerBase(p.ships)` frisch pro Check,
+  Zeile 745). Ab Check 2 wuerde der Gegner also gegen die START-Flotte skalieren, waehrend die
+  reale Flotte bereits geschrumpft ist - zusaetzlich zur +15%-Eskalation. Aktuell folgenlos, weil
+  Check 2 nie erreicht wird (Befund 2), aber **genau dieser Fehler wird durch den Fix zu Befund 2
+  scharfgeschaltet.** Unbedingt zusammen anfassen.
+- **Der Boss selbst skaliert nicht mit Forschung, seine Eskorte schon.** `sideBStatsOverride`
+  umgeht `getEffectiveStats()` komplett (bewusst, siehe Kommentar in `combat.worker.ts`), waehrend
+  die Eskorte ueber `computePirateResearch()` die volle Spielerforschung bekommt. Mit steigender
+  Forschung waechst also die Eskorte, waehrend der namensgebende Boss relativ dazu immer weicher
+  wird - das erklaert die 93% Siegquote bei "voll" gegen 17% bei "mittel".
+- **Kein Rueckflug.** `finalizeAdminEncounter()` schreibt die ueberlebenden Schiffe direkt in
+  `pState.fleet` (Zeile 641-645). Es gibt kein `returnTime` wie bei
+  `finalizeGroupExpedition()` - die Flotte ist nach dem Kampf sofort wieder zu Hause, obwohl der
+  Hinflug 3,8h gedauert hat.
+- **Kein Cooldown, kein Mindestteilnehmer.** Beide "Nur Multiplayer"-Sektoren lassen sich mit
+  einem einzigen Teilnehmer erstellen und starten (`createGroupOperation()` prueft nur den
+  Sektor und die Schiffstypen). P10 ist zusaetzlich beliebig oft wiederholbar.
+
+## Befund 9 (NIEDRIG): kleinere Beobachtungen
+
+- **Offener Punkt 6 der Liste ("NPC-Verteidigung auch bei P10/Raids gegenchecken") ist gegenstandslos.**
+  Weder das Boss-Gefecht (`generateAdmiralEncounter()` nutzt nur `ADMIRAL_ESCORT_POOL`, reine
+  Schiffe) noch der Raid (`generateFallbackFleet()`, ebenfalls nur Schiffe) erzeugen ueberhaupt
+  NPC-Verteidigungsanlagen. `generateDefenseFleet()` wird ausschliesslich in den Piraten-Sektoren
+  und im Simulator aufgerufen - der `SHIELD_REGEN_BASE_BY_CLASS`-Fix von Session 1 kann dort also
+  keine weiteren Stellen betreffen.
+- **Der Kampf-Modifikator-Deckel wirkt beim Piratenadmiral nicht** - `rollBattleModifier()` wird in
+  `runAdminCheck()` gar nicht aufgerufen, P10-Kaempfe haben nie einen Modifikator. Bewusst oder
+  vergessen? `BATTLE_MODIFIER_CHANCE` hat auch keinen `piraten_admiral`-Eintrag.
+- **`defenseFactor` ist an drei Stellen dupliziert** (`simulator.ts` Zeile 69-73, `groupOps.ts`
+  Zeile 775-776, implizit in `missions.ts`) und dabei bereits leicht auseinandergelaufen:
+  `piraten_mittel` steht im Simulator auf 0,12, in `groupOps.ts` auf 0,10. Der Simulator sagt damit
+  fuer Mittel etwas anderes voraus als der echte Kampf. Gehoert in eine Konstante.
+- **Die Kampfbericht-Anzeige "[Feindstärke X%]" ist irrefuehrend** (siehe Befund 1) - sie zeigt den
+  nominalen Multiplikator, der real etwa die Haelfte bedeutet. Beim Piratenadmiral zeigt sie
+  zusaetzlich nur den gewuerfelten Basiswert OHNE die Eskalation (bewusst, siehe Kommentar
+  Zeile 529-532) - was den Ausbau des Spielers ueber die Checks hinweg unsichtbar macht.
+- **Solo-Sektor-Verluste sind so niedrig, dass die Werft praktisch keinen Nachschubbedarf deckt.**
+  Bei 1-4% Verlust pro 24h-Trip und den Ertraegen aus Session 1 amortisiert sich jede Mission
+  vielfach. Der Schiffbau ist dadurch reine Aufbau-, keine Ersatzbeschaffung - relevant fuer
+  Session 3, wenn dort Baukosten/Bauzeiten bewertet werden.
+
+## Reihenfolge fuer die Umsetzungs-Session
+
+1. **Zuerst entscheiden** (blockiert die grossen Aenderungen):
+   - Bleibt die Skalierung auf Rohwerten (Befund 1b) oder wird sie auf die echten Kampfwerte
+     umgestellt (Befund 1a)? Alles Weitere haengt daran, weil sich sonst die Messlatte
+     mitverschiebt.
+   - Soll die Perfekt-Serie des Elite-Bollwerks ein Ausnahmefall sein (Befund 5)?
+   - Soll die Raid-Frequenzverdopplung mehr Ertrag oder nur mehr Ereignisse bringen (Befund 4)?
+2. **Ohne Entscheidung sofort machbar:**
+   - Befund 2 (P10-Verlustkriterium) **zusammen mit** dem `contributedPower`-Freeze aus Befund 8 -
+     der eine Fix aktiviert den anderen Fehler.
+   - Befund 8, toter Code/Kommentar-Drift (`ADMIRAL_ESCORT_BASE`, der nicht mehr existierende
+     `RETREAT_THRESHOLD`-Verweis in `groupOps.ts` Zeile 407).
+   - Befund 9, `defenseFactor`-Duplikat zusammenfuehren (Simulator sagt fuer Mittel derzeit etwas
+     anderes voraus als der echte Kampf).
+3. **Danach:** Befund 6 (Forschungs-Minimum), unabhaengig von allem anderen, aber mit
+   Regressionstest gegen die Ursprungs-Korrektur vom 05.08.2026 (der schwaechere Mitspieler darf
+   nicht wieder ueber seinem eigenen Stand kaempfen muessen).
+4. **Erst danach** die eigentlichen Zahlen (Befund 3 Multiplikatoren, Befund 7 P10-Belohnung) -
+   beide lassen sich vor den Punkten 1-3 nicht sinnvoll kalibrieren.
+
+## Zu beachten bei jeder Kampf-Aenderung
+
+- **Vor der Simulation `tsc` laufen lassen.** Der Kampf-Worker laedt immer aus `dist/`
+  (README Punkt 9) - ohne frischen Build misst man den alten Stand.
+- **Nie einen Einzellauf bewerten.** Die Streuung ist erheblich: 16 Laeufe je Zelle ergaben im
+  Sweep noch eine nicht-monotone Kurve (250% -> 75% Sieg, 300% -> 94%), erst bei 40 Laeufe wurde
+  sie sauber. Fuer Entscheidungen mindestens 40 Laeufe je Zelle.
+- **`simulateCombat()` deckt nur die Piraten-Sektoren ab** (`cfg.type !== 'piraten'` wird
+  abgelehnt, und `PIRATEN_MULTIPLIER_ROLL[sektorId]` existiert fuer `piraten_admiral` gar nicht).
+  Fuer P10/Raid/Elite-Bollwerk muss der jeweilige Ablauf gegen `runCombatInWorker()` bzw.
+  `runMultiOwnerCombatInWorker()` nachgebaut werden - er ist zusaetzlich Einzelspieler-only und
+  bildet den Mehrspieler-Minimum-Effekt aus Befund 6 nicht ab.
+- **`result.retreated` bedeutet nicht "verloren"**, sondern "mindestens ein Schiff hat sich
+  abgesetzt" (siehe Befund 2). Jede neue Auswertung dieses Flags muss wie `simulateCombat()` den
+  Sieg-Fall vorher ausschliessen.
+- **Beide Belohnungs-Multiplikatoren gegenrechnen**, bevor an einem Basiswert gedreht wird:
+  `getEscalationMultiplier()` UND der `completionMultiplier = 2` aus `finalizeGroupExpedition()` -
+  das ist dieselbe Lektion wie in der Vorsession, hier aber zusaetzlich hintereinandergeschaltet.
+- **Ressourcen in Wert-Einheiten vergleichen** (`TRADE_VALUE`) und Container-DM nicht vergessen -
+  genau dieser Posten fehlte in der Session-1-DM-Bilanz (Befund 4).
