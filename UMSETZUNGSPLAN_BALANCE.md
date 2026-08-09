@@ -827,3 +827,100 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   **-0,55 Mrd pro 24h**, also totes Inhalt).
 - **Imperator im Kampf messen** (Abschnitt 4) - er fehlt in beiden Schiffs-Messungen. Danach
   entscheiden, ob die Prestige-Einstufung bleibt.
+
+---
+
+## 8. Uebergabe an Folge-Chats (ZUERST LESEN)
+
+Dieser Plan entsteht ueber mehrere Chat-Sitzungen hinweg. Dieser Abschnitt macht einen Kaltstart
+moeglich, ohne dass der Gespraechsverlauf mitgeliefert werden muss.
+
+### Wer hier arbeitet
+
+Zwei Spieler (Ehepaar), **keine Entwickler**. Sie betreiben den Server privat, es gibt keine
+weiteren echten Spieler ausser Bot-Accounts.
+
+**Erwartete Kommunikation:**
+- Normale Sprache. Fachbegriffe einmal kurz miterklaeren. Begriffe wie "Aggregat-Stapel",
+  "Overkill", "Feindstaerke-Skalierung", "Amortisation" oder "Koeffizient K" sind von sich aus
+  nicht verstaendlich.
+- **Bei jeder Zahl dazusagen, ob sie viel oder wenig ist.** Referenz: 21,69 Mrd Wert/Tag
+  Einnahmen im Endspiel (siehe Abschnitt 1), 1.088 DM/Tag.
+- Auswirkungen als Spielgefuehl beschreiben, nicht als Formel: Was merkt man beim Spielen? Was
+  passiert, wenn nichts geaendert wird?
+- Keine langen Code-Ausschnitte. Dateinamen nur zur Orientierung.
+- Sachlich, kompakt, keine Hoeflichkeitsfloskeln, keine Emojis.
+- Aktiv widersprechen, wenn eine Idee zu Problemen fuehrt - auch wenn sie bereits entschieden ist.
+
+### Wie die Entscheidungen zustande kamen
+
+Der Nutzer hat die Entscheidungshoheit ausdruecklich delegiert ("mach wie du denkst und fuer
+richtig haeltst"), nachdem ihn 8 gleichzeitige Einzelentscheidungen ueberfordert hatten.
+**Konsequenz fuer Folge-Chats: nicht mit offenen Fragen antworten, sondern mit einem entschiedenen
+Vorschlag samt Begruendung UND ausdruecklich genanntem Nachteil.** Der Nutzer korrigiert dann
+punktuell.
+
+Vorgegeben hat der Nutzer nur drei Geschmacksfragen:
+
+| Frage | Antwort |
+|---|---|
+| Wie lange soll das Spiel tragen? | **Dauerhaft, kein Endpunkt** |
+| Wie soll sich Fortschritt anfuehlen? | **Zahlen wachsen immer weiter** |
+| Wie viel Risiko beim Fliegen? | **Spuerbar, aber nie Totalverlust** |
+
+Dazu die vier frueheren Grundsatzentscheidungen aus Session 3 (Ressourcen-Engpass ja,
+Flottenwachstum ueber hoehere Belohnung statt geringere Verluste, Wrack-Bergung 30 %, Beute
+proportional zur vernichteten Feindmacht) und die Rahmenbedingung Server-Reset (Abschnitt 1a).
+
+**Diese sieben Vorgaben sind gesetzt und werden nicht neu diskutiert.** Alles andere in diesem Plan
+ist verhandelbar.
+
+### Zeitrahmen
+
+Umsetzung fruehestens in rund 8 Wochen (Rueckkehr des Nutzers aus dem Urlaub). Bis dahin wird der
+Plan wiederholt durchgesprochen und verfeinert. **In dieser Phase KEIN Code schreiben und KEINE
+Spieldateien aendern** - ausschliesslich diesen Plan fortschreiben. Die Umsetzung erfolgt danach mit
+Claude Code.
+
+### Was in Folge-Chats noch besprochen werden kann
+
+Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschmackssache ist:
+
+1. **Beute-Exponent 0,85 gegen 0,90-0,95** - haengt am gemessenen Kipppunkt (Entscheidung 2).
+2. **Feindstaerke-Variante (a)** - durch den Reset wieder technisch moeglich, aktuell aus einem
+   ANDEREN Grund zurueckgestellt (Modulkosten-Kette, siehe Abschnitt 4). Kann neu aufgemacht
+   werden, dann aber nur zusammen mit der Modulkosten-Senkung.
+3. **Imperator-Einstufung** - Prestige-Einheit ist vorlaeufig, nicht belegt (Abschnitt 4).
+4. **Startphasen-Kalibrierung** - Entscheidung 9 und 12 wirken gegenlaeufig und muessen gemeinsam
+   gegen die 30-Tage-Simulation kalibriert werden (Abschnitt 1a, Block F).
+5. **Solo-Stufen Niedrig/Mittel/Hoch** - ob nach Entscheidung 2 noch eine zusaetzliche
+   Differenzierung noetig ist (Abschnitt 4).
+6. **Booster-Preise** - erst nach Entscheidung 3 neu messen (Abschnitt 4).
+7. **Raid verlierbar machen** - Schnappschuss der ersten Welle gegen Rueckzugsregel; Entscheidung 3
+   und 10 wirken hier gegeneinander.
+8. **Modulkosten** - Senkung um Faktor 3-5, Effekterhoehung, oder bewusst als Endgame-Prestige
+   fuehren (Session 3, Befund 6). Bisher nicht entschieden.
+
+### Aenderungsprotokoll dieses Plans
+
+Jede Aenderung hier eintragen, damit ueber mehrere Chats hinweg nachvollziehbar bleibt, WARUM etwas
+so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spaeter entfallen ist.
+
+| Datum | Aenderung |
+|---|---|
+| 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
+| 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | Imperator-Absatz in Abschnitt 4 von einer Feststellung zu einem Messauftrag umgebaut. Grund: Nutzerrueckfrage deckte auf, dass der Imperator in KEINER der vier Sessions im Kampf gemessen wurde - die Einstufung "schlechteste Einheit" stammt aus reiner Tabellenrechnung. Baulimit-Widerspruch (README 2 gegen Session 3 mit 6) vermerkt. |
+
+### Methodische Lehre aus dem bisherigen Verlauf
+
+Die Checkliste enthaelt zwei Arten von Aussagen, die sich sprachlich nicht unterscheiden:
+
+- **Gemessen** (Sektoren, Raids, Elite-Serien, Duelle, Admiral-Serien) - belastbar, Stichproben
+  stehen in der Methodik des jeweiligen Session-Abschnitts.
+- **Gerechnet** (Kosten, Wert je Machtpunkt, Amortisationen, Erwartungswerte) - plausibel, aber
+  ohne Kampfsimulation dahinter.
+
+**Bei jeder absolut klingenden Einzelaussage pruefen, in welche Kategorie sie faellt.** Der
+Imperator-Fall (siehe Protokoll) ist das Beispiel: ein sehr starkes Urteil auf reiner
+Tabellenbasis, ueber eine Einheit, die aus beiden Messreihen ausgelassen wurde.
