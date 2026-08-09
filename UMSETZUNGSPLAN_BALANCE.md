@@ -506,14 +506,96 @@ schnell. **Die Beobachtung ist durch die Messungen bestaetigt.**
 
 #### Umsetzung in DIESER Reihenfolge (Bedingungen, nicht optional)
 
-**9.1 Zuerst die Untergrenzen, dann die Grundzeiten.** Basis-Bauzeiten zu erhoehen bringt nichts,
-solange sie mit einem Faktor nahe null multipliziert werden.
--> `roboterNaniteFactor()` fuer `target === 'building'`: **`Math.max(0.02...0.05, ...)`** (Vorbild:
-das bereits vorhandene `Math.max(0.3, ...)` in `baseTimeMultiplier()`). Der genaue Wert ist zu
-messen, nicht zu raten.
--> **Zielwert:** eine hohe Gebaeudestufe dauert in der Groessenordnung **1-5 Tage**, nicht 14
-Minuten und nicht 38 Tage.
--> Dieselbe Pruefung fuer die Stations-Fabriken (Entscheidung 7.4) und fuer Schiffe/Verteidigung.
+**9.1 ENTSCHIEDEN 09.08.2026: SAETTIGUNGSKURVE STATT UNTERGRENZE.**
+Der urspruengliche Vorschlag (`Math.max(0.02...0.05, ...)` in `roboterNaniteFactor()`) ist
+**verworfen.** Begruendung und Ersatz siehe unten. Der Zielwert **1-5 Tage je hoher Ausbaustufe**
+bleibt unveraendert.
+
+**Warum die Untergrenze nicht funktioniert (nachgerechnet):**
+Metallmine Stufe 36 dauert roh **759 Tage**. Mit Untergrenze 0,05 sind das 38 Tage - genau der Wert,
+den diese Entscheidung selbst als zu lang ausschliesst. Mit 0,02 noch 15 Tage. Fuer den Zielkorridor
+1-5 Tage braeuchte es rund 0,005 - dann dauert Stufe 45 rund 76 Tage und Stufe 50 ueber ein Jahr.
+Gebaeudestufen haben **kein Limit** (README Punkt 8), die Rohzeit waechst mit `timeGrowth` 1,35 je
+Stufe unbegrenzt weiter. Eine feste Untergrenze deckelt die Bremse, nicht das Wachstum: sie
+verschiebt die Mauer nur nach hinten, sie entfernt sie nicht. Das laeuft direkt gegen die
+Nutzervorgabe "dauerhaft, kein Endpunkt".
+
+**Zweiter Befund, der die Untergrenze zusaetzlich entwertet:** Die Bauzeit wird heute von **sechs
+unabhaengigen Reduktionsquellen MULTIPLIKATIV** gesenkt - Bauzeit-Forschung (bis 0,3),
+kategorie-spezifische Forschung (bis 0,5), gebaeudeeigenes Bauzeit-Modul (bis 0,5), Roboterfabrik
+(0,75 je Stufe), Nanitenfabrik (0,50 je Stufe) und Bautempo-Booster/Samstags-Event. Jede fuer sich
+ist vertretbar; multipliziert ergeben sie bei vollem Ausbau rund **0,002**. Selbst mit korrigiertem
+`timeGrowth` landet ein voll ausgebauter Spieler damit wieder bei knapp **24 Minuten** fuer eine
+Stufe-36-Mine. **Das ist derselbe Fehler wie beim Frischling-Bonus (Entscheidung 12): viele einzeln
+harmlose Boni, die multiplikativ gestapelt werden.**
+
+**Die Entscheidung besteht aus drei Teilen:**
+
+**9.1a Saettigungskurve fuer Gebaeude-Bauzeiten.**
+```
+effektiveZeit = rohZeit / (1 + rohZeit / T_cap)
+```
+Die Kurve verhaelt sich bei kleinen Rohzeiten praktisch wie heute (Stufe 1 bleibt 30 Minuten,
+Stufe 5 rund 2 Stunden) und naehert sich bei grossen Rohzeiten asymptotisch `T_cap` an - **ohne
+diesen Wert je zu ueberschreiten, auf Stufe 36 wie auf Stufe 60.** Es gibt damit weder einen
+Kollaps auf Minuten noch eine Mauer.
+
+**9.1b Alle Reduktionsquellen wirken ADDITIV auf `T_cap`, nicht multiplikativ auf die Zeit.**
+```
+T_cap = T_MAX_BASE / (1 + Summe aller Reduktionen)
+```
+Vorschlag fuer die Gewichte (Groessenordnung, exakte Werte sind zu messen):
+
+| Quelle | Beitrag zur Summe bei Vollausbau |
+|---|---|
+| `T_MAX_BASE` | **14 Tage** (Ausgangswert ohne jede Reduktion) |
+| Roboterfabrik | 0,15 je Stufe -> 2,25 bei Stufe 15 |
+| Nanitenfabrik | 0,30 je Stufe -> 3,00 bei Stufe 10 |
+| Bauzeit-Forschung (allgemein) | 1,00 |
+| Bauzeit-Forschung Gebaeude | 0,50 |
+| Gebaeudeeigenes Bauzeit-Modul | 0,50 |
+| Bautempo-Booster / Samstags-Event / Ingenieur | zusammen ~1,00 |
+
+Ergebnis dieser Kalibrierung, nachgerechnet:
+
+| Ausbaustand | Stufe 10 | Stufe 20 | Stufe 36 | Stufe 50 |
+|---|---|---|---|---|
+| **nichts gebaut** (T_cap 14 d) | 9,8 h | 5,3 Tage | 13,8 Tage | ~14 Tage |
+| **voll ausgebaut** (T_cap 1,5 d) | 7,9 h | 1,3 Tage | 1,5 Tage | ~1,5 Tage |
+
+Damit ist alles auf einmal erfuellt: Zielkorridor 1-5 Tage getroffen, keine Mauer bei hohen Stufen,
+Startphase praktisch unveraendert (Stufe 1-10 liegen mit und ohne Ausbau dicht beieinander), und
+**jede einzelne Reduktionsquelle bleibt spuerbar, ohne dass irgendeine die Zeit auf null druecken
+kann.** Der volle Ausbau aller Zeit-Hebel bringt beim gleichen Gebaeude Faktor 9 - ein echtes,
+lohnendes Ausbauziel statt einer Zahl nahe null.
+
+**9.1c Basis-Bauzeiten NICHT anheben.** Bei Roboter/Nanit Stufe 0 ist der Reduktionsfaktor exakt 1 -
+in Woche 1 gelten also schon heute die vollen Rohzeiten. Eine Anhebung der `baseTimeSeconds` traefe
+ausschliesslich die Startphase, also genau die Phase, die dieser Plan schuetzen will (Abschnitt 1a).
+
+**Anwendungsbereich - nach Art der Kurve unterscheiden, NICHT pauschal:**
+- **Gebaeude (unbegrenzte Stufenleiter, `timeGrowth` 1,35-1,5):** Saettigungskurve nach 9.1a/9.1b.
+  Betrifft auch die Allianz-Station (Entscheidung 7.4) und die Gebaeude-Module.
+- **Forschung (bei Stufe 10 gedeckelt, `MAX_RESEARCH_LEVEL`):** hier ist eine Untergrenze
+  ausreichend, weil die Leiter endlich ist. Der eigentliche Hebel bleibt 9.3/9.4.
+- **Schiffe/Verteidigung:** die Bauzeit ist **linear in der Stueckzahl**
+  (`ship.buildTime * bauzeitMultiplier * qty`), es gibt gar keine Stufenleiter. Hier ist eine
+  Untergrenze auf den Multiplikator unproblematisch; der eigentliche Hebel ist die
+  Lane-Reduktion in 9.2.
+
+**Bekannte Nachteile - ausdruecklich genannt:**
+1. **Ein neuer Formeltyp ersetzt eine reine Multiplikation.** `client/src/lib/multipliers.ts` muss
+   ihn 1:1 spiegeln (README Punkt 1). Genau dieser Spiegel ist schon einmal auseinandergelaufen -
+   siehe R1. Ohne Spiegel zeigt die UI falsche Bauzeiten.
+2. **Die Nanitenfabrik verliert ihren Ausnahmestatus** (0,50 je Stufe multiplikativ -> 0,30 additiv).
+   Sie bleibt der staerkste Einzel-Hebel, ist aber nicht mehr fuer sich allein spielentscheidend.
+   Durch den Server-Reset ohne Rueckwirkung.
+3. **In Woche 1 wird der Zeit-Engpass NICHT spuerbar.** Das ist beabsichtigt (Abschnitt 1a), heisst
+   aber: der Nutzerwunsch "Bauen geht zu schnell" wird in der Startphase bewusst nicht erfuellt. Der
+   Engpass setzt ab etwa Stufe 15-20 ein.
+4. **Die Zahlen oben sind gerechnet, nicht gemessen.** `T_MAX_BASE` und die sieben Gewichte sind
+   gegen die Zielspanne kalibriert, nicht simuliert. Vor dem Festschreiben gegen die
+   30-Tage-Simulation (Abschnitt 1a) und einen Endspiel-Ausbaustand pruefen.
 
 **9.2 Danach die Slots reduzieren - NICHT gleichzeitig.** Slot-Reduktion und Zeiterhoehung sind eine
 Doppelbremse. 4 Forschungsslots auf 1 vervierfacht die Gesamtdauer allein durch die Slot-Aenderung
@@ -550,6 +632,24 @@ ein.
 Bauzeit haben, ist aus der Analyse nicht belegt - **im Code pruefen**. Falls nein: eigene Bauzeit
 geben, sie sind mit 99,57 Mrd (Schiffs-Module Vollausbau) die zweitgroesste Ressourcen-Senke nach
 Gebaeuden.
+
+#### ENDZIEL fuer den gesamten Zeit-Umbau (festgelegt 09.08.2026)
+
+**Zeit ist eine KONSTANTE Reibung. Kosten sind der unbegrenzte Wachstumsmotor.**
+
+Daraus folgt fuer jede kuenftige Einzelentscheidung in diesem Block:
+
+1. **Jede hohe Ausbaustufe kostet in der Groessenordnung 1-5 Tage - auf Stufe 30 wie auf Stufe 60.**
+   Bauzeit darf mit dem Fortschritt NICHT unbegrenzt mitwachsen. Wo sie das heute tut, wird sie
+   gesaettigt (9.1a).
+2. **Das unbegrenzte Wachstum lebt in den Kosten** (`costGrowth` 1,55-1,6 je Stufe), nicht in der
+   Zeit. Dort ist "Zahlen wachsen immer weiter" richtig aufgehoben, weil die Einnahmen mitwachsen
+   (Zielbild, Abschnitt 1) - bei der Zeit tun sie das nicht.
+3. **Keine Reduktionsquelle darf die Zeit gegen null druecken, und keine darf wirkungslos sein.**
+   Additiv statt multiplikativ (9.1b). Dieselbe Regel gilt sinngemaess fuer jeden anderen Stapel
+   von Boni im Spiel - siehe Entscheidung 12 (Frischling-Bonus).
+4. **Die Startphase bleibt unangetastet.** Zeitdruck ist Inhalt fuer die mittlere und spaete Phase.
+   In Woche 1 ist die Ressourcenmenge der Engpass, nicht die Uhr.
 
 #### Zielwert fuer die Bau-Kapazitaet
 
@@ -1057,17 +1157,11 @@ Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschma
    und 10 wirken hier gegeneinander.
 8. **Modulkosten** - Senkung um Faktor 3-5, Effekterhoehung, oder bewusst als Endgame-Prestige
    fuehren (Session 3, Befund 6). Bisher nicht entschieden.
-9. **Entscheidung 9.1: Untergrenze gegen Relation.** Vorgeschlagen am 09.08.2026, **noch nicht
-   entschieden.** Eine feste Untergrenze auf den Bauzeit-Faktor deckelt die Bremse, nicht das
-   Wachstum: Metallmine Stufe 36 dauert roh 759 Tage, mit Untergrenze 0,05 sind das 38 Tage (der
-   Wert, den 9.1 selbst als zu lang ausschliesst), mit 0,02 noch 15 Tage. Fuer den Zielkorridor
-   1-5 Tage braeuchte es ~0,005 - dann dauert Stufe 45 rund 76 Tage und Stufe 50 ueber ein Jahr.
-   Gebaeudestufen haben kein Limit, die Rohzeit waechst mit 1,35 je Stufe unbegrenzt weiter. Das
-   laeuft gegen die Vorgabe "kein Endpunkt". Alternative: **Relation glattziehen** statt deckeln -
-   Zeitwachstum je Gebaeudestufe senken (1,35 Richtung 1,2) UND den Fabrikeffekt je Stufe
-   abschwaechen (heute Roboter 0,75 / Nanit 0,50). Zusatz, unabhaengig davon: **Basis-Bauzeiten
-   NICHT anheben** - bei Roboter/Nanit Stufe 0 ist der Faktor exakt 1, eine Anhebung traefe
-   ausschliesslich die Startphase.
+9. ~~Entscheidung 9.1: Untergrenze gegen Relation.~~ **ENTSCHIEDEN am 09.08.2026** (Nutzer hat die
+   Entscheidung ausdruecklich delegiert): Saettigungskurve statt Untergrenze, alle Reduktionen
+   additiv, Basis-Bauzeiten unveraendert. Vollstaendig in Entscheidung 9.1a-c, Endziel des Blocks
+   in Entscheidung 9. Offen bleibt nur noch die **Messung** der sieben Gewichte und von
+   `T_MAX_BASE`, nicht mehr die Bauform.
 10. **30-Tage-Simulation vorziehen** (Vorschlag 09.08.2026, nicht entschieden): von Position 22 auf
     vor Block D. Sie muss ohnehin gebaut werden; steht sie am Ende, wird Block D zweimal
     kalibriert - einmal gegen das Endspiel, einmal dagegen. Nachteil: der Reset rueckt um den
@@ -1087,6 +1181,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | **Entscheidung 9.1 entschieden** (Nutzer hat die Entscheidung delegiert): Untergrenze verworfen, ersetzt durch Saettigungskurve (9.1a), additive statt multiplikativer Reduktionen (9.1b), Basis-Bauzeiten unveraendert (9.1c). Grund: eine feste Untergrenze deckelt die Bremse, nicht das unbegrenzte Wachstum der Rohzeit - sie verschiebt die Mauer nur. Zweiter Grund: sechs multiplikativ gestapelte Reduktionsquellen ergeben bei Vollausbau ~0,002, dieselbe Fehlerform wie beim Frischling-Bonus. Neu: **Endziel fuer den gesamten Zeit-Umbau** in Entscheidung 9 ("Zeit ist konstante Reibung, Kosten sind der Wachstumsmotor"). Anwendungsbereich nach Kurvenart getrennt: Saettigung nur fuer Gebaeude, Untergrenze genuegt bei Forschung (Stufe 10 gedeckelt) und Schiffen (linear in der Stueckzahl). |
 | 09.08.2026 | Entscheidung 13 (KI-Bots/Piratenbasen) und Entscheidung 14 (Gebaeude-Module V2/V3) neu. Punkt 7.5 aus Entscheidung 7 herausgeloest - die Allianz-Station ist nachweislich NICHT betroffen (Generator ueber alle drei Stufen), die Luecke liegt allein in der handgetippten `buildingModules.ts` der Heimatbasis. Entscheidung 5 um 5a (`SEED_FLEET`-Boden muss nach dem Reset mitfallen) und 5b (Messblocker durch 13.3) ergaenzt. R12 (Startpruefung Modul-IDs) neu. Reihenfolge in Abschnitt 5 neu durchnummeriert. Offene Punkte 9-12 in Abschnitt 8 ergaenzt (9.1-Untergrenze, Vorziehen der 30-Tage-Simulation, Bot-Ertragsweg, Nachteil bei Entscheidung 3) - alle vier sind VORSCHLAEGE, nicht entschieden. |
 | 09.08.2026 | Imperator-Absatz in Abschnitt 4 von einer Feststellung zu einem Messauftrag umgebaut. Grund: Nutzerrueckfrage deckte auf, dass der Imperator in KEINER der vier Sessions im Kampf gemessen wurde - die Einstufung "schlechteste Einheit" stammt aus reiner Tabellenrechnung. Baulimit-Widerspruch (README 2 gegen Session 3 mit 6) vermerkt. |
 
