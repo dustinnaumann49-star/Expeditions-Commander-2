@@ -290,6 +290,34 @@ bleiben.
 - Ertraege NIE an einem Einzelcheck bewerten - komplette 24h-Mission mit mitgeschleppten Verlusten
   rechnen (`run_mission_breakeven.mjs`, `run_elite_series_net.mjs`, `run_real_fleet.mjs`).
 
+- **Zwei Container-Pruefpunkte, ergaenzt am 09.08.2026** (aus Session-1-Befund 7, dort als
+  "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden - beide beruehren
+  Entscheidung 2 aber direkt):
+
+  **2c. Teile-Umwandlungsrate ueber die Container-Stufen angleichen.**
+  `TEILE_CONVERT_RESOURCES` ergibt 325.000 Wert-Einheiten pro Teil. Gemessen am Ressourcenwert
+  DESSELBEN Containers sind das bei **Silber 59 %, Gold 40 %, Elite 38 %**. Der Zielkorridor im
+  Code-Kommentar lautet **45-55 %** - kein einziger Tier trifft ihn, und die Abweichung laeuft in
+  beide Richtungen. Folge: Teile aus einem Elite-Container sind relativ das SCHLECHTESTE Ergebnis,
+  obwohl es der teuerste Container ist. -> Entweder die Rate anheben oder die Teile-Mengen pro
+  Container angleichen; die Rate ist der einfachere Hebel, die Mengen der genauere.
+  *Nachteil der Rate:* sie wirkt auch auf jede andere Teile-Quelle mit, nicht nur auf Container.
+
+  **2d. Freischiff-Rueckkopplung gegen den Kipppunkt pruefen.**
+  Das Freischiff ist in **jedem** Container die wertvollste Kategorie (Silber 91,7 gegen 33,0 Mio
+  Ressourcen, Elite 350,0 gegen 229,0 Mio). Als seltener Jackpot (7-14 %) ist das vertretbar. Die
+  Rueckkopplung ist es moeglicherweise nicht: geschenkte Schiffe umgehen die Werft komplett und
+  erhoehen die eigene Power - und an der eigenen Power skaliert die Piraten-Feindstaerke
+  (`PIRATEN_MULTIPLIER_ROLL`). Nach Entscheidung 2 haengt zusaetzlich die BEUTE an der vernichteten
+  Feindmacht. Damit koennen sich Jackpot, Feindstaerke und Beute gegenseitig hochziehen.
+  -> **Den Kipppunkt zweimal rechnen: einmal mit Freischiff-Treffern, einmal ohne.** Weichen die
+  beiden Kurven spuerbar voneinander ab, ist die Rueckkopplung real und die Freischiff-Chance oder
+  die Schiffsauswahl im Jackpot muss gedeckelt werden. Weichen sie nicht ab, ist es Rauschen und
+  der Punkt ist erledigt.
+  *Warum das trotz "NIEDRIG"-Einstufung hier steht:* Rueckkopplungen sind in diesem Projekt bisher
+  jedes Mal die Stelle gewesen, an der etwas gekippt ist. Der Test kostet einen zusaetzlichen
+  Durchlauf.
+
 **Achtung:** `PIRATEN_EVENT_BONUS_MULTIPLIER` (Mo/Fr) verdoppelt bereits `combatWins` und damit die
 Container-Anzahl (`missions.ts:558`). Jede neue Skalierung multipliziert sich darauf.
 
@@ -1095,6 +1123,11 @@ einen Bergungsflug ein einzelnes Schiff genuegt - der Versand der kompletten Rea
 identisch, Hoch bringt pro Sieg sogar weniger als Mittel) wird durch Entscheidung 2 automatisch
 geloest - die Beute haengt danach an der vernichteten Feindmacht, und die unterscheidet sich je
 Stufe. **Erst nach Entscheidung 2 neu bewerten**, nicht vorher an `winContainer` drehen.
+Die Container-Erwartungswerte selbst sind vollstaendig gemessen (Session 1, exakte Enumeration
+inkl. der "genau 2 Treffer"-Normalisierung): Silber 60,1 Mio, Gold 127,2 Mio, Elite 237,6 Mio
+Wert-Einheiten, dazu 0/19,4/28,6 DM. **Zwei Container-Befunde waren bis zum 09.08.2026 nicht in
+eine Entscheidung ueberfuehrt** - die Teile-Umwandlungsrate und die Freischiff-Rueckkopplung. Sie
+stehen jetzt als Pruefpunkte 2c und 2d in Entscheidung 2.
 
 **Booster-Preise** (Session 1, Befund 5): Entscheidung 3 (Raid-Halbierung) entfernt bereits 595 der
 1.088 DM/Tag. **Danach neu messen**, bevor an `BOOSTER_DURATION_OPTIONS` gedreht wird.
@@ -1413,6 +1446,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | **Zwei Container-Befunde nachgetragen**, die in Session 1 als "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden waren, obwohl beide Entscheidung 2 direkt beruehren. Neu als Pruefpunkte **2c** (Teile-Umwandlungsrate: gemessen 59/40/38 % gegen einen Zielkorridor von 45-55 %, kein Tier trifft ihn) und **2d** (Freischiff-Rueckkopplung: Jackpot erhoeht die eigene Power, an der die Feindstaerke skaliert, an der nach Entscheidung 2 die Beute haengt - Kipppunkt deshalb zweimal rechnen, mit und ohne Freischiff-Treffer). Die Container-Erwartungswerte selbst waren bereits vollstaendig gemessen. |
 | 09.08.2026 | **Mobil-Darstellung als eigener Strang ausgelagert:** neue Datei `MOBIL_CHECKLISTE.md` im Repo-Wurzelverzeichnis. Bewusst NICHT hier eingearbeitet - anderes Problemfeld (Darstellung statt Simulation), andere Pruefmethode (Auge am Geraet statt Messskript), reversibel und **nicht blockierend fuer den Reset**. Die Aenderungen koennen unabhaengig vom Balance-Paket sofort live gehen. Erster Befund (M1) ist bereits behoben: die Klasse `.combat-table` trug neben der 10-spaltigen Kampftabelle auch neun schmale Tabellen inklusive der Nachrichtenliste, und die Mobil-Regel `min-width:720px` blies die auf einem 390px-Display ueber den rechten Rand hinaus. Dieselbe Fehlerform wie Messregel 15: eine zentrale Regel, die an einer Stelle richtig und an acht anderen falsch ist. |
 | 09.08.2026 | **Die sechs verbliebenen messabhaengigen Punkte geschlossen** - nicht durch Zahlen, sondern durch **Entscheidungsregeln**: was gemessen wird, welche Antwort welche Konsequenz hat, und was bei uneindeutiger Messung gilt. Punkt 4 war durch Abschnitt 1b bereits beantwortet und ist nur noch nicht gestrichen gewesen. Punkt 7 (Raid verlierbar) ist auf Design-Grundlage entschieden statt vertagt: ja, verlierbar, aber mit gedeckeltem Verlust - eine nicht verlierbare Heimatverteidigung ist ein Timer, kein Spannungselement. Dazu die Vorrangregel, dass im Konfliktfall Entscheidung 3 zurueckgenommen wird und nicht das Verlustrisiko. Fuer Punkt 3 (Imperator) gilt neu ausdruecklich: "Prestige" ist keine gueltige Begruendung fuer schlechte Werte allein. **Damit braucht die Umsetzungs-Session keine weitere Entscheidungsrunde mehr.** |
 | 09.08.2026 | **Konsistenzpruefung des Gesamtplans.** Zehn Widersprueche und veraltete Verweise behoben, die durch das Wachstum ueber vier Sessions und drei Erweiterungen entstanden waren. Die drei wichtigsten: (1) Entscheidung 5 enthielt in einem Satz "`SEED_FLEET` bleibt Untergrenze" und in 5a das Gegenteil - der aeltere Satz stammte aus der Zeit vor der Reset-Entscheidung. (2) Entscheidung 12 stand in Block F, also NACH dem ersten Simulationslauf, obwohl Abnahmekriterium 5 genau diesen Bonus misst - der erste Lauf haette zwangslaeufig gescheitert; 12 ist nach Block C vorgezogen. (3) R1 (Client-Spiegel der Bauzeit-Formel) stand in Block E, Wochen nach Entscheidung 9.1 in Block D - genau die getrennte Terminierung, durch die multipliers.ts schon einmal auseinandergelaufen ist; R1 laeuft jetzt in Schritt 14 mit 9.1 zusammen. Ausserdem: R1 inhaltlich auf die Saettigungskurve umgeschrieben, Risiko-Absatz der Nanitenfabrik als hinfaellig markiert, Abnahmekriterium 4 um den Raid korrigiert (er trifft ab Tag 1 und ist kein freischaltbarer Inhalt), vier Verweise von Abschnitt 1a auf 1b umgehaengt, Reihenfolge auf 27 Schritte neu durchnummeriert, Messregeln 14 und 15 neu, Abschnitt 7 um fuenf Punkte ergaenzt. |
