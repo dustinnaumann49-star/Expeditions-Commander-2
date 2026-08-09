@@ -679,9 +679,46 @@ umstellen. Nominal 250 % waeren nach (a) auch real 250 %, was laut Sweep bereits
 "mittel" 30 % Verlust bedeutet. Die Kante ist ausserdem sehr scharf (350 % -> 400 % kippt von 88 %
 auf 38 % Siegchance) - in kleinen Schritten anheben und nach jedem Schritt neu simulieren.
 
-**Der Imperator bleibt Prestige-Einheit.** Rechnerisch die schlechteste Einheit des Spiels (0,0040
-Power je Wert-Einheit gegen 0,90 beim Leichten Jaeger, Faktor 225). Sein Wert liegt in RapidFire und
-Zaehigkeit. Bewusst so.
+**Der Imperator bleibt Prestige-Einheit - ABER die Entscheidung steht auf duenner Datengrundlage.**
+
+Session 3, Befund 10 nennt ihn "rechnerisch die schlechteste Einheit im Spiel": 0,0040 Power je
+Wert-Einheit gegen 0,90 beim Leichten Jaeger, Faktor 225. Bewertet ueber den Teile-Gegenwert
+(3.000 Teile x 325.000 = 975 Mio Wert-Einheiten).
+
+**Was diese Zahl wirklich aussagt - und was nicht:**
+- "Power" ist `combatFleetPowerBase()`, also die Bezugsgroesse fuer die GEGNER-Skalierung. Die Zahl
+  sagt: der Imperator erhoeht die Gegnerstaerke kaum, gemessen an dem, was er kostet.
+- Sie sagt NICHT, wie stark er im Kampf ist.
+- **Dieselbe Eigenschaft ist bei Modulen ausdruecklich als deren einziger verbliebener Wert
+  dokumentiert** (Session 3, Befund 6: Module erhoehen die Gegnerskalierung nicht). Beim Imperator
+  wirkt derselbe Effekt, nur staerker - er bringt Panzerung (2.520.000) und RapidFire in den Kampf
+  ein und meldet der Skalierungsformel fast nichts.
+- Die 975 Mio entsprechen 4,5 % eines Tageseinkommens. Der reale Preis sind nicht Ressourcen,
+  sondern die Grind-Zeit fuer 3.000 Teile.
+
+**Die Luecke: Der Imperator wurde in KEINER der vier Sessions im Kampf gemessen.** Er ist Teil der
+Referenzflotte "gross" (2 Stueck), aber er fehlt in der Einzeltyp-Tabelle aus Session 3, Befund 3
+(elf Schiffe) und in der Duell-Matrix aus Session 4, Befund 7 (acht Schiffe). Die Bewertung
+"schlechteste Einheit" stammt aus einer reinen Tabellenrechnung, nicht aus einem simulierten
+Gefecht.
+
+**Messauftrag (vor jeder Aenderung an Teile-Kosten oder Kampfwerten):**
+1. Imperator in `run_ships.mjs` (Duell bei gleichem Wert) und `run_ship_value.mjs`
+   (machtskalierter Sektor) aufnehmen - er fehlt in beiden.
+2. Gezielt gegen Jaegerschwaerme testen. Die README beschreibt ihn als RapidFire-Gegenmittel gegen
+   Jaeger-Klassen. **Dieselbe README-Passage enthaelt nachweislich einen Fehler** (der
+   Schlachtkreuzer hat kein RapidFire gegen Jaeger und verliert mit -553 bis -556 Mio, siehe
+   Entscheidung 6). Die Aussage zum Imperator ist damit ungeprueft, nicht automatisch falsch.
+3. Den Skalierungsvorteil separat beziffern: wie viel schwaecher faellt die generierte
+   Gegnerflotte aus, wenn dieselbe Kampfkraft ueber Imperatoren statt ueber Standardschiffe
+   eingebracht wird?
+
+**Widerspruch im Baulimit klaeren:** README Punkt 21 nennt `maxCount` **2** ("bleibt bewusst bei 2"),
+Session 3, Befund 6 rechnet mit **6**. Einer der beiden Staende ist veraltet - im Code pruefen und
+die README nachziehen (gehoert zu R10).
+
+**Erst nach dieser Messung entscheiden**, ob der Imperator Prestige-Einheit bleibt. Bis dahin gilt
+die Prestige-Einstufung als vorlaeufig, nicht als belegt.
 
 **Galaxie-Ereignisse bleiben Deko** (31 Mio Wert/Tag = 0,14 % der Baseline). Ausdruecklich als
 "Grund, in die Galaxie-Ansicht zu schauen" gewollt. Einzige Ergaenzung: ein UI-Hinweis, dass fuer
@@ -788,3 +825,5 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 - Erreichte Check-Tiefe bei P10 (Ziel 3-5).
 - Ob die Solo-Sektoren durch Entscheidung 2 wieder lohnend sind (heute fuer die reale Flotte
   **-0,55 Mrd pro 24h**, also totes Inhalt).
+- **Imperator im Kampf messen** (Abschnitt 4) - er fehlt in beiden Schiffs-Messungen. Danach
+  entscheiden, ob die Prestige-Einstufung bleibt.
