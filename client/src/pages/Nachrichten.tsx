@@ -161,7 +161,7 @@ function RewardTable({ rows }: { rows: [string, string][] }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Belohnungen</p>
-      <table className="combat-table">
+      <table className="combat-table narrow">
         <tbody>
           {rows.map(([label, value], i) => (
             <tr key={i}>
@@ -189,7 +189,7 @@ function SpyRangeTable({ title, units, emptyText }: { title: string; units: SpyR
   return (
     <div style={{ marginBottom: 12 }}>
       <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{title}</p>
-      <table className="combat-table">
+      <table className="combat-table narrow">
         <thead>
           <tr>
             <th style={{ textAlign: 'left' }}>Einheit</th>
@@ -257,7 +257,7 @@ function RichFindList({ finds }: { finds: RichFindEntry[] }) {
   return (
     <div style={{ marginTop: 16 }}>
       <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Reiche Funde (Ertrag verdoppelt)</p>
-      <table className="combat-table">
+      <table className="combat-table narrow">
         <thead>
           <tr>
             <th style={{ textAlign: 'left' }}>Stunde</th>
@@ -378,7 +378,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
             </p>
             <div style={{ marginBottom: 12 }}>
               <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Ressourcen</p>
-              <table className="combat-table">
+              <table className="combat-table narrow">
                 <tbody>
                   <tr>
                     <td style={{ textAlign: 'left' }}>Metall</td>
@@ -422,7 +422,7 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
             {msg.detail.fleetReturned && Object.values(msg.detail.fleetReturned).some((c) => c > 0) && (
               <div>
                 <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Zurückgekehrte Flotte</p>
-                <table className="combat-table">
+                <table className="combat-table narrow">
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Schiff</th>
@@ -501,10 +501,12 @@ function MessageTable({ messages, onOpen }: { messages: GameMessage[]; onOpen: (
     return <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Keine Einträge.</p>;
   }
   return (
-    <table className="combat-table">
+    <table className="combat-table narrow">
       <thead>
         <tr>
-          <th style={{ textAlign: 'left', width: 140 }}>Zeit</th>
+          {/* Prozent statt fester 140px: bei table-layout:fixed wuerde eine Pixelbreite auf
+              schmalen Displays ueber ein Drittel der Zeile belegen. */}
+          <th style={{ textAlign: 'left', width: '32%' }}>Zeit</th>
           <th style={{ textAlign: 'left' }}>Ereignis</th>
         </tr>
       </thead>

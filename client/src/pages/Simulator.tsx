@@ -122,7 +122,7 @@ export function SimulatorView() {
             {ratingText(result)}
           </p>
 
-          <table className="combat-table" style={{ marginBottom: 16 }}>
+          <table className="combat-table narrow" style={{ marginBottom: 16 }}>
             <tbody>
               <tr>
                 <td style={{ textAlign: 'left' }}>Siegchance (alle Feinde vernichtet)</td>
@@ -156,7 +156,7 @@ export function SimulatorView() {
           </table>
 
           <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Durchschnittliche Verluste je Schiffstyp</p>
-          <table className="combat-table" style={{ marginBottom: 16 }}>
+          <table className="combat-table narrow" style={{ marginBottom: 16 }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Schiff</th>
@@ -181,7 +181,7 @@ export function SimulatorView() {
           </table>
 
           <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Beispiel-Gegnerflotte (variiert pro Kampf)</p>
-          <table className="combat-table">
+          <table className="combat-table narrow">
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Einheit</th>
