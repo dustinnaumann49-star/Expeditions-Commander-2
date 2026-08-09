@@ -77,7 +77,65 @@ Alle Betraege in Wert-Einheiten (`metall*1 + kristall*1,5 + deuterium*3`, entspr
 
 ---
 
-## 2. Die neun Entscheidungen
+## 1a. RAHMENBEDINGUNG: Server-Reset nach der Umsetzung
+
+**Nutzerentscheidung (09.08.2026): Nach Abschluss aller Aenderungen wird der Server komplett
+zurueckgesetzt. Alle Spieler fangen von vorne an.**
+
+Das aendert den Zuschnitt dieses Plans erheblich.
+
+### Was dadurch entfaellt
+
+- **Keine Ruecksicht auf bestehende Spielstaende.** Alle Nachteile in diesem Plan, die mit
+  "wirkt rueckwirkend" oder "entwertet bereits getaetigte Investitionen" begruendet sind, sind
+  hinfaellig. Betrifft Entscheidung 7 (Minen-Kostenkurve) und Entscheidung 9.2 (Slot-Reduktion).
+- **Keine Migrations-Sorgen.** Die automatische Forschungsfeld-Migration in `loadPlayerState()`
+  (README Punkt 33) muss zwar korrekt bleiben, wird aber praktisch nicht mehr gebraucht.
+- Es kann beherzter eingegriffen werden als urspruenglich geplant.
+
+### Was dadurch NEU dazukommt - der wichtigste Punkt dieses Abschnitts
+
+**Alle Messungen der Sessions 1-4 sind gegen ENTWICKELTE Accounts gelaufen** (reale Flotte
+34,99 Mrd Wert, Profil "voll", Forschung 10, Module 10, Klasse, Dauer-Booster). **Nach dem Reset
+wird genau die Phase gespielt, die am schlechtesten gemessen ist.** Der gesamte Plan ist auf das
+Endspiel geeicht.
+
+Die Einnahmen-Baseline von 21,69 Mrd/Tag ist ein Endspiel-Wert. In Woche 1 liegt sie um
+Groessenordnungen darunter. Jede Aussage der Form "X Mrd sind viel/wenig" in diesem Plan gilt
+NICHT fuer die Startphase.
+
+**Ein Reset ist einmalig.** Wenn die Startphase daneben liegt, faellt das erst nach Wochen auf.
+Deshalb: vor dem Reset die Startphase simulieren, nicht erst danach beobachten.
+
+### Konkrete Startphasen-Risiken (aus den Sessions, bisher als Randnotiz gefuehrt)
+
+| Risiko | Gemessen | Folge nach Reset |
+|---|---|---|
+| **Raid bei schwachem Ausbau** | **100 % Flottenverlust**, 78,7 % Verteidigungsverlust, 10,6 von 12 Wellen gewonnen | Trifft ab Tag 1. Widerspricht der Vorgabe "nie Totalverlust". **Macht Entscheidung 10 blockierend, nicht optional.** |
+| **Piratenbasen bei kleiner Flotte** | **89,6 % Verlust**, 32,2 Mio Beute | Inhalt ist im Startspiel unspielbar. **Macht Entscheidung 5 dringend.** |
+| **Frischling-Bonus stapelt multiplikativ** | Mining-Forschung 10 (x2) * `mining_schiffe` * Prospektor (1,2) * Abbau-Booster (1,7) * Di/Do-Event (2,0) * Frischling (3,0) = **bis 24,5x**. Ein 7 Tage alter Account: **8,5 Mrd/Tag allein aus Asteroiden** - mehr als eine voll ausgebaute Heimatbasis | War bisher Randbeobachtung (Session 1, Befund 7). Nach dem Reset ist das die erste Spielwoche. **Siehe Entscheidung 12.** |
+| **Elite-Bollwerk bei Profil "schwach"** | 53 % Siegchance / 28 % Verlust (grosse Flotte), 46 % / 41,4 % (kleine Flotte) | Der einzige Inhalt, der im Startspiel ueberhaupt Risiko zeigt. Nach Entscheidung 1 neu messen. |
+| **Entscheidung 9 (Zeit als Engpass)** | Im Endspiel richtig kalibriert | In Woche 1 mit 1 Bau-Slot und 1 Forschungs-Slot kann sich das Spiel tot anfuehlen. **Muss gegen die STARTPHASE kalibriert werden, nicht gegen das Endspiel.** |
+| **Mining-Schiffe amortisieren in unter 3 Stunden** | 300 Schiffe = 6,2 Mio Wert gegen 55,8 Mio/Tag im Niedrig-Feld; alle drei Felder parallel = 346 Mio/Tag bedingungsloses Grundeinkommen | Nach dem Reset die erste und lange Zeit einzige Einnahmequelle. Bewusst so lassen oder bewusst aendern - nicht unbemerkt lassen. |
+
+### Zwingende Ergaenzung zum Messplan
+
+Zusaetzlich zu allen Messungen in diesem Plan ist **eine komplette Fortschritts-Simulation der
+ersten 30 Tage** noetig, die es bisher nicht gibt:
+
+- Startbestand -> Woche 1 -> Woche 2 -> Woche 4, jeweils mit realistisch erreichbarem Ausbaustand.
+- Pro Woche pruefen: Welche Inhalte sind ueberhaupt spielbar? Wo entsteht Leerlauf? Wo entsteht
+  Frust (Totalverlust, unerreichbare Ziele)?
+- Die vier Ausbau-Profile der Sessions ("voll"/"voll ohne Boost"/"mittel"/"schwach") reichen dafuer
+  NICHT - sie beschreiben Zustaende, keinen Verlauf. **"schwach" ist Forschung 3, keine Module,
+  keine Klasse - das ist bereits mehrere Wochen Spielzeit.** Ein echter Startzustand (Forschung 0,
+  nichts gebaut) ist in keiner Session gemessen worden.
+
+**Der Reset erfolgt erst, wenn diese Simulation vorliegt.**
+
+---
+
+## 2. Die Entscheidungen
 
 Reihenfolge ist verbindlich. Nach jedem Block neu messen, bevor der naechste beginnt.
 
@@ -376,8 +434,9 @@ wie `v2_metallmine_foerdereffizienz` - **die existieren nicht**, `moduleBoostFac
 1 zurueck. Die 15 Gebaeude-Module (44,38 Mrd Vollausbau) wirken damit nur auf die schwaechste der
 drei Stufen.
 
-**Bekannter Nachteil:** Die Aenderung an `buildings.ts` wirkt rueckwirkend - bereits bezahlte
-Minenstufen waeren danach guenstiger gewesen. Und selbst mit sauberer Relation bleibt die Station
+**Bekannter Nachteil:** ~~Die Aenderung an `buildings.ts` wirkt rueckwirkend - bereits bezahlte
+Minenstufen waeren danach guenstiger gewesen.~~ **Entfaellt durch den Server-Reset (Abschnitt 1a).**
+Selbst mit sauberer Relation bleibt die Station
 eine schwache Investition gegenueber Verteidigungsanlagen (unter einer Woche Amortisation). Sie wird
 korrekt, nicht attraktiv. **Das ist akzeptiert:** ihre eigentliche Funktion sind die 558 Mrd
 Ressourcen-Senke (35 % aller uebrigen einmaligen Senken zusammen).
@@ -444,6 +503,10 @@ Lane-basiert, die Warteschlange existiert im Ansatz.
 -> Gebaeude: `MAX_BUILDING_SLOTS` steht bereits auf 1, hier nur die Warteschlange sicherstellen.
 -> **Die Warteschlange ist zwingend, nicht optional.** Der Nutzer ist teils mehrere Wochen
 abwesend. Ohne Warteschlange bestraft 1 Slot genau diese Abwesenheit.
+-> Der Nachteil "fuehlt sich wie eine Wegnahme an" entfaellt durch den Server-Reset (Abschnitt 1a) -
+nach dem Reset hat niemand jemals 4 Slots gehabt.
+-> **Neuer Nachteil durch den Reset:** Die Kalibrierung muss gegen die STARTPHASE erfolgen. 1
+Bau-Slot und 1 Forschungs-Slot in Woche 1 koennen sich tot anfuehlen. Siehe Block F der Reihenfolge.
 
 **9.3 Forschungs-Wirkungskurve MIT anpassen.** Ohne diesen Schritt wartet der Spieler bei 1 Slot
 Jahre auf Stufen, die messbar nichts tun. Langsamer ist gewollt - leer warten nicht.
@@ -493,7 +556,7 @@ Nach Einziehen der Untergrenze diese Kalibrierung neu bewerten.
 
 ---
 
-### Entscheidung 10 - Rueckzug bei der Heimatverteidigung (Konflikt mit der Nutzervorgabe)
+### Entscheidung 10 - Rueckzug bei der Heimatverteidigung (BLOCKIEREND wegen Reset)
 
 **Bezug:** README Punkt 27, Session 2 Befund 4. **Datei:** `game/raids.ts`.
 
@@ -514,6 +577,37 @@ und ein Totalverlust der Flotte ist ausgeschlossen.
 **Vorher pruefen:** ob das den Raid endgueltig unverlierbar macht (er ist es heute schon fast, siehe
 Entscheidung 3). Falls ja, ist der bessere Weg der Schnappschuss der ersten Welle statt einer
 Rueckzugsregel.
+
+**Dringlichkeit durch den Reset:** Bisher als "trifft nur neue Spieler" eingestuft. **Nach dem
+Reset sind ALLE Spieler neue Spieler.** Der 100-%-Flottenverlust bei schwachem Ausbau ist damit
+kein Randfall mehr, sondern das erwartbare Ergebnis der ersten Raids. **Muss vor dem Reset fertig
+sein.**
+
+---
+
+### Entscheidung 12 - Frischling-Bonus: ADDITIV STATT MULTIPLIKATIV (durch Reset dringend)
+
+**Bezug:** Session 1, Befund 7. **Dateien:** `game/missions.ts` (`miningMultiplier()`),
+`data/economy.ts` (`NOVICE_BONUS_MULTIPLIER`, `ABBAU_BOOST_MULTIPLIER`).
+
+**Sachlage:** Alle Mining-Multiplikatoren stapeln rein multiplikativ:
+Mining-Forschung Stufe 10 (x2) * `mining_schiffe` * Prospektor (1,2) * Abbau-Booster (1,7) *
+Di/Do-Event (2,0) * Frischling (3,0) = **bis 24,5x**. Ein 7 Tage alter Account kommt damit auf rund
+**8,5 Mrd/Tag allein aus Asteroiden** - mehr als eine voll ausgebaute Heimatbasis (0,55 Mrd/Tag)
+und rund 40 % der Endspiel-Baseline.
+
+**Entscheidung:** `NOVICE_BONUS_MULTIPLIER` additiv statt multiplikativ wirken lassen. Der
+Frischling-Bonus ist als Aufholhilfe gedacht und ueberschiesst in dieser Stapelung deutlich.
+
+**Warum durch den Reset dringend:** Bisher war das eine Randbeobachtung fuer hypothetische neue
+Spieler. **Nach dem Reset ist es die erste Spielwoche beider Spieler.** Ohne Korrektur ist die
+Startphase die ertragreichste Phase des Spiels relativ zum Aufwand - genau das Gegenteil der
+Vorgabe "Zahlen wachsen immer weiter".
+
+**Vorsicht:** Nicht ueberkorrigieren. Der Bonus soll die Startphase weiterhin spuerbar
+beschleunigen, gerade weil Entscheidung 9 (Zeit als Engpass) sie gleichzeitig verlangsamt. Beide
+Aenderungen wirken in dieselbe Richtung und muessen **gemeinsam** gegen die
+30-Tage-Fortschrittssimulation (Abschnitt 1a) kalibriert werden, nicht einzeln.
 
 ---
 
@@ -563,9 +657,22 @@ dieser Wert ist die Bezugsgroesse fuer alle Feindstaerke-Tabellen. Real bedeutet
 | 120 % (Hoch, Spitzenwert) | 68 % | 34 % |
 | 155 % (Elite, Spitzenwert) | 88 % | 44 % |
 
-**Warum nicht aendern:** Variante (a) - Booster/Klasse/Module einrechnen - ist der groessere
-Eingriff und entwertet nachtraeglich bereits getaetigte Investitionen. Stattdessen: **die Anzeige
-korrigieren** (R9) und die Werte bewusst auf das reale Niveau anheben, falls noetig.
+**Die urspruengliche Begruendung ist durch den Server-Reset hinfaellig geworden** und wurde am
+09.08.2026 ersetzt. Sie lautete: "Variante (a) entwertet nachtraeglich bereits getaetigte
+Investitionen." Nach einem Reset gibt es keine solchen Investitionen mehr. Damit ist (a) wieder
+technisch moeglich. **Die Entscheidung bleibt trotzdem bei (b), aus einem anderen Grund:**
+
+Wenn `combatFleetPowerBase()` Module mitrechnet, waechst der Gegner mit jedem gebauten Modul mit.
+Module amortisieren sich heute erst nach **508-806 Tagen** (Session 3, Befund 6) und sind nur
+deshalb nicht wertlos, weil sie die Gegnerskalierung NICHT erhoehen - das ist ihr einziger
+verbliebener Wert, und er steht nirgends im Code. Variante (a) wuerde ihn beseitigen und zwingend
+eine Modulkosten-Senkung um **Faktor 3-5** nach sich ziehen. Das ist eine Kette, kein Einzelschritt.
+
+Stattdessen: **die Anzeige korrigieren** (R9) und die Werte bewusst auf das reale Niveau anheben,
+falls noetig.
+
+**Falls eine spaetere Session (a) doch umsetzen will:** dann zwingend zusammen mit der
+Modulkosten-Senkung, und NICHT gleichzeitig mit einer Anhebung von `PIRATEN_MULTIPLIER_ROLL`.
 
 **NIEMALS beides gleichzeitig:** `PIRATEN_MULTIPLIER_ROLL` anheben UND auf echte Kampfwerte
 umstellen. Nominal 250 % waeren nach (a) auch real 250 %, was laut Sweep bereits fuer das Profil
@@ -621,7 +728,20 @@ BLOCK E (Kleinkram, jederzeit)
  15. Entscheidung 8   Sandronator
  16. Entscheidung 11  Aussenposten-Reste
  17. R1 - R11
+
+BLOCK F (STARTPHASE - erst wenn A bis E stehen, vor dem Reset)
+ 18. Entscheidung 12  Frischling-Bonus additiv
+ 19. 30-Tage-Fortschrittssimulation (Abschnitt 1a) - existiert noch nicht, muss neu gebaut werden
+ 20. Entscheidung 9 GEGEN DIE STARTPHASE nachkalibrieren (nicht gegen das Endspiel)
+ 21. Entscheidung 10 verifizieren: kein Totalverlust mehr bei Startausbau
+
+RESET
+ 22. Erst nach Block F. Ein Reset ist einmalig - Fehler in der Startphase
+     fallen sonst erst nach Wochen auf.
 ```
+
+**Entscheidung 10 und 12 sind blockierend fuer den Reset.** Alles andere waere im Nachhinein
+korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 
 ---
 
