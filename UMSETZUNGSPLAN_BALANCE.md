@@ -6,7 +6,7 @@ Diese Datei enthaelt die daraus **getroffenen Entscheidungen** und ist die Arbei
 Umsetzungs-Session.
 
 **Status:** Am Spielcode wurde weiterhin NICHTS geaendert. Alle Entscheidungen sind getroffen, die
-Umsetzung steht aus.
+Umsetzung steht aus. **14 Entscheidungen, 12 Reparaturen** (Stand 09.08.2026, zweite Fassung).
 
 **Wer diese Datei liest, kann direkt loslegen.** Zahlen muessen nicht neu hergeleitet werden - sie
 stehen in der Checkliste unter dem jeweils genannten Befund.
@@ -350,6 +350,28 @@ oft ausbeutbaren Quelle, sobald die Garnison nachwaechst. Es braucht eine zusaet
 **Angriffe pro Basis und Tag begrenzen ODER eine echte Erholungszeit der Garnison.** Ohne das
 tauscht man ein totes Feature gegen die neue beste Farmroute des Spiels.
 
+**NACHTRAG 09.08.2026 (Code-Pruefung) - zwei Ergaenzungen, ohne die diese Entscheidung ihr Ziel
+verfehlt:**
+
+**5a. Der `SEED_FLEET`-Boden muss mitfallen, sonst loest Entscheidung 5 die Startphase NICHT.**
+`SEED_FLEET` sind **5.300 Schiffe** (2.000 leicht / 1.500 schwer / 800 kreuzer / 400 schlachtschiff /
+300 bomber / 150 schlachtkreuzer / 100 zerstoerer / 50 reaper) plus 1.120 Verteidigungsanlagen,
+festgeschrieben als dauerhafte Untergrenze (Floor-Up in `loadPirateBase()`, "unzerstoerbare
+Basis"-Design). Der urspruengliche Text dieser Entscheidung laesst die Garnison mitskalieren, behaelt
+den Boden aber ausdruecklich bei. **Nach dem Reset ist genau dieser Boden das Problem:** ein Spieler
+in Woche 1 hat Dutzende Schiffe, nicht Tausende. Die gemessenen **89,6 % Verlust bei kleiner Flotte**
+blieben damit unveraendert bestehen, obwohl die Skalierung eingebaut waere - der Boden greift ja
+zuerst. Der Boden muss entweder mit der angreifenden Flotte mitskalieren oder ganz entfallen.
+Nachteil: eine frisch angegriffene Basis kann dann kurzzeitig sehr schwach dastehen; das
+"unzerstoerbare Basis"-Design braucht dafuer eine Erholungszeit statt einer festen Untergrenze -
+dieselbe Schranke, die oben ohnehin gegen Dauer-Farming gefordert ist.
+
+**5b. Vor JEDER Messung an den Basen muss Entscheidung 13.3 stehen.** `loadPirateBase()` fuehrt bei
+jedem Laden einen kompletten Bau-Entscheidungsschritt aus, und die Basen werden bei jedem Aufruf der
+Galaxie-Ansicht geladen. Die Wachstumsrate einer Basis haengt damit an der Anzahl der Client-Aufrufe
+und ist nicht reproduzierbar. Solange das so ist, misst man an den Basen Rauschen. Siehe
+Entscheidung 13.3.
+
 ---
 
 ### Entscheidung 6 - Schiffs-Tiers: WERT JE MACHTPUNKT ANGLEICHEN
@@ -428,11 +450,11 @@ an der Station damit entweder absoluter Blocker (vorher) oder bedeutungslos (dan
 -> Fabrik-Stufen an eine Voraussetzung binden (analog `PARENT_UNLOCK_LEVEL`) oder Effekt pro Stufe
 deutlich senken. **Gehoert zu Entscheidung 9, gemeinsam kalibrieren.**
 
-**7.5 Gebaeude-Module fuer V2/V3 ergaenzen** (Session 3, Befund 9): `BUILDING_MODULES` referenziert
-ausschliesslich V1-IDs. `mineOutputPerHour()` und `roboterNaniteFactor()` bilden fuer Tier 2/3 IDs
-wie `v2_metallmine_foerdereffizienz` - **die existieren nicht**, `moduleBoostFactor()` liefert still
-1 zurueck. Die 15 Gebaeude-Module (44,38 Mrd Vollausbau) wirken damit nur auf die schwaechste der
-drei Stufen.
+**7.5 ENTFAELLT HIER - verschoben nach Entscheidung 14.** Der Punkt stand faelschlich unter der
+Allianz-Station. Code-Pruefung 09.08.2026: **Die Allianz-Station ist NICHT betroffen** -
+`data/stationBuildingModules.ts` erzeugt ihre Module per Generator ueber `STATION_BUILDINGS`, und
+dort stehen alle drei Stufen drin. Die Luecke betrifft ausschliesslich die **Heimatbasis**
+(`data/buildingModules.ts`, handgetippt, nur V1-IDs). Vollstaendig behandelt in Entscheidung 14.
 
 **Bekannter Nachteil:** ~~Die Aenderung an `buildings.ts` wirkt rueckwirkend - bereits bezahlte
 Minenstufen waeren danach guenstiger gewesen.~~ **Entfaellt durch den Server-Reset (Abschnitt 1a).**
@@ -627,6 +649,130 @@ kalibriert, den Entscheidung 5 braucht.
 
 ---
 
+### Entscheidung 13 - KI-Mitspieler und Piratenbasen: ERTRAG AN DIE EIGENE FLOTTENMACHT KOPPELN
+
+**Bezug:** Nutzerbeobachtung 09.08.2026 ("Vega und Nyx sollen Spieler imitieren, tun das nach
+vielen Fixes immer noch nicht"), belegt durch Code-Pruefung in derselben Sitzung. **In keiner der
+vier Sessions enthalten - komplett neuer Punkt.** **Dateien:** `game/economyBotTurn.ts`,
+`game/bot.ts`, `game/pirateBaseState.ts`, `data/economy.ts`
+(`NPC_PRODUCTION_BONUS_MULTIPLIER`), `game/routes.ts` (`/galaxy`).
+
+**Kernbefund:** Die Entscheidungslogik der Bots ist nicht das Problem - sie ist fuer das, was sie
+tut, sauber gebaut und nutzt exakt dieselben Aktionsfunktionen wie ein Mensch. Das Problem liegt
+eine Ebene tiefer: **Bots bauen, aber sie spielen nicht.** Sie fliegen keine Missionen, keine
+Raids, keine Asteroiden, oeffnen keine Container. Kein Feinschliff an der Bau-Reihenfolge kann das
+aufholen.
+
+**13.1 Der Ertrag ist strukturell zu niedrig (Hauptpunkt).**
+Ein Spieler verdient 21,69 Mrd/Tag, davon **0,55 Mrd aus den Minen - also 2,5 %**. Bots und
+Piratenbasen haben ausschliesslich Minen-Einkommen, ausgeglichen ueber
+`NPC_PRODUCTION_BONUS_MULTIPLIER = 6`. Das ergibt rund **3,3 Mrd/Tag, etwa 15 % eines Spielers**.
+Der Kommentar an der Konstante behauptet, sie leiste den kompletten Ausgleich fuer den fehlenden
+Zugang zu Container-/Missions-/Raid-Beute; dafuer muesste sie bei rund **39** liegen, nicht bei 6.
+
+Zwei Wege:
+- **(a) Bots wirklich fliegen lassen** (Missionen, Elite, Raids). Realistisch abgebildet, aber jede
+  geflogene Mission ist eine echte Kampf-Simulation im nur 2-Worker-Pool - genau das wurde nach dem
+  CPU-Spitzen-Vorfall gedrosselt (README Punkt 97/98). Nicht empfohlen.
+- **(b) Virtueller Missions-Ertrag aus der eigenen Flottenmacht** (EMPFOHLEN). Der Bot bekommt pro
+  Zeiteinheit einen Ertrag, der sich aus `combatFleetPowerBase()` seiner eigenen Flotte ableitet -
+  **mit denselben Koeffizienten wie Entscheidung 2** (Beute je vernichteter Feindmacht) - und
+  zusaetzlich eine **virtuelle Verlustrate** aus derselben Groesse. Kein Kampf, keine CPU-Last,
+  aber per Konstruktion dieselbe Kurve wie bei einem Spieler: waechst die Bot-Flotte, waechst
+  Ertrag UND Verlust mit. Damit erfuellt der Bot automatisch das Zielbild aus Abschnitt 1, statt
+  ueber einen festen Multiplikator daneben zu liegen.
+  **Nachteil:** bleibt eine Naeherung. Bots erleben nie echte Zufallsausreisser (Totalverlust,
+  Gluecksserie) und haben deshalb eine unnatuerlich glatte Wachstumskurve.
+
+**Ohne die virtuelle Verlustrate NICHT umsetzen.** Ertrag ohne Verlust waere eine monoton wachsende
+Flotte ohne jede Gegenkraft - der Bot wuerde die Spieler ueberholen statt sie zu begleiten.
+
+**13.2 Vega und Nyx sind heute nicht unterscheidbar.**
+Forschung laeuft strikt in der Array-Reihenfolge von `RESEARCH` durch (erste Technologie, die
+bezahlbar ist). Schiffe und Verteidigung werden nach "geringster Bestand zuerst" gebaut, was
+langfristig auf **gleiche Stueckzahlen aller 8 Schiffstypen und aller 11 Verteidigungstypen**
+zulaeuft. So baut kein Spieler, und es ist zusaetzlich wertmaessig schief: gleich viele Reaper wie
+Leichte Jaeger heisst, der Grossteil des Flottenwerts steckt in den teuersten Typen - nach
+Entscheidung 6 genau die schlechteste Verwendung. Einziger Unterschied zwischen beiden Bots ist
+heute die zufaellige Klassenwahl in `maybeChooseClass()`.
+-> Feste Profile je Bot: gewichtete Bauverteilung statt Gleichverteilung, eigene
+Forschungsreihenfolge, dazu passende Klasse statt Zufall. Vorschlag: **Vega offensiv/flottenlastig
+(Kanonier), Nyx defensiv/wirtschaftslastig (Bollwerk)**. Billig umzusetzen, sofort sichtbar in der
+Spielerliste und im Kampfbericht.
+
+**13.3 Wachstum haengt an der Aufruf-Haeufigkeit, nicht an der Zeit (blockiert Entscheidung 5).**
+`loadPirateBase()` ruft bei JEDEM Laden `runEconomyBotTurn()` auf. `/galaxy` in `routes.ts` laedt
+ueber `listActivePirateBaseSummaries()` **alle vier Basen bei jedem Aufruf der Galaxie-Ansicht**.
+Die Ressourcenproduktion selbst ist zeitbasiert und damit korrekt - der **Bau-Entscheidungsschritt
+ist es nicht**. Eine Basis waechst also schneller, je oefter jemand in die Galaxie schaut.
+-> Entscheidungsschritt an einen Zeitstempel auf der Basis haengen (z.B. hoechstens alle N Minuten),
+nicht an den Ladevorgang. Kleine Aenderung, aber **Voraussetzung fuer jede reproduzierbare Messung
+an Entscheidung 5**.
+
+**13.4 Entscheidung 9 trifft Bots haerter als Spieler.**
+Bots und Basen teilen sich `MAX_BUILD_SLOTS`, `MAX_DEFENSE_SLOTS` und `MAX_RESEARCH_SLOTS` mit den
+Menschen. 3 Bau-Lanes auf 1 und 4 Forschungsslots auf 1 bremst sie im selben Verhaeltnis - nur haben
+sie keine zweite Einnahmequelle zum Ausgleich und keine Warteschlangen-Strategie (pro Zug wird
+hoechstens ein Auftrag eingereiht). Nach dem Reset fallen sie dadurch dauerhaft zurueck.
+-> Gehoert zwingend in die Kalibrierung von Block D und in die 30-Tage-Simulation.
+
+**13.5 Warum das nicht nur Kosmetik ist.**
+Das **Elite-Bollwerk ist mit 10,87 Mrd/Tag die groesste Einnahmequelle des Spiels** und braucht
+Mitspieler. Bots nehmen ueber `maybeHandleGroupOps()` daran teil. Sind sie zu schwach, faellt der
+groesste Posten des Spiels aus oder wird zum Verlustgeschaeft. Nach dem Reset trifft das sofort:
+Bots starten wie alle anderen bei null. **Bot-Staerke ist damit keine Nebensache, sondern eine
+Vorbedingung fuer den wichtigsten Inhalt.**
+
+**Messkriterien:**
+- Bot-Flottenwert und Bot-Einnahmen gegen einen menschlichen Spieler ueber 30 simulierte Tage.
+  **Zielkorridor: 60-100 % des Spielers**, nicht 15 %.
+- Elite-Bollwerk mit 2 Bots + 1 Mensch in Woche 1, Woche 2 und Woche 4 der 30-Tage-Simulation:
+  ab wann ist die Expedition ueberhaupt gewinnbar?
+- Nach 13.3: Basiswachstum zweimal mit unterschiedlich vielen Galaxie-Aufrufen messen - die
+  Ergebnisse muessen identisch sein.
+
+---
+
+### Entscheidung 14 - Gebaeude-Module der Heimatbasis fuer V2/V3 (verschoben aus 7.5)
+
+**Bezug:** Session 3, Befund 9 + Nutzerhinweis 09.08.2026, praezisiert durch Code-Pruefung.
+**Dateien:** `data/buildingModules.ts`, `game/actions.ts`
+(`roboterNaniteFactor()`, `BUILDING_SELF_BUILDTIME_MODULE`, `mineOutputPerHour()`,
+`energyConsumed()`/Solar-Ertrag), `game/state.ts` (Migration).
+
+**Befund, praeziser als bisher im Plan:**
+- **Allianz-Station: nicht betroffen.** Ihre Module werden per Generator ueber `STATION_BUILDINGS`
+  erzeugt, dort stehen v1/v2/v3 - alle drei Stufen haben vollstaendige Module.
+- **Heimatbasis: betroffen.** `data/buildingModules.ts` enthaelt 15 **handgetippte** Module mit
+  ausschliesslich V1-IDs. Genau dieser Unterschied - Generator gegen Handarbeit - ist die Ursache.
+- Fuer V2/V3 laufen drei verschiedene Fehler nebeneinander:
+  1. Ertrag, Energie, Solar-Ertrag und Fabrik-Verstaerkung: die IDs werden zur Laufzeit als
+     `v2_metallmine_foerdereffizienz` usw. zusammengesetzt, existieren aber nicht.
+     `moduleBoostFactor()`/`moduleReductionFactor()` geben **still 1 zurueck** - kein Fehler, keine
+     Meldung.
+  2. Die gebaeudeeigenen Bauzeit-Module werden fuer V2/V3 **nicht einmal zusammengesetzt**:
+     `BUILDING_SELF_BUILDTIME_MODULE` ist eine feste Zuordnungstabelle mit ausschliesslich
+     V1-Schluesseln.
+  3. `loadPlayerState()` legt die Modulfelder aus `BUILDING_MODULES` an - die V2/V3-Felder
+     existieren im Spielstand also gar nicht.
+
+**Entscheidung:** Heimatbasis auf **denselben Generator** umstellen wie die Station, statt 30
+weitere Module von Hand nachzutippen. **Nachteil:** die heute individuell gesetzten Kostenwerte je
+Gebaeude gehen in eine Formel ueber, die Werte verschieben sich leicht. Durch den Server-Reset ohne
+Folgen. Der Gewinn: bei einer kuenftigen V4-Stufe entsteht derselbe Fehler nicht noch einmal.
+
+**ZWINGEND gemeinsam mit Entscheidung 9.1 kalibrieren.** Den V2/V3-Gebaeuden fehlt heute die
+"Verstaerkte Automatisierung" von Roboter- und Nanitenfabrik - beide senken den Bauzeit-Faktor um je
+die Haelfte. **V2/V3 bauen dadurch aktuell viermal langsamer als ein gleich ausgebautes V1.** Wer
+Entscheidung 14 repariert, beschleunigt V2/V3 um Faktor 4 und arbeitet damit direkt gegen den
+Zeit-Engpass. Wird das getrennt gemessen, ist die Kalibrierung von 9.1 hinterher falsch.
+
+**Einordnung der Groesse:** 44,38 Mrd Vollausbau der Gebaeude-Module entsprechen rund **zwei
+Tageseinnahmen** im Endspiel - spuerbar, aber nicht dringend. Nach dem Reset liegt V2/V3 ohnehin
+Monate entfernt. **Nicht blockierend fuer den Reset.**
+
+---
+
 ## 3. Reine Reparaturen (keine Entscheidung noetig, laufen parallel mit)
 
 | # | Was | Datei | Bezug |
@@ -642,6 +788,7 @@ kalibriert, den Entscheidung 5 braucht.
 | R9 | Kampfbericht-Anzeige "[Feindstaerke X%]" korrigieren - sie zeigt den nominalen Wert, der real etwa die Haelfte bedeutet (siehe Abschnitt 4) | Client | S2-B1/B9 |
 | R10 | README korrigieren: Aussenposten, RapidFire-Kette (kein Stein-Schere-Papier), Kosten/Waffenpunkt-Korridor, Salvenschiffe als Rollen-Einheiten | `README.md` | S4-Konsistenz |
 | R11 | Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
+| R12 | **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
 
 ---
 
@@ -748,32 +895,42 @@ BLOCK B (Piratenadmiral, in sich sequenziell)
   4. Entscheidung 4.1 + 4.2  Verlust-Kriterium UND contributedPower-Freeze ZUSAMMEN
   5. Entscheidung 4.3 - 4.8  Boss-Anteil, Mechanik, Belohnung, Cooldown
 
-BLOCK C (unabhaengig voneinander)
-  6. Entscheidung 5   Piratenbasen (+ Schranke gegen Dauer-Farming!)
-  7. Entscheidung 6   Schiffs-Tiers
-  8. Entscheidung 7   Allianz-Station
-  9. Entscheidung 10  Heimatverteidigung
+BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
+  6. Entscheidung 13.3 Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit entkoppeln
+                       -> Voraussetzung fuer JEDE reproduzierbare Messung an Entscheidung 5
+  7. Entscheidung 5   Piratenbasen (+ Schranke gegen Dauer-Farming! + SEED_FLEET-Boden, 5a)
+  8. Entscheidung 6   Schiffs-Tiers
+  9. Entscheidung 7   Allianz-Station
+ 10. Entscheidung 10  Heimatverteidigung
+ 11. Entscheidung 13.1 + 13.2  Bot-Ertrag aus eigener Flottenmacht, Bot-Profile
+                       -> 13.1 braucht die Koeffizienten aus Entscheidung 2, also nach Block A
 
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
- 10. Entscheidung 9.1  Untergrenzen  -> messen
- 11. Entscheidung 9.2  Slots auf 1 + Warteschlange  -> messen
- 12. Entscheidung 9.3  Forschungs-Wirkungskurve
- 13. Entscheidung 9.4  Forschungskosten
- 14. Entscheidung 9.5  Module
+ 12. Entscheidung 9.1  Untergrenzen  -> messen
+ 13. Entscheidung 14   Gebaeude-Module V2/V3 der Heimatbasis
+                       -> ZUSAMMEN mit 9.1 kalibrieren (Faktor 4 auf V2/V3-Bauzeit)
+ 14. Entscheidung 9.2  Slots auf 1 + Warteschlange  -> messen
+                       -> dabei 13.4 pruefen: Bots werden davon haerter getroffen als Spieler
+ 15. Entscheidung 9.3  Forschungs-Wirkungskurve
+ 16. Entscheidung 9.4  Forschungskosten
+ 17. Entscheidung 9.5  Module
 
 BLOCK E (Kleinkram, jederzeit)
- 15. Entscheidung 8   Sandronator
- 16. Entscheidung 11  Aussenposten-Reste
- 17. R1 - R11
+ 18. Entscheidung 8   Sandronator
+ 19. Entscheidung 11  Aussenposten-Reste
+ 20. R1 - R12
 
 BLOCK F (STARTPHASE - erst wenn A bis E stehen, vor dem Reset)
- 18. Entscheidung 12  Frischling-Bonus additiv
- 19. 30-Tage-Fortschrittssimulation (Abschnitt 1a) - existiert noch nicht, muss neu gebaut werden
- 20. Entscheidung 9 GEGEN DIE STARTPHASE nachkalibrieren (nicht gegen das Endspiel)
- 21. Entscheidung 10 verifizieren: kein Totalverlust mehr bei Startausbau
+ 21. Entscheidung 12  Frischling-Bonus additiv
+ 22. 30-Tage-Fortschrittssimulation (Abschnitt 1a) - existiert noch nicht, muss neu gebaut werden
+ 23. Entscheidung 9 GEGEN DIE STARTPHASE nachkalibrieren (nicht gegen das Endspiel)
+ 24. Entscheidung 10 verifizieren: kein Totalverlust mehr bei Startausbau
+ 25. Entscheidung 13.5 verifizieren: ist das Elite-Bollwerk mit 2 Bots + 1 Mensch in
+     Woche 1/2/4 ueberhaupt gewinnbar? Wenn nein, faellt der groesste Inhalt des Spiels
+     nach dem Reset wochenlang aus.
 
 RESET
- 22. Erst nach Block F. Ein Reset ist einmalig - Fehler in der Startphase
+ 26. Erst nach Block F. Ein Reset ist einmalig - Fehler in der Startphase
      fallen sonst erst nach Wochen auf.
 ```
 
@@ -900,6 +1057,26 @@ Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschma
    und 10 wirken hier gegeneinander.
 8. **Modulkosten** - Senkung um Faktor 3-5, Effekterhoehung, oder bewusst als Endgame-Prestige
    fuehren (Session 3, Befund 6). Bisher nicht entschieden.
+9. **Entscheidung 9.1: Untergrenze gegen Relation.** Vorgeschlagen am 09.08.2026, **noch nicht
+   entschieden.** Eine feste Untergrenze auf den Bauzeit-Faktor deckelt die Bremse, nicht das
+   Wachstum: Metallmine Stufe 36 dauert roh 759 Tage, mit Untergrenze 0,05 sind das 38 Tage (der
+   Wert, den 9.1 selbst als zu lang ausschliesst), mit 0,02 noch 15 Tage. Fuer den Zielkorridor
+   1-5 Tage braeuchte es ~0,005 - dann dauert Stufe 45 rund 76 Tage und Stufe 50 ueber ein Jahr.
+   Gebaeudestufen haben kein Limit, die Rohzeit waechst mit 1,35 je Stufe unbegrenzt weiter. Das
+   laeuft gegen die Vorgabe "kein Endpunkt". Alternative: **Relation glattziehen** statt deckeln -
+   Zeitwachstum je Gebaeudestufe senken (1,35 Richtung 1,2) UND den Fabrikeffekt je Stufe
+   abschwaechen (heute Roboter 0,75 / Nanit 0,50). Zusatz, unabhaengig davon: **Basis-Bauzeiten
+   NICHT anheben** - bei Roboter/Nanit Stufe 0 ist der Faktor exakt 1, eine Anhebung traefe
+   ausschliesslich die Startphase.
+10. **30-Tage-Simulation vorziehen** (Vorschlag 09.08.2026, nicht entschieden): von Position 22 auf
+    vor Block D. Sie muss ohnehin gebaut werden; steht sie am Ende, wird Block D zweimal
+    kalibriert - einmal gegen das Endspiel, einmal dagegen. Nachteil: der Reset rueckt um den
+    Bauaufwand der Simulation nach hinten.
+11. **Bot-Ertragsweg (a) gegen (b)** in Entscheidung 13.1 - Empfehlung steht auf (b), bestaetigt
+    ist sie nicht.
+12. **Entscheidung 3, "Bekannter Nachteil":** entfaellt vermutlich durch den Reset (nach dem Reset
+    hatte nie jemand 10/6/2). Dieselbe Streichung ist bei 7 und 9.2 schon eingetragen, bei 3 fehlt
+    sie. Nicht eingetragen, weil noch nicht bestaetigt.
 
 ### Aenderungsprotokoll dieses Plans
 
@@ -910,6 +1087,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | Entscheidung 13 (KI-Bots/Piratenbasen) und Entscheidung 14 (Gebaeude-Module V2/V3) neu. Punkt 7.5 aus Entscheidung 7 herausgeloest - die Allianz-Station ist nachweislich NICHT betroffen (Generator ueber alle drei Stufen), die Luecke liegt allein in der handgetippten `buildingModules.ts` der Heimatbasis. Entscheidung 5 um 5a (`SEED_FLEET`-Boden muss nach dem Reset mitfallen) und 5b (Messblocker durch 13.3) ergaenzt. R12 (Startpruefung Modul-IDs) neu. Reihenfolge in Abschnitt 5 neu durchnummeriert. Offene Punkte 9-12 in Abschnitt 8 ergaenzt (9.1-Untergrenze, Vorziehen der 30-Tage-Simulation, Bot-Ertragsweg, Nachteil bei Entscheidung 3) - alle vier sind VORSCHLAEGE, nicht entschieden. |
 | 09.08.2026 | Imperator-Absatz in Abschnitt 4 von einer Feststellung zu einem Messauftrag umgebaut. Grund: Nutzerrueckfrage deckte auf, dass der Imperator in KEINER der vier Sessions im Kampf gemessen wurde - die Einstufung "schlechteste Einheit" stammt aus reiner Tabellenrechnung. Baulimit-Widerspruch (README 2 gegen Session 3 mit 6) vermerkt. |
 
 ### Methodische Lehre aus dem bisherigen Verlauf
