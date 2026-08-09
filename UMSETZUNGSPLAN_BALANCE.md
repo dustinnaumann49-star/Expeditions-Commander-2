@@ -1295,20 +1295,85 @@ Claude Code.
 
 ### Was in Folge-Chats noch besprochen werden kann
 
-Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschmackssache ist:
+**Stand 09.08.2026: KEINER dieser Punkte ist mehr eine offene Frage.** Fuer jeden ist die
+**Entscheidungsregel** festgelegt - was gemessen wird, welche Antwort welche Konsequenz hat, und was
+gilt, wenn die Messung uneindeutig ausfaellt. Die Umsetzungs-Session misst und wendet die Regel an;
+sie muss dafuer nicht zurueckfragen. Offen ist nur noch die ZAHL, nicht die Entscheidung.
 
-1. **Beute-Exponent 0,85 gegen 0,90-0,95** - haengt am gemessenen Kipppunkt (Entscheidung 2).
-2. **Feindstaerke-Variante (a)** - durch den Reset wieder technisch moeglich, aktuell aus einem
-   ANDEREN Grund zurueckgestellt (Modulkosten-Kette, siehe Abschnitt 4). Kann neu aufgemacht
-   werden, dann aber nur zusammen mit der Modulkosten-Senkung.
-3. **Imperator-Einstufung** - Prestige-Einheit ist vorlaeufig, nicht belegt (Abschnitt 4).
-4. **Startphasen-Kalibrierung** - Entscheidung 9 und 12 wirken gegenlaeufig und muessen gemeinsam
-   gegen die 30-Tage-Simulation kalibriert werden (Abschnitt 1b, Schritt 13 der Reihenfolge).
-5. **Solo-Stufen Niedrig/Mittel/Hoch** - ob nach Entscheidung 2 noch eine zusaetzliche
-   Differenzierung noetig ist (Abschnitt 4).
-6. **Booster-Preise** - erst nach Entscheidung 3 neu messen (Abschnitt 4).
-7. **Raid verlierbar machen** - Schnappschuss der ersten Welle gegen Rueckzugsregel; Entscheidung 3
-   und 10 wirken hier gegeneinander.
+**Warum ueberhaupt Regeln statt Zahlen:** alle Zahlen in diesem Plan sind gegen eine Baseline von
+21,69 Mrd/Tag gerechnet, die nach Block A wegfaellt (Abschnitt 7). Eine heute festgelegte Zahl waere
+nach der ersten Messung falsch, eine Regel nicht.
+
+---
+
+**1. Beute-Exponent 0,85 gegen 0,90-0,95** (Entscheidung 2).
+- *Gemessen wird:* fuer einen fruehen, einen mittleren und einen spaeten Ausbaustand die Kennzahl
+  **"Tage bis zum naechsten sinnvollen Ausbauschritt"** = Kosten des naechsten Schritts geteilt
+  durch Netto-Einnahmen pro Tag.
+- *Regel:* Der Exponent ist richtig, wenn diese Kennzahl ueber alle drei Staende **im Band 3-10 Tage
+  bleibt und nicht monoton waechst.** Waechst sie mit dem Fortschritt, bleiben die Einnahmen hinter
+  den Kosten zurueck -> Exponent erhoehen. Schrumpft sie, laeuft das Spiel sich tot -> senken.
+  Suchraum 0,80-0,95 in Schritten von 0,05.
+- *Bei Uneindeutigkeit:* den **niedrigeren** Wert nehmen. Zu wenig Beute laesst sich spaeter ueber
+  Sektorwerte nachbessern, zu viel Beute nur durch eine Wegnahme.
+- *Nachteil:* das Band 3-10 Tage ist gesetzt, nicht gemessen. Es folgt aus dem Zielbild
+  ("Ziele bleiben bestehen"), nicht aus Daten.
+
+**2. Feindstaerke-Variante (a)** - **GESCHLOSSEN am 09.08.2026.** Bleibt bei (b), siehe Punkt 8 und
+Abschnitt 4. Wird nicht neu aufgemacht.
+
+**3. Imperator-Einstufung** (Abschnitt 4).
+- *Gemessen wird:* Kampfkraft pro Ressourceneinheit im echten Kampf, gegen die Bandbreite der
+  uebrigen Schiffe.
+- *Regel:* Liegt er **im Band** -> er ist ein normales Schiff, und der Grind (rund 11 Tage fuer
+  1.000 Teile einer Kategorie) muss auf das Niveau vergleichbar starker Schiffe gesenkt werden.
+  Liegt er **darunter** -> er darf nur dann Prestige-Einheit bleiben, wenn er eine Faehigkeit
+  besitzt, die kein anderes Schiff hat. Hat er keine, werden seine Werte angehoben, bis er im Band
+  liegt.
+- **"Prestige" ist keine gueltige Begruendung fuer schlechte Werte allein.** Der Begriff hat im
+  bisherigen Plan genau diese Luecke gefuellt.
+- *Nachteil:* eine Sonderfaehigkeit nachzuruesten ist Inhaltsarbeit, keine Balance-Aenderung, und
+  entsprechend aufwaendig.
+
+**4. Startphasen-Kalibrierung** - **GESCHLOSSEN am 09.08.2026 durch Abschnitt 1b.** Die Frage
+"woran erkennt man, dass die Startphase stimmt" ist dort mit sechs Abnahmekriterien beantwortet.
+Es bleibt eine Messaufgabe, keine Entscheidung.
+
+**5. Solo-Stufen Niedrig/Mittel/Hoch** (Abschnitt 4).
+- *Gemessen wird:* Netto-Ertrag pro Stunde je Stufe nach Entscheidung 2, jeweils bei dem
+  Ausbaustand, bei dem die Stufe zuerst zuverlaessig gewinnbar ist.
+- *Regel:* Jede hoehere Stufe muss **mindestens 30 % mehr** Netto-Ertrag pro Stunde liefern als die
+  darunterliegende. Darunter gibt es keinen Grund, das hoehere Risiko zu fliegen - dann ist eine
+  zusaetzliche Differenzierung noetig. **Ueber 100 % Sprung** ist ebenfalls ein Fehlschlag: dann
+  sind die unteren Stufen tot und der Sprung muss gedaempft werden.
+- *Nachteil:* die 30 % sind gesetzt. Sie beschreiben "spuerbar besser, aber nicht alternativlos".
+
+**6. Booster-Preise** (Abschnitt 4).
+- *Gemessen wird:* der Mehrertrag, den ein Booster ueber seine eigene Laufzeit erzeugt, gegen
+  seinen Preis - je Booster einzeln, nicht gemittelt.
+- *Regel:* Zielband **1,5 bis 3-facher Gegenwert.** Unter 1,5 kauft ihn niemand, ueber 3 ist er
+  Pflicht statt Wahl - und Pflicht-Booster sind das Gegenteil eines Ziels.
+- *Achtung:* Bei den ZEIT-Boostern ist diese Rechnung nach Entscheidung 9.1b eine voellig andere.
+  Sie wirken dann nicht mehr multiplikativ auf die Bauzeit, sondern additiv auf `T_cap`. Die
+  Messung muss danach neu aufgesetzt werden, alte Boosterwerte sind nicht uebertragbar.
+- *Nachteil:* das Band ist gesetzt und gilt fuer alle Booster gleich, obwohl manche Effekte
+  schwerer in Ressourcen umzurechnen sind als andere.
+
+**7. Raid verlierbar machen** - **ENTSCHIEDEN am 09.08.2026, auf Design-Grundlage statt Messung.**
+- *Entscheidung:* **Ja, der Raid wird verlierbar - aber mit gedeckeltem Verlust.**
+- *Begruendung:* Eine Heimatverteidigung, die man nicht verlieren kann, ist kein Spannungselement,
+  sondern ein Timer mit Belohnung. Das widerspricht dem Endziel direkt. Die Gegenkraft ist
+  Entscheidung 10, die in der Startphase Totalverluste ausschliesst. Beides zusammen ergibt:
+  **Verlust ja, Totalverlust nein.** Ein verlorener Raid kostet Ressourcen und einen Teil der
+  Verteidigungsanlagen, nicht die Flotte. Die Verlustobergrenze aus Entscheidung 10 gilt auch hier.
+- *Offen bleibt nur der Mechanismus:* Schnappschuss der ersten Welle gegen Rueckzugsregel
+  (README Punkt 27 - der Rueckzug ist bei Raids ausdruecklich abgeschaltet). Das ist eine
+  Messfrage, keine Entscheidung.
+- *Nachteil, ausdruecklich genannt:* Damit treffen **zwei Verschlechterungen denselben Inhalt** -
+  Entscheidung 3 halbiert den Raid-Ertrag, Punkt 7 fuegt ein Verlustrisiko hinzu. Beide muessen
+  gemeinsam kalibriert werden, sonst wird der Raid vom Ereignis zur reinen Belastung. **Wenn eine
+  von beiden Aenderungen zurueckgenommen werden muss, dann Entscheidung 3, nicht diese hier** -
+  ein verlierbarer Raid mit vollem Ertrag ist spannender als ein sicherer Raid mit halbem.
 8. ~~Modulkosten~~ **ENTSCHIEDEN am 09.08.2026:** Zielwert 60-120 Tage Amortisation gegen die NEUE
    Baseline nach Block A, Faktor ergibt sich aus der Messung. Feindstaerke-Variante bleibt bei (b),
    wird nicht neu aufgemacht. Siehe Abschnitt 4. Damit ist auch der offene Punkt 2 geschlossen.
@@ -1330,8 +1395,14 @@ Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschma
     10/6/2 gehabt. Der rechnerische Effekt bleibt bestehen: der Raid liefert nach der Halbierung
     weniger, gemessen an der neuen Baseline. Siehe Entscheidung 3.
 
-**Damit sind alle Punkte geschlossen, die ohne Messung entscheidbar waren.** Offen bleiben nur noch
-1, 3, 4, 5, 6 und 7 - jeder davon haengt an einer Messung, die erst nach Block A moeglich ist.
+**Damit ist der Plan vollstaendig entschieden.** Fuer jeden Punkt steht entweder die Zahl oder die
+Regel, nach der die Zahl bestimmt wird. **Eine Umsetzungs-Session braucht keine weitere
+Entscheidungsrunde** - sie arbeitet Abschnitt 5 der Reihe nach ab, misst, wendet die jeweilige Regel
+an und traegt das Ergebnis in Abschnitt 7 nach.
+
+**Was das ausdruecklich NICHT heisst:** dass die Zahlen stimmen. Sie sind gerechnet, nicht gemessen.
+Der Unterschied zwischen diesem Plan und dem Zustand davor ist nicht, dass jetzt die richtigen Werte
+feststehen, sondern dass fuer jeden Wert festgelegt ist, **woran man erkennt, ob er richtig ist.**
 
 ### Aenderungsprotokoll dieses Plans
 
@@ -1342,6 +1413,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | **Die sechs verbliebenen messabhaengigen Punkte geschlossen** - nicht durch Zahlen, sondern durch **Entscheidungsregeln**: was gemessen wird, welche Antwort welche Konsequenz hat, und was bei uneindeutiger Messung gilt. Punkt 4 war durch Abschnitt 1b bereits beantwortet und ist nur noch nicht gestrichen gewesen. Punkt 7 (Raid verlierbar) ist auf Design-Grundlage entschieden statt vertagt: ja, verlierbar, aber mit gedeckeltem Verlust - eine nicht verlierbare Heimatverteidigung ist ein Timer, kein Spannungselement. Dazu die Vorrangregel, dass im Konfliktfall Entscheidung 3 zurueckgenommen wird und nicht das Verlustrisiko. Fuer Punkt 3 (Imperator) gilt neu ausdruecklich: "Prestige" ist keine gueltige Begruendung fuer schlechte Werte allein. **Damit braucht die Umsetzungs-Session keine weitere Entscheidungsrunde mehr.** |
 | 09.08.2026 | **Konsistenzpruefung des Gesamtplans.** Zehn Widersprueche und veraltete Verweise behoben, die durch das Wachstum ueber vier Sessions und drei Erweiterungen entstanden waren. Die drei wichtigsten: (1) Entscheidung 5 enthielt in einem Satz "`SEED_FLEET` bleibt Untergrenze" und in 5a das Gegenteil - der aeltere Satz stammte aus der Zeit vor der Reset-Entscheidung. (2) Entscheidung 12 stand in Block F, also NACH dem ersten Simulationslauf, obwohl Abnahmekriterium 5 genau diesen Bonus misst - der erste Lauf haette zwangslaeufig gescheitert; 12 ist nach Block C vorgezogen. (3) R1 (Client-Spiegel der Bauzeit-Formel) stand in Block E, Wochen nach Entscheidung 9.1 in Block D - genau die getrennte Terminierung, durch die multipliers.ts schon einmal auseinandergelaufen ist; R1 laeuft jetzt in Schritt 14 mit 9.1 zusammen. Ausserdem: R1 inhaltlich auf die Saettigungskurve umgeschrieben, Risiko-Absatz der Nanitenfabrik als hinfaellig markiert, Abnahmekriterium 4 um den Raid korrigiert (er trifft ab Tag 1 und ist kein freischaltbarer Inhalt), vier Verweise von Abschnitt 1a auf 1b umgehaengt, Reihenfolge auf 27 Schritte neu durchnummeriert, Messregeln 14 und 15 neu, Abschnitt 7 um fuenf Punkte ergaenzt. |
 | 09.08.2026 | Vier weitere offene Punkte entschieden: 30-Tage-Simulation vorgezogen (vor Block D; nach der Neunummerierung Schritt 13), Bot-Ertragsweg (b) bestaetigt, Nachteil bei Entscheidung 3 gestrichen und praezisiert, Modulkosten als ZIELWERT statt als Faktor festgelegt (60-120 Tage Amortisation gegen die neue Baseline) - damit ist auch die Feindstaerke-Variante endgueltig auf (b) geschlossen. Neu: **Abschnitt 1b, vollstaendige Spezifikation der 30-Tage-Simulation** mit drei Spielerprofilen, sieben Protokoll-Kennzahlen und sechs Abnahmekriterien. Damit sind alle ohne Messung entscheidbaren Punkte geschlossen. |
 | 09.08.2026 | **Entscheidung 9.1 entschieden** (Nutzer hat die Entscheidung delegiert): Untergrenze verworfen, ersetzt durch Saettigungskurve (9.1a), additive statt multiplikativer Reduktionen (9.1b), Basis-Bauzeiten unveraendert (9.1c). Grund: eine feste Untergrenze deckelt die Bremse, nicht das unbegrenzte Wachstum der Rohzeit - sie verschiebt die Mauer nur. Zweiter Grund: sechs multiplikativ gestapelte Reduktionsquellen ergeben bei Vollausbau ~0,002, dieselbe Fehlerform wie beim Frischling-Bonus. Neu: **Endziel fuer den gesamten Zeit-Umbau** in Entscheidung 9 ("Zeit ist konstante Reibung, Kosten sind der Wachstumsmotor"). Anwendungsbereich nach Kurvenart getrennt: Saettigung nur fuer Gebaeude, Untergrenze genuegt bei Forschung (Stufe 10 gedeckelt) und Schiffen (linear in der Stueckzahl). |
