@@ -133,6 +133,91 @@ ersten 30 Tage** noetig, die es bisher nicht gibt:
 
 **Der Reset erfolgt erst, wenn diese Simulation vorliegt.**
 
+**ENTSCHIEDEN 09.08.2026: Die Simulation wird VORGEZOGEN** - gebaut nach Block C, erstmals
+ausgefuehrt VOR Block D, erneut ausgefuehrt in Block F. Grund: Entscheidung 9 muss ohnehin gegen die
+Startphase kalibriert werden. Steht die Simulation erst am Ende, wird Block D zweimal kalibriert -
+einmal gegen das Endspiel und danach dagegen. Der Bauaufwand faellt so oder so an; die Reihenfolge
+entscheidet nur, ob er einmal oder zweimal Nutzen bringt. **Nachteil:** der Reset verschiebt sich um
+die Bauzeit der Simulation, und sie muss nach Block D ein zweites Mal laufen, weil sich die Zahlen
+bis dahin verschieben. Vollstaendige Spezifikation siehe Abschnitt 1b.
+
+---
+
+## 1b. Spezifikation der 30-Tage-Fortschrittssimulation
+
+Dieser Abschnitt existiert, weil die Simulation das einzige fehlende Werkzeug des gesamten Plans
+ist und als einziges ohne vorherige Messung vollstaendig festgelegt werden kann. Sie ist damit auch
+das einzige Stueck Arbeit, das eine Umsetzungs-Session sofort beginnen kann.
+
+### Was sie NICHT ist
+
+Kein weiteres Kampf-Skript. Die vorhandenen Skripte in `balance/session2-simulation/` messen
+**Zustaende** (vier Ausbau-Profile gegen einen Sektor). Diese Simulation misst einen **Verlauf**:
+Tag 0 bis Tag 30, mit allem, was sich dabei gegenseitig bedingt - Ressourcen finanzieren Bauten,
+Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
+
+### Aufbau
+
+- **Zeitschritt: 1 Stunde**, 720 Schritte. Feiner ist unnoetig (kuerzeste relevante Bauzeit liegt
+  bei 30 Minuten), groeber verfehlt die stuendlichen Missions-Checks.
+- **Startzustand: `defaultPlayerState()`**, also Forschung 0, nichts gebaut, Startressourcen. Kein
+  Profil aus den Sessions - "schwach" ist bereits mehrere Wochen Spielzeit (siehe Abschnitt 1a).
+- **Echte Spiel-Funktionen verwenden**, keine nachgebaute Wirtschaft: `runEconomyTick()`,
+  `startBuildingConstruction()`, `startResearch()`, `startBuild()`, `runHourlyCheck()`. Sonst misst
+  man das Modell statt das Spiel - genau der Fehler, den Messregel 1 fuer den Kampf-Worker
+  beschreibt.
+- **Drei Spielerprofile** (getrennte Durchlaeufe, NICHT gemittelt):
+  1. **Aktiv** - handelt jede simulierte Stunde, baut ressourcen-optimal.
+  2. **Gelegenheit** - handelt zweimal taeglich, sonst laeuft nur die Warteschlange.
+  3. **Abwesend** - handelt an Tag 1, danach 14 Tage gar nicht, dann wieder taeglich. Bildet die
+     reale Nutzungslage ab (mehrwoechige Abwesenheit, siehe Entscheidung 9.2) und ist der
+     eigentliche Test der Warteschlange.
+- **Die Bot-Logik aus `economyBotTurn.ts` NICHT als Spielermodell verwenden.** Sie baut
+  gleichverteilt ueber alle Typen und ist damit nachweislich nicht spielertypisch (Entscheidung
+  13.2). Sie darf nur fuer die BOTS im Durchlauf genutzt werden, nicht fuer den simulierten
+  Menschen.
+
+### Was pro Tag protokolliert wird
+
+| Kennzahl | Wofuer |
+|---|---|
+| Einnahmen/Tag in Wert-Einheiten | Verlaufskurve, Vergleich mit der 21,69-Mrd-Baseline |
+| Flottenwert und `combatFleetPowerBase()` | Freischaltung von Inhalten, Gegnerskalierung |
+| **Leerlaufanteil** - Anteil der Stunden ohne laufenden Bau-, Forschungs- ODER Verteidigungsauftrag | Kernmass fuer Entscheidung 9. Zeitdruck ohne Leerlauf ist Inhalt, Zeitdruck mit Leerlauf ist Frust |
+| **Ressourcenstau** - Anteil der Stunden, in denen Ressourcen vorhanden sind, aber kein Slot frei | Gegenprobe zu 9.2: zu wenige Lanes erzeugt genau das |
+| Erstmals spielbare Inhalte, mit Tag | Woche-fuer-Woche-Fortschritt |
+| Verlustereignisse mit Anteil der verlorenen Flotte | Entscheidung 10 (kein Totalverlust) |
+| Anteil jeder Einnahmequelle an der Wochensumme | Entscheidung 12 (Frischling-Ueberschuss) |
+
+### Abnahmekriterien (Definition of Done fuer die Startphase)
+
+Der Reset erfolgt erst, wenn **alle sechs** erfuellt sind. Jedes Kriterium nennt die Entscheidung,
+die daran kalibriert wird.
+
+1. **Kein Totalverlust.** In keinem der drei Profile verliert der Spieler in 30 Tagen mehr als
+   **70 %** seiner Flotte in einem einzelnen Ereignis. -> Entscheidung 10.
+2. **Leerlauf unter 20 %** im Profil "Aktiv" und **0 %** im Profil "Abwesend" (die Warteschlange
+   muss die Abwesenheit vollstaendig ueberbruecken). -> Entscheidung 9.2.
+3. **Ressourcenstau unter 25 %** im Profil "Aktiv". Ueber diesem Wert sind die Lanes zu knapp und
+   der Ueberschuss ist nicht ausgebbar. -> Entscheidung 9.2, Gegenprobe zu Kriterium 2.
+4. **Jede Woche wird mindestens ein Inhalt erstmals spielbar.** Erwartete Reihenfolge:
+   Woche 1 Asteroiden, Woche 2 Solo-Piraten Niedrig, Woche 3 Raid und Piratenbasis, Woche 4
+   Elite-Bollwerk. Ein leerer Wochenabschnitt ist ein Fehlschlag, kein Randbefund.
+   -> Entscheidungen 5 und 13.5.
+5. **Keine Einzelquelle liefert in Woche 1 mehr als 50 % der Wochen-Einnahmen.**
+   -> Entscheidung 12 (heute waeren es die Asteroiden mit dem 24,5-fach gestapelten Bonus).
+6. **Die Einnahmenkurve hat kein Plateau ueber 5 Tage.** Ein laengeres Plateau heisst, dass der
+   naechste Ausbauschritt unerreichbar weit weg ist. -> Entscheidungen 7 und 9.4.
+
+### Was daran kalibriert wird
+
+- `T_MAX_BASE` und die sieben Reduktionsgewichte aus Entscheidung 9.1b.
+- Die Slot-Zahlen aus 9.2 - und zwar gegen Kriterium 2 UND 3 gleichzeitig, weil beide
+  gegenlaeufig sind.
+- Die additive Form des Frischling-Bonus aus Entscheidung 12.
+- Der `SEED_FLEET`-Boden der Piratenbasen aus Entscheidung 5a.
+- Die Bot-Wachstumskurve aus Entscheidung 13.1, gegen Kriterium 4.
+
 ---
 
 ## 2. Die Entscheidungen
@@ -231,8 +316,11 @@ scheitern (gemessen: 100 % Flottenverlust, trotzdem 10,6 von 12 Wellen gewonnen)
 der ersten Welle (analog `raid.initialCombinedPower`) wuerde Raids ueberhaupt erst verlierbar
 machen. **Vorsicht:** kollidiert mit der Nutzervorgabe "nie Totalverlust" - siehe Entscheidung 10.
 
-**Bekannter Nachteil:** Die einzige Aenderung des Pakets, die sich beim Spielen wie ein Rueckschritt
-anfuehlt (sofort weniger Ertrag, ohne Gegenleistung).
+**Bekannter Nachteil - PRAEZISIERT 09.08.2026:** ~~Die einzige Aenderung des Pakets, die sich beim
+Spielen wie ein Rueckschritt anfuehlt.~~ Das GEFUEHL der Wegnahme entfaellt durch den Server-Reset
+(Abschnitt 1a) - nach dem Reset hat nie jemand 10/6/2 gehabt. **Der rechnerische Effekt bleibt
+bestehen:** der Raid liefert weniger, gemessen an der neuen Baseline nach Block A, und bleibt damit
+eine echte Senkung - nur keine spuerbare Enteignung.
 
 ---
 
@@ -918,6 +1006,23 @@ eine Modulkosten-Senkung um **Faktor 3-5** nach sich ziehen. Das ist eine Kette,
 Stattdessen: **die Anzeige korrigieren** (R9) und die Werte bewusst auf das reale Niveau anheben,
 falls noetig.
 
+**Modulkosten - ENTSCHIEDEN 09.08.2026, aber als ZIELWERT, nicht als Zahl.**
+Eine feste Kostensenkung "um Faktor 3-5" jetzt festzuschreiben waere ein Rechenfehler: die
+508-806 Tage Amortisation sind gegen die heutige Baseline von 21,69 Mrd/Tag gerechnet, und genau
+diese Baseline faellt nach Block A weg (Abschnitt 7). Ein heute festgelegter Faktor waere nach der
+ersten Messung falsch.
+-> **Zielwert: Module amortisieren sich in der Groessenordnung 60-120 Tage, gemessen gegen die NEUE
+Baseline nach Block A.** Der noetige Faktor ergibt sich daraus, er wird nicht vorher geraten.
+Begruendung fuer diese Spanne: kuerzer als 60 Tage macht Module zur Pflichtaufgabe statt zum Ziel;
+laenger als 120 Tage faengt niemand damit an, und die zweitgroesste Ressourcen-Senke des Spiels
+(99,57 Mrd) bleibt tot. Beides widerspricht der Vorgabe "Ziele auf Dauer beibehalten".
+-> **Zusaetzlich dokumentieren, im Code und im Info-Popup:** dass Module die Gegnerskalierung NICHT
+erhoehen. Das ist heute ihr staerkstes Argument und steht nirgends - weder im Spiel noch im Code.
+Ein Vorteil, den niemand kennt, wirkt nicht.
+-> **Feindstaerke-Variante bleibt bei (b)** und wird nicht neu aufgemacht. Variante (a) wuerde genau
+diese Eigenschaft beseitigen und die Modulentscheidung zu einer Kette aus drei voneinander
+abhaengigen Aenderungen machen. Der Gewinn rechtfertigt das nicht.
+
 **Falls eine spaetere Session (a) doch umsetzen will:** dann zwingend zusammen mit der
 Modulkosten-Senkung, und NICHT gleichzeitig mit einer Anhebung von `PIRATEN_MULTIPLIER_ROLL`.
 
@@ -1005,8 +1110,13 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
  11. Entscheidung 13.1 + 13.2  Bot-Ertrag aus eigener Flottenmacht, Bot-Profile
                        -> 13.1 braucht die Koeffizienten aus Entscheidung 2, also nach Block A
 
+SIMULATION (neu, ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
+ 11a. 30-Tage-Fortschrittssimulation nach Abschnitt 1b bauen und erstmals ausfuehren
+      -> ohne sie ist Block D nicht gegen die Startphase kalibrierbar, sondern nur gegen
+         das Endspiel - und muesste danach ein zweites Mal kalibriert werden
+
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
- 12. Entscheidung 9.1  Untergrenzen  -> messen
+ 12. Entscheidung 9.1  Saettigungskurve + additive Reduktionen  -> messen
  13. Entscheidung 14   Gebaeude-Module V2/V3 der Heimatbasis
                        -> ZUSAMMEN mit 9.1 kalibrieren (Faktor 4 auf V2/V3-Bauzeit)
  14. Entscheidung 9.2  Slots auf 1 + Warteschlange  -> messen
@@ -1022,7 +1132,8 @@ BLOCK E (Kleinkram, jederzeit)
 
 BLOCK F (STARTPHASE - erst wenn A bis E stehen, vor dem Reset)
  21. Entscheidung 12  Frischling-Bonus additiv
- 22. 30-Tage-Fortschrittssimulation (Abschnitt 1a) - existiert noch nicht, muss neu gebaut werden
+ 22. 30-Tage-Fortschrittssimulation ERNEUT ausfuehren (gebaut in Schritt 11a, Abschnitt 1b) -
+     alle sechs Abnahmekriterien muessen erfuellt sein
  23. Entscheidung 9 GEGEN DIE STARTPHASE nachkalibrieren (nicht gegen das Endspiel)
  24. Entscheidung 10 verifizieren: kein Totalverlust mehr bei Startausbau
  25. Entscheidung 13.5 verifizieren: ist das Elite-Bollwerk mit 2 Bots + 1 Mensch in
@@ -1155,22 +1266,29 @@ Bewusst offen gelassen, weil die Antwort von einer Messung abhaengt oder Geschma
 6. **Booster-Preise** - erst nach Entscheidung 3 neu messen (Abschnitt 4).
 7. **Raid verlierbar machen** - Schnappschuss der ersten Welle gegen Rueckzugsregel; Entscheidung 3
    und 10 wirken hier gegeneinander.
-8. **Modulkosten** - Senkung um Faktor 3-5, Effekterhoehung, oder bewusst als Endgame-Prestige
-   fuehren (Session 3, Befund 6). Bisher nicht entschieden.
+8. ~~Modulkosten~~ **ENTSCHIEDEN am 09.08.2026:** Zielwert 60-120 Tage Amortisation gegen die NEUE
+   Baseline nach Block A, Faktor ergibt sich aus der Messung. Feindstaerke-Variante bleibt bei (b),
+   wird nicht neu aufgemacht. Siehe Abschnitt 4. Damit ist auch der offene Punkt 2 geschlossen.
 9. ~~Entscheidung 9.1: Untergrenze gegen Relation.~~ **ENTSCHIEDEN am 09.08.2026** (Nutzer hat die
    Entscheidung ausdruecklich delegiert): Saettigungskurve statt Untergrenze, alle Reduktionen
    additiv, Basis-Bauzeiten unveraendert. Vollstaendig in Entscheidung 9.1a-c, Endziel des Blocks
    in Entscheidung 9. Offen bleibt nur noch die **Messung** der sieben Gewichte und von
    `T_MAX_BASE`, nicht mehr die Bauform.
-10. **30-Tage-Simulation vorziehen** (Vorschlag 09.08.2026, nicht entschieden): von Position 22 auf
-    vor Block D. Sie muss ohnehin gebaut werden; steht sie am Ende, wird Block D zweimal
-    kalibriert - einmal gegen das Endspiel, einmal dagegen. Nachteil: der Reset rueckt um den
-    Bauaufwand der Simulation nach hinten.
-11. **Bot-Ertragsweg (a) gegen (b)** in Entscheidung 13.1 - Empfehlung steht auf (b), bestaetigt
-    ist sie nicht.
-12. **Entscheidung 3, "Bekannter Nachteil":** entfaellt vermutlich durch den Reset (nach dem Reset
-    hatte nie jemand 10/6/2). Dieselbe Streichung ist bei 7 und 9.2 schon eingetragen, bei 3 fehlt
-    sie. Nicht eingetragen, weil noch nicht bestaetigt.
+10. ~~30-Tage-Simulation vorziehen~~ **ENTSCHIEDEN am 09.08.2026:** vorgezogen auf Schritt 11a,
+    also nach Block C und vor Block D. Spezifikation in Abschnitt 1b.
+11. ~~Bot-Ertragsweg (a) gegen (b)~~ **ENTSCHIEDEN am 09.08.2026: Weg (b)** - virtueller Ertrag UND
+    virtuelle Verlustrate aus der eigenen Flottenmacht, mit den Koeffizienten aus Entscheidung 2.
+    Weg (a) (Bots fliegen echte Missionen) ist verworfen: jede geflogene Mission ist eine echte
+    Kampf-Simulation im 2-Worker-Pool, genau die Last, die nach dem CPU-Vorfall gedrosselt wurde.
+    Nachteil von (b) ausdruecklich akzeptiert: Bots haben eine unnatuerlich glatte Wachstumskurve
+    ohne Zufallsausreisser.
+12. ~~Entscheidung 3, "Bekannter Nachteil"~~ **ENTSCHIEDEN am 09.08.2026: gestrichen, mit
+    Praezisierung.** Was durch den Reset entfaellt, ist das GEFUEHL der Wegnahme - niemand hat je
+    10/6/2 gehabt. Der rechnerische Effekt bleibt bestehen: der Raid liefert nach der Halbierung
+    weniger, gemessen an der neuen Baseline. Siehe Entscheidung 3.
+
+**Damit sind alle Punkte geschlossen, die ohne Messung entscheidbar waren.** Offen bleiben nur noch
+1, 3, 4, 5, 6 und 7 - jeder davon haengt an einer Messung, die erst nach Block A moeglich ist.
 
 ### Aenderungsprotokoll dieses Plans
 
@@ -1181,6 +1299,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 09.08.2026 | Vier weitere offene Punkte entschieden: 30-Tage-Simulation vorgezogen (neuer Schritt 11a, vor Block D), Bot-Ertragsweg (b) bestaetigt, Nachteil bei Entscheidung 3 gestrichen und praezisiert, Modulkosten als ZIELWERT statt als Faktor festgelegt (60-120 Tage Amortisation gegen die neue Baseline) - damit ist auch die Feindstaerke-Variante endgueltig auf (b) geschlossen. Neu: **Abschnitt 1b, vollstaendige Spezifikation der 30-Tage-Simulation** mit drei Spielerprofilen, sieben Protokoll-Kennzahlen und sechs Abnahmekriterien. Damit sind alle ohne Messung entscheidbaren Punkte geschlossen. |
 | 09.08.2026 | **Entscheidung 9.1 entschieden** (Nutzer hat die Entscheidung delegiert): Untergrenze verworfen, ersetzt durch Saettigungskurve (9.1a), additive statt multiplikativer Reduktionen (9.1b), Basis-Bauzeiten unveraendert (9.1c). Grund: eine feste Untergrenze deckelt die Bremse, nicht das unbegrenzte Wachstum der Rohzeit - sie verschiebt die Mauer nur. Zweiter Grund: sechs multiplikativ gestapelte Reduktionsquellen ergeben bei Vollausbau ~0,002, dieselbe Fehlerform wie beim Frischling-Bonus. Neu: **Endziel fuer den gesamten Zeit-Umbau** in Entscheidung 9 ("Zeit ist konstante Reibung, Kosten sind der Wachstumsmotor"). Anwendungsbereich nach Kurvenart getrennt: Saettigung nur fuer Gebaeude, Untergrenze genuegt bei Forschung (Stufe 10 gedeckelt) und Schiffen (linear in der Stueckzahl). |
 | 09.08.2026 | Entscheidung 13 (KI-Bots/Piratenbasen) und Entscheidung 14 (Gebaeude-Module V2/V3) neu. Punkt 7.5 aus Entscheidung 7 herausgeloest - die Allianz-Station ist nachweislich NICHT betroffen (Generator ueber alle drei Stufen), die Luecke liegt allein in der handgetippten `buildingModules.ts` der Heimatbasis. Entscheidung 5 um 5a (`SEED_FLEET`-Boden muss nach dem Reset mitfallen) und 5b (Messblocker durch 13.3) ergaenzt. R12 (Startpruefung Modul-IDs) neu. Reihenfolge in Abschnitt 5 neu durchnummeriert. Offene Punkte 9-12 in Abschnitt 8 ergaenzt (9.1-Untergrenze, Vorziehen der 30-Tage-Simulation, Bot-Ertragsweg, Nachteil bei Entscheidung 3) - alle vier sind VORSCHLAEGE, nicht entschieden. |
 | 09.08.2026 | Imperator-Absatz in Abschnitt 4 von einer Feststellung zu einem Messauftrag umgebaut. Grund: Nutzerrueckfrage deckte auf, dass der Imperator in KEINER der vier Sessions im Kampf gemessen wurde - die Einstufung "schlechteste Einheit" stammt aus reiner Tabellenrechnung. Baulimit-Widerspruch (README 2 gegen Session 3 mit 6) vermerkt. |
