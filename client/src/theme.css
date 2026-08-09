@@ -489,6 +489,31 @@
      Nachrichten.tsx), da der Fix zentral hier sitzt statt an jeder Stelle einzeln. Auf breiten
      Bildschirmen ohne Effekt (kein Scrollbalken, solange die Tabelle in die Breite passt). */
   .combat-table{ width:100%; border-collapse:collapse; font-size:13px; display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+  /* Nutzer-Fund 09.08.2026 (Mobil-Fix, Folgefehler des Fixes darueber): Der Fix von 04.08.2026 ist
+     bewusst ZENTRAL auf alle `.combat-table` angewandt worden - zusammen mit der Mobil-Regel
+     `.combat-table{ min-width:720px }` weiter unten. Fuer die 10-spaltige Kampftabelle ist das
+     richtig. Dieselbe Klasse traegt aber auch alle SCHMALEN Tabellen (2-4 Spalten): die
+     Nachrichtenliste selbst, Belohnungen, Spionage-Bereiche, zurueckgekehrte Flotte,
+     Simulator-Ergebnisse. Auf einem 390px-Display wurden die dadurch auf 720px aufgeblasen und
+     liefen rechts aus dem Bild - der Text war abgeschnitten, BEVOR man einen Bericht ueberhaupt
+     geoeffnet hatte.
+     `.narrow` nimmt genau diesen Teil zurueck: gleiche Optik, aber fliessende Breite, Umbruch statt
+     Scroll. Die Kampftabelle selbst bleibt unveraendert scrollbar.
+     Regel fuer neue Tabellen: `.combat-table` nur fuer breite Kampf-/Statistiktabellen,
+     `.combat-table narrow` fuer alles mit hoechstens vier Spalten. */
+  .combat-table.narrow{
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+    overflow-x: visible;
+  }
+  .combat-table.narrow th,
+  .combat-table.narrow td{
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
   .combat-table th{
     padding:8px 6px; border-bottom:2px solid var(--border-bright);
     color:var(--accent-kristall); font-weight:600;
@@ -736,5 +761,11 @@
        (siehe .combat-table oben) - Wert grob aus den laengsten Headern/Werten ueberschlagen. */
     .combat-table{ min-width: 720px; font-size: 12px; }
     .combat-table th, .combat-table td{ padding: 6px 8px; }
+
+    /* Schmale Tabellen: enger setzen, aber KEINE Mindestbreite. Die hoehere Spezifitaet von
+       `.combat-table.narrow` (0,2,0) schlaegt `.combat-table` (0,1,0) unabhaengig von der
+       Reihenfolge - die Mindestbreite oben greift hier also nicht. */
+    .combat-table.narrow{ font-size: 12px; }
+    .combat-table.narrow th, .combat-table.narrow td{ padding: 6px 6px; }
     #modal-box{ padding: 14px; }
 }
