@@ -10,7 +10,14 @@ import type { BuildingModuleDefinition } from '../types.js';
 // Stufe 3), sondern pro Gebaeudetyp verschieden, da die Gebaeude unterschiedlich schnell/teuer
 // wachsen: Minen/Solarkraftwerk Stufe 20, Roboterfabrik Stufe 10, Nanitenfabrik Stufe 5.
 // Kosten/Bauzeit bewusst hoch angesetzt (spaetes Ausbauziel, kein fruehes Upgrade).
-export const BUILDING_MODULES: BuildingModuleDefinition[] = [
+//
+// V2/V3 (10.08.2026): Diese Liste enthaelt weiterhin NUR die V1-Module - die V2/V3-Varianten
+// werden daraus unten generiert (siehe BUILDING_MODULES). Vorher fehlten sie komplett, wodurch
+// drei Dinge still ausfielen: Foerdereffizienz/Energiesparmodul/Ertragssteigerung fuer V2/V3
+// (moduleBoostFactor() liefert bei unbekannter ID einfach 1), die gebaeudeeigenen Bauzeit-Module,
+// und die "Verstaerkte Automatisierung" von V2/V3-Roboter-/Nanitenfabrik. Letzteres liess V2/V3
+// rund viermal langsamer bauen als ein gleich ausgebautes V1.
+const V1_BUILDING_MODULES: BuildingModuleDefinition[] = [
   // ===== Metallmine (Voraussetzung: Stufe 20) =====
   { id: 'metallmine_foerdereffizienz', name: 'Fördereffizienz', buildingId: 'metallmine', moduleKind: 'output', requiredBuildingLevel: 20, effectPerLevel: 0.05, maxLevel: 10,
     lore: 'Praezisere Bohrkoepfe und optimierte Foerderbaender steigern den Ertrag der Metallmine zusaetzlich zur normalen Stufen-Skalierung.',
@@ -67,6 +74,47 @@ export const BUILDING_MODULES: BuildingModuleDefinition[] = [
   { id: 'nanitenfabrik_wartungsfreiheit', name: 'Wartungsfreiheit', buildingId: 'nanitenfabrik', moduleKind: 'buildtime_self', requiredBuildingLevel: 5, effectPerLevel: 0.03, maxLevel: 10,
     lore: 'Selbstreplizierende Wartungs-Naniten verkuerzen die Bauzeit fuer jede weitere Ausbaustufe der Nanitenfabrik selbst.',
     baseCost: { metall: 16000000, kristall: 9500000, deuterium: 4200000 }, costGrowth: 1.7, baseTimeSeconds: 21600, timeGrowth: 1.4 },
+];
+
+// ===== V2/V3-Generator (10.08.2026) =====
+// Bewusst NICHT der Weg aus Entscheidung 14 des Umsetzungsplans ("Heimatbasis auf denselben
+// Generator umstellen wie die Station"). Grund: der Stations-Generator leitet die Modulkosten ueber
+// einen festen MODULE_COST_MULTIPLIER aus den GEBAEUDEKOSTEN ab. Auf die Heimatbasis angewandt
+// haette das auch die 15 bestehenden V1-Module neu bewertet - bei der Metallmine z.B. von
+// 2.000.000/1.000.000/500.000 auf 1.500.000/600.000/0, also inklusive eines auf null fallenden
+// Deuterium-Anteils. Das ist keine "leichte Verschiebung", sondern eine stille Balance-Aenderung an
+// bereits kalibrierten Werten.
+// Stattdessen: V1 bleibt exakt wie es ist (handgetippt, unveraendert), V2/V3 werden DARAUS
+// abgeleitet - mit denselben Stufen-Faktoren, die auch die Gebaeude selbst verwenden
+// (siehe buildings.ts: V2 = 2x Kosten / 1,3x Bauzeit, V3 = 4x Kosten / 1,6x Bauzeit).
+// Ergebnis ist dasselbe wie bei Entscheidung 14 beabsichtigt - eine kuenftige V4-Stufe entsteht
+// automatisch mit, ohne dass hier 15 weitere Module von Hand nachgetippt werden muessen -, aber
+// ohne Nebenwirkung auf V1.
+const TIER_COST_FACTOR: Record<2 | 3, number> = { 2: 2, 3: 4 };
+const TIER_TIME_FACTOR: Record<2 | 3, number> = { 2: 1.3, 3: 1.6 };
+
+function deriveTierModule(mod: BuildingModuleDefinition, tier: 2 | 3): BuildingModuleDefinition {
+  const costFactor = TIER_COST_FACTOR[tier];
+  return {
+    ...mod,
+    // Die IDs MUESSEN exakt `v2_<gebaeudeId>_<suffix>` lauten - genau so setzen actions.ts
+    // (mineOutputPerHour/energyConsumed/energyProduced/roboterNaniteFactor) sie zur Laufzeit
+    // zusammen. Weicht das ab, faellt das Modul wieder still aus (Messregel 15).
+    id: `v${tier}_${mod.id}`,
+    buildingId: `v${tier}_${mod.buildingId}`,
+    baseCost: {
+      metall: Math.round(mod.baseCost.metall * costFactor),
+      kristall: Math.round(mod.baseCost.kristall * costFactor),
+      deuterium: Math.round(mod.baseCost.deuterium * costFactor),
+    },
+    baseTimeSeconds: Math.round(mod.baseTimeSeconds * TIER_TIME_FACTOR[tier]),
+  };
+}
+
+export const BUILDING_MODULES: BuildingModuleDefinition[] = [
+  ...V1_BUILDING_MODULES,
+  ...V1_BUILDING_MODULES.map((m) => deriveTierModule(m, 2)),
+  ...V1_BUILDING_MODULES.map((m) => deriveTierModule(m, 3)),
 ];
 
 export function findBuildingModule(id: string): BuildingModuleDefinition | undefined {
