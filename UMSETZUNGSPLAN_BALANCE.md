@@ -1166,29 +1166,55 @@ Spieler, nicht dem Gebaeude.
 
 **Gemessen** (alle drei Stufen auf Level 30, ohne Module, gegen die alte Baseline):
 
-| Stand | Ertrag | Anteil an 21,69 Mrd/Tag |
-|---|---|---|
-| vorher | 78,4 Mio Wert/h = **1,88 Mrd/Tag** | 8,7 % |
-| nachher (7.1 + Kompensation, Faktor 4,20) | 329,2 Mio Wert/h = **7,90 Mrd/Tag** | 36,4 % |
+| Stand | Ertrag der Station | Anteil an 21,69 Mrd/Tag, ganze Station | dito, pro Kopf bei 2 Mitgliedern |
+|---|---|---|---|
+| vorher | 78,4 Mio Wert/h = **1,88 Mrd/Tag** | 8,7 % | 4,3 % |
+| nachher (7.1 + Kompensation, Faktor 4,20) | 329,2 Mio Wert/h = **7,90 Mrd/Tag** | 36,4 % | **18,2 %** |
 
-**WARUM DAS EIN OFFENER PUNKT IST - ausdruecklich als Widerspruch festgehalten:**
-7,90 Mrd/Tag aus einer **voellig passiven Quelle ohne Flottenbindung, ohne Flugzeit, ohne
-Entscheidung** liegt oberhalb des Raids vor seiner Halbierung (6,31 Mrd/Tag). **Entscheidung 3
-halbiert den Raid mit exakt dieser Begruendung.** Die Station bekommt hier also gerade eine
-Eigenschaft, die der Plan an anderer Stelle als Fehler bewertet.
+**Die Pro-Kopf-Spalte ist die massgebliche** (praezisiert 10.08.2026 nach Nutzerhinweis): Die
+Baseline von 21,69 Mrd/Tag ist ein Wert fuer EINEN Spieler. Die Station ist ein gemeinsamer Topf,
+aus dem alle Mitglieder entnehmen - der Stationsertrag muss also durch die Mitgliederzahl geteilt
+werden, bevor er mit der Baseline verglichen wird. Bei den aktuell zwei Spielern sind das rund
+3,95 Mrd/Tag je Person.
 
-Gegenargumente, die trotzdem fuer den Wert sprechen: der Vollausbau kostet 558 Mrd Ressourcen (rund
-26 Tage Gesamteinnahmen), er ist ein spaetes Ziel, und die Station ist laut Entscheidung 7
+**Wichtig fuer jede kuenftige Messung:** Der Teiler steht NIRGENDS im Code. `withdrawFromStation()`
+hat keine Pro-Mitglied-Quote, die Mitgliederzahl beeinflusst weder Produktion noch Entnahme - wer
+zuerst entnimmt, bekommt. "Haelfte je Spieler" ist eine Absprache zwischen den Beteiligten, keine
+Mechanik. Die Zahlen oben gelten also nur, solange gleichmaessig entnommen wird; im Extremfall
+(einer nimmt alles) gelten die 36,4 %. Bei einer wachsenden Allianz faellt der Pro-Kopf-Anteil
+entsprechend (zu viert rund 9 %) - **wer den Ertrag spaeter an die Mitgliederzahl koppeln will,
+muss die Aufteilung erst bauen.**
+
+**WARUM DAS TROTZDEM EIN OFFENER PUNKT IST - abgeschwaecht am 10.08.2026:**
+Hier stand zunaechst, 7,90 Mrd/Tag laegen oberhalb des Raids vor seiner Halbierung (6,31 Mrd/Tag)
+und die Station bekomme damit genau die Eigenschaft, die Entscheidung 3 am Raid als Fehler
+bewertet. **Das war gegen die falsche Bezugsgroesse gerechnet:** pro Kopf sind es bei zwei
+Mitgliedern rund **3,95 Mrd/Tag**, also deutlich unter dem Raid und knapp innerhalb des unten
+genannten Zielbands. Der Einwand faellt damit weitgehend weg.
+
+Was bestehen bleibt, ist die **Art** der Quelle, nicht ihre Groesse: die Station liefert voellig
+passiv, ohne Flottenbindung, ohne Flugzeit, ohne Entscheidung - dieselbe Eigenschaft, wegen der
+Entscheidung 3 den Raid halbiert. Sie ist deshalb weiter zu beobachten, aber nicht vorrangig zu
+korrigieren.
+
+Gegenargumente, die zusaetzlich fuer den Wert sprechen: der Vollausbau kostet 558 Mrd Ressourcen
+(rund 26 Tage Gesamteinnahmen), er ist ein spaetes Ziel, und die Station ist laut Entscheidung 7
 ausdruecklich als **Ressourcen-Senke** gedacht - eine Senke, die nichts zurueckgibt, wird nicht
 gebaut.
 
 **Entscheidungsregel fuer die Umsetzungs-Session (nach Block A anzuwenden):**
-- *Gemessen wird:* der Anteil der Station an den Gesamteinnahmen bei vollem Ausbau, gegen die NEUE
-  Baseline, und die Amortisationszeit der 558 Mrd.
-- *Regel:* Der Anteil soll **unter 20 %** der Gesamteinnahmen liegen und die Amortisation im Band
-  **60-120 Tage** (dieselbe Spanne wie fuer Module, Abschnitt 4). Liegt der Anteil darueber, wird
+- *Gemessen wird:* der **Pro-Kopf-Anteil** der Station an den Gesamteinnahmen bei vollem Ausbau -
+  also Stationsertrag geteilt durch die Mitgliederzahl, gegen die NEUE Baseline - sowie die
+  Amortisationszeit der 558 Mrd.
+- *Regel:* Der Pro-Kopf-Anteil soll **unter 20 %** liegen und die Amortisation im Band
+  **60-120 Tage** (dieselbe Spanne wie fuer Module, Abschnitt 4). Liegt er darueber, wird
   `STATION_MINING_COMPENSATION` gesenkt - **nicht** die Ertragsrelation aus 7.1, die ist eine
   Innenkorrektur und soll bestehen bleiben.
+- *Achtung bei der Mitgliederzahl:* Der aktuelle Wert 3 ist gegen **zwei** Mitglieder gerechnet.
+  Waechst die Allianz, sinkt der Pro-Kopf-Anteil automatisch - dann darf die Kompensation NICHT
+  reflexhaft nachgezogen werden, sonst waechst der Gesamtertrag mit jedem neuen Mitglied. Zuerst
+  entscheiden, ob die Station pro Kopf oder insgesamt konstant bleiben soll. Das ist eine offene
+  Design-Frage, keine Messfrage.
 - *Bei Uneindeutigkeit:* den **niedrigeren** Wert nehmen (Messregel-Logik aus Abschnitt 8, Punkt 1:
   zu wenig laesst sich nachbessern, zu viel nur durch eine Wegnahme).
 - *Untergrenze:* nicht unter **2,0**. Darunter liegt die Station wieder unter dem, was dieselben
@@ -1199,13 +1225,12 @@ Letzterer ist der eigentliche Grund, warum die Station langfristig bedeutungslos
 Heimatbasis hat gar keinen Cap und waechst unbegrenzt weiter. Das ist eine echte Design-Aenderung
 und gehoert zu Entscheidung 7, nicht in eine vorgezogene Reparatur.
 
-**Ebenfalls festgehalten - eine Annahme, die der Code nicht deckt:** Die Station wird umgangs-
-sprachlich als "Produktion fuer die Allianz, die auf die Mitglieder aufgeteilt wird" beschrieben.
-**Im Code gibt es keine Aufteilung.** `withdrawFromStation()` hat keine Pro-Mitglied-Quote, und die
-Mitgliederzahl beeinflusst die Produktion an keiner Stelle - es ist ein gemeinsamer Topf, wer
-zuerst entnimmt, bekommt. Bei zwei Mitgliedern gibt es also keine Verduennung, die ein hoeherer
-Ertrag ausgleichen muesste. Wer den Ertrag kuenftig an die Mitgliederzahl koppeln will, muss die
-Aufteilung erst bauen.
+**Zur Entnahme, damit die Bezugsgroesse eindeutig bleibt:** Die Station ist ein gemeinsamer Topf,
+aus dem JEDES Mitglied entnehmen kann - insofern wird der Ertrag sehr wohl geteilt, nur eben durch
+Nutzung und nicht durch eine Quote im Code. Fuer die Kalibrierung heisst das: Stationsertrag durch
+Mitgliederzahl teilen, bevor er mit der Pro-Spieler-Baseline verglichen wird (siehe Messtabelle
+oben). Was es NICHT gibt, ist eine erzwungene Aufteilung - `withdrawFromStation()` prueft keine
+Quote.
 
 ---
 
@@ -1479,10 +1504,12 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 
 ## 7. Nach der Umsetzung neu zu bestimmen
 
-- **`STATION_MINING_COMPENSATION` neu bestimmen (NEU 10.08.2026, hoechste Prioritaet in dieser
-  Liste).** Steht auf 3 und liefert damit 7,90 Mrd/Tag bei vollem Stationsausbau - eine passive
-  Quelle oberhalb des Raids VOR seiner Halbierung. Vollstaendige Entscheidungsregel (Zielanteil
-  unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0) in Abschnitt 2a.
+- **`STATION_MINING_COMPENSATION` neu bestimmen (NEU 10.08.2026).** Steht auf 3 und liefert damit
+  7,90 Mrd/Tag bei vollem Stationsausbau - **bei zwei Mitgliedern rund 3,95 Mrd/Tag pro Kopf**, was
+  gegen die alte Baseline 18,2 % entspricht und damit knapp im Zielband liegt. Kein akuter
+  Handlungsbedarf, aber nach Block A gegen die neue Baseline nachzurechnen. Vollstaendige
+  Entscheidungsregel (Pro-Kopf-Anteil unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0, plus
+  die offene Design-Frage zur Mitgliederzahl) in Abschnitt 2a.
 - **Einnahmen-Baseline komplett neu rechnen.** Die 21,69 Mrd/Tag gelten nach Block A nicht mehr.
   **Achtung:** die Station taucht in der Referenztabelle in Abschnitt 1 bisher gar nicht auf,
   obwohl sie seit dem 10.08.2026 ein spuerbarer Posten ist. Beim Neurechnen mit aufnehmen.
@@ -1693,7 +1720,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
-| 10.08.2026 | **Erste Code-Aenderung des Projekts seit Planbeginn** (Nutzerentscheidung, ausgeloest durch zwei eigene Beobachtungen beim Spielen). Vollstaendig dokumentiert im neuen **Abschnitt 2a**. Kurz: Entscheidung 14 erledigt, aber mit bewusster Abweichung vom beschlossenen Weg - NICHT auf den Stations-Generator umgestellt, weil der die 15 bestehenden V1-Module mit neu bewertet haette (Metallmine-Modul von 2,0/1,0/0,5 Mio auf 1,5/0,6/0 Mio, inklusive eines auf null fallenden Deuterium-Anteils); stattdessen V2/V3 aus dem unveraenderten V1 abgeleitet, `BUILDING_MODULES` jetzt 45 statt 15. Gemessen: V2/V3 bauen jetzt exakt so schnell wie V1 (vorher Faktor 4 langsamer), Foerdereffizienz wirkt auf allen drei Stufen. **Der in Entscheidung 14 angekuendigte Faktor 4 ist damit eingetreten und Ausgangszustand fuer 9.1, nicht mehr eine kommende Aenderung.** Ausserdem Entscheidung 7.1 erledigt (Stations-Ertrag V2/V3 auf 2x/4x) und R12 erledigt (`game/moduleIntegrity.ts`, Startpruefung fuer zur Laufzeit gebildete Modul-IDs). **Ein Befund war NEU und stand in keiner Session:** `stationMineOutputPerHour()` wendet den Mining-Multiplikator nicht an - die Entkopplung der Station von der Forschung einzelner Mitglieder ist beabsichtigt und richtig, wurde aber nie ausgeglichen, wodurch die Station bei gleicher Gebaeudestufe ein Sechstel der Heimatbasis produzierte. Neue Konstante `STATION_MINING_COMPENSATION = 3` (nur der dauerhafte Forschungsanteil 2,0 x 1,5, bewusst nicht die vollen 6,12 inkl. Klasse und Booster). **Als Widerspruch ausdruecklich festgehalten:** der resultierende Vollausbau-Ertrag von 7,90 Mrd/Tag liegt oberhalb des Raids vor seiner Halbierung, und Entscheidung 3 halbiert den Raid genau wegen dieser Eigenschaft (passiv, ohne Flottenbindung). Entscheidungsregel zur Nachkalibrierung in Abschnitt 2a, Messpunkt mit hoechster Prioritaet in Abschnitt 7. Zusaetzlich korrigiert: die verbreitete Annahme, die Stationsproduktion werde auf die Mitglieder aufgeteilt - `withdrawFromStation()` hat keine Quote, die Mitgliederzahl wirkt nirgends. Zeitrahmen-Absatz in Abschnitt 8 von einer Absolutsperre auf einen Ausnahme-Massstab praezisiert. |
+| 10.08.2026 | **Erste Code-Aenderung des Projekts seit Planbeginn** (Nutzerentscheidung, ausgeloest durch zwei eigene Beobachtungen beim Spielen). Vollstaendig dokumentiert im neuen **Abschnitt 2a**. Kurz: Entscheidung 14 erledigt, aber mit bewusster Abweichung vom beschlossenen Weg - NICHT auf den Stations-Generator umgestellt, weil der die 15 bestehenden V1-Module mit neu bewertet haette (Metallmine-Modul von 2,0/1,0/0,5 Mio auf 1,5/0,6/0 Mio, inklusive eines auf null fallenden Deuterium-Anteils); stattdessen V2/V3 aus dem unveraenderten V1 abgeleitet, `BUILDING_MODULES` jetzt 45 statt 15. Gemessen: V2/V3 bauen jetzt exakt so schnell wie V1 (vorher Faktor 4 langsamer), Foerdereffizienz wirkt auf allen drei Stufen. **Der in Entscheidung 14 angekuendigte Faktor 4 ist damit eingetreten und Ausgangszustand fuer 9.1, nicht mehr eine kommende Aenderung.** Ausserdem Entscheidung 7.1 erledigt (Stations-Ertrag V2/V3 auf 2x/4x) und R12 erledigt (`game/moduleIntegrity.ts`, Startpruefung fuer zur Laufzeit gebildete Modul-IDs). **Ein Befund war NEU und stand in keiner Session:** `stationMineOutputPerHour()` wendet den Mining-Multiplikator nicht an - die Entkopplung der Station von der Forschung einzelner Mitglieder ist beabsichtigt und richtig, wurde aber nie ausgeglichen, wodurch die Station bei gleicher Gebaeudestufe ein Sechstel der Heimatbasis produzierte. Neue Konstante `STATION_MINING_COMPENSATION = 3` (nur der dauerhafte Forschungsanteil 2,0 x 1,5, bewusst nicht die vollen 6,12 inkl. Klasse und Booster). Der resultierende Vollausbau-Ertrag betraegt 7,90 Mrd/Tag. **Noch am selben Tag nach Nutzerhinweis korrigiert:** dieser Wert war zunaechst direkt gegen die Baseline von 21,69 Mrd/Tag gestellt und daraus ein Widerspruch zu Entscheidung 3 abgeleitet worden (passive Quelle oberhalb des Raids). Die Baseline ist aber ein **Pro-Spieler-Wert**, waehrend die Station ein gemeinsamer Topf ist, aus dem beide Mitglieder entnehmen - pro Kopf sind es rund 3,95 Mrd/Tag bzw. 18,2 %, also unter dem Raid und knapp im Zielband. Der Einwand faellt damit weitgehend weg; bestehen bleibt nur die ART der Quelle (voellig passiv), nicht ihre Groesse. Entscheidungsregel zur Nachkalibrierung entsprechend auf den Pro-Kopf-Anteil umgestellt, ergaenzt um die offene Design-Frage, ob die Station bei wachsender Allianz pro Kopf oder insgesamt konstant bleiben soll. **Lehre daraus:** Bei jeder Kennzahl pruefen, ob sie pro Spieler oder fuer alle zusammen gilt, bevor sie gegen die Baseline gestellt wird - dieselbe Fehlerform wie bei den Aggregat-Stapeln, nur in der Auswertung statt im Code. Zeitrahmen-Absatz in Abschnitt 8 von einer Absolutsperre auf einen Ausnahme-Massstab praezisiert. |
 | 10.08.2026 | **Zweiter Abgleich gegen den Repo-Stand, Schwerpunkt Abschnitt 1b.** Anlass: erneuter Kaltstart, bei dem wieder die alte 33-Punkte-README als Anhang mitgeliefert wurde - genau der Fall, den Messregel 16 beschreibt. **Bestaetigt und unveraendert** (gegen den Code geprueft, nicht gegen Beschreibungen): Raid-Rhythmus Mi/So mit `RAID_SPAWN_CHANCE` 0,7, `POOL_SIZE` 1, `MAX_PLAYER_SHIPS` 200.000, alle drei Missionsdauern, Slot-Zahlen 3/3/4/1, `RAID_WAVE_WIN_*` 10/6/2, `SEED_FLEET` 5.300 + `SEED_DEFENSE` 1.120, `RESOURCE_CAP`-Kommentar mit 1,5 gegen tatsaechliche 6, `ADMIRAL_STAT_SHARE` 0,55, `lib.mjs`/`lib3`/`lib4` byte-identisch. **Sechs Korrekturen:** (1) Abschnitt 1b nennt `runHourlyCheck()` als zu nutzende Spielfunktion - **die ist nicht exportiert**; Einstiegspunkt ist `processMissions()`. (2) Neuer Unterabschnitt "Technische Vorbedingungen" in 1b: alle Kernfunktionen lesen `Date.now()` direkt (19x actions.ts, 9x state.ts, 7x raids.ts, 4x missions.ts), 720 Stundenschritte sind ohne gefaelschte Uhr unmoeglich; und `state.ts` oeffnet ueber `db.ts` beim Import die **produktive** `game.db` mit hartkodiertem Pfad. Beides war im Plan stillschweigend als geloest vorausgesetzt. (3) Die 30-Minuten-Begruendung des Zeitschritts gilt nur fuer Gebaeude - Schiffs-Bauzeiten liegen im Sekundenbereich, wodurch der Lane-Leerlauf bei Stundenaufloesung systematisch unterschaetzt wird; Leerlauf wird deshalb jetzt getrennt je Auftragsart protokolliert. (4) Entscheidung 5a stuetzte sich auf "ein Spieler in Woche 1 hat Dutzende Schiffe" - **falsch**, `defaultPlayerState()` finanziert ab Stunde 0 rund 2.200 Schiffe; die Entscheidung bleibt richtig, die Begruendung ist auf Qualitaet statt Stueckzahl umgestellt. (5) Startkapital als eigene Zeile in der Risikotabelle 1a - es fuehrt direkt in die Asteroiden und verschaerft damit Abnahmekriterium 5. (6) Imperator-Baulimit geklaert: Code sagt `maxCount: 6`, Session 3 hatte recht, die "2" stammt aus der alten README; R10 um die vier nachweislich veralteten Zahlen der alten Fassung ergaenzt. |
 | 09.08.2026 | **Nutzerfund: Flottenlimit blockierte jeden Schiffsbau.** Ein Spielstand lag mit 103.196 Schiffen ueber `MAX_PLAYER_SHIPS = 100.000`. Sofortmassnahme (Nutzerentscheidung): Limit auf **200.000** angehoben und beobachten - die Konstante ist im Code ausdruecklich ein Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt weit unter den Spitzen. Zusaetzlich die Fehlermeldung korrigiert, die bei negativem Rest woertlich "Nur noch -3196 Schiff(e) moeglich" ausgab. **Die Ursache bleibt offen und steht als R13** in Abschnitt 3: `totalOwnedShips()` zaehlt Schiffe auf Missionen/Entsendungen/Gruppen-Operationen nicht mit, wodurch sich das Limit durch Wegschicken und Nachbauen umgehen laesst. Offener Messpunkt fuer Abschnitt 7: welche Flottengroesse die Kampf-Engine in vertretbarer Zeit verkraftet - gemessen sind bisher nur ~700 ms bei 2.600 Einheiten, nichts darueber. |
 | 09.08.2026 | **Zwei Container-Befunde nachgetragen**, die in Session 1 als "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden waren, obwohl beide Entscheidung 2 direkt beruehren. Neu als Pruefpunkte **2c** (Teile-Umwandlungsrate: gemessen 59/40/38 % gegen einen Zielkorridor von 45-55 %, kein Tier trifft ihn) und **2d** (Freischiff-Rueckkopplung: Jackpot erhoeht die eigene Power, an der die Feindstaerke skaliert, an der nach Entscheidung 2 die Beute haengt - Kipppunkt deshalb zweimal rechnen, mit und ohne Freischiff-Treffer). Die Container-Erwartungswerte selbst waren bereits vollstaendig gemessen. |
