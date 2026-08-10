@@ -543,6 +543,15 @@ export function startBuild(state: PlayerState, shipId: string, qty: number): Act
     return { ok: false, error: 'Nicht genug Ressourcen.' };
   }
   const frei = MAX_PLAYER_SHIPS - totalOwnedShips(state);
+  // Wenn `frei` negativ ist, liegt der Bestand bereits UEBER dem Limit (moeglich, siehe Kommentar
+  // an MAX_PLAYER_SHIPS). Die alte Meldung gab dann woertlich "Nur noch -3196 Schiff(e) moeglich"
+  // aus - fachlich richtig, aber fuer den Spieler unverstaendlich.
+  if (frei <= 0) {
+    return {
+      ok: false,
+      error: `Flottenlimit erreicht: ${totalOwnedShips(state)} von ${MAX_PLAYER_SHIPS} Schiffen. Verschrotte Schiffe, um wieder bauen zu koennen.`,
+    };
+  }
   if (effectiveQty > frei) return { ok: false, error: `Nur noch ${frei} Schiff(e) bis zum Flottenlimit moeglich.` };
 
   state.resources.metall -= effectiveCost.metall * effectiveQty;
