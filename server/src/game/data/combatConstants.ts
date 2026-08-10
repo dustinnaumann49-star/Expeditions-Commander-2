@@ -470,7 +470,24 @@ export const MAX_DEFENSE_MODULE_SLOTS = 3;
 // Kampfberechnung jetzt in einem separaten Worker-Thread laeuft, siehe combatRunner.ts).
 // Grosszuegig bemessen, damit auch gemeinsame Multiplayer-Flotten (mehrere Spieler kombiniert
 // im selben Piraten-Sektor) genug Platz haben.
-export const MAX_PLAYER_SHIPS = 100000;
+//
+// 09.08.2026: von 100.000 auf 200.000 angehoben (Nutzerentscheidung). Anlass: ein Spielstand lag
+// mit 103.196 Schiffen UEBER dem alten Limit und konnte dadurch gar kein Schiff mehr bauen.
+// Begruendung fuer die Anhebung statt einer Korrektur nach unten: die Konstante ist ein
+// Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt laut Beobachtung weit unter den
+// Spitzen. Bewusst 200.000 und nicht mehr - der Wert wird beobachtet.
+//
+// OFFEN (siehe R13 im UMSETZUNGSPLAN_BALANCE.md): Wie das Limit ueberhaupt ueberschritten werden
+// konnte. `totalOwnedShips()` in actions.ts zaehlt NUR `state.fleet` (zuhause) + `buildQueue` -
+// NICHT die Schiffe auf Missionen, in Galaxie-Entsendungen oder Gruppen-Operationen. Wer seine
+// Flotte wegschickt, kann zuhause bis zum Limit nachbauen; kehrt sie zurueck, liegt der Bestand
+// darueber. Zusaetzlich fliessen Container-Freischiffe (inventory.ts) und Missionsrueckkehrer
+// (missions.ts) ohne Limitpruefung direkt in die Flotte. Exakt derselbe Fehler wurde fuer die
+// Einzel-Limits bereits behoben (`countShipEverywhere`, Kommentar in actions.ts), bei
+// `totalOwnedShips` aber nie nachgezogen. Die Umstellung macht die Zaehlung STRENGER und darf
+// deshalb erst erfolgen, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher
+// Schiffe bekannt ist - sonst blockiert sie den Spieler sofort wieder.
+export const MAX_PLAYER_SHIPS = 200000;
 
 // Belohnungs-Bonus fuer groesser eingesetzte Flotten (Nutzerentscheidung Juli 2026): wer deutlich
 // mehr Macht als sektortypisch noetig einsetzt, bekommt einen begrenzten Beute-/Teile-/Bergungs-
