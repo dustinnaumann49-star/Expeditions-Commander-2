@@ -658,6 +658,10 @@ export interface GameData {
   piratenCheckCount: number;
   stationBuildings: StationBuildingDefinition[];
   stationBuildingModules: BuildingModuleDefinition[];
+  // Ausgleich dafuer, dass die Allianz-Station bewusst NICHT an Forschung/Klasse/Booster eines
+  // einzelnen Mitglieds gekoppelt ist (Herleitung an der Konstante in
+  // server/src/game/data/stationBuildings.ts). MUSS in jede Ertrags-Anzeige der Station einfliessen.
+  stationMiningCompensation?: number;
 }
 
 export interface StationBuildingDefinition {
