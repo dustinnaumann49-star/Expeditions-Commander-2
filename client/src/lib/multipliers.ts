@@ -138,7 +138,7 @@ export function getGebaeudeBauzeitMultiplier(gameData: GameData, state: PlayerSt
   const tier = buildingId ? gameData.buildings.find((b) => b.id === buildingId)?.tier ?? 1 : 1;
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
   let m = baseTimeMultiplier(gameData, state) * roboterNaniteFactor(gameData, state, 'building', tier) * specific * economyBauzeitMultiplier(state);
-  const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
+  const selfModuleId = buildingId ? selfBuildtimeModuleId(buildingId) : undefined;
   if (selfModuleId) m *= moduleReductionFactor(gameData, state, selfModuleId);
   return m;
 }
@@ -163,6 +163,9 @@ function moduleReductionFactor(gameData: GameData, state: PlayerState, moduleId:
   return Math.max(0.5, 1 - moduleLevel(state, moduleId) * mod.effectPerLevel);
 }
 
+// Enthaelt bewusst nur die V1-Schluessel; V2/V3 werden ueber selfBuildtimeModuleId() abgeleitet -
+// exakt wie in server/src/game/actions.ts. Ohne die Ableitung wuerde die Bauzeit-ANZEIGE fuer
+// V2/V3-Gebaeude das gebaeudeeigene Bauzeit-Modul unterschlagen, obwohl der Server es rechnet.
 const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
   metallmine: 'metallmine_automatisierung',
   kristallmine: 'kristallmine_automatisierung',
@@ -171,6 +174,14 @@ const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
   roboterfabrik: 'roboterfabrik_wartungsfreiheit',
   nanitenfabrik: 'nanitenfabrik_wartungsfreiheit',
 };
+
+function selfBuildtimeModuleId(buildingId: string): string | undefined {
+  const tierMatch = /^v([23])_(.+)$/.exec(buildingId);
+  const baseId = tierMatch ? tierMatch[2] : buildingId;
+  const v1ModuleId = BUILDING_SELF_BUILDTIME_MODULE[baseId];
+  if (!v1ModuleId) return undefined;
+  return tierMatch ? `v${tierMatch[1]}_${v1ModuleId}` : v1ModuleId;
+}
 const MINE_OUTPUT_MODULE: Record<string, string> = {
   metallmine: 'metallmine_foerdereffizienz',
   kristallmine: 'kristallmine_foerdereffizienz',
