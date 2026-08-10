@@ -159,7 +159,10 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 ### Aufbau
 
 - **Zeitschritt: 1 Stunde**, 720 Schritte. Feiner ist unnoetig (kuerzeste relevante Bauzeit liegt
-  bei 30 Minuten), groeber verfehlt die stuendlichen Missions-Checks.
+  bei 30 Minuten), groeber verfehlt die stuendlichen Asteroiden-Checks. Piraten-Sektoren checken
+  alle 4 h (`PIRATEN_CHECK_INTERVAL_MS`), Missionen laufen einheitlich 24 h
+  (`MISSION_DURATION_MS`/`ASTEROID_MISSION_DURATION_MS`) - beides teilt sich sauber in
+  Stundenschritte.
 - **Startzustand: `defaultPlayerState()`**, also Forschung 0, nichts gebaut, Startressourcen. Kein
   Profil aus den Sessions - "schwach" ist bereits mehrere Wochen Spielzeit (siehe Abschnitt 1a).
 - **Echte Spiel-Funktionen verwenden**, keine nachgebaute Wirtschaft: `runEconomyTick()`,
@@ -203,10 +206,16 @@ die daran kalibriert wird.
 4. **Jede Woche wird mindestens ein Inhalt erstmals spielbar.** Erwartete Reihenfolge:
    Woche 1 Asteroiden, Woche 2 Solo-Piraten Niedrig, Woche 3 Piratenbasis, Woche 4 Elite-Bollwerk.
    Ein leerer Wochenabschnitt ist ein Fehlschlag, kein Randbefund. -> Entscheidungen 5 und 13.5.
-   **Der Raid gehoert ausdruecklich NICHT in diese Liste:** er laeuft an festen Serverzeitpunkten
-   mit 60 % Chance und trifft damit **ab Tag 1**, ob der Spieler dafuer geruestet ist oder nicht
-   (`FIXED_CHECK_HOURS_UTC`). Er ist kein freischaltbarer Inhalt, sondern ein Ereignis, das der
-   Spieler von Anfang an ueberstehen muss - genau deshalb ist Kriterium 1 auf ihn gemuenzt.
+   **Der Raid gehoert ausdruecklich NICHT in diese Liste:** er laeuft an festen WOECHENTLICHEN
+   Checkpoints (`RAID_FALLBACK_SCHEDULE` in `economy.ts`: Mittwoch und Sonntag 0 Uhr) mit
+   `RAID_SPAWN_CHANCE = 0,7`; fuer namentlich in `RAID_SCHEDULE_BY_USERNAME` hinterlegte Spieler
+   mit Chance 1,0. Er trifft damit **ab der ersten Woche**, ob der Spieler dafuer geruestet ist
+   oder nicht. Er ist kein freischaltbarer Inhalt, sondern ein Ereignis, das der Spieler von Anfang
+   an ueberstehen muss - genau deshalb ist Kriterium 1 auf ihn gemuenzt. Die Simulation muss die
+   Wochentage abbilden, nicht eine Tageschance.
+   *Korrigiert am 10.08.2026:* hier stand zuvor "feste Serverzeitpunkte, 60 % Chance, ab Tag 1,
+   `FIXED_CHECK_HOURS_UTC`". Diese Konstante existiert nicht mehr - der Wert stammte aus einer
+   veralteten README-Fassung. Siehe Messregel 16.
 5. **Keine Einzelquelle liefert in Woche 1 mehr als 50 % der Wochen-Einnahmen.**
    -> Entscheidung 12 (heute waeren es die Asteroiden mit dem 24,5-fach gestapelten Bonus).
 6. **Die Einnahmenkurve hat kein Plateau ueber 5 Tage.** Ein laengeres Plateau heisst, dass der
@@ -902,8 +911,10 @@ Zugang zu Container-/Missions-/Raid-Beute; dafuer muesste sie bei rund **39** li
 
 Zwei Wege:
 - **(a) Bots wirklich fliegen lassen** (Missionen, Elite, Raids). Realistisch abgebildet, aber jede
-  geflogene Mission ist eine echte Kampf-Simulation im nur 2-Worker-Pool - genau das wurde nach dem
-  CPU-Spitzen-Vorfall gedrosselt (README Punkt 97/98). Nicht empfohlen.
+  geflogene Mission ist eine echte Kampf-Simulation, und `POOL_SIZE` in `combatRunner.ts` steht auf
+  **1** - alle Kaempfe aller Spieler laufen also serialisiert ueber einen einzigen Worker, weitere
+  Anfragen warten in der `waitQueue`. Genau das wurde nach dem CPU-Spitzen-Vorfall so gedrosselt.
+  Nicht empfohlen. *(Korrigiert am 10.08.2026: hier stand "2-Worker-Pool".)*
 - **(b) Virtueller Missions-Ertrag aus der eigenen Flottenmacht** (EMPFOHLEN). Der Bot bekommt pro
   Zeiteinheit einen Ertrag, der sich aus `combatFleetPowerBase()` seiner eigenen Flotte ableitet -
   **mit denselben Koeffizienten wie Entscheidung 2** (Beute je vernichteter Feindmacht) - und
@@ -1246,6 +1257,14 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
     Mining (sechs Quellen, bis 24,5x), Gegnerskalierung (drei Quellen, Messregel 5). Multiplikative
     Stapel sehen an jeder Einzelstelle vertretbar aus und kippen erst im Produkt - **die Pruefung
     muss deshalb an der Summe ansetzen, nicht am Einzelwert.**
+16. **Die README im Repo ist die Quelle, nicht eine hochgeladene Kopie.** Am 10.08.2026 sind zwei
+    Aussagen dieses Plans als falsch aufgefallen, weil sie aus einer aelteren README-Fassung
+    stammten (33 nummerierte Punkte) statt aus der Fassung im Repo (ueber 750 Zeilen, in Abschnitte
+    gegliedert, KEINE Nummerierung). Betroffen waren die Raid-Mechanik und die
+    Kampf-Performance - letztere um mehr als das Hundertfache. **Alle Verweise der Form
+    "README Punkt N" in diesem Plan zeigen ins Leere** und muessen bei der Umsetzung ueber den
+    Abschnittstitel oder den Konstantennamen aufgeloest werden, nicht ueber die Nummer. Generell:
+    **jede uebernommene Zahl gegen den Code pruefen, nicht gegen eine Beschreibung des Codes.**
 15. **Stille Ausweichwerte sind keine Fehlerbehandlung.** `moduleBoostFactor()` liefert bei
     unbekannter ID 1, `moduleReductionFactor()` ebenso, `defenseFactor` lief unbemerkt auseinander,
     `ADMIRAL_ESCORT_BASE` war tot. In allen vier Faellen war das Verhalten korrekt im Sinne des
@@ -1270,9 +1289,13 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 - **Modul-Amortisation gegen die NEUE Baseline** (Zielwert 60-120 Tage, Abschnitt 4). Der noetige
   Kostenfaktor ergibt sich erst hier.
 - **Bot-Wachstumskurve gegen einen menschlichen Spieler** (Entscheidung 13, Zielkorridor 60-100 %).
-- **Maximal vertretbare Flottengroesse fuer die Kampf-Engine** - gemessen sind ~700 ms bei 2.600
-  Einheiten, darueber nichts. `MAX_PLAYER_SHIPS` steht seit 09.08.2026 auf 200.000 und wird
-  beobachtet; eine echte Messung fehlt.
+- ~~Maximal vertretbare Flottengroesse fuer die Kampf-Engine~~ **ERLEDIGT, war nie offen.** Die
+  Messung existiert bereits: seit der stack-basierten Aggregat-Engine haengt die Rechenzeit nur
+  noch von der ANZAHL VERSCHIEDENER TYPEN ab (max. 15), nicht von der Stueckzahl - **bestaetigt
+  bis 1,5 Mio. Schiffe bei ~26 ms** (README, Abschnitt "Performance: Kampf-Engine fuer sehr grosse
+  Flotten"). Die am 09.08.2026 hier eingetragene Zahl "~700 ms bei 2.600 Einheiten" stammte aus
+  einer veralteten README-Fassung von VOR dieser Engine. `MAX_PLAYER_SHIPS = 200.000` ist damit
+  performance-seitig unbedenklich.
 - **Neutralitaets-Kalibrierung der Nanitenfabrik** - nach dem Umbau auf additive Reduktionen
   beschreibt die alte Rechnung nichts mehr (Entscheidung 9, Risiko).
 
@@ -1424,7 +1447,8 @@ Es bleibt eine Messaufgabe, keine Entscheidung.
 11. ~~Bot-Ertragsweg (a) gegen (b)~~ **ENTSCHIEDEN am 09.08.2026: Weg (b)** - virtueller Ertrag UND
     virtuelle Verlustrate aus der eigenen Flottenmacht, mit den Koeffizienten aus Entscheidung 2.
     Weg (a) (Bots fliegen echte Missionen) ist verworfen: jede geflogene Mission ist eine echte
-    Kampf-Simulation im 2-Worker-Pool, genau die Last, die nach dem CPU-Vorfall gedrosselt wurde.
+    Kampf-Simulation, und `POOL_SIZE` steht auf 1 - alle Kaempfe laufen serialisiert ueber einen
+    Worker. Genau die Last, die nach dem CPU-Vorfall gedrosselt wurde.
     Nachteil von (b) ausdruecklich akzeptiert: Bots haben eine unnatuerlich glatte Wachstumskurve
     ohne Zufallsausreisser.
 12. ~~Entscheidung 3, "Bekannter Nachteil"~~ **ENTSCHIEDEN am 09.08.2026: gestrichen, mit
@@ -1450,6 +1474,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
 | 09.08.2026 | **Nutzerfund: Flottenlimit blockierte jeden Schiffsbau.** Ein Spielstand lag mit 103.196 Schiffen ueber `MAX_PLAYER_SHIPS = 100.000`. Sofortmassnahme (Nutzerentscheidung): Limit auf **200.000** angehoben und beobachten - die Konstante ist im Code ausdruecklich ein Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt weit unter den Spitzen. Zusaetzlich die Fehlermeldung korrigiert, die bei negativem Rest woertlich "Nur noch -3196 Schiff(e) moeglich" ausgab. **Die Ursache bleibt offen und steht als R13** in Abschnitt 3: `totalOwnedShips()` zaehlt Schiffe auf Missionen/Entsendungen/Gruppen-Operationen nicht mit, wodurch sich das Limit durch Wegschicken und Nachbauen umgehen laesst. Offener Messpunkt fuer Abschnitt 7: welche Flottengroesse die Kampf-Engine in vertretbarer Zeit verkraftet - gemessen sind bisher nur ~700 ms bei 2.600 Einheiten, nichts darueber. |
 | 09.08.2026 | **Zwei Container-Befunde nachgetragen**, die in Session 1 als "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden waren, obwohl beide Entscheidung 2 direkt beruehren. Neu als Pruefpunkte **2c** (Teile-Umwandlungsrate: gemessen 59/40/38 % gegen einen Zielkorridor von 45-55 %, kein Tier trifft ihn) und **2d** (Freischiff-Rueckkopplung: Jackpot erhoeht die eigene Power, an der die Feindstaerke skaliert, an der nach Entscheidung 2 die Beute haengt - Kipppunkt deshalb zweimal rechnen, mit und ohne Freischiff-Treffer). Die Container-Erwartungswerte selbst waren bereits vollstaendig gemessen. |
 | 09.08.2026 | **Mobil-Darstellung als eigener Strang ausgelagert:** neue Datei `MOBIL_CHECKLISTE.md` im Repo-Wurzelverzeichnis. Bewusst NICHT hier eingearbeitet - anderes Problemfeld (Darstellung statt Simulation), andere Pruefmethode (Auge am Geraet statt Messskript), reversibel und **nicht blockierend fuer den Reset**. Die Aenderungen koennen unabhaengig vom Balance-Paket sofort live gehen. Erster Befund (M1) ist bereits behoben: die Klasse `.combat-table` trug neben der 10-spaltigen Kampftabelle auch neun schmale Tabellen inklusive der Nachrichtenliste, und die Mobil-Regel `min-width:720px` blies die auf einem 390px-Display ueber den rechten Rand hinaus. Dieselbe Fehlerform wie Messregel 15: eine zentrale Regel, die an einer Stelle richtig und an acht anderen falsch ist. |
