@@ -83,7 +83,13 @@ function stationMineOutputPerHour(gameData: GameData, station: Station, b: Stati
   if (!b.baseOutput) return 0;
   const base = stationLevelScaledValue(b.baseOutput, station.buildings[b.id] || 0);
   const moduleFactor = stationModuleBoostFactor(gameData, station, stationOutputModuleId(b));
-  return base * moduleFactor * stationEnergyFactorForTier(gameData, station, b.tier);
+  // Spiegelt stationMineOutputPerHour() in server/src/game/stations.ts 1:1 - inklusive
+  // STATION_MINING_COMPENSATION. Fehlt der Faktor hier, zeigt die Seite einen zu niedrigen Ertrag
+  // an, waehrend der Server real mehr gutschreibt: genau so sah es am 10.08.2026 aus, als ob sich
+  // an der Station "gar nichts geaendert" haette. Fallback 1 nur fuer den Fall, dass ein alter
+  // Server die Konstante noch nicht mitliefert.
+  const compensation = gameData.stationMiningCompensation ?? 1;
+  return base * moduleFactor * compensation * stationEnergyFactorForTier(gameData, station, b.tier);
 }
 function stationBauzeitFactorForTier(gameData: GameData, station: Station, tier: 1 | 2 | 3): number {
   const tierBuildings = gameData.stationBuildings.filter((b) => b.tier === tier);
