@@ -1,7 +1,7 @@
 import { getUserById, listAlliancesJson, saveAllianceJson, getStationJson, listStationsJson, saveStationJson } from '../db.js';
 import { getReservedGalaxyPositions, isGalaxyPositionFree } from './galaxyPositions.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS } from './data/galaxyConstants.js';
-import { STATION_BUILDINGS, findStationBuilding, stationBuildingsForTier } from './data/stationBuildings.js';
+import { STATION_BUILDINGS, findStationBuilding, stationBuildingsForTier, STATION_MINING_COMPENSATION } from './data/stationBuildings.js';
 import { findStationBuildingModule } from './data/stationBuildingModules.js';
 import type { ActionResult } from './actions.js';
 import type { Alliance, AllianceMember, BuildingModuleDefinition, GalaxyPosition, PlayerState, ResourceCost, Station, StationBuildingDefinition } from './types.js';
@@ -252,7 +252,11 @@ function stationMineOutputPerHour(station: Station, building: StationBuildingDef
   const level = station.buildings[building.id] || 0;
   const base = levelScaledValue(building.baseOutput, level);
   const moduleFactor = stationModuleBoostFactor(station, stationOutputModuleId(building));
-  return base * moduleFactor * stationEnergyFactorForTier(station, building.tier);
+  // STATION_MINING_COMPENSATION gleicht aus, dass hier bewusst KEINE Forschung/Klasse/Booster
+  // eines Mitglieds einfliesst (siehe ausfuehrliche Herleitung an der Konstante selbst in
+  // data/stationBuildings.ts). Greift nur bei Minen - das Solarkraftwerk hat kein `baseOutput`
+  // und faellt schon in der Zeile oben heraus, sein Energieertrag bleibt also unveraendert.
+  return base * moduleFactor * STATION_MINING_COMPENSATION * stationEnergyFactorForTier(station, building.tier);
 }
 
 // Rechnet die seit `station.lastTick` vergangene Zeit als passive Produktion hoch - summiert

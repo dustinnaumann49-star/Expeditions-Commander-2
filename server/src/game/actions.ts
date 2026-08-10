@@ -62,9 +62,11 @@ function roboterNaniteFactor(state: PlayerState, target: 'building' | 'shipDefen
     target === 'building' ? Math.pow(0.75, roboterLevel) * Math.pow(0.5, naniteLevel) : Math.pow(0.99, roboterLevel) * Math.pow(0.98, naniteLevel);
   // Module "Verstaerkte Automatisierung" (Roboterfabrik/Nanitenfabrik) verstaerken den
   // bestehenden Stufen-Effekt zusaetzlich, OHNE dass die Fabrik selbst weiter ausgebaut werden
-  // muss - stapelt multiplikativ mit dem obigen Basiswert. Existiert bislang nur fuer V1
-  // (`roboterfabrik_verstaerkte_automatisierung`), fuer V2/V3 liefert moduleReductionFactor() bei
-  // fehlendem Modul einfach 1 zurueck (kein Fehler, kein Effekt).
+  // muss - stapelt multiplikativ mit dem obigen Basiswert.
+  // Korrigiert 10.08.2026: hier stand "existiert bislang nur fuer V1, fuer V2/V3 liefert
+  // moduleReductionFactor() bei fehlendem Modul einfach 1 zurueck (kein Fehler, kein Effekt)".
+  // Genau dieser stille Ausfall liess V2/V3-Gebaeude rund viermal langsamer bauen als ein gleich
+  // ausgebautes V1. Die V2/V3-Module existieren jetzt (siehe buildingModules.ts).
   factor *= moduleReductionFactor(state, `${roboterId}_verstaerkte_automatisierung`);
   factor *= moduleReductionFactor(state, `${naniteId}_verstaerkte_automatisierung`);
   return factor;
@@ -102,6 +104,9 @@ function moduleReductionFactor(state: PlayerState, moduleId: string): number {
 
 // Zuordnung Gebaeude -> eigenes "buildtime_self"-Modul (verkuerzt NUR die Bauzeit fuer weitere
 // Ausbaustufen GENAU DIESES Gebaeudes).
+// Die Tabelle enthaelt bewusst nur die V1-Schluessel; V2/V3 werden ueber selfBuildtimeModuleId()
+// abgeleitet. Vorher war das eine reine V1-Tabelle OHNE Ableitung - fuer V2/V3-Gebaeude wurde die
+// Modul-ID gar nicht erst gebildet, das Bauzeit-Modul war dort also wirkungslos (10.08.2026).
 const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
   metallmine: 'metallmine_automatisierung',
   kristallmine: 'kristallmine_automatisierung',
@@ -110,6 +115,16 @@ const BUILDING_SELF_BUILDTIME_MODULE: Record<string, string> = {
   roboterfabrik: 'roboterfabrik_wartungsfreiheit',
   nanitenfabrik: 'nanitenfabrik_wartungsfreiheit',
 };
+
+// Loest die Zuordnung oben auch fuer V2/V3 auf: `v2_metallmine` -> `v2_metallmine_automatisierung`,
+// passend zu den in buildingModules.ts generierten IDs.
+function selfBuildtimeModuleId(buildingId: string): string | undefined {
+  const tierMatch = /^v([23])_(.+)$/.exec(buildingId);
+  const baseId = tierMatch ? tierMatch[2] : buildingId;
+  const v1ModuleId = BUILDING_SELF_BUILDTIME_MODULE[baseId];
+  if (!v1ModuleId) return undefined;
+  return tierMatch ? `v${tierMatch[1]}_${v1ModuleId}` : v1ModuleId;
+}
 
 // Zuordnung Mine -> eigenes "output"-Modul (Foerdereffizienz) bzw. "energy_reduction"-Modul
 // (Energiesparmodul).
@@ -153,7 +168,7 @@ export function gebaeudeBauzeitMultiplier(state: PlayerState, buildingId?: strin
   const tier = buildingId ? findBuilding(buildingId)?.tier ?? 1 : 1;
   const specific = specificTimeMultiplier(state.research.bauzeit_gebaeude || 0, 0.03);
   let m = baseTimeMultiplier(state) * roboterNaniteFactor(state, 'building', tier) * specific * economyBauzeitMultiplier(state);
-  const selfModuleId = buildingId ? BUILDING_SELF_BUILDTIME_MODULE[buildingId] : undefined;
+  const selfModuleId = buildingId ? selfBuildtimeModuleId(buildingId) : undefined;
   if (selfModuleId) m *= moduleReductionFactor(state, selfModuleId);
   return m;
 }
