@@ -11,7 +11,7 @@ import { savePreset, deletePreset } from './presets.js';
 import { listActiveRaids } from './raidReinforce.js';
 import { createGroupOperation, listMyGroupOperations, respondToGroupOperation, cancelGroupOperation, startGroupOperation, respondAdminEncounter, recallGroupOperation } from './groupOps.js';
 import { createAlliance, inviteToAlliance, respondToAllianceInvite, getMyAllianceAndStation, foundStation, listAllStationPositions, startStationBuildingConstruction, startStationModuleUpgrade, depositToStation, withdrawFromStation } from './stations.js';
-import { STATION_BUILDINGS } from './data/stationBuildings.js';
+import { STATION_BUILDINGS, STATION_MINING_COMPENSATION } from './data/stationBuildings.js';
 import { STATION_BUILDING_MODULES } from './data/stationBuildingModules.js';
 import { simulateCombat } from './simulator.js';
 import { listGalaxyOccupants, startHoldDeployment, recallHoldDeployment, relocateGalaxyPosition, galaxyDistance, galaxyFleetSpeed, galaxyDurationMs, galaxyFuelCost, getIncomingDeploymentsFor } from './galaxy.js';
@@ -111,6 +111,9 @@ gameRouter.get('/data', (_req, res) => {
     piratenCheckCount: PIRATEN_CHECK_COUNT,
     stationBuildings: STATION_BUILDINGS,
     stationBuildingModules: STATION_BUILDING_MODULES,
+    // Muss mit ausgeliefert werden, sonst zeigt der Client-Spiegel in Allianz.tsx wieder den
+    // unkompensierten Ertrag an (genau dieser Fehler ist am 10.08.2026 einmal passiert).
+    stationMiningCompensation: STATION_MINING_COMPENSATION,
   });
 });
 
