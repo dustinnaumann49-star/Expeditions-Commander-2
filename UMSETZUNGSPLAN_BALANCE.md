@@ -5,8 +5,10 @@ Sessions (Befunde, Messwerte, Methodik). Sie bleibt unveraendert und ist die Bew
 Diese Datei enthaelt die daraus **getroffenen Entscheidungen** und ist die Arbeitsanweisung fuer die
 Umsetzungs-Session.
 
-**Status:** Am Spielcode wurde weiterhin NICHTS geaendert. Alle Entscheidungen sind getroffen, die
-Umsetzung steht aus. **14 Entscheidungen, 12 Reparaturen** (Stand 09.08.2026, zweite Fassung).
+**Status:** **Am Spielcode wurde am 10.08.2026 erstmals etwas geaendert** (Nutzerentscheidung,
+bewusst ausserhalb der Blockreihenfolge - Begruendung und Umfang siehe Abschnitt 2a
+"Vorgezogene Umsetzung"). Alles Uebrige ist unveraendert: **14 Entscheidungen, 12 Reparaturen**
+(Stand 09.08.2026, zweite Fassung), Umsetzung steht aus.
 
 **Wer diese Datei liest, kann direkt loslegen.** Zahlen muessen nicht neu hergeleitet werden - sie
 stehen in der Checkliste unter dem jeweils genannten Befund.
@@ -612,6 +614,11 @@ Einheiten - **das steht nirgends im Spiel.** Ins Info-Popup aufnehmen.
 
 ### Entscheidung 7 - Allianz-Station: RELATION GLATTZIEHEN, KOSTENKURVE ANGLEICHEN
 
+> **7.1 ERLEDIGT am 10.08.2026** (V2 = 2x Ertrag, V3 = 4x Ertrag). Zusaetzlich ist ein im Plan
+> nicht enthaltener Befund behoben worden - der fehlende Ausgleich fuer die bewusst entkoppelte
+> Mining-Forschung. Beides samt Messwerten und offenem Kalibrierpunkt in **Abschnitt 2a**.
+> **7.2, 7.3 und 7.4 stehen unveraendert aus.**
+
 **Bezug:** Session 4, Befund 1 + 2 + 3 / Session 1, Befund 2 / Session 3, Befund 9. **Dateien:**
 `data/stationBuildings.ts`, `game/stations.ts` (`checkTierUnlock()`,
 `stationBauzeitFactorForTier()`), `data/buildings.ts`.
@@ -1039,6 +1046,12 @@ Vorbedingung fuer den wichtigsten Inhalt.**
 
 ### Entscheidung 14 - Gebaeude-Module der Heimatbasis fuer V2/V3 (verschoben aus 7.5)
 
+> **ERLEDIGT am 10.08.2026, mit bewusster Abweichung vom hier beschriebenen Weg.**
+> Umgesetzt wurde NICHT die Umstellung auf den Stations-Generator, sondern eine Ableitung der
+> V2/V3-Module aus den unveraenderten V1-Modulen. Begruendung, Messwerte und Folgen fuer die
+> Kalibrierung von 9.1 stehen in **Abschnitt 2a**. Der Text unten ist der Stand VOR der Umsetzung
+> und bleibt als Befundbeschreibung erhalten.
+
 **Bezug:** Session 3, Befund 9 + Nutzerhinweis 09.08.2026, praezisiert durch Code-Pruefung.
 **Dateien:** `data/buildingModules.ts`, `game/actions.ts`
 (`roboterNaniteFactor()`, `BUILDING_SELF_BUILDTIME_MODULE`, `mineOutputPerHour()`,
@@ -1077,6 +1090,125 @@ Monate entfernt. **Nicht blockierend fuer den Reset.**
 
 ---
 
+## 2a. Vorgezogene Umsetzung am 10.08.2026 (ausserhalb der Blockreihenfolge)
+
+**Nutzerentscheidung.** Ausloeser waren zwei eigene Beobachtungen beim Spielen: die Heimatbasis hat
+bei V2/V3-Gebaeuden keine Module, und die Allianz-Station produziert auffaellig wenig. Beides steht
+im Plan (Entscheidung 14 bzw. 7), beides war fuer spaeter terminiert. Der Nutzer wollte es sofort
+geloest haben; die Blockreihenfolge ist dafuer bewusst durchbrochen worden.
+
+**Warum das vertretbar ist:** Der Server wird ohnehin zurueckgesetzt (Abschnitt 1a). Was in den
+kommenden Wochen an Spielstaenden entsteht, ist nicht erhaltenswert. Die Aenderungen kosten also
+nichts ausser dem Risiko, dass spaetere Kalibrierungen sie noch einmal anfassen muessen.
+
+**Was das NICHT aufhebt:** Die Messungen dieser Aenderungen sind gegen die alte Baseline von
+21,69 Mrd/Tag gerechnet, und die faellt nach Block A weg (Abschnitt 7). Die Zahlen unten sind
+Zwischenstaende, keine Endwerte.
+
+### Was umgesetzt wurde
+
+**1. Entscheidung 14 (Gebaeude-Module V2/V3 der Heimatbasis) - erledigt, aber ANDERS als
+beschlossen.**
+Der Plan sah vor, die Heimatbasis auf denselben Generator umzustellen wie die Station. **Das wurde
+bewusst nicht gemacht.** Der Stations-Generator leitet die Modulkosten ueber einen festen
+`MODULE_COST_MULTIPLIER` aus den Gebaeudekosten ab; auf die Heimatbasis angewandt haette er auch
+die 15 bestehenden V1-Module neu bewertet - bei der Metallmine von 2.000.000/1.000.000/500.000 auf
+1.500.000/600.000/0, inklusive eines auf null fallenden Deuterium-Anteils. Der Plan nennt das "die
+Werte verschieben sich leicht"; tatsaechlich waere es eine stille Balance-Aenderung an bereits
+kalibrierten Werten gewesen.
+-> Stattdessen: V1 bleibt exakt unveraendert, V2/V3 werden DARAUS abgeleitet, mit denselben
+Stufen-Faktoren, die auch die Gebaeude selbst nutzen (2x/4x Kosten, 1,3x/1,6x Bauzeit). Der Gewinn
+aus Entscheidung 14 bleibt erhalten - eine kuenftige V4-Stufe entsteht automatisch mit -, ohne
+Nebenwirkung auf V1. `BUILDING_MODULES` umfasst jetzt 45 statt 15 Module.
+**Gemessen:** V2/V3-Gebaeude bauen bei gleichem Ausbaustand jetzt exakt so schnell wie V1
+(Verhaeltnis 1,000; vorher Faktor 4 langsamer, weil die "Verstaerkte Automatisierung" von Roboter-
+und Nanitenfabrik fuer V2/V3 nicht existierte und `moduleReductionFactor()` still 1 lieferte).
+Foerdereffizienz wirkt jetzt auf allen drei Stufen (Stufe 10 = +50 %).
+**Das ist genau die Beschleunigung um Faktor 4, vor der Entscheidung 14 warnt** - sie ist damit
+bereits eingetreten und muss bei der Kalibrierung von 9.1 in Block D als Ausgangszustand
+angenommen werden, nicht als noch bevorstehende Aenderung.
+
+**2. Entscheidung 7.1 (Stufen-Relation der Allianz-Station) - erledigt.**
+V2-Minen liefern jetzt 2x, V3-Minen 4x den V1-Ertrag, bei unveraendert 2x bzw. 4x Kosten (vorher
+1,5x und 2,5x Ertrag bei denselben Kosten - jede Ausbaustufe war unwirtschaftlicher als die
+vorherige). Energieverbrauch und Solar-Ertrag bleiben absichtlich bei 1,5x/2,5x: beide skalieren
+innerhalb einer Stufe gemeinsam, der Energiefaktor je Stufe aendert sich dadurch nicht.
+Der Rest von Entscheidung 7 (7.2 Kostenkurve, 7.3 Module, 7.4 Fabriken) ist NICHT angefasst.
+
+**3. NEU, nicht aus dem Plan: Kompensationsfaktor fuer den Stations-Minenertrag.**
+Siehe eigener Unterabschnitt unten - das ist der einzige Punkt hier, der nicht aus einer bereits
+getroffenen Entscheidung folgt.
+
+**4. R12 (Startpruefung fuer zusammengesetzte Modul-IDs) - erledigt.**
+Neue Datei `game/moduleIntegrity.ts`, eingehaengt in `index.ts`. Bildet beim Serverstart dieselben
+Modul-IDs, die `actions.ts`/`stations.ts` zur Laufzeit zusammensetzen, und meldet jede ohne
+Definition. Bricht bewusst nicht ab. Genau diese Pruefung haette den V2/V3-Ausfall sofort sichtbar
+gemacht.
+
+### Der Kompensationsfaktor der Allianz-Station (offener Kalibrierpunkt)
+
+**Befund (Code-Pruefung 10.08.2026, nicht aus den Sessions):** Die Station nutzt dieselben
+Basiswerte und dieselbe Formel wie die Heimatbasis. Der Unterschied liegt woanders:
+`stationMineOutputPerHour()` wendet den Mining-Multiplikator NICHT an. Die Heimatbasis bekommt bei
+Vollausbau bis zu **6,12x** obendrauf (Mining-Forschung 10 = 2,0 * Mining-Boost Minen 10 = 1,5 *
+Prospektor 1,2 * Abbau-Booster 1,7). Die Station bekam davon nichts und produzierte bei gleicher
+Gebaeudestufe **ein Sechstel**.
+
+**Die Entkopplung selbst ist richtig und bleibt** (Nutzerbestaetigung): bei mehreren Mitgliedern
+mit unterschiedlicher Forschung waere nicht definiert, wessen Stand gilt. Der Code dokumentiert das
+ausdruecklich. **Nur ausgeglichen wurde sie nie** - das war eine Luecke, kein Beschluss.
+
+**Umsetzung:** neue Konstante `STATION_MINING_COMPENSATION = 3` in `data/stationBuildings.ts`,
+angewandt in `stationMineOutputPerHour()`. Ausgeglichen wird bewusst nur der dauerhafte
+**Forschungsanteil** (2,0 * 1,5 = 3,0), nicht die vollen 6,12: Prospektor ist eine Klassenwahl
+unter mehreren, der Abbau-Booster ist zeitlich begrenzt und kostet DM. Beides gehoert dem einzelnen
+Spieler, nicht dem Gebaeude.
+
+**Gemessen** (alle drei Stufen auf Level 30, ohne Module, gegen die alte Baseline):
+
+| Stand | Ertrag | Anteil an 21,69 Mrd/Tag |
+|---|---|---|
+| vorher | 78,4 Mio Wert/h = **1,88 Mrd/Tag** | 8,7 % |
+| nachher (7.1 + Kompensation, Faktor 4,20) | 329,2 Mio Wert/h = **7,90 Mrd/Tag** | 36,4 % |
+
+**WARUM DAS EIN OFFENER PUNKT IST - ausdruecklich als Widerspruch festgehalten:**
+7,90 Mrd/Tag aus einer **voellig passiven Quelle ohne Flottenbindung, ohne Flugzeit, ohne
+Entscheidung** liegt oberhalb des Raids vor seiner Halbierung (6,31 Mrd/Tag). **Entscheidung 3
+halbiert den Raid mit exakt dieser Begruendung.** Die Station bekommt hier also gerade eine
+Eigenschaft, die der Plan an anderer Stelle als Fehler bewertet.
+
+Gegenargumente, die trotzdem fuer den Wert sprechen: der Vollausbau kostet 558 Mrd Ressourcen (rund
+26 Tage Gesamteinnahmen), er ist ein spaetes Ziel, und die Station ist laut Entscheidung 7
+ausdruecklich als **Ressourcen-Senke** gedacht - eine Senke, die nichts zurueckgibt, wird nicht
+gebaut.
+
+**Entscheidungsregel fuer die Umsetzungs-Session (nach Block A anzuwenden):**
+- *Gemessen wird:* der Anteil der Station an den Gesamteinnahmen bei vollem Ausbau, gegen die NEUE
+  Baseline, und die Amortisationszeit der 558 Mrd.
+- *Regel:* Der Anteil soll **unter 20 %** der Gesamteinnahmen liegen und die Amortisation im Band
+  **60-120 Tage** (dieselbe Spanne wie fuer Module, Abschnitt 4). Liegt der Anteil darueber, wird
+  `STATION_MINING_COMPENSATION` gesenkt - **nicht** die Ertragsrelation aus 7.1, die ist eine
+  Innenkorrektur und soll bestehen bleiben.
+- *Bei Uneindeutigkeit:* den **niedrigeren** Wert nehmen (Messregel-Logik aus Abschnitt 8, Punkt 1:
+  zu wenig laesst sich nachbessern, zu viel nur durch eine Wegnahme).
+- *Untergrenze:* nicht unter **2,0**. Darunter liegt die Station wieder unter dem, was dieselben
+  Gebaeude an der Heimatbasis leisten, und der urspruengliche Befund waere nur halb behoben.
+
+**Bewusst NICHT geaendert:** die Kopplung an Forschung (siehe oben) und der **Level-Cap 30**.
+Letzterer ist der eigentliche Grund, warum die Station langfristig bedeutungslos wird - die
+Heimatbasis hat gar keinen Cap und waechst unbegrenzt weiter. Das ist eine echte Design-Aenderung
+und gehoert zu Entscheidung 7, nicht in eine vorgezogene Reparatur.
+
+**Ebenfalls festgehalten - eine Annahme, die der Code nicht deckt:** Die Station wird umgangs-
+sprachlich als "Produktion fuer die Allianz, die auf die Mitglieder aufgeteilt wird" beschrieben.
+**Im Code gibt es keine Aufteilung.** `withdrawFromStation()` hat keine Pro-Mitglied-Quote, und die
+Mitgliederzahl beeinflusst die Produktion an keiner Stelle - es ist ein gemeinsamer Topf, wer
+zuerst entnimmt, bekommt. Bei zwei Mitgliedern gibt es also keine Verduennung, die ein hoeherer
+Ertrag ausgleichen muesste. Wer den Ertrag kuenftig an die Mitgliederzahl koppeln will, muss die
+Aufteilung erst bauen.
+
+---
+
 ## 3. Reine Reparaturen (keine Entscheidung noetig, laufen parallel mit)
 
 | # | Was | Datei | Bezug |
@@ -1093,7 +1225,7 @@ Monate entfernt. **Nicht blockierend fuer den Reset.**
 | R10 | README korrigieren: Aussenposten, RapidFire-Kette (kein Stein-Schere-Papier), Kosten/Waffenpunkt-Korridor, Salvenschiffe als Rollen-Einheiten. **Ergaenzt 10.08.2026:** Die Repo-README ist an diesen Stellen bereits richtig - falsch ist die aeltere, nummerierte Fassung, die noch im Umlauf ist (33 Punkte). Beim Abarbeiten von R10 pruefen, welche Aussagen tatsaechlich noch in `README.md` stehen, statt gegen die alte Fassung zu korrigieren. Konkret nachweislich veraltet in der alten Fassung: Imperator `maxCount` 2 statt **6**, Salvenschiff-Limits 8-30 statt **150/90/30**, Asteroiden-Missionsdauer 12 h statt **24 h**, Kampf-Performance 700 ms bei 2.600 Einheiten statt **~26 ms bei 1,5 Mio** | `README.md` | S4-Konsistenz |
 | R11 | Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
 | R13 | **`totalOwnedShips()` zaehlt nicht "ueberall".** Sie summiert nur `state.fleet` + `buildQueue`, NICHT Missionen, Galaxie-Entsendungen und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` unbeabsichtigt ueberschreiten: Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt zurueck. Zusaetzlich fliessen Container-Freischiffe (`inventory.ts:174`) und Missionsrueckkehrer (`missions.ts:691`) ohne Limitpruefung in die Flotte. **Exakt derselbe Fehler wurde fuer die Einzel-Limits schon behoben** (`countShipEverywhere`, samt Kommentar in `actions.ts`) - bei `totalOwnedShips` nie nachgezogen. **Achtung bei der Umsetzung:** die Korrektur macht die Zaehlung STRENGER. Erst anwenden, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher Schiffe bekannt ist, sonst blockiert sie den Spieler sofort wieder | `game/actions.ts:198`, `data/combatConstants.ts` | Nutzerfund 09.08.2026 |
-| R12 | **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
+| R12 | **ERLEDIGT 10.08.2026** (siehe Abschnitt 2a), umgesetzt in `game/moduleIntegrity.ts`. Ursprungstext: **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
 
 ---
 
@@ -1231,7 +1363,8 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                        -> Voraussetzung fuer JEDE reproduzierbare Messung an Entscheidung 5
   7. Entscheidung 5   Piratenbasen (+ Schranke gegen Dauer-Farming! + SEED_FLEET-Boden, 5a)
   8. Entscheidung 6   Schiffs-Tiers
-  9. Entscheidung 7   Allianz-Station
+  9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
+                       vorgezogen erledigt, siehe Abschnitt 2a)
  10. Entscheidung 10  Heimatverteidigung
  11. Entscheidung 12  Frischling-Bonus additiv
                        -> VORGEZOGEN aus Block F (09.08.2026): Abnahmekriterium 5 der Simulation
@@ -1255,8 +1388,9 @@ BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
                           Spiegelung ist der Weg, auf dem multipliers.ts schon einmal
                           auseinandergelaufen ist
                        -> messen
- 15. Entscheidung 14   Gebaeude-Module V2/V3 der Heimatbasis
-                       -> ZUSAMMEN mit 9.1 kalibrieren (Faktor 4 auf V2/V3-Bauzeit)
+ 15. Entscheidung 14   ERLEDIGT am 10.08.2026 (Abschnitt 2a) - hier nur noch KALIBRIEREN
+                       -> der Faktor 4 auf die V2/V3-Bauzeit ist bereits eingetreten und
+                          gilt als Ausgangszustand von 9.1, nicht als kommende Aenderung
  16. Entscheidung 9.2  Slots auf 1 + Warteschlange  -> messen
                        -> gegen Abnahmekriterium 2 UND 3 gleichzeitig (Leerlauf gegen
                           Ressourcenstau), sie schlagen gegenlaeufig aus
@@ -1268,7 +1402,7 @@ BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
 BLOCK E (Kleinkram, jederzeit)
  20. Entscheidung 8   Sandronator
  21. Entscheidung 11  Aussenposten-Reste
- 22. R2 - R12  (R1 laeuft in Schritt 14 mit)
+ 22. R2 - R11  (R1 laeuft in Schritt 14 mit, R12 ist am 10.08.2026 erledigt)
 
 BLOCK F (STARTPHASE - erst wenn A bis E stehen, vor dem Reset)
  23. 30-Tage-Fortschrittssimulation ERNEUT ausfuehren (gebaut in Schritt 13, Abschnitt 1b) -
@@ -1345,7 +1479,13 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 
 ## 7. Nach der Umsetzung neu zu bestimmen
 
+- **`STATION_MINING_COMPENSATION` neu bestimmen (NEU 10.08.2026, hoechste Prioritaet in dieser
+  Liste).** Steht auf 3 und liefert damit 7,90 Mrd/Tag bei vollem Stationsausbau - eine passive
+  Quelle oberhalb des Raids VOR seiner Halbierung. Vollstaendige Entscheidungsregel (Zielanteil
+  unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0) in Abschnitt 2a.
 - **Einnahmen-Baseline komplett neu rechnen.** Die 21,69 Mrd/Tag gelten nach Block A nicht mehr.
+  **Achtung:** die Station taucht in der Referenztabelle in Abschnitt 1 bisher gar nicht auf,
+  obwohl sie seit dem 10.08.2026 ein spuerbarer Posten ist. Beim Neurechnen mit aufnehmen.
 - **DM-Bilanz neu rechnen.** 1.088/Tag faellt durch Entscheidung 3 um 595.
 - **Kipppunkt der Beute-Kurve messen** (Entscheidung 2).
 - **"74 Tage bis alles gekauft ist" neu rechnen** - Entscheidung 7 und 9.4 verlaengern das.
@@ -1419,9 +1559,17 @@ ist verhandelbar.
 ### Zeitrahmen
 
 Umsetzung fruehestens in rund 8 Wochen (Rueckkehr des Nutzers aus dem Urlaub). Bis dahin wird der
-Plan wiederholt durchgesprochen und verfeinert. **In dieser Phase KEIN Code schreiben und KEINE
-Spieldateien aendern** - ausschliesslich diesen Plan fortschreiben. Die Umsetzung erfolgt danach mit
+Plan wiederholt durchgesprochen und verfeinert. Die eigentliche Umsetzung erfolgt danach mit
 Claude Code.
+
+*Praezisiert am 10.08.2026:* hier stand "In dieser Phase KEIN Code schreiben und KEINE Spieldateien
+aendern - ausschliesslich diesen Plan fortschreiben". Das gilt weiterhin als **Grundregel fuer die
+Balance-Blocke A bis F**, ist aber keine Absolutsperre: der Nutzer hat am 10.08.2026 zwei selbst
+gefundene Defekte vorgezogen umsetzen lassen (Abschnitt 2a). **Massstab fuer solche Ausnahmen:**
+Es muss ein stiller Defekt sein (etwas wirkt nicht, obwohl es soll), nicht eine Balance-Zahl, die
+sich nach Block A ohnehin verschiebt - und jede vorgezogene Aenderung wird in Abschnitt 2a mit
+Messwert und offenem Kalibrierpunkt protokolliert. Wo dabei doch eine Balance-Zahl noetig wird,
+gehoert sie als benannte Konstante in den Code, damit die spaetere Kalibrierung eine Zeile ist.
 
 ### Was in Folge-Chats noch besprochen werden kann
 
@@ -1545,6 +1693,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 10.08.2026 | **Erste Code-Aenderung des Projekts seit Planbeginn** (Nutzerentscheidung, ausgeloest durch zwei eigene Beobachtungen beim Spielen). Vollstaendig dokumentiert im neuen **Abschnitt 2a**. Kurz: Entscheidung 14 erledigt, aber mit bewusster Abweichung vom beschlossenen Weg - NICHT auf den Stations-Generator umgestellt, weil der die 15 bestehenden V1-Module mit neu bewertet haette (Metallmine-Modul von 2,0/1,0/0,5 Mio auf 1,5/0,6/0 Mio, inklusive eines auf null fallenden Deuterium-Anteils); stattdessen V2/V3 aus dem unveraenderten V1 abgeleitet, `BUILDING_MODULES` jetzt 45 statt 15. Gemessen: V2/V3 bauen jetzt exakt so schnell wie V1 (vorher Faktor 4 langsamer), Foerdereffizienz wirkt auf allen drei Stufen. **Der in Entscheidung 14 angekuendigte Faktor 4 ist damit eingetreten und Ausgangszustand fuer 9.1, nicht mehr eine kommende Aenderung.** Ausserdem Entscheidung 7.1 erledigt (Stations-Ertrag V2/V3 auf 2x/4x) und R12 erledigt (`game/moduleIntegrity.ts`, Startpruefung fuer zur Laufzeit gebildete Modul-IDs). **Ein Befund war NEU und stand in keiner Session:** `stationMineOutputPerHour()` wendet den Mining-Multiplikator nicht an - die Entkopplung der Station von der Forschung einzelner Mitglieder ist beabsichtigt und richtig, wurde aber nie ausgeglichen, wodurch die Station bei gleicher Gebaeudestufe ein Sechstel der Heimatbasis produzierte. Neue Konstante `STATION_MINING_COMPENSATION = 3` (nur der dauerhafte Forschungsanteil 2,0 x 1,5, bewusst nicht die vollen 6,12 inkl. Klasse und Booster). **Als Widerspruch ausdruecklich festgehalten:** der resultierende Vollausbau-Ertrag von 7,90 Mrd/Tag liegt oberhalb des Raids vor seiner Halbierung, und Entscheidung 3 halbiert den Raid genau wegen dieser Eigenschaft (passiv, ohne Flottenbindung). Entscheidungsregel zur Nachkalibrierung in Abschnitt 2a, Messpunkt mit hoechster Prioritaet in Abschnitt 7. Zusaetzlich korrigiert: die verbreitete Annahme, die Stationsproduktion werde auf die Mitglieder aufgeteilt - `withdrawFromStation()` hat keine Quote, die Mitgliederzahl wirkt nirgends. Zeitrahmen-Absatz in Abschnitt 8 von einer Absolutsperre auf einen Ausnahme-Massstab praezisiert. |
 | 10.08.2026 | **Zweiter Abgleich gegen den Repo-Stand, Schwerpunkt Abschnitt 1b.** Anlass: erneuter Kaltstart, bei dem wieder die alte 33-Punkte-README als Anhang mitgeliefert wurde - genau der Fall, den Messregel 16 beschreibt. **Bestaetigt und unveraendert** (gegen den Code geprueft, nicht gegen Beschreibungen): Raid-Rhythmus Mi/So mit `RAID_SPAWN_CHANCE` 0,7, `POOL_SIZE` 1, `MAX_PLAYER_SHIPS` 200.000, alle drei Missionsdauern, Slot-Zahlen 3/3/4/1, `RAID_WAVE_WIN_*` 10/6/2, `SEED_FLEET` 5.300 + `SEED_DEFENSE` 1.120, `RESOURCE_CAP`-Kommentar mit 1,5 gegen tatsaechliche 6, `ADMIRAL_STAT_SHARE` 0,55, `lib.mjs`/`lib3`/`lib4` byte-identisch. **Sechs Korrekturen:** (1) Abschnitt 1b nennt `runHourlyCheck()` als zu nutzende Spielfunktion - **die ist nicht exportiert**; Einstiegspunkt ist `processMissions()`. (2) Neuer Unterabschnitt "Technische Vorbedingungen" in 1b: alle Kernfunktionen lesen `Date.now()` direkt (19x actions.ts, 9x state.ts, 7x raids.ts, 4x missions.ts), 720 Stundenschritte sind ohne gefaelschte Uhr unmoeglich; und `state.ts` oeffnet ueber `db.ts` beim Import die **produktive** `game.db` mit hartkodiertem Pfad. Beides war im Plan stillschweigend als geloest vorausgesetzt. (3) Die 30-Minuten-Begruendung des Zeitschritts gilt nur fuer Gebaeude - Schiffs-Bauzeiten liegen im Sekundenbereich, wodurch der Lane-Leerlauf bei Stundenaufloesung systematisch unterschaetzt wird; Leerlauf wird deshalb jetzt getrennt je Auftragsart protokolliert. (4) Entscheidung 5a stuetzte sich auf "ein Spieler in Woche 1 hat Dutzende Schiffe" - **falsch**, `defaultPlayerState()` finanziert ab Stunde 0 rund 2.200 Schiffe; die Entscheidung bleibt richtig, die Begruendung ist auf Qualitaet statt Stueckzahl umgestellt. (5) Startkapital als eigene Zeile in der Risikotabelle 1a - es fuehrt direkt in die Asteroiden und verschaerft damit Abnahmekriterium 5. (6) Imperator-Baulimit geklaert: Code sagt `maxCount: 6`, Session 3 hatte recht, die "2" stammt aus der alten README; R10 um die vier nachweislich veralteten Zahlen der alten Fassung ergaenzt. |
 | 09.08.2026 | **Nutzerfund: Flottenlimit blockierte jeden Schiffsbau.** Ein Spielstand lag mit 103.196 Schiffen ueber `MAX_PLAYER_SHIPS = 100.000`. Sofortmassnahme (Nutzerentscheidung): Limit auf **200.000** angehoben und beobachten - die Konstante ist im Code ausdruecklich ein Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt weit unter den Spitzen. Zusaetzlich die Fehlermeldung korrigiert, die bei negativem Rest woertlich "Nur noch -3196 Schiff(e) moeglich" ausgab. **Die Ursache bleibt offen und steht als R13** in Abschnitt 3: `totalOwnedShips()` zaehlt Schiffe auf Missionen/Entsendungen/Gruppen-Operationen nicht mit, wodurch sich das Limit durch Wegschicken und Nachbauen umgehen laesst. Offener Messpunkt fuer Abschnitt 7: welche Flottengroesse die Kampf-Engine in vertretbarer Zeit verkraftet - gemessen sind bisher nur ~700 ms bei 2.600 Einheiten, nichts darueber. |
 | 09.08.2026 | **Zwei Container-Befunde nachgetragen**, die in Session 1 als "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden waren, obwohl beide Entscheidung 2 direkt beruehren. Neu als Pruefpunkte **2c** (Teile-Umwandlungsrate: gemessen 59/40/38 % gegen einen Zielkorridor von 45-55 %, kein Tier trifft ihn) und **2d** (Freischiff-Rueckkopplung: Jackpot erhoeht die eigene Power, an der die Feindstaerke skaliert, an der nach Entscheidung 2 die Beute haengt - Kipppunkt deshalb zweimal rechnen, mit und ohne Freischiff-Treffer). Die Container-Erwartungswerte selbst waren bereits vollstaendig gemessen. |
