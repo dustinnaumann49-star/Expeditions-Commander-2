@@ -7,6 +7,7 @@ import { gameRouter } from './game/routes.js';
 import { runGlobalHeartbeat } from './game/heartbeat.js';
 import { ensureBotUsers } from './game/bot.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
+import { checkModuleIntegrity } from './game/moduleIntegrity.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
 // zuverlaessig, aber unklar ob der Server tatsaechlich den neuesten Commit ausfuehrt). Liest den
@@ -50,6 +51,15 @@ app.use('/api/game', gameRouter);
 
 app.listen(PORT, async () => {
   console.log(`Expedition-Commander Server läuft auf Port ${PORT} (Commit ${deployedCommit})`);
+
+  // R12 (Umsetzungsplan): meldet Modul-IDs, die zur Laufzeit gebildet werden, aber keine
+  // Definition haben. Bricht bewusst NICHT ab - macht nur die Fehlerklasse sichtbar, durch die
+  // die V2/V3-Module der Heimatbasis unbemerkt ausgefallen sind. Siehe game/moduleIntegrity.ts.
+  try {
+    checkModuleIntegrity();
+  } catch (err) {
+    console.error('Modul-Pruefung-Fehler:', err);
+  }
 
   // KI-Spieler-Accounts (KI-Vega/KI-Nyx) throttled wieder eingefuehrt (30.07.2026, siehe README
   // Punkt 100) - waren nach dem CPU-Spitzen-Vorfall (Punkt 97/98) komplett entfernt worden, weil
