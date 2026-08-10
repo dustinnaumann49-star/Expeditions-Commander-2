@@ -117,6 +117,7 @@ Deshalb: vor dem Reset die Startphase simulieren, nicht erst danach beobachten.
 | **Elite-Bollwerk bei Profil "schwach"** | 53 % Siegchance / 28 % Verlust (grosse Flotte), 46 % / 41,4 % (kleine Flotte) | Der einzige Inhalt, der im Startspiel ueberhaupt Risiko zeigt. Nach Entscheidung 1 neu messen. |
 | **Entscheidung 9 (Zeit als Engpass)** | Im Endspiel richtig kalibriert | In Woche 1 mit 1 Bau-Slot und 1 Forschungs-Slot kann sich das Spiel tot anfuehlen. **Muss gegen die STARTPHASE kalibriert werden, nicht gegen das Endspiel.** |
 | **Mining-Schiffe amortisieren in unter 3 Stunden** | 300 Schiffe = 6,2 Mio Wert gegen 55,8 Mio/Tag im Niedrig-Feld; alle drei Felder parallel = 346 Mio/Tag bedingungsloses Grundeinkommen | Nach dem Reset die erste und lange Zeit einzige Einnahmequelle. Bewusst so lassen oder bewusst aendern - nicht unbemerkt lassen. |
+| **Startkapital ist hoch** *(neu 10.08.2026, Code-Pruefung)* | `defaultPlayerState()`: 50 Mio Metall / 25 Mio Kristall / 10 Mio Deuterium / 500 DM = rund **117,5 Mio Wert-Einheiten**. Code-Kommentar: bewusst bemessen auf 700 Mining-Schiffe + 1.500 Begleitschiffe | **Stunde 0 nach dem Reset ist kein leerer Zustand**, sondern eine finanzierte Mining-Wirtschaft. Zusammen mit der Zeile darueber heisst das: die Asteroiden-Einnahmen laufen ab dem ersten Tag auf vollem Niveau. **Verschaerft Entscheidung 12 und Abnahmekriterium 5** (keine Einzelquelle ueber 50 % der Wochen-Einnahmen) - das Startkapital fuehrt direkt in genau diese Quelle. Bewusst so lassen oder mit Entscheidung 12 gemeinsam kalibrieren, nicht getrennt. |
 
 ### Zwingende Ergaenzung zum Messplan
 
@@ -158,17 +159,34 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Aufbau
 
-- **Zeitschritt: 1 Stunde**, 720 Schritte. Feiner ist unnoetig (kuerzeste relevante Bauzeit liegt
-  bei 30 Minuten), groeber verfehlt die stuendlichen Asteroiden-Checks. Piraten-Sektoren checken
-  alle 4 h (`PIRATEN_CHECK_INTERVAL_MS`), Missionen laufen einheitlich 24 h
+- **Zeitschritt: 1 Stunde**, 720 Schritte. Groeber verfehlt die stuendlichen Asteroiden-Checks.
+  Piraten-Sektoren checken alle 4 h (`PIRATEN_CHECK_INTERVAL_MS`), Missionen laufen einheitlich 24 h
   (`MISSION_DURATION_MS`/`ASTEROID_MISSION_DURATION_MS`) - beides teilt sich sauber in
   Stundenschritte.
-- **Startzustand: `defaultPlayerState()`**, also Forschung 0, nichts gebaut, Startressourcen. Kein
-  Profil aus den Sessions - "schwach" ist bereits mehrere Wochen Spielzeit (siehe Abschnitt 1a).
+  *Korrigiert am 10.08.2026:* hier stand "feiner ist unnoetig, kuerzeste relevante Bauzeit liegt bei
+  30 Minuten". Das gilt **nur fuer Gebaeude** (kleinste `baseTimeSeconds` in `buildings.ts` ist
+  1.800). **Schiffe und Verteidigung haben Bauzeiten im Sekundenbereich vor dem Multiplikator**
+  (Leichter Jaeger `buildTime: 4`), ein Auftrag ist also je nach Stueckzahl in Sekunden bis Minuten
+  fertig. Folge fuer die Messung: **der Leerlauf der Bau-Lanes wird bei Stundenaufloesung
+  systematisch unterschaetzt** - genau die Kennzahl, an der Abnahmekriterium 2 und die Kalibrierung
+  von Entscheidung 9.2 haengen. **Zwingend deshalb: Leerlauf getrennt je Auftragsart erfassen**
+  (Gebaeude / Forschung / Schiffe+Verteidigung) und bei Schiffen die tatsaechliche Restlaufzeit des
+  Auftrags innerhalb der Stunde mitrechnen, nicht nur "am Stundenende lief etwas". Ein gemeinsamer
+  Leerlaufwert ueber alle drei Arten waere hier unbrauchbar.
+- **Startzustand: `defaultPlayerState()`**, also Forschung 0, nichts gebaut. **Startressourcen sind
+  50 Mio Metall / 25 Mio Kristall / 10 Mio Deuterium / 500 DM** (`state.ts`) - das sind rund
+  117,5 Mio Wert-Einheiten und laut Code-Kommentar bewusst auf eine komplette Mining-Flotte (700)
+  plus Begleitschutz (1.500) bemessen. **Der Startzustand ist also nicht leer, sondern finanziert
+  ab Stunde 0 rund 2.200 Schiffe.** Kein Profil aus den Sessions - "schwach" ist bereits mehrere
+  Wochen Spielzeit (siehe Abschnitt 1a). Siehe dazu die Korrektur an Entscheidung 5a.
 - **Echte Spiel-Funktionen verwenden**, keine nachgebaute Wirtschaft: `runEconomyTick()`,
-  `startBuildingConstruction()`, `startResearch()`, `startBuild()`, `runHourlyCheck()`. Sonst misst
+  `startBuildingConstruction()`, `startResearch()`, `startBuild()`, `processMissions()`. Sonst misst
   man das Modell statt das Spiel - genau der Fehler, den Messregel 1 fuer den Kampf-Worker
   beschreibt.
+  *Korrigiert am 10.08.2026:* hier stand `runHourlyCheck()`. **Diese Funktion ist in `missions.ts`
+  nicht exportiert** und aus einem Sim-Skript nicht erreichbar. Der oeffentliche Einstiegspunkt ist
+  `processMissions(state)` (async), der den Stunden-Check intern ausloest. Entweder darueber gehen
+  oder `runHourlyCheck` exportieren - **nicht nachbauen.** Siehe Messregel 16.
 - **Drei Spielerprofile** (getrennte Durchlaeufe, NICHT gemittelt):
   1. **Aktiv** - handelt jede simulierte Stunde, baut ressourcen-optimal.
   2. **Gelegenheit** - handelt zweimal taeglich, sonst laeuft nur die Warteschlange.
@@ -180,13 +198,47 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
   13.2). Sie darf nur fuer die BOTS im Durchlauf genutzt werden, nicht fuer den simulierten
   Menschen.
 
+### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
+
+Beide Punkte waren im Plan stillschweigend als geloest vorausgesetzt. Sie sind es nicht, und beide
+blockieren den Bau der Simulation - sie gehoeren VOR Schritt 13 geklaert, nicht waehrenddessen.
+
+**V1. Die Spielfunktionen lesen die Uhr direkt, es gibt keine einspeisbare Zeitquelle.**
+`Date.now()` steht 19x in `actions.ts`, 9x in `state.ts`, 7x in `raids.ts`, 4x in `missions.ts`.
+`runEconomyTick()` rechnet sein Delta aus `Date.now() - state.lastUpdate`. **720 Stundenschritte
+gegen die Echtzeituhr sind damit unmoeglich** - der reale Ablauf waere 30 Tage.
+
+Zwei Wege:
+- **(a) `Date.now` im Sim-Prozess ueberschreiben** (EMPFOHLEN), gesetzt VOR dem ersten Import der
+  Spielmodule, danach je Schritt um eine Stunde weiterdrehen. Kein Eingriff in den Produktionscode,
+  passt zum bestehenden Muster der `balance/`-Skripte.
+  **Bekannte Luecke:** der Kampf-Worker laeuft in einem eigenen Thread mit eigenem Kontext und sieht
+  die gefaelschte Uhr NICHT. Fuer die Kampf-Aufloesung selbst ist das unerheblich (sie rechnet in
+  Runden, nicht in Uhrzeit) - **vor dem ersten Lauf trotzdem einmal pruefen**, ob im Worker-Pfad
+  irgendwo eine Zeitdifferenz gebildet wird.
+- **(b) Zeitquelle durch den Produktionscode ziehen.** Sauberer, aber ein Eingriff in `actions.ts`,
+  `state.ts`, `raids.ts` und `missions.ts` - genau die Dateien, die Block A bis D ohnehin anfassen.
+  Zwei gleichzeitige Umbauten an denselben Stellen. Nicht empfohlen.
+
+**V2. Der Import der Spielfunktionen oeffnet die Live-Datenbank.**
+`state.ts` importiert `db.ts`, und `db.ts` fuehrt beim Import `new Database(dbPath)` aus - mit
+**hartkodiertem Pfad** `server/data/game.db`, ohne Env-Override. Ein Sim-Skript, das die echten
+Wirtschaftsfunktionen importiert, fasst damit die produktive Datenbank an. Die bestehenden
+Messskripte umgehen das bewusst: `lib.mjs` baut einen `PlayerState`-Stub und importiert `state.js`
+gar nicht erst - dieser Weg steht der 30-Tage-Simulation aber nicht offen, weil sie genau die
+Zustandsverwaltung mitmessen soll.
+-> **Vor dem Bau entscheiden:** `dbPath` per Umgebungsvariable ueberschreibbar machen (kleiner
+Eingriff, hilft auch beim Testen) ODER die Simulation gegen eine Kopie der Datenbank in einem
+eigenen Verzeichnis laufen lassen. **Nicht ungeprueft starten** - ein Sim-Lauf schreibt sonst
+Spielstaende in die laufende Partie.
+
 ### Was pro Tag protokolliert wird
 
 | Kennzahl | Wofuer |
 |---|---|
 | Einnahmen/Tag in Wert-Einheiten | Verlaufskurve, Vergleich mit der 21,69-Mrd-Baseline |
 | Flottenwert und `combatFleetPowerBase()` | Freischaltung von Inhalten, Gegnerskalierung |
-| **Leerlaufanteil** - Anteil der Stunden ohne laufenden Bau-, Forschungs- ODER Verteidigungsauftrag | Kernmass fuer Entscheidung 9. Zeitdruck ohne Leerlauf ist Inhalt, Zeitdruck mit Leerlauf ist Frust |
+| **Leerlaufanteil, GETRENNT je Auftragsart** (Gebaeude / Forschung / Schiffe+Verteidigung) - Anteil der Stunden ohne laufenden Auftrag der jeweiligen Art, bei Schiffen anteilig innerhalb der Stunde | Kernmass fuer Entscheidung 9. Zeitdruck ohne Leerlauf ist Inhalt, Zeitdruck mit Leerlauf ist Frust. *Getrennt seit 10.08.2026:* ein gemeinsamer Wert verdeckt den Schiffs-Leerlauf, weil Gebaeude-Auftraege Tage laufen und Schiffs-Auftraege Sekunden - siehe Korrektur beim Zeitschritt |
 | **Ressourcenstau** - Anteil der Stunden, in denen Ressourcen vorhanden sind, aber kein Slot frei | Gegenprobe zu 9.2: zu wenige Lanes erzeugt genau das |
 | Erstmals spielbare Inhalte, mit Tag | Woche-fuer-Woche-Fortschritt |
 | Verlustereignisse mit Anteil der verlorenen Flotte | Entscheidung 10 (kein Totalverlust) |
@@ -488,10 +540,21 @@ verfehlt:**
 300 bomber / 150 schlachtkreuzer / 100 zerstoerer / 50 reaper) plus 1.120 Verteidigungsanlagen,
 festgeschrieben als dauerhafte Untergrenze (Floor-Up in `loadPirateBase()`, "unzerstoerbare
 Basis"-Design). Der urspruengliche Text dieser Entscheidung laesst die Garnison mitskalieren, behaelt
-den Boden aber ausdruecklich bei. **Nach dem Reset ist genau dieser Boden das Problem:** ein Spieler
-in Woche 1 hat Dutzende Schiffe, nicht Tausende. Die gemessenen **89,6 % Verlust bei kleiner Flotte**
-blieben damit unveraendert bestehen, obwohl die Skalierung eingebaut waere - der Boden greift ja
-zuerst. Der Boden muss entweder mit der angreifenden Flotte mitskalieren oder ganz entfallen.
+den Boden aber ausdruecklich bei. **Nach dem Reset ist genau dieser Boden das Problem.** Die
+gemessenen **89,6 % Verlust bei kleiner Flotte** blieben unveraendert bestehen, obwohl die
+Skalierung eingebaut waere - der Boden greift ja zuerst.
+
+*Begruendung korrigiert am 10.08.2026 (Code-Pruefung, Messregel 16):* hier stand "ein Spieler in
+Woche 1 hat Dutzende Schiffe, nicht Tausende". **Das ist falsch.** `defaultPlayerState()` vergibt
+50 Mio Metall / 25 Mio Kristall / 10 Mio Deuterium - laut Code-Kommentar bewusst bemessen auf
+700 Mining-Schiffe plus 1.500 Begleitschiffe. **Ein Spieler hat in Stunde 0 rund 2.200 Schiffe
+finanziert, nicht Dutzende.** Die Entscheidung 5a bleibt trotzdem richtig, aber aus einem anderen
+Grund: diese 2.200 Schiffe sind **Wirtschafts- und Eskortschiffe** (Begleitschiff: 350 Waffen,
+8.500 Panzerung; Mining-Schiff: 0 Waffen) und stehen 5.300 echten Kampfschiffen bis hinauf zum
+Reaper plus 1.120 Verteidigungsanlagen gegenueber. Der Abstand ist eine Frage der Qualitaet, nicht
+der Stueckzahl. **Konsequenz fuer die Messung:** das Startprofil der 30-Tage-Simulation darf NICHT
+als "leere Flotte" angesetzt werden - wer den Boden gegen eine leere Flotte kalibriert, kalibriert
+gegen einen Zustand, den es im Spiel nie gibt. Der Boden muss entweder mit der angreifenden Flotte mitskalieren oder ganz entfallen.
 Nachteil: eine frisch angegriffene Basis kann dann kurzzeitig sehr schwach dastehen; das
 "unzerstoerbare Basis"-Design braucht dafuer eine Erholungszeit statt einer festen Untergrenze -
 dieselbe Schranke, die oben ohnehin gegen Dauer-Farming gefordert ist.
@@ -1027,7 +1090,7 @@ Monate entfernt. **Nicht blockierend fuer den Reset.**
 | R7 | `GalaxyEvent.claimedBy` wird gelesen, aber nirgends gesetzt. Feld und Typ-Kommentar bereinigen | `game/galaxyEvents.ts`, `types.ts` | S4-B10 |
 | R8 | `startSpyProbe()` nimmt `qty` entgegen, prueft und verbraucht sie - **auf den Bericht hat sie keinen Einfluss** (`buildSpyReport()` haengt allein an `research.spionage`). Entweder `qty` entfernen oder den Detailgrad an die Sondenzahl koppeln (letzteres gibt der Spionagesonde ueberhaupt erst eine Bauentscheidung) | `game/spyMissions.ts` | S4-B10 |
 | R9 | Kampfbericht-Anzeige "[Feindstaerke X%]" korrigieren - sie zeigt den nominalen Wert, der real etwa die Haelfte bedeutet (siehe Abschnitt 4) | Client | S2-B1/B9 |
-| R10 | README korrigieren: Aussenposten, RapidFire-Kette (kein Stein-Schere-Papier), Kosten/Waffenpunkt-Korridor, Salvenschiffe als Rollen-Einheiten | `README.md` | S4-Konsistenz |
+| R10 | README korrigieren: Aussenposten, RapidFire-Kette (kein Stein-Schere-Papier), Kosten/Waffenpunkt-Korridor, Salvenschiffe als Rollen-Einheiten. **Ergaenzt 10.08.2026:** Die Repo-README ist an diesen Stellen bereits richtig - falsch ist die aeltere, nummerierte Fassung, die noch im Umlauf ist (33 Punkte). Beim Abarbeiten von R10 pruefen, welche Aussagen tatsaechlich noch in `README.md` stehen, statt gegen die alte Fassung zu korrigieren. Konkret nachweislich veraltet in der alten Fassung: Imperator `maxCount` 2 statt **6**, Salvenschiff-Limits 8-30 statt **150/90/30**, Asteroiden-Missionsdauer 12 h statt **24 h**, Kampf-Performance 700 ms bei 2.600 Einheiten statt **~26 ms bei 1,5 Mio** | `README.md` | S4-Konsistenz |
 | R11 | Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
 | R13 | **`totalOwnedShips()` zaehlt nicht "ueberall".** Sie summiert nur `state.fleet` + `buildQueue`, NICHT Missionen, Galaxie-Entsendungen und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` unbeabsichtigt ueberschreiten: Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt zurueck. Zusaetzlich fliessen Container-Freischiffe (`inventory.ts:174`) und Missionsrueckkehrer (`missions.ts:691`) ohne Limitpruefung in die Flotte. **Exakt derselbe Fehler wurde fuer die Einzel-Limits schon behoben** (`countShipEverywhere`, samt Kommentar in `actions.ts`) - bei `totalOwnedShips` nie nachgezogen. **Achtung bei der Umsetzung:** die Korrektur macht die Zaehlung STRENGER. Erst anwenden, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher Schiffe bekannt ist, sonst blockiert sie den Spieler sofort wieder | `game/actions.ts:198`, `data/combatConstants.ts` | Nutzerfund 09.08.2026 |
 | R12 | **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
@@ -1119,9 +1182,13 @@ Gefecht.
    Gegnerflotte aus, wenn dieselbe Kampfkraft ueber Imperatoren statt ueber Standardschiffe
    eingebracht wird?
 
-**Widerspruch im Baulimit klaeren:** README Punkt 21 nennt `maxCount` **2** ("bleibt bewusst bei 2"),
-Session 3, Befund 6 rechnet mit **6**. Einer der beiden Staende ist veraltet - im Code pruefen und
-die README nachziehen (gehoert zu R10).
+**Widerspruch im Baulimit - GEKLAERT am 10.08.2026 durch Code-Pruefung.** ~~README Punkt 21 nennt
+`maxCount` 2, Session 3, Befund 6 rechnet mit 6.~~ **Der Code sagt `maxCount: 6`** (`ships.ts`,
+Imperator). Session 3 ist richtig, die "2" stammt aus der veralteten README-Fassung (Messregel 16).
+Die Repo-README fuehrt im selben Kommentarblock ebenfalls 6, zusammen mit den Salvenschiffen
+(Salvenjaeger 150, Salvenkreuzer 90, Salvendreadnought 30) - auch diese drei Zahlen weichen von der
+alten Fassung ab (dort 8-30). **Alle Rechnungen, die mit `maxCount: 2` gearbeitet haben, sind
+entsprechend nachzuziehen.** Kein Handlungsbedarf am Code, nur an der Dokumentation (R10).
 
 **Erst nach dieser Messung entscheiden**, ob der Imperator Prestige-Einheit bleibt. Bis dahin gilt
 die Prestige-Einstufung als vorlaeufig, nicht als belegt.
@@ -1178,6 +1245,9 @@ SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
  13. 30-Tage-Fortschrittssimulation nach Abschnitt 1b bauen und erstmals ausfuehren
      -> ohne sie ist Block D nicht gegen die Startphase kalibrierbar, sondern nur gegen
         das Endspiel - und muesste danach ein zweites Mal kalibriert werden
+     -> ZUERST die beiden technischen Vorbedingungen V1 (Zeitquelle) und V2 (Datenbank)
+        aus Abschnitt 1b klaeren. Beide blockieren den Bau, beide waren bis zum
+        10.08.2026 im Plan stillschweigend als geloest vorausgesetzt.
 
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
  14. Entscheidung 9.1 + R1  Saettigungskurve, additive Reduktionen UND der Client-Spiegel
@@ -1475,6 +1545,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 10.08.2026 | **Zweiter Abgleich gegen den Repo-Stand, Schwerpunkt Abschnitt 1b.** Anlass: erneuter Kaltstart, bei dem wieder die alte 33-Punkte-README als Anhang mitgeliefert wurde - genau der Fall, den Messregel 16 beschreibt. **Bestaetigt und unveraendert** (gegen den Code geprueft, nicht gegen Beschreibungen): Raid-Rhythmus Mi/So mit `RAID_SPAWN_CHANCE` 0,7, `POOL_SIZE` 1, `MAX_PLAYER_SHIPS` 200.000, alle drei Missionsdauern, Slot-Zahlen 3/3/4/1, `RAID_WAVE_WIN_*` 10/6/2, `SEED_FLEET` 5.300 + `SEED_DEFENSE` 1.120, `RESOURCE_CAP`-Kommentar mit 1,5 gegen tatsaechliche 6, `ADMIRAL_STAT_SHARE` 0,55, `lib.mjs`/`lib3`/`lib4` byte-identisch. **Sechs Korrekturen:** (1) Abschnitt 1b nennt `runHourlyCheck()` als zu nutzende Spielfunktion - **die ist nicht exportiert**; Einstiegspunkt ist `processMissions()`. (2) Neuer Unterabschnitt "Technische Vorbedingungen" in 1b: alle Kernfunktionen lesen `Date.now()` direkt (19x actions.ts, 9x state.ts, 7x raids.ts, 4x missions.ts), 720 Stundenschritte sind ohne gefaelschte Uhr unmoeglich; und `state.ts` oeffnet ueber `db.ts` beim Import die **produktive** `game.db` mit hartkodiertem Pfad. Beides war im Plan stillschweigend als geloest vorausgesetzt. (3) Die 30-Minuten-Begruendung des Zeitschritts gilt nur fuer Gebaeude - Schiffs-Bauzeiten liegen im Sekundenbereich, wodurch der Lane-Leerlauf bei Stundenaufloesung systematisch unterschaetzt wird; Leerlauf wird deshalb jetzt getrennt je Auftragsart protokolliert. (4) Entscheidung 5a stuetzte sich auf "ein Spieler in Woche 1 hat Dutzende Schiffe" - **falsch**, `defaultPlayerState()` finanziert ab Stunde 0 rund 2.200 Schiffe; die Entscheidung bleibt richtig, die Begruendung ist auf Qualitaet statt Stueckzahl umgestellt. (5) Startkapital als eigene Zeile in der Risikotabelle 1a - es fuehrt direkt in die Asteroiden und verschaerft damit Abnahmekriterium 5. (6) Imperator-Baulimit geklaert: Code sagt `maxCount: 6`, Session 3 hatte recht, die "2" stammt aus der alten README; R10 um die vier nachweislich veralteten Zahlen der alten Fassung ergaenzt. |
 | 09.08.2026 | **Nutzerfund: Flottenlimit blockierte jeden Schiffsbau.** Ein Spielstand lag mit 103.196 Schiffen ueber `MAX_PLAYER_SHIPS = 100.000`. Sofortmassnahme (Nutzerentscheidung): Limit auf **200.000** angehoben und beobachten - die Konstante ist im Code ausdruecklich ein Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt weit unter den Spitzen. Zusaetzlich die Fehlermeldung korrigiert, die bei negativem Rest woertlich "Nur noch -3196 Schiff(e) moeglich" ausgab. **Die Ursache bleibt offen und steht als R13** in Abschnitt 3: `totalOwnedShips()` zaehlt Schiffe auf Missionen/Entsendungen/Gruppen-Operationen nicht mit, wodurch sich das Limit durch Wegschicken und Nachbauen umgehen laesst. Offener Messpunkt fuer Abschnitt 7: welche Flottengroesse die Kampf-Engine in vertretbarer Zeit verkraftet - gemessen sind bisher nur ~700 ms bei 2.600 Einheiten, nichts darueber. |
 | 09.08.2026 | **Zwei Container-Befunde nachgetragen**, die in Session 1 als "NIEDRIG" abgelegt und deshalb nie in eine Entscheidung ueberfuehrt worden waren, obwohl beide Entscheidung 2 direkt beruehren. Neu als Pruefpunkte **2c** (Teile-Umwandlungsrate: gemessen 59/40/38 % gegen einen Zielkorridor von 45-55 %, kein Tier trifft ihn) und **2d** (Freischiff-Rueckkopplung: Jackpot erhoeht die eigene Power, an der die Feindstaerke skaliert, an der nach Entscheidung 2 die Beute haengt - Kipppunkt deshalb zweimal rechnen, mit und ohne Freischiff-Treffer). Die Container-Erwartungswerte selbst waren bereits vollstaendig gemessen. |
 | 09.08.2026 | **Mobil-Darstellung als eigener Strang ausgelagert:** neue Datei `MOBIL_CHECKLISTE.md` im Repo-Wurzelverzeichnis. Bewusst NICHT hier eingearbeitet - anderes Problemfeld (Darstellung statt Simulation), andere Pruefmethode (Auge am Geraet statt Messskript), reversibel und **nicht blockierend fuer den Reset**. Die Aenderungen koennen unabhaengig vom Balance-Paket sofort live gehen. Erster Befund (M1) ist bereits behoben: die Klasse `.combat-table` trug neben der 10-spaltigen Kampftabelle auch neun schmale Tabellen inklusive der Nachrichtenliste, und die Mobil-Regel `min-width:720px` blies die auf einem 390px-Display ueber den rechten Rand hinaus. Dieselbe Fehlerform wie Messregel 15: eine zentrale Regel, die an einer Stelle richtig und an acht anderen falsch ist. |
