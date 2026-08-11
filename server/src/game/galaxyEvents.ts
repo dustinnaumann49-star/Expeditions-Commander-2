@@ -59,7 +59,6 @@ export function maybeSpawnGalaxyEvent(): void {
     position: pos.position,
     spawnedAt: now,
     expiresAt: now + GALAXY_EVENT_LIFETIME_MS,
-    claimedBy: null,
   };
   saveGalaxyEvent(event.id, 'active', JSON.stringify(event));
 }
@@ -82,7 +81,6 @@ export function startEventClaim(state: PlayerState, eventId: string, ships: Reco
 
   const event = listActiveGalaxyEvents().find((e) => e.id === eventId);
   if (!event) return { ok: false, error: 'Dieses Ereignis ist nicht mehr verfügbar.' };
-  if (event.claimedBy !== null) return { ok: false, error: 'Dieses Ereignis wurde bereits beansprucht.' };
 
   const targetPos: GalaxyPosition = { system: event.system, position: event.position };
   const speed = galaxyFleetSpeed(ships, state.research, state.playerClass, state.shipModules);
@@ -130,7 +128,10 @@ export function processEventTrips(state: PlayerState): void {
       const event = listActiveGalaxyEvents().find((e) => e.id === trip.eventId);
       const def = GALAXY_EVENT_TYPES[trip.eventType];
       const label = def?.label || trip.eventType;
-      if (event && event.claimedBy === null) {
+      // R7: hier stand zusaetzlich `&& event.claimedBy === null`. Das Feld wurde nie gesetzt, die
+      // Bedingung war also immer wahr - seit der Umstellung auf "Ereignis sofort loeschen" (siehe
+      // deleteGalaxyEvent() unten) ist das Vorhandensein des Ereignisses selbst die Pruefung.
+      if (event) {
         trip.reward = rollGalaxyEventReward(trip.eventType);
         // Sofort loeschen statt nur als "claimed" zu markieren - andere Spieler sollen es ab jetzt
         // nirgends mehr sehen koennen (kein Wettlauf um ein bereits vergriffenes Ereignis).

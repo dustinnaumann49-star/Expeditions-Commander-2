@@ -1,4 +1,4 @@
-import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
+import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL, sektorDefenseFactor } from './data/sectors.js';
 import {
   combatFleetPowerBase,
   generatePiratenFleet,
@@ -66,11 +66,9 @@ export async function simulateCombat(state: PlayerState, sektorId: string, selec
   // Korrektur 05.08.2026 (Nutzer-Fund, siehe missions.ts/groupOps.ts fuer dieselbe Korrektur):
   // Hoch/Elite von 0.20 gesenkt, machte NPC-Verteidigung praktisch unzerstoerbar. MUSS mit
   // missions.ts synchron bleiben (siehe README).
-  let defenseFactor = 0;
-  if (sektorId === 'piraten_niedrig') defenseFactor = 0.05;
-  else if (sektorId === 'piraten_mittel') defenseFactor = 0.12;
-  else if (sektorId === 'piraten_hoch') defenseFactor = 0.15;
-  else if (sektorId === 'piraten_elite') defenseFactor = 0.18;
+  // R4: gemeinsame Quelle mit missions.ts/groupOps.ts. Wichtig gerade hier - ein Simulator, der
+  // mit anderen Werten rechnet als das Spiel, sagt das Falsche voraus.
+  const defenseFactor = sektorDefenseFactor(sektorId);
 
   const startedAt = Date.now();
   let runs = 0;

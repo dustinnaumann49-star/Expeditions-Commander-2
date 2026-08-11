@@ -68,8 +68,9 @@ export interface GalaxyDeployment {
 // ===== Galaxie-Ereignisse (Wrack/Handelskonvoi) =====
 // Global, nicht an einen Nutzer gebunden (eigene DB-Tabelle galaxy_events, siehe db.ts) - taucht
 // zufaellig an einer freien Galaxie-Position auf, verschwindet nach GALAXY_EVENT_LIFETIME_MS
-// wieder, falls niemand es vorher beansprucht. `claimedBy` wird gesetzt, sobald eine Flotte dort
-// ankommt UND das Ereignis noch nicht vergeben war (Details siehe game/galaxyEvents.ts) - das
+// wieder, falls niemand es vorher beansprucht. Wer als Erster ankommt, bekommt es - das Ereignis
+// wird dann SOFORT geloescht (deleteGalaxyEvent), damit niemand sonst es noch sieht. Ein Feld
+// `claimedBy` gab es dafuer frueher; es wurde nie beschrieben und ist am 11.08.2026 entfallen (R7).
 // Ereignis wird danach sofort geloescht, damit es fuer alle anderen nicht mehr sichtbar ist.
 export interface GalaxyEvent {
   id: string;
@@ -78,7 +79,6 @@ export interface GalaxyEvent {
   position: number;
   spawnedAt: number;
   expiresAt: number;
-  claimedBy: number | null;
 }
 
 export interface GalaxyEventReward {
@@ -737,6 +737,10 @@ export type PlayerClass = 'kanonier' | 'bollwerk' | 'kommandant';
 export type EconomyClass = 'schmuggler' | 'ingenieur' | 'prospektor';
 
 export interface PlayerState {
+  // R13-Absicherung: persoenliche Flotten-Obergrenze, die nur sinken kann (siehe
+  // effectiveShipLimit() in actions.ts). Fehlt bei allen Spielstaenden vor dem 11.08.2026 und
+  // wird beim ersten Bau-Versuch gesetzt.
+  shipLimitCeiling?: number;
   userId: number;
   // Unix-ms-Timestamp der Konto-Erstellung (Nutzerentscheidung 04.08.2026, "Frischling-Bonus" -
   // siehe NOVICE_BONUS_MULTIPLIER/-WINDOW_MS in data/economy.ts, miningMultiplier() in

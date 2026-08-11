@@ -1,6 +1,6 @@
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
-import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
+import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL, sektorDefenseFactor } from './data/sectors.js';
 import { galaxyDistance, galaxyDurationMs, galaxyFleetSpeed } from './galaxy.js';
 import { isBoosterActive } from './boosterUtil.js';
 import {
@@ -405,11 +405,9 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
     // piraten_elite): 0.20 bei Hoch liess die NPC-Verteidigung bei ueblichen Flottengroessen auf
     // mehrere Milliarden Panzerung/Schild anwachsen - praktisch unzerstoerbar trotz Schild-Regen-
     // Staffelung. Auf 0.15 gesenkt.
-    let defenseFactor = 0;
-    if (mission.sektorId === 'piraten_niedrig') defenseFactor = 0.05;
-    else if (mission.sektorId === 'piraten_mittel') defenseFactor = 0.12;
-    else if (mission.sektorId === 'piraten_hoch') defenseFactor = 0.15;
-    npcDefenses = generateDefenseFleet(sentPower * defenseFactor, 0);
+    // R4: Wert kommt jetzt aus SEKTOR_CONFIG (sektorDefenseFactor), nicht mehr aus einer lokalen
+    // if-Kette - dieselbe Quelle wie Simulator und Gruppen-Expeditionen.
+    npcDefenses = generateDefenseFleet(sentPower * sektorDefenseFactor(mission.sektorId), 0);
   } else {
     npcShips = generatePiratenFleet(targetPower, 0, profile) || generateFallbackFleet(targetPower, profile);
   }

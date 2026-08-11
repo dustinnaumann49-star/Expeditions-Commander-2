@@ -1,5 +1,5 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
-import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL } from './data/sectors.js';
+import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL, sektorDefenseFactor } from './data/sectors.js';
 import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, PIRATEN_CHECK_INTERVAL_MS, PIRATEN_CHECK_COUNT, getEscalationMultiplier } from './data/economy.js';
 import {
   getEffectiveStats,
@@ -772,8 +772,10 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
   // Verluste ueber mehrere echte Checks hinweg, siehe Live-Bericht). Simulation mit den echten
   // Check-2-Flottenwerten zeigte: 0.20 -> nur ø 7% Verteidigungs-Verlust, 0.18 -> ø 10%,
   // 0.14 -> ø 16%. Auf 0.18 gesenkt (haerteste Stufe bleibt bewusst am schwersten zu knacken).
-  const defenseFactor =
-    op.sektorId === 'piraten_niedrig' ? 0.05 : op.sektorId === 'piraten_mittel' ? 0.1 : op.sektorId === 'piraten_elite' ? 0.18 : 0.15;
+  // R4: gemeinsame Quelle (SEKTOR_CONFIG). Der frueher hier stehende Sonderwert 0,10 fuer
+  // piraten_mittel war unerreichbar - diese Funktion laeuft nur fuer piraten_elite/piraten_admiral
+  // (siehe Sektor-Pruefung weiter oben) - und ist daher ersatzlos entfallen.
+  const defenseFactor = sektorDefenseFactor(op.sektorId!);
   let npcDefenses = generateDefenseFleet(totalSentPower * defenseFactor, spionageMax);
 
   const captainSpawned = cfg.captainChance && Math.random() < cfg.captainChance;

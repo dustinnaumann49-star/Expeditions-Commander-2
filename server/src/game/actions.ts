@@ -210,11 +210,63 @@ export function canAfford(state: PlayerState, cost: ResourceCost, qty: number): 
   );
 }
 
+// R13, 11.08.2026: zaehlte bisher NUR state.fleet (zuhause) + buildQueue und liess damit das
+// globale Flottenlimit umgehen - Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt
+// zurueck. Genau derselbe Fehler war fuer die EINZEL-Limits laengst behoben
+// (countShipEverywhere() weiter unten), bei dieser Funktion aber nie nachgezogen.
+// Zaehlt jetzt dieselben fuenf Orte wie countShipEverywhere(), nur ueber alle Schiffstypen.
 export function totalOwnedShips(state: PlayerState): number {
   let total = 0;
   Object.values(state.fleet).forEach((c) => (total += c || 0));
   state.buildQueue.forEach((job) => (total += job.count || 0));
+  state.missions.forEach((m) => {
+    if (!m.finalized) Object.values(m.ships).forEach((c) => (total += c || 0));
+  });
+  state.galaxyDeployments.forEach((d) => {
+    Object.values(d.ships).forEach((c) => (total += c || 0));
+  });
+  listMyGroupOperations(state.userId).forEach((op) => {
+    op.participants.forEach((p) => {
+      if (p.userId === state.userId && p.status === 'accepted') {
+        Object.values(p.ships).forEach((c) => (total += c || 0));
+      }
+    });
+  });
   return total;
+}
+
+// ===== ABSICHERUNG GEGEN RUECKWIRKENDE SPERRE (R13) =====
+// Die Korrektur oben macht die Zaehlung STRENGER. Wer unter der alten, zu niedrigen Zaehlung
+// legitim aufgebaut hat, koennte dadurch schlagartig ueber dem Limit liegen und gar kein Schiff
+// mehr bauen - genau dieser Vorfall ist am 09.08.2026 schon einmal eingetreten (103.196 Schiffe
+// ueber dem damaligen Limit, kompletter Baustopp).
+//
+// Loesung: eine persoenliche Obergrenze, die beim ersten Mal auf den tatsaechlichen Bestand gesetzt
+// wird und danach nur noch SINKEN kann ("Ratsche"):
+//   - Beim ersten Aufruf nach der Umstellung: Obergrenze = max(MAX_PLAYER_SHIPS, Ist-Bestand).
+//     Niemand wird also schlechter gestellt als im Moment der Umstellung.
+//   - Bei jedem weiteren Aufruf: Obergrenze = max(MAX_PLAYER_SHIPS, min(gespeichert, Ist-Bestand)).
+//     Sinkt der Bestand (Verschrottung, Verluste), sinkt die Obergrenze mit - sie kann NIE wieder
+//     steigen. Wer einmal unter MAX_PLAYER_SHIPS faellt, ist dauerhaft im Normalzustand.
+// Ausnutzen laesst sich das nicht: ueber der Obergrenze wird weiterhin nicht gebaut, sie waechst
+// nie, und sie verschwindet von selbst.
+// Einmaliger Zuschlag beim Grandfathering. Ohne ihn waere die Obergrenze exakt gleich dem
+// Ist-Bestand - der Spieler koennte also am Tag der Umstellung KEIN einziges Schiff mehr bauen,
+// also genau der Vorfall vom 09.08.2026 noch einmal. Der Zuschlag ist unbedenklich, weil
+// MAX_PLAYER_SHIPS ausdruecklich ein Sicherheitsnetz gegen CPU-Last ist und kein Balance-Wert
+// (siehe Kommentar dort) und die Kampf-Engine laut README-Benchmark bis 1,5 Mio. Schiffen bei
+// ~26 ms bleibt - 25 % ueber einer ohnehin konservativen 200.000er-Grenze liegt weit darunter.
+const SHIP_LIMIT_GRANDFATHER_HEADROOM = 1.25;
+
+export function effectiveShipLimit(state: PlayerState): number {
+  const total = totalOwnedShips(state);
+  const stored = state.shipLimitCeiling;
+  const ceiling =
+    stored === undefined
+      ? Math.max(MAX_PLAYER_SHIPS, Math.ceil(total * SHIP_LIMIT_GRANDFATHER_HEADROOM))
+      : Math.max(MAX_PLAYER_SHIPS, Math.min(stored, Math.ceil(total * SHIP_LIMIT_GRANDFATHER_HEADROOM)));
+  state.shipLimitCeiling = ceiling;
+  return ceiling;
 }
 
 // Bugfix: zaehlte bisher NUR state.fleet (zuhause) + buildQueue (im Bau) - Schiffe, die gerade
@@ -557,14 +609,15 @@ export function startBuild(state: PlayerState, shipId: string, qty: number): Act
   if (!ship.cost || !canAfford(state, effectiveCost, effectiveQty)) {
     return { ok: false, error: 'Nicht genug Ressourcen.' };
   }
-  const frei = MAX_PLAYER_SHIPS - totalOwnedShips(state);
+  const limit = effectiveShipLimit(state);
+  const frei = limit - totalOwnedShips(state);
   // Wenn `frei` negativ ist, liegt der Bestand bereits UEBER dem Limit (moeglich, siehe Kommentar
   // an MAX_PLAYER_SHIPS). Die alte Meldung gab dann woertlich "Nur noch -3196 Schiff(e) moeglich"
   // aus - fachlich richtig, aber fuer den Spieler unverstaendlich.
   if (frei <= 0) {
     return {
       ok: false,
-      error: `Flottenlimit erreicht: ${totalOwnedShips(state)} von ${MAX_PLAYER_SHIPS} Schiffen. Verschrotte Schiffe, um wieder bauen zu koennen.`,
+      error: `Flottenlimit erreicht: ${totalOwnedShips(state)} von ${limit} Schiffen (inkl. unterwegs befindlicher Flotten). Verschrotte Schiffe, um wieder bauen zu koennen.`,
     };
   }
   if (effectiveQty > frei) return { ok: false, error: `Nur noch ${frei} Schiff(e) bis zum Flottenlimit moeglich.` };
@@ -863,8 +916,8 @@ export function buildImperator(state: PlayerState): ActionResult {
   if (state.buildQueue.length >= MAX_BUILD_SLOTS) {
     return { ok: false, error: `Alle ${MAX_BUILD_SLOTS} Bau-Slots sind belegt.` };
   }
-  if (totalOwnedShips(state) >= MAX_PLAYER_SHIPS) {
-    return { ok: false, error: `Flottenlimit erreicht (${MAX_PLAYER_SHIPS} Schiffe).` };
+  if (totalOwnedShips(state) >= effectiveShipLimit(state)) {
+    return { ok: false, error: `Flottenlimit erreicht (${effectiveShipLimit(state)} Schiffe, inkl. unterwegs befindlicher Flotten).` };
   }
   state.teile.waffen -= cost.waffen;
   state.teile.schild -= cost.schild;
