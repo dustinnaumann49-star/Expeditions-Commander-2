@@ -399,6 +399,51 @@ Container-Anzahl (`missions.ts:558`). Jede neue Skalierung multipliziert sich da
 **Ziel:** 10/6/2 -> **5/3/1**. Damit liegt die Wochensumme wieder auf dem Stand vor der
 Frequenzverdopplung.
 
+> **KRITISCHE ERGAENZUNG 11.08.2026 (Nutzerhinweis): Die Zahlen unten gelten fuer EINEN Raid -
+> der eigenen. Real werden vier verteidigt.**
+>
+> Der Nutzer meldete rund 10.000 DM an einem Raid-Tag und nannte den Grund: er verteidigt seinen
+> eigenen Raid, den seiner Frau und die der zwei Bots. **Im Code bestaetigt** (`finalizeRaidWaves()`
+> in `raids.ts`): `grantContainers()` wird fuer den Verteidiger UND jeden Verstaerker/Halter
+> aufgerufen - jeder bekommt die **volle** Menge, ausdruecklich unter Verweis auf Punkt 5 der README
+> ("Mehrspieler-Belohnungen werden NIE geteilt").
+>
+> Diese Entscheidung stammt aus dem Kontext gemeinsamer Expeditionen, wo alle Teilnehmer EINE
+> Mission zusammen fliegen. Auf Raids angewandt bedeutet sie etwas anderes: es sind **N getrennte
+> Ereignisse, jedes voll verguetet**. Der Ertrag skaliert damit **linear mit der Zahl der
+> angreifbaren Accounts** - Bots eingeschlossen. Und da die Belohnung nicht am Beitrag haengt,
+> genuegt eine kleine Halte-Flotte je Verbuendetem.
+>
+> **Nachgerechnet** (`CONTAINER_TYPES` x `RAID_WAVE_WIN_*`, 12/12 gewonnene Wellen):
+>
+> | | ein eigener Raid | x4 verteidigte Raids |
+> |---|---|---|
+> | Dunkle Materie | 1.800 | **7.200** (+ Bergung/Jackpot -> deckt die gemeldeten ~10.000) |
+> | Ressourcenwert | 14,51 Mrd | **58,02 Mrd pro Raid-Tag** |
+> | auf den Tag gemittelt | 4,15 Mrd | **16,58 Mrd/Tag** |
+>
+> **Folgen fuer diese Entscheidung:**
+> - Die unten genannten **6,31 Mrd/Tag sind um Faktor 2,6 zu niedrig**, die 595 DM/Tag um Faktor
+>   3,5 (real rund 2.060 DM/Tag).
+> - Der Raid liefert damit nicht 29 %, sondern bei korrigierter Gesamtsumme (31,96 Mrd/Tag)
+>   **rund 52 % aller Einnahmen** - er verletzt **Abnahmekriterium 5** (keine Einzelquelle ueber
+>   50 %) bereits im Ist-Zustand, nicht erst hypothetisch.
+> - **Die geplante Halbierung auf 5/3/1 reicht nicht.** Sie fuehrt auf 8,29 Mrd/Tag und damit
+>   immer noch ueber den Wert, den dieser Plan bisher als Ist-Zustand annimmt.
+> - **Der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot.** Das ist der eigentliche
+>   Punkt: eine Halbierung der Konstanten behebt einen Zahlenwert, nicht die Skalierung.
+>
+> **Zu entscheiden in Block A/D (bewusst NICHT vorgezogen - anders als die Reparaturen des
+> 10./11.08.2026 ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit
+> unerwarteter Nebenwirkung):**
+> 1. Bleibt es bei voller Belohnung je Verteidiger? Dann muessen die Konstanten gegen die Zahl der
+>    Accounts kalibriert werden - und beim naechsten Beitritt erneut.
+> 2. Oder bekommt der fremde Raid weniger als der eigene (z.B. Halter erhalten einen Bruchteil)?
+>    Das erhaelt den Anreiz, sich gegenseitig zu helfen, ohne die Skalierung.
+> 3. Oder zaehlen Bots nicht als Belohnungsquelle? Sie sind als Gegner-Fuellung gedacht, nicht als
+>    Einnahmequelle.
+> **Empfehlung: Variante 2**, weil sie als einzige unabhaengig von der Spielerzahl stabil bleibt.
+
 **Begruendung:** Die Verdopplung von 1x auf 2x/Woche wurde als reiner Kalendereintrag umgesetzt,
 ohne die Belohnung pro Raid gegenzurechnen - die Kommentare an den Konstanten begruenden 10/6/2
 noch mit "nur 1x/Woche pruefbar". Der Raid liefert heute **6,31 Mrd/Tag (29 % der Gesamteinnahmen)
@@ -1859,6 +1904,12 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   `combatFleetPowerBase()` besteht zu **98,4 % aus Schild und Panzerung und nur zu 1,6 % aus
   Waffen**. Waffen zu bauen laesst die Gegner also praktisch nicht mitwachsen, Panzerung zu bauen
   schon. Beruehrt Entscheidung 6 direkt. Herleitung in Abschnitt 4a.
+- **Raid-Ertrag gegen die ZAHL DER ACCOUNTS neu rechnen (NEU 11.08.2026, hoechste Prioritaet).**
+  Jeder Verteidiger und Halter bekommt die volle Container-Menge, der Ertrag skaliert also linear
+  mit der Zahl angreifbarer Accounts inklusive Bots. Bei vier verteidigten Raids sind es
+  16,58 Mrd/Tag statt der im Plan gefuehrten 6,31 - **rund 52 % aller Einnahmen und damit ein
+  Verstoss gegen Abnahmekriterium 5 im Ist-Zustand.** Die geplante Halbierung reicht nicht.
+  Vollstaendige Rechnung und drei Loesungsvarianten im Kasten bei Entscheidung 3.
 - **`MAX_PLAYER_SHIPS` erneut entscheiden (NEU 11.08.2026).** Steht auf 1.000.000. Bis Entscheidung
   2 (Beute-Kurve) gebaut und gemessen ist, wirkt das Limit als Ersatz-Bremsklotz gegen
   Weglauf-Wachstum grosser Flotten - danach ist es wieder eine reine CPU-Frage und kann komplett
@@ -2073,6 +2124,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 11.08.2026 | **Raid-Ertrag skaliert mit der Zahl der Accounts - Entscheidung 3 steht auf zu niedrigen Zahlen** (Nutzerhinweis: rund 10.000 DM an einem Raid-Tag, weil er eigenen Raid, den seiner Frau und die beiden Bot-Raids verteidigt). Im Code bestaetigt: `finalizeRaidWaves()` ruft `grantContainers()` fuer den Verteidiger UND jeden Halter auf, jeder bekommt die volle Menge - korrekt nach Punkt 5 der README, aber diese Regel stammt aus dem Kontext gemeinsamer Expeditionen, wo alle EINE Mission zusammen fliegen. Bei Raids sind es N getrennte Ereignisse, jedes voll verguetet, und die Belohnung haengt nicht am Beitrag. Nachgerechnet: ein eigener Raid gibt 1.800 DM und 14,51 Mrd Ressourcenwert, vier verteidigte Raids 7.200 DM und 58,02 Mrd pro Raid-Tag = **16,58 Mrd/Tag gegen die im Plan gefuehrten 6,31 Mrd/Tag** (Faktor 2,6; DM Faktor 3,5). Der Raid ist damit **rund 52 % aller Einnahmen und verletzt Abnahmekriterium 5 bereits im Ist-Zustand**; die geplante Halbierung auf 5/3/1 landet bei 8,29 Mrd/Tag und damit immer noch ueber dem bisher angenommenen Ist-Wert. **Kern des Problems ist nicht die Hoehe, sondern die Skalierung** - der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot. Drei Loesungsvarianten im Kasten bei Entscheidung 3 dokumentiert, Empfehlung: Halter bekommen einen Bruchteil statt der vollen Menge, weil das als einzige Variante unabhaengig von der Spielerzahl stabil bleibt. **Bewusst NICHT vorgezogen umgesetzt** - anders als die Reparaturen der Vortage ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit unerwarteter Nebenwirkung, und die Korrektur veraendert die Einnahmen-Baseline, an der Block A haengt. |
 | 11.08.2026 | **Klassen: situative Aufschlaege statt reiner Zahlen-Angleichung** (zweiter Schritt desselben Tages, Details in Abschnitt 4a). Nach der Angleichung lagen alle drei Klassen ueberall gleichauf - damit gab es keinen inhaltlichen Grund mehr, eine bestimmte zu waehlen. Die Nutzeridee, die Boni komplett zu gaten (Kanonier nur Angriff, Bollwerk nur Verteidigung), wurde durchgerechnet und **verworfen**: Angriffe sind rund fuenfmal haeufiger als Raids, der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen und zwei von drei Klassen die Haelfte der Zeit wirkungslos. Umgesetzt stattdessen: Grundbonus ueberall plus Aufschlag auf dem Heimatfeld (Kanonier Waffen x2,0 -> x2,4 ausserhalb der Heimatverteidigung; Bollwerk Schild/Panzerung x1,6 -> x2,4 bei Heimatverteidigung; Kommandant x1,4 flach). Neues Feld `homeDefense` in `CombatWorkerRequest`, nur aus `raids.ts` gesetzt und bewusst NICHT an `allowRetreat: false` gekoppelt, obwohl heute deckungsgleich. Der Verstaerker-Fall funktioniert ohne Zusatzarbeit, weil `OwnedFleetContribution` bereits eine eigene `playerClass` traegt. Endstand: Wochenbilanz 69,1 / 65,2 / 70,7, jede Klasse auf ihrem Heimatfeld klar vorn. Die Restspanne von ~8 % wird bewusst nicht weiter justiert - sie liegt innerhalb der Messstreuung und der Unsicherheit der Wochen-Annahme. |
 | 11.08.2026 | **Klassen angepasst: Bollwerk x1,5 -> x2,0, Kommandant x4/3 -> x1,5** (Nutzerentscheidung gegen meine Empfehlung abzuwarten - mit dem Argument, zwei von drei Klassen seien sonst totes Inventar; das Argument war richtig). **Meine Begruendung fuers Abwarten war zusaetzlich sachlich falsch:** ich hatte behauptet, eine Feindstaerke-Korrektur in Block D wuerde den Kanonier-Vorsprung von selbst schrumpfen lassen. Nachgerechnet ist das Gegenteil richtig - Waffen machen nur 1,6 % der Roh-Machtbasis aus, Schild und Panzerung 98,4 %; eine solche Korrektur haette die Machtbasis des Kanoniers um 1,6 %, die des Bollwerks aber um 49,2 % angehoben und das Bollwerk damit noch weiter zurueckgeworfen. **Der Nebenbefund ist wichtiger als der Klassen-Punkt selbst und als eigener Messpunkt in Abschnitt 7 eingetragen:** die Gegner-Skalierung haengt fast ausschliesslich an Schild/Panzerung, Waffen zu bauen ist ihr gegenueber nahezu kostenlos - beruehrt Entscheidung 6 direkt. Die neuen Werte sind hergeleitet, nicht gefittet (ein Punkt Schaden ist etwa doppelt so viel wert wie ein Punkt Robustheit, Budget daher schadens-aequivalent statt nominal), und durch einen unabhaengigen Sweep bestaetigt: Gleichstand liegt bei genau 2,0. Nach der Anpassung liegen alle drei Klassen innerhalb der Streuung gleichauf, mit weiterhin klar unterschiedlichen Profilen (Kanonier 19 Runden und 100 % Siegquote im Elite-Bollwerk, Bollwerk 45 Runden und 95 %, dafuer geringste Raid-Schwankung). **Client-Spiegel vorab geprueft und gefunden:** `lib/combatInfo.ts` trug die Multiplikatoren an zwei Stellen hartkodiert - die Bau-Karten haetten weiter +50 % Schild angezeigt, waehrend der Kampf mit +100 % rechnet. Laeuft jetzt ueber `/game/data`. |
 | 11.08.2026 | **Klassen-Balance erstmals gemessen** (Nutzerfrage, ob an den Klassen etwas anzupassen ist). Neuer Abschnitt 4a, neues Messskript `balance/session2-simulation/run_classes.mjs` samt `classes.txt`. Der Plan enthielt zu den SPIELER-Klassen bis dahin keinen einzigen Vergleich - nur Punkt 13.2 zu den Bots und die Kanonier-Zeile in der Feindstaerke-Tabelle. **Befund: der Kanonier ist in jeder gemessenen Situation die beste Wahl**, offensiv (3,6 % Verlust gegen 6,1 % beim Bollwerk im Elite-Bollwerk) wie defensiv (29,0 % gegen 39,4 % Flottenverlust beim Raid). Erwartet war eine Umkehr bei der Heimatverteidigung, weil dort der Rueckzug abgeschaltet ist und das Bollwerk eine eigene Reparatur-Sonderregel hat - sie tritt nicht ein. Mechanismus: der Kanonier beendet Kaempfe in der halben Rundenzahl und kassiert entsprechend weniger Rueckfeuer; in einem Abnutzungssystem ist Schaden strukturell mehr wert als Robustheit. **Damit ist die Design-Absicht in `classes.ts` widerlegt**, die alle drei Klassen mit einem gleichen Budget von 100 Prozentpunkten begruendet. Bewusst KEINE Aenderung vorgenommen: die Klassen-Multiplikatoren wirken auf dieselben Kampfwerte, die Entscheidung 1 und 19 ohnehin neu bewerten, und der Kanonier-Vorsprung haengt teilweise an der Feindstaerke-Rechnung, die Block D anfasst. Als Messpunkt in Abschnitt 7 eingetragen. **Methodischer Nebenbefund, teuer gelernt:** die erste Raid-Messung lief mit 4 Durchlaeufen und ergab das GEGENTEIL (Bollwerk 9 Prozentpunkte VOR dem Kanonier); bei 30 Durchlaeufen kippte das Vorzeichen. Die Streuung eines einzelnen Raids ist groesser als der gesamte Klassenunterschied - fuer Raid-Messungen sind mindestens 30 Durchlaeufe Pflicht, das Skript erzwingt das jetzt und gibt die min-max-Spanne mit aus. |
