@@ -91,7 +91,6 @@ export interface GalaxyEvent {
   position: number;
   spawnedAt: number;
   expiresAt: number;
-  claimedBy: number | null;
 }
 
 export interface GalaxyEventTypeDef {
@@ -540,6 +539,10 @@ export interface SektorConfig {
   guaranteedContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number }[];
   winContainer?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   winResources?: { metall: number; kristall: number; deuterium: number };
+  // Anteil der eingesetzten Flottenmacht, mit dem NPC-Verteidigungsanlagen gespawnt werden.
+  // Kommt seit dem 11.08.2026 vom Server (SEKTOR_CONFIG) - vorher stand die Zahl in Sektor.tsx
+  // hartkodiert und war falsch (siehe dort).
+  defenseFactor?: number;
   multiplayerOnly?: boolean;
 }
 
