@@ -1438,6 +1438,67 @@ Quote.
 
 ---
 
+## 4a. Klassen-Balance: gemessen am 11.08.2026, Entscheidung offen
+
+**Anlass:** Nutzerfrage, ob an den Klassen etwas anzupassen ist. Der Plan enthielt dazu bis dahin
+nur zwei Randnotizen - Punkt 13.2 (die BOTS waehlen ihre Klasse zufaellig) und die
+Kanonier-Zeile in der Feindstaerke-Tabelle unten. **Ein direkter Vergleich der drei Spielerklassen
+existierte nicht.** Er liegt jetzt vor: `balance/session2-simulation/run_classes.mjs`, Ausgabe in
+`classes.txt`.
+
+**Offensiv** (Forschung 10, Module 10, Kampf-Booster, Rueckzug aktiv):
+
+| Szenario | keine | Kanonier | Bollwerk | Kommandant |
+|---|---|---|---|---|
+| Elite-Bollwerk, grosse Flotte | 9,9 % Verlust / 45 Runden | **3,6 % / 19** | 6,1 % / 44 | 4,1 % / 28 |
+| Piraten Hoch, grosse Flotte | 5,0 % / 32 | **2,3 % / 15** | 3,0 % / 31 | 2,4 % / 23 |
+| Piraten Mittel, kleine Flotte | 2,5 % / 24 | 0,9 % / 13 | 1,1 % / 23 | **0,8 % / 18** |
+
+**Defensiv** (Raid auf die Heimatbasis, Rueckzug abgeschaltet, 32 Durchlaeufe):
+
+| Klasse | Flottenverlust | min-max | Verteidigungsverlust |
+|---|---|---|---|
+| keine | 50,7 % | 37-70 % | 8,1 % |
+| **Kanonier** | **29,0 %** | 19-45 % | 0,9 % |
+| Bollwerk | 39,4 % | 31-57 % | **0,3 %** |
+| Kommandant | 34,7 % | 22-48 % | 0,3 % |
+
+**Befund: Der Kanonier gewinnt ueberall.** Erwartet war, dass sich das bei der Heimatverteidigung
+umkehrt - dort ist der Rueckzug abgeschaltet (Punkt 27 der README), der Kampf laeuft also bis zum
+Ende durch, und das Bollwerk hat mit
+`CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT` (0,9 statt 0,7) eine eigene Sonderregel. **Es kehrt sich
+nicht um.** Das Bollwerk gewinnt nur beim Verlust an Verteidigungsanlagen, und der faellt gegen den
+Flottenverlust kaum ins Gewicht.
+
+**Mechanismus (Runden-Spalte):** Der Kanonier beendet den Kampf in etwa der halben Rundenzahl und
+kassiert dadurch halb so viele Runden Rueckfeuer. Mehr Schild und Panzerung verlaengern den Kampf -
+man haelt laenger durch, wird aber auch laenger beschossen. **In einem Abnutzungssystem ist Schaden
+strukturell mehr wert als Robustheit**, unabhaengig davon, wie die Bonuspunkte verteilt sind.
+
+**Damit ist die Design-Absicht im Code widerlegt.** `classes.ts` begruendet die Werte mit einem
+gleichen "Gesamtbudget" von 100 Prozentpunkten je Klasse (Kanonier 1x100 %, Bollwerk 2x50 %,
+Kommandant 3x33,3 %). Gleiches Budget ergibt hier nachweislich nicht gleiche Staerke. Wer die
+Klassen angleichen will, muss das Bollwerk deutlich UEBER 100 Prozentpunkte heben oder ihm einen
+Vorteil geben, der nicht ueber Kampfwerte laeuft.
+
+**Bewusst KEINE Aenderung jetzt.** Die Klassen-Multiplikatoren wirken auf genau die Kampfwerte, die
+Entscheidung 1 (Overkill-Deckel, bereits umgesetzt) und Entscheidung 19 (die vier ungeskalierten
+Forschungen) ohnehin neu bewerten. Eine Klassen-Kalibrierung vor Block D muesste danach wiederholt
+werden. Zusaetzlich verstaerkt sich der Kanonier durch die Feindstaerke-Rechnung (siehe direkt
+unten, Abschnitt 4): sein verdoppelter Schaden fliesst NICHT in `combatFleetPowerBase()` ein, die
+Gegner skalieren also nicht mit. Aendert sich das, schrumpft sein Vorsprung von selbst - moeglich,
+dass sich die Klassenfrage dadurch teilweise erledigt.
+
+**Methodischer Hinweis, teuer gelernt:** Die erste Messung der defensiven Seite lief mit nur 4
+Durchlaeufen und ergab das GEGENTEIL - Bollwerk 29,3 % gegen Kanonier 38,3 %, also einen Vorsprung
+des Bollwerks von 9 Prozentpunkten. Bei 30 Durchlaeufen kehrte sich das Vorzeichen um. Der Raid
+streut extrem (Wellenwurf 50/30/20, Kampf-Modifikator, NPC-Generierung je Welle neu) - die
+Spannweite eines einzelnen Durchlaufs ist GROESSER als der gesamte Klassenunterschied. **Fuer
+Raid-Messungen sind mindestens 30 Durchlaeufe Pflicht**, und die min-max-Spalte gehoert immer mit
+ausgegeben. `run_classes.mjs` erzwingt das jetzt.
+
+---
+
 ## 4. Bewusst NICHT geaendert (mit Begruendung)
 
 **`combatFleetPowerBase()` bleibt auf Rohwerten** (Session 2, Befund 1, Variante b).
@@ -1709,6 +1770,13 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   Handlungsbedarf, aber nach Block A gegen die neue Baseline nachzurechnen. Vollstaendige
   Entscheidungsregel (Pro-Kopf-Anteil unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0, plus
   die offene Design-Frage zur Mitgliederzahl) in Abschnitt 2a.
+- **Klassen-Balance entscheiden (NEU 11.08.2026, Messung liegt vor).** Nach heutigem Stand ist der
+  **Kanonier in JEDER gemessenen Situation die beste Wahl** - offensiv wie defensiv. Das Bollwerk
+  gewinnt keine einzige Kennzahl ausser dem Verlust an Verteidigungsanlagen, und der ist absolut
+  klein. Vollstaendige Messreihe und Herleitung in Abschnitt 4a, reproduzierbar mit
+  `balance/session2-simulation/run_classes.mjs`. **Vor Block D nichts aendern** - die
+  Klassen-Multiplikatoren wirken auf dieselben Kampfwerte, die Entscheidung 1 und Entscheidung 19
+  ohnehin neu bewerten.
 - **`MAX_PLAYER_SHIPS` erneut entscheiden (NEU 11.08.2026).** Steht auf 1.000.000. Bis Entscheidung
   2 (Beute-Kurve) gebaut und gemessen ist, wirkt das Limit als Ersatz-Bremsklotz gegen
   Weglauf-Wachstum grosser Flotten - danach ist es wieder eine reine CPU-Frage und kann komplett
@@ -1923,6 +1991,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 11.08.2026 | **Klassen-Balance erstmals gemessen** (Nutzerfrage, ob an den Klassen etwas anzupassen ist). Neuer Abschnitt 4a, neues Messskript `balance/session2-simulation/run_classes.mjs` samt `classes.txt`. Der Plan enthielt zu den SPIELER-Klassen bis dahin keinen einzigen Vergleich - nur Punkt 13.2 zu den Bots und die Kanonier-Zeile in der Feindstaerke-Tabelle. **Befund: der Kanonier ist in jeder gemessenen Situation die beste Wahl**, offensiv (3,6 % Verlust gegen 6,1 % beim Bollwerk im Elite-Bollwerk) wie defensiv (29,0 % gegen 39,4 % Flottenverlust beim Raid). Erwartet war eine Umkehr bei der Heimatverteidigung, weil dort der Rueckzug abgeschaltet ist und das Bollwerk eine eigene Reparatur-Sonderregel hat - sie tritt nicht ein. Mechanismus: der Kanonier beendet Kaempfe in der halben Rundenzahl und kassiert entsprechend weniger Rueckfeuer; in einem Abnutzungssystem ist Schaden strukturell mehr wert als Robustheit. **Damit ist die Design-Absicht in `classes.ts` widerlegt**, die alle drei Klassen mit einem gleichen Budget von 100 Prozentpunkten begruendet. Bewusst KEINE Aenderung vorgenommen: die Klassen-Multiplikatoren wirken auf dieselben Kampfwerte, die Entscheidung 1 und 19 ohnehin neu bewerten, und der Kanonier-Vorsprung haengt teilweise an der Feindstaerke-Rechnung, die Block D anfasst. Als Messpunkt in Abschnitt 7 eingetragen. **Methodischer Nebenbefund, teuer gelernt:** die erste Raid-Messung lief mit 4 Durchlaeufen und ergab das GEGENTEIL (Bollwerk 9 Prozentpunkte VOR dem Kanonier); bei 30 Durchlaeufen kippte das Vorzeichen. Die Streuung eines einzelnen Raids ist groesser als der gesamte Klassenunterschied - fuer Raid-Messungen sind mindestens 30 Durchlaeufe Pflicht, das Skript erzwingt das jetzt und gibt die min-max-Spanne mit aus. |
 | 11.08.2026 | **Aufraeum-Paket R2/R4/R7/R11/R13** (Nutzerentscheidung, Details in Abschnitt 2a, Punkt 7). Auswahlkriterium: kein Punkt darf eine Balance-Entscheidung verlangen, die ohne die neue Baseline nicht zu treffen ist - R3, R5, R8 und R9 sind deshalb NICHT dabei. **Zwei Befunde weichen von der Planbeschreibung ab.** (1) R4: der Plan sagte, der Simulator rechne fuer Mittel anders als das Spiel - falsch, beide nutzen 0,12; der abweichende Wert 0,10 stand in einem unerreichbaren `groupOps.ts`-Zweig. Dafuer gab es einen **vierten Fundort, den der Plan nicht kannte und der als einziger LIVE falsch war**: `client/src/pages/Sektor.tsx` zeigte Spielern 10 % statt 12 % fuer Mittel und pauschal 15 % fuer das Elite-Bollwerk statt 18 %. Gefunden, weil diesmal VOR dem Paketieren im Client gegreppt wurde - Messregel 8 entsprechend um diesen Fundort ergaenzt und um den Hinweis, dass die Liste der Spiegel nicht vollstaendig ist. (2) R13 ist mit einer Ratschen-Obergrenze (`state.shipLimitCeiling`) abgesichert, weil die strengere Zaehlung sonst rueckwirkend aussperren wuerde; der 25-%-Zuschlag ist ausdruecklich ein pragmatischer Puffer, kein hergeleiteter Wert. **Zusaetzlich `MAX_PLAYER_SHIPS` von 200.000 auf 1.000.000 angehoben.** Nutzervorschlag war, es ganz zu entfernen; die technische Begruendung (Engine schafft 1,5 Mio. bei ~26 ms) wurde gegengeprueft und stimmt - die Schleifen ueber Einzelstuecke laufen nur unterhalb der Aggregationsschwelle. Bewusst trotzdem eine Grenze behalten, weil das Limit derzeit als Ersatz-Bremsklotz gegen Weglauf-Wachstum wirkt: seit dem Overkill-Deckel verlieren grosse Flotten anteilig immer weniger, und die eigentlich dafuer vorgesehene Bremse (Entscheidung 2, Beute-Kurve) ist noch nicht gebaut. Als Messpunkt fuer nach Block D in Abschnitt 7 eingetragen. R2 nur teilweise erledigt: tote Eintraege entfernt, die Frage nach einer Sieg-Serien-Belohnung fuer Solo-Sektoren bleibt eine Balance-Entscheidung fuer Block D. `run_sectors.mjs` komplett neu gelaufen: alle 32 Zellen im Rahmen der Streuung unveraendert, wie erwartet. |
 | 10.08.2026 | **Entscheidung 1 (Overkill-Deckel) und R6 vorgezogen umgesetzt** (Nutzerentscheidung, Details in Abschnitt 2a, Punkte 5 und 6). Entscheidung 1 war der beste Vorzieh-Kandidat des ganzen Plans, weil die Aggregations-Schwelle eine reine Performance-Optimierung ist, die das Kampfergebnis nicht veraendern darf - ein Defekt, keine Balance-Frage - und weil sie ohnehin Schritt 1 der Reihenfolge ist, also nichts praejudiziert. Gemessen: die Klippe bei 101 Kreuzern faellt von 100 % auf 35,3 % Verlust, die Kurve ueber die Schwelle ist stetig, der Individual-Pfad unveraendert. **Die in Entscheidung 1 genannte Befuerchtung "Sektoren werden dadurch zu leicht" hat sich NICHT bestaetigt** - alle 32 Zellen von `run_sectors.mjs` praktisch unveraendert, weil in normalen Sektorkaempfen kein Schuetze einen Waffenwert von 574 Einheiten-HP hat. R6 gemessen: 0,994x statt 1,429x Punkte aus demselben Kreislauf. **Neuer Nebenbefund fuer Block D:** `getDurchschlagFraction()` liefert bei Forschung 10 den Wert 1,0, also Weitergabe ohne jede Daempfung - und da die NPC-Forschung aus der des Spielers abgeleitet wird, macht das die Gegner ebenso toedlicher (im Individual-Pfad schon vor dieser Aenderung). Vor der Kalibrierung von Entscheidung 19 anzusehen. **Client-Spiegel diesmal vorab geprueft** (Lehre vom selben Tag): fuer die Kampf-Aenderung existiert keiner, fuer R6 ebenfalls nicht - der Schrotthaendler zeigt aber jetzt einen Hinweis auf den Punkte-Abzug, damit Spieler nicht ohne erkennbaren Grund sinkende Punkte sehen. |
 | 10.08.2026 | **Nachtrag zur Code-Aenderung desselben Tages: die Client-Spiegel fehlten.** Nutzermeldung "an der Allianz-Station hat sich nichts geaendert" - zutreffend, und zwar aus dem im Plan mehrfach beschriebenen Grund. Der Server rechnete den Kompensationsfaktor bereits, aber `pages/Allianz.tsx` enthaelt eine vollstaendige eigene Kopie von `stationMineOutputPerHour()` und zeigte weiter den alten Wert (15,70 Mio/h real gegen 5,23 Mio/h angezeigt, V1-Metallmine Stufe 30). Bei V1-Minen war die Anzeige sogar identisch zum Vorzustand, weil 7.1 nur die V2/V3-`baseOutput` betrifft. Zweiter betroffener Spiegel: `lib/multipliers.ts` mit derselben V1-only-Tabelle `BUILDING_SELF_BUILDTIME_MODULE`. Behoben, wobei die Konstante jetzt ueber `/game/data` ausgeliefert wird statt im Client hartkodiert - eine Quelle statt zweier Werte, die auseinanderlaufen koennen. **Messregel 8 entsprechend verschaerft**: `Allianz.tsx` war bisher nirgends als Spiegel gefuehrt, obwohl sie die komplette Stations-Wirtschaft nachbaut, und der verbindliche Ablauf lautet jetzt "erst im Client greppen, dann den Server aendern". Der Vorfall ist der dritte dokumentierte Fall derselben Fehlerform (README Punkt 1, R1, jetzt hier). |
