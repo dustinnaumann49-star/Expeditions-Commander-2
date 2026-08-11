@@ -57,7 +57,8 @@ async function defensive(cls, fleet, defense) {
     if (Object.keys(npc).filter((i) => npc[i] > 0).length === 0) continue;
     const r = await L.runner.runCombatInWorker({
       sideAShips: defenders, sideBShips: npc, research: st.research, defenseCounts: st.defense,
-      sharedShieldPoolA: pool, allowRetreat: false, battleModifier: L.combat.rollBattleModifier('raid'),
+      sharedShieldPoolA: pool, allowRetreat: false, homeDefense: true,
+      battleModifier: L.combat.rollBattleModifier('raid'),
       playerClass: cls, kampfBoostActive: true, shipModules: st.shipModules,
     });
     shipIds.forEach((i) => (st.fleet[i] = r.survivorsA[i] || 0));
@@ -70,6 +71,7 @@ async function defensive(cls, fleet, defense) {
 
 console.log(`Klassen-Vergleich, Forschung 10 / Module 10 / Kampf-Booster aktiv, ${REPS} Wiederholungen je Zelle\n`);
 
+const OFFENSE_ELITE = {}; const DEFENSE_RAID = {};
 console.log('=== OFFENSIV (Rueckzug aktiv) ===');
 console.log('Szenario                        Klasse         Sieg%   oVerlust%   Runden');
 for (const [label, fleet, sektor] of [
@@ -79,6 +81,7 @@ for (const [label, fleet, sektor] of [
 ]) {
   for (const cls of CLASSES) {
     const r = await offensive(cls, sektor, fleet);
+    if (sektor === 'piraten_elite') OFFENSE_ELITE[cls || 'keine'] = r.loss;
     console.log(`${label.padEnd(31)} ${(cls || 'keine').padEnd(13)} ${r.win.toFixed(0).padStart(5)}% ${r.loss.toFixed(1).padStart(10)}% ${r.rounds.toFixed(0).padStart(8)}`);
   }
 }
@@ -97,7 +100,19 @@ for (const cls of CLASSES) {
   for (let i = 0; i < RAID_RUNS; i++) { const r = await defensive(cls, L.FLEET_LARGE, DEFENSE_REF); vals.push(r.fleetLoss); d += r.defLoss; }
   const avg = vals.reduce((a, b) => a + b, 0) / RAID_RUNS;
   const span = `${(Math.min(...vals) * 100).toFixed(0)}-${(Math.max(...vals) * 100).toFixed(0)}%`;
+  DEFENSE_RAID[cls || 'keine'] = avg * 100;
   console.log(`${(cls || 'keine').padEnd(13)} ${(avg * 100).toFixed(1).padStart(13)}% ${span.padStart(10)} ${((d / RAID_RUNS) * 100).toFixed(1).padStart(20)}%`);
+}
+
+// Wochenbilanz: Raids laufen 2x/Woche mit 70% Chance (RAID_FALLBACK_SCHEDULE + RAID_SPAWN_CHANCE),
+// Sektor-Missionen dauern 24h und sind unbegrenzt parallel moeglich - konservativ 7/Woche.
+// Ohne diese Gewichtung sieht ein reines Nebeneinander der Spalten das Bild falsch: Raids sind
+// selten, kosten aber pro Ereignis ein Vielfaches.
+console.log('\n=== WOCHENBILANZ (7 Sektor-Missionen + 1,4 Raids) ===');
+console.log('Klasse         gewichtete Verlustsumme');
+for (const cls of CLASSES) {
+  const o = OFFENSE_ELITE[cls || 'keine'], d = DEFENSE_RAID[cls || 'keine'];
+  console.log(`${(cls || 'keine').padEnd(13)} ${(7 * o + 1.4 * d).toFixed(1).padStart(12)}`);
 }
 
 console.log('\nLesart: Gewonnen wird offensiv ueberall, der Unterschied liegt allein bei den Verlusten.');

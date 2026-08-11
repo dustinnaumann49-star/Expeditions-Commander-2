@@ -1,26 +1,33 @@
-Klassen-Vergleich, Forschung 10 / Module 10 / Kampf-Booster aktiv, 8 Wiederholungen je Zelle
+Klassen-Vergleich, Forschung 10 / Module 10 / Kampf-Booster aktiv, 20 Wiederholungen je Zelle
 
 === OFFENSIV (Rueckzug aktiv) ===
 Szenario                        Klasse         Sieg%   oVerlust%   Runden
-Grosse Flotte / Elite-Bollwerk  keine            95%        9.9%       45
-Grosse Flotte / Elite-Bollwerk  kanonier        100%        3.6%       19
-Grosse Flotte / Elite-Bollwerk  bollwerk         97%        6.1%       44
-Grosse Flotte / Elite-Bollwerk  kommandant      100%        4.1%       28
-Grosse Flotte / Piraten Hoch    keine           100%        5.0%       32
-Grosse Flotte / Piraten Hoch    kanonier        100%        2.3%       15
-Grosse Flotte / Piraten Hoch    bollwerk        100%        3.0%       31
-Grosse Flotte / Piraten Hoch    kommandant      100%        2.4%       23
+Grosse Flotte / Elite-Bollwerk  keine            96%       10.4%       45
+Grosse Flotte / Elite-Bollwerk  kanonier        100%        3.5%       16
+Grosse Flotte / Elite-Bollwerk  bollwerk         98%        4.8%       41
+Grosse Flotte / Elite-Bollwerk  kommandant      100%        4.0%       28
+Grosse Flotte / Piraten Hoch    keine           100%        5.2%       31
+Grosse Flotte / Piraten Hoch    kanonier        100%        1.9%       13
+Grosse Flotte / Piraten Hoch    bollwerk        100%        2.6%       30
+Grosse Flotte / Piraten Hoch    kommandant      100%        2.3%       22
 Kleine Flotte / Piraten Mittel  keine           100%        2.5%       24
-Kleine Flotte / Piraten Mittel  kanonier        100%        0.9%       13
-Kleine Flotte / Piraten Mittel  bollwerk        100%        1.1%       23
-Kleine Flotte / Piraten Mittel  kommandant      100%        0.8%       18
+Kleine Flotte / Piraten Mittel  kanonier        100%        0.3%       11
+Kleine Flotte / Piraten Mittel  bollwerk        100%        0.9%       23
+Kleine Flotte / Piraten Mittel  kommandant      100%        0.7%       17
 
-=== DEFENSIV: Raid auf die Heimatbasis (Rueckzug abgeschaltet), 32 Durchlaeufe ===
+=== DEFENSIV: Raid auf die Heimatbasis (Rueckzug abgeschaltet), 80 Durchlaeufe ===
 Klasse         Flottenverlust   min-max      Verteidigungsverlust
-keine                  50.7%     37-70%                  8.1%
-kanonier               29.0%     19-45%                  0.9%
-bollwerk               39.4%     31-57%                  0.3%
-kommandant             34.7%     22-48%                  0.3%
+keine                  52.9%     34-85%                 10.3%
+kanonier               31.6%     18-45%                  1.2%
+bollwerk               22.3%     12-37%                  0.2%
+kommandant             30.2%     15-44%                  0.2%
+
+=== WOCHENBILANZ (7 Sektor-Missionen + 1,4 Raids) ===
+Klasse         gewichtete Verlustsumme
+keine                147.2
+kanonier              69.1
+bollwerk              65.2
+kommandant            70.7
 
 Lesart: Gewonnen wird offensiv ueberall, der Unterschied liegt allein bei den Verlusten.
 Die Runden-Spalte erklaert den Mechanismus - wer schneller toetet, kassiert weniger Rueckfeuer.
