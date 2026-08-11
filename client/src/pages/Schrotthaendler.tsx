@@ -42,7 +42,14 @@ export function SchrotthaendlerPage() {
     <div>
       <img className="view-banner" src="/ui/schrotthaendler.png" alt="Schrotthändler" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
       {error && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
-      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>Du erhältst {(rate * 100).toFixed(0)}% der Baukosten zurück.</p>
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>Du erhältst {(rate * 100).toFixed(0)}% der Baukosten zurück.</p>
+      {/* Hinweis noetig, seit das Verschrotten die erstatteten Ressourcen auch von der Punktebasis
+          abzieht (R6): ohne ihn saehen Spieler nur, dass ihre Punkte ohne erkennbaren Grund
+          sinken. Der Abzug entspricht exakt der Erstattung, nicht den vollen Baukosten. */}
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>
+        Hinweis: Der erstattete Betrag wird auch von deiner Punktebasis abgezogen - Punkte zählen die
+        Ressourcen, die tatsächlich in deiner Flotte und Verteidigung stecken.
+      </p>
 
       <h3 style={{ fontSize: 14, marginBottom: 8 }}>Schiffe</h3>
       {ownedShips.length === 0 ? (
