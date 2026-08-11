@@ -1,12 +1,23 @@
 import type { GameData, PlayerState, PlayerClass, ShipDefinition, DefenseDefinition } from '../types/game';
 import { isBoosterActive } from './multipliers';
 
-// Spiegelt server/src/game/data/classes.ts's CLASS_*_SCHILD_MULTIPLIER 1:1, nur fuer die
-// Schild-Seite (fuer computeDomeSharedPool() unten gebraucht) - Kanonier hat keinen Schild-Bonus.
-function getClassSchildMultiplier(playerClass: PlayerClass | null): number {
-  if (playerClass === 'bollwerk') return 1.5;
-  if (playerClass === 'kommandant') return 4 / 3;
-  return 1;
+// Klassen-Multiplikatoren kommen seit dem 11.08.2026 vom Server (gameData.classCombatMultipliers).
+// Geliefert werden bewusst die GRUNDWERTE ohne die situativen Aufschlaege
+// (CLASS_KANONIER_OFFENSE_BONUS / CLASS_BOLLWERK_DEFENSE_BONUS): eine Bau-Karte gehoert zu keiner
+// Kampfsituation, ein Effektivwert mit Aufschlag waere dort schlicht falsch. Die Aufschlaege
+// stehen stattdessen als eigene Zeile in der Klassen-Beschreibung (PLAYER_CLASSES in
+// server/src/game/data/classes.ts), die der Client ohnehin fertig formatiert bekommt.
+// Vorher standen sie hier hartkodiert - zweimal, mit unterschiedlichem Zuschnitt - und waeren bei
+// der Klassen-Anpassung desselben Tages still veraltet: die Anzeige haette weiter +50% Schild
+// gemeldet, waehrend der Kampf mit +100% rechnet.
+function classMultipliers(gameData: GameData, playerClass: PlayerClass | null): { waffen: number; schild: number; panzerung: number } {
+  const fallback = { waffen: 1, schild: 1, panzerung: 1 };
+  if (!playerClass) return fallback;
+  return gameData.classCombatMultipliers?.[playerClass] || fallback;
+}
+
+function getClassSchildMultiplier(gameData: GameData, playerClass: PlayerClass | null): number {
+  return classMultipliers(gameData, playerClass).schild;
 }
 
 // Spiegelt SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL aus server/src/game/data/shipModules.ts (gilt
@@ -109,15 +120,7 @@ export function panzerungMultiplier(gameData: GameData, research: Record<string,
   return 1 + (research.panzerung || 0) * (tech ? tech.effectPerLevel : 0.1);
 }
 
-// Spiegelt server/src/game/data/classes.ts's CLASS_*_WAFFEN/SCHILD/PANZERUNG_MULTIPLIER 1:1 - im
-// Unterschied zu getClassSchildMultiplier() oben (nur fuer den Kuppel-Pool gedacht) liefert diese
-// Funktion alle drei Werte fuer die vollstaendige Effektiv-Werte-Anzeige auf den Bau-Karten.
-function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: number; schild: number; panzerung: number } {
-  if (playerClass === 'kanonier') return { waffen: 2, schild: 1, panzerung: 1 };
-  if (playerClass === 'bollwerk') return { waffen: 1, schild: 1.5, panzerung: 1.5 };
-  if (playerClass === 'kommandant') return { waffen: 4 / 3, schild: 4 / 3, panzerung: 4 / 3 };
-  return { waffen: 1, schild: 1, panzerung: 1 };
-}
+
 
 // Spiegelt server/src/game/combat.ts's getEffectiveStats() 1:1 fuer den Schiffs-Zweig - fuer die
 // "Basiswert (Effektivwert)"-Anzeige auf den Bau-Karten (Nutzerentscheidung), damit sichtbar wird,
@@ -129,7 +132,7 @@ export function getEffectiveShipStats(
   ship: ShipDefinition
 ): { waffen: number; schild: number; panzerung: number } {
   const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
-  const classMult = classCombatMultipliers(state.playerClass);
+  const classMult = classMultipliers(gameData, state.playerClass);
   const waffenModule = 1 + (state.shipModules[`${ship.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
   const schildModule = 1 + (state.shipModules[`${ship.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
   const panzerungModule = 1 + (state.shipModules[`${ship.id}_panzerung`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
@@ -148,7 +151,7 @@ export function getEffectiveDefenseStats(
   def: DefenseDefinition
 ): { waffen: number; schild: number; panzerung: number } {
   const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
-  const classMult = classCombatMultipliers(state.playerClass);
+  const classMult = classMultipliers(gameData, state.playerClass);
   const ownSchild = def.isDome ? 0 : def.stats.schild;
   const waffenModule = 1 + (state.shipModules[`${def.id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
   const schildModule = 1 + (state.shipModules[`${def.id}_schild`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
@@ -192,7 +195,7 @@ function statBonusLines(
   const researchLevel = state.research[statKey] || 0;
   if (researchLevel > 0) lines.push({ label: `🔬 Forschung (Stufe ${researchLevel})`, percent: formatBonusPercent(researchMult) });
 
-  const classMult = classCombatMultipliers(state.playerClass)[statKey];
+  const classMult = classMultipliers(gameData, state.playerClass)[statKey];
   if (classMult !== 1) lines.push({ label: '🎖️ Klassen-Bonus', percent: formatBonusPercent(classMult) });
 
   const moduleLevel = state.shipModules[`${typeId}_${statKey}`] || 0;
@@ -236,7 +239,7 @@ export function computeDomeSharedPool(
   state: PlayerState,
 ): number {
   const kampfBoost = isBoosterActive(state, 'kampf') ? gameData.kampfBoostMultiplier : 1;
-  const classSchildMult = getClassSchildMultiplier(state.playerClass);
+  const classSchildMult = getClassSchildMultiplier(gameData, state.playerClass);
   let total = 0;
   gameData.defenses.forEach((d) => {
     if (!d.isDome) return;
