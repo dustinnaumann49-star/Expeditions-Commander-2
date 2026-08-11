@@ -665,6 +665,9 @@ export interface GameData {
   // einzelnen Mitglieds gekoppelt ist (Herleitung an der Konstante in
   // server/src/game/data/stationBuildings.ts). MUSS in jede Ertrags-Anzeige der Station einfliessen.
   stationMiningCompensation?: number;
+  // Kampf-Multiplikatoren der Klassen, vom Server. Ersetzt seit dem 11.08.2026 zwei hartkodierte
+  // Kopien in lib/combatInfo.ts, die bei Balance-Aenderungen still veraltet waeren.
+  classCombatMultipliers?: Record<string, { waffen: number; schild: number; panzerung: number }>;
 }
 
 export interface StationBuildingDefinition {
