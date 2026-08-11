@@ -3,11 +3,11 @@ Schwelle Kreuzer: 100 (Stapel > Schwelle wird aggregiert)
 Gegner: 1x Piratenadmiral, Waffen 280 Mio (ein Kreuzer hat 487k HP)
 
 Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
-     90        nein   100.0         36.3      40.4%         24 Mio
-     99        nein   100.0         41.7      42.1%         27 Mio
-    101          ja     2.8        101.0     100.0%         66 Mio
-    150          ja     2.5        150.0     100.0%         99 Mio
-    400          ja     2.5        400.0     100.0%        263 Mio
+     90        nein   100.0         38.7      43.0%         25 Mio
+     99        nein   100.0         38.3      38.6%         25 Mio
+    101          ja   100.0         33.9      33.6%         22 Mio
+    150          ja   100.0         34.4      22.9%         23 Mio
+    400          ja   100.0         27.3       6.8%         18 Mio
 
 Erwartung bei Einzel-Einheiten: ein Schuss toetet 1 Kreuzer (Rest verpufft, nur Durchschlags-
 Kaskade reicht weiter). Bei Aggregation: Schaden geht in den HP-Pool, kein Overkill-Verlust.
