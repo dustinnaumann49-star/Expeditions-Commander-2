@@ -9,6 +9,26 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '11.08.2026',
+    title: 'Flottenlimit auf 1 Million angehoben, Simulator-Genauigkeit',
+    changes: [
+      'Das Flottenlimit steigt von 200.000 auf 1.000.000 Schiffe. Hintergrund: die Kampf-Engine fasst große Stapel zusammen, ihre Rechenzeit hängt deshalb nur noch von der Anzahl verschiedener Schiffstypen ab und nicht mehr von der Stückzahl - bestätigt bis 1,5 Millionen Schiffen. Das Limit bleibt als reines Sicherheitsnetz bestehen, liegt jetzt aber weit oberhalb allem, was im Spiel praktisch vorkommt.',
+      'Das Flottenlimit zählt jetzt auch Schiffe mit, die gerade auf einer Mission, in einer Galaxie-Entsendung oder in einer gemeinsamen Expedition unterwegs sind. Vorher zählte nur, was zuhause stand - dadurch ließ sich das Limit unbeabsichtigt überschreiten, indem man die Flotte wegschickte und zuhause nachbaute. Wer dadurch aktuell über dem Limit liegt, wird NICHT ausgesperrt: es gilt vorübergehend eine persönliche Obergrenze, die sich automatisch auf den Normalwert zurückzieht, sobald die Flotte kleiner wird.',
+      'Der Anteil an NPC-Verteidigungsanlagen in Piraten-Sektoren stand an drei Stellen im Code getrennt und war bereits leicht auseinandergelaufen. Jetzt gibt es nur noch eine Quelle - Kampfsimulator, Solo-Missionen und gemeinsame Expeditionen rechnen garantiert mit denselben Werten. An den tatsächlichen Werten ändert sich nichts.',
+    ],
+  },
+  {
+    date: '10.08.2026',
+    title: 'Wichtig: Große Flotten werden nicht mehr komplett vernichtet',
+    changes: [
+      'Ab einer bestimmten Stapelgröße rechnet die Kampf-Engine gebündelt statt Schiff für Schiff - das ist eine reine Geschwindigkeits-Optimierung und sollte am Ergebnis nichts ändern. Sie tat es aber: ein einzelner sehr starker Treffer (z.B. vom Piratenadmiral) konnte in diesem Modus hunderte Schiffe auf einmal auslöschen, statt wie sonst nur eines. Dadurch überstanden 99 Kreuzer einen Kampf mit rund 42% Verlust, während 101 Kreuzer restlos vernichtet wurden. Ein einziges Schiff mehr kippte den Ausgang. Behoben - ein Treffer richtet jetzt in beiden Modi denselben Schaden an, und große Flotten verlieren wieder anteilig weniger statt alles.',
+      'Die Schwierigkeit der Sektoren ist davon praktisch unberührt geblieben (nachgemessen über alle Stufen und Flottenprofile) - betroffen waren fast nur Boss-Gegner gegen sehr große Flotten.',
+      'Allianz-Station: Die Minen produzieren deutlich mehr. Die Station ist bewusst nicht an die Forschung einzelner Mitglieder gekoppelt - dieser Nachteil war aber nie ausgeglichen worden, wodurch sie bei gleicher Ausbaustufe nur ein Sechstel der Heimatbasis lieferte. Zusätzlich liefern die Ausbaustufen V2 und V3 jetzt doppelten bzw. vierfachen Ertrag statt anderthalbfachen bzw. zweieinhalbfachen - passend zu ihren doppelten bzw. vierfachen Kosten. Vorher war jede Ausbaustufe unwirtschaftlicher als die vorherige.',
+      'Heimatbasis: Die Gebäude-Module gab es bisher nur für die V1-Stufen. Für V2- und V3-Gebäude fehlten sie komplett - ohne Fehlermeldung, sie wirkten einfach nicht. Dadurch bauten V2/V3-Gebäude rund viermal langsamer als ein gleich ausgebautes V1, und Fördereffizienz sowie Energiesparmodul blieben dort wirkungslos. Jetzt für alle drei Stufen vorhanden.',
+      'Schrotthändler: Der erstattete Betrag wird jetzt auch von der Punktebasis abgezogen. Vorher ließen sich durch wiederholtes Bauen und Verschrotten aus derselben Ressourcenmenge rund 43% mehr Punkte erzeugen.',
+    ],
+  },
+  {
     date: '06.08.2026',
     title: 'Feature: Aktuelle Erträge/Belohnungen direkt im Sektor sichtbar',
     changes: [

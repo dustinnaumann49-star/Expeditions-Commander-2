@@ -474,20 +474,36 @@ export const MAX_DEFENSE_MODULE_SLOTS = 3;
 // 09.08.2026: von 100.000 auf 200.000 angehoben (Nutzerentscheidung). Anlass: ein Spielstand lag
 // mit 103.196 Schiffen UEBER dem alten Limit und konnte dadurch gar kein Schiff mehr bauen.
 // Begruendung fuer die Anhebung statt einer Korrektur nach unten: die Konstante ist ein
-// Sicherheitsnetz, kein Balance-Wert, und die CPU-Last liegt laut Beobachtung weit unter den
-// Spitzen. Bewusst 200.000 und nicht mehr - der Wert wird beobachtet.
+// Sicherheitsnetz, kein Balance-Wert.
 //
-// OFFEN (siehe R13 im UMSETZUNGSPLAN_BALANCE.md): Wie das Limit ueberhaupt ueberschritten werden
-// konnte. `totalOwnedShips()` in actions.ts zaehlt NUR `state.fleet` (zuhause) + `buildQueue` -
-// NICHT die Schiffe auf Missionen, in Galaxie-Entsendungen oder Gruppen-Operationen. Wer seine
-// Flotte wegschickt, kann zuhause bis zum Limit nachbauen; kehrt sie zurueck, liegt der Bestand
-// darueber. Zusaetzlich fliessen Container-Freischiffe (inventory.ts) und Missionsrueckkehrer
-// (missions.ts) ohne Limitpruefung direkt in die Flotte. Exakt derselbe Fehler wurde fuer die
-// Einzel-Limits bereits behoben (`countShipEverywhere`, Kommentar in actions.ts), bei
-// `totalOwnedShips` aber nie nachgezogen. Die Umstellung macht die Zaehlung STRENGER und darf
-// deshalb erst erfolgen, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher
-// Schiffe bekannt ist - sonst blockiert sie den Spieler sofort wieder.
-export const MAX_PLAYER_SHIPS = 200000;
+// 11.08.2026: von 200.000 auf 1.000.000 angehoben (Nutzerentscheidung). Der urspruengliche
+// Vorschlag war, das Limit ganz zu entfernen. Nachgeprueft und bestaetigt: die Rechenzeit haengt
+// seit der Aggregat-Engine nur noch von der ANZAHL VERSCHIEDENER TYPEN ab (max. 15), nicht von der
+// Stueckzahl - die einzigen Schleifen ueber Einzelstuecke in combat.ts (buildUnits()) laufen
+// ausschliesslich UNTERHALB von STACK_AGGREGATE_THRESHOLD_BY_TYPE. Auch ausserhalb des Kampfes
+// skaliert nichts mit der Stueckzahl: `state.fleet` ist ein Record aus Typ und Anzahl, der
+// Spielstand ist bei 1,5 Mio. Schiffen genauso gross wie bei 100.
+//
+// TROTZDEM bewusst nicht auf unbegrenzt, aus zwei Gruenden:
+// 1. Die Unabhaengigkeit von der Stueckzahl gilt WEGEN der Aggregation. Senkt jemand spaeter eine
+//    Schwelle oder baut einen Kampfmodus, der wieder pro Einheit rechnet, gibt es ohne Limit
+//    keinen Auffangboden mehr. Ein Limit weit oberhalb jeder realistischen Nutzung kostet nichts.
+// 2. WICHTIGER: Seit dem Overkill-Deckel (Entscheidung 1, umgesetzt 10.08.2026) verlieren grosse
+//    Flotten anteilig deutlich weniger - 400 Kreuzer verlieren 6,6 %, wo vorher alles wegging.
+//    Je groesser die Flotte, desto sicherer wird sie pro Schiff. Genau diese Rueckkopplung soll
+//    Entscheidung 2 (Beute-Kurve, Exponent 0,85) abfangen, und die ist noch NICHT gebaut. Bis
+//    dahin wirkt dieses Limit als stiller Ersatz-Bremsklotz gegen Weglauf-Wachstum.
+// -> NACH Block D des Umsetzungsplans erneut ansehen. Dann ist es wieder eine reine CPU-Frage und
+//    die Entscheidung "ganz weg oder nicht" faellt leichter. Siehe Abschnitt 7 des Plans.
+//
+// R13 (Zaehlung ueber alle Orte) ist am 11.08.2026 behoben - `totalOwnedShips()` zaehlt jetzt auch
+// Missionen, Galaxie-Entsendungen und Gruppen-Operationen mit, abgesichert durch eine
+// Ratschen-Obergrenze (`effectiveShipLimit()` in actions.ts), damit die strengere Zaehlung
+// niemanden rueckwirkend aussperrt.
+// OFFEN geblieben: Container-Freischiffe (inventory.ts) und Missionsrueckkehrer (missions.ts)
+// fliessen weiterhin ohne Limitpruefung direkt in die Flotte - der Bestand kann die Grenze dadurch
+// von selbst ueberschreiten, Bauen ist dann bis zur naechsten Verschrottung gesperrt.
+export const MAX_PLAYER_SHIPS = 1000000;
 
 // Belohnungs-Bonus fuer groesser eingesetzte Flotten (Nutzerentscheidung Juli 2026): wer deutlich
 // mehr Macht als sektortypisch noetig einsetzt, bekommt einen begrenzten Beute-/Teile-/Bergungs-

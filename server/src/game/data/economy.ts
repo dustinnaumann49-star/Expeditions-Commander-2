@@ -526,10 +526,16 @@ export type EscalationConfig = { mode: 'additive'; step: number; max: number } |
 // Balance-Anpassung (Juli 2026): Obergrenzen fuer mittel/hoch angehoben, damit sich eine lange
 // Sieg-Serie auf den schwereren Stufen deutlich staerker lohnt (direkte Beute, nicht ueber
 // Container) - Stufen-Abstand zu niedrig wird dadurch klarer spuerbar.
+// R2, 11.08.2026: Die drei Eintraege fuer piraten_niedrig/mittel/hoch sind ersatzlos entfallen.
+// Sie waren seit dem Umbau vom 29.07.2026 wirkungslos: getEscalationMultiplier() wird in
+// missions.ts zwar aufgerufen, das Ergebnis fliesst aber ausschliesslich in die lootBase- und
+// teileCap-Zweige - und genau diese beiden Felder haben die drei Solo-Piraten-Sektoren seitdem
+// nicht mehr (sie nutzen winContainer + winResources, siehe sectors.ts). Der Serien-Text wurde
+// dort folglich auch nie angezeigt. Nichts an dieser Entfernung aendert das Spielverhalten.
+// OFFEN (Umsetzungsplan R2): ob die Solo-Sektoren eine Sieg-Serien-Belohnung zurueckbekommen
+// sollen. Falls ja, auf winResources verdrahten - NICHT auf winContainer, das waere wieder
+// exponentiell. Das ist eine Balance-Entscheidung und braucht die neue Baseline.
 export const REWARD_ESCALATION: Record<string, EscalationConfig> = {
-  piraten_niedrig: { mode: 'additive', step: 0.10, max: 1.30 },
-  piraten_mittel: { mode: 'additive', step: 0.20, max: 1.80 },
-  piraten_hoch: { mode: 'additive', step: 0.35, max: 2.40 },
   piraten_elite: { mode: 'double' },
 };
 

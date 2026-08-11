@@ -73,6 +73,17 @@ export interface SektorConfig {
   // allein fuehlte sich bei einem verlorenen Kampf ohne jeden Ressourcen-Ausgleich zu hart an. Ausgezahlt
   // genauso wie winContainer erst am Missionsende (siehe finalizeMission() in missions.ts).
   winResources?: { metall: number; kristall: number; deuterium: number };
+  // Anteil der eingesetzten Spieler-Flottenmacht, mit dem NPC-Verteidigungsanlagen zusaetzlich zur
+  // NPC-Flotte gespawnt werden (generateDefenseFleet()). EINZIGE QUELLE dieses Wertes.
+  // R4, 11.08.2026: stand vorher als hartkodierte if-Kette an DREI Stellen gleichzeitig
+  // (missions.ts fuer Solo, simulator.ts fuer die Vorhersage, groupOps.ts fuer Gruppen-
+  // Expeditionen) und war dort bereits auseinandergelaufen - groupOps fuehrte fuer piraten_mittel
+  // 0,10 statt 0,12. Dass das nie aufgefallen ist, liegt nur daran, dass groupOps.ts alles ausser
+  // piraten_elite/piraten_admiral abweist (siehe dortige Sektor-Pruefung), der abweichende Zweig
+  // also unerreichbar war. Die Zusammenfuehrung aendert deshalb KEIN erreichbares Verhalten -
+  // sie verhindert nur, dass die naechste Aenderung an einer der drei Stellen wieder still
+  // auseinanderlaeuft. Fehlt der Wert, gibt es keine NPC-Verteidigung (Asteroiden-Felder).
+  defenseFactor?: number;
   multiplayerOnly?: boolean; // nur ueber gemeinsame Expeditionen erreichbar, nicht per Solo-Missionen
   // Position in der Galaxie (siehe game/galaxy.ts) - bestimmt die echte Flugzeit dorthin/zurueck
   // (ersetzt die vorher feste MISSION_TRAVEL_MS, siehe sendFleet() in missions.ts). Fehlt bewusst
@@ -109,13 +120,13 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // Missionsende ausgezahlt. Zusaetzlich darf jetzt nur noch EINE der drei Stufen gleichzeitig
   // beflogen werden (siehe sendFleet() in missions.ts) - man muss sich fuer Niedrig/Mittel/Hoch
   // entscheiden statt alle drei parallel laufen zu lassen.
-  piraten_niedrig:  { checkChance:0.55, type:"piraten", npcFloor:300000,
+  piraten_niedrig:  { checkChance:0.55, type:"piraten", npcFloor:300000, defenseFactor:0.05,
     winContainer:{tier:"silber", count:4}, winResources:{metall:800000, kristall:500000, deuterium:200000},
     galaxyPosition:{system:10, position:5} },
-  piraten_mittel:   { checkChance:0.65, type:"piraten", npcFloor:950000,
+  piraten_mittel:   { checkChance:0.65, type:"piraten", npcFloor:950000, defenseFactor:0.12,
     winContainer:{tier:"gold", count:2}, winResources:{metall:2000000, kristall:1200000, deuterium:600000},
     galaxyPosition:{system:27, position:9} },
-  piraten_hoch:     { checkChance:0.75, type:"piraten", npcFloor:2400000,
+  piraten_hoch:     { checkChance:0.75, type:"piraten", npcFloor:2400000, defenseFactor:0.15,
     winContainer:{tier:"elite", count:1}, winResources:{metall:5000000, kristall:3000000, deuterium:1500000},
     galaxyPosition:{system:45, position:3} },
   // resourceCapOverTime entfernt (Umbau 28.07.2026, Nutzerentscheidung "nicht mehr ueber Zeit,
@@ -134,7 +145,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // gelassen - das eigentliche Problem war die VERTEILUNG (Check 1-2 mit niedrigem Streak tragen
   // die hoechsten Verluste, bekommen aber die kleinste Belohnung), nicht die Gesamtsumme. Siehe
   // winResources unten fuer die tatsaechliche Korrektur (flacher, NICHT eskalierender Bonus).
-  piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000,
+  piraten_elite:    { checkChance:1, type:"piraten", teileCap:30, npcFloor:3000000, defenseFactor:0.18,
     lootBase:{metall:25000000, kristall:15000000, deuterium:10000000}, bonusLootChance:0.15, bonusLootMultiplier:3,
     // Flacher Ausgleichs-Bonus PRO gewonnenem Check (Nutzerentscheidung 05.08.2026), NICHT von der
     // Sieg-Serie-Eskalation betroffen (siehe runGroupHourlyCheck() in groupOps.ts - wird separat
@@ -151,7 +162,7 @@ export const SEKTOR_CONFIG: Record<string, SektorConfig> =
   // combatConstants.ts (ADMIRAL_*) und der Ablauf-Logik in groupOps.ts, da sich das Boss-Gefecht
   // strukturell zu stark von den anderen Piraten-Sektoren unterscheidet (fester Gegner statt
   // Macht-Skalierung, 10-Minuten-Checks statt Stunden-Checks, Rueckzugs-Entscheidung).
-  piraten_admiral:  { checkChance:1, type:"piraten", npcFloor:0,
+  piraten_admiral:  { checkChance:1, type:"piraten", npcFloor:0, defenseFactor:0.15,
     multiplayerOnly:true, galaxyPosition:{system:50, position:1} }
 };
 
@@ -192,3 +203,8 @@ export const PIRATEN_MULTIPLIER_ROLL: Record<string, [number, number, number | [
   piraten_hoch:    [0.70, 0.95, [0.95, 1.20]],
   piraten_elite:   [0.90, 1.20, 1.55]
 };
+
+// Einzige Lesestelle fuer den defenseFactor - siehe Feld-Kommentar oben (R4).
+export function sektorDefenseFactor(sektorId: string): number {
+  return SEKTOR_CONFIG[sektorId]?.defenseFactor ?? 0;
+}
