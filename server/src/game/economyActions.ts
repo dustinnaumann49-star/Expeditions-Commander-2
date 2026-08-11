@@ -39,6 +39,26 @@ export function executeTrade(state: PlayerState, amount: number, from: 'metall' 
 
 // ========== SCHROTTHAENDLER ==========
 
+// ===== R6: Punkte-Buchhaltung beim Verschrotten =====
+// Punkte haengen an den KUMULATIVEN Ausgaben (`stats.resourcesSpentShipsDefense`, siehe stats.ts).
+// Bauen erhoeht diesen Wert, Verschrotten senkte ihn bisher NICHT - die erstatteten Ressourcen
+// liessen sich also erneut verbauen und zaehlten ein zweites Mal. Bei SCRAP_REFUND_RATE = 0.3
+// konvergiert das gegen 1/(1-0,3) = 1,43x Punkte aus denselben Ressourcen, beim Schmuggler
+// entsprechend hoeher. Gegenmassnahme: den TATSAECHLICH erstatteten Betrag wieder abziehen, dann
+// ist die Buchhaltung geschlossen (bauen -> verschrotten -> bauen landet wieder bei 1,00x).
+//
+// BEKANNTER RANDFALL, bewusst so akzeptiert: Freischiffe aus Containern (inventory.ts) landen
+// direkt in `state.fleet`, ohne `resourcesSpentShipsDefense` zu erhoehen - sie haben also nie
+// Punkte gegeben. Wer ein solches Schiff verschrottet, verliert trotzdem Punkte in Hoehe der
+// Erstattung. Das ist die konservative Richtung (Punkte lassen sich dadurch nur verlieren, nie
+// erzeugen) und betrifft eine seltene Jackpot-Kategorie. Die Untergrenze 0 verhindert, dass der
+// Wert dabei negativ wird.
+function refundScrapPoints(state: PlayerState, refunded: { metall: number; kristall: number; deuterium: number }) {
+  const total = refunded.metall + refunded.kristall + refunded.deuterium;
+  if (!state.stats || total <= 0) return;
+  state.stats.resourcesSpentShipsDefense = Math.max(0, (state.stats.resourcesSpentShipsDefense || 0) - total);
+}
+
 export function scrapShip(state: PlayerState, shipId: string, qty: number): ActionResult {
   const ship = findShip(shipId);
   if (!ship || !ship.cost) return { ok: false, error: 'Dieses Schiff kann nicht verschrottet werden.' };
@@ -48,9 +68,15 @@ export function scrapShip(state: PlayerState, shipId: string, qty: number): Acti
   if (effectiveQty <= 0) return { ok: false, error: 'Keine Schiffe dieses Typs vorhanden.' };
   const rate = effectiveScrapRefundRate(state);
   state.fleet[shipId] -= effectiveQty;
-  state.resources.metall += Math.round(ship.cost.metall * rate * effectiveQty);
-  state.resources.kristall += Math.round(ship.cost.kristall * rate * effectiveQty);
-  state.resources.deuterium += Math.round(ship.cost.deuterium * rate * effectiveQty);
+  const refunded = {
+    metall: Math.round(ship.cost.metall * rate * effectiveQty),
+    kristall: Math.round(ship.cost.kristall * rate * effectiveQty),
+    deuterium: Math.round(ship.cost.deuterium * rate * effectiveQty),
+  };
+  state.resources.metall += refunded.metall;
+  state.resources.kristall += refunded.kristall;
+  state.resources.deuterium += refunded.deuterium;
+  refundScrapPoints(state, refunded);
   return { ok: true };
 }
 
@@ -63,9 +89,15 @@ export function scrapDefense(state: PlayerState, defId: string, qty: number): Ac
   if (effectiveQty <= 0) return { ok: false, error: 'Keine Anlagen dieses Typs vorhanden.' };
   const rate = effectiveScrapRefundRate(state);
   state.defense[defId] -= effectiveQty;
-  state.resources.metall += Math.round(def.cost.metall * rate * effectiveQty);
-  state.resources.kristall += Math.round(def.cost.kristall * rate * effectiveQty);
-  state.resources.deuterium += Math.round(def.cost.deuterium * rate * effectiveQty);
+  const refunded = {
+    metall: Math.round(def.cost.metall * rate * effectiveQty),
+    kristall: Math.round(def.cost.kristall * rate * effectiveQty),
+    deuterium: Math.round(def.cost.deuterium * rate * effectiveQty),
+  };
+  state.resources.metall += refunded.metall;
+  state.resources.kristall += refunded.kristall;
+  state.resources.deuterium += refunded.deuterium;
+  refundScrapPoints(state, refunded);
   return { ok: true };
 }
 

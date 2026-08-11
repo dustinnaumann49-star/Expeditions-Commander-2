@@ -680,6 +680,45 @@ function sampleBinomial(n: number, p: number): number {
   return Math.max(0, Math.min(n, sample));
 }
 
+// Maximale Zahl der Einheiten, die EIN Treffer ueber die Durchschlags-Kaskade nacheinander
+// erreichen kann. Modulweit, weil applyHitToTarget() (Einzel-Einheiten) und
+// cappedAggregateHitDamage() (Aggregat-Stapel) denselben Wert verwenden MUESSEN - lag der Wert
+// vorher lokal in applyHitToTarget(), gab es fuer den Aggregat-Pfad gar keine Grenze.
+const OVERKILL_MAX_CASCADE = 5;
+
+// ===== OVERKILL-DECKEL (Entscheidung 1 des Umsetzungsplans) =====
+// Berechnet, wieviel Schaden EIN Treffer mit `dmg` Rohschaden einem Stapel dieses Typs hoechstens
+// zufuegen kann - exakt nach derselben Regel wie applyHitToTarget() bei Einzel-Einheiten: eine
+// Einheit absorbiert Schild + Panzerung, der UEBERSCHUSS wird mit dem Durchschlags-Faktor
+// multipliziert und an die naechste Einheit weitergereicht, hoechstens OVERKILL_MAX_CASCADE mal.
+//
+// Warum das noetig war: Die Aggregation ab STACK_AGGREGATE_THRESHOLD_BY_TYPE ist eine reine
+// PERFORMANCE-Optimierung und darf das Kampfergebnis nicht veraendern. Genau das tat sie aber -
+// applyAggregateDamage() schob den kompletten Rohschaden ungebremst in den HP-Topf, ohne Deckel,
+// ohne Kaskadengrenze, ohne Durchschlags-Faktor. Gemessen (balance/session2-simulation/
+// aggregate_threshold.txt): 99 Kreuzer ueberstehen 100 Runden mit 42,1 % Verlust, 101 Kreuzer sind
+// nach 2,8 Runden zu 100 % vernichtet - EIN Schiff mehr kippte den Ausgang vollstaendig, weil ein
+// einzelner Schuss des Piratenadmirals (280 Mio Waffen) rechnerisch rund 574 Kreuzer (je 487k HP)
+// aus dem Topf schnitt statt einen einzigen zu toeten. Direkter Verstoss gegen die Vorgabe
+// "nie Totalverlust".
+function cappedAggregateHitDamage(dmg: number, stack: AggregateStack, overkillFraction: number): number {
+  const perUnit = stack.shieldMax + stack.hpMax;
+  if (perUnit <= 0 || dmg <= 0) return 0;
+  let remaining = dmg;
+  let total = 0;
+  for (let step = 0; step < OVERKILL_MAX_CASCADE && remaining > 0; step++) {
+    const absorbed = Math.min(remaining, perUnit);
+    total += absorbed;
+    remaining -= absorbed;
+    if (remaining <= 0) break;
+    // Nur der UEBERSCHUSS traegt weiter, dabei dauerhaft gedaempft. Bei Durchschlag-Forschung 0
+    // ist overkillFraction 0 und die Schleife endet hier - ein Treffer toetet dann hoechstens eine
+    // Einheit, genau wie bei Einzel-Einheiten.
+    remaining *= overkillFraction;
+  }
+  return total;
+}
+
 // Wendet gebuendelten Schaden (hits Treffer, davon crits kritisch) auf einen Aggregat-Stapel an -
 // Schild-Pool zuerst, dann HP-Pool (kein Durchschlag-Kaskade/Explosions-Sonderfall fuer Aggregate,
 // bewusst vereinfacht - siehe README Punkt 103, bei so grossen Stapeln faellt das kaum ins
@@ -693,11 +732,17 @@ function applyAggregateDamage(
   dmgTakenTarget: Record<string, number>,
   shieldDmgTakenTarget: Record<string, number>,
   statKeyStr: string,
+  overkillFraction: number,
   shooterTypeId?: string
 ): number {
   if (hits <= 0) return 0;
   const normalHits = hits - crits;
-  let totalDmg = normalHits * dmgPerHit + crits * dmgPerHit * (shooterTypeId ? getCritDamageMultiplier(shooterTypeId) : CRIT_DAMAGE_DEFAULT_MULTIPLIER);
+  const critMultiplier = shooterTypeId ? getCritDamageMultiplier(shooterTypeId) : CRIT_DAMAGE_DEFAULT_MULTIPLIER;
+  // Overkill-Deckel: JE TREFFER begrenzen, nicht erst die Summe. Ein Buendel aus 100 Treffern darf
+  // 100 Einheiten toeten, ein einzelner Treffer aber nicht 574 (siehe cappedAggregateHitDamage).
+  const perNormalHit = cappedAggregateHitDamage(dmgPerHit, stack, overkillFraction);
+  const perCritHit = cappedAggregateHitDamage(dmgPerHit * critMultiplier, stack, overkillFraction);
+  let totalDmg = normalHits * perNormalHit + crits * perCritHit;
   const dealt = totalDmg;
   const shieldAbsorbed = Math.min(totalDmg, stack.shieldPoolCur);
   stack.shieldPoolCur -= shieldAbsorbed;
@@ -931,7 +976,6 @@ function applyHitToTarget(
   onKill?: (unit: CombatUnit) => void,
   typedPool?: AliveTargetsByType
 ) {
-  const MAX_CASCADE = 5;
   let currentTarget: CombatUnit | undefined = target;
   let remainingDmg = dmg;
   let cascadeSteps = 0;
@@ -943,7 +987,7 @@ function applyHitToTarget(
     if (remainingDmg <= 0) return;
   }
 
-  while (remainingDmg > 0 && currentTarget && cascadeSteps < MAX_CASCADE) {
+  while (remainingDmg > 0 && currentTarget && cascadeSteps < OVERKILL_MAX_CASCADE) {
     cascadeSteps++;
     const shieldDmg = Math.min(remainingDmg, currentTarget.shieldCur);
     currentTarget.shieldCur -= shieldDmg;
@@ -1065,6 +1109,7 @@ function applyAggregateHit(
   isCrit: boolean,
   dmgTakenTarget: Record<string, number>,
   shieldDmgTakenTarget: Record<string, number>,
+  overkillFraction: number,
   targetsSharedShieldPool?: { remaining: number }
 ) {
   let remainingDmg = dmg;
@@ -1080,7 +1125,7 @@ function applyAggregateHit(
   // lassen, sonst wird ein kritischer Treffer VIERFACH statt doppelt gezaehlt (Bug, gefunden nach
   // Nutzer-Feedback "fast die ganze Flotte vernichtet" - einzelne NPC-Schuetzen landeten dadurch
   // stark ueberhoehten Schaden gegen Aggregat-Stapel).
-  applyAggregateDamage(stack, 1, 0, remainingDmg, dmgTakenTarget, shieldDmgTakenTarget, aggStatKey(stack));
+  applyAggregateDamage(stack, 1, 0, remainingDmg, dmgTakenTarget, shieldDmgTakenTarget, aggStatKey(stack), overkillFraction);
 }
 
 function fireShots(
@@ -1227,7 +1272,7 @@ function fireShots(
           if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
           const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
           shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-          applyAggregateHit(va, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
+          applyAggregateHit(va, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, overkillFraction, targetsSharedShieldPool);
           const hitRfChance = getRapidFireChance(shooter.typeId, va.typeId, applyPlayerResearch);
           if (hitRfChance > 0 && Math.random() < hitRfChance) {
             shots++;
@@ -1252,7 +1297,7 @@ function fireShots(
         if (isCrit) shooterStats.crits[statKey(shooter)] = (shooterStats.crits[statKey(shooter)] || 0) + 1;
         const dmg = shooter.waffen * (isCrit ? getCritDamageMultiplier(shooter.typeId) : 1);
         shooterStats.dmgDealt[statKey(shooter)] = (shooterStats.dmgDealt[statKey(shooter)] || 0) + dmg;
-        applyAggregateHit(targetAgg, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, targetsSharedShieldPool);
+        applyAggregateHit(targetAgg, dmg, isCrit, dmgTakenTarget, shieldDmgTakenTarget, overkillFraction, targetsSharedShieldPool);
         const hitRfChance = getRapidFireChance(shooter.typeId, targetAgg.typeId, applyPlayerResearch);
         if (hitRfChance > 0 && Math.random() < hitRfChance) {
           shots++;
@@ -1390,6 +1435,9 @@ function fireShotsAggregateShooters(
             dmgTakenTarget,
             shieldDmgTakenTarget,
             aggStatKey(bucket.agg),
+            // Aggregat-SCHUETZEN bekommen bewusst keinen Durchschlag - identisch zum
+            // Individual-Zweig direkt darueber, der applyHitToTarget(..., 0, ...) aufruft.
+            0,
             stack.typeId
           );
           shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dealt;
