@@ -290,7 +290,11 @@ export function SektorInfoBox({ sektorId, gameData }: { sektorId: string; gameDa
     const multiplierRollText = rollTable
       .map((v, i) => `${(Array.isArray(v) ? `${Math.round(v[0] * 100)}-${Math.round(v[1] * 100)}%` : Math.round(v * 100) + '%')} (${rollChances[i]})`)
       .join(' / ');
-    const defenseFactor = sektorId === 'piraten_niedrig' ? 5 : sektorId === 'piraten_mittel' ? 10 : 15;
+    // R4: kommt jetzt aus der Server-Konfiguration. Hier stand vorher eine vierte, hartkodierte
+    // Kopie dieser Werte - und die war als einzige LIVE falsch: sie zeigte fuer Mittel 10 % an,
+    // waehrend das Spiel mit 12 % rechnet, und fuer alles ausser Niedrig/Mittel pauschal 15 %,
+    // also auch fuer das Elite-Bollwerk mit tatsaechlich 18 %.
+    const defenseFactor = Math.round((cfg.defenseFactor ?? 0) * 100);
     const containerCfg = cfg.captainContainerTier ? gameData.containerTypes[cfg.captainContainerTier] : null;
 
     return (
