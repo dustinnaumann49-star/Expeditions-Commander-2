@@ -294,6 +294,11 @@ Reihenfolge ist verbindlich. Nach jedem Block neu messen, bevor der naechste beg
 
 ### Entscheidung 1 - Overkill-Deckel bei Aggregat-Stapeln: DECKELN
 
+> **ERLEDIGT am 10.08.2026.** Umsetzung, Messreihe vorher/nachher und die Pruefung der Befuerchtung
+> "Sektoren werden zu leicht" stehen in **Abschnitt 2a, Punkt 5**. Kurz: Klippe beseitigt (101
+> Kreuzer 100 % -> 35,3 % Verlust), Individual-Pfad unveraendert, Sektoren praktisch unveraendert.
+> Der Text unten bleibt als Befundbeschreibung erhalten.
+
 **Bezug:** Session 4, Befund 5. **Dateien:** `game/combat.ts` (`applyAggregateDamage()` ~Zeile 688,
 `applyHitToTarget()` ~Zeile 923, `buildUnits()` ~Zeile 714), `data/combatConstants.ts`
 (`STACK_AGGREGATE_THRESHOLD_BY_TYPE`).
@@ -1166,6 +1171,70 @@ mindestens `client/src/lib/multipliers.ts`, `client/src/lib/combatInfo.ts` und
 `client/src/pages/Allianz.tsx`; letztere ist im Plan bisher NIRGENDS als Spiegel gefuehrt worden,
 obwohl sie die komplette Stations-Wirtschaft nachbaut.
 
+**5. Entscheidung 1 (Overkill-Deckel bei Aggregat-Stapeln) - ERLEDIGT am 10.08.2026.**
+Vorgezogen, weil die Aggregations-Schwelle eine reine PERFORMANCE-Optimierung ist und das
+Kampfergebnis nicht veraendern darf. Dass sie es tat, war ein Defekt, keine Balance-Frage - und
+Entscheidung 1 ist ohnehin Schritt 1 der Reihenfolge, es steht nichts davor.
+
+*Ursache im Code:* `applyAggregateDamage()` schob den kompletten Rohschaden ungebremst in den
+HP-Topf - kein Deckel, keine Kaskadengrenze, kein Durchschlags-Faktor. `MAX_CASCADE` lag als lokale
+Konstante in `applyHitToTarget()` und war fuer den Aggregat-Pfad damit gar nicht vorhanden.
+
+*Umsetzung:* neue Funktion `cappedAggregateHitDamage()` in `combat.ts`, die EINEN Treffer nach
+exakt derselben Regel deckelt wie der Einzel-Pfad - eine Einheit absorbiert Schild + Panzerung, der
+Ueberschuss wird mit dem Durchschlags-Faktor multipliziert und hoechstens `OVERKILL_MAX_CASCADE`
+(5) mal weitergereicht. Gedeckelt wird JE TREFFER, nicht erst die Summe: ein Buendel aus 100
+Treffern darf weiterhin 100 Einheiten toeten. `MAX_CASCADE` ist dafuer nach modulweit gezogen, damit
+beide Pfade denselben Wert benutzen. Der Durchschlags-Faktor wird bis in `applyAggregateDamage()`
+durchgereicht; **keine Aenderung an der Worker-Schnittstelle noetig**, weil er aus der ohnehin
+uebergebenen Forschung abgeleitet wird.
+
+*Gemessen mit `run_aggregate_threshold.mjs`, 20 Laeufe je Zelle:*
+
+| Kreuzer | aggregiert | Verlust vorher | Verlust nachher |
+|---|---|---|---|
+| 95 | nein | 39,9 % | 40,2 % |
+| 99 | nein | 39,0 % | 39,8 % |
+| 100 | nein | 37,4 % | 39,5 % |
+| 101 | **ja** | **100,0 %** | **35,3 %** |
+| 105 | ja | 100,0 % | 31,9 % |
+| 200 | ja | 100,0 % | 16,2 % |
+| 400 | ja | 100,0 % | 6,6 % |
+
+Die Klippe ist weg, die Kurve ueber die Schwelle stetig, und **grosse Flotten verlieren jetzt
+anteilig weniger statt alles** - das erwartete Verhalten. Der Individual-Pfad ist unveraendert
+(95/99/100 identisch im Rahmen der Streuung), also keine Nebenwirkung.
+
+*Gegen die Befuerchtung aus Entscheidung 1 gemessen ("Sektoren werden zu leicht"):*
+`run_sectors.mjs` komplett neu, alle 32 Zellen praktisch unveraendert - `gross|voll|elite` 4,1 ->
+4,4 % Verlust, `gross|schwach|elite` 28,0 -> 29,0 %, Siegquote 53 -> 52 %. **Die Befuerchtung hat
+sich nicht bestaetigt**, und der Grund ist einleuchtend: in normalen Sektorkaempfen hat kein
+Schuetze einen Waffenwert von 574 Einheiten-HP. Der Defekt betraf fast ausschliesslich
+Boss-Gegner (Piratenadmiral) gegen grosse Stapel.
+
+*Nebenbefund, NICHT behoben:* `getDurchschlagFraction()` liefert bei Forschung 10 den Wert 1,0 -
+volle Weitergabe ohne jede Daempfung. Da `computePirateResearch()` die NPC-Forschung aus der des
+Spielers ableitet, macht hohe Durchschlag-Forschung damit auch die Gegner drastisch toedlicher: im
+Test verliert der Spieler bei Durchschlag 10 gegen den Admiral 100 % - **auch im Individual-Pfad,
+also schon vor dieser Aenderung**. Gehoert zu Block D, nicht hierher, aber vor der Kalibrierung von
+Entscheidung 19 (die vier ungeskalierten Kampf-Forschungen) anzusehen.
+
+**6. R6 (Punkte-Exploit beim Verschrotten) - ERLEDIGT am 10.08.2026.**
+Im Code bestaetigt: `resourcesSpentShipsDefense` wurde beim Bauen erhoeht und beim Verschrotten
+nirgends gesenkt. Neue Hilfsfunktion `refundScrapPoints()` in `economyActions.ts` zieht den
+TATSAECHLICH erstatteten Betrag ab (nicht die vollen Baukosten - sonst waere die Buchhaltung in die
+andere Richtung falsch).
+*Gemessen:* 40 Durchlaeufe bauen -> verschrotten -> bauen landen jetzt bei **0,994x** der
+Ausgangs-Punktebasis statt bei den vorhergesagten 1,429x. Die 0,6 % Abweichung nach unten sind
+Rundungsverluste beim Wiederaufbau, also die konservative Richtung.
+*Bekannter Randfall, bewusst akzeptiert und im Code dokumentiert:* Freischiffe aus Containern
+landen ohne Punkte-Buchung in der Flotte. Wer eines verschrottet, verliert trotzdem Punkte in Hoehe
+der Erstattung. Untergrenze 0 verhindert negative Werte (getestet). Die Alternative waere eine
+Herkunfts-Verfolgung pro Schiff - unverhaeltnismaessig fuer eine Jackpot-Kategorie mit 7-14 %
+Chance.
+*Client:* `Schrotthaendler.tsx` weist jetzt auf den Punkte-Abzug hin. Ohne den Hinweis saehen
+Spieler ihre Punkte ohne erkennbaren Grund sinken.
+
 **4. R12 (Startpruefung fuer zusammengesetzte Modul-IDs) - erledigt.**
 Neue Datei `game/moduleIntegrity.ts`, eingehaengt in `index.ts`. Bildet beim Serverstart dieselben
 Modul-IDs, die `actions.ts`/`stations.ts` zur Laufzeit zusammensetzen, und meldet jede ohne
@@ -1270,7 +1339,7 @@ Quote.
 | R3 | Forschungs-Minimum pro Beitragendem statt global. Heute senkt **ein Mitspieler mit 1 Leichtem Jaeger und Forschung 0 den Verlust des Hauptspielers um Faktor 19**. Zeitbombe fuer jeden weiteren Account. **Regressionstest gegen die Urspruengliche Korrektur vom 05.08.2026**: der schwaechere Mitspieler darf nicht wieder ueber seinem Stand kaempfen muessen | `game/combat.ts` (`computePirateResearch()` ~Zeile 769), `game/groupOps.ts` | S2-B6 |
 | R4 | `defenseFactor` ist an drei Stellen dupliziert und bereits auseinandergelaufen (`piraten_mittel`: Simulator 0,12, `groupOps.ts` 0,10) - **der Simulator sagt fuer Mittel etwas anderes voraus als der echte Kampf**. In eine Konstante zusammenfuehren | `simulator.ts:69-73`, `groupOps.ts:775-776`, `missions.ts` | S2-B9 |
 | R5 | `MULTI_TARGET_POWER_CORRECTION` in `resolveOneWave()` nachziehen. Sentinel-/Ultimate-Kanone und alle Salvenschiffe zaehlen zu Hause nur mit einem Achtel ihrer Macht - wer in sie investiert, bekommt die schwaechsten Wellen bei der staerksten Abwehr | `game/raids.ts:319-327` | S3-B4 |
-| R6 | Beim Verschrotten den erstatteten Betrag von `resourcesSpentShipsDefense` abziehen. Heute ergibt Bauen -> Verschrotten -> Bauen bei `SCRAP_REFUND_RATE = 0.3` **1,43x Punkte** aus derselben Ressourcenmenge | `game/stats.ts`, `scrapUnits()` | S4-B9 |
+| R6 | **ERLEDIGT 10.08.2026** (Abschnitt 2a, Punkt 6) - gemessen 0,994x statt 1,429x. Ursprungstext: Beim Verschrotten den erstatteten Betrag von `resourcesSpentShipsDefense` abziehen. Heute ergibt Bauen -> Verschrotten -> Bauen bei `SCRAP_REFUND_RATE = 0.3` **1,43x Punkte** aus derselben Ressourcenmenge | `game/stats.ts`, `scrapUnits()` | S4-B9 |
 | R7 | `GalaxyEvent.claimedBy` wird gelesen, aber nirgends gesetzt. Feld und Typ-Kommentar bereinigen | `game/galaxyEvents.ts`, `types.ts` | S4-B10 |
 | R8 | `startSpyProbe()` nimmt `qty` entgegen, prueft und verbraucht sie - **auf den Bericht hat sie keinen Einfluss** (`buildSpyReport()` haengt allein an `research.spionage`). Entweder `qty` entfernen oder den Detailgrad an die Sondenzahl koppeln (letzteres gibt der Spionagesonde ueberhaupt erst eine Bauentscheidung) | `game/spyMissions.ts` | S4-B10 |
 | R9 | Kampfbericht-Anzeige "[Feindstaerke X%]" korrigieren - sie zeigt den nominalen Wert, der real etwa die Haelfte bedeutet (siehe Abschnitt 4) | Client | S2-B1/B9 |
@@ -1401,7 +1470,9 @@ stehen jetzt als Pruefpunkte 2c und 2d in Entscheidung 2.
 
 ```
 BLOCK A (zusammen messen, hier haengt alles dran)
-  1. Entscheidung 1   Overkill-Deckel
+  1. Entscheidung 1   ERLEDIGT am 10.08.2026 (Abschnitt 2a) - hier nur noch die uebrigen
+                       Messreihen neu laufen lassen (run_elite, run_raid, run_real_fleet);
+                       run_aggregate_threshold und run_sectors sind bereits neu
   2. Entscheidung 2   Beute-Exponent 0,85 + Wrack-Bergung 30 %
   3. Entscheidung 3   Raid-Ertrag halbieren
   -> danach ALLE Simulationen neu, dann Baseline neu festschreiben
@@ -1755,6 +1826,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 10.08.2026 | **Entscheidung 1 (Overkill-Deckel) und R6 vorgezogen umgesetzt** (Nutzerentscheidung, Details in Abschnitt 2a, Punkte 5 und 6). Entscheidung 1 war der beste Vorzieh-Kandidat des ganzen Plans, weil die Aggregations-Schwelle eine reine Performance-Optimierung ist, die das Kampfergebnis nicht veraendern darf - ein Defekt, keine Balance-Frage - und weil sie ohnehin Schritt 1 der Reihenfolge ist, also nichts praejudiziert. Gemessen: die Klippe bei 101 Kreuzern faellt von 100 % auf 35,3 % Verlust, die Kurve ueber die Schwelle ist stetig, der Individual-Pfad unveraendert. **Die in Entscheidung 1 genannte Befuerchtung "Sektoren werden dadurch zu leicht" hat sich NICHT bestaetigt** - alle 32 Zellen von `run_sectors.mjs` praktisch unveraendert, weil in normalen Sektorkaempfen kein Schuetze einen Waffenwert von 574 Einheiten-HP hat. R6 gemessen: 0,994x statt 1,429x Punkte aus demselben Kreislauf. **Neuer Nebenbefund fuer Block D:** `getDurchschlagFraction()` liefert bei Forschung 10 den Wert 1,0, also Weitergabe ohne jede Daempfung - und da die NPC-Forschung aus der des Spielers abgeleitet wird, macht das die Gegner ebenso toedlicher (im Individual-Pfad schon vor dieser Aenderung). Vor der Kalibrierung von Entscheidung 19 anzusehen. **Client-Spiegel diesmal vorab geprueft** (Lehre vom selben Tag): fuer die Kampf-Aenderung existiert keiner, fuer R6 ebenfalls nicht - der Schrotthaendler zeigt aber jetzt einen Hinweis auf den Punkte-Abzug, damit Spieler nicht ohne erkennbaren Grund sinkende Punkte sehen. |
 | 10.08.2026 | **Nachtrag zur Code-Aenderung desselben Tages: die Client-Spiegel fehlten.** Nutzermeldung "an der Allianz-Station hat sich nichts geaendert" - zutreffend, und zwar aus dem im Plan mehrfach beschriebenen Grund. Der Server rechnete den Kompensationsfaktor bereits, aber `pages/Allianz.tsx` enthaelt eine vollstaendige eigene Kopie von `stationMineOutputPerHour()` und zeigte weiter den alten Wert (15,70 Mio/h real gegen 5,23 Mio/h angezeigt, V1-Metallmine Stufe 30). Bei V1-Minen war die Anzeige sogar identisch zum Vorzustand, weil 7.1 nur die V2/V3-`baseOutput` betrifft. Zweiter betroffener Spiegel: `lib/multipliers.ts` mit derselben V1-only-Tabelle `BUILDING_SELF_BUILDTIME_MODULE`. Behoben, wobei die Konstante jetzt ueber `/game/data` ausgeliefert wird statt im Client hartkodiert - eine Quelle statt zweier Werte, die auseinanderlaufen koennen. **Messregel 8 entsprechend verschaerft**: `Allianz.tsx` war bisher nirgends als Spiegel gefuehrt, obwohl sie die komplette Stations-Wirtschaft nachbaut, und der verbindliche Ablauf lautet jetzt "erst im Client greppen, dann den Server aendern". Der Vorfall ist der dritte dokumentierte Fall derselben Fehlerform (README Punkt 1, R1, jetzt hier). |
 | 10.08.2026 | **Erste Code-Aenderung des Projekts seit Planbeginn** (Nutzerentscheidung, ausgeloest durch zwei eigene Beobachtungen beim Spielen). Vollstaendig dokumentiert im neuen **Abschnitt 2a**. Kurz: Entscheidung 14 erledigt, aber mit bewusster Abweichung vom beschlossenen Weg - NICHT auf den Stations-Generator umgestellt, weil der die 15 bestehenden V1-Module mit neu bewertet haette (Metallmine-Modul von 2,0/1,0/0,5 Mio auf 1,5/0,6/0 Mio, inklusive eines auf null fallenden Deuterium-Anteils); stattdessen V2/V3 aus dem unveraenderten V1 abgeleitet, `BUILDING_MODULES` jetzt 45 statt 15. Gemessen: V2/V3 bauen jetzt exakt so schnell wie V1 (vorher Faktor 4 langsamer), Foerdereffizienz wirkt auf allen drei Stufen. **Der in Entscheidung 14 angekuendigte Faktor 4 ist damit eingetreten und Ausgangszustand fuer 9.1, nicht mehr eine kommende Aenderung.** Ausserdem Entscheidung 7.1 erledigt (Stations-Ertrag V2/V3 auf 2x/4x) und R12 erledigt (`game/moduleIntegrity.ts`, Startpruefung fuer zur Laufzeit gebildete Modul-IDs). **Ein Befund war NEU und stand in keiner Session:** `stationMineOutputPerHour()` wendet den Mining-Multiplikator nicht an - die Entkopplung der Station von der Forschung einzelner Mitglieder ist beabsichtigt und richtig, wurde aber nie ausgeglichen, wodurch die Station bei gleicher Gebaeudestufe ein Sechstel der Heimatbasis produzierte. Neue Konstante `STATION_MINING_COMPENSATION = 3` (nur der dauerhafte Forschungsanteil 2,0 x 1,5, bewusst nicht die vollen 6,12 inkl. Klasse und Booster). Der resultierende Vollausbau-Ertrag betraegt 7,90 Mrd/Tag. **Noch am selben Tag nach Nutzerhinweis korrigiert:** dieser Wert war zunaechst direkt gegen die Baseline von 21,69 Mrd/Tag gestellt und daraus ein Widerspruch zu Entscheidung 3 abgeleitet worden (passive Quelle oberhalb des Raids). Die Baseline ist aber ein **Pro-Spieler-Wert**, waehrend die Station ein gemeinsamer Topf ist, aus dem beide Mitglieder entnehmen - pro Kopf sind es rund 3,95 Mrd/Tag bzw. 18,2 %, also unter dem Raid und knapp im Zielband. Der Einwand faellt damit weitgehend weg; bestehen bleibt nur die ART der Quelle (voellig passiv), nicht ihre Groesse. Entscheidungsregel zur Nachkalibrierung entsprechend auf den Pro-Kopf-Anteil umgestellt, ergaenzt um die offene Design-Frage, ob die Station bei wachsender Allianz pro Kopf oder insgesamt konstant bleiben soll. **Lehre daraus:** Bei jeder Kennzahl pruefen, ob sie pro Spieler oder fuer alle zusammen gilt, bevor sie gegen die Baseline gestellt wird - dieselbe Fehlerform wie bei den Aggregat-Stapeln, nur in der Auswertung statt im Code. Zeitrahmen-Absatz in Abschnitt 8 von einer Absolutsperre auf einen Ausnahme-Massstab praezisiert. |
 | 10.08.2026 | **Zweiter Abgleich gegen den Repo-Stand, Schwerpunkt Abschnitt 1b.** Anlass: erneuter Kaltstart, bei dem wieder die alte 33-Punkte-README als Anhang mitgeliefert wurde - genau der Fall, den Messregel 16 beschreibt. **Bestaetigt und unveraendert** (gegen den Code geprueft, nicht gegen Beschreibungen): Raid-Rhythmus Mi/So mit `RAID_SPAWN_CHANCE` 0,7, `POOL_SIZE` 1, `MAX_PLAYER_SHIPS` 200.000, alle drei Missionsdauern, Slot-Zahlen 3/3/4/1, `RAID_WAVE_WIN_*` 10/6/2, `SEED_FLEET` 5.300 + `SEED_DEFENSE` 1.120, `RESOURCE_CAP`-Kommentar mit 1,5 gegen tatsaechliche 6, `ADMIRAL_STAT_SHARE` 0,55, `lib.mjs`/`lib3`/`lib4` byte-identisch. **Sechs Korrekturen:** (1) Abschnitt 1b nennt `runHourlyCheck()` als zu nutzende Spielfunktion - **die ist nicht exportiert**; Einstiegspunkt ist `processMissions()`. (2) Neuer Unterabschnitt "Technische Vorbedingungen" in 1b: alle Kernfunktionen lesen `Date.now()` direkt (19x actions.ts, 9x state.ts, 7x raids.ts, 4x missions.ts), 720 Stundenschritte sind ohne gefaelschte Uhr unmoeglich; und `state.ts` oeffnet ueber `db.ts` beim Import die **produktive** `game.db` mit hartkodiertem Pfad. Beides war im Plan stillschweigend als geloest vorausgesetzt. (3) Die 30-Minuten-Begruendung des Zeitschritts gilt nur fuer Gebaeude - Schiffs-Bauzeiten liegen im Sekundenbereich, wodurch der Lane-Leerlauf bei Stundenaufloesung systematisch unterschaetzt wird; Leerlauf wird deshalb jetzt getrennt je Auftragsart protokolliert. (4) Entscheidung 5a stuetzte sich auf "ein Spieler in Woche 1 hat Dutzende Schiffe" - **falsch**, `defaultPlayerState()` finanziert ab Stunde 0 rund 2.200 Schiffe; die Entscheidung bleibt richtig, die Begruendung ist auf Qualitaet statt Stueckzahl umgestellt. (5) Startkapital als eigene Zeile in der Risikotabelle 1a - es fuehrt direkt in die Asteroiden und verschaerft damit Abnahmekriterium 5. (6) Imperator-Baulimit geklaert: Code sagt `maxCount: 6`, Session 3 hatte recht, die "2" stammt aus der alten README; R10 um die vier nachweislich veralteten Zahlen der alten Fassung ergaenzt. |
