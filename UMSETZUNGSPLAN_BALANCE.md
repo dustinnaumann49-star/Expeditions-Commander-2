@@ -1481,7 +1481,88 @@ Kommandant 3x33,3 %). Gleiches Budget ergibt hier nachweislich nicht gleiche Sta
 Klassen angleichen will, muss das Bollwerk deutlich UEBER 100 Prozentpunkte heben oder ihm einen
 Vorteil geben, der nicht ueber Kampfwerte laeuft.
 
-**Bewusst KEINE Aenderung jetzt.** Die Klassen-Multiplikatoren wirken auf genau die Kampfwerte, die
+### UMGESETZT am 11.08.2026 (Nutzerentscheidung: "das ist was verbessert werden muss")
+
+Der Nutzer hat der Einschaetzung "erst nach Block D" widersprochen, mit dem Argument, zwei von drei
+Klassen seien so totes Inventar. **Das Argument ist richtig, und meine Begruendung zum Abwarten war
+zusaetzlich sachlich falsch** - siehe der Kasten "Warum Abwarten hier NICHT geholfen haette" unten.
+
+**Zwei Schritte am selben Tag.** Zuerst reine Zahlen-Angleichung (Bollwerk x1,5 -> x2,0,
+Kommandant x4/3 -> x1,5). Ergebnis: alle drei ueberall gleichauf - und damit **kein inhaltlicher
+Grund mehr, eine bestimmte Klasse zu waehlen**. Auf Nutzerhinweis daher ein zweiter Schritt:
+situative Aufschlaege.
+
+**Verworfen: Boni komplett GATEN** (Nutzeridee: Kanonier nur im Angriff, Bollwerk nur in der
+Verteidigung, Kommandant ueberall). Durchgerechnet mit den gemessenen Zellen kippt das Problem nur:
+
+| Klasse | Angriff | Verteidigung | Wochensumme |
+|---|---|---|---|
+| Kanonier (gegated) | 4,1 % | 53,8 % | 104,0 |
+| Bollwerk (gegated) | 9,2 % | 28,2 % | 103,9 |
+| Kommandant (ungegated) | 3,8 % | 28,3 % | **66,2** |
+
+Der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen, und zwei von drei
+Klassen waeren die Haelfte der Zeit totes Inventar. Grund ist die Haeufigkeit: Raids laufen 2x/Woche
+mit 70 % Chance (`RAID_FALLBACK_SCHEDULE`, `RAID_SPAWN_CHANCE`), Sektor-Missionen dauern 24 h und
+sind **unbegrenzt parallel** moeglich.
+
+**Umgesetzt: Grundbonus ueberall + Aufschlag auf dem Heimatfeld.**
+
+| Klasse | Grundwert (ueberall) | Aufschlag |
+|---|---|---|
+| Kanonier | Waffen x2,0 | **x2,4** ausserhalb der Heimatverteidigung (`CLASS_KANONIER_OFFENSE_BONUS` 1,2) |
+| Bollwerk | Schild/Panzerung x1,6 | **x2,4** bei Heimatverteidigung (`CLASS_BOLLWERK_DEFENSE_BONUS` 1,5) |
+| Kommandant | alles x1,4 | keiner - "ueberall zweiter, nirgends letzter" ist die Identitaet |
+
+*Technisch:* neues Feld `homeDefense` in `CombatWorkerRequest`, gesetzt ausschliesslich in
+`raids.ts`. **Bewusst NICHT an `allowRetreat: false` gekoppelt**, obwohl das heute deckungsgleich
+waere - die beiden bedeuten Unterschiedliches, und eine spaetere Aenderung an der Rueckzugs-Logik
+wuerde sonst still den Klassenbonus mitverschieben. Der Verstaerker-Fall funktioniert ohne
+Zusatzarbeit, weil `OwnedFleetContribution` bereits ein eigenes `playerClass`-Feld traegt: wer als
+Bollwerk einem anderen Spieler zu Hilfe kommt, bekommt seinen Verteidigungs-Aufschlag.
+
+**Endstand** (20 bzw. 80 Wiederholungen, grosse Flotte):
+
+| Klasse | Elite-Bollwerk | Piraten Hoch | Raid | Runden (Elite) | Wochenbilanz |
+|---|---|---|---|---|---|
+| Kanonier | **3,5 %** | **1,9 %** | 31,6 % | **16** | 69,1 |
+| Bollwerk | 4,8 % | 2,6 % | **22,3 %** | 41 | 65,2 |
+| Kommandant | 4,0 % | 2,3 % | 30,2 % | 28 | 70,7 |
+
+Jede Klasse ist auf ihrem Heimatfeld klar erste Wahl, keine ist irgendwo wirkungslos. Das Bollwerk
+gewinnt den Raid zusaetzlich mit der mit Abstand engsten Streuung (12-37 % gegen 18-45 %) und
+verliert praktisch keine Verteidigungsanlagen (0,2 % gegen 1,2 %).
+
+**Die verbleibende Spanne von ~8 % wird bewusst NICHT weiter feinjustiert.** Sie liegt innerhalb
+der Messstreuung und innerhalb der Unsicherheit der Wochen-Annahme selbst (7 Missionen + 1,4 Raids)
+- wer mehr Raids als Missionen hat, verschiebt sie zugunsten des Bollwerks. Weiteres Nachziehen
+waere Anpassen an Rauschen. Ebenfalls nicht eingerechnet: die Kosten-Boni (Kanonier -10 % Schiffe,
+Bollwerk -25 % Verteidigung, Kommandant -10 % beides), die ausserhalb des Kampfes wirken.
+
+> **Warum Abwarten hier NICHT geholfen haette - Korrektur einer eigenen Fehlaussage.**
+> Ich hatte argumentiert, Block D wuerde den Kanonier-Vorsprung von selbst schrumpfen lassen, weil
+> sein verdoppelter Schaden nicht in `combatFleetPowerBase()` einfliesst. **Das Gegenteil ist der
+> Fall.** Nachgerechnet an der Referenzflotte: Waffen machen nur **1,6 %** der Roh-Machtbasis aus,
+> Schild und Panzerung **98,4 %**. Wuerde die Feindstaerke die Klassen mitrechnen, stiege die
+> Machtbasis beim Kanonier um 1,6 %, beim Bollwerk aber um **49,2 %** - eine Korrektur in Block D
+> haette das Bollwerk also noch weiter zurueckgeworfen.
+>
+> **Der Nebenbefund ist wichtiger als der Klassen-Punkt selbst:** Die Feindstaerke-Skalierung
+> haengt zu 98,4 % an Schild und Panzerung und praktisch gar nicht an Waffen. Waffen zu bauen ist
+> gegenueber der Gegner-Skalierung also nahezu kostenlos, Panzerung zu bauen teuer. Beruehrt
+> Entscheidung 6 direkt und gehoert vor Block D geprueft.
+
+**Client-Spiegel:** `lib/combatInfo.ts` trug die Klassen-Multiplikatoren an ZWEI Stellen
+hartkodiert. Laufen jetzt ueber `/game/data` (`classCombatMultipliers`) - geliefert werden bewusst
+die GRUNDWERTE ohne Aufschlag, weil eine Bau-Karte zu keiner Kampfsituation gehoert. Die
+Aufschlaege stehen als eigene Zeile in den Klassen-Beschreibungen, die sich aus den Konstanten
+ableiten und daher automatisch stimmen.
+
+**Nicht angefasst:** Kosten-Boni, Flottengeschwindigkeit,
+`CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT`. Sie wirken ausserhalb des Kampfes und waren nicht Teil des
+gemessenen Ungleichgewichts.
+
+**Bleibt fuer Block D:****Bleibt fuer Block D:** Die Klassen-Multiplikatoren wirken auf genau die Kampfwerte, die
 Entscheidung 1 (Overkill-Deckel, bereits umgesetzt) und Entscheidung 19 (die vier ungeskalierten
 Forschungen) ohnehin neu bewerten. Eine Klassen-Kalibrierung vor Block D muesste danach wiederholt
 werden. Zusaetzlich verstaerkt sich der Kanonier durch die Feindstaerke-Rechnung (siehe direkt
@@ -1770,13 +1851,14 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   Handlungsbedarf, aber nach Block A gegen die neue Baseline nachzurechnen. Vollstaendige
   Entscheidungsregel (Pro-Kopf-Anteil unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0, plus
   die offene Design-Frage zur Mitgliederzahl) in Abschnitt 2a.
-- **Klassen-Balance entscheiden (NEU 11.08.2026, Messung liegt vor).** Nach heutigem Stand ist der
-  **Kanonier in JEDER gemessenen Situation die beste Wahl** - offensiv wie defensiv. Das Bollwerk
-  gewinnt keine einzige Kennzahl ausser dem Verlust an Verteidigungsanlagen, und der ist absolut
-  klein. Vollstaendige Messreihe und Herleitung in Abschnitt 4a, reproduzierbar mit
-  `balance/session2-simulation/run_classes.mjs`. **Vor Block D nichts aendern** - die
-  Klassen-Multiplikatoren wirken auf dieselben Kampfwerte, die Entscheidung 1 und Entscheidung 19
-  ohnehin neu bewerten.
+- **Klassen-Balance nachmessen (angepasst am 11.08.2026, siehe Abschnitt 4a).** Bollwerk und
+  Kommandant sind angehoben worden, alle drei Klassen liegen jetzt gleichauf. Nach jeder Aenderung
+  an Entscheidung 1, 19 oder am Rueckzugs-Mechanismus `run_classes.mjs` neu laufen lassen - die
+  Klassen haengen an genau diesen Groessen.
+- **Feindstaerke-Basis pruefen (NEU 11.08.2026, Nebenbefund aus der Klassen-Messung).**
+  `combatFleetPowerBase()` besteht zu **98,4 % aus Schild und Panzerung und nur zu 1,6 % aus
+  Waffen**. Waffen zu bauen laesst die Gegner also praktisch nicht mitwachsen, Panzerung zu bauen
+  schon. Beruehrt Entscheidung 6 direkt. Herleitung in Abschnitt 4a.
 - **`MAX_PLAYER_SHIPS` erneut entscheiden (NEU 11.08.2026).** Steht auf 1.000.000. Bis Entscheidung
   2 (Beute-Kurve) gebaut und gemessen ist, wirkt das Limit als Ersatz-Bremsklotz gegen
   Weglauf-Wachstum grosser Flotten - danach ist es wieder eine reine CPU-Frage und kann komplett
@@ -1991,6 +2073,8 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 11.08.2026 | **Klassen: situative Aufschlaege statt reiner Zahlen-Angleichung** (zweiter Schritt desselben Tages, Details in Abschnitt 4a). Nach der Angleichung lagen alle drei Klassen ueberall gleichauf - damit gab es keinen inhaltlichen Grund mehr, eine bestimmte zu waehlen. Die Nutzeridee, die Boni komplett zu gaten (Kanonier nur Angriff, Bollwerk nur Verteidigung), wurde durchgerechnet und **verworfen**: Angriffe sind rund fuenfmal haeufiger als Raids, der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen und zwei von drei Klassen die Haelfte der Zeit wirkungslos. Umgesetzt stattdessen: Grundbonus ueberall plus Aufschlag auf dem Heimatfeld (Kanonier Waffen x2,0 -> x2,4 ausserhalb der Heimatverteidigung; Bollwerk Schild/Panzerung x1,6 -> x2,4 bei Heimatverteidigung; Kommandant x1,4 flach). Neues Feld `homeDefense` in `CombatWorkerRequest`, nur aus `raids.ts` gesetzt und bewusst NICHT an `allowRetreat: false` gekoppelt, obwohl heute deckungsgleich. Der Verstaerker-Fall funktioniert ohne Zusatzarbeit, weil `OwnedFleetContribution` bereits eine eigene `playerClass` traegt. Endstand: Wochenbilanz 69,1 / 65,2 / 70,7, jede Klasse auf ihrem Heimatfeld klar vorn. Die Restspanne von ~8 % wird bewusst nicht weiter justiert - sie liegt innerhalb der Messstreuung und der Unsicherheit der Wochen-Annahme. |
+| 11.08.2026 | **Klassen angepasst: Bollwerk x1,5 -> x2,0, Kommandant x4/3 -> x1,5** (Nutzerentscheidung gegen meine Empfehlung abzuwarten - mit dem Argument, zwei von drei Klassen seien sonst totes Inventar; das Argument war richtig). **Meine Begruendung fuers Abwarten war zusaetzlich sachlich falsch:** ich hatte behauptet, eine Feindstaerke-Korrektur in Block D wuerde den Kanonier-Vorsprung von selbst schrumpfen lassen. Nachgerechnet ist das Gegenteil richtig - Waffen machen nur 1,6 % der Roh-Machtbasis aus, Schild und Panzerung 98,4 %; eine solche Korrektur haette die Machtbasis des Kanoniers um 1,6 %, die des Bollwerks aber um 49,2 % angehoben und das Bollwerk damit noch weiter zurueckgeworfen. **Der Nebenbefund ist wichtiger als der Klassen-Punkt selbst und als eigener Messpunkt in Abschnitt 7 eingetragen:** die Gegner-Skalierung haengt fast ausschliesslich an Schild/Panzerung, Waffen zu bauen ist ihr gegenueber nahezu kostenlos - beruehrt Entscheidung 6 direkt. Die neuen Werte sind hergeleitet, nicht gefittet (ein Punkt Schaden ist etwa doppelt so viel wert wie ein Punkt Robustheit, Budget daher schadens-aequivalent statt nominal), und durch einen unabhaengigen Sweep bestaetigt: Gleichstand liegt bei genau 2,0. Nach der Anpassung liegen alle drei Klassen innerhalb der Streuung gleichauf, mit weiterhin klar unterschiedlichen Profilen (Kanonier 19 Runden und 100 % Siegquote im Elite-Bollwerk, Bollwerk 45 Runden und 95 %, dafuer geringste Raid-Schwankung). **Client-Spiegel vorab geprueft und gefunden:** `lib/combatInfo.ts` trug die Multiplikatoren an zwei Stellen hartkodiert - die Bau-Karten haetten weiter +50 % Schild angezeigt, waehrend der Kampf mit +100 % rechnet. Laeuft jetzt ueber `/game/data`. |
 | 11.08.2026 | **Klassen-Balance erstmals gemessen** (Nutzerfrage, ob an den Klassen etwas anzupassen ist). Neuer Abschnitt 4a, neues Messskript `balance/session2-simulation/run_classes.mjs` samt `classes.txt`. Der Plan enthielt zu den SPIELER-Klassen bis dahin keinen einzigen Vergleich - nur Punkt 13.2 zu den Bots und die Kanonier-Zeile in der Feindstaerke-Tabelle. **Befund: der Kanonier ist in jeder gemessenen Situation die beste Wahl**, offensiv (3,6 % Verlust gegen 6,1 % beim Bollwerk im Elite-Bollwerk) wie defensiv (29,0 % gegen 39,4 % Flottenverlust beim Raid). Erwartet war eine Umkehr bei der Heimatverteidigung, weil dort der Rueckzug abgeschaltet ist und das Bollwerk eine eigene Reparatur-Sonderregel hat - sie tritt nicht ein. Mechanismus: der Kanonier beendet Kaempfe in der halben Rundenzahl und kassiert entsprechend weniger Rueckfeuer; in einem Abnutzungssystem ist Schaden strukturell mehr wert als Robustheit. **Damit ist die Design-Absicht in `classes.ts` widerlegt**, die alle drei Klassen mit einem gleichen Budget von 100 Prozentpunkten begruendet. Bewusst KEINE Aenderung vorgenommen: die Klassen-Multiplikatoren wirken auf dieselben Kampfwerte, die Entscheidung 1 und 19 ohnehin neu bewerten, und der Kanonier-Vorsprung haengt teilweise an der Feindstaerke-Rechnung, die Block D anfasst. Als Messpunkt in Abschnitt 7 eingetragen. **Methodischer Nebenbefund, teuer gelernt:** die erste Raid-Messung lief mit 4 Durchlaeufen und ergab das GEGENTEIL (Bollwerk 9 Prozentpunkte VOR dem Kanonier); bei 30 Durchlaeufen kippte das Vorzeichen. Die Streuung eines einzelnen Raids ist groesser als der gesamte Klassenunterschied - fuer Raid-Messungen sind mindestens 30 Durchlaeufe Pflicht, das Skript erzwingt das jetzt und gibt die min-max-Spanne mit aus. |
 | 11.08.2026 | **Aufraeum-Paket R2/R4/R7/R11/R13** (Nutzerentscheidung, Details in Abschnitt 2a, Punkt 7). Auswahlkriterium: kein Punkt darf eine Balance-Entscheidung verlangen, die ohne die neue Baseline nicht zu treffen ist - R3, R5, R8 und R9 sind deshalb NICHT dabei. **Zwei Befunde weichen von der Planbeschreibung ab.** (1) R4: der Plan sagte, der Simulator rechne fuer Mittel anders als das Spiel - falsch, beide nutzen 0,12; der abweichende Wert 0,10 stand in einem unerreichbaren `groupOps.ts`-Zweig. Dafuer gab es einen **vierten Fundort, den der Plan nicht kannte und der als einziger LIVE falsch war**: `client/src/pages/Sektor.tsx` zeigte Spielern 10 % statt 12 % fuer Mittel und pauschal 15 % fuer das Elite-Bollwerk statt 18 %. Gefunden, weil diesmal VOR dem Paketieren im Client gegreppt wurde - Messregel 8 entsprechend um diesen Fundort ergaenzt und um den Hinweis, dass die Liste der Spiegel nicht vollstaendig ist. (2) R13 ist mit einer Ratschen-Obergrenze (`state.shipLimitCeiling`) abgesichert, weil die strengere Zaehlung sonst rueckwirkend aussperren wuerde; der 25-%-Zuschlag ist ausdruecklich ein pragmatischer Puffer, kein hergeleiteter Wert. **Zusaetzlich `MAX_PLAYER_SHIPS` von 200.000 auf 1.000.000 angehoben.** Nutzervorschlag war, es ganz zu entfernen; die technische Begruendung (Engine schafft 1,5 Mio. bei ~26 ms) wurde gegengeprueft und stimmt - die Schleifen ueber Einzelstuecke laufen nur unterhalb der Aggregationsschwelle. Bewusst trotzdem eine Grenze behalten, weil das Limit derzeit als Ersatz-Bremsklotz gegen Weglauf-Wachstum wirkt: seit dem Overkill-Deckel verlieren grosse Flotten anteilig immer weniger, und die eigentlich dafuer vorgesehene Bremse (Entscheidung 2, Beute-Kurve) ist noch nicht gebaut. Als Messpunkt fuer nach Block D in Abschnitt 7 eingetragen. R2 nur teilweise erledigt: tote Eintraege entfernt, die Frage nach einer Sieg-Serien-Belohnung fuer Solo-Sektoren bleibt eine Balance-Entscheidung fuer Block D. `run_sectors.mjs` komplett neu gelaufen: alle 32 Zellen im Rahmen der Streuung unveraendert, wie erwartet. |
 | 10.08.2026 | **Entscheidung 1 (Overkill-Deckel) und R6 vorgezogen umgesetzt** (Nutzerentscheidung, Details in Abschnitt 2a, Punkte 5 und 6). Entscheidung 1 war der beste Vorzieh-Kandidat des ganzen Plans, weil die Aggregations-Schwelle eine reine Performance-Optimierung ist, die das Kampfergebnis nicht veraendern darf - ein Defekt, keine Balance-Frage - und weil sie ohnehin Schritt 1 der Reihenfolge ist, also nichts praejudiziert. Gemessen: die Klippe bei 101 Kreuzern faellt von 100 % auf 35,3 % Verlust, die Kurve ueber die Schwelle ist stetig, der Individual-Pfad unveraendert. **Die in Entscheidung 1 genannte Befuerchtung "Sektoren werden dadurch zu leicht" hat sich NICHT bestaetigt** - alle 32 Zellen von `run_sectors.mjs` praktisch unveraendert, weil in normalen Sektorkaempfen kein Schuetze einen Waffenwert von 574 Einheiten-HP hat. R6 gemessen: 0,994x statt 1,429x Punkte aus demselben Kreislauf. **Neuer Nebenbefund fuer Block D:** `getDurchschlagFraction()` liefert bei Forschung 10 den Wert 1,0, also Weitergabe ohne jede Daempfung - und da die NPC-Forschung aus der des Spielers abgeleitet wird, macht das die Gegner ebenso toedlicher (im Individual-Pfad schon vor dieser Aenderung). Vor der Kalibrierung von Entscheidung 19 anzusehen. **Client-Spiegel diesmal vorab geprueft** (Lehre vom selben Tag): fuer die Kampf-Aenderung existiert keiner, fuer R6 ebenfalls nicht - der Schrotthaendler zeigt aber jetzt einen Hinweis auf den Punkte-Abzug, damit Spieler nicht ohne erkennbaren Grund sinkende Punkte sehen. |
