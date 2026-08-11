@@ -42,9 +42,11 @@ import {
   CLASS_KANONIER_WAFFEN_MULTIPLIER,
   CLASS_KANONIER_SCHILD_MULTIPLIER,
   CLASS_KANONIER_PANZERUNG_MULTIPLIER,
+  CLASS_KANONIER_OFFENSE_BONUS,
   CLASS_BOLLWERK_WAFFEN_MULTIPLIER,
   CLASS_BOLLWERK_SCHILD_MULTIPLIER,
   CLASS_BOLLWERK_PANZERUNG_MULTIPLIER,
+  CLASS_BOLLWERK_DEFENSE_BONUS,
   CLASS_KOMMANDANT_COMBAT_MULTIPLIER,
 } from './data/classes.js';
 import { SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL } from './data/shipModules.js';
@@ -256,12 +258,26 @@ export function computeDomeSharedPool(
 // Kanonier boostet NUR Waffen, Bollwerk NUR Schild+Panzerung, Kommandant alle drei gleichmaessig
 // aber schwaecher pro Wert. Gleiches "Gesamtbudget" (~100 Prozentpunkte) bei allen drei Klassen,
 // nur unterschiedlich verteilt - siehe data/classes.ts fuer die genauen Werte/Begruendung.
-function classCombatMultipliers(playerClass: PlayerClass | null): { waffen: number; schild: number; panzerung: number } {
+// `homeDefense` = Verteidigung der eigenen Basis gegen einen Raid. Wird ausschliesslich aus
+// raids.ts gesetzt (siehe CombatWorkerRequest.homeDefense) und gilt dort fuer ALLE Beitragenden,
+// also auch fuer Verstaerker - deren eigene playerClass kommt ueber die jeweilige
+// OwnedFleetContribution. Nur das Bollwerk wertet das Flag aus.
+function classCombatMultipliers(playerClass: PlayerClass | null, homeDefense = false): { waffen: number; schild: number; panzerung: number } {
   switch (playerClass) {
     case 'kanonier':
-      return { waffen: CLASS_KANONIER_WAFFEN_MULTIPLIER, schild: CLASS_KANONIER_SCHILD_MULTIPLIER, panzerung: CLASS_KANONIER_PANZERUNG_MULTIPLIER };
-    case 'bollwerk':
-      return { waffen: CLASS_BOLLWERK_WAFFEN_MULTIPLIER, schild: CLASS_BOLLWERK_SCHILD_MULTIPLIER, panzerung: CLASS_BOLLWERK_PANZERUNG_MULTIPLIER };
+      return {
+        waffen: CLASS_KANONIER_WAFFEN_MULTIPLIER * (homeDefense ? 1 : CLASS_KANONIER_OFFENSE_BONUS),
+        schild: CLASS_KANONIER_SCHILD_MULTIPLIER,
+        panzerung: CLASS_KANONIER_PANZERUNG_MULTIPLIER,
+      };
+    case 'bollwerk': {
+      const bonus = homeDefense ? CLASS_BOLLWERK_DEFENSE_BONUS : 1;
+      return {
+        waffen: CLASS_BOLLWERK_WAFFEN_MULTIPLIER,
+        schild: CLASS_BOLLWERK_SCHILD_MULTIPLIER * bonus,
+        panzerung: CLASS_BOLLWERK_PANZERUNG_MULTIPLIER * bonus,
+      };
+    }
     case 'kommandant':
       return { waffen: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, schild: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, panzerung: CLASS_KOMMANDANT_COMBAT_MULTIPLIER };
     default:
@@ -283,10 +299,11 @@ export function getEffectiveStats(
   defenseCounts: Record<string, number> = {},
   kampfBoostActive = false,
   playerClass: PlayerClass | null = null,
-  shipModules: Record<string, number> = {}
+  shipModules: Record<string, number> = {},
+  homeDefense = false
 ): CombatStats {
   const kampfBoost = kampfBoostActive ? KAMPF_BOOST_MULTIPLIER : 1;
-  const classMult = classCombatMultipliers(playerClass);
+  const classMult = classCombatMultipliers(playerClass, homeDefense);
   const ship = findShip(id);
   if (ship) {
     const waffenModule = 1 + (shipModules[`${id}_waffen`] || 0) * SHIP_MODULE_COMBAT_EFFECT_PER_LEVEL;
@@ -835,13 +852,16 @@ export function computePirateResearch(research: Record<string, number>, contribu
 // Typs beitraegt.
 function buildUnitsMultiOwner(
   contributions: OwnedFleetContribution[],
-  fallbackStatsFn: (id: string) => CombatStats
+  fallbackStatsFn: (id: string) => CombatStats,
+  homeDefense = false
 ): { units: CombatUnit[]; aggregates: AggregateStack[] } {
   const units: CombatUnit[] = [];
   const aggregates: AggregateStack[] = [];
   contributions.forEach(({ ownerKey, ships, research, defenseCounts, playerClass, kampfBoostActive, shipModules }) => {
     const fn = (id: string) =>
-      research ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null, shipModules || {}) : fallbackStatsFn(id);
+      research
+        ? getEffectiveStats(id, research, defenseCounts || {}, !!kampfBoostActive, playerClass || null, shipModules || {}, homeDefense)
+        : fallbackStatsFn(id);
     Object.entries(ships).forEach(([id, count]) => {
       if (!count || count <= 0) return;
       const s = fn(id);
@@ -1775,9 +1795,10 @@ export function resolveCombatMultiOwner(
   research: Record<string, number>,
   sharedShieldPoolA = 0,
   allowRetreat = true,
-  battleModifier: BattleModifierType | null = null
+  battleModifier: BattleModifierType | null = null,
+  homeDefense = false
 ): MultiOwnerCombatResult {
-  const { units: unitsA0, aggregates: aggregatesA0 } = buildUnitsMultiOwner(contributions, statsFnA);
+  const { units: unitsA0, aggregates: aggregatesA0 } = buildUnitsMultiOwner(contributions, statsFnA, homeDefense);
   const { units: unitsB0, aggregates: aggregatesB0 } = buildUnits(sideBShips, statsFnB);
   const pirateResearch = computePirateResearch(research, contributions);
   const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier, aggregatesA0, aggregatesB0);

@@ -22,6 +22,11 @@ import { listAllUsers } from '../db.js';
 import { executeTrade, scrapShip, scrapDefense, convertTeile, buyBooster, buyVoucher } from './economyActions.js';
 import { setPlayerClass, setEconomyClass } from './classActions.js';
 import { PLAYER_CLASSES, CLASS_CHANGE_COST_DM } from './data/classes.js';
+import {
+  CLASS_KANONIER_WAFFEN_MULTIPLIER, CLASS_KANONIER_SCHILD_MULTIPLIER, CLASS_KANONIER_PANZERUNG_MULTIPLIER,
+  CLASS_BOLLWERK_WAFFEN_MULTIPLIER, CLASS_BOLLWERK_SCHILD_MULTIPLIER, CLASS_BOLLWERK_PANZERUNG_MULTIPLIER,
+  CLASS_KOMMANDANT_COMBAT_MULTIPLIER,
+} from './data/classes.js';
 import { ECONOMY_CLASSES, ECONOMY_CLASS_CHANGE_COST_DM } from './data/economyClasses.js';
 import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
@@ -114,6 +119,14 @@ gameRouter.get('/data', (_req, res) => {
     // Muss mit ausgeliefert werden, sonst zeigt der Client-Spiegel in Allianz.tsx wieder den
     // unkompensierten Ertrag an (genau dieser Fehler ist am 10.08.2026 einmal passiert).
     stationMiningCompensation: STATION_MINING_COMPENSATION,
+    // Kampf-Multiplikatoren der Klassen. MUESSEN mitgeliefert werden, sonst laufen die beiden
+    // Kopien in client/src/lib/combatInfo.ts bei jeder Balance-Aenderung still auseinander -
+    // genau das war am 11.08.2026 der Fall, als Bollwerk und Kommandant angehoben wurden.
+    classCombatMultipliers: {
+      kanonier: { waffen: CLASS_KANONIER_WAFFEN_MULTIPLIER, schild: CLASS_KANONIER_SCHILD_MULTIPLIER, panzerung: CLASS_KANONIER_PANZERUNG_MULTIPLIER },
+      bollwerk: { waffen: CLASS_BOLLWERK_WAFFEN_MULTIPLIER, schild: CLASS_BOLLWERK_SCHILD_MULTIPLIER, panzerung: CLASS_BOLLWERK_PANZERUNG_MULTIPLIER },
+      kommandant: { waffen: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, schild: CLASS_KOMMANDANT_COMBAT_MULTIPLIER, panzerung: CLASS_KOMMANDANT_COMBAT_MULTIPLIER },
+    },
   });
 });
 

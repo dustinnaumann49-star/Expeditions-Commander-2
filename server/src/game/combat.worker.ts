@@ -11,7 +11,7 @@ import type { CombatWorkerRequest } from './combatRunner.js';
 // `workerData` beim Start zu lesen.
 function statsFnFor(request: CombatWorkerRequest) {
   return (id: string) =>
-    getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive, request.playerClass || null, request.shipModules || {});
+    getEffectiveStats(id, request.research, request.defenseCounts || {}, !!request.kampfBoostActive, request.playerClass || null, request.shipModules || {}, !!request.homeDefense);
 }
 
 // Boss-Gefecht (Punkt 76): Seite B nutzt normalerweise die Piraten-Werte (Basiswerte + anteilige
@@ -40,7 +40,8 @@ parentPort?.on('message', (request: CombatWorkerRequest) => {
         request.research,
         request.sharedShieldPoolA || 0,
         request.allowRetreat !== false,
-        request.battleModifier || null
+        request.battleModifier || null,
+        !!request.homeDefense
       )
     : resolveCombat(
         request.sideAShips || {},

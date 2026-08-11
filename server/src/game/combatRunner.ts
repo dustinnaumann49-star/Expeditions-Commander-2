@@ -39,6 +39,12 @@ export interface CombatWorkerRequest {
   // wuerde ein Rueckzug sonst die ganze Streitmacht zu frueh abziehen, obwohl die Flotte selbst noch
   // laengst kampffaehig waere.
   allowRetreat?: boolean;
+  // Verteidigung der EIGENEN Basis (Raid). Wird nur aus raids.ts gesetzt und aktiviert den
+  // Bollwerk-Aufschlag (CLASS_BOLLWERK_DEFENSE_BONUS) - bei Mehrspieler-Verteidigung fuer jeden
+  // Beitragenden einzeln, je nach dessen eigener playerClass. Bewusst ein EIGENES Feld und nicht
+  // an `allowRetreat: false` gekoppelt: die beiden bedeuten Unterschiedliches, und eine spaetere
+  // Aenderung an der Rueckzugs-Logik wuerde sonst still den Klassenbonus mitverschieben.
+  homeDefense?: boolean;
   // Seltener Kampf-Modifikator fuer diesen einen Kampf (Nebel/Ionensturm/etc., siehe
   // BATTLE_MODIFIER_LABELS in combatConstants.ts) - wird vor dem Kampf gewuerfelt und hier nur
   // durchgereicht, damit die eigentliche Wuerfel-Logik ausserhalb des Workers bleibt (der Worker
