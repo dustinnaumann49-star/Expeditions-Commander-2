@@ -1235,6 +1235,94 @@ Chance.
 *Client:* `Schrotthaendler.tsx` weist jetzt auf den Punkte-Abzug hin. Ohne den Hinweis saehen
 Spieler ihre Punkte ohne erkennbaren Grund sinken.
 
+**7. Aufraeum-Paket am 11.08.2026: R2, R4, R7, R11 und R13 - alle erledigt.**
+Ausgewaehlt nach einem Kriterium: kein einziger Punkt darf eine Balance-Entscheidung verlangen, die
+ohne die neue Baseline nicht zu treffen ist. R3, R5, R8 und R9 sind aus genau diesem Grund NICHT
+dabei.
+
+**R4 (`defenseFactor` dreifach dupliziert) - und die Beschreibung im Plan war falsch.**
+Der Plan sagte, der Simulator zeige fuer Mittel etwas anderes als das Spiel. Gegengeprueft:
+Simulator (0,05/0,12/0,15) und Solo-Spiel (`missions.ts`, dieselben Werte) stimmen exakt ueberein.
+Der abweichende Wert 0,10 stand in `groupOps.ts` - und dort werden alle Sektoren ausser
+`piraten_elite`/`piraten_admiral` abgewiesen, der Zweig war also **unerreichbar**.
+-> Zusammengefuehrt in ein neues Feld `defenseFactor` in `SEKTOR_CONFIG` plus
+`sektorDefenseFactor()` als einzige Lesestelle. **Kein erreichbares Verhalten geaendert**,
+bestaetigt durch einen kompletten Neulauf von `run_sectors.mjs` (alle 32 Zellen im Rahmen der
+Streuung identisch).
+**Dabei fiel ein VIERTER Fundort auf, den der Plan nicht kannte und der als einziger LIVE falsch
+war:** `client/src/pages/Sektor.tsx` zeigte in der Sektor-Infobox eine eigene hartkodierte Kopie -
+**10 % fuer Mittel, waehrend das Spiel mit 12 % rechnet**, und pauschal 15 % fuer alles ausser
+Niedrig/Mittel, also auch fuer das Elite-Bollwerk mit tatsaechlich 18 %. Spieler bekamen dort seit
+jeher falsche Zahlen angezeigt. Laeuft jetzt ueber `gameData.sektorConfig`. Siehe Messregel 8.
+
+**R7 (`GalaxyEvent.claimedBy`) - bestaetigt tot.** Auf `null` initialisiert, zweimal gelesen, nie
+beschrieben; die Bedingungen waren damit immer wahr. Seit der Umstellung auf "Ereignis sofort
+loeschen" ist das Vorhandensein des Ereignisses selbst die Pruefung. Feld und Kommentar in
+Server- und Client-Typ entfernt.
+
+**R2 (tote Eskalations-Konfiguration) - bestaetigt tot, Teil erledigt.** `getEscalationMultiplier()`
+wird in `missions.ts` aufgerufen, das Ergebnis fliesst aber nur in die `lootBase`- und
+`teileCap`-Zweige - und beide Felder haben `piraten_niedrig/mittel/hoch` seit dem Umbau vom
+29.07.2026 nicht mehr (nachgeprueft in `sectors.ts`: dort stehen nur `winContainer` +
+`winResources`). Die drei Eintraege sind entfernt, `piraten_elite` bleibt.
+**Offen bleibt die eigentliche Frage:** ob die Solo-Sektoren eine Sieg-Serien-Belohnung
+zurueckbekommen sollen. Das waere eine Balance-Entscheidung (auf `winResources`, NICHT auf
+`winContainer`) und gehoert in Block D.
+
+**R13 (`totalOwnedShips()`) - erledigt, mit Absicherung.** Zaehlt jetzt dieselben fuenf Orte wie
+`countShipEverywhere()`: Flotte, Bauschlange, laufende Missionen, Galaxie-Entsendungen und
+angenommene Gruppen-Operationen.
+*Die Absicherung war noetig und ist nicht optional:* die Korrektur macht die Zaehlung strenger, und
+genau daran ist am 09.08.2026 schon einmal der gesamte Schiffsbau haengengeblieben. `state.shipLimitCeiling`
+ist eine persoenliche Obergrenze, die beim ersten Aufruf auf `max(MAX_PLAYER_SHIPS, Ist-Bestand *
+1,25)` gesetzt wird und danach **nur noch sinken kann** ("Ratsche"). Wer unter
+`MAX_PLAYER_SHIPS` faellt, ist dauerhaft im Normalzustand; die Obergrenze steigt nie wieder.
+Der Zuschlag von 25 % ist ein pragmatischer Puffer, kein hergeleiteter Wert - seine einzige Aufgabe
+ist, niemanden am Umstellungstag auszusperren. Vertretbar, weil `MAX_PLAYER_SHIPS` laut eigenem
+Code-Kommentar ein CPU-Sicherheitsnetz und kein Balance-Wert ist und die Engine laut Benchmark bis
+1,5 Mio. Schiffen bei ~26 ms bleibt.
+*Getestet:* unterwegs befindliche Schiffe werden mitgezaehlt (50.000 + 30.000 -> 80.000 statt
+50.000); unter dem Limit aendert sich nichts; ein Bestand von 260.000 wird auf 325.000
+grandfathered und kann weiterbauen; sinkt der Bestand auf 150.000, faellt die Obergrenze auf
+200.000 und steigt danach auch bei kuenstlich erhoehtem Bestand nicht wieder.
+**Nicht behoben:** Container-Freischiffe und Missionsrueckkehrer fliessen weiterhin ohne
+Limitpruefung in die Flotte. Der Bestand kann die Obergrenze dadurch von selbst ueberschreiten -
+Bauen ist dann gesperrt, bis wieder verschrottet wird. Das ist die konservative Richtung und war
+auch vorher so.
+
+**8. `MAX_PLAYER_SHIPS` von 200.000 auf 1.000.000 (11.08.2026, Nutzerentscheidung).**
+Der urspruengliche Vorschlag war, das Limit ganz zu entfernen - Begruendung: die Engine schafft
+1,5 Mio. Schiffe bei ~26 ms. **Die technische Begruendung stimmt und ist gegengeprueft:** die
+einzigen Schleifen ueber Einzelstuecke in `combat.ts` (`buildUnits()`, Zeilen 783/864) laufen
+ausschliesslich UNTERHALB von `STACK_AGGREGATE_THRESHOLD_BY_TYPE`; darueber wird ein Stapel zu
+einem Objekt. Auch ausserhalb des Kampfes skaliert nichts mit der Stueckzahl - `state.fleet` ist
+ein Record aus Typ und Anzahl, der Spielstand ist bei 1,5 Mio. Schiffen genauso gross wie bei 100.
+
+**Trotzdem bewusst nicht auf unbegrenzt**, aus zwei Gruenden - der zweite ist der wichtigere:
+1. Die Unabhaengigkeit von der Stueckzahl gilt WEGEN der Aggregation. Senkt jemand spaeter eine
+   Schwelle oder baut einen Kampfmodus, der wieder pro Einheit rechnet, gibt es ohne Limit keinen
+   Auffangboden. Eine Grenze weit oberhalb jeder realistischen Nutzung kostet nichts.
+2. **Das Limit ist gerade kein reiner CPU-Wert mehr.** Seit dem Overkill-Deckel (Punkt 5 oben)
+   verlieren grosse Flotten anteilig deutlich weniger - 400 Kreuzer 6,6 %, wo vorher alles wegging.
+   Je groesser die Flotte, desto sicherer wird sie pro Schiff. Genau diese Rueckkopplung soll
+   **Entscheidung 2 (Beute-Kurve, Exponent 0,85) abfangen - und die ist noch nicht gebaut.** Bis
+   dahin wirkt das Schiffslimit als stiller Ersatz-Bremsklotz gegen Weglauf-Wachstum. Ihn ganz zu
+   entfernen, bevor die eigentliche Bremse existiert, waere genau die Reihenfolge, vor der dieser
+   Plan an mehreren Stellen warnt.
+
+*Wechselwirkung mit R13:* die Ratschen-Absicherung greift bei zwei Spielern mit rund 103.000
+Schiffen jetzt nie - getestet, dass sie oberhalb von 1.000.000 weiterhin funktioniert (Bestand
+1,3 Mio. -> Obergrenze 1,625 Mio., Bauen erlaubt; faellt der Bestand, faellt die Obergrenze auf
+1.000.000 zurueck). Sie ist also nicht ueberfluessig geworden, nur ruhend.
+
+**-> Nach Block D erneut ansehen.** Dann ist es wieder eine reine CPU-Frage. Steht als Messpunkt in
+Abschnitt 7.
+
+**R11 (Changelog) - erledigt.** Zwei Eintraege (10.08. und 11.08.), fuer Spieler formuliert. Der
+neueste Eintrag war zuvor vom 06.08.2026, waehrend seitdem sechs spuerbare Aenderungen live
+gegangen sind - darunter die vervierfachte Stationsproduktion und der Punkte-Abzug beim
+Verschrotten, die beide ohne Erklaerung wie ein Fehler ausgesehen haetten.
+
 **4. R12 (Startpruefung fuer zusammengesetzte Modul-IDs) - erledigt.**
 Neue Datei `game/moduleIntegrity.ts`, eingehaengt in `index.ts`. Bildet beim Serverstart dieselben
 Modul-IDs, die `actions.ts`/`stations.ts` zur Laufzeit zusammensetzen, und meldet jede ohne
@@ -1335,17 +1423,17 @@ Quote.
 | # | Was | Datei | Bezug |
 |---|---|---|---|
 | R1 | **Bauzeit-Formel Server UND Client synchron.** Inhaltlich ueberholt seit Entscheidung 9.1 (09.08.2026): nicht mehr eine Untergrenze spiegeln, sondern die **Saettigungskurve 9.1a UND die additive `T_cap`-Berechnung 9.1b**. **Nicht in Block E abarbeiten, sondern GEMEINSAM mit 9.1 in Block D** - eine getrennt terminierte Spiegelung ist genau der Weg, auf dem der Spiegel schon einmal auseinandergelaufen ist | `game/actions.ts` + `client/src/lib/multipliers.ts` | S1-B3 |
-| R2 | Toter `REWARD_ESCALATION`-Code bei `piraten_niedrig/mittel/hoch` entfernen oder auf `winResources` verdrahten (NICHT auf `winContainer` - waere wieder exponentiell) | `data/economy.ts`, `game/missions.ts:537-539, 572, 586-593` | S1-B6 |
+| R2 | **TEILWEISE ERLEDIGT 11.08.2026** (Abschnitt 2a, Punkt 7): tote Eintraege entfernt, das Verdrahten auf `winResources` bleibt als Balance-Entscheidung offen. Ursprungstext: Toter `REWARD_ESCALATION`-Code bei `piraten_niedrig/mittel/hoch` entfernen oder auf `winResources` verdrahten (NICHT auf `winContainer` - waere wieder exponentiell) | `data/economy.ts`, `game/missions.ts:537-539, 572, 586-593` | S1-B6 |
 | R3 | Forschungs-Minimum pro Beitragendem statt global. Heute senkt **ein Mitspieler mit 1 Leichtem Jaeger und Forschung 0 den Verlust des Hauptspielers um Faktor 19**. Zeitbombe fuer jeden weiteren Account. **Regressionstest gegen die Urspruengliche Korrektur vom 05.08.2026**: der schwaechere Mitspieler darf nicht wieder ueber seinem Stand kaempfen muessen | `game/combat.ts` (`computePirateResearch()` ~Zeile 769), `game/groupOps.ts` | S2-B6 |
-| R4 | `defenseFactor` ist an drei Stellen dupliziert und bereits auseinandergelaufen (`piraten_mittel`: Simulator 0,12, `groupOps.ts` 0,10) - **der Simulator sagt fuer Mittel etwas anderes voraus als der echte Kampf**. In eine Konstante zusammenfuehren | `simulator.ts:69-73`, `groupOps.ts:775-776`, `missions.ts` | S2-B9 |
+| R4 | **ERLEDIGT 11.08.2026** (Abschnitt 2a, Punkt 7) - ACHTUNG, die Beschreibung unten war falsch: Simulator und Solo-Spiel stimmten ueberein, der abweichende Wert stand in einem unerreichbaren Zweig von `groupOps.ts`. Dafuer gab es einen vierten, LIVE falschen Fundort im Client (`Sektor.tsx`). Ursprungstext: `defenseFactor` ist an drei Stellen dupliziert und bereits auseinandergelaufen (`piraten_mittel`: Simulator 0,12, `groupOps.ts` 0,10) - **der Simulator sagt fuer Mittel etwas anderes voraus als der echte Kampf**. In eine Konstante zusammenfuehren | `simulator.ts:69-73`, `groupOps.ts:775-776`, `missions.ts` | S2-B9 |
 | R5 | `MULTI_TARGET_POWER_CORRECTION` in `resolveOneWave()` nachziehen. Sentinel-/Ultimate-Kanone und alle Salvenschiffe zaehlen zu Hause nur mit einem Achtel ihrer Macht - wer in sie investiert, bekommt die schwaechsten Wellen bei der staerksten Abwehr | `game/raids.ts:319-327` | S3-B4 |
 | R6 | **ERLEDIGT 10.08.2026** (Abschnitt 2a, Punkt 6) - gemessen 0,994x statt 1,429x. Ursprungstext: Beim Verschrotten den erstatteten Betrag von `resourcesSpentShipsDefense` abziehen. Heute ergibt Bauen -> Verschrotten -> Bauen bei `SCRAP_REFUND_RATE = 0.3` **1,43x Punkte** aus derselben Ressourcenmenge | `game/stats.ts`, `scrapUnits()` | S4-B9 |
-| R7 | `GalaxyEvent.claimedBy` wird gelesen, aber nirgends gesetzt. Feld und Typ-Kommentar bereinigen | `game/galaxyEvents.ts`, `types.ts` | S4-B10 |
+| R7 | **ERLEDIGT 11.08.2026** (Abschnitt 2a, Punkt 7). Ursprungstext: `GalaxyEvent.claimedBy` wird gelesen, aber nirgends gesetzt. Feld und Typ-Kommentar bereinigen | `game/galaxyEvents.ts`, `types.ts` | S4-B10 |
 | R8 | `startSpyProbe()` nimmt `qty` entgegen, prueft und verbraucht sie - **auf den Bericht hat sie keinen Einfluss** (`buildSpyReport()` haengt allein an `research.spionage`). Entweder `qty` entfernen oder den Detailgrad an die Sondenzahl koppeln (letzteres gibt der Spionagesonde ueberhaupt erst eine Bauentscheidung) | `game/spyMissions.ts` | S4-B10 |
 | R9 | Kampfbericht-Anzeige "[Feindstaerke X%]" korrigieren - sie zeigt den nominalen Wert, der real etwa die Haelfte bedeutet (siehe Abschnitt 4) | Client | S2-B1/B9 |
 | R10 | README korrigieren: Aussenposten, RapidFire-Kette (kein Stein-Schere-Papier), Kosten/Waffenpunkt-Korridor, Salvenschiffe als Rollen-Einheiten. **Ergaenzt 10.08.2026:** Die Repo-README ist an diesen Stellen bereits richtig - falsch ist die aeltere, nummerierte Fassung, die noch im Umlauf ist (33 Punkte). Beim Abarbeiten von R10 pruefen, welche Aussagen tatsaechlich noch in `README.md` stehen, statt gegen die alte Fassung zu korrigieren. Konkret nachweislich veraltet in der alten Fassung: Imperator `maxCount` 2 statt **6**, Salvenschiff-Limits 8-30 statt **150/90/30**, Asteroiden-Missionsdauer 12 h statt **24 h**, Kampf-Performance 700 ms bei 2.600 Einheiten statt **~26 ms bei 1,5 Mio** | `README.md` | S4-Konsistenz |
-| R11 | Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
-| R13 | **`totalOwnedShips()` zaehlt nicht "ueberall".** Sie summiert nur `state.fleet` + `buildQueue`, NICHT Missionen, Galaxie-Entsendungen und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` unbeabsichtigt ueberschreiten: Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt zurueck. Zusaetzlich fliessen Container-Freischiffe (`inventory.ts:174`) und Missionsrueckkehrer (`missions.ts:691`) ohne Limitpruefung in die Flotte. **Exakt derselbe Fehler wurde fuer die Einzel-Limits schon behoben** (`countShipEverywhere`, samt Kommentar in `actions.ts`) - bei `totalOwnedShips` nie nachgezogen. **Achtung bei der Umsetzung:** die Korrektur macht die Zaehlung STRENGER. Erst anwenden, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher Schiffe bekannt ist, sonst blockiert sie den Spieler sofort wieder | `game/actions.ts:198`, `data/combatConstants.ts` | Nutzerfund 09.08.2026 |
+| R11 | **ERLEDIGT 11.08.2026** (Abschnitt 2a, Punkt 7) - zwei Eintraege fuer 10.08. und 11.08. Ursprungstext: Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
+| R13 | **ERLEDIGT 11.08.2026 mit Absicherung** (Abschnitt 2a, Punkt 7) - persoenliche Obergrenze mit Ratsche, damit niemand rueckwirkend ausgesperrt wird. Ursprungstext: **`totalOwnedShips()` zaehlt nicht "ueberall".** Sie summiert nur `state.fleet` + `buildQueue`, NICHT Missionen, Galaxie-Entsendungen und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` unbeabsichtigt ueberschreiten: Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt zurueck. Zusaetzlich fliessen Container-Freischiffe (`inventory.ts:174`) und Missionsrueckkehrer (`missions.ts:691`) ohne Limitpruefung in die Flotte. **Exakt derselbe Fehler wurde fuer die Einzel-Limits schon behoben** (`countShipEverywhere`, samt Kommentar in `actions.ts`) - bei `totalOwnedShips` nie nachgezogen. **Achtung bei der Umsetzung:** die Korrektur macht die Zaehlung STRENGER. Erst anwenden, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher Schiffe bekannt ist, sonst blockiert sie den Spieler sofort wieder | `game/actions.ts:198`, `data/combatConstants.ts` | Nutzerfund 09.08.2026 |
 | R12 | **ERLEDIGT 10.08.2026** (siehe Abschnitt 2a), umgesetzt in `game/moduleIntegrity.ts`. Ursprungstext: **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
 
 ---
@@ -1569,7 +1657,12 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 8. **Client-Spiegel nicht vergessen.** `client/src/lib/multipliers.ts` spiegelt Bauzeit-, Klassen-
    und Booster-Multiplikatoren 1:1 - **und es ist nicht der einzige Spiegel.**
    `client/src/pages/Allianz.tsx` baut die KOMPLETTE Stations-Wirtschaft nach (Produktion, Energie,
-   Bauzeit, Modul-Faktoren), `client/src/lib/combatInfo.ts` die Kampfwert-Anzeige.
+   Bauzeit, Modul-Faktoren), `client/src/lib/combatInfo.ts` die Kampfwert-Anzeige, und
+   `client/src/pages/Sektor.tsx` trug bis zum 11.08.2026 eine eigene hartkodierte Kopie der
+   `defenseFactor`-Werte - **die einzige der vier Kopien, die live falsche Zahlen anzeigte**
+   (10 % statt 12 % fuer Mittel). Gefunden nur, weil vor dem Paketieren im Client gegreppt wurde.
+   Die Liste ist erfahrungsgemaess NICHT vollstaendig: vor jeder Aenderung selbst greppen, statt
+   sich auf sie zu verlassen.
    *Verschaerft am 10.08.2026:* diese Regel ist beim ersten Eingriff ueberhaupt sofort verletzt
    worden - der Stations-Kompensationsfaktor landete nur im Server, die Anzeige blieb unveraendert,
    und fuer den Spieler sah es aus, als sei die Aenderung gar nicht angekommen. **Verbindlicher
@@ -1616,6 +1709,10 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   Handlungsbedarf, aber nach Block A gegen die neue Baseline nachzurechnen. Vollstaendige
   Entscheidungsregel (Pro-Kopf-Anteil unter 20 %, Amortisation 60-120 Tage, Untergrenze 2,0, plus
   die offene Design-Frage zur Mitgliederzahl) in Abschnitt 2a.
+- **`MAX_PLAYER_SHIPS` erneut entscheiden (NEU 11.08.2026).** Steht auf 1.000.000. Bis Entscheidung
+  2 (Beute-Kurve) gebaut und gemessen ist, wirkt das Limit als Ersatz-Bremsklotz gegen
+  Weglauf-Wachstum grosser Flotten - danach ist es wieder eine reine CPU-Frage und kann komplett
+  fallen. **Nicht vorher entfernen.** Herleitung in Abschnitt 2a, Punkt 8.
 - **Einnahmen-Baseline komplett neu rechnen.** Die 21,69 Mrd/Tag gelten nach Block A nicht mehr.
   **Achtung:** die Station taucht in der Referenztabelle in Abschnitt 1 bisher gar nicht auf,
   obwohl sie seit dem 10.08.2026 ein spuerbarer Posten ist. Beim Neurechnen mit aufnehmen.
@@ -1826,6 +1923,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
+| 11.08.2026 | **Aufraeum-Paket R2/R4/R7/R11/R13** (Nutzerentscheidung, Details in Abschnitt 2a, Punkt 7). Auswahlkriterium: kein Punkt darf eine Balance-Entscheidung verlangen, die ohne die neue Baseline nicht zu treffen ist - R3, R5, R8 und R9 sind deshalb NICHT dabei. **Zwei Befunde weichen von der Planbeschreibung ab.** (1) R4: der Plan sagte, der Simulator rechne fuer Mittel anders als das Spiel - falsch, beide nutzen 0,12; der abweichende Wert 0,10 stand in einem unerreichbaren `groupOps.ts`-Zweig. Dafuer gab es einen **vierten Fundort, den der Plan nicht kannte und der als einziger LIVE falsch war**: `client/src/pages/Sektor.tsx` zeigte Spielern 10 % statt 12 % fuer Mittel und pauschal 15 % fuer das Elite-Bollwerk statt 18 %. Gefunden, weil diesmal VOR dem Paketieren im Client gegreppt wurde - Messregel 8 entsprechend um diesen Fundort ergaenzt und um den Hinweis, dass die Liste der Spiegel nicht vollstaendig ist. (2) R13 ist mit einer Ratschen-Obergrenze (`state.shipLimitCeiling`) abgesichert, weil die strengere Zaehlung sonst rueckwirkend aussperren wuerde; der 25-%-Zuschlag ist ausdruecklich ein pragmatischer Puffer, kein hergeleiteter Wert. **Zusaetzlich `MAX_PLAYER_SHIPS` von 200.000 auf 1.000.000 angehoben.** Nutzervorschlag war, es ganz zu entfernen; die technische Begruendung (Engine schafft 1,5 Mio. bei ~26 ms) wurde gegengeprueft und stimmt - die Schleifen ueber Einzelstuecke laufen nur unterhalb der Aggregationsschwelle. Bewusst trotzdem eine Grenze behalten, weil das Limit derzeit als Ersatz-Bremsklotz gegen Weglauf-Wachstum wirkt: seit dem Overkill-Deckel verlieren grosse Flotten anteilig immer weniger, und die eigentlich dafuer vorgesehene Bremse (Entscheidung 2, Beute-Kurve) ist noch nicht gebaut. Als Messpunkt fuer nach Block D in Abschnitt 7 eingetragen. R2 nur teilweise erledigt: tote Eintraege entfernt, die Frage nach einer Sieg-Serien-Belohnung fuer Solo-Sektoren bleibt eine Balance-Entscheidung fuer Block D. `run_sectors.mjs` komplett neu gelaufen: alle 32 Zellen im Rahmen der Streuung unveraendert, wie erwartet. |
 | 10.08.2026 | **Entscheidung 1 (Overkill-Deckel) und R6 vorgezogen umgesetzt** (Nutzerentscheidung, Details in Abschnitt 2a, Punkte 5 und 6). Entscheidung 1 war der beste Vorzieh-Kandidat des ganzen Plans, weil die Aggregations-Schwelle eine reine Performance-Optimierung ist, die das Kampfergebnis nicht veraendern darf - ein Defekt, keine Balance-Frage - und weil sie ohnehin Schritt 1 der Reihenfolge ist, also nichts praejudiziert. Gemessen: die Klippe bei 101 Kreuzern faellt von 100 % auf 35,3 % Verlust, die Kurve ueber die Schwelle ist stetig, der Individual-Pfad unveraendert. **Die in Entscheidung 1 genannte Befuerchtung "Sektoren werden dadurch zu leicht" hat sich NICHT bestaetigt** - alle 32 Zellen von `run_sectors.mjs` praktisch unveraendert, weil in normalen Sektorkaempfen kein Schuetze einen Waffenwert von 574 Einheiten-HP hat. R6 gemessen: 0,994x statt 1,429x Punkte aus demselben Kreislauf. **Neuer Nebenbefund fuer Block D:** `getDurchschlagFraction()` liefert bei Forschung 10 den Wert 1,0, also Weitergabe ohne jede Daempfung - und da die NPC-Forschung aus der des Spielers abgeleitet wird, macht das die Gegner ebenso toedlicher (im Individual-Pfad schon vor dieser Aenderung). Vor der Kalibrierung von Entscheidung 19 anzusehen. **Client-Spiegel diesmal vorab geprueft** (Lehre vom selben Tag): fuer die Kampf-Aenderung existiert keiner, fuer R6 ebenfalls nicht - der Schrotthaendler zeigt aber jetzt einen Hinweis auf den Punkte-Abzug, damit Spieler nicht ohne erkennbaren Grund sinkende Punkte sehen. |
 | 10.08.2026 | **Nachtrag zur Code-Aenderung desselben Tages: die Client-Spiegel fehlten.** Nutzermeldung "an der Allianz-Station hat sich nichts geaendert" - zutreffend, und zwar aus dem im Plan mehrfach beschriebenen Grund. Der Server rechnete den Kompensationsfaktor bereits, aber `pages/Allianz.tsx` enthaelt eine vollstaendige eigene Kopie von `stationMineOutputPerHour()` und zeigte weiter den alten Wert (15,70 Mio/h real gegen 5,23 Mio/h angezeigt, V1-Metallmine Stufe 30). Bei V1-Minen war die Anzeige sogar identisch zum Vorzustand, weil 7.1 nur die V2/V3-`baseOutput` betrifft. Zweiter betroffener Spiegel: `lib/multipliers.ts` mit derselben V1-only-Tabelle `BUILDING_SELF_BUILDTIME_MODULE`. Behoben, wobei die Konstante jetzt ueber `/game/data` ausgeliefert wird statt im Client hartkodiert - eine Quelle statt zweier Werte, die auseinanderlaufen koennen. **Messregel 8 entsprechend verschaerft**: `Allianz.tsx` war bisher nirgends als Spiegel gefuehrt, obwohl sie die komplette Stations-Wirtschaft nachbaut, und der verbindliche Ablauf lautet jetzt "erst im Client greppen, dann den Server aendern". Der Vorfall ist der dritte dokumentierte Fall derselben Fehlerform (README Punkt 1, R1, jetzt hier). |
 | 10.08.2026 | **Erste Code-Aenderung des Projekts seit Planbeginn** (Nutzerentscheidung, ausgeloest durch zwei eigene Beobachtungen beim Spielen). Vollstaendig dokumentiert im neuen **Abschnitt 2a**. Kurz: Entscheidung 14 erledigt, aber mit bewusster Abweichung vom beschlossenen Weg - NICHT auf den Stations-Generator umgestellt, weil der die 15 bestehenden V1-Module mit neu bewertet haette (Metallmine-Modul von 2,0/1,0/0,5 Mio auf 1,5/0,6/0 Mio, inklusive eines auf null fallenden Deuterium-Anteils); stattdessen V2/V3 aus dem unveraenderten V1 abgeleitet, `BUILDING_MODULES` jetzt 45 statt 15. Gemessen: V2/V3 bauen jetzt exakt so schnell wie V1 (vorher Faktor 4 langsamer), Foerdereffizienz wirkt auf allen drei Stufen. **Der in Entscheidung 14 angekuendigte Faktor 4 ist damit eingetreten und Ausgangszustand fuer 9.1, nicht mehr eine kommende Aenderung.** Ausserdem Entscheidung 7.1 erledigt (Stations-Ertrag V2/V3 auf 2x/4x) und R12 erledigt (`game/moduleIntegrity.ts`, Startpruefung fuer zur Laufzeit gebildete Modul-IDs). **Ein Befund war NEU und stand in keiner Session:** `stationMineOutputPerHour()` wendet den Mining-Multiplikator nicht an - die Entkopplung der Station von der Forschung einzelner Mitglieder ist beabsichtigt und richtig, wurde aber nie ausgeglichen, wodurch die Station bei gleicher Gebaeudestufe ein Sechstel der Heimatbasis produzierte. Neue Konstante `STATION_MINING_COMPENSATION = 3` (nur der dauerhafte Forschungsanteil 2,0 x 1,5, bewusst nicht die vollen 6,12 inkl. Klasse und Booster). Der resultierende Vollausbau-Ertrag betraegt 7,90 Mrd/Tag. **Noch am selben Tag nach Nutzerhinweis korrigiert:** dieser Wert war zunaechst direkt gegen die Baseline von 21,69 Mrd/Tag gestellt und daraus ein Widerspruch zu Entscheidung 3 abgeleitet worden (passive Quelle oberhalb des Raids). Die Baseline ist aber ein **Pro-Spieler-Wert**, waehrend die Station ein gemeinsamer Topf ist, aus dem beide Mitglieder entnehmen - pro Kopf sind es rund 3,95 Mrd/Tag bzw. 18,2 %, also unter dem Raid und knapp im Zielband. Der Einwand faellt damit weitgehend weg; bestehen bleibt nur die ART der Quelle (voellig passiv), nicht ihre Groesse. Entscheidungsregel zur Nachkalibrierung entsprechend auf den Pro-Kopf-Anteil umgestellt, ergaenzt um die offene Design-Frage, ob die Station bei wachsender Allianz pro Kopf oder insgesamt konstant bleiben soll. **Lehre daraus:** Bei jeder Kennzahl pruefen, ob sie pro Spieler oder fuer alle zusammen gilt, bevor sie gegen die Baseline gestellt wird - dieselbe Fehlerform wie bei den Aggregat-Stapeln, nur in der Auswertung statt im Code. Zeitrahmen-Absatz in Abschnitt 8 von einer Absolutsperre auf einen Ausnahme-Massstab praezisiert. |
