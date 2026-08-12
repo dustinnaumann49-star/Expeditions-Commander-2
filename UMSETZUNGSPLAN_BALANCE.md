@@ -5,7 +5,7 @@ Sessions (Befunde, Messwerte, Methodik). Sie bleibt unveraendert und ist die Bew
 Diese Datei enthaelt die daraus **getroffenen Entscheidungen** und ist die Arbeitsanweisung fuer die
 Umsetzungs-Session.
 
-**Status:** **Am Spielcode wurde am 10.08.2026 erstmals etwas geaendert** (Nutzerentscheidung,
+**Status:** **15 Entscheidungen** (Entscheidung 15 neu am 12.08.2026). **Am Spielcode wurde am 10.08.2026 erstmals etwas geaendert** (Nutzerentscheidung,
 bewusst ausserhalb der Blockreihenfolge - Begruendung und Umfang siehe Abschnitt 2a
 "Vorgezogene Umsetzung"). Alles Uebrige ist unveraendert: **14 Entscheidungen, 12 Reparaturen**
 (Stand 09.08.2026, zweite Fassung), Umsetzung steht aus.
@@ -1130,6 +1130,70 @@ Vorbedingung fuer den wichtigsten Inhalt.**
   ab wann ist die Expedition ueberhaupt gewinnbar?
 - Nach 13.3: Basiswachstum zweimal mit unterschiedlich vielen Galaxie-Aufrufen messen - die
   Ergebnisse muessen identisch sein.
+
+---
+
+### Entscheidung 15 - Waffen/Schild/Panzerung unbegrenzt forschbar (NEU 12.08.2026, Nutzeridee)
+
+**Anlass:** Alle Forschungen stehen bei den Spielern auf `MAX_RESEARCH_LEVEL` (10). Damit sind
+**Zeit-Gutscheine wertlos** (es gibt nichts mehr zu beschleunigen) und ueber Forschung sind **keine
+Punkte mehr erzielbar** - `calculatePoints()` zaehlt `resourcesSpentResearchBuildings`, und der
+waechst nicht mehr. Vorschlag des Nutzers: den Deckel fuer Waffentechnik, Schildtechnik und
+Panzerungtechnik aufheben.
+
+**Die Begruendung des Nutzers ("Piraten skalieren ja mit der Forschung mit") ist HALB richtig -
+der Mechanismus ist ein anderer als angenommen:**
+- **Die Feindstaerke skaliert NICHT mit Forschung.** `combatFleetPowerBase()` rechnet auf reinen
+  Basiswerten; der Kommentar dort sagt ausdruecklich, dass Forschung die Gegnerstaerke seit dem
+  Umbau nicht mehr beeinflusst. Es gibt also keine groesseren Piratenflotten.
+- **Stattdessen greift `PIRATE_RESEARCH_SHARE = 1.0`:** Piraten bekommen 100 % des
+  Spieler-Forschungsstands auf ihre EIGENEN Einheiten. Nicht mehr Schiffe, aber jedes einzelne so
+  stark, als haette es den Forschungsstand des Spielers.
+
+**Ergebnis: relativ neutral - aber aus einem unbequemen Grund.** Forschung verschafft gegen Piraten
+ohnehin fast keinen Vorteil; der echte Vorsprung des Spielers kommt aus Klasse, Modulen und
+Kampf-Booster, die den NPCs bewusst vorenthalten bleiben. Eine Aufhebung des Deckels aendert an
+diesem Verhaeltnis nichts - sie blaeht nur die absoluten Zahlen auf beiden Seiten auf.
+
+**Die Kurve ist bereits ein natuerlicher Deckel** (Waffentechnik, `costGrowth` 1,8 /
+`timeGrowth` 1,6, Basiszeit 12 h):
+
+| Stufe | Effekt | Kosten | Forschungszeit (Basiswert, ohne Multiplikatoren) |
+|---|---|---|---|
+| 10 | +100 % | 0,02 Mrd | 34 Tage |
+| 11 | +110 % | 0,04 Mrd | 55 Tage |
+| 15 | +150 % | 0,43 Mrd | 360 Tage |
+| 20 | +200 % | 8,14 Mrd | 10,4 Jahre |
+
+Begrenzt wird also ueber **ZEIT, nicht ueber Ressourcen** - genau die Groesse, auf die Zeit-Gutscheine
+wirken. Als Senke fuer Gutscheine und als laufende Punktequelle funktioniert das damit sauber.
+
+**Die Auswahl der drei Forschungen ist richtig gewaehlt:** Waffen/Schild/Panzerung sind die
+einzigen mit unbegrenztem Multiplikator (`effectPerLevel` 0,10, linear, ohne Obergrenze). Praezision,
+Ausweichen, Schild-Regeneration und Kritische Treffer haben eigene Kappungen (`PRECISION_MAX`,
+`EVASION_MAX`, `SHIELD_REGEN_MAX`, `CRIT_CHANCE_MAX`) und wuerden oberhalb von Stufe 10 gar nichts
+mehr bewirken.
+
+**DREI STELLEN BRECHEN, wenn `MAX_RESEARCH_LEVEL` einfach entfernt wird:**
+1. **Die Bot-Ruecklage vom 12.08.2026** (Abschnitt 2a, Punkt 9). `nextResearchCost()` sucht die
+   erste Forschung unterhalb von `MAX_RESEARCH_LEVEL` - ohne Deckel findet sie IMMER eine und legt
+   bei Stufe 20 acht Milliarden zurueck. **Die Bots wuerden dann nie wieder Schiffe oder
+   Verteidigung bauen** - eine Sparfalle gegen die naechste getauscht. Die Ruecklage braucht dann
+   eine Obergrenze (z.B. nur bis zu einem bestimmten Stufen- oder Kostenniveau zuruecklegen).
+2. **Die Bot-Forschung selbst** (`economyBotTurn.ts`, Zeilen 89 und 138) wuerde endlos weiterforschen.
+3. **Der Client** bekommt `maxResearchLevel` ueber `/game/data` (`routes.ts`) - die Oberflaeche
+   zeigt den Deckel an und sperrt. Messregel 8: vor der Aenderung im Client greppen.
+
+**Empfehlung:** Umsetzen, aber NICHT gleichzeitig mit der frisch ausgelieferten Bot-Ruecklage - die
+ist seit dem 12.08.2026 live und noch unbeobachtet. Zwei ineinandergreifende Aenderungen an
+derselben Stelle gleichzeitig ist genau das Muster, vor dem Abschnitt 5 warnt. Reihenfolge: erst
+die Ruecklage im Livebetrieb bestaetigen, dann den Deckel aufheben und die Ruecklage im selben
+Zug begrenzen.
+
+**Offen zu entscheiden:** ob der Deckel ganz faellt oder nur angehoben wird (z.B. auf 25, wo die
+Forschungszeit ohnehin bei ueber 100 Jahren liegt). Ein harter Wert waere ehrlicher gegenueber der
+Anzeige und verhindert Ueberlaufeffekte bei sehr grossen Zahlen; praktisch macht es keinen
+Unterschied, weil die Zeitkurve lange vorher greift.
 
 ---
 
@@ -2283,6 +2347,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
 | 11.08.2026 | **Raid-Ertrag skaliert mit der Zahl der Accounts - Entscheidung 3 steht auf zu niedrigen Zahlen** (Nutzerhinweis: rund 10.000 DM an einem Raid-Tag, weil er eigenen Raid, den seiner Frau und die beiden Bot-Raids verteidigt). Im Code bestaetigt: `finalizeRaidWaves()` ruft `grantContainers()` fuer den Verteidiger UND jeden Halter auf, jeder bekommt die volle Menge - korrekt nach Punkt 5 der README, aber diese Regel stammt aus dem Kontext gemeinsamer Expeditionen, wo alle EINE Mission zusammen fliegen. Bei Raids sind es N getrennte Ereignisse, jedes voll verguetet, und die Belohnung haengt nicht am Beitrag. Nachgerechnet: ein eigener Raid gibt 1.800 DM und 14,51 Mrd Ressourcenwert, vier verteidigte Raids 7.200 DM und 58,02 Mrd pro Raid-Tag = **16,58 Mrd/Tag gegen die im Plan gefuehrten 6,31 Mrd/Tag** (Faktor 2,6; DM Faktor 3,5). Der Raid ist damit **rund 52 % aller Einnahmen und verletzt Abnahmekriterium 5 bereits im Ist-Zustand**; die geplante Halbierung auf 5/3/1 landet bei 8,29 Mrd/Tag und damit immer noch ueber dem bisher angenommenen Ist-Wert. **Kern des Problems ist nicht die Hoehe, sondern die Skalierung** - der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot. Vier Loesungsvarianten im Kasten bei Entscheidung 3 dokumentiert. **Variante 4 stammt vom Nutzer:** fester Topf pro Raid, aufgeteilt nach tatsaechlichem Beitrag - technisch bereits moeglich, weil `combat.ts` `dmgDealt` und `dmgTakenA` schon besitzer-bewusst fuehrt. Zwei Bedingungen dabei zwingend: der Topf muss FEST pro Raid sein (sonst bleibt die Skalierung bestehen - Schadensmessung loest Fairness, nicht Hoehe), und der Beitrag muss Schaden GEMACHT plus ABSORBIERT zaehlen, sonst waere das Bollwerk mit Waffen x1 ausgerechnet auf seinem Heimatfeld der schlechtest bezahlte Teilnehmer. Empfehlung: Variante 4, hilfsweise Variante 2. **Bewusst NICHT vorgezogen umgesetzt** - anders als die Reparaturen der Vortage ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit unerwarteter Nebenwirkung, und die Korrektur veraendert die Einnahmen-Baseline, an der Block A haengt. |
+| 12.08.2026 | **Entscheidung 15 neu aufgenommen: Waffen/Schild/Panzerung unbegrenzt forschbar** (Nutzeridee). Anlass: alle Forschungen stehen auf Stufe 10, damit sind Zeit-Gutscheine wertlos und ueber Forschung keine Punkte mehr erzielbar. **Die Begruendung des Nutzers war halb richtig:** die Feindstaerke skaliert NICHT mit Forschung (`combatFleetPowerBase()` rechnet auf Rohwerten), wohl aber bekommen Piraten ueber `PIRATE_RESEARCH_SHARE = 1.0` den vollen Forschungsstand auf ihre eigenen Einheiten. Netto also relativ neutral - aber weil Forschung gegen Piraten ohnehin kaum Vorteil bringt, nicht weil sie sauber gegengerechnet wird. Kosten-/Zeitkurve geprueft: bei `timeGrowth` 1,6 liegt Stufe 15 bei 360 Tagen und Stufe 20 bei 10,4 Jahren Forschungszeit - begrenzt wird also ueber ZEIT statt Ressourcen, genau die Groesse, auf die Zeit-Gutscheine wirken. Die drei vom Nutzer genannten Forschungen sind zudem die einzigen mit unbegrenztem Multiplikator; die vier Kampfwert-Forschungen haben eigene Kappungen und wuerden oberhalb von Stufe 10 nichts mehr bewirken. **Drei Bruchstellen dokumentiert**, darunter eine selbstverschuldete: die tags zuvor ausgelieferte Bot-Ruecklage wuerde ohne Deckel unbegrenzt zuruecklegen und die Bots komplett lahmlegen. **Bewusst nicht sofort umgesetzt** - die Ruecklage ist noch unbeobachtet, zwei ineinandergreifende Aenderungen an derselben Stelle gleichzeitig sind genau das Muster, vor dem Abschnitt 5 warnt. |
 | 12.08.2026 | **Wirtschaftsklassen erstmals verglichen** (Nutzerbeobachtung: "nur der Prospektor macht Sinn"). Neuer Abschnitt 4b. **Die Einschaetzung ist widerlegt - der Prospektor ist die schwaechste der drei.** Gemessen am echten Ausbaustand: Schmuggler +0,92 Mrd Werteinheiten/Tag, Prospektor +0,22, Ingenieur +17,6 % Bauleistung. Der Prospektor liefert damit 1 bis 3 % der Gesamteinnahmen, sein DM-Bonus ist wertlos solange DM nicht knapp ist, und auf die Allianz-Station wirkt sein Mining-Bonus gar nicht. **Wichtiger als die Rangfolge ist die Kopplung:** der Schmuggler-Wert stammt fast vollstaendig aus dem Deuterium der Raid-Container (2,14 Mrd je Raid gegen 82,9 Mio/Tag aus der Mine - Faktor 29), das mangels Verwendung laufend getauscht wird. Wird der Raid-Ertrag nach Entscheidung 3 korrigiert, bricht der Schmuggler mit ein. Als gegenseitiger Verweis in beiden Abschnitten eingetragen. **Eigene Fehlaussage korrigiert:** aus den rund 50 Mrd unverbauten Werteinheiten hatte ich auf einen Zeitengpass geschlossen und daraus den Ingenieur als beste Wahl abgeleitet - auf Rueckfrage ist das bewusstes Sparen, kein Ueberschuss. Die Frage Zeit gegen Ressourcen bleibt damit offen und faellt mit Entscheidung 9 zusammen. |
 | 12.08.2026 | **Sparfalle bei Bots und Piratenbasen behoben** (Details in Abschnitt 2a, Punkt 9). Aufgedeckt ueber eine CPU-Spitze in Coolify, verfolgt ueber Heartbeat-Warnungen bis in die Datenbank des laufenden Servers. Befund: beide Bots sind 13 Tage alt, stehen bei Minenstufe 11 (Menschen: 36) und hatten LEERE Gebaeude- und Forschungs-Warteschlangen - seit 13 Tagen kein einziger Ausbau. Ursache ist der Fallback "billigstes, ein Stueck", der jeden Zug das letzte Metall abraeumt; nachgerechnet reicht die Metallproduktion nie fuer den naechsten Minenschritt, weil alle drei Takte ein Lasergeschuetz gekauft wird. Behoben durch eine Ruecklage fuer den naechsten Gebaeude-/Forschungsschritt. **Methodisch wichtig:** eine eigens gebaute Wirtschaftssimulation zeigte KEINEN Unterschied und wurde als unbrauchbar verworfen - sie liess den Bot auf 2,5 Billionen Metall wachsen, drei Groessenordnungen ueber der Realitaet. Belegt wurde ausschliesslich ueber den realen Datenbankzustand und die Kosten-/Produktionsformeln. Beinahe waere die Aenderung auf Basis einer falschen Simulation verworfen und zuvor auf Basis einer unbelegten Vermutung ausgeliefert worden. **Offen:** die Aenderung wirkt auch auf Piratenbasen (beobachtet: 20.112 Leichte Lasergeschuetze bei Startbestand 1.120) und verschiebt damit deren Schwierigkeit - als Messpunkt in Abschnitt 7 eingetragen. |
 | 11.08.2026 | **Klassen: situative Aufschlaege statt reiner Zahlen-Angleichung** (zweiter Schritt desselben Tages, Details in Abschnitt 4a). Nach der Angleichung lagen alle drei Klassen ueberall gleichauf - damit gab es keinen inhaltlichen Grund mehr, eine bestimmte zu waehlen. Die Nutzeridee, die Boni komplett zu gaten (Kanonier nur Angriff, Bollwerk nur Verteidigung), wurde durchgerechnet und **verworfen**: Angriffe sind rund fuenfmal haeufiger als Raids, der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen und zwei von drei Klassen die Haelfte der Zeit wirkungslos. Umgesetzt stattdessen: Grundbonus ueberall plus Aufschlag auf dem Heimatfeld (Kanonier Waffen x2,0 -> x2,4 ausserhalb der Heimatverteidigung; Bollwerk Schild/Panzerung x1,6 -> x2,4 bei Heimatverteidigung; Kommandant x1,4 flach). Neues Feld `homeDefense` in `CombatWorkerRequest`, nur aus `raids.ts` gesetzt und bewusst NICHT an `allowRetreat: false` gekoppelt, obwohl heute deckungsgleich. Der Verstaerker-Fall funktioniert ohne Zusatzarbeit, weil `OwnedFleetContribution` bereits eine eigene `playerClass` traegt. Endstand: Wochenbilanz 69,1 / 65,2 / 70,7, jede Klasse auf ihrem Heimatfeld klar vorn. Die Restspanne von ~8 % wird bewusst nicht weiter justiert - sie liegt innerhalb der Messstreuung und der Unsicherheit der Wochen-Annahme. |
