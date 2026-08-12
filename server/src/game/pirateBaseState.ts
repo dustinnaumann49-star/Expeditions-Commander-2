@@ -89,7 +89,23 @@ const SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
 // liefert damit bei PIRATE_BASE_LOOT_PERCENT=0.35 pro vollem Beutezug ca. 15,4M/7M/2,1M, spuerbar
 // mehr als ein Silber-Container und in Metall-Reichweite eines Gold-Containers - angemessen fuer
 // eine Basis, die eine ~5.300-Schiffe-Garnison durchbrechen muss.
-const RESOURCE_CAP = { metall: 44000000, kristall: 20000000, deuterium: 6000000 };
+// UMGEWIDMET am 12.08.2026 (Nutzerentscheidung): Diese Werte begrenzen jetzt ausschliesslich die
+// BEUTE, nicht mehr den Lagerbestand der Basis.
+//
+// Grund: Der Deckel erfuellte zwei Aufgaben gleichzeitig, von denen nur eine beabsichtigt war.
+// Gewollt war die Beute-Kalibrierung (oben beschrieben). Ungewollt war die Nebenwirkung, dass ein
+// Gebaeude, dessen Kosten den Deckel uebersteigen, fuer eine Basis NIE bezahlbar wird - nachgerechnet
+// endete der Ausbau bei Metallmine 22, Kristallmine 20, Deuterium-Synthetisierer 19,
+// Roboterfabrik 14 und Nanitenfabrik 6. Danach waere jede weitere Produktion wieder vollstaendig in
+// Verteidigung geflossen, also derselbe Zustand wie vor der Behebung der Sparfalle
+// (economyBotTurn.ts), nur auf hoeherem Niveau. Erklaerte Absicht des Nutzers ist, dass Basen und
+// Bots unbegrenzt dasselbe tun koennen wie Spieler.
+//
+// Die Beute bleibt dadurch EXAKT wie kalibriert: hoechstens 35 % von 44M/20M/6M, also 15,4M/7M/2,1M
+// pro vollem Beutezug - unabhaengig davon, wie reich die Basis darueber hinaus wird.
+// ACHTUNG bei kuenftigen Aenderungen: Wer diese Zahlen anpasst, aendert NUR noch die Beute. Die
+// Ausbaugrenze ist damit entfallen und darf nicht versehentlich ueber diesen Weg wieder entstehen.
+const LOOT_BASIS_CAP = { metall: 44000000, kristall: 20000000, deuterium: 6000000 };
 // Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
 // aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
 const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
@@ -172,11 +188,10 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   });
   await runEconomyTick(base.state);
   runEconomyBotTurn(base.state);
-  // Ressourcen-Deckel NACH Produktion UND Bau-Entscheidung anwenden (siehe RESOURCE_CAP oben) -
-  // kappt nur noch ungenutzt liegen gebliebene Ueberschuesse, nicht die Produktion/Ausgaben selbst.
-  base.state.resources.metall = Math.min(base.state.resources.metall, RESOURCE_CAP.metall);
-  base.state.resources.kristall = Math.min(base.state.resources.kristall, RESOURCE_CAP.kristall);
-  base.state.resources.deuterium = Math.min(base.state.resources.deuterium, RESOURCE_CAP.deuterium);
+  // 12.08.2026: Der Deckel wird NICHT mehr auf den Lagerbestand angewandt - siehe LOOT_BASIS_CAP.
+  // Vorher stand hier ein Kappen der Ressourcen nach jedem Zug, was den AUSBAU der Basis
+  // unbeabsichtigt hart begrenzt hat (ein Gebaeude, das mehr kostet als der Deckel hergibt, wurde
+  // nie bezahlbar).
   savePirateBaseJson(id, JSON.stringify(base));
   return base;
 }
@@ -394,10 +409,12 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
   let lootText = '';
   let loot: { metall: number; kristall: number; deuterium: number } | undefined;
   if (anyNpcDestroyed) {
+    // Beute-Grundlage ist der Bestand, gedeckelt auf LOOT_BASIS_CAP - der tatsaechliche Bestand
+    // darf hoeher liegen (die Basis baut damit weiter aus), die Beute waechst aber nicht mit.
     loot = {
-      metall: Math.round(pState.resources.metall * PIRATE_BASE_LOOT_PERCENT),
-      kristall: Math.round(pState.resources.kristall * PIRATE_BASE_LOOT_PERCENT),
-      deuterium: Math.round(pState.resources.deuterium * PIRATE_BASE_LOOT_PERCENT),
+      metall: Math.round(Math.min(pState.resources.metall, LOOT_BASIS_CAP.metall) * PIRATE_BASE_LOOT_PERCENT),
+      kristall: Math.round(Math.min(pState.resources.kristall, LOOT_BASIS_CAP.kristall) * PIRATE_BASE_LOOT_PERCENT),
+      deuterium: Math.round(Math.min(pState.resources.deuterium, LOOT_BASIS_CAP.deuterium) * PIRATE_BASE_LOOT_PERCENT),
     };
     pState.resources.metall -= loot.metall;
     pState.resources.kristall -= loot.kristall;

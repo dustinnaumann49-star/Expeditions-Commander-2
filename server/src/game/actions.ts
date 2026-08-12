@@ -536,6 +536,10 @@ export async function runEconomyTick(state: PlayerState): Promise<void> {
 // hatten aber bisher keine eigene Zeitmessung wie der globale Heartbeat. Nur bei ungewoehnlicher
 // Dauer wird geloggt, um die Logs im Normalbetrieb nicht zuzuspammen.
 const SLOW_TICK_PHASE_MS = 1000;
+// Schwelle fuer die Gesamt-Aufschluesselung unten. Bewusst gleich der Heartbeat-Schwelle
+// (SLOW_USER_TICK_MS in heartbeat.ts), damit beide Warnungen zum selben Vorfall erscheinen und
+// sich gegenseitig ergaenzen: die eine nennt Nutzer und Spielstandgroesse, diese die Phasen.
+const SLOW_TICK_TOTAL_MS = 500;
 
 export async function tick(state: PlayerState): Promise<PlayerState> {
   const t0 = Date.now();
@@ -568,6 +572,21 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
     ['processOverdueRaidSpawnsForOtherUsers', t5 - t4],
     ['processAllDepartedGroupOperations', t6 - t5],
   ];
+  // 12.08.2026: Zusaetzlich zur Einzelphasen-Warnung eine GESAMT-Aufschluesselung, sobald der
+  // ganze tick() auffaellig lange braucht. Anlass: die wiederholten Warnungen "Langsamer tick() bei
+  // KI-Nyx: 650ms" liessen sich nicht zuordnen, weil KEINE einzelne Phase die 1000-ms-Schwelle
+  // riss - die Zeit verteilte sich. Ohne Aufschluesselung war nicht zu entscheiden, ob es die
+  // Kampfauflösung, das Speichern oder etwas Drittes ist. Die Schwelle liegt bewusst unter
+  // SLOW_TICK_PHASE_MS, damit genau dieser Fall sichtbar wird.
+  const totalMs = t6 - t0;
+  if (totalMs > SLOW_TICK_TOTAL_MS) {
+    const breakdown = phases
+      .filter(([, ms]) => ms > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, ms]) => `${label} ${ms}ms`)
+      .join(', ');
+    console.warn(`tick(): Gesamt ${totalMs}ms fuer Nutzer ${state.userId} - Aufschluesselung: ${breakdown || 'alle Phasen unter 1ms'}`);
+  }
   for (const [label, ms] of phases) {
     if (ms > SLOW_TICK_PHASE_MS) {
       console.warn(`tick(): langsame Phase "${label}" fuer Nutzer ${state.userId}: ${ms}ms`);
