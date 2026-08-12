@@ -80,7 +80,14 @@ export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; er
       savePlayerState(state);
       const userTickMs = Date.now() - userTickStart;
       if (userTickMs > SLOW_USER_TICK_MS) {
-        console.warn(`runGlobalHeartbeat: Langsamer tick() bei ${u.username} (${u.isBot ? 'Bot' : 'Mensch'}, id=${u.id}): ${userTickMs}ms`);
+        // Groesse des Spielstands mitloggen: sie geht direkt in die tick()-Dauer ein, weil der
+        // Zustand bei jedem Zug komplett als ein JSON serialisiert wird. Ohne diese Angabe liess
+        // sich am 11.08.2026 nicht entscheiden, ob ein langsamer Bot-Zug an seiner Spielweise oder
+        // schlicht an seiner angesammelten Nachrichten-Historie liegt.
+        const stateKb = Math.round(JSON.stringify(state).length / 1024);
+        console.warn(
+          `runGlobalHeartbeat: Langsamer tick() bei ${u.username} (${u.isBot ? 'Bot' : 'Mensch'}, id=${u.id}): ${userTickMs}ms, Spielstand ${stateKb} KB, ${state.messages.length} Nachrichten`
+        );
       }
     } catch (err) {
       errors++;
