@@ -1,4 +1,5 @@
-import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed } from './actions.js';
+import { startBuild, startDefenseBuild, startBuildingConstruction, startResearch, startModuleUpgrade, startShipModuleUpgrade, startDefenseModuleUpgrade, energyProduced, energyConsumed, buildingCostForLevel, researchCostForLevel } from './actions.js';
+import { BUILDINGS } from './data/buildings.js';
 import { RESEARCH } from './data/research.js';
 import { BUILDING_MODULES } from './data/buildingModules.js';
 import { SHIP_MODULES } from './data/shipModules.js';
@@ -7,7 +8,7 @@ import { SHIPS } from './data/ships.js';
 import { DEFENSES } from './data/defenses.js';
 import { MAX_RESEARCH_LEVEL, MAX_BUILD_SLOTS, MAX_DEFENSE_SLOTS, MAX_RESEARCH_SLOTS, MAX_BUILDING_SLOTS, MAX_SHIP_MODULE_SLOTS, MAX_DEFENSE_MODULE_SLOTS } from './data/combatConstants.js';
 import { setPlayerClass } from './classActions.js';
-import type { PlayerState } from './types.js';
+import type { PlayerState, ResourceCost } from './types.js';
 
 // Wirtschafts-Entscheidungslogik, GETRENNT von bot.ts ausgelagert (Nutzerentscheidung Juli 2026:
 // Piratenbasen wachsen jetzt "genau wie ein Spieler" - eigene Wirtschaft/Forschung/Flotten-
@@ -90,12 +91,88 @@ function maybeStartResearch(state: PlayerState): void {
   }
 }
 
+
+// ===== RUECKLAGE FUER AUSBAUZIELE (12.08.2026) =====
+// Befund aus dem Livebetrieb: Bots UND Piratenbasen sassen dauerhaft in einer Sparfalle. Der
+// Fallback "billigstes, ein Stueck" unten in maybeBuildShips/-Defense raeumte bei JEDEM Zug (alle
+// zwei Minuten) das letzte Metall ab. Dadurch konnte nie genug fuer den naechsten Minen- oder
+// Forschungsausbau zusammenkommen, der ein Vielfaches kostet - und weil die Minen nicht wuchsen,
+// blieb auch das Metalleinkommen klein. Gemessen an den echten Konten:
+//   KI-Nyx        Metall 21.933  gegen Kristall 84,5 Mio / Deuterium 93,3 Mio, Minen Stufe 9-11,
+//                 Forschung Stufe 2-3, dafuer 8.614 Leichte Lasergeschuetze
+//   KI-Vega       Metall  2.925  gegen Kristall 85,6 Mio / Deuterium 106,9 Mio
+//   Piratenbasis  Metall 37.928  bei Kristall UND Deuterium exakt am RESOURCE_CAP,
+//                 20.112 Leichte Lasergeschuetze (Startbestand war 1.120)
+// Das Leichte Lasergeschuetz ist mit 40.000 Gesamtkosten die guenstigste unbegrenzt baubare
+// Anlage - der Fallback landete deshalb praktisch immer dort. Kristall und Deuterium liefen
+// derweil bis zum Deckel voll und die Produktion ins Leere.
+//
+// Loesung: vor Schiffen und Verteidigung wird zurueckgelegt, was der naechste Gebaeude- bzw.
+// Forschungsschritt kostet. Ausgegeben wird nur der Ueberschuss. Das ist selbstbegrenzend - sobald
+// der Ausbau bezahlt ist (maybeBuildBuilding/maybeStartResearch laufen VOR den Bauteilen), faellt
+// die Ruecklage weg und der Ueberschuss fliesst wieder in Schiffe/Verteidigung.
+//
+// BEWUSST NICHT zurueckgelegt wird fuer Module: die laufen ueber denselben Gebaeude-Slot und
+// wuerden die Ruecklage sonst dauerhaft blockieren.
+function nextBuildingCost(state: PlayerState): ResourceCost | null {
+  if (state.buildingQueue.length > 0) return null; // Ausbau laeuft bereits - nichts zurueckzulegen
+  const candidates: string[] = [];
+  if (!hasEnergyHeadroom(state)) candidates.push('solarkraftwerk');
+  candidates.push(...[...MINE_IDS].sort((a, b) => (state.buildings[a] || 0) - (state.buildings[b] || 0)));
+  if ((state.buildings.roboterfabrik || 0) < 5) candidates.push('roboterfabrik');
+  candidates.push('nanitenfabrik');
+  for (const id of candidates) {
+    const b = BUILDINGS.find((x) => x.id === id);
+    if (!b) continue;
+    const level = (state.buildings[id] || 0) + 1;
+    if (b.maxLevel && level > b.maxLevel) continue;
+    return buildingCostForLevel(b, level);
+  }
+  return null;
+}
+
+function nextResearchCost(state: PlayerState): ResourceCost | null {
+  if (state.researchQueue.length >= MAX_RESEARCH_SLOTS) return null;
+  for (const tech of RESEARCH) {
+    const level = state.research[tech.id] || 0;
+    if (level >= MAX_RESEARCH_LEVEL) continue;
+    return researchCostForLevel(tech, level + 1);
+  }
+  return null;
+}
+
+// Was darf fuer Schiffe/Verteidigung tatsaechlich ausgegeben werden?
+function spendableResources(state: PlayerState): ResourceCost {
+  const reserve = { metall: 0, kristall: 0, deuterium: 0 };
+  for (const c of [nextBuildingCost(state), nextResearchCost(state)]) {
+    if (!c) continue;
+    reserve.metall += c.metall;
+    reserve.kristall += c.kristall;
+    reserve.deuterium += c.deuterium;
+  }
+  return {
+    metall: Math.max(0, state.resources.metall - reserve.metall),
+    kristall: Math.max(0, state.resources.kristall - reserve.kristall),
+    deuterium: Math.max(0, state.resources.deuterium - reserve.deuterium),
+  };
+}
+
+function affordableFrom(spendable: ResourceCost, cost: ResourceCost | undefined, count: number): boolean {
+  if (!cost) return false;
+  return (
+    cost.metall * count <= spendable.metall &&
+    cost.kristall * count <= spendable.kristall &&
+    cost.deuterium * count <= spendable.deuterium
+  );
+}
+
 function countInFleetOrQueue(state: PlayerState, shipId: string): number {
   return (state.fleet[shipId] || 0) + state.buildQueue.filter((j) => j.shipId === shipId).reduce((a, j) => a + j.count, 0);
 }
 
 function maybeBuildShips(state: PlayerState): void {
   if (state.buildQueue.length >= MAX_BUILD_SLOTS) return;
+  const spendable = spendableResources(state);
   // Kampfschiffe gemischt aufbauen statt immer denselben (guenstigsten) Typ zuerst zu versuchen -
   // der Typ mit dem aktuell geringsten Bestand (Flotte + Warteschlange) kommt zuerst dran. Das
   // ergibt von selbst eine durchmischte Flotte statt einer reinen Masse des billigsten Schiffs;
@@ -103,12 +180,14 @@ function maybeBuildShips(state: PlayerState): void {
   // einfach fehlschlaegt (ok:false) und der naechstguenstigere Typ in der sortierten Liste drankommt.
   const sortedCombatIds = [...COMBAT_SHIP_IDS].sort((a, b) => countInFleetOrQueue(state, a) - countInFleetOrQueue(state, b));
   for (const id of sortedCombatIds) {
+    if (!affordableFrom(spendable, SHIPS.find((x) => x.id === id)?.cost, 5)) continue;
     if (startBuild(state, id, 5).ok) return;
   }
   // Flexibler Fallback (Nutzerentscheidung, Neugestaltung 04.08.2026): das eigentliche Bauvorhaben
   // (5 Stueck) war fuer JEDEN Typ zu teuer - statt den Zug leer enden zu lassen, auf eine kleinere,
   // bezahlbare Alternative ausweichen (guenstigster Typ zuerst, jeweils nur 1 Stueck).
   for (const id of COMBAT_SHIP_IDS_BY_COST) {
+    if (!affordableFrom(spendable, SHIPS.find((x) => x.id === id)?.cost, 1)) continue;
     if (startBuild(state, id, 1).ok) return;
   }
 }
@@ -119,17 +198,20 @@ function countDefenseInStockOrQueue(state: PlayerState, defId: string): number {
 
 function maybeBuildDefense(state: PlayerState): void {
   if (state.defenseQueue.length >= MAX_DEFENSE_SLOTS) return;
+  const spendable = spendableResources(state);
   // Gemischte Verteidigung statt nur Raketenwerfer: dieselbe "geringster Bestand zuerst"-
   // Sortierung wie bei maybeBuildShips. Schildkuppeln (maxCount:1) und Sentinel-/Ultimate-Kanone
   // (maxCount:150/60) fallen automatisch aus der Rotation, sobald ihr Limit erreicht ist -
   // startDefenseBuild() liefert dann ok:false, naechster Typ wird versucht.
   const sortedDefenseIds = [...DEFENSE_IDS].sort((a, b) => countDefenseInStockOrQueue(state, a) - countDefenseInStockOrQueue(state, b));
   for (const id of sortedDefenseIds) {
+    if (!affordableFrom(spendable, DEFENSES.find((x) => x.id === id)?.cost, 10)) continue;
     if (startDefenseBuild(state, id, 10).ok) return;
   }
   // Flexibler Fallback, analog zu maybeBuildShips oben: 10 Stueck war fuer JEDEN Typ zu teuer ->
   // guenstigste Anlage zuerst, jeweils nur 1 Stueck.
   for (const id of DEFENSE_IDS_BY_COST) {
+    if (!affordableFrom(spendable, DEFENSES.find((x) => x.id === id)?.cost, 1)) continue;
     if (startDefenseBuild(state, id, 1).ok) return;
   }
 }

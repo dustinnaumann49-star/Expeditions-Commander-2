@@ -397,7 +397,10 @@ export function checkHomeBuildingTierUnlock(state: PlayerState): void {
   if (allMet) state.buildingTier = (state.buildingTier + 1) as 1 | 2 | 3;
 }
 
-function buildingCostForLevel(building: BuildingDefinition, level: number): ResourceCost {
+// Exportiert fuer die Ruecklagen-Logik der KI (economyBotTurn.ts) - dort muessen die Kosten des
+// NAECHSTEN Ausbauschritts bekannt sein, bevor entschieden wird, ob Ressourcen fuer Schiffe oder
+// Verteidigung ausgegeben werden duerfen.
+export function buildingCostForLevel(building: BuildingDefinition, level: number): ResourceCost {
   const f = Math.pow(building.costGrowth, level - 1);
   return {
     metall: Math.round(building.baseCost.metall * f),
@@ -845,7 +848,8 @@ export function startDefenseModuleUpgrade(state: PlayerState, moduleId: string):
 
 // ========== FORSCHUNG ==========
 
-function researchCostForLevel(tech: (typeof RESEARCH)[number], level: number): ResourceCost {
+// Exportiert, siehe buildingCostForLevel() - gleicher Zweck.
+export function researchCostForLevel(tech: (typeof RESEARCH)[number], level: number): ResourceCost {
   const f = Math.pow(tech.costGrowth, level - 1);
   return {
     metall: Math.round(tech.baseCost.metall * f),
