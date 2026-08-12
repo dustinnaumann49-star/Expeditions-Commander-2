@@ -471,6 +471,13 @@ Frequenzverdopplung.
 >    den Loewenanteil - fuer den kleineren koennte sich das Helfen dann kaum noch lohnen. Vor der
 >    Umsetzung pruefen, ob ein Mindestanteil je Teilnehmer noetig ist.
 >
+> **NEBENWIRKUNG AUF DIE WIRTSCHAFTSKLASSEN (ergaenzt 12.08.2026).** Wer hier etwas aendert,
+> verschiebt automatisch die Balance der Wirtschaftsklassen - siehe Abschnitt 4b. Kurz: Das
+> Deuterium der Spieler stammt zu rund 97 % aus Raid-Containern, nicht aus den Minen. Der
+> Schmuggler-Bonus (halbierte Handelsgebuehr) haengt damit vollstaendig am Raid-Ertrag. Faellt der
+> auf einen Bruchteil, faellt der Schmuggler von +0,92 auf unter +0,25 Mrd/Tag und damit hinter
+> den Prospektor zurueck. **Die Klassenwahl nach der Aenderung neu bewerten, nicht vorher.**
+>
 > **Empfehlung: Variante 4, hilfsweise Variante 2.** Variante 4 trifft die Ursache am genauesten
 > (Belohnung folgt dem Beitrag) und bleibt unabhaengig von der Spielerzahl stabil, ist aber die
 > aufwendigste. Variante 2 (Halter bekommen einen festen Bruchteil) erreicht die Stabilitaet mit
@@ -1579,6 +1586,53 @@ Quote.
 
 ---
 
+## 4b. Wirtschaftsklassen: gemessen am 12.08.2026, Entscheidung offen
+
+**Anlass:** Nutzerbeobachtung - "ich empfinde, dass nur der Prospektor Sinn macht, wir nutzen auch
+nichts anderes". Der Plan enthielt zu den WIRTSCHAFTS-Klassen (`economyClasses.ts`, unabhaengig von
+den Kampf-Klassen aus Abschnitt 4a) bis dahin keinen einzigen Vergleich.
+
+**Gemessen am tatsaechlichen Ausbaustand der Spieler** (Minen 36/32/30, Mining-Forschung 10):
+
+| Klasse | laufender Vorteil | Grundlage |
+|---|---|---|
+| **Schmuggler** | **+0,92 Mrd Werteinheiten/Tag** | Handelsgebuehr 20 % -> 10 % auf das getauschte Deuterium |
+| Prospektor | +0,22 Mrd/Tag | +20 % auf die Minen; dazu je nach Mining-Flotte +0,06 bis +0,3 aus den Asteroiden |
+| Ingenieur | **+17,6 % Bauleistung** | Bauzeit-Multiplikator faellt von 0,739 auf 0,628 (Robo 10 / Nanit 10 / Forschung 10) |
+
+**Die Einschaetzung des Nutzers ist damit widerlegt - der Prospektor ist die schwaechste der drei
+Klassen, nicht die einzig sinnvolle.** Er liefert rund 1 bis 3 % der Gesamteinnahmen. Sein
+DM-Bonus (+30 % Fundrate im Asteroidenfeld) ist zusaetzlich wertlos, solange DM nicht knapp ist -
+laut Nutzer ist sie das nicht. Und auf die Allianz-Station wirkt sein Mining-Bonus gar nicht
+(siehe Abschnitt 2a, Punkt 3).
+
+**Warum sich der Prospektor trotzdem richtig anfuehlt:** In den ersten Wochen ist er es auch - da
+sind Ressourcen knapp, Bauzeiten kurz, und +20 % Ertrag sind sofort in der Kopfleiste sichtbar.
+-15 % Bauzeit sieht man nie. Die Rangfolge kippt im Verlauf, ohne dass es jemand bemerkt, und
+gewechselt wird danach nicht mehr.
+
+**Der Schmuggler-Wert haengt vollstaendig am Raid-Defekt.** Nachgerechnet: Der
+Deuterium-Synthetisierer auf Stufe 30 liefert 82,9 Mio/Tag. Die Raid-Container liefern **2,14 Mrd
+pro gewonnenem Raid**, bei vier verteidigten Raids 8,56 Mrd pro Raid-Tag, gemittelt 2,45 Mrd/Tag -
+das **29-fache der Mine**. Da Deuterium im Spiel wenig gebraucht wird, wird es laufend in Metall
+und Kristall getauscht, und genau darauf wirkt die halbierte Gebuehr (+12,5 % je Tausch).
+-> **Wird der Raid-Ertrag nach Entscheidung 3 korrigiert, bricht der Schmuggler-Vorteil mit ein.**
+Die Wirtschaftsklassen sind ueber das Deuterium fest an die Raid-Frage gekoppelt.
+
+**Zum Ingenieur bleibt eine offene Frage.** Sein Wert haengt daran, ob ZEIT oder RESSOURCEN der
+Engpass sind. Der Nutzer hat rund 50 Mrd Werteinheiten unverbaut liegen, was zunaechst nach einem
+Zeitengpass aussieht - auf Rueckfrage ist das aber **bewusstes Sparen**, kein Ueberschuss. Damit ist
+die Frage NICHT entschieden. Sie faellt ohnehin mit Entscheidung 9 zusammen (Zeit als
+Haupt-Engpass) und gehoert dorthin.
+
+**Kein Handlungsbedarf vor Block A.** Die Rangfolge haengt an zwei Groessen, die dort ohnehin neu
+bestimmt werden: dem Raid-Ertrag (Schmuggler) und der Frage Zeit gegen Ressourcen (Ingenieur).
+Eine Kalibrierung jetzt muesste danach wiederholt werden. Was fehlt und nachzuholen ist: **ein
+laufender Vorteil fuer den Prospektor, der nicht an einer einzelnen Quelle haengt** - er ist die
+einzige der drei Klassen ohne Kopplung an Raid oder Bauzeit und faellt dadurch strukturell zurueck.
+
+---
+
 ## 4a. Klassen-Balance: gemessen am 11.08.2026, Entscheidung offen
 
 **Anlass:** Nutzerfrage, ob an den Klassen etwas anzupassen ist. Der Plan enthielt dazu bis dahin
@@ -2006,6 +2060,10 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   16,58 Mrd/Tag statt der im Plan gefuehrten 6,31 - **rund 52 % aller Einnahmen und damit ein
   Verstoss gegen Abnahmekriterium 5 im Ist-Zustand.** Die geplante Halbierung reicht nicht.
   Vollstaendige Rechnung und drei Loesungsvarianten im Kasten bei Entscheidung 3.
+- **Wirtschaftsklassen nach der Raid-Korrektur neu bewerten (NEU 12.08.2026).** Der
+  Schmuggler liegt derzeit mit +0,92 Mrd/Tag klar vor Prospektor (+0,22), aber ausschliesslich ueber
+  das Deuterium aus Raid-Containern - 97 % seines Werts haengen am Raid-Defekt. Nach dessen
+  Korrektur neu messen. Vollstaendige Rechnung in Abschnitt 4b.
 - **Piratenbasis-Schwierigkeit nach der Bot-Reparatur neu messen (NEU 12.08.2026).** Die
   Ruecklagen-Aenderung vom 12.08.2026 (Abschnitt 2a, Punkt 9) veraendert, was Piratenbasen bauen -
   weg von der reinen Masse billigster Geschuetze. Wirkung baut sich erst ueber Tage auf und ist
@@ -2225,6 +2283,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
 | 11.08.2026 | **Raid-Ertrag skaliert mit der Zahl der Accounts - Entscheidung 3 steht auf zu niedrigen Zahlen** (Nutzerhinweis: rund 10.000 DM an einem Raid-Tag, weil er eigenen Raid, den seiner Frau und die beiden Bot-Raids verteidigt). Im Code bestaetigt: `finalizeRaidWaves()` ruft `grantContainers()` fuer den Verteidiger UND jeden Halter auf, jeder bekommt die volle Menge - korrekt nach Punkt 5 der README, aber diese Regel stammt aus dem Kontext gemeinsamer Expeditionen, wo alle EINE Mission zusammen fliegen. Bei Raids sind es N getrennte Ereignisse, jedes voll verguetet, und die Belohnung haengt nicht am Beitrag. Nachgerechnet: ein eigener Raid gibt 1.800 DM und 14,51 Mrd Ressourcenwert, vier verteidigte Raids 7.200 DM und 58,02 Mrd pro Raid-Tag = **16,58 Mrd/Tag gegen die im Plan gefuehrten 6,31 Mrd/Tag** (Faktor 2,6; DM Faktor 3,5). Der Raid ist damit **rund 52 % aller Einnahmen und verletzt Abnahmekriterium 5 bereits im Ist-Zustand**; die geplante Halbierung auf 5/3/1 landet bei 8,29 Mrd/Tag und damit immer noch ueber dem bisher angenommenen Ist-Wert. **Kern des Problems ist nicht die Hoehe, sondern die Skalierung** - der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot. Vier Loesungsvarianten im Kasten bei Entscheidung 3 dokumentiert. **Variante 4 stammt vom Nutzer:** fester Topf pro Raid, aufgeteilt nach tatsaechlichem Beitrag - technisch bereits moeglich, weil `combat.ts` `dmgDealt` und `dmgTakenA` schon besitzer-bewusst fuehrt. Zwei Bedingungen dabei zwingend: der Topf muss FEST pro Raid sein (sonst bleibt die Skalierung bestehen - Schadensmessung loest Fairness, nicht Hoehe), und der Beitrag muss Schaden GEMACHT plus ABSORBIERT zaehlen, sonst waere das Bollwerk mit Waffen x1 ausgerechnet auf seinem Heimatfeld der schlechtest bezahlte Teilnehmer. Empfehlung: Variante 4, hilfsweise Variante 2. **Bewusst NICHT vorgezogen umgesetzt** - anders als die Reparaturen der Vortage ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit unerwarteter Nebenwirkung, und die Korrektur veraendert die Einnahmen-Baseline, an der Block A haengt. |
+| 12.08.2026 | **Wirtschaftsklassen erstmals verglichen** (Nutzerbeobachtung: "nur der Prospektor macht Sinn"). Neuer Abschnitt 4b. **Die Einschaetzung ist widerlegt - der Prospektor ist die schwaechste der drei.** Gemessen am echten Ausbaustand: Schmuggler +0,92 Mrd Werteinheiten/Tag, Prospektor +0,22, Ingenieur +17,6 % Bauleistung. Der Prospektor liefert damit 1 bis 3 % der Gesamteinnahmen, sein DM-Bonus ist wertlos solange DM nicht knapp ist, und auf die Allianz-Station wirkt sein Mining-Bonus gar nicht. **Wichtiger als die Rangfolge ist die Kopplung:** der Schmuggler-Wert stammt fast vollstaendig aus dem Deuterium der Raid-Container (2,14 Mrd je Raid gegen 82,9 Mio/Tag aus der Mine - Faktor 29), das mangels Verwendung laufend getauscht wird. Wird der Raid-Ertrag nach Entscheidung 3 korrigiert, bricht der Schmuggler mit ein. Als gegenseitiger Verweis in beiden Abschnitten eingetragen. **Eigene Fehlaussage korrigiert:** aus den rund 50 Mrd unverbauten Werteinheiten hatte ich auf einen Zeitengpass geschlossen und daraus den Ingenieur als beste Wahl abgeleitet - auf Rueckfrage ist das bewusstes Sparen, kein Ueberschuss. Die Frage Zeit gegen Ressourcen bleibt damit offen und faellt mit Entscheidung 9 zusammen. |
 | 12.08.2026 | **Sparfalle bei Bots und Piratenbasen behoben** (Details in Abschnitt 2a, Punkt 9). Aufgedeckt ueber eine CPU-Spitze in Coolify, verfolgt ueber Heartbeat-Warnungen bis in die Datenbank des laufenden Servers. Befund: beide Bots sind 13 Tage alt, stehen bei Minenstufe 11 (Menschen: 36) und hatten LEERE Gebaeude- und Forschungs-Warteschlangen - seit 13 Tagen kein einziger Ausbau. Ursache ist der Fallback "billigstes, ein Stueck", der jeden Zug das letzte Metall abraeumt; nachgerechnet reicht die Metallproduktion nie fuer den naechsten Minenschritt, weil alle drei Takte ein Lasergeschuetz gekauft wird. Behoben durch eine Ruecklage fuer den naechsten Gebaeude-/Forschungsschritt. **Methodisch wichtig:** eine eigens gebaute Wirtschaftssimulation zeigte KEINEN Unterschied und wurde als unbrauchbar verworfen - sie liess den Bot auf 2,5 Billionen Metall wachsen, drei Groessenordnungen ueber der Realitaet. Belegt wurde ausschliesslich ueber den realen Datenbankzustand und die Kosten-/Produktionsformeln. Beinahe waere die Aenderung auf Basis einer falschen Simulation verworfen und zuvor auf Basis einer unbelegten Vermutung ausgeliefert worden. **Offen:** die Aenderung wirkt auch auf Piratenbasen (beobachtet: 20.112 Leichte Lasergeschuetze bei Startbestand 1.120) und verschiebt damit deren Schwierigkeit - als Messpunkt in Abschnitt 7 eingetragen. |
 | 11.08.2026 | **Klassen: situative Aufschlaege statt reiner Zahlen-Angleichung** (zweiter Schritt desselben Tages, Details in Abschnitt 4a). Nach der Angleichung lagen alle drei Klassen ueberall gleichauf - damit gab es keinen inhaltlichen Grund mehr, eine bestimmte zu waehlen. Die Nutzeridee, die Boni komplett zu gaten (Kanonier nur Angriff, Bollwerk nur Verteidigung), wurde durchgerechnet und **verworfen**: Angriffe sind rund fuenfmal haeufiger als Raids, der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen und zwei von drei Klassen die Haelfte der Zeit wirkungslos. Umgesetzt stattdessen: Grundbonus ueberall plus Aufschlag auf dem Heimatfeld (Kanonier Waffen x2,0 -> x2,4 ausserhalb der Heimatverteidigung; Bollwerk Schild/Panzerung x1,6 -> x2,4 bei Heimatverteidigung; Kommandant x1,4 flach). Neues Feld `homeDefense` in `CombatWorkerRequest`, nur aus `raids.ts` gesetzt und bewusst NICHT an `allowRetreat: false` gekoppelt, obwohl heute deckungsgleich. Der Verstaerker-Fall funktioniert ohne Zusatzarbeit, weil `OwnedFleetContribution` bereits eine eigene `playerClass` traegt. Endstand: Wochenbilanz 69,1 / 65,2 / 70,7, jede Klasse auf ihrem Heimatfeld klar vorn. Die Restspanne von ~8 % wird bewusst nicht weiter justiert - sie liegt innerhalb der Messstreuung und der Unsicherheit der Wochen-Annahme. |
 | 11.08.2026 | **Klassen angepasst: Bollwerk x1,5 -> x2,0, Kommandant x4/3 -> x1,5** (Nutzerentscheidung gegen meine Empfehlung abzuwarten - mit dem Argument, zwei von drei Klassen seien sonst totes Inventar; das Argument war richtig). **Meine Begruendung fuers Abwarten war zusaetzlich sachlich falsch:** ich hatte behauptet, eine Feindstaerke-Korrektur in Block D wuerde den Kanonier-Vorsprung von selbst schrumpfen lassen. Nachgerechnet ist das Gegenteil richtig - Waffen machen nur 1,6 % der Roh-Machtbasis aus, Schild und Panzerung 98,4 %; eine solche Korrektur haette die Machtbasis des Kanoniers um 1,6 %, die des Bollwerks aber um 49,2 % angehoben und das Bollwerk damit noch weiter zurueckgeworfen. **Der Nebenbefund ist wichtiger als der Klassen-Punkt selbst und als eigener Messpunkt in Abschnitt 7 eingetragen:** die Gegner-Skalierung haengt fast ausschliesslich an Schild/Panzerung, Waffen zu bauen ist ihr gegenueber nahezu kostenlos - beruehrt Entscheidung 6 direkt. Die neuen Werte sind hergeleitet, nicht gefittet (ein Punkt Schaden ist etwa doppelt so viel wert wie ein Punkt Robustheit, Budget daher schadens-aequivalent statt nominal), und durch einen unabhaengigen Sweep bestaetigt: Gleichstand liegt bei genau 2,0. Nach der Anpassung liegen alle drei Klassen innerhalb der Streuung gleichauf, mit weiterhin klar unterschiedlichen Profilen (Kanonier 19 Runden und 100 % Siegquote im Elite-Bollwerk, Bollwerk 45 Runden und 95 %, dafuer geringste Raid-Schwankung). **Client-Spiegel vorab geprueft und gefunden:** `lib/combatInfo.ts` trug die Multiplikatoren an zwei Stellen hartkodiert - die Bau-Karten haetten weiter +50 % Schild angezeigt, waehrend der Kampf mit +100 % rechnet. Laeuft jetzt ueber `/game/data`. |
