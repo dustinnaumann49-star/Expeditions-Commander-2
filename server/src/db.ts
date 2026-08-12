@@ -261,6 +261,22 @@ export function loadGameStateJson(userId: number): string | undefined {
   return row?.state_json;
 }
 
+// Diagnose: Groesse jedes Spielstands in Bytes, OHNE das JSON zu laden oder zu parsen -
+// LENGTH() rechnet SQLite direkt auf der Spalte. Hintergrund (11.08.2026): der Heartbeat meldete
+// wiederholt langsame ticks fuer KI-Nyx, und der Verdacht fiel auf die Groesse des Spielstands
+// (Kampf-Nachrichten mit Replay-Daten, siehe README zum Replay-Speicherbedarf). Ohne direkten
+// Datenbank-Zugriff auf dem Server liess sich das nicht pruefen - daher diese Abfrage.
+export function listGameStateSizes(): { userId: number; username: string; isBot: boolean; bytes: number }[] {
+  return db
+    .prepare(
+      `SELECT g.user_id AS userId, u.username AS username, u.is_bot AS isBot, LENGTH(g.state_json) AS bytes
+       FROM game_states g JOIN users u ON u.id = g.user_id
+       ORDER BY bytes DESC`
+    )
+    .all()
+    .map((r: any) => ({ userId: r.userId, username: r.username, isBot: !!r.isBot, bytes: r.bytes || 0 }));
+}
+
 export function saveGameStateJson(userId: number, stateJson: string): void {
   db.prepare(
     `INSERT INTO game_states (user_id, state_json, updated_at) VALUES (?, ?, ?)

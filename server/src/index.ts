@@ -8,14 +8,31 @@ import { runGlobalHeartbeat } from './game/heartbeat.js';
 import { ensureBotUsers } from './game/bot.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
 import { checkModuleIntegrity } from './game/moduleIntegrity.js';
+import { listGameStateSizes } from './db.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
 // zuverlaessig, aber unklar ob der Server tatsaechlich den neuesten Commit ausfuehrt). Liest den
 // aktuell ausgecheckten Commit-Hash EINMAL beim Start - faellt auf 'unbekannt' zurueck, falls kein
 // .git-Verzeichnis im Produktions-Image vorhanden ist (z.B. bei manchen Docker-Build-Strategien).
+// Der Commit-Hash wird zuerst aus der Umgebung gelesen und nur ersatzweise per git ermittelt.
+// Grund (11.08.2026): im Coolify-Deployment gibt es kein .git-Verzeichnis, `git rev-parse` schlug
+// dort bei JEDEM Start fehl ("fatal: not a git repository") und /api/health meldete dauerhaft
+// "unbekannt" - womit sich nicht mehr pruefen liess, ob ein Deploy tatsaechlich durchgegriffen hat.
+// Welche Variable die Plattform setzt, ist nicht garantiert; deshalb mehrere Kandidaten und als
+// letzte Moeglichkeit eine, die sich in Coolify von Hand als Umgebungsvariable eintragen laesst.
+const COMMIT_ENV_CANDIDATES = ['SOURCE_COMMIT', 'COOLIFY_SOURCE_COMMIT', 'GIT_COMMIT_SHA', 'GIT_COMMIT', 'DEPLOY_COMMIT'];
 let deployedCommit = 'unbekannt';
+for (const key of COMMIT_ENV_CANDIDATES) {
+  const v = process.env[key];
+  if (v && v.trim()) {
+    deployedCommit = v.trim().slice(0, 7);
+    break;
+  }
+}
 try {
-  deployedCommit = execSync('git rev-parse --short HEAD', { cwd: process.cwd(), encoding: 'utf-8' }).trim();
+  if (deployedCommit === 'unbekannt') {
+    deployedCommit = execSync('git rev-parse --short HEAD', { cwd: process.cwd(), encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  }
 } catch {
   // .git nicht verfuegbar im Image - bleibt bei 'unbekannt', kein Abbruch noetig.
 }
@@ -59,6 +76,19 @@ app.listen(PORT, async () => {
     checkModuleIntegrity();
   } catch (err) {
     console.error('Modul-Pruefung-Fehler:', err);
+  }
+
+  // Diagnose-Ausgabe der Spielstand-Groessen. Kostet eine einzige SQL-Abfrage beim Start.
+  // Anlass: wiederholt langsame ticks fuer einen einzelnen Bot (siehe listGameStateSizes()).
+  // Der Spielstand wird als EIN JSON gespeichert und bei jedem Zug komplett neu serialisiert -
+  // seine Groesse geht daher direkt in die tick()-Dauer ein.
+  try {
+    const sizes = listGameStateSizes();
+    const total = sizes.reduce((a, b) => a + b.bytes, 0);
+    console.log(`[Spielstand-Groessen] ${sizes.length} Konten, zusammen ${(total / 1024).toFixed(0)} KB:`);
+    sizes.forEach((s) => console.log(`  ${(s.bytes / 1024).toFixed(0).padStart(6)} KB  ${s.username}${s.isBot ? ' (Bot)' : ''}`));
+  } catch (err) {
+    console.error('Spielstand-Groessen-Fehler:', err);
   }
 
   // KI-Spieler-Accounts (KI-Vega/KI-Nyx) throttled wieder eingefuehrt (30.07.2026, siehe README
