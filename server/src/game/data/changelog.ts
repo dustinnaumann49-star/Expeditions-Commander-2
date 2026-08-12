@@ -9,6 +9,14 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '12.08.2026',
+    title: 'KI-Mitspieler und Piratenbasen entwickeln sich wieder',
+    changes: [
+      'KI-Vega und KI-Nyx steckten seit knapp zwei Wochen fest: Sie hingen bei Minenstufe 11 und hatten seit dem 30. Juli kein einziges Gebäude und keine Forschung mehr gestartet. Der Grund war eine Sparfalle - die KI gab bei jedem Zug ihr letztes Metall für die billigste Verteidigungsanlage aus und konnte dadurch nie genug für den nächsten Minenausbau ansammeln, der ein Vielfaches kostet. Sichtbar wurde das an KI-Nyx: 8.614 Leichte Lasergeschütze bei gleichzeitig unter 40.000 Metall und randvollen Kristall- und Deuteriumlagern.',
+      'Behoben: Die KI legt jetzt zurück, was der nächste Gebäude- oder Forschungsschritt kostet, bevor sie Schiffe oder Verteidigung baut. Piratenbasen nutzen dieselbe Logik und waren genauso betroffen - eine beobachtete Basis hatte 20.112 Leichte Lasergeschütze angehäuft, gestartet war sie mit 1.120. Ihre Zusammensetzung wird sich dadurch spürbar verändern: weniger billige Massengeschütze, dafür höhere Minen, mehr Forschung und eine gemischtere Verteidigung.',
+    ],
+  },
+  {
     date: '11.08.2026',
     title: 'Klassen ausbalanciert, Flottenlimit auf 1 Million',
     changes: [
