@@ -1530,6 +1530,56 @@ Server-Reset gegen die Basis simulieren (Abschnitt 7).**
 150/60 erreichen sie den nie, werden also in jedem Kampf einzeln gerechnet. Bei 210 Einheiten
 folgenlos, aber die Luecke besteht.
 
+**10. Ausbaugrenze der Piratenbasen aufgehoben (12.08.2026, Nutzerentscheidung).**
+*Vom Nutzer entdeckt*, direkt im Anschluss an die Sparfallen-Behebung (Punkt 9): Wenn Basen einen
+Ressourcen-Deckel haben, wie sollen sie dann je Gebaeude bezahlen, die mehr kosten?
+
+**Der Deckel erfuellte zwei Aufgaben, nur eine davon war beabsichtigt.** Gewollt: die
+Beute-Kalibrierung (35 % des Bestands, gedeckelt auf 15,4M/7M/2,1M pro Beutezug). Ungewollt: eine
+harte Ausbaugrenze, weil ein Gebaeude oberhalb des Deckels nie bezahlbar wird. Nachgerechnet:
+
+| Gebaeude | letzte erreichbare Stufe | Stand 12.08.2026 |
+|---|---|---|
+| Metallmine | 22 | 13 |
+| Kristallmine | 20 | 12 |
+| Deuterium-Synthetisierer | 19 | 12 |
+| Solarkraftwerk | 23 | 16 |
+| Roboterfabrik | 14 | 5 |
+| Nanitenfabrik | **6** | 2 |
+
+Die Forschung war nicht betroffen (alles erreicht Stufe 10 oder 11), mit einer Ausnahme:
+**Hyperraumantrieb kam nur auf 9** und blieb fuer Basen dauerhaft eine Stufe unter dem Maximum.
+
+*Behoben durch Entkopplung:* `RESOURCE_CAP` heisst jetzt `LOOT_BASIS_CAP` und wird NUR noch bei der
+Beute-Berechnung angewandt (`Math.min(bestand, cap) * PIRATE_BASE_LOOT_PERCENT`), nicht mehr auf den
+Lagerbestand. **Die Beute bleibt dadurch exakt wie kalibriert** - geprueft ueber mehrere
+Bestandshoehen bis 2 Mrd, das Ergebnis bleibt konstant bei 15,4M/7M/2,1M. Nur der Bestand darf
+darueber hinauswachsen.
+
+**OFFEN und ausdruecklich festgehalten:** Dieser Deckel war die EINZIGE Bremse fuer das Wachstum
+einer Piratenbasis. Gebaeude und Forschung haben eigene Maximalstufen - sind die erreicht, fliesst
+wieder alles in Schiffe und Verteidigung, jetzt aber unbegrenzt. **Und es ist bis heute NICHT
+geklaert, was den langsamen `tick()` bei KI-Nyx verursacht hat** (siehe Punkt 9): die Vermutung fiel
+auf die Menge der Verteidigungsanlagen, wurde aber nie zu Ende verfolgt, weil die Sparfalle
+dazwischenkam. Solange das offen ist, laesst sich nicht sagen, ob eine Basis mit 100.000 Einheiten
+problemlos laeuft. Die Kampf-Engine aggregiert nach TYP statt nach Stueckzahl, was dafuer spricht -
+das ist aber Theorie, keine Messung. **Deshalb im selben Zug die Diagnose nachgeruestet** (siehe
+unten). Nutzerposition dazu: Basen und Bots sollen unbegrenzt dasselbe koennen wie Spieler, solange
+die CPU mitspielt.
+
+**11. Gesamt-Aufschluesselung im `tick()` (12.08.2026).**
+Die Warnungen "Langsamer tick() bei KI-Nyx: 650ms" liessen sich nicht zuordnen, weil KEINE einzelne
+Phase die Schwelle `SLOW_TICK_PHASE_MS` (1000 ms) riss - die Zeit verteilte sich. Neu:
+`SLOW_TICK_TOTAL_MS` (500 ms, bewusst gleich `SLOW_USER_TICK_MS` im Heartbeat) loggt bei
+auffaelligem Gesamtlauf ALLE Phasen mit Dauer, absteigend sortiert. Beide Warnungen erscheinen damit
+zum selben Vorfall und ergaenzen sich: die eine nennt Nutzer, Spielstandgroesse und Nachrichtenzahl,
+die andere die Phasenverteilung.
+
+*Praktische Voraussetzung, unabhaengig vom Code:* Coolify haelt nur die Ausgabe des AKTUELL
+laufenden Containers. Bei jedem Redeploy ist das Protokoll weg - genau das ist am 12.08.2026
+zweimal passiert und hat die Diagnose verzoegert. Entweder vor jedem Deploy abrufen oder die
+Container-Ausgabe dauerhaft wegschreiben lassen.
+
 **R11 (Changelog) - erledigt.** Zwei Eintraege (10.08. und 11.08.), fuer Spieler formuliert. Der
 neueste Eintrag war zuvor vom 06.08.2026, waehrend seitdem sechs spuerbare Aenderungen live
 gegangen sind - darunter die vervierfachte Stationsproduktion und der Punkte-Abzug beim
@@ -2156,6 +2206,11 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   Schmuggler liegt derzeit mit +0,92 Mrd/Tag klar vor Prospektor (+0,22), aber ausschliesslich ueber
   das Deuterium aus Raid-Containern - 97 % seines Werts haengen am Raid-Defekt. Nach dessen
   Korrektur neu messen. Vollstaendige Rechnung in Abschnitt 4b.
+- **Wachstumsgrenze der Piratenbasen festlegen (NEU 12.08.2026).** Mit der Aufhebung der
+  Ausbaugrenze (Abschnitt 2a, Punkt 10) gibt es KEINE Bremse mehr: sind Gebaeude und Forschung am
+  Maximum, fliesst alles unbegrenzt in Schiffe und Verteidigung. Vor dem Reset entscheiden, ob das
+  so bleiben soll (Nutzerwunsch) oder ob eine Obergrenze noetig ist - und das erst, nachdem die
+  offene Frage zum langsamen `tick()` beantwortet ist.
 - **Piratenbasis-Schwierigkeit nach der Bot-Reparatur neu messen (NEU 12.08.2026).** Die
   Ruecklagen-Aenderung vom 12.08.2026 (Abschnitt 2a, Punkt 9) veraendert, was Piratenbasen bauen -
   weg von der reinen Masse billigster Geschuetze. Wirkung baut sich erst ueber Tage auf und ist
@@ -2378,6 +2433,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 12.08.2026 | **Entscheidung 15 neu aufgenommen: Waffen/Schild/Panzerung unbegrenzt forschbar** (Nutzeridee). Anlass: alle Forschungen stehen auf Stufe 10, damit sind Zeit-Gutscheine wertlos und ueber Forschung keine Punkte mehr erzielbar. **Die Begruendung des Nutzers war halb richtig:** die Feindstaerke skaliert NICHT mit Forschung (`combatFleetPowerBase()` rechnet auf Rohwerten), wohl aber bekommen Piraten ueber `PIRATE_RESEARCH_SHARE = 1.0` den vollen Forschungsstand auf ihre eigenen Einheiten. Netto also relativ neutral - aber weil Forschung gegen Piraten ohnehin kaum Vorteil bringt, nicht weil sie sauber gegengerechnet wird. Kosten-/Zeitkurve geprueft: bei `timeGrowth` 1,6 liegt Stufe 15 bei 360 Tagen und Stufe 20 bei 10,4 Jahren Forschungszeit - begrenzt wird also ueber ZEIT statt Ressourcen, genau die Groesse, auf die Zeit-Gutscheine wirken. Die drei vom Nutzer genannten Forschungen sind zudem die einzigen mit unbegrenztem Multiplikator; die vier Kampfwert-Forschungen haben eigene Kappungen und wuerden oberhalb von Stufe 10 nichts mehr bewirken. **Drei Bruchstellen dokumentiert**, darunter eine selbstverschuldete: die tags zuvor ausgelieferte Bot-Ruecklage wuerde ohne Deckel unbegrenzt zuruecklegen und die Bots komplett lahmlegen. **Bewusst nicht sofort umgesetzt** - die Ruecklage ist noch unbeobachtet, zwei ineinandergreifende Aenderungen an derselben Stelle gleichzeitig sind genau das Muster, vor dem Abschnitt 5 warnt. |
 | 12.08.2026 | **Herkunft der Wirtschaftsklassen-Werte geprueft** (Nutzerfrage, ob die niedrigen Werte einen Grund hatten). Ergebnis: **nein, es gibt keine dokumentierte Begruendung** - `economyClasses.ts` erklaert nur die Wirkung, nicht die Hoehe, und das Wertemuster besteht aus lauter glatten Zahlen. Anders als bei den Kampf-Klassen, wo immerhin ein (falsches) Budget-Prinzip im Code stand. Fuer Block A festgehalten: an diesen Werten ist nichts zu respektieren. **Wichtiger als die Hoehe ist die Bezugsgroesse** - ein Bonus auf eine Nebenquelle braucht eine viel groessere Prozentzahl als einer, der ueberall greift; die Klassen sind deshalb in Anteil an den GESAMTEINNAHMEN zu bewerten, nicht als Prozentwert auf ihrer eigenen Basis. Als Regel in Abschnitt 4b ergaenzt, mit Verweis auf denselben Fehler bei der Allianz-Station zwei Tage zuvor. Nutzer wollte die Werte zunaechst sofort anpassen; bewusst vertagt, weil alle drei Klassen an Groessen haengen, die Block A veraendert (Schmuggler am Raid-Ertrag, Ingenieur an Entscheidung 9, Prospektor an der Einnahmen-Baseline) - eine Kalibrierung jetzt muesste danach wiederholt werden. |
 | 12.08.2026 | **Wirtschaftsklassen erstmals verglichen** (Nutzerbeobachtung: "nur der Prospektor macht Sinn"). Neuer Abschnitt 4b. **Die Einschaetzung ist widerlegt - der Prospektor ist die schwaechste der drei.** Gemessen am echten Ausbaustand: Schmuggler +0,92 Mrd Werteinheiten/Tag, Prospektor +0,22, Ingenieur +17,6 % Bauleistung. Der Prospektor liefert damit 1 bis 3 % der Gesamteinnahmen, sein DM-Bonus ist wertlos solange DM nicht knapp ist, und auf die Allianz-Station wirkt sein Mining-Bonus gar nicht. **Wichtiger als die Rangfolge ist die Kopplung:** der Schmuggler-Wert stammt fast vollstaendig aus dem Deuterium der Raid-Container (2,14 Mrd je Raid gegen 82,9 Mio/Tag aus der Mine - Faktor 29), das mangels Verwendung laufend getauscht wird. Wird der Raid-Ertrag nach Entscheidung 3 korrigiert, bricht der Schmuggler mit ein. Als gegenseitiger Verweis in beiden Abschnitten eingetragen. **Eigene Fehlaussage korrigiert:** aus den rund 50 Mrd unverbauten Werteinheiten hatte ich auf einen Zeitengpass geschlossen und daraus den Ingenieur als beste Wahl abgeleitet - auf Rueckfrage ist das bewusstes Sparen, kein Ueberschuss. Die Frage Zeit gegen Ressourcen bleibt damit offen und faellt mit Entscheidung 9 zusammen. |
+| 12.08.2026 | **Versteckte Ausbaugrenze der Piratenbasen aufgehoben** (vom Nutzer entdeckt, direkt im Anschluss an die Sparfallen-Behebung - "wie sollen die dann jemals weiter ausbauen, wenn die Kosten den Deckel uebersteigen?"). Der `RESOURCE_CAP` war als Beute-Kalibrierung gesetzt, begrenzte als Nebenwirkung aber den Ausbau hart: Metallmine 22, Kristallmine 20, Nanitenfabrik 6, Hyperraumantrieb sogar eine Stufe unter dem regulaeren Forschungsmaximum. Entkoppelt - die Konstante heisst jetzt `LOOT_BASIS_CAP` und wirkt nur noch auf die Beute; geprueft ueber Bestaende bis 2 Mrd, die Beute bleibt konstant bei 15,4M/7M/2,1M. **Damit entfaellt die einzige Bremse fuer das Wachstum einer Basis**, als Messpunkt in Abschnitt 7 eingetragen. Gleichzeitig eine Gesamt-Aufschluesselung im `tick()` nachgeruestet (`SLOW_TICK_TOTAL_MS` 500 ms), weil die Ursache der langsamen Nyx-Ticks bis heute UNGEKLAERT ist - keine Einzelphase riss die 1000-ms-Schwelle, die Zeit verteilte sich, und die Vermutung "zu viele Verteidigungsanlagen" wurde nie belegt. Ohne diese Klaerung laesst sich nicht sagen, ob unbegrenztes Wachstum tragbar ist. |
 | 12.08.2026 | **Sparfalle bei Bots und Piratenbasen behoben** (Details in Abschnitt 2a, Punkt 9). Aufgedeckt ueber eine CPU-Spitze in Coolify, verfolgt ueber Heartbeat-Warnungen bis in die Datenbank des laufenden Servers. Befund: beide Bots sind 13 Tage alt, stehen bei Minenstufe 11 (Menschen: 36) und hatten LEERE Gebaeude- und Forschungs-Warteschlangen - seit 13 Tagen kein einziger Ausbau. Ursache ist der Fallback "billigstes, ein Stueck", der jeden Zug das letzte Metall abraeumt; nachgerechnet reicht die Metallproduktion nie fuer den naechsten Minenschritt, weil alle drei Takte ein Lasergeschuetz gekauft wird. Behoben durch eine Ruecklage fuer den naechsten Gebaeude-/Forschungsschritt. **Methodisch wichtig:** eine eigens gebaute Wirtschaftssimulation zeigte KEINEN Unterschied und wurde als unbrauchbar verworfen - sie liess den Bot auf 2,5 Billionen Metall wachsen, drei Groessenordnungen ueber der Realitaet. Belegt wurde ausschliesslich ueber den realen Datenbankzustand und die Kosten-/Produktionsformeln. Beinahe waere die Aenderung auf Basis einer falschen Simulation verworfen und zuvor auf Basis einer unbelegten Vermutung ausgeliefert worden. **Offen:** die Aenderung wirkt auch auf Piratenbasen (beobachtet: 20.112 Leichte Lasergeschuetze bei Startbestand 1.120) und verschiebt damit deren Schwierigkeit - als Messpunkt in Abschnitt 7 eingetragen. |
 | 11.08.2026 | **Klassen: situative Aufschlaege statt reiner Zahlen-Angleichung** (zweiter Schritt desselben Tages, Details in Abschnitt 4a). Nach der Angleichung lagen alle drei Klassen ueberall gleichauf - damit gab es keinen inhaltlichen Grund mehr, eine bestimmte zu waehlen. Die Nutzeridee, die Boni komplett zu gaten (Kanonier nur Angriff, Bollwerk nur Verteidigung), wurde durchgerechnet und **verworfen**: Angriffe sind rund fuenfmal haeufiger als Raids, der Kommandant waere als einzige ungegatete Klasse um 36 % besser gewesen und zwei von drei Klassen die Haelfte der Zeit wirkungslos. Umgesetzt stattdessen: Grundbonus ueberall plus Aufschlag auf dem Heimatfeld (Kanonier Waffen x2,0 -> x2,4 ausserhalb der Heimatverteidigung; Bollwerk Schild/Panzerung x1,6 -> x2,4 bei Heimatverteidigung; Kommandant x1,4 flach). Neues Feld `homeDefense` in `CombatWorkerRequest`, nur aus `raids.ts` gesetzt und bewusst NICHT an `allowRetreat: false` gekoppelt, obwohl heute deckungsgleich. Der Verstaerker-Fall funktioniert ohne Zusatzarbeit, weil `OwnedFleetContribution` bereits eine eigene `playerClass` traegt. Endstand: Wochenbilanz 69,1 / 65,2 / 70,7, jede Klasse auf ihrem Heimatfeld klar vorn. Die Restspanne von ~8 % wird bewusst nicht weiter justiert - sie liegt innerhalb der Messstreuung und der Unsicherheit der Wochen-Annahme. |
 | 11.08.2026 | **Klassen angepasst: Bollwerk x1,5 -> x2,0, Kommandant x4/3 -> x1,5** (Nutzerentscheidung gegen meine Empfehlung abzuwarten - mit dem Argument, zwei von drei Klassen seien sonst totes Inventar; das Argument war richtig). **Meine Begruendung fuers Abwarten war zusaetzlich sachlich falsch:** ich hatte behauptet, eine Feindstaerke-Korrektur in Block D wuerde den Kanonier-Vorsprung von selbst schrumpfen lassen. Nachgerechnet ist das Gegenteil richtig - Waffen machen nur 1,6 % der Roh-Machtbasis aus, Schild und Panzerung 98,4 %; eine solche Korrektur haette die Machtbasis des Kanoniers um 1,6 %, die des Bollwerks aber um 49,2 % angehoben und das Bollwerk damit noch weiter zurueckgeworfen. **Der Nebenbefund ist wichtiger als der Klassen-Punkt selbst und als eigener Messpunkt in Abschnitt 7 eingetragen:** die Gegner-Skalierung haengt fast ausschliesslich an Schild/Panzerung, Waffen zu bauen ist ihr gegenueber nahezu kostenlos - beruehrt Entscheidung 6 direkt. Die neuen Werte sind hergeleitet, nicht gefittet (ein Punkt Schaden ist etwa doppelt so viel wert wie ein Punkt Robustheit, Budget daher schadens-aequivalent statt nominal), und durch einen unabhaengigen Sweep bestaetigt: Gleichstand liegt bei genau 2,0. Nach der Anpassung liegen alle drei Klassen innerhalb der Streuung gleichauf, mit weiterhin klar unterschiedlichen Profilen (Kanonier 19 Runden und 100 % Siegquote im Elite-Bollwerk, Bollwerk 45 Runden und 95 %, dafuer geringste Raid-Schwankung). **Client-Spiegel vorab geprueft und gefunden:** `lib/combatInfo.ts` trug die Multiplikatoren an zwei Stellen hartkodiert - die Bau-Karten haetten weiter +50 % Schild angezeigt, waehrend der Kampf mit +100 % rechnet. Laeuft jetzt ueber `/game/data`. |
