@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '12.08.2026',
+    title: 'Piratenbasen können wieder unbegrenzt wachsen',
+    changes: [
+      'Piratenbasen hatten eine versteckte Ausbaugrenze: Ihr Ressourcenlager war gedeckelt, wodurch jedes Gebäude, das mehr kostete als der Deckel hergab, für sie nie bezahlbar wurde. Der Ausbau wäre bei Metallmine 22, Kristallmine 20 und Nanitenfabrik 6 endgültig stehengeblieben - danach wäre wieder alles nur noch in Verteidigungsanlagen geflossen.',
+      'Der Deckel war ursprünglich nur zur Begrenzung der Beute gedacht und begrenzt jetzt auch nur noch die. An der Beute ändert sich dadurch nichts: Ein vollständiger Beutezug bringt weiterhin höchstens 15,4 Mio Metall, 7 Mio Kristall und 2,1 Mio Deuterium, egal wie reich die Basis darüber hinaus wird. Die Basen bauen nun aber dauerhaft weiter aus, genau wie Spieler und KI-Mitspieler.',
+    ],
+  },
+  {
+    date: '12.08.2026',
     title: 'KI-Mitspieler und Piratenbasen entwickeln sich wieder',
     changes: [
       'KI-Vega und KI-Nyx steckten seit knapp zwei Wochen fest: Sie hingen bei Minenstufe 11 und hatten seit dem 30. Juli kein einziges Gebäude und keine Forschung mehr gestartet. Der Grund war eine Sparfalle - die KI gab bei jedem Zug ihr letztes Metall für die billigste Verteidigungsanlage aus und konnte dadurch nie genug für den nächsten Minenausbau ansammeln, der ein Vielfaches kostet. Sichtbar wurde das an KI-Nyx: 8.614 Leichte Lasergeschütze bei gleichzeitig unter 40.000 Metall und randvollen Kristall- und Deuteriumlagern.',
