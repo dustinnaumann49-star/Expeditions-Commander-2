@@ -1,4 +1,4 @@
-# Uebergabe - Stand 10.08.2026
+# Uebergabe - Stand 13.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -7,67 +7,111 @@ einsteigt und was NICHT im Plan steht.
 
 > Repo: https://github.com/dustinnaumann49-star/Expeditions-Commander-2
 > Synchronisiere dich. Lies `UMSETZUNGSPLAN_BALANCE.md` komplett, Abschnitt 8 zuerst, dann
-> Abschnitt 1b. `README.md` und `FINALE_BALANCE_CHECKLIST.md` nur bei Bedarf.
+> Abschnitt 2a, dann Abschnitt 1b. `README.md` und `FINALE_BALANCE_CHECKLIST.md` nur bei Bedarf.
 > Beachte Messregel 16: keine Zahl aus einer Beschreibung uebernehmen, immer gegen den Code
 > pruefen.
 
-**Eine Session pro Block, nicht mehr.** Plan 100 KB, Checkliste 125 KB, README 67 KB - das passt
-nicht gleichzeitig in eine Session. Einstieg ist **Block A, allein**.
+**Abschnitt 2a ist neu und der wichtigste Teil fuer den Einstieg** - dort steht, was zwischen dem
+10. und 13.08.2026 tatsaechlich am Code geaendert wurde. Wer nur Abschnitt 8 liest, haelt den Plan
+faelschlich fuer unangetastet.
+
+**Eine Session pro Block, nicht mehr.** Plan inzwischen ~220 KB, Checkliste 125 KB, README 67 KB -
+das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
-- **Plan vollstaendig entschieden.** 14 Entscheidungen, 13 Reparaturen, 27 Schritte in der
-  Reihenfolge (Abschnitt 5). Fuer jeden Punkt steht entweder die Zahl oder die Regel, nach der sie
-  bestimmt wird. **Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.**
-- **Am Spielcode ist fuer die Balance nichts geaendert.** Die Umsetzung hat noch nicht begonnen.
-- Alle Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht - der Unterschied zum
-  Zustand davor ist nicht, dass die richtigen Werte feststehen, sondern dass fuer jeden Wert
-  festgelegt ist, woran man erkennt, ob er richtig ist.
+- **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
+  Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
+- **Am Spielcode wurde seit dem 10.08.2026 erheblich geaendert** - 14 Punkte, vollstaendig in
+  Abschnitt 2a dokumentiert. Die urspruengliche Regel "in dieser Phase kein Code" gilt weiterhin
+  fuer die Balance-Bloecke A bis F, aber nicht mehr absolut; der Massstab fuer Ausnahmen steht in
+  Abschnitt 8.
+- **Block A hat noch nicht begonnen.** Entscheidung 1 (Overkill-Deckel) ist als Einzelmassnahme
+  vorgezogen erledigt, die uebrigen Messreihen stehen aus.
+- Alle noch offenen Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht.
 
-## Was am 09./10.08.2026 tatsaechlich live gegangen ist
+## Was seit dem 10.08.2026 live gegangen ist
 
-Drei kleine Aenderungen, unabhaengig vom Balance-Paket:
+Kurzfassung, Einzelheiten je Punkt in Abschnitt 2a:
 
-1. **Mobil-Fix M1** - `.combat-table.narrow` in `theme.css`, angewandt auf 6 Tabellen in
-   `Nachrichten.tsx` und 3 in `Simulator.tsx`. Die Nachrichtenliste lief rechts aus dem Bild, weil
-   die Mobil-Regel `min-width:720px` fuer die 10-spaltige Kampftabelle auch auf alle schmalen
-   Tabellen wirkte. Details in `MOBIL_CHECKLISTE.md`.
-2. **`MAX_PLAYER_SHIPS` von 100.000 auf 200.000** (`combatConstants.ts`). Ein Spielstand lag mit
-   103.196 Schiffen ueber dem alten Limit und konnte gar nichts mehr bauen. Performance-seitig
-   unbedenklich: die Aggregat-Engine ist bis 1,5 Mio. Schiffe bei ~26 ms bestaetigt.
-3. **Fehlermeldung beim Flottenlimit** (`actions.ts`) - gab bei negativem Rest woertlich
-   "Nur noch -3196 Schiff(e) moeglich" aus.
+**Behobene Defekte**
+- Overkill-Deckel bei Aggregat-Stapeln (Entscheidung 1) - 101 Kreuzer verloren vorher 100 %, jetzt
+  35 %
+- Gebaeude-Module der Heimatbasis fuer V2/V3 (Entscheidung 14) - bauten vorher 4x langsamer
+- Allianz-Station: Ertrags-Relation 7.1 + Ausgleich der fehlenden Mining-Kopplung
+- Punkte-Exploit beim Verschrotten (R6), tote Eskalations-Konfiguration (R2), `claimedBy` (R7),
+  `defenseFactor` dreifach dupliziert (R4), `totalOwnedShips()` (R13, mit Ratschen-Absicherung),
+  Startpruefung fuer Modul-IDs (R12), Changelog (R11)
+- **Sparfalle bei Bots und Piratenbasen** - beide standen 13 Tage bei Minenstufe 11 und starteten
+  kein einziges Gebaeude mehr
+- **Versteckte Ausbaugrenze der Piratenbasen** - `RESOURCE_CAP` begrenzte ungewollt den Ausbau,
+  heisst jetzt `LOOT_BASIS_CAP` und wirkt nur noch auf die Beute
+- **Cross-User-Sweeps gedrosselt** - liefen alle 3 Sekunden pro Client statt alle 30 Sekunden,
+  Hauptverursacher der Serverlast
+- KI baute nur Leichte Jaeger (feste Bestellmenge), stationierte Flotten waren eingefroren,
+  angekommene Halte-Flotten verschmelzen jetzt
+- Raid-Kampfberichte liessen sich auf Mobil nicht seitlich wischen
 
-## Zwei offene Punkte, die NICHT im Plan stehen koennen
+**Balance-Aenderungen**
+- Kampf-Klassen neu austariert, mit situativen Aufschlaegen (Abschnitt 4a)
+- `MAX_PLAYER_SHIPS` von 200.000 auf 1.000.000
+- Abschuss-Punkte nach Beitrag statt voll je Teilnehmer
 
-**1. R13 wartet auf eine Zahl vom Nutzer.**
-`totalOwnedShips()` zaehlt nur `state.fleet` + `buildQueue`, nicht Missionen, Galaxie-Entsendungen
-und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` umgehen: Flotte wegschicken,
-zuhause nachbauen, Flotte kehrt zurueck. Die Korrektur macht die Zaehlung **strenger** und darf
-erst angewandt werden, wenn der **tatsaechliche Gesamtbestand inkl. unterwegs befindlicher
-Schiffe** bekannt ist - sonst ist der Spieler sofort wieder blockiert. Steht als R13 in
-Abschnitt 3 des Plans.
+## Drei Dinge unter Beobachtung (Stand 13.08.2026)
 
-**2. Mobil-Punkte M2 bis M10 brauchen ein Geraet.**
-Neun Verdachtsstellen aus dem Code (feste Breiten in Login, Haendler, Gebaeude, Allianz;
-ungeprueft Galaxie, Statistik, Kampf-Visualisierung). Aus dem Code heraus nur vermutbar, nicht
-bestaetigbar. Pruefablauf und Abnahmekriterium stehen in `MOBIL_CHECKLISTE.md`.
+1. **Bots und Piratenbasen entwickeln sich wieder** - Minen von Stufe 11 auf 16 innerhalb eines
+   Tages, Forschung laeuft ebenfalls. Flotten sollten sich ab jetzt durchmischen.
+2. **Serverlast nach der Drosselung** - die `runGlobalHeartbeat`-Warnungen sollten weitgehend
+   verschwunden sein.
+3. **Ungeklaert: 435 KB laut Datenbank gegen 761 KB im Speicher** fuer denselben Spielstand.
+   Steht in Abschnitt 2a, Punkt 12.
 
-## Zwei Fallen, die schon zugeschnappt sind
+## Offene Punkte, die NICHT im Plan stehen koennen
 
-**Die README im Repo hat KEINE nummerierten Punkte mehr.** Sie ist in zwoelf Abschnitte
-gegliedert. Der Plan enthaelt zehn Verweise der Form "README Punkt 27" - **alle zeigen ins Leere**
-und muessen ueber den Abschnittstitel oder den Konstantennamen aufgeloest werden. Eine aeltere
-README-Fassung mit 33 nummerierten Punkten kursiert; sie ist an mehreren Stellen sachlich falsch
-(Raid-Mechanik, Kampf-Performance um Faktor 100, Baulimits, Sektor-Laufzeiten). **Nicht verwenden.**
+**Mobil-Punkte M2 bis M10 brauchen ein Geraet.** Neun Verdachtsstellen aus dem Code (feste Breiten
+in Login, Haendler, Gebaeude, Allianz; ungeprueft Galaxie, Statistik, Kampf-Visualisierung). Aus dem
+Code heraus nur vermutbar, nicht bestaetigbar. Pruefablauf in `MOBIL_CHECKLISTE.md`. M1 und der
+Raid-Bericht sind erledigt.
 
-**Stille Ausweichwerte.** Vier Fundstellen bisher: `moduleBoostFactor()` liefert bei unbekannter ID
-1, dito `moduleReductionFactor()`, `defenseFactor` lief unbemerkt auseinander,
-`ADMIRAL_ESCORT_BASE` war tot. Jedes Mal war das Verhalten im Sinne des Codes korrekt und im Sinne
-des Spiels falsch. Siehe R12 und Messregel 15.
+**R13 wartet auf nichts mehr.** Der frueher hier vermerkte Bedarf nach einer Zahl vom Nutzer ist
+entfallen - die Korrektur ist mit einer Ratschen-Obergrenze abgesichert, die niemanden rueckwirkend
+aussperrt.
+
+## Fallen, die schon zugeschnappt sind
+
+**Die README im Repo hat KEINE nummerierten Punkte mehr.** Eine aeltere Fassung mit 33 nummerierten
+Punkten kursiert und wird bei Kaltstarts immer wieder mitgeliefert; sie ist an mehreren Stellen
+sachlich falsch (Imperator-Baulimit, Salvenschiff-Limits, Asteroiden-Laufzeit, Kampf-Performance um
+Faktor 100). **Nicht verwenden.**
+
+**Stille Ausweichwerte.** `moduleBoostFactor()` und `moduleReductionFactor()` liefern bei unbekannter
+ID 1 - Verhalten im Sinne des Codes korrekt, im Sinne des Spiels falsch. R12 prueft das jetzt beim
+Serverstart.
+
+**Client-Spiegel laufen auseinander.** Bekannt sind `lib/multipliers.ts`, `lib/combatInfo.ts`,
+`pages/Allianz.tsx` und `pages/Sektor.tsx` - letztere zeigte live falsche Zahlen an. Die Liste ist
+erfahrungsgemaess unvollstaendig: **vor jeder Server-Aenderung im Client nach dem Funktionsnamen
+greppen.** Konstanten gehoeren ueber `/game/data` an den Client, nicht als zweite hartkodierte Zahl.
+
+**Selbstgebaute Simulationen sind erst dann Beweismittel, wenn sie einen bekannten realen Zustand
+reproduzieren.** Am 12.08.2026 zeigte eine eigens gebaute Wirtschaftssimulation keinen Unterschied
+zwischen kaputtem und repariertem Code und liess den Bot auf 2,5 Billionen Metall wachsen - drei
+Groessenordnungen ueber der Realitaet. Belegt wurde am Ende ueber den echten Datenbankzustand.
+
+**Coolify haelt nur die Ausgabe des aktuell laufenden Containers.** Bei jedem Redeploy ist das
+Protokoll weg. Logs VOR dem Deploy abrufen, sonst ist die Spur verloren.
+
+**Instrumentierung zuerst.** Die Ursache der langsamen ticks wurde zwei Tage lang auf Verdacht
+diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen Log - und die
+Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-Block A, Schritt 1: **Entscheidung 1 (Overkill-Deckel).** Sie macht saemtliche Messungen aus vier
-Sessions ungueltig und muss deshalb zuerst kommen. Rechne damit, dass Block A mehr Zeit kostet als
-alles danach.
+**Block A, Schritt 1:** Die uebrigen Messreihen nach dem Overkill-Deckel neu laufen lassen
+(`run_elite`, `run_raid`, `run_real_fleet`); `run_aggregate_threshold`, `run_sectors` und
+`run_classes` sind bereits neu. Danach Entscheidung 2 und 3.
+
+**Entscheidung 3 hat sich erheblich erweitert.** Der Raid ist nicht nur zu ertragreich, sondern
+auch zu leicht, und beides skaliert mit der Zahl der Beteiligten. Fuenf Loesungsvarianten stehen im
+Kasten dort, dazu die Kopplung an die Wirtschaftsklassen (Abschnitt 4b) und an den Beitrags-Massstab
+(Abschnitt 2a, Punkt 14). **Diese vier Punkte gehoeren zusammen entschieden.**
