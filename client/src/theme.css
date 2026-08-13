@@ -484,11 +484,35 @@
   /* Nutzer-Fund 04.08.2026 (Mobil-Fix): 9 Spalten inkl. langer Header ("Schaden ausgeteilt",
      "Schüsse/Treffer") quetschten sich auf schmalen Handy-Bildschirmen mit width:100% auf ein
      Minimum zusammen und wurden dadurch praktisch unlesbar ("verschwindet fast vollständig").
-     `display:block` + `overflow-x:auto` machen die Tabelle bei Bedarf seitlich scrollbar statt sie
-     zu quetschen - betrifft ALLE `.combat-table`-Vorkommen im Kampfbericht (7 Stellen in
-     Nachrichten.tsx), da der Fix zentral hier sitzt statt an jeder Stelle einzeln. Auf breiten
-     Bildschirmen ohne Effekt (kein Scrollbalken, solange die Tabelle in die Breite passt). */
-  .combat-table{ width:100%; border-collapse:collapse; font-size:13px; display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+     Die Tabelle soll bei Bedarf seitlich scrollbar sein statt gequetscht zu werden.
+
+     KORRIGIERT 13.08.2026 (Nutzer-Fund, Folgefehler): Der urspruengliche Fix setzte
+     `display:block` + `overflow-x:auto` auf die Tabelle SELBST - zusammen mit der Mobil-Regel
+     `min-width:720px` auf demselben Element. Ein Element kann sich aber nicht selbst scrollen: die
+     Tabelle wurde dadurch schlicht 720px breit und lief aus JEDEM Rahmen um sie herum heraus;
+     gescrollt hat immer ein Vorfahre (im Normalfall `#modal-box`). Daraus folgten zwei Fehler -
+     der Wellen-Rahmen mit `overflow:hidden` schnitt die Tabelle ab (siehe Nachrichten.tsx), und
+     der Behelfs-Fix dagegen machte den GESAMTEN aufgeklappten Bericht zum waagerechten
+     Wischbereich, wodurch das senkrechte Zurueckscrollen kaum noch ansprach (Richtungs-Sperre der
+     Touch-Geste, siehe `.table-scroll`).
+     Jetzt Standard-Aufbau: Scroll-Container ist der schmale Wrapper `.table-scroll`, die
+     Mindestbreite sitzt an der Tabelle. Auf breiten Bildschirmen ohne Effekt (kein Scrollbalken,
+     solange die Tabelle in die Breite passt). */
+  .combat-table{ width:100%; border-collapse:collapse; font-size:13px; }
+
+  /* Waagerechter Scroll-Bereich fuer BREITE Tabellen (`.combat-table` ohne `narrow`).
+     Bewusst so eng wie moeglich um die Tabelle gelegt: Handy-Browser legen die Wischrichtung in
+     den ersten Millimetern einer Geste fest. Beginnt eine Geste in einem waagerecht scrollbaren
+     Bereich und verlaeuft nur leicht schraeg, wird sie als waagerecht eingestuft und der
+     senkrechte Anteil fuer die restliche Beruehrung verworfen. Je groesser dieser Bereich, desto
+     haeufiger schluckt er das normale Hoch-/Runterscrollen - genau das war der Fehler vom
+     13.08.2026.
+     `overflow-y:hidden` ist Absicht: zusammen mit `overflow-x:auto` wuerde `visible` vom Browser
+     zu `auto` umgedeutet und eine zweite senkrechte Scrollleiste erzeugen. Geklammert wird nichts,
+     weil der Wrapper genau so hoch ist wie die Tabelle darin.
+     KEIN `touch-action` setzen: `pan-x` wuerde das senkrechte Scrollen fuer Gesten, die hier
+     beginnen, vollstaendig unterbinden statt es an die Seite weiterzureichen. */
+  .table-scroll{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; }
 
   /* Nutzer-Fund 09.08.2026 (Mobil-Fix, Folgefehler des Fixes darueber): Der Fix von 04.08.2026 ist
      bewusst ZENTRAL auf alle `.combat-table` angewandt worden - zusammen mit der Mobil-Regel
@@ -501,13 +525,15 @@
      `.narrow` nimmt genau diesen Teil zurueck: gleiche Optik, aber fliessende Breite, Umbruch statt
      Scroll. Die Kampftabelle selbst bleibt unveraendert scrollbar.
      Regel fuer neue Tabellen: `.combat-table` nur fuer breite Kampf-/Statistiktabellen,
-     `.combat-table narrow` fuer alles mit hoechstens vier Spalten. */
+     `.combat-table narrow` fuer alles mit hoechstens vier Spalten.
+     Angepasst 13.08.2026: `display:table` und `overflow-x:visible` sind hier entfallen, weil
+     `.combat-table` seit der Korrektur oben ohnehin eine normale Tabelle ohne eigenen
+     Scroll-Container ist. Wirksam bleibt allein die Ruecknahme der Mindestbreite - schmale
+     Tabellen brauchen deshalb KEINEN `.table-scroll`-Wrapper. */
   .combat-table.narrow{
-    display: table;
     table-layout: fixed;
     width: 100%;
     min-width: 0;
-    overflow-x: visible;
   }
   .combat-table.narrow th,
   .combat-table.narrow td{
@@ -757,8 +783,10 @@
      }
      .inventory-grid{ grid-template-columns:1fr; }
 
-    /* Mindestbreite, damit die 9 Spalten NICHT gequetscht werden, bevor der Scrollbalken greift
-       (siehe .combat-table oben) - Wert grob aus den laengsten Headern/Werten ueberschlagen. */
+    /* Mindestbreite, damit die 9 Spalten NICHT gequetscht werden, bevor der Scrollbalken greift -
+       Wert grob aus den laengsten Headern/Werten ueberschlagen. Die Mindestbreite gehoert an die
+       TABELLE, gescrollt wird der Wrapper `.table-scroll` darum (siehe oben). Beides auf dasselbe
+       Element zu legen war der Fehler, der am 13.08.2026 korrigiert wurde. */
     .combat-table{ min-width: 720px; font-size: 12px; }
     .combat-table th, .combat-table td{ padding: 6px 8px; }
 
