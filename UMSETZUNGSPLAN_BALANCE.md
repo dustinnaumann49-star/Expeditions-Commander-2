@@ -1750,6 +1750,49 @@ entschieden - inklusive der Beute aus Gruppen-Expeditionen. **Damit ist die Punk
 beitragsbasiert, die Belohnungsvergabe aber noch nicht.** Diese Inkonsistenz ist bewusst und
 temporaer.
 
+> **OFFEN: Der Beitrags-Massstab wirkt nicht so, wie er begruendet ist (erkannt 13.08.2026 durch
+> Nutzerrueckfrage - "dann koennte es Sinn machen, Bollwerk zu spielen, um Schaden zu fangen,
+> damit andere schiessen koennen").**
+>
+> Die Idee ist schluessig, geht mit der aktuellen Rechnung aber nicht auf. Aus dem realen
+> Kampfbericht des Nutzers (Elite-Bollwerk):
+>
+> ```
+> Schaden ausgeteilt - eigene Flotte   35.342.128.893
+> Schaden ausgeteilt - Gegner             583.884.340
+> ```
+>
+> Der gesamte gegnerische Schaden ist das, was auf Spielerseite ueberhaupt absorbiert WERDEN kann -
+> und das sind **1,6 %** der Summe aus beidem. Ein Spieler, der saemtlichen Beschuss auf sich zieht
+> und selbst keinen Schuss abgibt, bekaeme also 1,6 % der Punkte. **Tanken lohnt sich unter dieser
+> Rechnung nicht.**
+>
+> Verstaerkend: Das Bollwerk absorbiert nicht MEHR Schaden als andere - der Gegner teilt insgesamt
+> gleich viel aus, das Bollwerk ueberlebt ihn nur besser. Der einzige echte Zugewinn ist, dass bei
+> zaeheren Einheiten weniger Schaden als Ueberschuss verpufft.
+>
+> **Damit ist die Begruendung an `contributionShares()` ("wer Treffer schluckt, damit andere
+> schiessen koennen, leistet einen ebenso realen Beitrag") als Prinzip richtig, in der Umsetzung
+> aber weitgehend wirkungslos.** Das war beim Bauen zu optimistisch eingeschaetzt: die Addition
+> beider Zahlen setzt stillschweigend voraus, dass sie in derselben Groessenordnung liegen. Bei
+> einseitigen Kaempfen mit nahezu null Verlusten tun sie das nicht.
+>
+> **Loesungsansatz (NICHT umgesetzt, Nutzerentscheidung 13.08.2026: "erst mal in Plan festhalten,
+> das muss noch genauer besprochen werden und fordert Anpassungen an mehreren Stellen"):**
+> Statt beide Zahlen zu addieren, jede an ihrer EIGENEN Summe messen und dann mitteln - wer 50 %
+> des ausgeteilten Schadens beisteuert und 50 % des einsteckenden, bekommt 50 %. Ein reiner Tank
+> kaeme damit auf die Haelfte statt auf 1,6 %. Optional mit Gewichten, falls Austeilen und
+> Einstecken nicht gleich viel wert sein sollen.
+>
+> **Das waere eine bewusste Design-Entscheidung, keine Korrektur:** sie erklaert Schaden austeilen
+> und Schaden aufnehmen fuer gleichwertig. In einem Abnutzungssystem, in dem Schaden die Kaempfe
+> entscheidet, ist das diskutabel - genau deshalb vertagt.
+>
+> **Betrifft mehrere Stellen**, die gemeinsam entschieden werden muessen: den Massstab selbst
+> (`contributionShares()`), die Belohnungsaufteilung (Variante 4 in Entscheidung 3, die denselben
+> Massstab braeuchte) und die Klassenbalance (Abschnitt 4a - ein aufgewerteter Tank-Beitrag
+> veraendert den Wert des Bollwerks ueber den Kampf hinaus).
+
 **R11 (Changelog) - erledigt.** Zwei Eintraege (10.08. und 11.08.), fuer Spieler formuliert. Der
 neueste Eintrag war zuvor vom 06.08.2026, waehrend seitdem sechs spuerbare Aenderungen live
 gegangen sind - darunter die vervierfachte Stationsproduktion und der Punkte-Abzug beim
@@ -2377,6 +2420,12 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   16,58 Mrd/Tag statt der im Plan gefuehrten 6,31 - **rund 52 % aller Einnahmen und damit ein
   Verstoss gegen Abnahmekriterium 5 im Ist-Zustand.** Die geplante Halbierung reicht nicht.
   Vollstaendige Rechnung und drei Loesungsvarianten im Kasten bei Entscheidung 3.
+- **Beitrags-Massstab neu normieren (NEU 13.08.2026).** `contributionShares()` addiert ausgeteilten
+  und absorbierten Schaden - real machen die absorbierten Anteile aber nur rund 1,6 % der Summe aus,
+  wodurch Tanken praktisch keine Punkte bringt und die Begruendung der Funktion ins Leere laeuft.
+  Loesungsansatz (Normierung je Kategorie, dann Mittelung) samt Herleitung in Abschnitt 2a,
+  Punkt 14. **Gemeinsam mit Variante 4 (Belohnungsaufteilung) und Abschnitt 4a (Klassenbalance)
+  entscheiden** - alle drei haengen an demselben Massstab.
 - **Wirtschaftsklassen nach der Raid-Korrektur neu bewerten (NEU 12.08.2026).** Der
   Schmuggler liegt derzeit mit +0,92 Mrd/Tag klar vor Prospektor (+0,22), aber ausschliesslich ueber
   das Deuterium aus Raid-Containern - 97 % seines Werts haengen am Raid-Defekt. Nach dessen
@@ -2608,6 +2657,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 | 12.08.2026 | **Entscheidung 15 neu aufgenommen: Waffen/Schild/Panzerung unbegrenzt forschbar** (Nutzeridee). Anlass: alle Forschungen stehen auf Stufe 10, damit sind Zeit-Gutscheine wertlos und ueber Forschung keine Punkte mehr erzielbar. **Die Begruendung des Nutzers war halb richtig:** die Feindstaerke skaliert NICHT mit Forschung (`combatFleetPowerBase()` rechnet auf Rohwerten), wohl aber bekommen Piraten ueber `PIRATE_RESEARCH_SHARE = 1.0` den vollen Forschungsstand auf ihre eigenen Einheiten. Netto also relativ neutral - aber weil Forschung gegen Piraten ohnehin kaum Vorteil bringt, nicht weil sie sauber gegengerechnet wird. Kosten-/Zeitkurve geprueft: bei `timeGrowth` 1,6 liegt Stufe 15 bei 360 Tagen und Stufe 20 bei 10,4 Jahren Forschungszeit - begrenzt wird also ueber ZEIT statt Ressourcen, genau die Groesse, auf die Zeit-Gutscheine wirken. Die drei vom Nutzer genannten Forschungen sind zudem die einzigen mit unbegrenztem Multiplikator; die vier Kampfwert-Forschungen haben eigene Kappungen und wuerden oberhalb von Stufe 10 nichts mehr bewirken. **Drei Bruchstellen dokumentiert**, darunter eine selbstverschuldete: die tags zuvor ausgelieferte Bot-Ruecklage wuerde ohne Deckel unbegrenzt zuruecklegen und die Bots komplett lahmlegen. **Bewusst nicht sofort umgesetzt** - die Ruecklage ist noch unbeobachtet, zwei ineinandergreifende Aenderungen an derselben Stelle gleichzeitig sind genau das Muster, vor dem Abschnitt 5 warnt. |
 | 12.08.2026 | **Herkunft der Wirtschaftsklassen-Werte geprueft** (Nutzerfrage, ob die niedrigen Werte einen Grund hatten). Ergebnis: **nein, es gibt keine dokumentierte Begruendung** - `economyClasses.ts` erklaert nur die Wirkung, nicht die Hoehe, und das Wertemuster besteht aus lauter glatten Zahlen. Anders als bei den Kampf-Klassen, wo immerhin ein (falsches) Budget-Prinzip im Code stand. Fuer Block A festgehalten: an diesen Werten ist nichts zu respektieren. **Wichtiger als die Hoehe ist die Bezugsgroesse** - ein Bonus auf eine Nebenquelle braucht eine viel groessere Prozentzahl als einer, der ueberall greift; die Klassen sind deshalb in Anteil an den GESAMTEINNAHMEN zu bewerten, nicht als Prozentwert auf ihrer eigenen Basis. Als Regel in Abschnitt 4b ergaenzt, mit Verweis auf denselben Fehler bei der Allianz-Station zwei Tage zuvor. Nutzer wollte die Werte zunaechst sofort anpassen; bewusst vertagt, weil alle drei Klassen an Groessen haengen, die Block A veraendert (Schmuggler am Raid-Ertrag, Ingenieur an Entscheidung 9, Prospektor an der Einnahmen-Baseline) - eine Kalibrierung jetzt muesste danach wiederholt werden. |
 | 12.08.2026 | **Wirtschaftsklassen erstmals verglichen** (Nutzerbeobachtung: "nur der Prospektor macht Sinn"). Neuer Abschnitt 4b. **Die Einschaetzung ist widerlegt - der Prospektor ist die schwaechste der drei.** Gemessen am echten Ausbaustand: Schmuggler +0,92 Mrd Werteinheiten/Tag, Prospektor +0,22, Ingenieur +17,6 % Bauleistung. Der Prospektor liefert damit 1 bis 3 % der Gesamteinnahmen, sein DM-Bonus ist wertlos solange DM nicht knapp ist, und auf die Allianz-Station wirkt sein Mining-Bonus gar nicht. **Wichtiger als die Rangfolge ist die Kopplung:** der Schmuggler-Wert stammt fast vollstaendig aus dem Deuterium der Raid-Container (2,14 Mrd je Raid gegen 82,9 Mio/Tag aus der Mine - Faktor 29), das mangels Verwendung laufend getauscht wird. Wird der Raid-Ertrag nach Entscheidung 3 korrigiert, bricht der Schmuggler mit ein. Als gegenseitiger Verweis in beiden Abschnitten eingetragen. **Eigene Fehlaussage korrigiert:** aus den rund 50 Mrd unverbauten Werteinheiten hatte ich auf einen Zeitengpass geschlossen und daraus den Ingenieur als beste Wahl abgeleitet - auf Rueckfrage ist das bewusstes Sparen, kein Ueberschuss. Die Frage Zeit gegen Ressourcen bleibt damit offen und faellt mit Entscheidung 9 zusammen. |
+| 13.08.2026 | **Schwaeche des eigenen Beitrags-Massstabs erkannt** (Nutzerrueckfrage direkt nach der Umsetzung: ob es jetzt Sinn ergibt, Bollwerk zu spielen und Schaden zu fangen, damit andere schiessen koennen). **Die Idee ist schluessig, geht mit der gebauten Rechnung aber nicht auf.** Im realen Kampfbericht stehen 35,34 Mrd ausgeteiltem Schaden nur 0,58 Mrd gegnerischer Schaden gegenueber - der absorbierbare Anteil betraegt also **1,6 %** der Summe. Wer saemtlichen Beschuss auf sich zoege und selbst nicht schoesse, bekaeme 1,6 % der Punkte; Tanken lohnt sich damit nicht. Die Begruendung an `contributionShares()` ist als Prinzip richtig, in der Umsetzung aber weitgehend wirkungslos - **beim Bauen zu optimistisch eingeschaetzt**, weil die blosse Addition voraussetzt, dass beide Zahlen in derselben Groessenordnung liegen. Loesungsansatz dokumentiert (jede Kategorie an ihrer eigenen Summe normieren, dann mitteln - ein reiner Tank kaeme auf 50 % statt 1,6 %), **bewusst NICHT umgesetzt**: es waere eine Design-Entscheidung (Austeilen und Einstecken gleichwertig?) und beruehrt drei Stellen gleichzeitig - den Massstab, die Belohnungsaufteilung aus Variante 4 und die Klassenbalance. Nutzerentscheidung: erst besprechen. |
 | 13.08.2026 | **Abschuss-Punkte nach Beitrag statt voll je Teilnehmer** (Abschnitt 2a, Punkt 14). Ausgangsfrage des Nutzers: warum liegt seine Frau in der Bestenliste vorn, obwohl er mehr Schaden austeilt? **Erste Klaerung: Schaden fliesst gar nicht in die Punkte ein** - sie bestehen aus Ressourcenausgaben plus vernichteten Gegnern, bei diesem Spieler zu rund 95 % aus Abschuessen. Der eigentliche Befund lag daneben: bei Gruppen-Expeditionen und Raids mit Verstaerkung bekam JEDER Beteiligte die volle Abschussliste, waehrend ein Solo-Spieler nur seine eigenen Abschuesse erhaelt. Nutzerargument "wenn ich alleine fliege, bekomme ich ja auch nur meine Punkte" - traegt auch rechnerisch, weil die NPC-Staerke einer Gruppen-Expedition mit der gesamten eingesetzten Flottenmacht skaliert. Umgesetzt mit Schaden ausgeteilt UND absorbiert als Beitragsmass; nur den ausgeteilten zu werten haette ausgerechnet das Bollwerk auf seinem Heimatfeld bestraft. Gerechnet an den echten Berichtszahlen: 80,4 % / 18,9 % / 0,7 % statt dreimal 100 %. **Fallstrick beim Bauen:** `playerResults` wird schrittweise befuellt, eine zu frueh berechnete Aufteilung haette dem Verteidiger alles und allen anderen nichts gegeben - Berechnung und Speichern muessten ans Ende verschoben werden. **Belohnungen bewusst NICHT mit umgestellt** (gehoert zu Variante 4 in Entscheidung 3), Punkte sind damit vorerst beitragsbasiert, Beute noch nicht. |
 | 13.08.2026 | **Raid-Schwierigkeit als zweite Haelfte des Raid-Problems aufgenommen** (Nutzerbeobachtung aus dem Livebetrieb: rund 2 % Verlust, keine einzige Verteidigungsanlage). Im Code bestaetigt: `resolveOneWave()` berechnet die Gegnerstaerke ausschliesslich aus Flotte und Verteidigung des VERTEIDIGERS; Verstaerker- und Halte-Flotten gehen in den Kampf ein, aber nicht in die Bemessung. **Kein Fehler, sondern eine bewusste Entscheidung vom Juli 2026** ("sonst wuerde Unterstuetzung den Raid selbst verschaerfen, dann braeuchte man nicht unterstuetzen"). **Die Begruendung haelt der Rechnung jedoch nicht stand:** bei voller Mitzaehlung bliebe das Kraefteverhaeltnis wie im Alleingang, die Verluste verteilten sich aber auf mehrere Flotten - Unterstuetzung lohnt sich also weiterhin durch geteiltes Risiko. Das Argument verwechselt Verlust-Anteil mit Verlust-Menge. Zusammen mit der bereits dokumentierten Ertragsseite (jeder Teilnehmer erhaelt die volle Container-Menge) ergibt das den Befund "nahezu kein Risiko bei vervielfachter Beute". Als **Variante 5** in den Raid-Kasten aufgenommen: ein Gewichtungsfaktor `RAID_ALLY_POWER_WEIGHT` statt der heutigen Null-oder-Eins-Frage, Vorschlag 0,5. **Bewusst NICHT isoliert umgesetzt** - die Schwierigkeit anzuheben, waehrend die Belohnung weiter vervierfacht wird, verschiebt nur das Verhaeltnis, ohne die Ursache zu treffen. |
 | 13.08.2026 | **KI-Flotten: zwei Nutzer-Funde behoben** (Abschnitt 2a, Punkt 13). (a) Bots bauten ausschliesslich Leichte Jaeger, weil starr 5 Stueck bestellt wurden - fuenf Reaper kosten 4,80 Mio, fuenf Leichte Jaeger 0,60 Mio, also kam zuverlaessig nur der guenstigste Typ durch und die im Kommentar beschriebene Durchmischung war wirkungslos. Die Piratenbasen bauten nur deshalb quer, weil sie dank ihres damaligen 44-Mio-Deckels reicher waren. **Die Ruecklage vom Vortag hatte das verschaerft** - eine Nebenwirkung, die dort nicht bedacht war. Behoben durch flexible Stueckzahl (1 bis 5). (b) Die bei Spielern stationierten Verteidigungsflotten waren eingefroren: je 5 Leichte Jaeger standen ueber eine Woche unveraendert da, waehrend die Bot-Flotte auf 1.200 Schiffe wuchs - der Sollwert von 15 % stammte aus einer Zeit mit 33 Schiffen. Behoben durch Nachlegen gegen die Gesamtflotte; auf Rueckkopplung gegengerechnet, der Bestand pendelt sich nach einem Nachlegen stabil bei 15 % ein. Das Zurueckziehen bleibt bewusst aus - dauerhaft vor Ort zu bleiben ist der Zweck. Zusaetzlich ein Mobil-Fehler behoben: in Raid-Berichten liess sich die Einheiten-Tabelle nicht seitlich wischen, weil der Wellen-Rahmen `overflow:hidden` trug und die 720px breite Tabelle abschnitt, bevor das Modal scrollen konnte. |
