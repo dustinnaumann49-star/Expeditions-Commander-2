@@ -9,6 +9,13 @@ export interface ChangelogEntry {
 // sich fuers Spielgefuehl geaendert, nicht wie es technisch umgesetzt wurde.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: '13.08.2026',
+    title: 'Raid-Kampfberichte lassen sich wieder seitlich wischen',
+    changes: [
+      'In Raid-Berichten liess sich die Einheiten-Tabelle auf dem Handy nicht nach rechts wischen - man kam nicht über die Spalte "Verloren" hinaus. In allen anderen Kampfberichten funktionierte es. Ursache war der Rahmen um die einzelnen Wellen, der die breite Tabelle abgeschnitten hat. Behoben.',
+    ],
+  },
+  {
     date: '12.08.2026',
     title: 'Server-Last deutlich gesenkt',
     changes: [
