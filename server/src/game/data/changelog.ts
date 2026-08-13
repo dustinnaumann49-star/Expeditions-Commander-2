@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '12.08.2026',
+    title: 'Server-Last deutlich gesenkt',
+    changes: [
+      'Bei jeder Zustandsabfrage des Spiels - also alle drei Sekunden pro geöffnetem Fenster - hat der Server bisher die Spielstände aller anderen Spieler geladen und durchgesehen, um fällige Raids und Gruppen-Expeditionen nachzuholen. Das war der Hauptverursacher der Rechenlast und ist jetzt auf höchstens einen Durchlauf alle 30 Sekunden begrenzt. Am Spielgeschehen ändert sich nichts: Raids und Expeditionen werden ohnehin zusätzlich im Zwei-Minuten-Takt geprüft.',
+    ],
+  },
+  {
+    date: '12.08.2026',
     title: 'Piratenbasen können wieder unbegrenzt wachsen',
     changes: [
       'Piratenbasen hatten eine versteckte Ausbaugrenze: Ihr Ressourcenlager war gedeckelt, wodurch jedes Gebäude, das mehr kostete als der Deckel hergab, für sie nie bezahlbar wurde. Der Ausbau wäre bei Metallmine 22, Kristallmine 20 und Nanitenfabrik 6 endgültig stehengeblieben - danach wäre wieder alles nur noch in Verteidigungsanlagen geflossen.',
