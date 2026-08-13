@@ -33,6 +33,12 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
   return (
     <div style={{ marginBottom: 12 }}>
       <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{title}</p>
+      {/* `.table-scroll` ist der waagerechte Scroll-Bereich fuer diese eine breite Tabelle (siehe
+          theme.css). Bewusst hier an der Tabelle statt weiter oben um den ganzen Bericht: ein
+          grosser Wischbereich schluckt auf dem Handy das senkrechte Scrollen. Dies ist die EINZIGE
+          breite Tabelle im Projekt - sie wird in allen vier Berichtsarten verwendet, die Aenderung
+          wirkt daher ueberall gleichzeitig. */}
+      <div className="table-scroll">
       <table className="combat-table">
         <thead>
           <tr>
@@ -69,6 +75,7 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -341,19 +348,19 @@ function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSu
             </div>
             {isOpen && (
               // Nutzer-Fund 13.08.2026 (Mobil): In Raid-/Wellen-Berichten liess sich die breite
-              // Einheiten-Tabelle NICHT seitlich wischen, in allen anderen Kampfberichten schon -
-              // man kam nicht ueber die Spalte "Verloren" hinaus.
-              // Ursache: `.combat-table` ist auf Mobil `min-width:720px` breit (siehe theme.css);
-              // gescrollt wird nicht die Tabelle selbst, sondern der Container darum - im
-              // Normalfall `#modal-box`, das wegen `overflow-y:auto` implizit auch waagerecht
-              // scrollt. Der Wellen-Rahmen oben traegt aber `overflow:hidden` (noetig, damit der
-              // Kopfbereich die abgerundeten Ecken nicht ueberlappt) und schnitt die Tabelle
-              // deshalb ab, BEVOR das Modal ueberhaupt scrollen konnte.
-              // Loesung: eigener waagerechter Scroll-Bereich NUR fuer den aufgeklappten Inhalt -
-              // die Ecken des Rahmens bleiben damit sauber. `overflowY: 'visible'` waere hier
-              // ungueltig (zusammen mit overflow-x wuerde der Browser daraus auto machen und eine
-              // zweite senkrechte Scrollleiste erzeugen), daher bewusst 'hidden'.
-              <div style={{ padding: '10px', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+              // Einheiten-Tabelle NICHT seitlich wischen - man kam nicht ueber die Spalte
+              // "Verloren" hinaus. Ursache war, dass Mindestbreite und Seitwaerts-Scrollen beide
+              // auf der Tabelle selbst sassen: die Tabelle wurde dadurch 720px breit und lief aus
+              // dem Wellen-Rahmen heraus, der wegen der abgerundeten Ecken `overflow:hidden`
+              // traegt und sie deshalb abschnitt.
+              // Der erste Behelf dagegen war ein waagerechter Scroll-Bereich um den GESAMTEN
+              // aufgeklappten Inhalt. Der hat das seitliche Wischen zwar hergestellt, aber das
+              // senkrechte Zurueckscrollen weitgehend blockiert (Richtungs-Sperre der Touch-Geste,
+              // ausfuehrlich bei `.table-scroll` in theme.css) - zweiter Nutzer-Fund am selben Tag.
+              // Endgueltige Loesung: der Scroll-Bereich sitzt jetzt eng um die breite Tabelle
+              // selbst (`.table-scroll` in `UnitTable`), hier steht wieder ein normaler Rahmen.
+              // Nichts ragt mehr aus dem Wellen-Rahmen heraus, die Ecken bleiben sauber.
+              <div style={{ padding: '10px' }}>
                 <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
                 <RewardTable rows={combatRewardRows(sk.rewards)} />
                 <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
