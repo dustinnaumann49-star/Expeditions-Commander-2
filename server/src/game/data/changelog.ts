@@ -10,8 +10,10 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '13.08.2026',
-    title: 'Raid-Kampfberichte lassen sich wieder seitlich wischen',
+    title: 'KI baut gemischte Flotten, Raid-Berichte wieder wischbar',
     changes: [
+      'KI-Vega und KI-Nyx bauten ausschließlich Leichte Jäger. Ursache war die feste Bestellmenge: Die KI versucht immer fünf Schiffe auf einmal zu bauen und beginnt beim Typ mit dem geringsten Bestand - also bei den teuersten, die sie noch gar nicht besitzt. Fünf Reaper kosten 4,8 Millionen, fünf Leichte Jäger nur 600.000, weshalb zuverlässig nur Letztere durchkamen. Jetzt baut die KI vom Typ mit dem geringsten Bestand so viele, wie sie sich leisten kann - aus fünf Leichten Jägern wird bei gleichem Budget ein Reaper, und die Flotten durchmischen sich mit der Zeit von selbst.',
+      'Die Flotten, die KI-Mitspieler bei euch zur Verteidigung stationieren, waren eingefroren: Einmal abgestellt, wurden sie nie wieder aufgestockt. Beobachtet wurden je fünf Leichte Jäger, die über eine Woche unverändert standen, während die KI-Flotte auf über 1.200 Schiffe angewachsen war. Die stationierte Flotte wächst jetzt mit und liegt wieder bei den vorgesehenen 15 Prozent. Zurückgezogen wird sie weiterhin nicht - dauerhaft vor Ort zu bleiben ist ihr Zweck.',
       'In Raid-Berichten liess sich die Einheiten-Tabelle auf dem Handy nicht nach rechts wischen - man kam nicht über die Spalte "Verloren" hinaus. In allen anderen Kampfberichten funktionierte es. Ursache war der Rahmen um die einzelnen Wellen, der die breite Tabelle abgeschnitten hat. Behoben.',
     ],
   },
