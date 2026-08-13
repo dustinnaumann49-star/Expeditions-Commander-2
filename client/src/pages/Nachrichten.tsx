@@ -340,7 +340,20 @@ function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSu
               <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{isOpen ? '▾ zuklappen' : '▸ aufklappen'}</span>
             </div>
             {isOpen && (
-              <div style={{ padding: '10px' }}>
+              // Nutzer-Fund 13.08.2026 (Mobil): In Raid-/Wellen-Berichten liess sich die breite
+              // Einheiten-Tabelle NICHT seitlich wischen, in allen anderen Kampfberichten schon -
+              // man kam nicht ueber die Spalte "Verloren" hinaus.
+              // Ursache: `.combat-table` ist auf Mobil `min-width:720px` breit (siehe theme.css);
+              // gescrollt wird nicht die Tabelle selbst, sondern der Container darum - im
+              // Normalfall `#modal-box`, das wegen `overflow-y:auto` implizit auch waagerecht
+              // scrollt. Der Wellen-Rahmen oben traegt aber `overflow:hidden` (noetig, damit der
+              // Kopfbereich die abgerundeten Ecken nicht ueberlappt) und schnitt die Tabelle
+              // deshalb ab, BEVOR das Modal ueberhaupt scrollen konnte.
+              // Loesung: eigener waagerechter Scroll-Bereich NUR fuer den aufgeklappten Inhalt -
+              // die Ecken des Rahmens bleiben damit sauber. `overflowY: 'visible'` waere hier
+              // ungueltig (zusammen mit overflow-x wuerde der Browser daraus auto machen und eine
+              // zweite senkrechte Scrollleiste erzeugen), daher bewusst 'hidden'.
+              <div style={{ padding: '10px', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}>
                 <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
                 <RewardTable rows={combatRewardRows(sk.rewards)} />
                 <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
