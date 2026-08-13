@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: '13.08.2026',
+    title: 'Punkte für Abschüsse zählen jetzt den eigenen Beitrag',
+    changes: [
+      'Bei gemeinsamen Expeditionen und bei Raids mit Verstärkung bekam bisher JEDER Beteiligte die vollständige Abschussliste gutgeschrieben - wer eine einzelne Spionagesonde mitschickte, erhielt dieselben Punkte wie jemand mit 20.000 Schiffen. Wer alleine flog, bekam dagegen nur seine eigenen Abschüsse. Das war widersprüchlich.',
+      'Abschüsse werden jetzt nach tatsächlichem Beitrag verteilt. Als Beitrag zählt ausgeteilter UND absorbierter Schaden - wer Treffer schluckt, damit andere schießen können, leistet einen ebenso realen Beitrag. Ohne diese zweite Hälfte wäre ausgerechnet das Bollwerk bei der Heimatverteidigung am schlechtesten bezahlt worden.',
+      'An den Belohnungen ändert sich nichts: Container und Beute bleiben weiterhin vollständig für jeden Teilnehmer. Wer alleine kämpft, merkt von der Umstellung ebenfalls nichts - sein Anteil ist dann schlicht 100 Prozent.',
+    ],
+  },
+  {
+    date: '13.08.2026',
     title: 'KI baut gemischte Flotten, Raid-Berichte wieder wischbar',
     changes: [
       'KI-Vega und KI-Nyx bauten ausschließlich Leichte Jäger. Ursache war die feste Bestellmenge: Die KI versucht immer fünf Schiffe auf einmal zu bauen und beginnt beim Typ mit dem geringsten Bestand - also bei den teuersten, die sie noch gar nicht besitzt. Fünf Reaper kosten 4,8 Millionen, fünf Leichte Jäger nur 600.000, weshalb zuverlässig nur Letztere durchkamen. Jetzt baut die KI vom Typ mit dem geringsten Bestand so viele, wie sie sich leisten kann - aus fünf Leichten Jägern wird bei gleichem Budget ein Reaper, und die Flotten durchmischen sich mit der Zeit von selbst.',
