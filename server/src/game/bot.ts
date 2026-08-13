@@ -112,19 +112,44 @@ async function maybeHandleGroupOps(state: PlayerState, humanUserIds: number[]): 
 // Kampf-Simulation aus (nur Registrierung einer Stationierung), Kampf kommt erst spaeter ueber
 // einen echten Raid. Nicht bei JEDEM Heartbeat (sonst wuerde staendig neu versucht), sondern mit
 // Zufallschance, und nur falls dort nicht schon eine eigene Flotte haelt/unterwegs ist.
+// Anteil der eigenen Flotte, der je menschlichem Mitspieler dauerhaft zum Halten abgestellt wird.
+const HOLD_FLEET_SHARE = 0.15;
+// Erst nachlegen, wenn der bereits stationierte Bestand spuerbar unter dem Sollwert liegt - sonst
+// wuerde bei jedem Zug wegen eines einzelnen fehlenden Schiffs eine neue Entsendung starten.
+const HOLD_TOPUP_THRESHOLD = 0.5;
+
 function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
   for (const targetUserId of humanUserIds) {
-    const alreadyThere = state.galaxyDeployments.some((d) => d.targetUserId === targetUserId && !d.recalled);
-    if (alreadyThere) continue;
     if (Math.random() > BOT_ACTION_CHANCE) continue;
+
+    // 13.08.2026 (Nutzer-Fund): Hier stand vorher ein hartes "schon eine Flotte dort? dann gar
+    // nichts tun". Das hat die einmal abgestellte Flotte dauerhaft EINGEFROREN - beobachtet wurden
+    // je 5 Leichte Jaeger, die seit ueber einer Woche unveraendert bei den Spielern standen,
+    // waehrend die Bot-Flotte in derselben Zeit auf ueber 1.200 Schiffe gewachsen war. Der Anteil
+    // von 15 % stammte also noch aus einer Zeit, als der Bot rund 33 Schiffe besass.
+    // Nicht behoben wird das Zurueckziehen: eine dauerhaft stationierte Flotte ist genau der Zweck
+    // (sie verteidigt bei Piratenraids mit, siehe raids.ts). Behoben wird, dass sie NICHT MITWAECHST.
+    const held: Record<string, number> = {};
+    state.galaxyDeployments
+      .filter((d) => d.targetUserId === targetUserId && !d.recalled)
+      .forEach((d) => {
+        Object.entries(d.ships).forEach(([id, n]) => (held[id] = (held[id] || 0) + (n || 0)));
+      });
 
     const selection: Record<string, number> = {};
     let total = 0;
     for (const id of ['leicht', 'schwer', 'kreuzer']) {
-      const take = Math.floor((state.fleet[id] || 0) * 0.15);
-      if (take > 0) {
-        selection[id] = take;
-        total += take;
+      // Sollwert bezieht sich auf die GESAMTE Flotte des Bots, also inklusive der bereits
+      // stationierten Schiffe - sonst waechst der Sollwert mit jedem Nachlegen weiter mit.
+      const soll = Math.floor(((state.fleet[id] || 0) + (held[id] || 0)) * HOLD_FLEET_SHARE);
+      const fehlt = soll - (held[id] || 0);
+      // Nur nachlegen, wenn wirklich etwas fehlt UND der Bestand die Schwelle unterschreitet.
+      if (fehlt > 0 && (held[id] || 0) < soll * HOLD_TOPUP_THRESHOLD) {
+        const take = Math.min(fehlt, state.fleet[id] || 0);
+        if (take > 0) {
+          selection[id] = take;
+          total += take;
+        }
       }
     }
     if (total >= 5) startHoldDeployment(state, targetUserId, selection);

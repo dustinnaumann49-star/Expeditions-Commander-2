@@ -35,12 +35,11 @@ function totalCost(cost?: { metall: number; kristall: number; deuterium: number 
   return cost.metall + cost.kristall + cost.deuterium;
 }
 
-// Guenstigster-zuerst-Reihenfolge (Nutzerentscheidung, Neugestaltung "Ueberarbeitung KI-Bots &
-// Piratenbasen" 04.08.2026) - dient als FALLBACK, wenn das eigentliche Bauvorhaben (siehe
-// maybeBuildShips/-Defense unten) fuer JEDEN Typ zu teuer war, damit der Zug nicht leer endet.
-const COMBAT_SHIP_IDS_BY_COST = [...COMBAT_SHIP_IDS].sort(
-  (a, b) => totalCost(SHIPS.find((s) => s.id === a)?.cost) - totalCost(SHIPS.find((s) => s.id === b)?.cost)
-);
+// Guenstigster-zuerst-Reihenfolge - dient als FALLBACK bei der VERTEIDIGUNG (siehe
+// maybeBuildDefense unten), wenn das eigentliche Bauvorhaben fuer jeden Typ zu teuer war.
+// Fuer SCHIFFE wird sie seit dem 13.08.2026 nicht mehr gebraucht: dort wird die Stueckzahl
+// flexibel bestimmt (1 bis 5 statt starr 5), wodurch ein eigener Guenstigster-Fallback entfaellt -
+// der Durchlauf nach geringstem Bestand findet ohnehin jeden bezahlbaren Typ.
 const DEFENSE_IDS_BY_COST = [...DEFENSE_IDS].sort(
   (a, b) => totalCost(DEFENSES.find((d) => d.id === a)?.cost) - totalCost(DEFENSES.find((d) => d.id === b)?.cost)
 );
@@ -179,16 +178,29 @@ function maybeBuildShips(state: PlayerState): void {
   // teurere Typen werden trotzdem seltener gebaut, weil ein Versuch bei fehlenden Ressourcen
   // einfach fehlschlaegt (ok:false) und der naechstguenstigere Typ in der sortierten Liste drankommt.
   const sortedCombatIds = [...COMBAT_SHIP_IDS].sort((a, b) => countInFleetOrQueue(state, a) - countInFleetOrQueue(state, b));
+  // 13.08.2026 (Nutzer-Fund): Vorher wurden STARR 5 Stueck bestellt und bei zu wenig Ressourcen zum
+  // naechsten Typ gesprungen. Das machte die oben beschriebene Durchmischung wirkungslos, sobald der
+  // Bot arm ist: die teuren Typen stehen wegen ihres Bestands von 0 ganz vorn und scheitern
+  // reihenweise (5 Reaper = 4,8 Mio, 5 Bomber = 5,4 Mio), waehrend der Leichte Jaeger als
+  // guenstigster Typ mit 0,6 Mio zuverlaessig als Einziger durchkommt. Ergebnis in der Praxis:
+  // KI-Nyx und KI-Vega besassen nach zwei Wochen ausschliesslich Leichte Jaeger, waehrend die
+  // Piratenbasen - die dank ihres alten Ressourcen-Deckels von 44 Mio deutlich reicher waren -
+  // tatsaechlich quer bauten (+525 Schwere Jaeger, +285 Kreuzer, +183 Reaper ueber dem Seed-Bestand).
+  // Verschaerft wurde das durch die Ruecklage vom 12.08.2026, die den frei verfuegbaren Anteil
+  // zusaetzlich verkleinert.
+  // Jetzt: vom Typ mit dem geringsten Bestand so viele bauen, wie bezahlbar sind (1 bis 5). Damit
+  // wird aus "5 Leichte Jaeger fuer 600k" bei gleichem Budget "1 Reaper fuer 960k", und die Flotte
+  // durchmischt sich von selbst - genau die Absicht, die oben schon beschrieben stand.
   for (const id of sortedCombatIds) {
-    if (!affordableFrom(spendable, SHIPS.find((x) => x.id === id)?.cost, 5)) continue;
-    if (startBuild(state, id, 5).ok) return;
-  }
-  // Flexibler Fallback (Nutzerentscheidung, Neugestaltung 04.08.2026): das eigentliche Bauvorhaben
-  // (5 Stueck) war fuer JEDEN Typ zu teuer - statt den Zug leer enden zu lassen, auf eine kleinere,
-  // bezahlbare Alternative ausweichen (guenstigster Typ zuerst, jeweils nur 1 Stueck).
-  for (const id of COMBAT_SHIP_IDS_BY_COST) {
-    if (!affordableFrom(spendable, SHIPS.find((x) => x.id === id)?.cost, 1)) continue;
-    if (startBuild(state, id, 1).ok) return;
+    const cost = SHIPS.find((x) => x.id === id)?.cost;
+    let qty = 0;
+    for (let n = 5; n >= 1; n--) {
+      if (affordableFrom(spendable, cost, n)) {
+        qty = n;
+        break;
+      }
+    }
+    if (qty > 0 && startBuild(state, id, qty).ok) return;
   }
 }
 
