@@ -39,6 +39,54 @@ Drittel der Zeile belegt haette.
 
 ---
 
+## Bereits behoben (13.08.2026)
+
+### M11 - Kampfberichte liessen sich nicht mehr senkrecht zurueckscrollen
+
+**Symptom (Nutzermeldung):** Nach dem Fix fuer das seitliche Wischen in Raid-/Gruppen-Berichten
+liess sich der aufgeklappte Bericht kaum noch nach oben scrollen - es klappte erst nach mehreren
+Versuchen.
+
+**Ursache, zwei Ebenen.** Der eigentliche Konstruktionsfehler stammt vom 04.08.2026: Mindestbreite
+(`min-width:720px`) und Seitwaerts-Scrollen (`overflow-x:auto`) sassen auf DEMSELBEN Element, der
+Tabelle selbst. Ein Element kann sich nicht selbst scrollen - die Tabelle wurde dadurch schlicht
+720px breit und lief aus jedem Rahmen um sie herum heraus; gescrollt hat immer ein Vorfahre,
+im Normalfall `#modal-box`. Der Wellen-Rahmen der Raid-Berichte traegt `overflow:hidden` (noetig
+fuer die abgerundeten Ecken) und schnitt die Tabelle deshalb ab. Der Behelf dagegen - ein
+waagerechter Scroll-Bereich um den GESAMTEN aufgeklappten Berichtsinhalt - stellte das seitliche
+Wischen her, machte aber den halben Bildschirm zum Wischbereich.
+
+**Warum das das senkrechte Scrollen blockiert:** Handy-Browser legen die Wischrichtung in den ersten
+Millimetern einer Geste fest. Beginnt sie in einem waagerecht scrollbaren Bereich und verlaeuft nur
+leicht schraeg, gilt sie als waagerecht, und der senkrechte Anteil wird fuer die restliche
+Beruehrung verworfen. Da fast jeder Wischversuch in diesem Bereich landete, brauchte es mehrere
+Anlaeufe.
+
+**Behoben durch:** Standard-Aufbau hergestellt - neue Klasse `.table-scroll` in `theme.css` als
+schmaler Scroll-Wrapper, die Mindestbreite bleibt an der Tabelle. Angewandt in `UnitTable`
+(`Nachrichten.tsx`), der einzigen breiten Tabelle im Projekt; sie wird in allen vier Berichtsarten
+verwendet, die Aenderung wirkt daher ueberall gleichzeitig. Der grosse Wischbereich um den
+Wellen-Inhalt ist zurueckgebaut. `.combat-table.narrow` vereinfacht sich entsprechend
+(`display:table`/`overflow-x:visible` entfallen, wirksam bleibt allein die Ruecknahme der
+Mindestbreite).
+
+**Nebeneffekt:** `#modal-box` scrollt nicht mehr waagerecht mit - bisher verschob sich der gesamte
+Bericht seitlich, weil die 720px-Tabelle ueber seine Breite hinausragte.
+
+**Bewusst in Kauf genommen:** Bei einem Gruppenbericht mit mehreren Teilnehmern hat jede
+Teilnehmer-Tabelle ihren eigenen Scroll-Bereich; sie laufen nicht mehr gemeinsam. Ein Gleichlauf
+per Skript waere fuer den Nutzen zu aufwaendig.
+
+**Regel daraus:** Mindestbreite und Seitwaerts-Scrollen NIE auf dasselbe Element legen, und den
+Scroll-Bereich immer so eng wie moeglich um den breiten Inhalt ziehen - nie um einen ganzen
+Abschnitt.
+
+**Noch am Geraet zu bestaetigen:** aufgeklappten Raid-/Gruppenbericht bei 390px oeffnen, weit nach
+unten scrollen, dann in einem Zug zurueck nach oben. Zusaetzlich pruefen, ob die breite Tabelle
+weiterhin bis zur letzten Spalte wischbar ist.
+
+---
+
 ## Noch zu pruefen - nur am Geraet moeglich
 
 Diese Punkte lassen sich aus dem Code heraus nur vermuten, nicht bestaetigen. Sie brauchen einen
@@ -56,7 +104,7 @@ Durchgang mit dem Handy, Seite fuer Seite. Empfohlene Testbreite: **390 px** (iP
 | M6 | `Forschung.tsx` | Baumansicht mit `maxWidth: 100vw` und `overflowX: auto` - bewusst scrollbar. Pruefen, ob der Scrollbalken auf dem Handy auffindbar ist oder ob der Baum nur abgeschnitten wirkt. |
 | M7 | `Galaxie.tsx` | Karte mit Positionen - Kandidat fuer feste Koordinaten-Layouts. Ungeprueft. |
 | M8 | `Statistik.tsx` | Tabellen ungeprueft, moeglicherweise eigene Klassen statt `.combat-table`. |
-| M9 | Kampf-Visualisierung (`CombatReplay`) | Canvas-Groesse ungeprueft. Bei fester Pixelbreite dieselbe Ueberlauf-Frage wie M1. |
+| M9 | ~~Kampf-Visualisierung (`CombatReplay`)~~ | **GEGENSTANDSLOS (geprueft 13.08.2026).** Die Komponente existiert im Repo nicht (mehr) - es gibt kein `CombatReplayView.tsx` und keine Fundstelle im Client. Der Server schreibt die `replay`-Daten allerdings weiterhin in jede Kampfnachricht, ohne dass sie jemand anzeigt; das ist kein Mobil-Punkt, sondern ein Kandidat fuer den offenen Speicherbefund in Abschnitt 2a, Punkt 12 des Balance-Plans (435 KB laut Datenbank gegen 761 KB im Speicher). Dort zu klaeren, nicht hier. |
 | M10 | Alle Info-Popups (`InfoModal`, `LoreModal`) | `max-width: 800px; width: 100%; max-height: 85vh` - grundsaetzlich richtig gebaut. Pruefen, ob der Inhalt darin scrollt statt zu ueberlaufen. |
 
 ### Pruefablauf je Seite
