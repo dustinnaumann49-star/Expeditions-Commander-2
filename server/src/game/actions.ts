@@ -541,6 +541,32 @@ const SLOW_TICK_PHASE_MS = 1000;
 // sich gegenseitig ergaenzen: die eine nennt Nutzer und Spielstandgroesse, diese die Phasen.
 const SLOW_TICK_TOTAL_MS = 500;
 
+// ===== DROSSELUNG DER CROSS-USER-SWEEPS (12.08.2026) =====
+// Die drei Sweeps unten arbeiten NICHT am eigenen Zustand, sondern laden und verarbeiten die
+// Spielstaende ALLER anderen Nutzer. Sie liefen bisher bei jedem tick() - und tick() laeuft bei
+// JEDEM GET /game/state-Poll, also alle 3 Sekunden pro geoeffnetem Client. Bei zwei offenen
+// Fenstern waren das rund 40 vollstaendige Cross-User-Durchlaeufe pro Minute, jeder mit Laden und
+// Parsen fremder Spielstaende von 435 bis 655 KB; dieselbe Gruppen-Expedition wurde dabei mehrfach
+// pro Runde verarbeitet.
+//
+// Gemessen am 12.08.2026 (Gesamt-Aufschluesselung, KI-Nyx): von 578 ms Gesamtdauer entfielen 549 ms
+// auf processOverdueRaidsForOtherUsers bzw. in anderen Durchlaeufen 481-511 ms auf
+// processAllDepartedGroupOperations - waehrend runEconomyTick, also die eigene Wirtschaft des
+// Nutzers, bei 1 ms lag. Die Ursache lag also nie beim betroffenen Nutzer selbst.
+//
+// Loesung: global drosseln statt aus tick() entfernen. Der Sicherheitsnetz-Charakter bleibt damit
+// erhalten (die Sweeps laufen auch dann, wenn der Heartbeat aussetzt), und der Multiplikator
+// verschwindet. Die Korrektheit haengt ohnehin nicht am Poll-Takt: der Heartbeat laeuft alle
+// 2 Minuten, die Sweeps existieren nur, damit Raids und Expeditionen auch bei abwesenden Spielern
+// weiterlaufen. 30 Sekunden sind deutlich feiner als das und fuer den Spieler nicht wahrnehmbar.
+//
+// Bei den GRUPPEN-Operationen kommt hinzu, dass der Aufruf hier ohnehin redundant war: der
+// Heartbeat ruft processAllDepartedGroupOperations() bereits einmal global mit einem Anker-Zustand
+// auf, mit dem ausdruecklichen Kommentar "ein Durchlauf pro Nutzer waere unnoetig"
+// (heartbeat.ts). Der Aufruf hier ist damit nur noch Sicherheitsnetz.
+const CROSS_USER_SWEEP_MIN_INTERVAL_MS = 30000;
+let lastCrossUserSweepAt = 0;
+
 export async function tick(state: PlayerState): Promise<PlayerState> {
   const t0 = Date.now();
   await runEconomyTick(state);
@@ -553,16 +579,20 @@ export async function tick(state: PlayerState): Promise<PlayerState> {
   await processSpyMissions(state);
   maybeGeneratePirateSpyReport(state);
   const t3 = Date.now();
-  // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern bei jedem Tick zusaetzlich fuer
-  // ALLE anderen Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind -
-  // damit Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene
-  // Spieler selbst gerade nicht online ist (siehe README fuer den Hintergrund).
-  await processOverdueRaidsForOtherUsers(state);
+  // Ab hier: nicht nur den eigenen Zustand nachziehen, sondern zusaetzlich fuer ALLE anderen
+  // Spieler pruefen, ob faellige Checkpoints/Expeditionen liegen geblieben sind - damit
+  // Raids/Multiplayer-Expeditionen auch dann weiterlaufen, wenn der jeweils betroffene Spieler
+  // selbst gerade nicht online ist. Gedrosselt, siehe CROSS_USER_SWEEP_MIN_INTERVAL_MS oben.
+  const runSweeps = now - lastCrossUserSweepAt >= CROSS_USER_SWEEP_MIN_INTERVAL_MS;
+  if (runSweeps) lastCrossUserSweepAt = now;
+  if (runSweeps) await processOverdueRaidsForOtherUsers(state);
   const t4 = Date.now();
-  await processOverdueRaidSpawnsForOtherUsers(state);
+  if (runSweeps) await processOverdueRaidSpawnsForOtherUsers(state);
   const t5 = Date.now();
-  await processAllDepartedGroupOperations(state);
-  await autoStartReadyGroupOperations(state);
+  if (runSweeps) {
+    await processAllDepartedGroupOperations(state);
+    await autoStartReadyGroupOperations(state);
+  }
   const t6 = Date.now();
   const phases: [string, number][] = [
     ['runEconomyTick', t1 - t0],
