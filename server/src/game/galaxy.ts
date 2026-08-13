@@ -221,6 +221,40 @@ export function processGalaxyDeployments(state: PlayerState): void {
     }
     return true;
   });
+  mergeArrivedDeployments(state);
+}
+
+// Angekommene Halte-Flotten zum selben Ziel zu EINEM Eintrag zusammenfassen (13.08.2026,
+// Nutzer-Hinweis). Anlass: die KI legt seit demselben Tag Verstaerkung nach, wenn ihre stationierte
+// Flotte hinter der eigenen Flottengroesse zurueckbleibt (maybeHoldAtHumans() in bot.ts) - technisch
+// als ZUSAETZLICHE Entsendung, weil eine bereits fliegende Flotte nicht rueckwirkend vergroessert
+// werden kann. Ohne Zusammenfassung waechst die Liste "Eingehende Flotten" beim Zielspieler mit
+// jeder Aufstockung um eine Zeile; bei jeder Verdopplung der Bot-Flotte kaeme eine weitere dazu.
+//
+// Zusammengefasst wird bewusst ERST NACH DER ANKUNFT: unterwegs befindliche Flotten haben eigene
+// Ankunftszeiten und muessen getrennt bleiben, sonst waere die Anzeige "Ankunft in ..." falsch.
+// Der aelteste Eintrag bleibt bestehen (er traegt die urspruengliche Ankunftszeit, an der die
+// Anzeige "Haelt seit ..." haengt), die spaeteren werden hineingerechnet und entfernt.
+// Zurueckgerufene Flotten bleiben unangetastet - sie haben eine eigene Rueckflugzeit.
+function mergeArrivedDeployments(state: PlayerState): void {
+  const now = Date.now();
+  const firstByTarget = new Map<number, GalaxyDeployment>();
+  const merged = new Set<string>();
+  for (const d of state.galaxyDeployments) {
+    if (d.recalled || d.arriveTime > now) continue;
+    const existing = firstByTarget.get(d.targetUserId);
+    if (!existing) {
+      firstByTarget.set(d.targetUserId, d);
+      continue;
+    }
+    Object.entries(d.ships).forEach(([id, qty]) => {
+      if (qty > 0) existing.ships[id] = (existing.ships[id] || 0) + qty;
+    });
+    merged.add(d.id);
+  }
+  if (merged.size > 0) {
+    state.galaxyDeployments = state.galaxyDeployments.filter((d) => !merged.has(d.id));
+  }
 }
 
 // ========== HEIMATBASIS VERLEGEN ==========
