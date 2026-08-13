@@ -34,6 +34,60 @@ function enemyDestroyedPoints(stats: PlayerStats): number {
   );
 }
 
+// ===== BEITRAGS-GEWICHTETE ABSCHUSS-ZURECHNUNG (13.08.2026, Nutzerentscheidung) =====
+// Bis dahin bekam bei Mehrspieler-Kaempfen (Gruppen-Expeditionen UND Raids mit Verstaerkung) JEDER
+// Beteiligte die VOLLE Abschussliste gutgeschrieben - wer eine einzelne Spionagesonde mitschickte,
+// erhielt dieselben Punkte wie jemand mit 20.000 Schiffen. Der Nutzer hat das als Widerspruch zum
+// Solo-Fall benannt: "wenn ich alleine fliege, bekomme ich ja auch nur meine Punkte".
+//
+// Das Argument traegt auch rechnerisch: Die NPC-Staerke einer Gruppen-Expedition skaliert mit der
+// GESAMTEN eingesetzten Flottenmacht (siehe groupOps.ts), die Gruppe vernichtet also mehr als ein
+// Einzelspieler. Wird diese groessere Beute nach Beitrag aufgeteilt, bekommt jeder ungefaehr das,
+// was er auch solo bekommen haette - genau die Gleichbehandlung, die vorher fehlte.
+//
+// ALS BEITRAG ZAEHLT SCHADEN AUSGETEILT **UND** SCHADEN ABSORBIERT. Nur den ausgeteilten Schaden zu
+// werten waere ein Eigentor: das Bollwerk hat per Konstruktion den geringsten Waffenwert (siehe
+// classes.ts) und wuerde ausgerechnet bei der Heimatverteidigung - seinem Heimatfeld - am
+// schlechtesten bezahlt. Wer Treffer schluckt, damit andere schiessen koennen, leistet einen
+// ebenso realen Beitrag.
+//
+// Bewusst NICHT angetastet: Belohnungen (Container/Beute). Die bleiben vorerst voll je Teilnehmer,
+// siehe Entscheidung 3 im Umsetzungsplan - dort wird die Aufteilung als Ganzes entschieden.
+export function contributionShares(playerResults: { ownerUsername?: string; dmgDealt?: number; dmgTaken?: number }[]): Record<string, number> {
+  const raw: Record<string, number> = {};
+  let total = 0;
+  for (const r of playerResults) {
+    const owner = r.ownerUsername;
+    if (!owner) continue;
+    const value = (r.dmgDealt || 0) + (r.dmgTaken || 0);
+    raw[owner] = (raw[owner] || 0) + value;
+    total += value;
+  }
+  const owners = Object.keys(raw);
+  if (owners.length === 0) return {};
+  // Randfall: niemand hat Schaden ausgeteilt ODER erlitten (z.B. Kampf ohne Gegner). Dann gleich
+  // aufteilen statt durch null zu teilen - sonst bekaeme niemand etwas.
+  if (total <= 0) {
+    const equal = 1 / owners.length;
+    return Object.fromEntries(owners.map((o) => [o, equal]));
+  }
+  return Object.fromEntries(owners.map((o) => [o, raw[o] / total]));
+}
+
+// Skaliert eine Abschussliste auf den Anteil eines Teilnehmers. Gerundet, weil
+// `enemiesDestroyedByType` ganze Einheiten zaehlt; bei den ueblichen Groessenordnungen
+// (Tausende Abschuesse) ist der Rundungsfehler bedeutungslos. Ein Anteil > 0 ergibt mindestens
+// 1 Abschuss, damit ein kleiner Beitrag nicht voellig leer ausgeht.
+export function scaleKills(lossesById: Record<string, number>, share: number): Record<string, number> {
+  const out: Record<string, number> = {};
+  Object.entries(lossesById).forEach(([id, count]) => {
+    if (!count) return;
+    const scaled = count * share;
+    out[id] = scaled > 0 && scaled < 1 ? 1 : Math.round(scaled);
+  });
+  return out;
+}
+
 // Zentrale Stelle zum Verbuchen vernichteter Gegner (Nutzerentscheidung Juli 2026) - haelt sowohl
 // den unveraenderten Rohzaehler `enemiesDestroyed` als auch die neue Aufschluesselung nach Typ
 // `enemiesDestroyedByType` synchron, damit keiner der bisher fuenf Aufrufer (missions.ts, raids.ts

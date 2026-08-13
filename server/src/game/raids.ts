@@ -43,7 +43,7 @@ const RAID_FLEET_POWER_WEIGHT = 0.7;
 const RAID_DEFENSE_POWER_WEIGHT = 0.3;
 import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
 import { pushMessage } from './messages.js';
-import { recordEnemyKills } from './stats.js';
+import { recordEnemyKills, contributionShares, scaleKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -468,7 +468,6 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   // Zeilen (Punkt 6 README - Mehrspieler-Kampfbericht muss aufklappbar sein). Statistik
   // (enemiesDestroyed) zaehlt SOFORT pro Welle, "raidsRepelledFull/Partial" dagegen erst am Ende
   // in finalizeRaidWaves() - sonst wuerde ein einzelner Raid bis zu 5x in die Bestenliste einzahlen.
-  recordEnemyKills(state.stats, npcLossesById);
   state.stats.ownShipsLost += Object.values(losses).reduce((a, b) => a + b, 0);
 
   const modifierText = battleModifier ? ` ${BATTLE_MODIFIER_LABELS[battleModifier]}.` : '';
@@ -507,8 +506,6 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
         shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0), shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
     });
-    recordEnemyKills(reinforcerState.stats, npcLossesById);
-    if (r.userId !== currentUserId) savePlayerState(reinforcerState);
   });
 
   heldStates.forEach((holding) => {
@@ -529,7 +526,26 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
         shieldDmgTaken: Math.round(result.shieldDmgTakenA[statKey] || 0), shieldRegen: Math.round(result.shieldRegenA[statKey] || 0),
       });
     });
-    recordEnemyKills(ownerState.stats, npcLossesById);
+  });
+
+  // ===== ABSCHUSS-ZURECHNUNG NACH BEITRAG (13.08.2026, Nutzerentscheidung) =====
+  // ERST HIER, weil playerResults bis zu dieser Stelle nach und nach befuellt wird: zuerst die
+  // eigenen Einheiten des Verteidigers, dann die Verstaerker, zuletzt die haltenden Flotten. Eine
+  // frueher berechnete Aufteilung haette dem Verteidiger 100 % gegeben und allen anderen null.
+  // Herleitung des Verfahrens an contributionShares() in stats.ts.
+  // Bei Einzelverteidigung ohne Hilfe ist der eigene Anteil 1 - das Ergebnis ist dann identisch
+  // zum vorherigen Verhalten.
+  const killShares = contributionShares(playerResults);
+  recordEnemyKills(state.stats, scaleKills(npcLossesById, killShares[ownerUsername] ?? 1));
+  reinforcerStates.forEach(({ r, playerState: reinforcerState }) => {
+    recordEnemyKills(reinforcerState.stats, scaleKills(npcLossesById, killShares[r.username] || 0));
+    // Speichern MUSS nach der Verbuchung erfolgen, sonst geht die Statistik verloren.
+    if (r.userId !== currentUserId) savePlayerState(reinforcerState);
+  });
+  heldStates.forEach((holding) => {
+    // Haltende Flotten stehen in playerResults unter "<Name> (haltende Flotte)" - der Anteil muss
+    // unter genau diesem Schluessel nachgeschlagen werden, nicht unter dem blossen Namen.
+    recordEnemyKills(holding.ownerState.stats, scaleKills(npcLossesById, killShares[`${holding.ownerUsername} (haltende Flotte)`] || 0));
     persistHeldDeployment(holding, currentUserId);
   });
 

@@ -20,7 +20,7 @@ import {
 import type { OwnedFleetContribution } from './combat.js';
 import { runMultiOwnerCombatInWorker } from './combatRunner.js';
 import { pushMessage } from './messages.js';
-import { recordEnemyKills } from './stats.js';
+import { recordEnemyKills, contributionShares, scaleKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
 import { loadPlayerState, savePlayerState } from './state.js';
@@ -856,11 +856,15 @@ async function runGroupHourlyCheck(op: GroupOperation, accepted: GroupOperationP
     });
   });
 
-  // Statistik (siehe stats.ts) - jeder Teilnehmer bekommt denselben Ausgang gutgeschrieben.
+  // Statistik (siehe stats.ts): Abschuesse werden seit dem 13.08.2026 nach tatsaechlichem BEITRAG
+  // verteilt (Schaden ausgeteilt + absorbiert), nicht mehr jedem Teilnehmer vollstaendig
+  // gutgeschrieben - Herleitung an contributionShares(). Die Belohnungen darunter bleiben davon
+  // unberuehrt und weiterhin voll je Teilnehmer.
   const npcLossesById: Record<string, number> = Object.fromEntries(npcResults.map((r) => [r.id, r.destroyedCount || 0]));
+  const shares = contributionShares(playerResults);
   accepted.forEach((p) => {
     const pState = participantStates.get(p.userId)!;
-    recordEnemyKills(pState.stats, npcLossesById);
+    recordEnemyKills(pState.stats, scaleKills(npcLossesById, shares[p.username] || 0));
     if (anyNpcDestroyed) pState.stats.eliteBollwerkChecks++;
     const ownLost = playerResults.filter((r) => r.ownerUsername === p.username).reduce((sum, r) => sum + (r.lost || 0), 0);
     pState.stats.ownShipsLost += ownLost;
