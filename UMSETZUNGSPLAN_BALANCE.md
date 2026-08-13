@@ -1644,6 +1644,18 @@ als der Bot rund 33 Schiffe besass.
 und bei Unterschreitung nachgelegt. Gegengerechnet auf Rueckkopplung (jede Entsendung verkleinert
 die Heimatflotte): der Bestand pendelt sich nach EINEM Nachlegen bei exakt 15 % ein und bleibt
 stabil - keine Endlosschleife, kein Leerlaufen der Heimatbasis.
+*Folgefehler sofort mitbehoben (Nutzer-Hinweis noch im selben Zug):* Das Nachlegen legt technisch
+eine ZUSAETZLICHE Entsendung an - eine bereits fliegende Flotte laesst sich nicht rueckwirkend
+vergroessern. Ohne Gegenmassnahme waechst die Liste "Eingehende Flotten" beim Zielspieler mit jeder
+Aufstockung um eine Zeile, also bei jeder Verdopplung der Bot-Flotte um eine weitere.
+`mergeArrivedDeployments()` in `galaxy.ts` fasst deshalb ANGEKOMMENE Halte-Flotten desselben
+Besitzers am selben Ziel zu einem Eintrag zusammen. Bewusst erst nach der Ankunft: unterwegs
+befindliche Fluege haben eigene Ankunftszeiten und muessen getrennt bleiben, sonst stimmt die
+Anzeige "Ankunft in ..." nicht. Der aelteste Eintrag bleibt bestehen, weil an seiner Ankunftszeit
+die Anzeige "Haelt seit ..." haengt; zurueckgerufene Flotten bleiben unangetastet. Getestet mit
+gemischten Zustaenden (zwei angekommene + eine unterwegs + eine zurueckgerufene + ein zweites Ziel):
+nur die beiden angekommenen desselben Ziels werden vereint.
+
 *Bewusst NICHT geaendert:* das Zurueckziehen nach einem Raid. Dauerhaft vor Ort zu bleiben ist der
 Zweck der Stationierung (sie verteidigt bei Piratenraids mit). Der Fehler war nicht, dass die
 Flotte blieb, sondern dass sie nicht mitwuchs.
