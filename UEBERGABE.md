@@ -1,4 +1,4 @@
-# Uebergabe - Stand 13.08.2026
+# Uebergabe - Stand 14.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -22,13 +22,16 @@ das passt nicht gleichzeitig in eine Session.
 
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
+- **Block A laeuft.** Schritt 1 (Messreihen nach dem Overkill-Deckel) ist erledigt, Entscheidung 3
+  (Imperator-Einstufung) und Entscheidung 1 (Beute-Exponent) sind geschlossen. Offen in Block A:
+  Entscheidung 2 in ihrer Ertragswirkung und der neue Niveau-Punkt aus Abschnitt 7.
 - **Am Spielcode wurde seit dem 10.08.2026 erheblich geaendert** - 14 Punkte, vollstaendig in
   Abschnitt 2a dokumentiert. Die urspruengliche Regel "in dieser Phase kein Code" gilt weiterhin
   fuer die Balance-Bloecke A bis F, aber nicht mehr absolut; der Massstab fuer Ausnahmen steht in
   Abschnitt 8.
-- **Block A hat noch nicht begonnen.** Entscheidung 1 (Overkill-Deckel) ist als Einzelmassnahme
-  vorgezogen erledigt, die uebrigen Messreihen stehen aus.
-- Alle noch offenen Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht.
+- Die meisten noch offenen Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht.
+  Ausnahmen seit dem 14.08.2026: der Beute-Anker (0,0956 Wert-Einheiten je Punkt vernichteter
+  Feindmacht) und der Beute-Exponent (0,85) sind jetzt gemessen.
 
 ## Was seit dem 10.08.2026 live gegangen ist
 

@@ -340,10 +340,33 @@ verdoppelt sich alle fuenf Tage und ueberholt binnen Wochen jede andere Zahl im 
 waechst der Netto-Ertrag dauerhaft weiter (6,18 Mrd Flotte -> +0,99 Mrd/Tag; 34,99 -> +4,38;
 66,33 -> +8,2), in einem ueber Jahre spielbaren Tempo.
 
-**Kalibrierung:** Der Faktor von rund **0,091 Wert-Einheiten je Punkt vernichteter Feindmacht**
-(damit die Referenzflotte ihre heutige Belohnung behaelt) ist HOCHGERECHNET, nicht gemessen.
-**Vor dem Festschreiben direkt messen.** Die reale Flotte vernichtet pro 24h-Mission 83,62 Mrd
-Feindmacht, die Referenzflotte geschaetzt 12,2 Mrd.
+**Kalibrierung - GEMESSEN am 14.08.2026** (`run_loot_exponent.mjs`, 40 Durchlaeufe je Zelle):
+- Referenzflotte vernichtet **11,4 bis 11,8 Mrd** Feindmacht je 24h-Solo-Mission (geschaetzt waren
+  12,2 Mrd - die Schaetzung stimmt), die reale Flotte **80 bis 83 Mrd** (geschaetzt 83,62).
+- Daraus der Anker: **0,0948 bis 0,0962 Wert-Einheiten je Punkt vernichteter Feindmacht**
+  (hochgerechnet waren 0,091). Der Wert ist damit bestaetigt und darf festgeschrieben werden.
+- **Exponent bleibt bei 0,85**, gemessen und begruendet in Abschnitt 8, Punkt 1.
+
+**Geltungsbereich - ERGAENZT am 14.08.2026:** Die Kurve muss zusaetzlich auf `game/groupOps.ts`
+wirken (Elite-Bollwerk). Ohne das ist der Exponent nicht bestimmbar, Herleitung in Abschnitt 8,
+Punkt 1.
+
+> **Achtung, gegen die Erwartung des Plans:** Die Beute-Kurve ist per Saldo KEINE Bremse, sondern
+> fuer grosse Flotten eine deutliche Erhoehung und fuer kleine eine deutliche Kuerzung. Grund: Heute
+> ist die Belohnung eine FESTE Container-Menge je gewonnenem Check, voellig unabhaengig von der
+> Flottengroesse. Gemessen (Anker auf der Referenzflotte, Exponent 0,85):
+>
+> | | heute | mit Kurve |
+> |---|---|---|
+> | Solo-Mission, kleine Flotte | 1,20 Mrd | **0,15 Mrd** (-88 %) |
+> | Solo-Mission, Referenzflotte | 1,21 Mrd | 1,21 Mrd (Anker) |
+> | Solo-Mission, reale Flotte | 1,16 Mrd | **5,91 Mrd** (+410 %) |
+> | Elite-Serie, reale Flotte | 32,60 Mrd | **169,68 Mrd** (+420 %) |
+>
+> Die Bremswirkung des Exponenten wirkt also gegenueber der LINEAREN Variante, nicht gegenueber
+> heute. **Fuer die Startphase nach dem Reset ist das der kritische Punkt** - der frueheste
+> Ausbaustand verliert rund 88 % seiner Missionsbelohnung. Zusammen mit Entscheidung 10
+> (Verlustobergrenze in der Startphase) und Entscheidung 12 kalibrieren, nicht getrennt.
 
 **Zusaetzlich zwingend:** `fleetSizeRewardMultiplier()` wird dadurch fachlich ersetzt. Sie wird
 heute berechnet und auf `teileCap`/`lootBase` angewendet - **beide Felder existieren bei
@@ -2488,6 +2511,29 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 
 ## 7. Nach der Umsetzung neu zu bestimmen
 
+- **NIVEAU der Einnahmen festlegen, nicht nur die Neigung (NEU 14.08.2026, hoechste Prioritaet nach
+  dem Raid).** Bei der Messung zu Entscheidung 1 ist aufgefallen, dass **kein einziger Ausbaustand
+  auch nur in die Naehe des Zielbands 3-10 Tage kommt**: gemessen 0,5 bis 3 Stunden bis zum
+  naechsten Ausbauschritt (+10 % Flottenwert), und selbst eine Verdopplung der GESAMTEN Flotte
+  kostet nur 7 bis 12 Stunden Einnahmen. Ressourcen sind an keiner Stelle des Spiels ein Engpass -
+  weder frueh noch spaet. Das widerspricht der Grundsatzentscheidung "es soll einen
+  Ressourcen-Engpass geben" direkt. **Der Exponent kann das nicht loesen**, er kippt nur die
+  Neigung. Drei Hebel stehen zur Wahl, sie muessen gemeinsam entschieden werden:
+  (a) den Anker senken (0,0956 Wert-Einheiten je Punkt Feindmacht nach unten),
+  (b) die Ziele verteuern (Entscheidung 7 Minen-Kostenkurve, Modul- und Gebaeudekosten),
+  (c) akzeptieren, dass ZEIT statt Ressourcen der Engpass ist - dann ist Entscheidung 9 der
+  eigentliche Traeger des Spielgefuehls und dieser Punkt entfaellt.
+  **Vermutung nach der Messung: (c) trifft bereits heute zu**, ohne dass es so entschieden wurde.
+  Die grossen festen Ziele liegen dagegen im Band (Schiffs-Module 141,97 Mrd = 8,5 Tage beim
+  mittleren Stand, Heimatbasis V1 = 11,9 Tage) - **das Band stimmt also fuer die einmaligen
+  Ausbauziele und verfehlt nur das dauerhafte Flottenwachstum.** Genau die 74 Tage aus der
+  Senken-Rechnung: danach bleibt nur noch die Flotte, und die kostet Stunden.
+- **Beute-Kurve gegen die Startphase pruefen (NEU 14.08.2026).** Nach der Messung verliert der
+  frueheste Ausbaustand rund 88 % seiner Missionsbelohnung, weil die heutige Belohnung eine feste
+  Container-Menge ist und die neue an der vernichteten Feindmacht haengt. Nach dem Reset ist genau
+  das die erste Spielwoche. Gemeinsam mit Entscheidung 10 und 12 kalibrieren. Herleitung im Kasten
+  bei Entscheidung 2.
+
 - **`STATION_MINING_COMPENSATION` neu bestimmen (NEU 10.08.2026).** Steht auf 3 und liefert damit
   7,90 Mrd/Tag bei vollem Stationsausbau - **bei zwei Mitgliedern rund 3,95 Mrd/Tag pro Kopf**, was
   gegen die alte Baseline 18,2 % entspricht und damit knapp im Zielband liegt. Kein akuter
@@ -2655,7 +2701,50 @@ nach der ersten Messung falsch, eine Regel nicht.
 
 ---
 
-**1. Beute-Exponent 0,85 gegen 0,90-0,95** (Entscheidung 2).
+**1. Beute-Exponent 0,85 gegen 0,90-0,95** (Entscheidung 2) - **GESCHLOSSEN am 14.08.2026.**
+Messung: `run_loot_exponent.mjs` / `loot_exponent.txt`, 40 Durchlaeufe je Zelle, drei Ausbaustaende
+(klein/schwach 0,37 Mrd - Referenzflotte 6,18 Mrd - reale Flotte 34,99 Mrd).
+
+> **Ergebnis: Der Exponent bleibt bei 0,85.** Er ist nicht der urspruengliche Wert aus Bequemlichkeit,
+> sondern der gemessene beste Wert im Suchraum.
+
+- **Das Zielband 3-10 Tage ist von KEINEM Exponenten erreichbar** - auch nicht vom heutigen Zustand.
+  Gemessen liegt die Kennzahl bei 0,5 bis 3 Stunden statt 3 bis 10 Tagen, also um Faktor 25 bis 500
+  daneben. Grund: Der Exponent aendert nur die NEIGUNG der Beutekurve, nicht ihr NIVEAU. Das Niveau
+  steckt im Anker (gemessen 0,0956 Wert-Einheiten je Punkt vernichteter Feindmacht; im Plan mit 0,091
+  geschaetzt - die Schaetzung war also gut). Selbst "die gesamte Flotte verdoppeln" kostet nur 7 bis
+  12 Stunden Einnahmen. **Als eigener offener Punkt nach Abschnitt 7 uebernommen**, er ist mit dem
+  Exponenten nicht loesbar.
+- **Entschieden wurde deshalb allein am Verlaufskriterium** (Kennzahl darf nicht monoton wachsen),
+  gemessen als Verhaeltnis der Tagesrendite spaet/frueh; 1,00 waere ein flacher Verlauf. Weil der
+  Raid noch nicht entschieden ist und alles dominiert, wurde ueber drei Raid-Annahmen gemessen
+  (unveraendert / halbiert / entfaellt) und der Exponent mit der kleinsten groessten Abweichung
+  gewaehlt:
+
+  | Exponent | Raid x1,0 | Raid x0,5 | Raid x0,0 | groesste Abweichung |
+  |---|---|---|---|---|
+  | 0,80 | 0,98 | 0,87 | 0,76 | 24 % |
+  | **0,85** | **1,08** | **0,97** | **0,86** | **14 %** |
+  | 0,90 | 1,19 | 1,07 | 0,96 | 19 % |
+  | 0,95 | 1,30 | 1,19 | 1,07 | 30 % |
+
+  0,85 und 0,90 liegen dicht beieinander; die Regel "bei Uneindeutigkeit den niedrigeren Wert"
+  bestaetigt 0,85 zusaetzlich.
+- **Geltungsbereich musste mitentschieden werden und ist ein eigener Befund.** Entscheidung 2 nennt
+  nur die Solo-Dateien. Wirkt die Kurve NUR auf Solo-Sektoren, liegt das Verhaeltnis bei 0,23 bis
+  0,50 - mit KEINEM Exponenten im Suchraum reparierbar, auch 1,20 kommt nur auf 0,60. Grund: Das
+  Elite-Bollwerk ist mit 10,87 Mrd/Tag die groesste Einzelquelle und bleibt ohne Kurve eine feste
+  Belohnung, die mit der Flotte nicht mitwaechst. **Die Beute-Kurve muss deshalb auf Solo-Missionen
+  UND Gruppen-Expeditionen wirken** (`groupOps.ts` zusaetzlich zu den in Entscheidung 2 genannten
+  Dateien), sonst ist der Exponent gar nicht bestimmbar.
+- *Nachteil, ausdruecklich genannt:* Alle drei Ausbaustaende sind Momentaufnahmen. Dass ein hoeherer
+  Exponent die Flotte schneller wachsen laesst und damit die Gegner mitzieht (Rueckkopplung,
+  Pruefpunkt 2d), bildet die Messung nicht ab - dafuer braucht es die 30-Tage-Simulation aus
+  Abschnitt 1b.
+- *Zweiter Nachteil:* Das Zielband 3-10 Tage bleibt gesetzt und ungemessen. Es ist jetzt zusaetzlich
+  nachweislich unerfuellt - die Setzung ist damit nicht bestaetigt, sondern offen.
+
+Urspruengliche Formulierung der Entscheidungsregel:
 - *Gemessen wird:* fuer einen fruehen, einen mittleren und einen spaeten Ausbaustand die Kennzahl
   **"Tage bis zum naechsten sinnvollen Ausbauschritt"** = Kosten des naechsten Schritts geteilt
   durch Netto-Einnahmen pro Tag.
@@ -2781,6 +2870,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 14.08.2026 | **Entscheidung 1 (Beute-Exponent) geschlossen - der Exponent bleibt bei 0,85**, jetzt gemessen statt gesetzt. Neues Skript `run_loot_exponent.mjs` + `loot_exponent.txt`, 40 Durchlaeufe je Zelle, drei Ausbaustaende (0,37 / 6,18 / 34,99 Mrd Flottenwert). Der Exponent wurde NICHT in den Spielcode eingebaut - die Beute beeinflusst den Kampfverlauf innerhalb einer Mission nicht, deshalb genuegt ein Messlauf je Stand, auf den alle vier Exponenten nachtraeglich aufgerechnet werden. **Drei Befunde, die ueber die eigentliche Frage hinausgehen.** (1) **Das Zielband 3-10 Tage ist von keinem Exponenten erreichbar, auch nicht vom heutigen Zustand** - gemessen 0,5 bis 3 Stunden bis zum naechsten Ausbauschritt, eine Verdopplung der gesamten Flotte kostet 7 bis 12 Stunden Einnahmen. Der Exponent kippt nur die Neigung der Kurve, das Niveau steckt im Anker. Als neuer, hoch priorisierter Punkt in Abschnitt 7 eingetragen, samt der Beobachtung, dass die grossen EINMALIGEN Ziele (Schiffs-Module 8,5 Tage, Heimatbasis V1 11,9 Tage beim mittleren Stand) sehr wohl im Band liegen - das Band stimmt fuer die feste Inhaltsliste und verfehlt nur das dauerhafte Flottenwachstum. (2) **Der Geltungsbereich musste mitentschieden werden.** Wirkt die Kurve nur auf Solo-Sektoren wie in Entscheidung 2 beschrieben, liegt das Verhaeltnis der Tagesrendite spaet/frueh bei 0,23 bis 0,50 und ist mit KEINEM Exponenten im Suchraum reparierbar - das Elite-Bollwerk als groesste Einzelquelle bliebe eine feste, nicht mitwachsende Belohnung. `groupOps.ts` gehoert deshalb zwingend dazu. (3) **Die Beute-Kurve ist entgegen der Planerwartung keine Bremse, sondern eine Umverteilung von klein nach gross**: kleine Flotte -88 % Missionsbelohnung, reale Flotte +410 %, Elite-Serie +420 %. Ursache ist, dass die heutige Belohnung eine feste Container-Menge je gewonnenem Check ist. Fuer die Startphase nach dem Reset als eigener Punkt in Abschnitt 7 vermerkt. **Methodisch:** Die Entscheidung faellt allein ueber das Verlaufskriterium, gemessen ueber drei Raid-Annahmen (unveraendert / halbiert / entfaellt), weil der Raid noch offen ist und alles dominiert; 0,85 hat mit 14 % die kleinste groesste Abweichung von einem flachen Verlauf, 0,90 folgt mit 19 %. **Ein Modellfehler wurde waehrend der Messung gefunden und behoben:** der Raid war zunaechst mit den 6,31 Mrd/Tag aus der Baseline in Abschnitt 1 angesetzt, obwohl die Korrektur vom 11.08.2026 auf 4,15 Mrd/Tag JE verteidigtem Raid lautet - mit dem falschen Wert lag der flache Punkt bei 0,90 statt 0,85. Genau die Fehlerform aus Messregel 16, diesmal in einer Planzahl statt in der README. **Nebenbefund:** verteidigt schon der fruehe Ausbaustand einen Raid, faellt das Verhaeltnis auf 0,16 bis 0,31 und keine Beute-Kurve haelt dagegen - eine unabhaengige Bestaetigung des Abschnitt-7-Punkts, dass der Raid die dringendste offene Groesse ist. |
 | 14.08.2026 | **Block A, Schritt 1 erledigt: die drei Messreihen nach dem Overkill-Deckel neu gelaufen** (`elite.txt`, `raid.txt`, `real_fleet.txt` ersetzt). **Wirkung deutlich groesser als erwartet, und einseitig verteilt.** Reale Flotte, Solo Hoch, Profil voll: Verluste 1,65 -> 1,04 Mrd, Netto **-0,55 -> +0,11 Mrd** - das Vorzeichen des als "totes Inhalt" gefuehrten Solo-Bereichs ist gedreht. Raid-Verteidigung profitiert ebenfalls stark: ohne Kampf-Boost 21,7 -> 14,6 % Verlust, Profil mittel 20,1 -> 17,5 %, kleine Flotte 14,6 -> 10,1 %. Elite-Bollwerk dagegen **praktisch unveraendert** (3,0 -> 3,2 %, innerhalb der Streuung). Erklaerung: Der Deckel wirkt dort, wo grosse Einzelschlaege auf kleine Einheiten treffen - also gegen die NPC-Seite mit ihren Kapitalschiffen und Verteidigungsanlagen; beim Elite-Bollwerk stehen sich zwei grosse Flotten gegenueber, wo er kaum greift. **Folge fuer Entscheidung 1: die Einnahmen-Baseline muss auf den neuen Zahlen aufsetzen** (Elite-Serie 28,32 statt 27,87 Mrd bei Profil voll), und der Abstand Solo gegen Elite ist die Groesse, an der sich der Beute-Exponent messen lassen muss - nicht mehr das Vorzeichen. Ausserdem geschlossen: **Entscheidung 3 (Imperator-Einstufung)** - 0,040 Schaden je Wert-Einheit gegen ein Band von 0,087-0,439, also unter dem Band, aber mit belegter Alleinstellung (einziges Schiff mit RapidFire gegen Ionengeschuetz/Gausskanone/Plasmawerfer). Beschluss: Grind senken statt Kampfwerte anheben, Umsetzung in Block D. **Nebenbefund mit groesserer Tragweite: die drei Salven-Schiffe liegen mit 1,410-2,240 weit UEBER dem Band** - der Salvenkreuzer beim Fuenffachen des besten Standardschiffs. Als offener Punkt in Abschnitt 7 aufgenommen. |
 | 14.08.2026 | **Messauftrag Imperator (Abschnitt 4) geschlossen** - neues Skript `run_imperator.mjs` + `imperator.txt`. Anlass: Nutzerbeobachtung aus echten Kampfberichten, der Imperator teile zu wenig Schaden aus; Vorschlag war `maxCount` 12-18 oder Waffen verdoppeln bei gesenkter Panzerung. **Ergebnis: Praemisse widerlegt.** 6 Imperatoren stellen in einer 6.300-Schiffe-Flotte 34,0 % des Gesamtschadens, bei 12 Stueck 50,0 %. Die Berichtsspalte "Schaden ausgeteilt" summiert je Schiffstyp und misst damit Klassengroesse statt Nutzen pro Schiff - fuer stueckzahlbegrenzte Einheiten grundsaetzlich kein Balance-Indikator (Fall von Messregel 15). **Der Nutzervorschlag Waffen x2 / Panzerung halbiert ist messbar die schlechteste Variante**, schlechter als nichts zu tun: Schuesse 232 -> 70, Schaden 111 -> 54 Mio, Gegner behaelt mehr Einheiten - Ueberlebenszeit und Schadensausstoss sind in einem Attritions-System nicht unabhaengig. Der Trefferwert-Befund (12,6 % gegen Leichte Jaeger) ist richtig, aber NICHT imperator-spezifisch: Reaper 13,4 %, Salvendreadnought 14,0 % - dominant ist der Groessen-Fehlpaarung-Bonus 0,45 auf die ganze Klasse "gross", nicht der Praezisionsmalus (-1,4 Prozentpunkte). Kampfwerte bleiben unveraendert, Prestige-Einstufung ist damit belegt statt vorlaeufig. **Neu offen und ausdruecklich NICHT entschieden: `speed: 100`** - ein einziger mitgenommener Imperator verzwoelffacht die Flugzeit der gesamten Flotte, wodurch die staerkste Einheit des Spiels faktisch auf Heimatverteidigung beschraenkt ist. Nebenbei korrigiert: Abschnitt 4 nannte 2.520.000 Panzerung, der Code sagt 3.000.000/500.000/400.000 (Messregel 16). |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
