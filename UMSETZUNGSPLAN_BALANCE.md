@@ -2265,6 +2265,27 @@ andere Richtung: bei sehr KLEINEN Gefechten (0,25x, 73 statt 100 Runden) endet d
 Rundendeckel, und dann feuert er tatsaechlich weniger (2.237 Schuesse). Grosse Flotten verkuerzen
 den Kampf hier nicht, sie verlaengern ihn bis zum Deckel.
 
+**Gegenprobe mit der ECHTEN Nutzerflotte 14.08.2026** (`run_imperator_realfleet.mjs` /
+`imperator_realfleet.txt`): 70.270 Schiffe (20.000 leicht, 20.000 schwer, je 5.000 der Kreuzer- und
+Elite-Klassen, 270 Salvenschiffe) gegen `piraten_elite`, Profil voll, je 72 Laeufe.
+
+| Variante | Sieg | Verlust | Runden |
+|---|---|---|---|
+| ohne Imperator | 100 % | 6,17 % | 20,3 |
+| mit 6 Imperatoren | 100 % | **4,83 %** | 17,5 |
+| mit 12 Imperatoren | 100 % | 5,00 % | 18,0 |
+| mit 6 Imp., ohne die 270 Salvenschiffe | 100 % | **14,17 %** | 40,5 |
+
+**Drei Schluesse.** (1) Die 6 Imperatoren senken die Verluste um 1,34 Prozentpunkte - bei 70.000
+Schiffen sind das rund **940 gerettete Schiffe pro Flug**, obwohl sie im Bericht nur ~1 von ~25 Mrd
+Schaden stellen. Ihr Nutzen steckt in der verkuerzten Kampfdauer (20,3 -> 17,5 Runden), nicht in der
+Schadensspalte. (2) **Eine Anhebung von `maxCount` auf 12 bringt messbar nichts** (5,00 % gegen
+4,83 %, innerhalb der Streuung) - bei dieser Flottengroesse ist der Sektor ohnehin sicher gewonnen,
+es gibt nichts mehr beizutragen. Der Nutzervorschlag ist damit auch empirisch erledigt, nicht nur
+argumentativ. (3) **Die eigentlichen Arbeitspferde sind die 270 Salvenschiffe**: ohne sie
+verdreifachen sich die Verluste und der Kampf dauert doppelt so lange. Bei kuenftigen
+Balance-Aenderungen ist das der empfindlichere Hebel, nicht der Imperator.
+
 Zusatzhinweis zur Waffen-Verdopplung: Der Overkill-Deckel begrenzt einen Einzeltreffer auf
 `OVERKILL_MAX_CASCADE` (5) Einheiten. Die Spalte "Schaden" bucht ROHSCHADEN vor dieser Deckelung
 (`shotsA.dmgDealt`), die 193 Mio sind also die Obergrenze, nicht der angekommene Wert. Bei 500.000
