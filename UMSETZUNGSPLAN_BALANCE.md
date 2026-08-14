@@ -2543,8 +2543,26 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 - **Kipppunkt der Beute-Kurve messen** (Entscheidung 2).
 - **"74 Tage bis alles gekauft ist" neu rechnen** - Entscheidung 7 und 9.4 verlaengern das.
 - Erreichte Check-Tiefe bei P10 (Ziel 3-5).
-- Ob die Solo-Sektoren durch Entscheidung 2 wieder lohnend sind (heute fuer die reale Flotte
-  **-0,55 Mrd pro 24h**, also totes Inhalt).
+- ~~Ob die Solo-Sektoren durch Entscheidung 2 wieder lohnend sind (heute fuer die reale Flotte
+  **-0,55 Mrd pro 24h**, also totes Inhalt).~~ **TEILWEISE BEANTWORTET 14.08.2026 durch die
+  Neumessung nach dem Overkill-Deckel:** Solo Hoch liegt bei Profil voll jetzt bei **+0,11 Mrd
+  statt -0,55 Mrd** (mit 30 % Bergung +0,43 Mrd), weil die Verluste von 1,65 auf 1,04 Mrd fielen.
+  Das Vorzeichen ist gedreht, die Frage damit aber nur halb beantwortet: **gegen 28,32 Mrd beim
+  Elite-Bollwerk bleibt Solo Hoch praktisch bedeutungslos** - nicht mehr verlustbringend, aber
+  weiterhin kein Grund, es zu fliegen. Bei Profil mittel bleibt es negativ (-1,37 Mrd). Entscheidung
+  2 muss den Abstand schliessen, nicht nur das Vorzeichen.
+- **NEU 14.08.2026: Die drei Salven-Schiffe liegen weit UEBER dem Band** (Nebenbefund aus
+  `imperator_value.txt`, siehe Entscheidung 3). Schaden je Wert-Einheit: Salvenkreuzer **2,240**,
+  Salvenjaeger **1,712**, Salvendreadnought **1,410** - gegen ein Band der Standardschiffe von 0,087
+  bis 0,439. Der Salvenkreuzer ist damit **das Fuenffache des besten Standardschiffs und das
+  26-fache des schwaechsten**, pro eingesetzter Ressourceneinheit. Bestaetigt durch den Flottentest:
+  laesst man die 270 Salven-Schiffe weg, verdreifachen sich die Verluste (4,83 % -> 14,17 %) und der
+  Kampf dauert doppelt so lange. **Sie sind der eigentliche Ausreisser im Schiffs-Balance, nicht der
+  Imperator.** Gedeckelt wird das bisher allein durch `maxCount` (150/90/30) - das begrenzt die
+  Gesamtwirkung, aendert aber nichts daran, dass sie fuer jeden Spieler die rechnerisch erste
+  Bauentscheidung sind. Vor einer Aenderung messen, wie stark die Mehrfachziel-Salve gegenueber
+  Einzelzielschiffen tatsaechlich durchschlaegt - der Rohschaden in `dmgDealt` bucht je getroffenem
+  Typ und koennte den Vorteil ueberzeichnen.
 - **Imperator im Kampf messen** (Abschnitt 4) - er fehlt in beiden Schiffs-Messungen. Danach
   entscheiden, ob die Prestige-Einstufung bleibt.
 - **`T_MAX_BASE` und die sieben Reduktionsgewichte** aus Entscheidung 9.1b - gerechnet, nicht
@@ -2653,7 +2671,25 @@ nach der ersten Messung falsch, eine Regel nicht.
 **2. Feindstaerke-Variante (a)** - **GESCHLOSSEN am 09.08.2026.** Bleibt bei (b), siehe Punkt 8 und
 Abschnitt 4. Wird nicht neu aufgemacht.
 
-**3. Imperator-Einstufung** (Abschnitt 4).
+**3. Imperator-Einstufung** (Abschnitt 4) - **GESCHLOSSEN am 14.08.2026.** Messung:
+`run_imperator_value.mjs` / `imperator_value.txt`. Ergebnis: **0,040 Schaden je Wert-Einheit gegen
+ein Band der Standardschiffe von 0,087 (Bomber) bis 0,439 (Kreuzer)** - er liegt bei 46 % des
+schwaechsten und 9 % des besten Standardschiffs, also klar UNTER dem Band. Nach der Regel unten
+bleibt er damit nur dann Prestige-Einheit, wenn er eine Faehigkeit besitzt, die kein anderes Schiff
+hat. **Er hat eine:** Der Imperator ist das einzige Schiff mit RapidFire gegen Ionengeschuetz,
+Gausskanone und Plasmawerfer (im Code geprueft; der Bomber hat RapidFire nur gegen Raketenwerfer
+und die beiden Laser). Damit ist die Prestige-Einstufung erstmals belegt statt behauptet.
+**Beschlossene Konsequenz: nicht die Kampfwerte anheben, sondern den Grind senken.** Werte anheben
+wuerde exakt den Zustand wiederherstellen, der am 05.08.2026 per Nutzerentscheidung zurueckgebaut
+wurde ("andere Schiffe muessen wieder mitkaempfen") - der Nachweis dafuer steht in Abschnitt 4:
+6 Imperatoren stellen bereits 34 % des Flottenschadens, 12 Stueck 50 %. Eine Halbierung der
+Teile-Kosten (1.000 -> 500 je Kategorie, Grind rund 11 -> 5,5 Tage) bringt ihn rechnerisch auf 0,080
+und damit an die Bandgrenze, **ohne einen einzigen Kampfwert anzufassen.** *Nachteil:* die
+Teile-Kosten haengen an der Container- und Belohnungswirtschaft; die Aenderung gehoert deshalb in
+Block D und NICHT vorgezogen. *Offen bleibt:* der Ressourcen-Gegenwert von 325.000 je Teil ist eine
+Setzung aus Abschnitt 2a, keine Messung - die Kennzahl 0,040 haengt direkt daran.
+
+Urspruengliche Formulierung der Entscheidung:
 - *Gemessen wird:* Kampfkraft pro Ressourceneinheit im echten Kampf, gegen die Bandbreite der
   uebrigen Schiffe.
 - *Regel:* Liegt er **im Band** -> er ist ein normales Schiff, und der Grind (rund 11 Tage fuer
@@ -2745,6 +2781,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 14.08.2026 | **Block A, Schritt 1 erledigt: die drei Messreihen nach dem Overkill-Deckel neu gelaufen** (`elite.txt`, `raid.txt`, `real_fleet.txt` ersetzt). **Wirkung deutlich groesser als erwartet, und einseitig verteilt.** Reale Flotte, Solo Hoch, Profil voll: Verluste 1,65 -> 1,04 Mrd, Netto **-0,55 -> +0,11 Mrd** - das Vorzeichen des als "totes Inhalt" gefuehrten Solo-Bereichs ist gedreht. Raid-Verteidigung profitiert ebenfalls stark: ohne Kampf-Boost 21,7 -> 14,6 % Verlust, Profil mittel 20,1 -> 17,5 %, kleine Flotte 14,6 -> 10,1 %. Elite-Bollwerk dagegen **praktisch unveraendert** (3,0 -> 3,2 %, innerhalb der Streuung). Erklaerung: Der Deckel wirkt dort, wo grosse Einzelschlaege auf kleine Einheiten treffen - also gegen die NPC-Seite mit ihren Kapitalschiffen und Verteidigungsanlagen; beim Elite-Bollwerk stehen sich zwei grosse Flotten gegenueber, wo er kaum greift. **Folge fuer Entscheidung 1: die Einnahmen-Baseline muss auf den neuen Zahlen aufsetzen** (Elite-Serie 28,32 statt 27,87 Mrd bei Profil voll), und der Abstand Solo gegen Elite ist die Groesse, an der sich der Beute-Exponent messen lassen muss - nicht mehr das Vorzeichen. Ausserdem geschlossen: **Entscheidung 3 (Imperator-Einstufung)** - 0,040 Schaden je Wert-Einheit gegen ein Band von 0,087-0,439, also unter dem Band, aber mit belegter Alleinstellung (einziges Schiff mit RapidFire gegen Ionengeschuetz/Gausskanone/Plasmawerfer). Beschluss: Grind senken statt Kampfwerte anheben, Umsetzung in Block D. **Nebenbefund mit groesserer Tragweite: die drei Salven-Schiffe liegen mit 1,410-2,240 weit UEBER dem Band** - der Salvenkreuzer beim Fuenffachen des besten Standardschiffs. Als offener Punkt in Abschnitt 7 aufgenommen. |
 | 14.08.2026 | **Messauftrag Imperator (Abschnitt 4) geschlossen** - neues Skript `run_imperator.mjs` + `imperator.txt`. Anlass: Nutzerbeobachtung aus echten Kampfberichten, der Imperator teile zu wenig Schaden aus; Vorschlag war `maxCount` 12-18 oder Waffen verdoppeln bei gesenkter Panzerung. **Ergebnis: Praemisse widerlegt.** 6 Imperatoren stellen in einer 6.300-Schiffe-Flotte 34,0 % des Gesamtschadens, bei 12 Stueck 50,0 %. Die Berichtsspalte "Schaden ausgeteilt" summiert je Schiffstyp und misst damit Klassengroesse statt Nutzen pro Schiff - fuer stueckzahlbegrenzte Einheiten grundsaetzlich kein Balance-Indikator (Fall von Messregel 15). **Der Nutzervorschlag Waffen x2 / Panzerung halbiert ist messbar die schlechteste Variante**, schlechter als nichts zu tun: Schuesse 232 -> 70, Schaden 111 -> 54 Mio, Gegner behaelt mehr Einheiten - Ueberlebenszeit und Schadensausstoss sind in einem Attritions-System nicht unabhaengig. Der Trefferwert-Befund (12,6 % gegen Leichte Jaeger) ist richtig, aber NICHT imperator-spezifisch: Reaper 13,4 %, Salvendreadnought 14,0 % - dominant ist der Groessen-Fehlpaarung-Bonus 0,45 auf die ganze Klasse "gross", nicht der Praezisionsmalus (-1,4 Prozentpunkte). Kampfwerte bleiben unveraendert, Prestige-Einstufung ist damit belegt statt vorlaeufig. **Neu offen und ausdruecklich NICHT entschieden: `speed: 100`** - ein einziger mitgenommener Imperator verzwoelffacht die Flugzeit der gesamten Flotte, wodurch die staerkste Einheit des Spiels faktisch auf Heimatverteidigung beschraenkt ist. Nebenbei korrigiert: Abschnitt 4 nannte 2.520.000 Panzerung, der Code sagt 3.000.000/500.000/400.000 (Messregel 16). |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
 | 11.08.2026 | **Raid-Ertrag skaliert mit der Zahl der Accounts - Entscheidung 3 steht auf zu niedrigen Zahlen** (Nutzerhinweis: rund 10.000 DM an einem Raid-Tag, weil er eigenen Raid, den seiner Frau und die beiden Bot-Raids verteidigt). Im Code bestaetigt: `finalizeRaidWaves()` ruft `grantContainers()` fuer den Verteidiger UND jeden Halter auf, jeder bekommt die volle Menge - korrekt nach Punkt 5 der README, aber diese Regel stammt aus dem Kontext gemeinsamer Expeditionen, wo alle EINE Mission zusammen fliegen. Bei Raids sind es N getrennte Ereignisse, jedes voll verguetet, und die Belohnung haengt nicht am Beitrag. Nachgerechnet: ein eigener Raid gibt 1.800 DM und 14,51 Mrd Ressourcenwert, vier verteidigte Raids 7.200 DM und 58,02 Mrd pro Raid-Tag = **16,58 Mrd/Tag gegen die im Plan gefuehrten 6,31 Mrd/Tag** (Faktor 2,6; DM Faktor 3,5). Der Raid ist damit **rund 52 % aller Einnahmen und verletzt Abnahmekriterium 5 bereits im Ist-Zustand**; die geplante Halbierung auf 5/3/1 landet bei 8,29 Mrd/Tag und damit immer noch ueber dem bisher angenommenen Ist-Wert. **Kern des Problems ist nicht die Hoehe, sondern die Skalierung** - der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot. Vier Loesungsvarianten im Kasten bei Entscheidung 3 dokumentiert. **Variante 4 stammt vom Nutzer:** fester Topf pro Raid, aufgeteilt nach tatsaechlichem Beitrag - technisch bereits moeglich, weil `combat.ts` `dmgDealt` und `dmgTakenA` schon besitzer-bewusst fuehrt. Zwei Bedingungen dabei zwingend: der Topf muss FEST pro Raid sein (sonst bleibt die Skalierung bestehen - Schadensmessung loest Fairness, nicht Hoehe), und der Beitrag muss Schaden GEMACHT plus ABSORBIERT zaehlen, sonst waere das Bollwerk mit Waffen x1 ausgerechnet auf seinem Heimatfeld der schlechtest bezahlte Teilnehmer. Empfehlung: Variante 4, hilfsweise Variante 2. **Bewusst NICHT vorgezogen umgesetzt** - anders als die Reparaturen der Vortage ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit unerwarteter Nebenwirkung, und die Korrektur veraendert die Einnahmen-Baseline, an der Block A haengt. |
