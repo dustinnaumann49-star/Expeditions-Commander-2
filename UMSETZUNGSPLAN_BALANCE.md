@@ -2193,27 +2193,98 @@ Wert-Einheit gegen 0,90 beim Leichten Jaeger, Faktor 225. Bewertet ueber den Tei
 - Sie sagt NICHT, wie stark er im Kampf ist.
 - **Dieselbe Eigenschaft ist bei Modulen ausdruecklich als deren einziger verbliebener Wert
   dokumentiert** (Session 3, Befund 6: Module erhoehen die Gegnerskalierung nicht). Beim Imperator
-  wirkt derselbe Effekt, nur staerker - er bringt Panzerung (2.520.000) und RapidFire in den Kampf
-  ein und meldet der Skalierungsformel fast nichts.
+  wirkt derselbe Effekt, nur staerker - er bringt Panzerung (3.000.000; die frueher hier genannten
+  2.520.000 sind veraltet, Code-Stand 14.08.2026: Waffen 500.000, Schild 400.000) und RapidFire in
+  den Kampf ein und meldet der Skalierungsformel fast nichts.
 - Die 975 Mio entsprechen 4,5 % eines Tageseinkommens. Der reale Preis sind nicht Ressourcen,
   sondern die Grind-Zeit fuer 3.000 Teile.
 
-**Die Luecke: Der Imperator wurde in KEINER der vier Sessions im Kampf gemessen.** Er ist Teil der
+**Die Luecke: Der Imperator wurde in KEINER der vier Sessions im Kampf gemessen.** ~~Er ist Teil der
 Referenzflotte "gross" (2 Stueck), aber er fehlt in der Einzeltyp-Tabelle aus Session 3, Befund 3
-(elf Schiffe) und in der Duell-Matrix aus Session 4, Befund 7 (acht Schiffe). Die Bewertung
-"schlechteste Einheit" stammt aus einer reinen Tabellenrechnung, nicht aus einem simulierten
-Gefecht.
+(elf Schiffe) und in der Duell-Matrix aus Session 4, Befund 7 (acht Schiffe).~~
+**GESCHLOSSEN am 14.08.2026** durch `run_imperator.mjs` / `imperator.txt`
+(`balance/session2-simulation/`). Anlass war eine Nutzerbeobachtung aus echten Kampfberichten
+("tankt alles weg, teilt aber weniger aus als die Elite-Klassen") und der daraus abgeleitete
+Wunsch, `maxCount` auf 12-18 anzuheben oder die Waffen zu verdoppeln.
 
-**Messauftrag (vor jeder Aenderung an Teile-Kosten oder Kampfwerten):**
-1. Imperator in `run_ships.mjs` (Duell bei gleichem Wert) und `run_ship_value.mjs`
-   (machtskalierter Sektor) aufnehmen - er fehlt in beiden.
-2. Gezielt gegen Jaegerschwaerme testen. Die README beschreibt ihn als RapidFire-Gegenmittel gegen
-   Jaeger-Klassen. **Dieselbe README-Passage enthaelt nachweislich einen Fehler** (der
-   Schlachtkreuzer hat kein RapidFire gegen Jaeger und verliert mit -553 bis -556 Mio, siehe
-   Entscheidung 6). Die Aussage zum Imperator ist damit ungeprueft, nicht automatisch falsch.
-3. Den Skalierungsvorteil separat beziffern: wie viel schwaecher faellt die generierte
-   Gegnerflotte aus, wenn dieselbe Kampfkraft ueber Imperatoren statt ueber Standardschiffe
-   eingebracht wird?
+**Ergebnis: Die Praemisse ist falsch. Der Imperator ist die mit Abstand stark
+ueberproportionale Einheit im Spiel.** In einer ausgebauten Flotte (6.300 Schiffe gegen 8.250,
+Forschung 10, ohne Module/Klasse/Boost, kein Rueckzug) stellen 6 Imperatoren **34,0 % des
+Gesamtschadens der Flotte** - sechs Schiffe von 6.306. Ueberlebende der eigenen Seite steigen von
+827 auf 1.353, die des Gegners fallen von 4.174 auf 2.794. Bei 12 Stueck sind es 50,0 % des
+Schadens: die Flotte waere dann rechnerisch eine Imperator-Flotte mit Beiwerk - **exakt der
+Zustand, der am selben Schiff schon einmal per Nutzerentscheidung zurueckgebaut wurde** (siehe
+Kommentar in `ships.ts`: Werte von 5.000.000/2.500.000/12.000.000 gesenkt, Begruendung "andere
+Schiffe muessen wieder mitkaempfen").
+
+**Warum die Kampfberichte den gegenteiligen Eindruck erzeugen:** Die Berichtsspalte "Schaden
+ausgeteilt" summiert je SCHIFFSTYP. Bei `maxCount: 6` gegen Klassen mit 90/150 Stueck und
+Standardschiffen im Hunderterbereich kann diese Summe nicht vorn liegen, egal wie stark das
+einzelne Schiff ist. **Die Spalte misst Klassengroesse, nicht Nutzen pro Schiff** - sie taugt
+grundsaetzlich nicht als Balance-Indikator fuer stueckzahlbegrenzte Einheiten. Vgl. Messregel 15
+(zentrale Groesse, die an einer Stelle richtig und an anderen irrefuehrend ist).
+
+**Der Trefferwert-Befund - richtig, aber NICHT imperator-spezifisch.** Bei Forschung 10 trifft der
+Imperator einen Leichten Jaeger nur in 12,6 % der Schuesse (Praezision 45 % x Gegenwahrscheinlichkeit
+zum Ausweichen von 72 %). Der Vergleich zeigt aber: Reaper 13,4 %, Salvendreadnought 14,0 %. Der
+Praezisionsmalus des Imperators (-0,15, der schlechteste im Spiel) kostet ihn gegenueber dem
+Salvendreadnought nur 1,4 Prozentpunkte. **Der dominante Faktor ist der Groessen-Fehlpaarung-Bonus
+(`SIZE_MISMATCH_EVASION_BONUS` klein/gross = 0,45), der ALLE Schiffe der Klasse "gross" gleich
+trifft** - eine bewusste Entscheidung zur Jaeger-Rolle, kein Imperator-Problem. Wer hier ansetzt,
+aendert die Jaeger-Rolle insgesamt, nicht den Imperator.
+
+**Die drei diskutierten Hebel, gemessen** (6 Imperatoren gegen eine gemischte 645-Schiffe-Flotte):
+
+| Variante | Schuesse | Treffer% | Schaden Imp. | Rest Gegner |
+|---|---|---|---|---|
+| Ist-Zustand | 232 | 21,8 % | 111 Mio | 563 |
+| Praezisionsmalus 0 statt -0,15 | 269 | 28,9 % | 160 Mio | 520 |
+| Ausweich-Bonus klein/gross 0,22 | 230 | 26,6 % | 121 Mio | 539 |
+| Waffen verdoppelt (1.000.000) | 236 | 20,6 % | 193 Mio | 536 |
+| **Waffen x2, Panzerung/Schild halbiert** | **70** | 18,5 % | **54 Mio** | **617** |
+
+**Der Nutzervorschlag "Waffen verdoppeln, dafuer Panzerung und Schild senken" ist messbar die
+SCHLECHTESTE der geprueften Varianten** - schlechter als gar nichts zu tun. Die Schusszahl bricht
+von 232 auf 70 ein, der Schaden halbiert sich statt sich zu verdoppeln, und der Gegner behaelt mehr
+Einheiten als im Ist-Zustand. Grund: Die Panzerung ist das, was den Imperator lange genug am Leben
+haelt, um ueberhaupt zu feuern. Wer sie halbiert, kauft Schaden pro Schuss mit dem Verlust fast
+aller Schuesse. **Ein gutes Beispiel dafuer, dass bei einem Attritions-Kampfsystem Ueberlebenszeit
+und Schadensausstoss nicht unabhaengig voneinander sind.**
+
+**Nachtest 14.08.2026 zur Folgehypothese des Nutzers** ("je mehr andere Schiffe mitfliegen, desto
+weniger Treffer setzt der Imperator, weil die anderen die Feinde schneller ausschalten") -
+`run_imperator_scale.mjs` / `imperator_scale.txt`: Flotte und Gegner gemeinsam von 0,25x bis 4x
+skaliert (1.581 bis 25.206 eigene Schiffe), Imperatoren fest bei 6. **Widerlegt.** Schuesse
+(2.957 -> 2.973), Trefferquote (24,3 % -> 23,4 %) und Schaden je Imperator und Runde (2,5 -> 2,3
+Mio) bleiben ueber die 16-fache Flottengroesse praktisch konstant; der Imperator feuert in jedem
+Szenario an seiner Kapazitaetsgrenze und laeuft nie aus Zielen. Was faellt, ist allein sein
+prozentualer ANTEIL (58,2 % -> 11,5 %) - reine Arithmetik, weil ringsum mehr Schiffe mitschiessen.
+Pro Stueck leistet ein Imperator dabei durchgehend das **360- bis 480-fache eines
+durchschnittlichen Schiffs derselben Flotte**. Richtig an der Hypothese ist nur der Randfall in die
+andere Richtung: bei sehr KLEINEN Gefechten (0,25x, 73 statt 100 Runden) endet der Kampf vor dem
+Rundendeckel, und dann feuert er tatsaechlich weniger (2.237 Schuesse). Grosse Flotten verkuerzen
+den Kampf hier nicht, sie verlaengern ihn bis zum Deckel.
+
+Zusatzhinweis zur Waffen-Verdopplung: Der Overkill-Deckel begrenzt einen Einzeltreffer auf
+`OVERKILL_MAX_CASCADE` (5) Einheiten. Die Spalte "Schaden" bucht ROHSCHADEN vor dieser Deckelung
+(`shotsA.dmgDealt`), die 193 Mio sind also die Obergrenze, nicht der angekommene Wert. Bei 500.000
+Waffen liegt der Imperator noch unter der Kaskadengrenze, bei 1.000.000 nicht mehr.
+
+**Entscheidungsgrundlage - kein Handlungsbedarf an den Kampfwerten.** Die Prestige-Einstufung ist
+damit nicht mehr vorlaeufig, sondern belegt: der Imperator ist keine schwache Einheit, sondern die
+staerkste pro Stueck, und `maxCount: 6` ist genau das, was ihn davon abhaelt, die Flotte allein zu
+entscheiden. Session 3s "rechnerisch die schlechteste Einheit im Spiel" ist widerlegt - die Zahl
+mass `combatFleetPowerBase()`, also die Gegner-Skalierung, nicht die Kampfleistung.
+
+**Was offen bleibt - und zwar unabhaengig vom Kampf: `speed: 100`.** Die Flotte fliegt mit dem
+langsamsten Schiff (`galaxyFleetSpeed()`), alle Elite-Schiffe liegen bei 15.000-17.000. Nach
+`galaxyDurationMs()` (Wurzelformel) bedeutet ein einziger mitgenommener Imperator rund
+**12,3-fache Flugzeit** (Wurzel aus 15.000/100), unabhaengig von der Entfernung. Aus 4 Stunden
+werden knapp zwei Tage. Das ist eine reine Designfrage, keine Messfrage: Die staerkste Einheit des
+Spiels ist so teuer im Transport, dass sie faktisch nur zur Heimatverteidigung taugt. **Entweder
+ist das der bewusste Prestige-Preis (dann gehoert es in die Lore/UI erklaert), oder das Tempo wird
+angehoben - dann aber im Wissen, dass eine Einheit mit 34 % Schadensanteil bei 6 Stueck damit
+universell mitnehmbar wird.** Noch nicht entschieden.
 
 **Widerspruch im Baulimit - GEKLAERT am 10.08.2026 durch Code-Pruefung.** ~~README Punkt 21 nennt
 `maxCount` 2, Session 3, Befund 6 rechnet mit 6.~~ **Der Code sagt `maxCount: 6`** (`ships.ts`,
@@ -2223,8 +2294,9 @@ Die Repo-README fuehrt im selben Kommentarblock ebenfalls 6, zusammen mit den Sa
 alten Fassung ab (dort 8-30). **Alle Rechnungen, die mit `maxCount: 2` gearbeitet haben, sind
 entsprechend nachzuziehen.** Kein Handlungsbedarf am Code, nur an der Dokumentation (R10).
 
-**Erst nach dieser Messung entscheiden**, ob der Imperator Prestige-Einheit bleibt. Bis dahin gilt
-die Prestige-Einstufung als vorlaeufig, nicht als belegt.
+~~**Erst nach dieser Messung entscheiden**, ob der Imperator Prestige-Einheit bleibt. Bis dahin gilt
+die Prestige-Einstufung als vorlaeufig, nicht als belegt.~~ **Erledigt 14.08.2026: Prestige-Einheit
+bestaetigt, Kampfwerte unveraendert. Offen bleibt allein die Tempo-Frage (siehe oben).**
 
 **Galaxie-Ereignisse bleiben Deko** (31 Mio Wert/Tag = 0,14 % der Baseline). Ausdruecklich als
 "Grund, in die Galaxie-Ansicht zu schauen" gewollt. Einzige Ergaenzung: ein UI-Hinweis, dass fuer
@@ -2652,6 +2724,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 |---|---|
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
+| 14.08.2026 | **Messauftrag Imperator (Abschnitt 4) geschlossen** - neues Skript `run_imperator.mjs` + `imperator.txt`. Anlass: Nutzerbeobachtung aus echten Kampfberichten, der Imperator teile zu wenig Schaden aus; Vorschlag war `maxCount` 12-18 oder Waffen verdoppeln bei gesenkter Panzerung. **Ergebnis: Praemisse widerlegt.** 6 Imperatoren stellen in einer 6.300-Schiffe-Flotte 34,0 % des Gesamtschadens, bei 12 Stueck 50,0 %. Die Berichtsspalte "Schaden ausgeteilt" summiert je Schiffstyp und misst damit Klassengroesse statt Nutzen pro Schiff - fuer stueckzahlbegrenzte Einheiten grundsaetzlich kein Balance-Indikator (Fall von Messregel 15). **Der Nutzervorschlag Waffen x2 / Panzerung halbiert ist messbar die schlechteste Variante**, schlechter als nichts zu tun: Schuesse 232 -> 70, Schaden 111 -> 54 Mio, Gegner behaelt mehr Einheiten - Ueberlebenszeit und Schadensausstoss sind in einem Attritions-System nicht unabhaengig. Der Trefferwert-Befund (12,6 % gegen Leichte Jaeger) ist richtig, aber NICHT imperator-spezifisch: Reaper 13,4 %, Salvendreadnought 14,0 % - dominant ist der Groessen-Fehlpaarung-Bonus 0,45 auf die ganze Klasse "gross", nicht der Praezisionsmalus (-1,4 Prozentpunkte). Kampfwerte bleiben unveraendert, Prestige-Einstufung ist damit belegt statt vorlaeufig. **Neu offen und ausdruecklich NICHT entschieden: `speed: 100`** - ein einziger mitgenommener Imperator verzwoelffacht die Flugzeit der gesamten Flotte, wodurch die staerkste Einheit des Spiels faktisch auf Heimatverteidigung beschraenkt ist. Nebenbei korrigiert: Abschnitt 4 nannte 2.520.000 Panzerung, der Code sagt 3.000.000/500.000/400.000 (Messregel 16). |
 | 10.08.2026 | **Abgleich des Plans gegen den aktuellen Repo-Stand** (Nutzerhinweis: die Performance-Zahl stamme vermutlich aus der Zeit vor der Aggregat-Engine - zutreffend). Ursache: eine im Chat hochgeladene README-Fassung mit 33 nummerierten Punkten wurde als aktuell behandelt; die Fassung im Repo hat ueber 750 Zeilen, ist in Abschnitte gegliedert und enthaelt keine Nummerierung. **Vier Korrekturen:** (1) Der Performance-Messpunkt in Abschnitt 7 ist gestrichen - die Messung existiert laengst und lautet 1,5 Mio. Schiffe bei ~26 ms statt 700 ms bei 2.600 Einheiten, ein Unterschied von mehr als Faktor 100; `MAX_PLAYER_SHIPS = 200.000` ist damit unbedenklich. (2) Die Raid-Mechanik in Abnahmekriterium 4 korrigiert: keine taeglichen Checkpoints mit 60 %, sondern woechentlich Mittwoch/Sonntag mit `RAID_SPAWN_CHANCE = 0,7` bzw. 1,0 fuer namentlich hinterlegte Spieler; `FIXED_CHECK_HOURS_UTC` existiert nicht mehr. (3) `POOL_SIZE` ist 1, nicht 2 - Kaempfe laufen serialisiert, was das Argument gegen Bot-Ertragsweg (a) eher staerkt. (4) Zeitschritt-Begruendung in Abschnitt 1b praezisiert (Asteroiden stuendlich, Piraten 4 h, Missionen einheitlich 24 h). **Gegengeprueft und korrekt:** die Slot-Zahlen (3/3/4/1), die Missionsdauern, die Raid-Belohnungen 10/6/2 und die Frequenz 2x/Woche in Entscheidung 3 - der Plan selbst war also am aktuellen Code geschrieben, nur die in diesem Chat ergaenzten Stellen nicht. Neu: **Messregel 16**. |
 | 11.08.2026 | **Raid-Ertrag skaliert mit der Zahl der Accounts - Entscheidung 3 steht auf zu niedrigen Zahlen** (Nutzerhinweis: rund 10.000 DM an einem Raid-Tag, weil er eigenen Raid, den seiner Frau und die beiden Bot-Raids verteidigt). Im Code bestaetigt: `finalizeRaidWaves()` ruft `grantContainers()` fuer den Verteidiger UND jeden Halter auf, jeder bekommt die volle Menge - korrekt nach Punkt 5 der README, aber diese Regel stammt aus dem Kontext gemeinsamer Expeditionen, wo alle EINE Mission zusammen fliegen. Bei Raids sind es N getrennte Ereignisse, jedes voll verguetet, und die Belohnung haengt nicht am Beitrag. Nachgerechnet: ein eigener Raid gibt 1.800 DM und 14,51 Mrd Ressourcenwert, vier verteidigte Raids 7.200 DM und 58,02 Mrd pro Raid-Tag = **16,58 Mrd/Tag gegen die im Plan gefuehrten 6,31 Mrd/Tag** (Faktor 2,6; DM Faktor 3,5). Der Raid ist damit **rund 52 % aller Einnahmen und verletzt Abnahmekriterium 5 bereits im Ist-Zustand**; die geplante Halbierung auf 5/3/1 landet bei 8,29 Mrd/Tag und damit immer noch ueber dem bisher angenommenen Ist-Wert. **Kern des Problems ist nicht die Hoehe, sondern die Skalierung** - der Ertrag waechst mit jedem neuen Spieler und jedem neuen Bot. Vier Loesungsvarianten im Kasten bei Entscheidung 3 dokumentiert. **Variante 4 stammt vom Nutzer:** fester Topf pro Raid, aufgeteilt nach tatsaechlichem Beitrag - technisch bereits moeglich, weil `combat.ts` `dmgDealt` und `dmgTakenA` schon besitzer-bewusst fuehrt. Zwei Bedingungen dabei zwingend: der Topf muss FEST pro Raid sein (sonst bleibt die Skalierung bestehen - Schadensmessung loest Fairness, nicht Hoehe), und der Beitrag muss Schaden GEMACHT plus ABSORBIERT zaehlen, sonst waere das Bollwerk mit Waffen x1 ausgerechnet auf seinem Heimatfeld der schlechtest bezahlte Teilnehmer. Empfehlung: Variante 4, hilfsweise Variante 2. **Bewusst NICHT vorgezogen umgesetzt** - anders als die Reparaturen der Vortage ist das kein stiller Defekt, sondern eine bewusste Design-Entscheidung mit unerwarteter Nebenwirkung, und die Korrektur veraendert die Einnahmen-Baseline, an der Block A haengt. |
 | 12.08.2026 | **Entscheidung 15 neu aufgenommen: Waffen/Schild/Panzerung unbegrenzt forschbar** (Nutzeridee). Anlass: alle Forschungen stehen auf Stufe 10, damit sind Zeit-Gutscheine wertlos und ueber Forschung keine Punkte mehr erzielbar. **Die Begruendung des Nutzers war halb richtig:** die Feindstaerke skaliert NICHT mit Forschung (`combatFleetPowerBase()` rechnet auf Rohwerten), wohl aber bekommen Piraten ueber `PIRATE_RESEARCH_SHARE = 1.0` den vollen Forschungsstand auf ihre eigenen Einheiten. Netto also relativ neutral - aber weil Forschung gegen Piraten ohnehin kaum Vorteil bringt, nicht weil sie sauber gegengerechnet wird. Kosten-/Zeitkurve geprueft: bei `timeGrowth` 1,6 liegt Stufe 15 bei 360 Tagen und Stufe 20 bei 10,4 Jahren Forschungszeit - begrenzt wird also ueber ZEIT statt Ressourcen, genau die Groesse, auf die Zeit-Gutscheine wirken. Die drei vom Nutzer genannten Forschungen sind zudem die einzigen mit unbegrenztem Multiplikator; die vier Kampfwert-Forschungen haben eigene Kappungen und wuerden oberhalb von Stufe 10 nichts mehr bewirken. **Drei Bruchstellen dokumentiert**, darunter eine selbstverschuldete: die tags zuvor ausgelieferte Bot-Ruecklage wuerde ohne Deckel unbegrenzt zuruecklegen und die Bots komplett lahmlegen. **Bewusst nicht sofort umgesetzt** - die Ruecklage ist noch unbeobachtet, zwei ineinandergreifende Aenderungen an derselben Stelle gleichzeitig sind genau das Muster, vor dem Abschnitt 5 warnt. |

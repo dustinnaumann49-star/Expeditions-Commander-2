@@ -81,9 +81,20 @@ per Skript waere fuer den Nutzen zu aufwaendig.
 Scroll-Bereich immer so eng wie moeglich um den breiten Inhalt ziehen - nie um einen ganzen
 Abschnitt.
 
-**Noch am Geraet zu bestaetigen:** aufgeklappten Raid-/Gruppenbericht bei 390px oeffnen, weit nach
-unten scrollen, dann in einem Zug zurueck nach oben. Zusaetzlich pruefen, ob die breite Tabelle
-weiterhin bis zur letzten Spalte wischbar ist.
+**Am Geraet geprueft (14.08.2026):** Deutliche Verbesserung, aber NICHT vollstaendig behoben. Der
+Nutzer hat zehn Berichte geoeffnet: in acht Faellen liess sich sofort zurueckscrollen, in zwei
+Faellen schluckte die Geste weiterhin - jeweils, wenn der Finger direkt auf einer Tabelle
+aufsetzte. Das ist die verbleibende Restwirkung der Richtungs-Sperre, die sich nicht beseitigen
+laesst, solange es ueberhaupt einen waagerecht scrollbaren Bereich gibt.
+**Bewusst so belassen.** Die vollstaendige Loesung waere, das waagerechte Scrollen ganz zu
+entfernen - also die neun Spalten auf dem Handy gestapelt oder als Kompakttabelle mit
+Detail-Umschalter darzustellen. Das waere praktisch eine eigene Handy-Ansicht der Kampfberichte und
+steht damit gegen "Bewusst NICHT geaendert" weiter unten. Nutzerentscheidung: der jetzige Zustand
+reicht, das Spiel wird ueberwiegend am PC gespielt.
+**Nicht erneut umbauen**, ohne dass diese Entscheidung ausdruecklich zurueckgenommen wird.
+Randbeobachtung des Nutzers, kein Anwendungsfehler: am aeussersten Bildschirmrand funktioniert das
+Scrollen gar nicht - dort greifen die System-Gesten von Android/iOS, die Beruehrung erreicht die
+Seite nie.
 
 ---
 
