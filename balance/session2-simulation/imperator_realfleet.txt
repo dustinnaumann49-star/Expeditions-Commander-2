@@ -1,0 +1,7 @@
+===== Nutzerflotte gegen piraten_elite, Profil voll (Forschung/Module 10, Kanonier, Kampfboost) =====
+
+Variante                        Schiffe  Laeufe   Sieg%  Verlust%  Totalverlust%  Runden
+ohne Imperator                    70270      72  100.0%     6.17%           0.0%    20.3
+mit 6 Imperatoren                 70276      72  100.0%     4.83%           0.0%    17.5
+mit 12 Imperatoren                70282      72  100.0%     5.00%           0.0%    18.0
+nur Salvenschiffe weglassen       70006      72  100.0%    14.17%           0.0%    40.5
