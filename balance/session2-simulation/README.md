@@ -14,6 +14,7 @@ node run_admiral.mjs 6             # Piratenadmiral: komplette 6-Check-Serien, E
 node run_pirate_base.mjs 3         # Piratenbasen-Angriff: Verluste gegen Beute-Deckel
 node run_admiral_rebalance.mjs 5  # P10-Neubalancierung: Boss-Anteil, Verlustkriterium, Beute-Koeffizient
 node run_aggregate_threshold.mjs 6  # Overkill-Schutz an der Aggregations-Schwelle (Regressionstest)
+node run_loot_exponent.mjs 40      # Beute-Exponent (Entscheidung 1): drei Ausbaustaende, vier Exponenten
 ```
 
 `lib4.mjs` ist eine unveraenderte Kopie von `../session2-simulation/lib.mjs` (Pfade zu
@@ -42,3 +43,19 @@ Die `.txt`-Dateien sind die Rohausgaben, aus denen die Tabellen im Session-4-Abs
 - **`run_aggregate_threshold.mjs`** ist der Regressionstest zu Befund 5: dieselbe Gegnereinheit
   gegen Stapel knapp unter und knapp ueber `STACK_AGGREGATE_THRESHOLD_BY_TYPE`. Bei jeder Aenderung
   an `applyAggregateDamage()` oder an einer Einheit mit sehr hohem Waffenwert erneut laufen lassen.
+
+## Nachtrag 14.08.2026: `run_loot_exponent.mjs`
+
+Misst den Beute-Exponenten aus Entscheidung 1. Zwei Besonderheiten, die bei Aenderungen erhalten
+bleiben sollten:
+
+- **Der Exponent wird NICHT in den Spielcode eingebaut.** Die Beute beeinflusst den Kampfverlauf
+  innerhalb einer Mission nicht, deshalb genuegt EIN Messlauf je Ausbaustand; alle vier Exponenten
+  werden nachtraeglich auf dieselben gemessenen Kampfergebnisse aufgerechnet. Das spart Laufzeit und
+  haelt die Exponenten exakt vergleichbar (gleiche Zufallsziehungen).
+- **Alle nicht aus dem Code ableitbaren Annahmen stehen gebuendelt oben im Kopf unter SETZUNGEN**
+  (Container-Erwartungswerte, Elite-Serienertrag und -Frequenz, Raid-Ertrag je verteidigtem Raid,
+  Heimatbasis-Ertrag je Ausbaustand). Der Raid-Wert ist die empfindlichste davon - er stammt aus der
+  Korrektur vom 11.08.2026 (4,15 Mrd/Tag je Raid), NICHT aus der Baseline-Tabelle in Abschnitt 1.
+
+Laufzeit rund 90 Sekunden bei 40 Durchlaeufen je Zelle.

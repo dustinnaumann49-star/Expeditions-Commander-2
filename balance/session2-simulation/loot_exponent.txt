@@ -1,0 +1,169 @@
+=== Entscheidung 1: Beute-Exponent - 40 Durchlaeufe je Zelle ===
+Wrack-Bergung 30 %, Zielband 3-10 Tage, Checks je Mission: 6
+
+--- Ausbaustand frueh: 910 Schiffe, 0.37 Mrd Wert, Profil schwach, BasePower 0.28 Mrd ---
+  Solo piraten_mittel  Siege 3.7/6  Beute heute 0.96 Mrd  Verlust 0.05 Mrd  vernicht. Feindmacht 0.79 Mrd
+  Solo piraten_hoch    Siege 4.5/6  Beute heute 1.12 Mrd  Verlust 0.13 Mrd  vernicht. Feindmacht 1.05 Mrd
+  Asteroiden 0.66 Mrd/Tag  Heimatbasis 0.06 Mrd/Tag  Raid 0.00 Mrd/Tag (0 verteidigt)
+
+--- Ausbaustand mittel: 6.332 Schiffe, 6.18 Mrd Wert, Profil mittel, BasePower 2.72 Mrd ---
+  Solo piraten_hoch    Siege 4.4/6  Beute heute 1.10 Mrd  Verlust 0.22 Mrd  vernicht. Feindmacht 11.65 Mrd
+  Elite-Bollwerk        Checks 6.0/6  Beute heute 32.60 Mrd  Verlust 0.57 Mrd  vernicht. Feindmacht 19.47 Mrd
+  Asteroiden 1.57 Mrd/Tag  Heimatbasis 0.30 Mrd/Tag  Raid 8.29 Mrd/Tag (2 verteidigt)
+
+--- Ausbaustand spaet: 31.276 Schiffe, 34.99 Mrd Wert, Profil voll, BasePower 18.58 Mrd ---
+  Solo piraten_hoch    Siege 4.6/6  Beute heute 1.16 Mrd  Verlust 1.24 Mrd  vernicht. Feindmacht 84.05 Mrd
+  Elite-Bollwerk        Checks 6.0/6  Beute heute 32.60 Mrd  Verlust 3.73 Mrd  vernicht. Feindmacht 135.62 Mrd
+  Asteroiden 2.72 Mrd/Tag  Heimatbasis 0.55 Mrd/Tag  Raid 16.58 Mrd/Tag (4 verteidigt)
+
+=== Anker (mittlerer Ausbaustand behaelt seine heutige Belohnung) ===
+  Solo : Basis 1.10 Mrd bei Referenz 11.65 Mrd vernicht. Feindmacht
+  Elite: Basis 32.60 Mrd bei Referenz 19.47 Mrd vernicht. Feindmacht
+  Linearer Vergleichsfaktor Solo: 0.0945 Wert-Einheiten je Punkt Feindmacht
+
+=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf Solo UND Elite, Raid unveraendert ===
+Schritt = +10 % Flottenwert. Zielband 3-10 Tage.
+Exponent           frueh      mittel       spaet    Verlauf
+heute              0.5 h       0.7 h       2.8 h    monoton steigend, ausserhalb Band
+0.80               1.1 h       0.7 h       1.1 h    nicht monoton, ausserhalb Band
+0.85               1.1 h       0.7 h       1.0 h    nicht monoton, ausserhalb Band
+0.90               1.1 h       0.7 h       1.0 h    nicht monoton, ausserhalb Band
+0.95               1.2 h       0.7 h       0.9 h    nicht monoton, ausserhalb Band
+
+Dieselbe Rechnung als Tagesrendite auf den Flottenwert (Netto pro Tag / Flottenwert):
+Exponent           frueh      mittel       spaet
+heute              470 %       354 %        86 %
+0.80               218 %       354 %       214 %
+0.85               213 %       354 %       230 %
+0.90               209 %       354 %       248 %
+0.95               206 %       354 %       269 %
+
+Grosser Schritt = Flotte verdoppeln:
+Exponent           frueh      mittel       spaet
+heute              5.1 h       6.8 h      1.16 d
+0.80              11.0 h       6.8 h      11.2 h
+0.85              11.3 h       6.8 h      10.4 h
+0.90              11.5 h       6.8 h       9.7 h
+0.95              11.6 h       6.8 h       8.9 h
+
+=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf Solo UND Elite, ohne Raid ===
+Schritt = +10 % Flottenwert. Zielband 3-10 Tage.
+Exponent           frueh      mittel       spaet    Verlauf
+heute              0.5 h       1.1 h       6.2 h    monoton steigend, ausserhalb Band
+0.80               1.1 h       1.1 h       1.4 h    nicht monoton, ausserhalb Band
+0.85               1.1 h       1.1 h       1.3 h    nicht monoton, ausserhalb Band
+0.90               1.1 h       1.1 h       1.2 h    nicht monoton, ausserhalb Band
+0.95               1.2 h       1.1 h       1.1 h    nicht monoton, ausserhalb Band
+
+Dieselbe Rechnung als Tagesrendite auf den Flottenwert (Netto pro Tag / Flottenwert):
+Exponent           frueh      mittel       spaet
+heute              470 %       219 %        39 %
+0.80               218 %       219 %       166 %
+0.85               213 %       219 %       183 %
+0.90               209 %       219 %       201 %
+0.95               206 %       219 %       221 %
+
+Grosser Schritt = Flotte verdoppeln:
+Exponent           frueh      mittel       spaet
+heute              5.1 h      10.9 h      2.58 d
+0.80              11.0 h      10.9 h      14.4 h
+0.85              11.3 h      10.9 h      13.1 h
+0.90              11.5 h      10.9 h      11.9 h
+0.95              11.6 h      10.9 h      10.8 h
+
+=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf NUR Solo (Elite bleibt fest), Raid unveraendert ===
+Schritt = +10 % Flottenwert. Zielband 3-10 Tage.
+Exponent           frueh      mittel       spaet    Verlauf
+heute              0.5 h       0.7 h       2.8 h    monoton steigend, ausserhalb Band
+0.80               1.1 h       0.7 h       2.4 h    nicht monoton, ausserhalb Band
+0.85               1.1 h       0.7 h       2.4 h    nicht monoton, ausserhalb Band
+0.90               1.1 h       0.7 h       2.4 h    nicht monoton, ausserhalb Band
+0.95               1.2 h       0.7 h       2.3 h    nicht monoton, ausserhalb Band
+
+Dieselbe Rechnung als Tagesrendite auf den Flottenwert (Netto pro Tag / Flottenwert):
+Exponent           frueh      mittel       spaet
+heute              470 %       354 %        86 %
+0.80               218 %       354 %        98 %
+0.85               213 %       354 %       100 %
+0.90               209 %       354 %       101 %
+0.95               206 %       354 %       103 %
+
+Grosser Schritt = Flotte verdoppeln:
+Exponent           frueh      mittel       spaet
+heute              5.1 h       6.8 h      1.16 d
+0.80              11.0 h       6.8 h      1.02 d
+0.85              11.3 h       6.8 h      1.00 d
+0.90              11.5 h       6.8 h      23.7 h
+0.95              11.6 h       6.8 h      23.2 h
+
+=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf NUR Solo (Elite bleibt fest), ohne Raid ===
+Schritt = +10 % Flottenwert. Zielband 3-10 Tage.
+Exponent           frueh      mittel       spaet    Verlauf
+heute              0.5 h       1.1 h       6.2 h    monoton steigend, ausserhalb Band
+0.80               1.1 h       1.1 h       4.7 h    nicht monoton, ausserhalb Band
+0.85               1.1 h       1.1 h       4.6 h    nicht monoton, ausserhalb Band
+0.90               1.1 h       1.1 h       4.4 h    nicht monoton, ausserhalb Band
+0.95               1.2 h       1.1 h       4.3 h    nicht monoton, ausserhalb Band
+
+Dieselbe Rechnung als Tagesrendite auf den Flottenwert (Netto pro Tag / Flottenwert):
+Exponent           frueh      mittel       spaet
+heute              470 %       219 %        39 %
+0.80               218 %       219 %        51 %
+0.85               213 %       219 %        52 %
+0.90               209 %       219 %        54 %
+0.95               206 %       219 %        56 %
+
+Grosser Schritt = Flotte verdoppeln:
+Exponent           frueh      mittel       spaet
+heute              5.1 h      10.9 h      2.58 d
+0.80              11.0 h      10.9 h      1.97 d
+0.85              11.3 h      10.9 h      1.91 d
+0.90              11.5 h      10.9 h      1.85 d
+0.95              11.6 h      10.9 h      1.79 d
+
+=== Nebenzeile: Schritt = naechste Stufe ALLER 9 Kampfforschungen (feste Liste) ===
+  frueh    Kosten 0.01 Mrd -> 0.3 h
+  mittel   Kosten 0.06 Mrd -> 0.1 h
+  spaet    Kosten 0.67 Mrd -> 0.2 h
+
+=== Grosse feste Ausbauziele (einmalig) gegen die Netto-Einnahmen, Exponent 0,85, inkl. Raid ===
+Ziel                                    Kosten       frueh      mittel       spaet
+Alle Schiffs-Module Stufe 10        141.97 Mrd    178.96 d      6.50 d      1.76 d
+Heimatbasis V1 voll (36/32/30)      197.97 Mrd    249.55 d      9.06 d      2.46 d
+Heimatbasis V2 voll                 395.94 Mrd    499.10 d     18.12 d      4.91 d
+Alle Gebaeude-Module Stufe 10        44.38 Mrd     55.94 d      2.03 d      13.2 h
+
+=== Was die Beute-Kurve mit der Belohnung macht (Solo-Mission, 24h) ===
+Stand            heute        0.80        0.85        0.90        0.95
+frueh         1.12 Mrd    0.16 Mrd    0.14 Mrd    0.13 Mrd    0.11 Mrd
+mittel        1.10 Mrd    1.10 Mrd    1.10 Mrd    1.10 Mrd    1.10 Mrd
+spaet         1.16 Mrd    5.35 Mrd    5.91 Mrd    6.52 Mrd    7.20 Mrd
+
+=== Dasselbe fuer das Elite-Bollwerk (je 24h-Serie) ===
+Stand            heute        0.80        0.85        0.90        0.95
+mittel       32.60 Mrd   32.60 Mrd   32.60 Mrd   32.60 Mrd   32.60 Mrd
+spaet        32.60 Mrd  153.99 Mrd  169.68 Mrd  186.97 Mrd  206.02 Mrd
+
+=== Diagnose: Verhaeltnis Tagesrendite spaet / frueh ===
+(1,00 waere ein flacher Verlauf - die Kennzahl bliebe ueber alle Staende gleich)
+  Solo+Elite, Raid x1.0 0.80: 0.98   0.85: 1.08   0.90: 1.19   0.95: 1.30   1.00: 1.43   1.10: 1.72   1.20: 2.07
+  Solo+Elite, Raid x0.5 0.80: 0.87   0.85: 0.97   0.90: 1.07   0.95: 1.19   1.00: 1.31   1.10: 1.60   1.20: 1.95
+  Solo+Elite, Raid x0.0 0.80: 0.76   0.85: 0.86   0.90: 0.96   0.95: 1.07   1.00: 1.20   1.10: 1.48   1.20: 1.83
+  nur Solo  , Raid x1.0 0.80: 0.45   0.85: 0.47   0.90: 0.48   0.95: 0.50   1.00: 0.52   1.10: 0.56   1.20: 0.60
+  nur Solo  , Raid x0.5 0.80: 0.34   0.85: 0.36   0.90: 0.37   0.95: 0.39   1.00: 0.40   1.10: 0.44   1.20: 0.48
+  nur Solo  , Raid x0.0 0.80: 0.23   0.85: 0.25   0.90: 0.26   0.95: 0.27   1.00: 0.29   1.10: 0.32   1.20: 0.35
+
+Empfindlichkeit: derselbe Wert, wenn der fruehe Stand EINEN Raid verteidigt:
+  Solo+Elite, Raid x1.0 0.80: 0.16   0.85: 0.17   0.90: 0.19   0.95: 0.20   1.00: 0.22   1.10: 0.26   1.20: 0.31
+  nur Solo  , Raid x1.0 0.80: 0.07   0.85: 0.08   0.90: 0.08   0.95: 0.08   1.00: 0.08   1.10: 0.08   1.20: 0.09
+
+=== Entscheidungstabelle: Abweichung vom flachen Verlauf je Raid-Annahme (Solo+Elite) ===
+Exponent       Raid x1.0   Raid x0.5   Raid x0.0   groesste Abw.
+0.80                0.98        0.87        0.76            24 %
+0.85                1.08        0.97        0.86            14 %
+0.90                1.19        1.07        0.96            19 %
+0.95                1.30        1.19        1.07            30 %
+
+Kleinste groesste Abweichung: Exponent 0.85 (14 %).
+Liegen zwei Exponenten dicht beieinander, gilt die Planregel "bei Uneindeutigkeit den
+niedrigeren Wert nehmen" (Abschnitt 8, Punkt 1).
