@@ -3,10 +3,11 @@
 
 --- Profil voll, 5 Durchlaeufe je Zeile ---
 Einsatz                 Siege   Belohnung    Verlust  Netto heute  Netto +30% Bergung  vernicht. Feindmacht
-Solo Hoch (24h)           4.4    1.11 Mrd   1.65 Mrd    -0.55 Mrd           -0.05 Mrd             83.62 Mrd
-Elite-Bollwerk (Serie)    6.0   32.60 Mrd   4.73 Mrd    27.87 Mrd           29.29 Mrd            139.67 Mrd
+Solo Hoch (24h)           4.6    1.16 Mrd   1.04 Mrd     0.11 Mrd            0.43 Mrd             80.90 Mrd
+Elite-Bollwerk (Serie)    6.0   32.60 Mrd   4.28 Mrd    28.32 Mrd           29.60 Mrd            144.42 Mrd
 
 --- Profil mittel, 5 Durchlaeufe je Zeile ---
 Einsatz                 Siege   Belohnung    Verlust  Netto heute  Netto +30% Bergung  vernicht. Feindmacht
-Solo Hoch (24h)           4.4    1.11 Mrd   2.57 Mrd    -1.47 Mrd           -0.69 Mrd             73.22 Mrd
-Elite-Bollwerk (Serie)    6.0   32.60 Mrd   9.40 Mrd    23.20 Mrd           26.02 Mrd            128.29 Mrd
+Solo Hoch (24h)           4.6    1.16 Mrd   2.52 Mrd    -1.37 Mrd           -0.61 Mrd             79.76 Mrd
+Elite-Bollwerk (Serie)    6.0   32.60 Mrd   7.13 Mrd    25.47 Mrd           27.61 Mrd            125.06 Mrd
+

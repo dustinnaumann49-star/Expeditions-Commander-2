@@ -16,7 +16,7 @@ GESAMT pro Spieler pro 24h-Serie: 32.60 Mrd + 737 DM
 
 === Elite-Bollwerk Mehrspieler-Check, 15 Laeufe je Konstellation ===
 Konstellation | Sieg% | oVerlust Spieler 1% | oVerlust Spieler 2%
-2x voll | 100 | 3.0 | 3.0
-voll + mittel | 100 | 1.8 | 2.7
-voll + schwach | 100 | 1.7 | 4.1
-voll + schwach (kleine Flotte) | 100 | 0.5 | 0.1
+2x voll | 100 | 3.2 | 3.2
+voll + mittel | 100 | 1.6 | 2.5
+voll + schwach | 100 | 1.0 | 2.6
+voll + schwach (kleine Flotte) | 100 | 0.7 | 0.1

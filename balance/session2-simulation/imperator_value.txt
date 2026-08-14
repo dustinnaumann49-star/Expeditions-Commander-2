@@ -1,0 +1,25 @@
+===== Entscheidung 3: Kampfkraft pro Ressourceneinheit =====
+Gemeinsames Gefecht, 5 Laeufe, Forschung 10, ohne Module/Klasse/Boost, kein Rueckzug.
+"Schaden je Wert" = Rohschaden pro Schiff geteilt durch seinen Ressourcen-Gegenwert.
+
+Schiff               Stueck  Wert/Stueck  Schaden ges.   je Schiff   je Wert
+Salvenkreuzer            90     0.01 Mrd      2.57 Mrd    0.03 Mrd     2.251
+Salvenjäger             150     0.00 Mrd      1.10 Mrd    0.01 Mrd     1.708
+Salvendreadnought        30     0.03 Mrd      1.36 Mrd    0.05 Mrd     1.403
+Kreuzer                1000     0.00 Mrd      0.29 Mrd    0.00 Mrd     0.448
+Schwerer Jäger         1500     0.00 Mrd      0.17 Mrd    0.00 Mrd     0.390
+Leichter Jäger         2000     0.00 Mrd      0.07 Mrd    0.00 Mrd     0.266
+Schlachtschiff          600     0.00 Mrd      0.10 Mrd    0.00 Mrd     0.183
+Reaper                  200     0.00 Mrd      0.04 Mrd    0.00 Mrd     0.153
+Zerstörer               300     0.00 Mrd      0.06 Mrd    0.00 Mrd     0.136
+Schlachtkreuzer         400     0.00 Mrd      0.06 Mrd    0.00 Mrd     0.115
+Bomber                  300     0.00 Mrd      0.04 Mrd    0.00 Mrd     0.085
+Imperator                 6     0.97 Mrd      0.23 Mrd    0.04 Mrd     0.039
+
+Band der Standardschiffe: 0.085 bis 0.448
+Imperator: 0.039 -> UNTER dem Band
+Faktor zum schwaechsten Standardschiff: 0.45x
+
+Zweite Bezugsgroesse (der Plan nennt sie als die eigentlich relevante): der Imperator
+kostet keine Ressourcen, sondern rund 11 Tage Grind je Exemplar. Der Ressourcen-Gegenwert
+von 325.000 je Teil ist eine Setzung aus Abschnitt 2a, keine Messung.
