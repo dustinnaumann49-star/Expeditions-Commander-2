@@ -1,0 +1,73 @@
+===== 1. Trefferwahrscheinlichkeit je Schuetze/Ziel =====
+
+--- ohne Forschung ---
+Schuetze            Ziel                 Praezision  Ausweichen   Treffer  1 Treffer je
+Imperator           Leichter Jäger            25.0%       57.0%     10.7%  9.3 Schuss
+Imperator           Kreuzer                   25.0%       23.0%     19.3%  5.2 Schuss
+Imperator           Reaper                    25.0%        0.0%     25.0%  4.0 Schuss
+Reaper              Leichter Jäger            28.0%       57.0%     12.0%  8.3 Schuss
+Reaper              Kreuzer                   28.0%       23.0%     21.6%  4.6 Schuss
+Reaper              Reaper                    28.0%        0.0%     28.0%  3.6 Schuss
+Salvendreadnought   Leichter Jäger            30.0%       57.0%     12.9%  7.8 Schuss
+Salvendreadnought   Kreuzer                   30.0%       23.0%     23.1%  4.3 Schuss
+Salvendreadnought   Reaper                    30.0%        0.0%     30.0%  3.3 Schuss
+Kreuzer             Leichter Jäger            45.0%       12.0%     39.6%  2.5 Schuss
+Kreuzer             Kreuzer                   45.0%        5.0%     42.8%  2.3 Schuss
+Kreuzer             Reaper                    45.0%        0.0%     45.0%  2.2 Schuss
+Leichter Jäger      Leichter Jäger            55.0%       12.0%     48.4%  2.1 Schuss
+Leichter Jäger      Kreuzer                   55.0%        5.0%     52.3%  1.9 Schuss
+Leichter Jäger      Reaper                    55.0%        0.0%     55.0%  1.8 Schuss
+
+--- Forschung Stufe 10 ---
+Schuetze            Ziel                 Praezision  Ausweichen   Treffer  1 Treffer je
+Imperator           Leichter Jäger            45.0%       72.0%     12.6%  7.9 Schuss
+Imperator           Kreuzer                   45.0%       38.0%     27.9%  3.6 Schuss
+Imperator           Reaper                    45.0%        0.0%     45.0%  2.2 Schuss
+Reaper              Leichter Jäger            48.0%       72.0%     13.4%  7.4 Schuss
+Reaper              Kreuzer                   48.0%       38.0%     29.8%  3.4 Schuss
+Reaper              Reaper                    48.0%        0.0%     48.0%  2.1 Schuss
+Salvendreadnought   Leichter Jäger            50.0%       72.0%     14.0%  7.1 Schuss
+Salvendreadnought   Kreuzer                   50.0%       38.0%     31.0%  3.2 Schuss
+Salvendreadnought   Reaper                    50.0%        0.0%     50.0%  2.0 Schuss
+Kreuzer             Leichter Jäger            65.0%       27.0%     47.4%  2.1 Schuss
+Kreuzer             Kreuzer                   65.0%       20.0%     52.0%  1.9 Schuss
+Kreuzer             Reaper                    65.0%        0.0%     65.0%  1.5 Schuss
+Leichter Jäger      Leichter Jäger            75.0%       27.0%     54.8%  1.8 Schuss
+Leichter Jäger      Kreuzer                   75.0%       20.0%     60.0%  1.7 Schuss
+Leichter Jäger      Reaper                    75.0%        0.0%     75.0%  1.3 Schuss
+
+===== 2. 6 Imperatoren gegen 400 Leichte Jaeger (Forschung 10, ohne Module/Klasse/Boost) =====
+
+Schuesse 1148, Treffer 143 (12.5%), Schaden       289M
+Runden 39.4, Ueberlebende A 6.0 / B 0, Siegquote 100.0%
+
+===== 3. Hebel-Vergleich - Jaegerschwarm (400 Leichte Jaeger) =====
+
+Variante                           Schuesse  Treffer%  Schaden Imp  Rest A  Rest B   Sieg%
+Ist-Zustand                            1148     12.2%         294M     6.0       0  100.0%
+Praezisionsmalus 0 statt -0,15          857     16.7%         290M     6.0       0  100.0%
+Ausweich-Bonus klein/gross 0,22         614     23.0%         290M     6.0       0  100.0%
+Waffen verdoppelt (1.000.000)           802     13.5%         438M     6.0       0  100.0%
+Waffen x2, Panzerung/Schild halb        874     12.3%         444M     6.0       0  100.0%
+12 Imperatoren (Werte unveraendert)     1145     12.5%         290M    12.0       0  100.0%
+18 Imperatoren (Werte unveraendert)     1180     12.2%         284M    18.0       0  100.0%
+
+===== 3. Hebel-Vergleich - Gemischte Flotte (645 Schiffe) =====
+
+Variante                           Schuesse  Treffer%  Schaden Imp  Rest A  Rest B   Sieg%
+Ist-Zustand                             232     21.8%         111M     0.0     563    0.0%
+Praezisionsmalus 0 statt -0,15          269     28.9%         160M     0.0     520    0.0%
+Ausweich-Bonus klein/gross 0,22         230     26.6%         121M     0.0     539    0.0%
+Waffen verdoppelt (1.000.000)           236     20.6%         193M     0.0     536    0.0%
+Waffen x2, Panzerung/Schild halb         70     18.5%          54M     0.0     617    0.0%
+12 Imperatoren (Werte unveraendert)     1766     20.8%         756M    12.0       0  100.0%
+18 Imperatoren (Werte unveraendert)     1881     19.7%         756M    18.0       0  100.0%
+
+===== 4. Beitrag in einer ausgebauten Flotte (6.300 Schiffe gegen 8.250) =====
+
+Zusammensetzung                      Rest A   Rest B   Sieg%  Anteil Imp. am Schaden
+ohne Imperator                          827     4174    0.0%                    0.0%
++ 6 Imperatoren                        1353     2794    0.0%                   34.0%
++ 12 Imperatoren                       1945     1421    0.0%                   50.0%
++ 6 Imp., Praezisionsmalus 0           1486     2473    0.0%                   38.6%
++ 6 Imp., Waffen verdoppelt            1648     2153    0.0%                   50.7%
