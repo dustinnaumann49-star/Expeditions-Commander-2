@@ -49,6 +49,23 @@ const ELITE_CADENCE_DAYS = 3;
 // Raid-Entscheidung vom 15.08.2026 (Variante 6) ist das Skript ohnehin neu zu rechnen, dann mit
 // einer eigenen Raid-Annahme fuer Variante 6 statt eines festen Werts je Raid.
 const RAID_PER_DEFENDED_PER_DAY = 6.31e9;
+// Raid-Modell je Szenario. Eine ZAHL ist das Vielfache des Ist-Zustands (1 = unveraendert,
+// 0 = ohne Raid). Der Schluessel 'v6' ist die am 15.08.2026 beschlossene Variante 6: fester
+// Container-Topf je Raid nach Beitrag, plus Saettigung ueber die Tagessumme der Anteile.
+// Beitragsanteile gemessen in raid_support.txt; S_MAX ist die einzige Setzung des Raid-Pakets.
+// Achtung: die Anteile sind am SPAETEN Ausbaustand gemessen. Fuer den mittleren Stand sind sie
+// damit eine Obergrenze - ein kleinerer Spieler dominiert einen fremden Raid weniger deutlich.
+const V6_S_MAX = 1.5;
+const V6_SHARE_OWN = 0.932;
+const V6_SHARE_FOREIGN = 0.715;
+const v6sat = (x) => V6_S_MAX * (1 - Math.exp(-x / V6_S_MAX));
+function raidIncome(st, scenario) {
+  const n = st.raidsDefended;
+  if (n <= 0) return 0;
+  if (scenario === 'v6') return v6sat(V6_SHARE_OWN + (n - 1) * V6_SHARE_FOREIGN) * RAID_PER_DEFENDED_PER_DAY;
+  return n * RAID_PER_DEFENDED_PER_DAY * scenario;
+}
+const raidLabel = (sc) => sc === 'v6' ? 'Raid nach Variante 6' : sc === 1 ? 'Raid unveraendert' : sc === 0 ? 'ohne Raid' : `Raid x${Number(sc).toFixed(1)}`;
 // Heimatbasis: 554 Mio/Tag bei V1-Vollausbau (Abschnitt 1); frueh/mittel anteilig gesetzt.
 const BASE_INCOME = { frueh: 55e6, mittel: 300e6, spaet: 554e6 };
 // Woechentlicher Asteroiden-Event (Di/Do, x2) als Wochendurchschnitt.
@@ -222,7 +239,8 @@ for (const st of STATES) {
         `vernicht. Feindmacht ${mrd(r.destroyedPower)}`);
   }
   say(`  Asteroiden ${mrd(asteroidIncomePerDay(st))}/Tag  Heimatbasis ${mrd(BASE_INCOME[st.key])}/Tag  ` +
-      `Raid ${mrd(st.raidsDefended * RAID_PER_DEFENDED_PER_DAY)}/Tag (${st.raidsDefended} verteidigt)`);
+      `Raid heute ${mrd(raidIncome(st, 1))}/Tag, nach Variante 6 ${mrd(raidIncome(st, 'v6'))}/Tag ` +
+      `(${st.raidsDefended} verteidigt)`);
   say();
 }
 
@@ -260,8 +278,7 @@ function evaluate(exponent, raidFactor, eliteCurve = true) {
       eliteLoot = (exponent === null || !eliteCurve) ? e.rewardToday : lootElite(e.destroyedPower, exponent);
       eliteNet = (eliteLoot - e.lost * (1 - SALVAGE)) / ELITE_CADENCE_DAYS;
     }
-    const flat = asteroidIncomePerDay(st) + BASE_INCOME[st.key]
-      + st.raidsDefended * RAID_PER_DEFENDED_PER_DAY * raidFactor;
+    const flat = asteroidIncomePerDay(st) + BASE_INCOME[st.key] + raidIncome(st, raidFactor);
     const net = soloNet + eliteNet + flat;
     const fv = measured[st.key].fleetValue;
     const stepResearch = researchStepCost(st.profile === 'schwach' ? 3 : st.profile === 'mittel' ? 6 : 10);
@@ -279,8 +296,8 @@ function evaluate(exponent, raidFactor, eliteCurve = true) {
 
 const fmtDays = (d) => !isFinite(d) ? 'nie' : d >= 1 ? `${d.toFixed(2)} d` : `${(d * 24).toFixed(1)} h`;
 
-for (const [withRaid, eliteCurve] of [[1, true], [0, true], [1, false], [0, false]]) {
-  say(`=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf ${eliteCurve ? 'Solo UND Elite' : 'NUR Solo (Elite bleibt fest)'}, ${withRaid ? 'Raid unveraendert' : 'ohne Raid'} ===`);
+for (const [withRaid, eliteCurve] of [['v6', true], [1, true], [0, true], ['v6', false], [1, false], [0, false]]) {
+  say(`=== Kennzahl "Tage bis zum naechsten Ausbauschritt" - Beute-Kurve auf ${eliteCurve ? 'Solo UND Elite' : 'NUR Solo (Elite bleibt fest)'}, ${raidLabel(withRaid)} ===`);
   say(`Schritt = +10 % Flottenwert. Zielband ${BAND[0]}-${BAND[1]} Tage.`);
   say('Exponent'.padEnd(12) + STATES.map((s) => s.label.padStart(12)).join('') + '    Verlauf');
   for (const e of [null, ...EXPONENTS]) {
@@ -368,9 +385,9 @@ function spread(e, raidFactor, eliteCurve) {
 say('=== Diagnose: Verhaeltnis Tagesrendite spaet / frueh ===');
 say('(1,00 waere ein flacher Verlauf - die Kennzahl bliebe ueber alle Staende gleich)');
 const EXPO_SCAN = [0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20];
-for (const [rf, eliteCurve] of [[1, true], [0.5, true], [0, true], [1, false], [0.5, false], [0, false]]) {
+for (const [rf, eliteCurve] of [['v6', true], [1, true], [0.5, true], [0, true], ['v6', false], [1, false], [0.5, false], [0, false]]) {
   const line = EXPO_SCAN.map((e) => `${e.toFixed(2)}: ${spread(e, rf, eliteCurve).toFixed(2)}`).join('   ');
-  say(`  ${(eliteCurve ? 'Solo+Elite' : 'nur Solo  ')}, Raid x${rf.toFixed(1)} ${line}`);
+  say(`  ${(eliteCurve ? 'Solo+Elite' : 'nur Solo  ')}, ${raidLabel(rf).padEnd(20)} ${line}`);
 }
 say();
 // Empfindlichkeitspruefung: der fruehe Stand verteidigt im Hauptmodell KEINEN Raid (nach der
@@ -380,7 +397,7 @@ say('Empfindlichkeit: derselbe Wert, wenn der fruehe Stand EINEN Raid verteidigt
 STATES[0].raidsDefended = 1;
 for (const eliteCurve of [true, false]) {
   const line = EXPO_SCAN.map((e) => `${e.toFixed(2)}: ${spread(e, 1, eliteCurve).toFixed(2)}`).join('   ');
-  say(`  ${(eliteCurve ? 'Solo+Elite' : 'nur Solo  ')}, Raid x1.0 ${line}`);
+  say(`  ${(eliteCurve ? 'Solo+Elite' : 'nur Solo  ')}, Raid unveraendert    ${line}`);
 }
 STATES[0].raidsDefended = 0;
 say();
@@ -391,7 +408,23 @@ say();
 // Raid-Annahme gewaehlt, sondern gegen den ungueltigsten Fall ueber drei Annahmen hinweg:
 // Raid unveraendert, Raid halbiert, Raid entfaellt. Gesucht ist der Exponent mit der kleinsten
 // groessten Abweichung von einem flachen Verlauf (Verhaeltnis 1,00).
-say('=== Entscheidungstabelle: Abweichung vom flachen Verlauf je Raid-Annahme (Solo+Elite) ===');
+// NEU 15.08.2026: Der Raid IST inzwischen entschieden (Variante 6). Der Exponent wird deshalb
+// primaer gegen diese eine Annahme gewaehlt; die drei alten Annahmen bleiben als
+// Empfindlichkeitspruefung stehen, damit der Vergleich mit dem Lauf vom 14.08.2026 moeglich ist.
+say('=== Entscheidungstabelle (NEU): Abweichung vom flachen Verlauf, Raid nach Variante 6 ===');
+say('Exponent'.padEnd(12) + 'Verhaeltnis spaet/frueh'.padStart(24) + 'Abweichung'.padStart(14));
+let bestV6 = null;
+for (const e of EXPONENTS) {
+  const v = spread(e, 'v6', true);
+  const abw = Math.abs(v - 1);
+  if (bestV6 === null || abw < bestV6.abw - 1e-9) bestV6 = { e, abw };
+  say(e.toFixed(2).padEnd(12) + v.toFixed(2).padStart(24) + `${(abw * 100).toFixed(0)} %`.padStart(14));
+}
+say();
+say(`Kleinste Abweichung unter Variante 6: Exponent ${bestV6.e.toFixed(2)} (${(bestV6.abw * 100).toFixed(0)} %).`);
+say();
+
+say('=== Empfindlichkeit: dieselbe Tabelle ueber die drei alten Raid-Annahmen (Solo+Elite) ===');
 say('Exponent'.padEnd(12) + 'Raid x1.0'.padStart(12) + 'Raid x0.5'.padStart(12) + 'Raid x0.0'.padStart(12) + 'groesste Abw.'.padStart(16));
 let best = null;
 for (const e of EXPONENTS) {
@@ -402,7 +435,7 @@ for (const e of EXPONENTS) {
       `${(worst * 100).toFixed(0)} %`.padStart(16));
 }
 say();
-say(`Kleinste groesste Abweichung: Exponent ${best.e.toFixed(2)} (${(best.worst * 100).toFixed(0)} %).`);
+say(`Kleinste groesste Abweichung ueber die drei alten Annahmen: Exponent ${best.e.toFixed(2)} (${(best.worst * 100).toFixed(0)} %).`);
 say('Liegen zwei Exponenten dicht beieinander, gilt die Planregel "bei Uneindeutigkeit den');
 say('niedrigeren Wert nehmen" (Abschnitt 8, Punkt 1).');
 

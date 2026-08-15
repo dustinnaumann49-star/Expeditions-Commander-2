@@ -87,3 +87,27 @@ node run_raid_support.mjs 5      # M2/M3: Mehrspieler-Raid, Beitragsanteile + Ge
   er im Raid eines gleich starken Spielers nur 4,6 % bekommt. Bei kuenftigen Messungen zu
   Mehrspieler-Belohnungen immer BEIDE Richtungen messen, nicht nur die aus Sicht des grossen
   Accounts.
+
+## Nachtrag 15.08.2026: `run_loot_exponent.mjs` umgebaut
+
+Das Raid-Modell ist nicht mehr ein fester Wert je verteidigtem Raid, sondern ein Szenario:
+
+- eine ZAHL bedeutet weiterhin "Vielfaches des Ist-Zustands" (1 = unveraendert, 0 = ohne Raid),
+- der Schluessel `'v6'` bildet die am 15.08.2026 beschlossene Variante 6 ab (Beitragsanteile aus
+  `raid_support.txt`, Saettigung `V6_S_MAX` ueber die Tagessumme).
+
+Zwei Dinge, die bei Aenderungen erhalten bleiben sollten:
+
+- **Die Entscheidungstabelle gibt es jetzt zweimal.** Primaer gegen Variante 6 (der Raid ist
+  entschieden), darunter die drei alten Hypothesen als Empfindlichkeitspruefung - sonst waere der
+  Vergleich mit dem Lauf vom 14.08.2026 nicht mehr moeglich.
+- **`V6_SHARE_FOREIGN` ist am SPAETEN Ausbaustand gemessen.** Auf den mittleren Stand angewandt ist
+  der Wert eine Obergrenze: ein kleinerer Spieler dominiert einen fremden Raid weniger deutlich.
+  Das Skript rechnet damit bewusst zugunsten des Raids, also konservativ.
+- Die Konstante `RAID_PER_DEFENDED_PER_DAY` stand bis dahin auf 4,145 Mrd/Tag (aus dem Kasten bei
+  Entscheidung 3). Richtig sind **6,31 Mrd/Tag**; die alte Zahl zaehlte nur die Container-Kategorie
+  "Ressourcen" mit dem rohen `chance`-Wert.
+
+**Der Anker streut.** Ueber drei Laeufe: 0,0956 / 0,0945 / 0,0939 Wert-Einheiten je Punkt
+vernichteter Feindmacht. Rund 2 % aus den Zufallsanteilen der Kaempfe - bei Vergleichen zwischen
+Laeufen nicht auf die dritte Nachkommastelle abstellen.
