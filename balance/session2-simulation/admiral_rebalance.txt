@@ -1,33 +1,104 @@
-=== A. Boss-Anteil (ADMIRAL_STAT_SHARE): wie stark aendert sich der Ausgang? ===
-(Verlust-Kriterium 45 % Wertverlust je Check, Profil voll, 5 Serien je Zelle)
+=== A. Boss-Anteil (ADMIRAL_STAT_SHARE) ueber alle vier Ausbau-Profile ===
+(Niederlage = 45 % kumulierter Wertverlust, contributedPower frisch je Check, 40 Serien je Zelle)
+(Heutiger Code-Wert: ADMIRAL_STAT_SHARE = 0,55. Ziel-Check-Tiefe laut Plan: 3-5.)
 
-Flotte  Anteil  Checks  Sieg   Verlust brutto  Verlust netto(-30%)  vernichtete Feindmacht
-gross    0.55     1.0 100.0%        0.59 Mrd             0.41 Mrd                2.66 Mrd
-gross    0.35     1.0 100.0%        0.53 Mrd             0.37 Mrd                3.08 Mrd
-gross    0.25     1.0 100.0%        0.43 Mrd             0.30 Mrd                2.74 Mrd
-real     0.55     1.0  60.0%        8.89 Mrd             6.23 Mrd               16.60 Mrd
-real     0.35     1.0 100.0%        4.82 Mrd             3.38 Mrd               20.88 Mrd
-real     0.25     1.0 100.0%        3.05 Mrd             2.13 Mrd               20.19 Mrd
+Profil          Flotte  Anteil  Checks   Sieg  Verlust brutto  Verlust netto(-30%)  vernichtete Feindmacht
+voll            gross   0.25    1.00 100.0%        0.04 Mrd             0.03 Mrd                2.66 Mrd
+voll            gross   0.35    1.00 100.0%        0.04 Mrd             0.03 Mrd                2.82 Mrd
+voll            gross   0.55    1.00 100.0%        0.02 Mrd             0.01 Mrd                2.80 Mrd
+voll            gross   0.75    1.00 100.0%        0.02 Mrd             0.01 Mrd                2.73 Mrd
+voll            gross    0.9    1.00 100.0%        0.01 Mrd             0.01 Mrd                2.73 Mrd
+voll            real    0.25    1.00 100.0%        0.43 Mrd             0.30 Mrd               22.16 Mrd
+voll            real    0.35    1.00 100.0%        0.26 Mrd             0.18 Mrd               21.99 Mrd
+voll            real    0.55    1.00 100.0%        0.07 Mrd             0.05 Mrd               22.42 Mrd
+voll            real    0.75    1.00 100.0%        0.01 Mrd             0.00 Mrd               23.10 Mrd
+voll            real     0.9    1.00 100.0%        0.00 Mrd             0.00 Mrd               22.25 Mrd
+voll_noboost    gross   0.25    1.00 100.0%        0.08 Mrd             0.06 Mrd                2.69 Mrd
+voll_noboost    gross   0.35    1.00 100.0%        0.06 Mrd             0.04 Mrd                2.73 Mrd
+voll_noboost    gross   0.55    1.00 100.0%        0.03 Mrd             0.02 Mrd                2.73 Mrd
+voll_noboost    gross   0.75    1.00 100.0%        0.03 Mrd             0.02 Mrd                2.74 Mrd
+voll_noboost    gross    0.9    1.00 100.0%        0.03 Mrd             0.02 Mrd                2.75 Mrd
+voll_noboost    real    0.25    1.00 100.0%        1.08 Mrd             0.76 Mrd               22.42 Mrd
+voll_noboost    real    0.35    1.00 100.0%        0.64 Mrd             0.45 Mrd               21.65 Mrd
+voll_noboost    real    0.55    1.00 100.0%        0.20 Mrd             0.14 Mrd               22.07 Mrd
+voll_noboost    real    0.75    1.00 100.0%        0.02 Mrd             0.02 Mrd               22.16 Mrd
+voll_noboost    real     0.9    1.00 100.0%        0.00 Mrd             0.00 Mrd               21.99 Mrd
+mittel          gross   0.25    1.00 100.0%        0.08 Mrd             0.05 Mrd                2.77 Mrd
+mittel          gross   0.35    1.00 100.0%        0.05 Mrd             0.03 Mrd                2.74 Mrd
+mittel          gross   0.55    1.00 100.0%        0.04 Mrd             0.03 Mrd                2.76 Mrd
+mittel          gross   0.75    1.00 100.0%        0.03 Mrd             0.02 Mrd                2.78 Mrd
+mittel          gross    0.9    1.00 100.0%        0.04 Mrd             0.03 Mrd                2.76 Mrd
+mittel          real    0.25    1.00 100.0%        0.71 Mrd             0.50 Mrd               21.65 Mrd
+mittel          real    0.35    1.00 100.0%        0.55 Mrd             0.39 Mrd               23.02 Mrd
+mittel          real    0.55    1.00 100.0%        0.14 Mrd             0.10 Mrd               22.07 Mrd
+mittel          real    0.75    1.00 100.0%        0.02 Mrd             0.02 Mrd               22.93 Mrd
+mittel          real     0.9    1.00 100.0%        0.00 Mrd             0.00 Mrd               22.59 Mrd
+schwach         gross   0.25    1.45  77.5%        0.72 Mrd             0.51 Mrd                3.31 Mrd
+schwach         gross   0.35    3.92   0.0%        2.00 Mrd             1.40 Mrd                7.03 Mrd
+schwach         gross   0.55    5.75   0.0%        1.85 Mrd             1.29 Mrd                8.16 Mrd
+schwach         gross   0.75    6.00   0.0%        1.14 Mrd             0.80 Mrd                5.21 Mrd
+schwach         gross    0.9    6.00   0.0%        0.92 Mrd             0.64 Mrd                2.14 Mrd
+schwach         real    0.25    2.27  25.0%       12.76 Mrd             8.93 Mrd               32.20 Mrd
+schwach         real    0.35    3.42   0.0%       15.51 Mrd            10.86 Mrd               45.14 Mrd
+schwach         real    0.55    5.80   0.0%       13.45 Mrd             9.41 Mrd               66.56 Mrd
+schwach         real    0.75    6.00   0.0%        3.19 Mrd             2.23 Mrd               47.01 Mrd
+schwach         real     0.9    6.00   0.0%        0.26 Mrd             0.18 Mrd               19.75 Mrd
 
 === B. Machtproportionale Belohnung: welcher Koeffizient trifft welches Ziel? ===
 
-Bezugsgroessen: Elite-Bollwerk-Serie 32,60 Mrd (24h), Raid-Tag 6,31 Mrd, Tagesbaseline 21,69 Mrd.
+Bezugsgroessen NEU (Stand 15.08.2026, Block A abgeschlossen): Tageseinnahmen 0,80 / 19,82 / 76,85 Mrd
+fuer den fruehen / mittleren / spaeten Ausbaustand; davon Elite-Bollwerk ~56,9 Mrd/Tag im spaeten Stand.
+Die alte Baseline 21,69 Mrd/Tag gilt NICHT mehr.
 Belohnung = vernichtete Feindmacht x K (Wert-Einheiten je Machtpunkt).
 
-Flotte  Anteil  vernichtete Macht  Netto-Verlust  K fuer Netto=0  K fuer Netto=+50% Verlust
-gross    0.55           2.66 Mrd       0.41 Mrd           0.155                      0.232
-gross    0.35           3.08 Mrd       0.37 Mrd           0.120                      0.180
-gross    0.25           2.74 Mrd       0.30 Mrd           0.110                      0.165
-real     0.55          16.60 Mrd       6.23 Mrd           0.375                      0.563
-real     0.35          20.88 Mrd       3.38 Mrd           0.162                      0.243
-real     0.25          20.19 Mrd       2.13 Mrd           0.106                      0.158
+Profil          Flotte  Anteil  vernicht. Macht  Netto-Verlust  K fuer Netto=0  K fuer Netto=+50%
+voll            gross   0.25         2.66 Mrd       0.03 Mrd          0.0099             0.0149
+voll            gross   0.35         2.82 Mrd       0.03 Mrd          0.0102             0.0153
+voll            gross   0.55         2.80 Mrd       0.01 Mrd          0.0050             0.0074
+voll            gross   0.75         2.73 Mrd       0.01 Mrd          0.0044             0.0066
+voll            gross    0.9         2.73 Mrd       0.01 Mrd          0.0032             0.0048
+voll            real    0.25        22.16 Mrd       0.30 Mrd          0.0135             0.0202
+voll            real    0.35        21.99 Mrd       0.18 Mrd          0.0084             0.0126
+voll            real    0.55        22.42 Mrd       0.05 Mrd          0.0023             0.0034
+voll            real    0.75        23.10 Mrd       0.00 Mrd          0.0002             0.0003
+voll            real     0.9        22.25 Mrd       0.00 Mrd          0.0000             0.0000
+voll_noboost    gross   0.25         2.69 Mrd       0.06 Mrd          0.0218             0.0326
+voll_noboost    gross   0.35         2.73 Mrd       0.04 Mrd          0.0163             0.0244
+voll_noboost    gross   0.55         2.73 Mrd       0.02 Mrd          0.0076             0.0114
+voll_noboost    gross   0.75         2.74 Mrd       0.02 Mrd          0.0069             0.0103
+voll_noboost    gross    0.9         2.75 Mrd       0.02 Mrd          0.0066             0.0099
+voll_noboost    real    0.25        22.42 Mrd       0.76 Mrd          0.0337             0.0506
+voll_noboost    real    0.35        21.65 Mrd       0.45 Mrd          0.0207             0.0311
+voll_noboost    real    0.55        22.07 Mrd       0.14 Mrd          0.0065             0.0097
+voll_noboost    real    0.75        22.16 Mrd       0.02 Mrd          0.0007             0.0010
+voll_noboost    real     0.9        21.99 Mrd       0.00 Mrd          0.0000             0.0000
+mittel          gross   0.25         2.77 Mrd       0.05 Mrd          0.0193             0.0289
+mittel          gross   0.35         2.74 Mrd       0.03 Mrd          0.0120             0.0180
+mittel          gross   0.55         2.76 Mrd       0.03 Mrd          0.0099             0.0149
+mittel          gross   0.75         2.78 Mrd       0.02 Mrd          0.0069             0.0104
+mittel          gross    0.9         2.76 Mrd       0.03 Mrd          0.0106             0.0158
+mittel          real    0.25        21.65 Mrd       0.50 Mrd          0.0230             0.0344
+mittel          real    0.35        23.02 Mrd       0.39 Mrd          0.0168             0.0252
+mittel          real    0.55        22.07 Mrd       0.10 Mrd          0.0043             0.0065
+mittel          real    0.75        22.93 Mrd       0.02 Mrd          0.0007             0.0010
+mittel          real     0.9        22.59 Mrd       0.00 Mrd          0.0000             0.0001
+schwach         gross   0.25         3.31 Mrd       0.51 Mrd          0.1527             0.2290
+schwach         gross   0.35         7.03 Mrd       1.40 Mrd          0.1995             0.2993
+schwach         gross   0.55         8.16 Mrd       1.29 Mrd          0.1586             0.2380
+schwach         gross   0.75         5.21 Mrd       0.80 Mrd          0.1527             0.2291
+schwach         gross    0.9         2.14 Mrd       0.64 Mrd          0.2995             0.4492
+schwach         real    0.25        32.20 Mrd       8.93 Mrd          0.2774             0.4161
+schwach         real    0.35        45.14 Mrd      10.86 Mrd          0.2406             0.3608
+schwach         real    0.55        66.56 Mrd       9.41 Mrd          0.1414             0.2121
+schwach         real    0.75        47.01 Mrd       2.23 Mrd          0.0475             0.0713
+schwach         real     0.9        19.75 Mrd       0.18 Mrd          0.0092             0.0138
 
-=== C. Gegenprobe: was liefert ein fester Koeffizient ueber alle Flottengroessen? ===
+=== C. Gegenprobe: was liefert ein fester Koeffizient? (Anteil 0,55 = heutiger Code) ===
 
-  K =  0.5  Netto -> gross:0.55: 0.92 Mrd   gross:0.35: 1.17 Mrd   gross:0.25: 1.07 Mrd   real:0.55: 2.07 Mrd   real:0.35: 7.06 Mrd   real:0.25: 7.96 Mrd
-  K =  1.0  Netto -> gross:0.55: 2.25 Mrd   gross:0.35: 2.71 Mrd   gross:0.25: 2.44 Mrd   real:0.55: 10.37 Mrd   real:0.35: 17.50 Mrd   real:0.25: 18.06 Mrd
-  K =  1.5  Netto -> gross:0.55: 3.58 Mrd   gross:0.35: 4.25 Mrd   gross:0.25: 3.81 Mrd   real:0.55: 18.67 Mrd   real:0.35: 27.94 Mrd   real:0.25: 28.16 Mrd
-  K =  2.0  Netto -> gross:0.55: 4.90 Mrd   gross:0.35: 5.79 Mrd   gross:0.25: 5.18 Mrd   real:0.55: 26.97 Mrd   real:0.35: 38.38 Mrd   real:0.25: 38.25 Mrd
+  K =  0.10  Netto je Durchlauf -> voll:gross: 0.27 Mrd  voll:real: 2.19 Mrd  voll_noboost:gross: 0.25 Mrd  voll_noboost:real: 2.06 Mrd  mittel:gross: 0.25 Mrd  mittel:real: 2.11 Mrd  schwach:gross: -0.48 Mrd  schwach:real: -2.76 Mrd
+  K =  0.25  Netto je Durchlauf -> voll:gross: 0.68 Mrd  voll:real: 5.55 Mrd  voll_noboost:gross: 0.66 Mrd  voll_noboost:real: 5.38 Mrd  mittel:gross: 0.66 Mrd  mittel:real: 5.42 Mrd  schwach:gross: 0.75 Mrd  schwach:real: 7.23 Mrd
+  K =  0.50  Netto je Durchlauf -> voll:gross: 1.38 Mrd  voll:real: 11.16 Mrd  voll_noboost:gross: 1.35 Mrd  voll_noboost:real: 10.89 Mrd  mittel:gross: 1.35 Mrd  mittel:real: 10.94 Mrd  schwach:gross: 2.79 Mrd  schwach:real: 23.87 Mrd
+  K =  1.00  Netto je Durchlauf -> voll:gross: 2.78 Mrd  voll:real: 22.37 Mrd  voll_noboost:gross: 2.71 Mrd  voll_noboost:real: 21.93 Mrd  mittel:gross: 2.74 Mrd  mittel:real: 21.98 Mrd  schwach:gross: 6.87 Mrd  schwach:real: 57.15 Mrd
 
 === D. Boss-RapidFire laeuft ins Leere ===
 

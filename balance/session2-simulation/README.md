@@ -154,3 +154,40 @@ Tabelle "Grosse feste Ausbauziele", beide fielen um rund ein Drittel zu niedrig 
 im mittleren Stand: 5,44 statt 7,16 Tage). Behoben. **`loot_exponent.txt` ist an genau diesen zwei
 Tabellen ueberholt, bis das Skript wieder mit 40 Durchlaeufen gelaufen ist** - die
 Exponenten-Entscheidung selbst nutzt diese Tabellen nicht und ist nicht betroffen.
+
+## Nachtrag 15.08.2026: Block B, Schritt 4 (Piratenadmiral, Entscheidung 4.1 + 4.2)
+
+```
+node run_admiral_defeat.mjs 40      # Verlust-Kriterium + contributedPower, ~60 Sekunden
+node run_admiral_rebalance.mjs 40   # Boss-Anteil ueber alle vier Profile, ~140 Sekunden
+```
+
+- **`run_admiral_defeat.mjs` misst EINMAL und wertet alle Schwellen nachtraeglich aus.** Die
+  Serien laufen ohne Niederlage-Abbruch ueber alle 6 Checks durch; je Check wird die kumulierte
+  Verlustquote in Wert UND Stueckzahl protokolliert. Ein Abbruch beendet die Serie nur, er
+  veraendert frueher liegende Checks nicht - das Ergebnis ist deshalb exakt identisch zu einem
+  echten Abbruch-Lauf, spart aber rund 80 % Laufzeit und haelt die Schwellen exakt vergleichbar
+  (gleiche Zufallsziehungen). Dieselbe Idee wie beim Beute-Exponenten.
+- **Die Reihenfolge des Spielcodes muss erhalten bleiben: erst Sieg pruefen, dann Niederlage.**
+  Sonst meldet ein gewonnener Kampf eine Niederlage (Messregel 9).
+- **`run_admiral_rebalance.mjs` laeuft jetzt ueber alle vier Ausbau-Profile**, nicht mehr nur
+  `voll`, nutzt das kumulierte Wert-Kriterium aus 4.1 und berechnet die Feindstaerke frisch je
+  Check (4.2). Der Boss-Anteil-Sweep ist nach OBEN erweitert (0,75 / 0,90), weil sich gezeigt hat,
+  dass ein hoeherer Anteil den Gegner schwaecher macht statt staerker.
+- **`WAVE_OUTLIER_CHANCE` hat keinen `piraten_admiral`-Eintrag**, der Ausreisser-Wurf entfaellt
+  dort also. Der gleichverteilte Griff in `ADMIRAL_MULTIPLIER_ROLL` in beiden Skripten entspricht
+  damit exakt dem Spielcode (`rollMultiplierWithOutlier()` behandelt `piraten_admiral` als
+  Sonderfall mit Gleichverteilung statt 50/30/20).
+- **Beide Skripte importieren nur `combat`/`combatRunner`/`data`, nicht `actions.js`.** Die
+  produktive Datenbank wird damit nicht geoeffnet; geprueft, dass nach einem Lauf kein
+  `server/data`-Verzeichnis existiert.
+- **Die Skripte bilden EINEN Teilnehmer ueber `runCombatInWorker` ab, nicht die
+  Mehrspieler-Variante.** Fuer die Frage nach Verlustquote und Check-Tiefe ist das unerheblich,
+  weil der Gegner ohnehin an der Summe der eingesetzten Flottenmacht skaliert - fuer alles, was
+  mit Beitragsanteilen zu tun hat (Belohnungsaufteilung in Schritt 5), muss dagegen
+  `runMultiOwnerCombatInWorker` verwendet werden, wie in `run_raid_support.mjs`.
+
+**Alle Admiral-Messdateien aelter als der 15.08.2026 sind ungueltig.** `admiral.txt` und
+`admiral_check1.txt` stammen vom 08.08.2026, also von vor dem Overkill-Deckel (10.08.) und vor der
+Klassen-Neuaustarierung (11.08.). Beide Aenderungen wirken stark und ausgerechnet am
+Piratenadmiral am staerksten - die Verlustquoten dort sind um Groessenordnungen zu hoch.

@@ -1,0 +1,199 @@
+=== Piratenadmiral: Entscheidung 4.1 (Verlust-Kriterium) + 4.2 (contributedPower) ===
+40 Serien je Zelle, 2 Modi x 4 Ausbau-Profile x 2 Flotten = 16 Zellen.
+Serien laufen ohne Abbruch durch, alle Schwellen werden nachtraeglich aufgerechnet.
+
+Flottenwerte: real 26.72 Mrd / 23326 Schiffe, gross 3.52 Mrd / 2832 Schiffe
+BasePower:    real 17.11 Mrd, gross 2.11 Mrd
+
+=== A. Ist-Zustand: das heutige Kriterium `result.retreated` ===
+
+Modus/Profil/Flotte             retreated in Check 1  davon Boss tot  Check-Tiefe heute  Sieg
+eingefroren/voll/real                           0.0%            0.0%               1.00100.0%
+eingefroren/voll/gross                          0.0%            0.0%               1.00100.0%
+eingefroren/voll_noboost/real                   0.0%            0.0%               1.00100.0%
+eingefroren/voll_noboost/gross                  0.0%            0.0%               1.00100.0%
+eingefroren/mittel/real                         0.0%            0.0%               1.00100.0%
+eingefroren/mittel/gross                        0.0%            0.0%               1.00100.0%
+eingefroren/schwach/real                        5.0%            0.0%               3.15  0.0%
+eingefroren/schwach/gross                       0.0%            0.0%               3.90  0.0%
+frisch/voll/real                                0.0%            0.0%               1.00100.0%
+frisch/voll/gross                               0.0%            0.0%               1.00100.0%
+frisch/voll_noboost/real                        0.0%            0.0%               1.00100.0%
+frisch/voll_noboost/gross                       0.0%            0.0%               1.00100.0%
+frisch/mittel/real                              0.0%            0.0%               1.00100.0%
+frisch/mittel/gross                             0.0%            0.0%               1.00100.0%
+frisch/schwach/real                             5.0%            0.0%               3.13  0.0%
+frisch/schwach/gross                            0.0%            0.0%               4.67  0.0%
+
+  "retreated in Check 1" = Anteil der Serien, in denen das Flag schon im ERSTEN Kampf gesetzt war.
+  "davon Boss tot" = davon der Anteil, in dem gleichzeitig der Boss vernichtet wurde -
+  also gewonnene Kaempfe, die der heutige Code als Niederlage wertet.
+
+=== B. Kumulierte Verlustquote je Check (gegen die entsandte Flotte) ===
+
+Modus/Profil/Flotte              Mass    C1     C2     C3     C4     C5     C6
+eingefroren/voll/real           Wert     0.2%      -      -      -      -      -
+eingefroren/voll/real           Stueck   0.4%      -      -      -      -      -
+eingefroren/voll/gross          Wert     0.5%      -      -      -      -      -
+eingefroren/voll/gross          Stueck   0.6%      -      -      -      -      -
+eingefroren/voll_noboost/real   Wert     0.7%      -      -      -      -      -
+eingefroren/voll_noboost/real   Stueck   0.9%      -      -      -      -      -
+eingefroren/voll_noboost/gross  Wert     0.9%      -      -      -      -      -
+eingefroren/voll_noboost/gross  Stueck   1.2%      -      -      -      -      -
+eingefroren/mittel/real         Wert     0.6%      -      -      -      -      -
+eingefroren/mittel/real         Stueck   0.8%      -      -      -      -      -
+eingefroren/mittel/gross        Wert     0.8%      -      -      -      -      -
+eingefroren/mittel/gross        Stueck   1.0%      -      -      -      -      -
+eingefroren/schwach/real        Wert     3.1%   8.8%  19.5%  40.6%  68.5%  83.6%
+eingefroren/schwach/real        Stueck   3.8%  10.2%  21.1%  41.0%  67.8%  83.2%
+eingefroren/schwach/gross       Wert     5.5%  12.5%  23.0%  40.8%  69.1%  85.1%
+eingefroren/schwach/gross       Stueck   6.0%  13.9%  24.9%  41.2%  66.4%  82.9%
+frisch/voll/real                Wert     0.2%      -      -      -      -      -
+frisch/voll/real                Stueck   0.4%      -      -      -      -      -
+frisch/voll/gross               Wert     0.6%      -      -      -      -      -
+frisch/voll/gross               Stueck   0.6%      -      -      -      -      -
+frisch/voll_noboost/real        Wert     0.8%      -      -      -      -      -
+frisch/voll_noboost/real        Stueck   1.0%      -      -      -      -      -
+frisch/voll_noboost/gross       Wert     0.9%      -      -      -      -      -
+frisch/voll_noboost/gross       Stueck   1.1%      -      -      -      -      -
+frisch/mittel/real              Wert     0.6%      -      -      -      -      -
+frisch/mittel/real              Stueck   0.8%      -      -      -      -      -
+frisch/mittel/gross             Wert     0.9%      -      -      -      -      -
+frisch/mittel/gross             Stueck   1.0%      -      -      -      -      -
+frisch/schwach/real             Wert     3.4%   8.4%  15.9%  28.1%  41.9%  58.3%
+frisch/schwach/real             Stueck   4.1%   9.9%  17.9%  29.9%  43.3%  59.3%
+frisch/schwach/gross            Wert     5.4%  12.6%  20.7%  31.3%  44.0%  58.4%
+frisch/schwach/gross            Stueck   5.9%  13.5%  22.0%  33.1%  45.7%  59.6%
+
+  Leere Zellen: alle Serien waren vorher durch einen Sieg beendet.
+
+=== C. Schwellen-Sweep: welche Schwelle trifft die Ziel-Check-Tiefe 3-5? ===
+
+--- Verlustmass: WERT-Anteil (kumulativ) ---
+Modus/Profil/Flotte                T=0.30   T=0.40   T=0.45   T=0.55   T=0.60
+eingefroren/voll/real                1.00     1.00     1.00     1.00     1.00
+eingefroren/voll/gross               1.00     1.00     1.00     1.00     1.00
+eingefroren/voll_noboost/real        1.00     1.00     1.00     1.00     1.00
+eingefroren/voll_noboost/gross       1.00     1.00     1.00     1.00     1.00
+eingefroren/mittel/real              1.00     1.00     1.00     1.00     1.00
+eingefroren/mittel/gross             1.00     1.00     1.00     1.00     1.00
+eingefroren/schwach/real             4.17     4.55     4.65     4.92     5.03
+eingefroren/schwach/gross            4.05     4.55     4.78     5.08     5.10
+frisch/voll/real                     1.00     1.00     1.00     1.00     1.00
+frisch/voll/gross                    1.00     1.00     1.00     1.00     1.00
+frisch/voll_noboost/real             1.00     1.00     1.00     1.00     1.00
+frisch/voll_noboost/gross            1.00     1.00     1.00     1.00     1.00
+frisch/mittel/real                   1.00     1.00     1.00     1.00     1.00
+frisch/mittel/gross                  1.00     1.00     1.00     1.00     1.00
+frisch/schwach/real                  4.72     5.38     5.67     6.00     6.00
+frisch/schwach/gross                 4.55     5.35     5.60     5.83     5.90
+
+--- Verlustmass: STUECKZAHL-Anteil (kumulativ) ---
+Modus/Profil/Flotte                T=0.30   T=0.40   T=0.45   T=0.55   T=0.60
+eingefroren/voll/real                1.00     1.00     1.00     1.00     1.00
+eingefroren/voll/gross               1.00     1.00     1.00     1.00     1.00
+eingefroren/voll_noboost/real        1.00     1.00     1.00     1.00     1.00
+eingefroren/voll_noboost/gross       1.00     1.00     1.00     1.00     1.00
+eingefroren/mittel/real              1.00     1.00     1.00     1.00     1.00
+eingefroren/mittel/gross             1.00     1.00     1.00     1.00     1.00
+eingefroren/schwach/real             4.03     4.58     4.70     4.95     5.03
+eingefroren/schwach/gross            3.88     4.58     4.72     5.10     5.13
+frisch/voll/real                     1.00     1.00     1.00     1.00     1.00
+frisch/voll/gross                    1.00     1.00     1.00     1.00     1.00
+frisch/voll_noboost/real             1.00     1.00     1.00     1.00     1.00
+frisch/voll_noboost/gross            1.00     1.00     1.00     1.00     1.00
+frisch/mittel/real                   1.00     1.00     1.00     1.00     1.00
+frisch/mittel/gross                  1.00     1.00     1.00     1.00     1.00
+frisch/schwach/real                  4.58     5.28     5.60     6.00     6.00
+frisch/schwach/gross                 4.30     5.10     5.55     5.85     5.95
+
+=== D. Ausgangsverteilung je Schwelle (Verlustmass WERT, Modus frisch) ===
+
+Profil/Flotte          Schwelle  Tiefe   Sieg  Niederlage  Extraktion  Verlust bei Ende  vernicht. Feindmacht
+voll/real                  0.30   1.00 100.0%        0.0%        0.0%              0.2%             21.99 Mrd
+voll/real                  0.40   1.00 100.0%        0.0%        0.0%              0.2%             21.99 Mrd
+voll/real                  0.45   1.00 100.0%        0.0%        0.0%              0.2%             21.99 Mrd
+voll/real                  0.55   1.00 100.0%        0.0%        0.0%              0.2%             21.99 Mrd
+voll/real                  0.60   1.00 100.0%        0.0%        0.0%              0.2%             21.99 Mrd
+voll/gross                 0.30   1.00 100.0%        0.0%        0.0%              0.6%              2.68 Mrd
+voll/gross                 0.40   1.00 100.0%        0.0%        0.0%              0.6%              2.68 Mrd
+voll/gross                 0.45   1.00 100.0%        0.0%        0.0%              0.6%              2.68 Mrd
+voll/gross                 0.55   1.00 100.0%        0.0%        0.0%              0.6%              2.68 Mrd
+voll/gross                 0.60   1.00 100.0%        0.0%        0.0%              0.6%              2.68 Mrd
+voll_noboost/real          0.30   1.00 100.0%        0.0%        0.0%              0.8%             22.16 Mrd
+voll_noboost/real          0.40   1.00 100.0%        0.0%        0.0%              0.8%             22.16 Mrd
+voll_noboost/real          0.45   1.00 100.0%        0.0%        0.0%              0.8%             22.16 Mrd
+voll_noboost/real          0.55   1.00 100.0%        0.0%        0.0%              0.8%             22.16 Mrd
+voll_noboost/real          0.60   1.00 100.0%        0.0%        0.0%              0.8%             22.16 Mrd
+voll_noboost/gross         0.30   1.00 100.0%        0.0%        0.0%              0.9%              2.82 Mrd
+voll_noboost/gross         0.40   1.00 100.0%        0.0%        0.0%              0.9%              2.82 Mrd
+voll_noboost/gross         0.45   1.00 100.0%        0.0%        0.0%              0.9%              2.82 Mrd
+voll_noboost/gross         0.55   1.00 100.0%        0.0%        0.0%              0.9%              2.82 Mrd
+voll_noboost/gross         0.60   1.00 100.0%        0.0%        0.0%              0.9%              2.82 Mrd
+mittel/real                0.30   1.00 100.0%        0.0%        0.0%              0.6%             22.42 Mrd
+mittel/real                0.40   1.00 100.0%        0.0%        0.0%              0.6%             22.42 Mrd
+mittel/real                0.45   1.00 100.0%        0.0%        0.0%              0.6%             22.42 Mrd
+mittel/real                0.55   1.00 100.0%        0.0%        0.0%              0.6%             22.42 Mrd
+mittel/real                0.60   1.00 100.0%        0.0%        0.0%              0.6%             22.42 Mrd
+mittel/gross               0.30   1.00 100.0%        0.0%        0.0%              0.9%              2.69 Mrd
+mittel/gross               0.40   1.00 100.0%        0.0%        0.0%              0.9%              2.69 Mrd
+mittel/gross               0.45   1.00 100.0%        0.0%        0.0%              0.9%              2.69 Mrd
+mittel/gross               0.55   1.00 100.0%        0.0%        0.0%              0.9%              2.69 Mrd
+mittel/gross               0.60   1.00 100.0%        0.0%        0.0%              0.9%              2.69 Mrd
+schwach/real               0.30   4.72   0.0%      100.0%        0.0%             39.0%             56.57 Mrd
+schwach/real               0.40   5.38   0.0%      100.0%        0.0%             47.6%             63.84 Mrd
+schwach/real               0.45   5.67   0.0%       92.5%        7.5%             52.1%             66.61 Mrd
+schwach/real               0.55   6.00   0.0%       55.0%       45.0%             58.3%             68.91 Mrd
+schwach/real               0.60   6.00   0.0%       45.0%       55.0%             58.3%             68.91 Mrd
+schwach/gross              0.30   4.55   0.0%      100.0%        0.0%             36.9%              6.39 Mrd
+schwach/gross              0.40   5.35   0.0%       97.5%        2.5%             49.3%              7.59 Mrd
+schwach/gross              0.45   5.60   0.0%       92.5%        7.5%             52.2%              7.93 Mrd
+schwach/gross              0.55   5.83   0.0%       45.0%       55.0%             55.7%              8.18 Mrd
+schwach/gross              0.60   5.90   0.0%       32.5%       67.5%             56.8%              8.24 Mrd
+
+=== E. Wirkung von 4.2 isoliert (eingefroren gegen frisch, Schwelle 0,45 auf Wert) ===
+
+Profil/Flotte           Tiefe eingefr.  Tiefe frisch  Verlust eingefr.  Verlust frisch  Sieg eingefr.  Sieg frisch
+voll/real                         1.00          1.00              0.2%            0.2%         100.0%       100.0%
+voll/gross                        1.00          1.00              0.5%            0.6%         100.0%       100.0%
+voll_noboost/real                 1.00          1.00              0.7%            0.8%         100.0%       100.0%
+voll_noboost/gross                1.00          1.00              0.9%            0.9%         100.0%       100.0%
+mittel/real                       1.00          1.00              0.6%            0.6%         100.0%       100.0%
+mittel/gross                      1.00          1.00              0.8%            0.9%         100.0%       100.0%
+schwach/real                      4.65          5.67             60.7%           52.1%           0.0%         0.0%
+schwach/gross                     4.78          5.60             64.5%           52.2%           0.0%         0.0%
+
+=== F. Vernichtete Feindmacht je Serie - Rohwert fuer Entscheidung 4.5 (K) ===
+
+(Modus frisch, Schwelle 0,45 auf Wert. Bezug: Elite-Bollwerk ~56,9 Mrd/Tag im spaeten Ausbaustand.)
+
+Profil/Flotte           vernicht. Feindmacht  Flottenverlust brutto  netto nach 30% Bergung
+voll/real                          21.99 Mrd               0.07 Mrd                0.05 Mrd
+voll/gross                          2.68 Mrd               0.02 Mrd                0.01 Mrd
+voll_noboost/real                  22.16 Mrd               0.21 Mrd                0.15 Mrd
+voll_noboost/gross                  2.82 Mrd               0.03 Mrd                0.02 Mrd
+mittel/real                        22.42 Mrd               0.15 Mrd                0.11 Mrd
+mittel/gross                        2.69 Mrd               0.03 Mrd                0.02 Mrd
+schwach/real                       66.61 Mrd              13.93 Mrd                9.75 Mrd
+schwach/gross                       7.93 Mrd               1.84 Mrd                1.29 Mrd
+
+=== G. Orientierung fuer Schritt 5: ab welcher Gegnerstaerke ueberlebt der Boss Check 1? ===
+
+(Zusatzfaktor auf die heutigen 110-150 %, Boss-Anteil 0,55, nur Check 1, keine Entscheidung dieses Schritts)
+
+Profil/Flotte        Faktor  Boss ueberlebt Check 1  Flottenverlust in Check 1
+voll/real                1x                    0.0%                      0.3%
+voll/real                2x                    0.0%                      3.0%
+voll/real                4x                  100.0%                     28.2%
+voll/real                8x                  100.0%                     52.3%
+voll/real               16x                  100.0%                     52.8%
+mittel/real              1x                    0.0%                      0.5%
+mittel/real              2x                   60.0%                      4.5%
+mittel/real              4x                  100.0%                     47.0%
+mittel/real              8x                  100.0%                     52.2%
+mittel/real             16x                  100.0%                     54.3%
+voll/gross               1x                    0.0%                      0.6%
+voll/gross               2x                    0.0%                      2.7%
+voll/gross               4x                  100.0%                     19.1%
+voll/gross               8x                  100.0%                     56.0%
+voll/gross              16x                  100.0%                     57.1%
