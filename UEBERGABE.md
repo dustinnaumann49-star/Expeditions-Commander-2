@@ -26,8 +26,7 @@ das passt nicht gleichzeitig in eine Session.
   sind Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1 (Beute-Exponent) und seit
   dem 15.08.2026 **das gesamte Raid-Paket, Schritt 3** - Entscheidung 3 (Ertrag), die
   Raid-Schwierigkeit, der Beitrags-Massstab und die Wirtschaftsklassen. Offen in Block A: der
-  Niveau-Punkt aus Abschnitt 7 (Zeit als Haupt-Engpass) und die Nachrechnung des Beute-Exponenten
-  mit dem korrigierten Raid-Wert.
+  Niveau-Punkt aus Abschnitt 7 (Zeit als Haupt-Engpass).
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -116,13 +115,12 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**`run_loot_exponent.mjs` mit dem korrigierten Raid-Wert neu laufen lassen.** Das Skript rechnete
-mit 4,145 Mrd/Tag je verteidigtem Raid; gemessen sind es 6,31, und die Raid-Entscheidung vom
-15.08.2026 verschiebt das Niveau nochmals. Der Exponent 0,85 duerfte halten (er gewinnt in allen
-drei Raid-Annahmen), aber die Tabelle in Abschnitt 8 Punkt 1 stimmt zahlenmaessig nicht mehr.
+**Der Niveau-Punkt aus Abschnitt 7** (Zeit ist Haupt-Engpass, Ressourcen Neben-Engpass -
+Entscheidung 9 ist der Traeger). **Das ist der einzige noch offene Punkt in Block A.**
 
-**Danach: der Niveau-Punkt aus Abschnitt 7** (Zeit ist Haupt-Engpass, Ressourcen Neben-Engpass -
-Entscheidung 9 ist der Traeger). Das ist der letzte offene Punkt in Block A.
+Alles andere in Block A ist geschlossen: Messreihen nach dem Overkill-Deckel, Imperator-Einstufung,
+Beute-Exponent (am 15.08.2026 mit korrigiertem Raid-Wert nachgerechnet, 0,85 bestaetigt mit nur
+3 % Abweichung vom flachen Verlauf) und das gesamte Raid-Paket.
 
 ## Was das Raid-Paket am 15.08.2026 ergeben hat
 

@@ -2919,14 +2919,42 @@ Messung: `run_loot_exponent.mjs` / `loot_exponent.txt`, 40 Durchlaeufe je Zelle,
   Abschnitt 1b.
 - *Zweiter Nachteil:* Das Zielband 3-10 Tage bleibt gesetzt und ungemessen. Es ist jetzt zusaetzlich
   nachweislich unerfuellt - die Setzung ist damit nicht bestaetigt, sondern offen.
-- **NACHTRAG 15.08.2026, betrifft die Datengrundlage:** `run_loot_exponent.mjs` rechnete mit
-  4,145 Mrd/Tag je verteidigtem Raid. Gemessen sind es **6,31**, also lag die Setzung um ein
-  Drittel zu niedrig; zusaetzlich veraendert die Raid-Entscheidung vom 15.08.2026 (Variante 6) das
-  Niveau erneut. Die Spalte "Raid x1,0" der Entscheidungstabelle bildet damit weder den alten noch
-  den neuen Zustand ab. **Der Exponent selbst duerfte robust sein** - er wurde ueber drei
-  Raid-Annahmen hinweg nach der kleinsten groessten Abweichung gewaehlt, und 0,85 gewinnt in allen
-  dreien -, aber die Zahlen sind nachzurechnen. Als Messaufgabe in Block A gefuehrt, nicht als
-  Wiederaufnahme der Entscheidung.
+- **NACHGERECHNET am 15.08.2026 mit korrigiertem Raid-Wert und der beschlossenen Variante 6.
+  Ergebnis: 0,85 bleibt, und zwar deutlicher als zuvor.** Das Skript rechnete bis dahin mit
+  4,145 Mrd/Tag je verteidigtem Raid; gemessen sind es 6,31. Zusaetzlich ist der Raid seit dem
+  15.08.2026 entschieden, der Exponent muss also nicht mehr gegen drei Hypothesen abgesichert
+  werden, sondern kann gegen den tatsaechlichen Zustand gemessen werden:
+
+  | Exponent | Verhaeltnis spaet/frueh | Abweichung vom flachen Verlauf |
+  |---|---|---|
+  | 0,80 | 0,87 | 13 % |
+  | **0,85** | **0,97** | **3 %** |
+  | 0,90 | 1,07 | 7 % |
+  | 0,95 | 1,18 | 18 % |
+
+  **0,85 liegt mit 3 % Abweichung nahezu exakt auf dem flachen Verlauf** - das ist das mit Abstand
+  beste Ergebnis, das dieser Suchraum bisher geliefert hat (zuvor 14 % als kleinste groesste
+  Abweichung ueber drei Annahmen). Der Grund ist einleuchtend: der Raid war die grosse
+  flotten-unabhaengige Einnahme, die den spaeten Ausbaustand nach oben zog. Mit Variante 6 faellt
+  sie auf ein Drittel, und die Kurve richtet sich von selbst aus. **Die Raid-Entscheidung und der
+  Beute-Exponent stuetzen sich gegenseitig.**
+
+  *Die alte Tabelle oben ist damit zahlenmaessig ueberholt.* Mit dem korrigierten Raid-Wert lauten
+  die drei Hypothesen-Spalten 1,19 / 1,02 / 0,86 (groesste Abweichung 19 % statt 14 %); 0,85
+  gewinnt auch dort weiterhin. **Die Entscheidung war also nie gefaehrdet, nur die Zahlen dahinter
+  waren falsch.**
+
+- **Zwei Dinge, die sich dadurch NICHT geaendert haben:**
+  - Das Zielband 3-10 Tage bleibt unerreicht (gemessen 1,1 bis 1,2 Stunden). Das ist der
+    Niveau-Punkt in Abschnitt 7, nicht der Exponent.
+  - Der Geltungsbereich bleibt zwingend: **nur Solo** ergibt unter Variante 6 ein Verhaeltnis von
+    0,35 statt 0,97. Ohne Wirkung auf `groupOps.ts` ist der Exponent weiterhin nicht bestimmbar -
+    die Raid-Senkung macht diesen Punkt sogar deutlicher, nicht schwaecher.
+
+- **Zur Belastbarkeit des Ankers:** ueber drei Laeufe hinweg lag er bei 0,0956 / 0,0945 / 0,0939
+  Wert-Einheiten je Punkt vernichteter Feindmacht. Das sind rund 2 % Streuung aus den
+  Zufallsanteilen der Kaempfe. **Der Anker ist damit auf zwei Nachkommastellen belastbar, nicht auf
+  vier** - Rechnungen, die auf die dritte Stelle empfindlich reagieren, sind zu fein.
 
 Urspruengliche Formulierung der Entscheidungsregel:
 - *Gemessen wird:* fuer einen fruehen, einen mittleren und einen spaeten Ausbaustand die Kennzahl
@@ -3066,6 +3094,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 15.08.2026 | **Beute-Exponent mit korrigiertem Raid-Wert nachgerechnet - 0,85 bestaetigt, deutlicher als zuvor.** `run_loot_exponent.mjs` umgebaut: statt eines festen Werts je verteidigtem Raid bildet es jetzt die beschlossene Variante 6 ab (Beitragsanteile aus `raid_support.txt`, Saettigung ueber die Tagessumme), die drei alten Hypothesen bleiben als Empfindlichkeitspruefung. Ergebnis: Abweichung vom flachen Verlauf **3 % bei 0,85** gegen 13/7/18 % bei den Nachbarwerten - zuvor waren es 14 % als kleinste groesste Abweichung. Ursache: der Raid war die grosse flotten-unabhaengige Einnahme, die den spaeten Stand nach oben zog; mit Variante 6 richtet sich die Kurve von selbst aus. **Raid-Entscheidung und Beute-Exponent stuetzen sich gegenseitig.** Die alte Tabelle in Abschnitt 8 Punkt 1 ist zahlenmaessig ueberholt (mit korrigiertem Raid: 1,19/1,02/0,86, groesste Abweichung 19 %), die Entscheidung war aber nie gefaehrdet. Nebenbefund: der Anker streut ueber drei Laeufe zwischen 0,0939 und 0,0956, also rund 2 % - er ist auf zwei Nachkommastellen belastbar, nicht auf vier. Der Geltungsbereich-Befund verschaerft sich: "nur Solo" ergibt unter Variante 6 ein Verhaeltnis von 0,35 statt 0,97, die Beute-Kurve MUSS auf `groupOps.ts` wirken. Das Zielband 3-10 Tage bleibt unerreicht (1,1-1,2 Stunden) - das ist der Niveau-Punkt in Abschnitt 7. |
 | 15.08.2026 | **Raid-Paket (Block A, Schritt 3) vollstaendig entschieden - alle vier zusammenhaengenden Punkte geschlossen.** Zwei neue Messskripte: `run_raid_yield.mjs`/`raid_yield.txt` (Ertragsmodell ueber die Kontenzahl, reine Arithmetik) und `run_raid_support.mjs`/`raid_support.txt` (Mehrspieler-Raid mit Beitragsanteilen, Gewichtungs-Sweep und Schnappschuss-Vergleich). **(a) Ertrag: Variante 6** - Variante 4 plus Saettigung ueber die Tagessumme, 7,56 Mrd/Tag und 33 % Anteil. **(b) Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`.** **(c) Beitrags-Massstab: unveraendert, Normierungs-Ansatz verworfen.** **(d) Wirtschaftsklassen: kein Handlungsbedarf.** **Vier Befunde, die den bisherigen Plan korrigieren:** (1) Die Zahlen im Kasten bei Entscheidung 3 (14,51 Mrd je Raid, 4,15 Mrd/Tag, 1.800 DM) sind zu NIEDRIG - sie zaehlen nur die Container-Kategorie "Ressourcen" mit dem rohen `chance`-Wert statt `realChance`, ohne Teile, Zeitgutscheine, Freischiffe und Jackpot; aus dem Code sind es 22,07 Mrd und 2.080 DM. Die 6,31 aus der Baseline waren nie falsch, sie zaehlen nur EINEN Raid. Real sind es 3,4 (zwei Spieler mit Chance 1,0, zwei Bots mit 0,7), also 21,4 Mrd/Tag und 58 % Anteil. (2) **Variante 4 allein loest die Skalierung nicht** - gemessen holt der grosse Spieler im Raid eines Bots 71,5 % des Topfes, weil die Wellenstaerke am schwachen Verteidiger haengt; Summe 2,41 Aequivalente statt der erwarteten Flachheit. Die Empfehlung im Kasten war insoweit falsch. (3) Der Loesungsansatz zum Beitrags-Massstab aus Abschnitt 2a Punkt 14 ist **schaedlich, nicht nur wirkungslos**: der absorbierte Anteil liegt im Raid bei 0,0-0,6 % statt 1,6 %, und die Normierung gaebe ihm die halbe Stimme (ein Bot mit 2,2 % ausgeteiltem Schaden kaeme auf 14,2 %). (4) Der **Schnappschuss der ersten Welle ist wirkungslos** (0,6 % gegen 0,5 %) und wirkt nur bei schwachen Konten - als Hebel fuer Verlierbarkeit ungeeignet. **Neu erkannter Zielkorridor:** 7-10 Mrd/Tag, nicht "so niedrig wie moeglich" - unter 7 Mrd ueberschreitet stattdessen das Elite-Bollwerk die 50-Prozent-Marke. **Einzige gesetzte Zahl des Pakets:** die Saettigungsgrenze `S_MAX = 1,5`. **Methodische Lehre:** die falschen Container-Werte entstanden, weil eine Zahl aus einer Beschreibung des Datenmodells gerechnet wurde statt aus dem Modell selbst - dieselbe Fehlerform wie Messregel 16, nur eine Ebene tiefer. Container-Erwartungswerte werden deshalb im neuen Skript aus `CONTAINER_TYPES` inklusive `realChance` und Jackpot berechnet, nicht gesetzt. |
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
