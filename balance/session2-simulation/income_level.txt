@@ -1,0 +1,112 @@
+=== Einnahmen-NIVEAU (Abschnitt 7) - 40 Durchlaeufe je Kampfzelle ===
+Exponent 0.85, Raid nach Variante 6, Wrack-Bergung 30 %, Zielband 3-10 Tage.
+Schritt = +10 % Flottenwert. Bau-Lanes laut Code: 3 (MAX_BUILD_SLOTS).
+
+=== 1. Einnahmen und Flottenwert je Ausbaustand ===
+Stand      Flottenwert       Solo   Elite/Tag       Raid     passiv    Station    NETTO/Tag
+frueh         0.37 Mrd   0.08 Mrd    0.00 Mrd   0.00 Mrd   0.72 Mrd   0.00 Mrd     0.80 Mrd
+mittel        6.18 Mrd   0.91 Mrd   10.72 Mrd   6.31 Mrd   1.87 Mrd   0.00 Mrd    19.82 Mrd
+spaet        34.99 Mrd   4.80 Mrd   56.58 Mrd   8.25 Mrd   3.28 Mrd   3.95 Mrd    76.85 Mrd
+
+Tagesrendite auf den Flottenwert (Netto/Tag geteilt durch Flottenwert):
+  frueh     216 %
+  mittel    321 %
+  spaet     220 %
+
+Anteil der Quellen an den Einnahmen (Abnahmekriterium 5: keine Quelle ueber 50 % in Woche 1):
+Stand         Solo    Elite     Raid   passiv  Station
+frueh         11 %      0 %      0 %     89 %      0 %
+mittel         5 %     54 %     32 %      9 %      0 %
+spaet          6 %     74 %     11 %      4 %      5 %
+
+=== 2. Die Kennzahl von BEIDEN Seiten ===
+Ressourcen-Seite = Kosten / Einnahmen. Zeit-Seite = Kosten / verbaubarer Wert pro Tag.
+Der tatsaechliche Engpass ist das Maximum aus beiden.
+
+Stand      Bauzeit-Mult.   Ausstoss/Tag   Kauf-Tage    Bau-Tage   Engpass
+frueh            9.51e-1       4.58 Mrd       1.1 h      12 min   Ressourcen
+mittel           1.82e-1      26.53 Mrd      45 min      34 min   Ressourcen
+spaet            8.61e-2      53.20 Mrd       1.1 h       1.6 h   Zeit
+
+Dasselbe mit 1 Lane statt 3 (Entscheidung 9.2):
+Stand       Ausstoss/Tag    Bau-Tage   Engpass
+frueh           1.53 Mrd      35 min   Ressourcen
+mittel          8.84 Mrd       1.7 h   Zeit
+spaet          17.73 Mrd       4.7 h   Zeit
+
+=== 3. Ressourcen-Ueberschuss: was taeglich NICHT in Schiffe fliessen kann ===
+(Einnahmen minus verbaubarer Wert. Positiv = es stapelt sich.)
+Stand           3 Lanes        1 Lane   Verhaeltnis Einnahmen/Ausstoss
+frueh         -3.78 Mrd     -0.72 Mrd   0.18x / 0.53x
+mittel        -6.71 Mrd     10.97 Mrd   0.75x / 2.24x
+spaet         23.65 Mrd     59.12 Mrd   1.44x / 4.33x
+
+=== 4. Was noetig waere, um das Band 3-10 Tage zu treffen ===
+Weg (b), ueber die KOSTEN: um welchen Faktor muessten Schiffe teurer werden?
+Weg (c), ueber die ZEIT:   um welchen Faktor muesste die Schiffs-Bauzeit steigen?
+
+Stand          Kostenfaktor    Zeitfaktor (3 Lanes)     Zeitfaktor (1 Lane)
+frueh               65-216x               370-1232x                123-411x
+mittel              96-321x                129-429x                 43-143x
+spaet               66-220x                 46-152x                  15-51x
+
+=== 4b. Kandidaten-Pakete: was ein bestimmter Gesamt-Zeitfaktor ergibt ===
+Gerechnet auf 1 Lane (Entscheidung 9.2) - der Sprung von 3 auf 1 Lane steckt also schon drin.
+Zeitfaktor         frueh      mittel       spaet   im Band 3-10 d
+1                 35 min       1.7 h       4.7 h   0/3 Staende
+3                  1.8 h       5.0 h      14.2 h   0/3 Staende
+6                  3.5 h      10.1 h      1.18 d   0/3 Staende
+10                 5.8 h      16.8 h      1.97 d   0/3 Staende
+20                11.7 h      1.40 d      3.95 d   1/3 Staende
+30                17.5 h      2.10 d      5.92 d   1/3 Staende
+50                1.22 d      3.49 d      9.87 d   2/3 Staende
+
+Was der Zeitfaktor konkret bedeutet (Beispiel-Schiffe, Bauzeit je STUECK, 1 Lane, Band-Mitte):
+  Leichter Jäger       heute 0.3 s -> 0.2 min
+  Kreuzer              heute 2.8 s -> 1.4 min
+  Reaper               heute 12.4 s -> 6.3 min
+  Salvendreadnought    heute 10.3 s -> 5.2 min
+
+=== 5. Gegenprobe: die Gebaeude-Kostenleiter ("Rest von (b)") ===
+Kosten der NAECHSTEN Stufe je V1-Gebaeude, gegen die Netto-Einnahmen des jeweiligen Stands.
+Bewusst je Gebaeude einzeln: eine Summe ueber alle sechs wird von der Nanitenfabrik
+(costGrowth 2,0) vollstaendig ueberdeckt und sagt nichts ueber die Minen aus.
+
+Gebaeude                       frueh (Stufe)      mittel (Stufe)       spaet (Stufe)
+Metallmine (x1.55)          0.00 Mrd = 2 min   0.18 Mrd = 13 min  34.13 Mrd = 10.7 h
+Kristallmine (x1.6)         0.00 Mrd = 2 min   0.24 Mrd = 17 min   26.37 Mrd = 8.2 h
+Deuterium-Synthetisierer (x1.6)    0.00 Mrd = 3 min   0.17 Mrd = 12 min   18.61 Mrd = 5.8 h
+Solarkraftwerk (x1.5)       0.00 Mrd = 2 min   0.16 Mrd = 11 min   13.54 Mrd = 4.2 h
+Roboterfabrik (x1.85)       0.00 Mrd = 1 min    0.01 Mrd = 1 min    0.20 Mrd = 4 min
+Nanitenfabrik (x2)          0.00 Mrd = 1 min    0.02 Mrd = 2 min   0.79 Mrd = 15 min
+
+Ab welcher Stufe kostet EIN Ausbauschritt dieses Gebaeudes 3 bzw. 10 Tage Einnahmen?
+(gerechnet gegen die Einnahmen des SPAETEN Stands, also gegen den hoechsten Wert)
+  Metallmine             3 Tage ab Stufe  41, 10 Tage ab Stufe  44  (heute 36)
+  Kristallmine           3 Tage ab Stufe  37, 10 Tage ab Stufe  40  (heute 32)
+  Deuterium-Synthetisierer 3 Tage ab Stufe  36, 10 Tage ab Stufe  38  (heute 30)
+  Solarkraftwerk         3 Tage ab Stufe  43, 10 Tage ab Stufe  46  (heute 36)
+  Roboterfabrik          3 Tage ab Stufe  27, 10 Tage ab Stufe  29  (heute 15)
+  Nanitenfabrik          3 Tage ab Stufe  19, 10 Tage ab Stufe  20  (heute 10)
+
+=== 5b. Forschungskosten (Pruefpunkt zu Entscheidung 9.4) ===
+Alle 21 Forschungen von 0 auf Stufe 10: 2.04 Mrd
+  = 2.54 d Einnahmen im Stand frueh
+  = 2.5 h Einnahmen im Stand mittel
+  = 38 min Einnahmen im Stand spaet
+
+=== 6. Kontrolle der Zahlen aus Abschnitt 7 (einmalige Ziele) ===
+Ziel                                    Kosten       frueh      mittel       spaet
+Alle Schiffs-Module Stufe 10        141.97 Mrd    176.47 d      7.16 d      1.85 d
+Heimatbasis V1 voll (36/32/30)      197.97 Mrd    246.08 d      9.99 d      2.58 d
+Alle Gebaeude-Module Stufe 10        44.38 Mrd     55.17 d      2.24 d      13.9 h
+Allianz-Station Vollausbau          558.00 Mrd    693.61 d     28.16 d      7.26 d
+
+=== 7. Bauzeit-Multiplikator: Herkunft der Zahlen ===
+Stand        Mittwoch     Samstag   Setzung (Roboter/Nanit, Forschung bauzeit/bauzeit_schiffe, Booster)
+frueh         9.51e-1     7.13e-1   5/0, 0/0, Bautempo-Booster nein
+mittel        1.82e-1     1.37e-1   10/5, 5/5, Bautempo-Booster ja
+spaet         8.61e-2     6.46e-2   15/10, 10/10, Bautempo-Booster ja
+(Forschung "bauzeit" wirkt 5 % je Stufe, Boden 30 %; "bauzeit_schiffe" 3 % je Stufe, Boden 50 %.)
+
+-> income_level.txt geschrieben

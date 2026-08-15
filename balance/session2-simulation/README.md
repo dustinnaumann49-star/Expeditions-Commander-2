@@ -111,3 +111,46 @@ Zwei Dinge, die bei Aenderungen erhalten bleiben sollten:
 **Der Anker streut.** Ueber drei Laeufe: 0,0956 / 0,0945 / 0,0939 Wert-Einheiten je Punkt
 vernichteter Feindmacht. Rund 2 % aus den Zufallsanteilen der Kaempfe - bei Vergleichen zwischen
 Laeufen nicht auf die dritte Nachkommastelle abstellen.
+
+## Nachtrag 15.08.2026: `run_income_level.mjs` (Niveau-Punkt, Abschnitt 7)
+
+```
+node run_income_level.mjs 40     # Einnahmen-Niveau gegen die Bau-Kapazitaet, ~5 Minuten
+```
+
+Misst die Kennzahl "Tage bis zum naechsten Ausbauschritt" von BEIDEN Seiten - Kosten geteilt durch
+Einnahmen (Ressourcen-Seite, wie bisher) UND Kosten geteilt durch verbaubaren Wert pro Tag
+(Zeit-Seite, neu). Der tatsaechliche Engpass ist das Maximum aus beiden; bei 3 Lanes ist die
+Zeit-Seite heute die kuerzere, also gar kein Engpass.
+
+Drei Dinge, die bei Aenderungen erhalten bleiben sollten:
+
+- **Der Import von `actions.js` laeuft ueber eine KOPIE von `server/dist` im Temp-Verzeichnis.**
+  Grund: `actions.js` zieht ueber `db.js` die Datenbank mit hartkodiertem Pfad `server/data/game.db`
+  nach (Abschnitt 1b, Vorbedingung V2) - ein direkter Import wuerde die laufende Partie anfassen.
+  `node_modules` wird in die Kopie verlinkt, nicht kopiert. Geprueft: nach einem Lauf existiert
+  kein `server/data`-Verzeichnis.
+- **`bauzeitMultiplier()` wird nicht nachgebaut, sondern aufgerufen.** Die Uhr wird fuer den Aufruf
+  auf einen Mittwoch gestellt, sonst faelscht das Samstags-Bauzeit-Event (-25 %) das Ergebnis je
+  nach Wochentag des Messlaufs. Beide Werte stehen in Abschnitt 7 der Ausgabe nebeneinander.
+- **Der Bau-Ausstoss wird ueber den FLOTTENMIX gerechnet**, nicht ueber einen einzelnen Schiffstyp:
+  Wert pro Sekunde = Summe(Anzahl * Kosten) / Summe(Anzahl * Bauzeit). Ein einzelner Typ waere
+  irrefuehrend - die Salven-Schiffe liefern pro Sekunde das Acht- bis Zwanzigfache eines Kreuzers,
+  sind aber durch `maxCount` gedeckelt.
+- **Die Gebaeude-Kostenleiter wird je Gebaeude einzeln ausgegeben.** Eine Summe ueber alle sechs
+  V1-Gebaeude wird von der Nanitenfabrik (`costGrowth` 2,0) vollstaendig ueberdeckt und sagt nichts
+  ueber die Minen aus - das war in der ersten Fassung der Fall und ist korrigiert.
+
+Gesetzt (nicht aus dem Code ableitbar) sind der Gebaeude-/Forschungs-Ausbaustand je Profil - die
+Messprofile in `lib.mjs` enthalten nur Kampfforschung - und der Pro-Kopf-Ertrag der Allianz-Station.
+Beides steht oben im Skript unter SETZUNGEN bzw. `BUILD_SETUP`/`LEVELS`.
+
+## Korrektur 15.08.2026 an `run_loot_exponent.mjs`
+
+Zwei Auswertungen am Ende des Skripts uebergaben `true` als Raid-Szenario. `true` ist kein
+gueltiger Wert - er wird zu 1 verrechnet und bedeutete damit still **"Raid unveraendert"** statt
+Variante 6. Betroffen waren die Nebenzeile "naechste Stufe aller 9 Kampfforschungen" und die
+Tabelle "Grosse feste Ausbauziele", beide fielen um rund ein Drittel zu niedrig aus (Schiffs-Module
+im mittleren Stand: 5,44 statt 7,16 Tage). Behoben. **`loot_exponent.txt` ist an genau diesen zwei
+Tabellen ueberholt, bis das Skript wieder mit 40 Durchlaeufen gelaufen ist** - die
+Exponenten-Entscheidung selbst nutzt diese Tabellen nicht und ist nicht betroffen.

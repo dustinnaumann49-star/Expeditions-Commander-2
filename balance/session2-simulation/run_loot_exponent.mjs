@@ -330,7 +330,11 @@ for (const [withRaid, eliteCurve] of [['v6', true], [1, true], [0, true], ['v6',
 
 // ===== Nebenzeile: feste Listen ==============================================================
 say('=== Nebenzeile: Schritt = naechste Stufe ALLER 9 Kampfforschungen (feste Liste) ===');
-for (const r of evaluate(0.85, true)) {
+// KORRIGIERT 15.08.2026: hier stand `evaluate(0.85, true)`. `true` ist kein gueltiges
+// Raid-Szenario - es wird zu 1 verrechnet und bedeutete damit still "Raid UNVERAENDERT", obwohl
+// der Raid seit dem 15.08.2026 auf Variante 6 entschieden ist. Die Kennzahlen fielen dadurch um
+// rund ein Drittel zu klein aus (Schiffs-Module mittel: 5,44 statt 7,16 Tage).
+for (const r of evaluate(0.85, 'v6')) {
   say(`  ${r.st.label.padEnd(8)} Kosten ${mrd(r.stepResearch)} -> ${fmtDays(r.daysResearch)}`);
 }
 say();
@@ -344,9 +348,11 @@ const BIG_SINKS = [
   ['Heimatbasis V2 voll', 395.94e9],
   ['Alle Gebaeude-Module Stufe 10', 44.38e9],
 ];
-say('=== Grosse feste Ausbauziele (einmalig) gegen die Netto-Einnahmen, Exponent 0,85, inkl. Raid ===');
+say('=== Grosse feste Ausbauziele (einmalig) gegen die Netto-Einnahmen, Exponent 0,85, Raid nach Variante 6 ===');
 {
-  const rows = evaluate(0.85, true, true);
+  // KORRIGIERT 15.08.2026, siehe Kommentar bei der Nebenzeile oben: `true` bedeutete still
+  // "Raid unveraendert" statt Variante 6.
+  const rows = evaluate(0.85, 'v6', true);
   say('Ziel'.padEnd(34) + 'Kosten'.padStart(12) + STATES.map((s) => s.label.padStart(12)).join(''));
   for (const [name, cost] of BIG_SINKS) {
     say(name.padEnd(34) + mrd(cost).padStart(12) +
