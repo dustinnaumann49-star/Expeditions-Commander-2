@@ -690,31 +690,142 @@ eine echte Senkung - nur keine spuerbare Enteignung.
 
 Umsetzung in dieser Reihenfolge:
 
-**4.1 Verlust-Kriterium reparieren (blockiert alles Weitere).**
-`runAdminCheck()` nutzt `result.retreated` als Niederlage-Kriterium. Das Flag hat seit der
-Umstellung auf den gestaffelten Einzelschiff-Rueckzug (Juli 2026) eine andere Bedeutung: es wird
-gesetzt, sobald **ein einziges** Schiff unter `UNIT_RETREAT_THRESHOLD = 0,3` faellt. Gemessen ist es
-in **77-100 % aller Kaempfe** gesetzt, auch in gewonnenen. Der im Code referenzierte
-`RETREAT_THRESHOLD` existiert nicht mehr.
-Folge: In 120 kompletten Testbegegnungen wurde **Check 2 kein einziges Mal erreicht**. Damit sind
-tot: `ADMIRAL_ESCALATION_PER_CHECK`, `ADMIRAL_TOTAL_CHECKS = 6`, `ADMIRAL_CHECK_INTERVAL_MS`, die
-komplette Extraktions-Entscheidung (`respondAdminEncounter()`, `adminAwaitingDecision`),
-`ADMIRAL_EXTRACTION_GROWTH_PER_CHECK`.
--> Ersetzen durch den Anteil tatsaechlich verlorener Einheiten aus `result.survivorsByOwner` gegen
-die entsandte Stueckzahl. Neue Konstante **`ADMIRAL_DEFEAT_LOSS_SHARE = 0.45`**.
--> `simulateCombat()` macht es bereits richtig (Zeile 123-128: nur zaehlen, wenn kein voller Sieg
-vorliegt) - als Vorlage nutzen.
+> **4.1 UND 4.2 GEMESSEN UND GESCHLOSSEN AM 15.08.2026 (Block B, Schritt 4).** Messung:
+> `run_admiral_defeat.mjs` / `admiral_defeat.txt` (neu) und `run_admiral_rebalance.mjs` /
+> `admiral_rebalance.txt` (umgebaut, jetzt ueber alle vier Ausbau-Profile). 40 Durchlaeufe je
+> Zelle, 2 Modi x 4 Profile x 2 Flotten. Methode wie bei `run_loot_exponent.mjs`: die Serien
+> laufen OHNE Abbruch durch, alle Schwellen werden nachtraeglich auf denselben Zufallsziehungen
+> ausgewertet - ein Abbruch beendet die Serie nur, er veraendert frueher liegende Checks nicht.
+>
+> **Befund in einem Satz: Beide Defekte sind echt und werden repariert, aber KEINER von beiden ist
+> heute noch die Ursache der toten Eskalation. Der Boss stirbt in Check 1 - in drei von vier
+> Ausbaustaenden mit 100 Prozent Wahrscheinlichkeit und 0,3 bis 1,1 Prozent Flottenverlust.**
+>
+> **(1) Die Diagnose zu 4.1 ist ueberholt.** Der Plan sagte, `result.retreated` sei in 77-100 %
+> aller Kaempfe gesetzt. Gemessen sind es **0,0 % bei `voll`, `voll_noboost` und `mittel`** und
+> 0-5 % bei `schwach`. Ursache ist der Overkill-Deckel vom 10.08.2026: der Verlust je Check faellt
+> dadurch auf 0,3-1,1 %, und unterhalb von 21 % zerstoerter Flotte setzt der gestaffelte
+> Einzelschiff-Rueckzug gar nicht erst ein. Die alten Admiral-Messdateien stammen vom 08.08.2026,
+> also aus der Zeit VOR dem Deckel und vor der Klassen-Neuaustarierung vom 11.08.2026.
+>
+> **(2) Die Schlussfolgerung stimmt trotzdem - aus dem umgekehrten Grund.** Check 2 wird weiterhin
+> nie erreicht, aber nicht weil die Flotte faelschlich als geschlagen gilt, sondern weil sie den
+> Boss sofort vernichtet. Damit sind `ADMIRAL_ESCALATION_PER_CHECK`, `ADMIRAL_TOTAL_CHECKS`, die
+> Extraktions-Entscheidung und `ADMIRAL_EXTRACTION_GROWTH_PER_CHECK` unveraendert tot, und **4.1
+> und 4.2 koennen daran nichts aendern.** In den drei realistischen Profilen aendert KEINE Schwelle
+> zwischen 0,30 und 0,60 und KEIN Modus (eingefroren/frisch) irgendeine Zelle: Check-Tiefe bleibt
+> 1,00, Siegquote 100 %.
+>
+> **(3) Verlustmass: WERT, nicht Stueckzahl.** Gemessen liegen beide ueber alle Checks nur 0,4 bis
+> 1,7 Prozentpunkte auseinander (z. B. `schwach`/real Check 4: 28,1 % Wert gegen 29,9 % Stueck) -
+> die Wahl ist praktisch folgenlos. Genommen wird der Wert, weil P10-Flotten extrem gemischt sind
+> (ein Imperator entspricht Hunderten Kreuzern) und Messregel 4 die Wert-Bilanz vorschreibt.
+> *Nachteil:* in der Kampfnachricht schlechter erklaerbar - dort gehoert der Prozentsatz
+> ausgeschrieben, sonst wirkt der Abbruch bei noch tausenden vorhandenen Schiffen willkuerlich.
+>
+> **(4) Kumulativ gegen die entsandte Flotte, nicht je Einzel-Check.** Der Plantext sagte
+> "gegen die entsandte Stueckzahl" (kumulativ), die bisherigen Messskripte rechneten je Check.
+> Der Unterschied entscheidet alles: mit repariertem 4.2 folgt der Gegner der schrumpfenden
+> Flotte, der Verlust je Check bleibt dadurch etwa gleich gross und erreicht 45 % nie - die Serie
+> liefe immer bis Check 6 und die Extraktions-Entscheidung waere wieder bedeutungslos, nur in die
+> andere Richtung. *Nachteil:* ein Spieler kann nach einem gut gelaufenen Check abbrechen muessen,
+> weil frueher aufgelaufene Verluste die Schwelle bereits fuellen.
+>
+> **(5) Die Schwelle wird auf 0,30 gesetzt, nicht auf die vorgeschlagenen 0,45.** Gemessen im
+> einzigen Profil, in dem sie ueberhaupt je erreicht wird (`schwach`, Modus frisch):
+>
+> | Schwelle | Check-Tiefe real / gross | tatsaechlicher Verlust am Ende |
+> |---|---|---|
+> | **0,30** | **4,72 / 4,55** | **39,0 % / 36,9 %** |
+> | 0,40 | 5,38 / 5,35 | 47,6 % / 49,3 % |
+> | 0,45 | 5,67 / 5,60 | 52,1 % / 52,2 % |
+> | 0,55 | 6,00 / 5,83 | 58,3 % / 55,7 % |
+> | 0,60 | 6,00 / 5,90 | 58,3 % / 56,8 % |
+>
+> Drei Gruende: 0,30 ist der einzige Wert im Suchraum, der die **Ziel-Check-Tiefe 3-5 trifft**;
+> der tatsaechliche Verlust landet bei 37-39 % und damit mit Abstand unter Abnahmekriterium 1
+> (hoechstens 70 % in einem Ereignis), waehrend 0,45 schon bei 52 % liegt; und die Regel "bei
+> Uneindeutigkeit den niedrigeren Wert" gilt hier genauso wie beim Beute-Exponenten.
+> **Wichtig: die Schwelle wird immer ueberschossen**, weil sie erst NACH einem vollstaendigen
+> Check geprueft wird - gemessen um 7 bis 9 Prozentpunkte. Wer 45 % tatsaechlichen Verlust will,
+> muss 0,35 setzen, nicht 0,45. *Nachteil:* die Serie endet fuer schwache Konten frueher, die
+> angesammelte Beute aus 4.7 ist entsprechend kleiner, und der Wert ist an genau EINEM Profil
+> kalibriert - in den anderen dreien wird er nie erreicht.
+>
+> **(6) 4.2 wird wie geplant repariert, wirkt aber nur bei schwachem Ausbau.** Isoliert gemessen
+> (Schwelle 0,45 auf Wert), Unterschied eingefroren gegen frisch: bei `voll`, `voll_noboost` und
+> `mittel` **null** (beide 1,00 Checks, 100 % Sieg). Bei `schwach`/real: Check-Tiefe 4,65 -> 5,67,
+> Verlust am Ende 60,7 % -> 52,1 %. Die Reparatur ist also richtig und wirkt genau in die
+> beabsichtigte Richtung - sie verhindert die Todesspirale, in der eine schrumpfende Flotte gegen
+> einen unveraendert grossen Gegner antritt. *Nachteil, ausdruecklich:* der Gegner schrumpft
+> dadurch mit, ein echter Totalverlust wird praktisch unmoeglich, und die gesamte Steigerung ueber
+> die Serie haengt allein an `ADMIRAL_ESCALATION_PER_CHECK`.
+>
+> **(7) Die Reihenfolge im Code bleibt: erst Sieg pruefen, dann Niederlage.** Der Elite-Pfad macht
+> das bereits richtig (`result.retreated && !npcFullyDestroyed`), `simulateCombat()` ebenfalls -
+> der Admiral-Pfad als einziger nicht. Ohne diese Reihenfolge meldet ein gewonnener Kampf
+> "Rueckzug nach hohen Verlusten" (Messregel 9).
 
-**4.2 `contributedPower`-Freeze GLEICHZEITIG reparieren.**
+**4.1 Verlust-Kriterium reparieren - ENTSCHIEDEN 15.08.2026.**
+`runAdminCheck()` nutzt `result.retreated` als Niederlage-Kriterium. Das Flag bedeutet seit der
+Umstellung auf den gestaffelten Einzelschiff-Rueckzug (Juli 2026) nur noch, dass sich mindestens
+ein Schiff abgesetzt hat (`UNIT_RETREAT_THRESHOLD = 0,3`); der im Code referenzierte
+`RETREAT_THRESHOLD` existiert nicht mehr.
+-> Ersetzen durch den **kumulierten WERT-Anteil der verlorenen Flotte** aus
+`result.survivorsByOwner`, gemessen gegen die beim Start entsandte Flotte. Neue Konstante
+**`ADMIRAL_DEFEAT_LOSS_SHARE = 0.30`** (gemessen, siehe Kasten Punkt 5 - der urspruenglich
+vorgeschlagene Wert 0,45 fuehrt zu Tiefe 5,6-5,7 und 52 % tatsaechlichem Verlust).
+-> Sieg wird VOR der Niederlage geprueft. `simulateCombat()` (Zeile 118-125) und der
+Elite-Bollwerk-Pfad in `groupOps.ts` machen das bereits richtig - als Vorlage nutzen.
+-> Der Prozentsatz gehoert in den Ausgangstext der Kampfnachricht, sonst ist der Abbruch fuer den
+Spieler nicht nachvollziehbar.
+
+**4.2 `contributedPower`-Freeze GLEICHZEITIG reparieren - ENTSCHIEDEN 15.08.2026.**
 `runAdminCheck()` (~Zeile 442) summiert `p.contributedPower`, das nur einmal beim Start gesetzt wird
 (~Zeile 285), waehrend die Ueberlebenden pro Check zurueckgeschrieben werden (~Zeile 522). Ab
-Check 2 skaliert der Gegner also gegen die START-Flotte. **Heute folgenlos, weil Check 2 nie
-erreicht wird - 4.1 schaltet diesen Fehler scharf.** Vorlage: der Elite-Bollwerk-Pfad macht es
-richtig (`combatFleetPowerBase(p.ships)` frisch pro Check, ~Zeile 745).
+Check 2 skaliert der Gegner also gegen die START-Flotte.
+-> Ersetzen durch `combatFleetPowerBase(p.ships)` frisch je Check, exakt wie der
+Elite-Bollwerk-Pfad (~Zeile 745). `contributedPower` bleibt als reines Anzeigefeld bestehen; es
+hat im ganzen Projekt **genau eine rechnerische Lesestelle** (im Code geprueft, Client liest es
+nicht), der Eingriff ist damit isoliert und risikoarm.
+-> Wirkt heute nur im Profil `schwach`, siehe Kasten Punkt 6. Die im Plan erwartete Wirkung
+"4.1 schaltet diesen Fehler scharf" ist NICHT eingetreten - beide Fehler bleiben folgenlos,
+solange der Boss Check 1 nicht ueberlebt.
 
 **4.3 Boss-Anteil senken.** `ADMIRAL_STAT_SHARE` von 0,55 auf **0,30**.
 Gemessen bei realer Flotte: Anteil 0,55 -> 60 % Siegchance, 8,89 Mrd Verlust. Anteil 0,25 -> 100 %
 Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
+
+> **ACHTUNG - DIESE ZAHLEN SIND UEBERHOLT UND DIE RICHTUNG HAT SICH UMGEKEHRT (15.08.2026).**
+> Neu gemessen mit `run_admiral_rebalance.mjs` ueber alle vier Profile, 40 Serien je Zelle:
+> **bei `voll`, `voll_noboost` und `mittel` liegt die Siegquote bei JEDEM Anteil von 0,25 bis 0,90
+> bei 100 %, und zwar in Check 1.** Der Verlust bewegt sich dabei GEGEN den Anteil: reale Flotte,
+> Profil `voll`, Anteil 0,25 -> 0,43 Mrd Verlust, Anteil 0,55 -> 0,07 Mrd, Anteil 0,90 -> 0,00 Mrd.
+> **Ein hoeherer Boss-Anteil macht den Gegner also SCHWAECHER, nicht staerker.**
+> Grund: seit dem Overkill-Deckel vom 10.08.2026 kann ein einzelner riesiger Schuss hoechstens
+> fuenf Ziele kaskadieren; dieselbe Macht, auf viele Eskortschiffe verteilt, erzeugt dagegen viele
+> ungedeckelte Schuesse. Die Konzentration auf eine Einheit ist damit fuer die NPC-Seite ein
+> Nachteil geworden. **Die geplante Senkung auf 0,30 wuerde den Kampf also haerter machen statt
+> leichter - was heute sogar erwuenscht waere, aber bei weitem nicht ausreicht: auch 0,25 endet in
+> 100 % der Faelle mit einem Sieg in Check 1.**
+> **`ADMIRAL_STAT_SHARE` ist damit kein brauchbarer Hebel mehr.** Der Hebel liegt in der
+> Gegnerstaerke selbst. Orientierungsmessung (Abschnitt G in `admiral_defeat.txt`, Zusatzfaktor
+> auf die heutigen 110-150 %, Boss-Anteil 0,55, nur Check 1):
+>
+> | Zusatzfaktor | Boss ueberlebt Check 1 (voll/real) | Flottenverlust | mittel/real: Verlust |
+> |---|---|---|---|
+> | 1x (heute) | 0 % | 0,3 % | 0,5 % |
+> | 2x | 0 % | 3,0 % | 4,5 % |
+> | **4x** | **100 %** | **28,2 %** | **47,0 %** |
+> | 8x | 100 % | 52,3 % | 52,2 % |
+> | 16x | 100 % | 52,8 % | 54,3 % |
+>
+> **Der gesamte brauchbare Bereich liegt zwischen dem Zwei- und dem Vierfachen der heutigen
+> Gegnerstaerke, und dazwischen kippt es abrupt** - genau die Alles-oder-Nichts-Eigenschaft, die
+> schon bei der Raid-Wellenstaerke dokumentiert ist (Abschnitt 8, Punkt 7). Eine Anhebung muss
+> deshalb in kleinen Schritten gemessen werden, und die Verlustobergrenze aus Entscheidung 10
+> gehoert davor, nicht danach. Die Saettigung bei rund 52-57 % Verlust ist der gestaffelte
+> Einzelschiff-Rueckzug, der bei Missionen ausdruecklich aktiv bleibt (Punkt 27 der Code-Doku).
 
 **4.4 Boss-Mechanik statt Boss-Zahl.**
 `RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` - **beide Typen stehen nicht in
@@ -733,6 +844,20 @@ Die Eskalation braucht dadurch keinen eigenen Belohnungs-Aufschlag: jeder weiter
 automatisch mehr vernichtete Macht (Gegner waechst mit 1,15^n) und riskiert zugleich die noch
 ungesicherte Beute.
 
+> **Rohwerte fuer K, gemessen am 15.08.2026 als Nebenprodukt von Schritt 4** (`admiral_defeat.txt`
+> Abschnitt F, `admiral_rebalance.txt` Abschnitt B; 40 Serien je Zelle, Boss-Anteil 0,55 wie im
+> Code, contributedPower frisch). **K ist damit NICHT entschieden - das ist Schritt 5.**
+> - Vernichtete Feindmacht je Durchlauf: **rund 22 Mrd** bei realer Flotte in allen drei
+>   realistischen Profilen, rund 2,7 Mrd bei der grossen Referenzflotte. Der Wert ist praktisch
+>   unabhaengig vom Ausbaustand, weil der Gegner ohnehin an der eigenen Flottenmacht skaliert.
+> - Netto-Verlust je Durchlauf (nach 30 % Wrack-Bergung): **0,05 bis 0,15 Mrd** - sehr wenig,
+>   rund ein Fuenftausendstel bis ein Fuenfhundertstel des Flottenwerts.
+> - **K fuer Netto = 0 liegt deshalb bei 0,0023 bis 0,0099** (reale Flotte, drei realistische
+>   Profile). Der im Plan vorgeschlagene Wert **K = 0,5 liegt um den Faktor 50 bis 200 darueber.**
+> - Nur im Profil `schwach` liegt der Break-even bei 0,14 bis 0,28, also nahe an einer sinnvollen
+>   Groessenordnung. Ein einziger K-Wert kann beide Lagen nicht bedienen - das ist die eigentliche
+>   Aufgabe von Schritt 5.
+
 **4.6 Sieg-Bonus:** `ADMIRAL_VICTORY_BONUS` (fester Betrag) -> **Faktor 1,5** auf die angesammelte
 Beute. `ADMIRAL_VICTORY_DM` bleibt bei **200**.
 
@@ -748,6 +873,21 @@ rund 2 Stunden, also bis zu **12 Durchlaeufe/Tag**. Bei K = 0,5 waeren das +95,5
 -> Ein Durchlauf je Teilnehmer und Tag. Damit liegt P10 bei rund +8 Mrd je Durchlauf, zwischen einem
 Raid-Tag (6,31) und einer Elite-Serie (32,60) - passend zu 2 h gebundener Flotte gegen 24 h.
 
+> **NEU GERECHNET AM 15.08.2026 - beide Zahlen der Rechnung oben waren falsch, das Ergebnis
+> bleibt aber richtig.** Der Nenner war die alte Baseline von 21,69 Mrd/Tag, die seit dem
+> Abschluss von Block A nicht mehr gilt; der Zaehler stammte aus den Admiral-Messungen vom
+> 08.08.2026, also von vor dem Overkill-Deckel.
+> - Gemessen liefert ein Durchlauf bei K = 0,5 heute **11,2 Mrd netto** (reale Flotte, Profil
+>   `voll`), nicht 8. Zwoelf Durchlaeufe waeren **134 Mrd/Tag**.
+> - Bezogen auf die neuen Tageseinnahmen von 0,80 / 19,82 / 76,85 Mrd (frueh/mittel/spaet) ist das
+>   im spaeten Ausbaustand das **1,7-fache aller uebrigen Einnahmen zusammen** und das
+>   **2,4-fache des Elite-Bollwerks** (56,9 Mrd/Tag). Im mittleren Stand waere es das
+>   Sechseinhalbfache. Der Cooldown ist damit noch dringender als bisher angenommen.
+> - **Ein Durchlauf pro Tag ergibt bei K = 0,5 rund 11 Mrd**, also 15 % der spaeten
+>   Tageseinnahmen - deutlich mehr als ein Raid-Tag nach Variante 6 (7,56 Mrd) und rund ein
+>   Fuenftel des Elite-Bollwerks. Das ist ein vertretbarer Korridor, haengt aber vollstaendig an
+>   K und gehoert deshalb mit 4.5 zusammen entschieden, nicht davor.
+
 **Ausserdem (kein eigener Entscheidungsbedarf):**
 - `ADMIRAL_ESCORT_BASE` ist toter Code (nirgends importiert). Der Kommentar beschreibt eine feste
   Eskorte, tatsaechlich ist sie ueber `generateCappedFleet()` voll machtskaliert. Entfernen oder
@@ -762,10 +902,17 @@ Raid-Tag (6,31) und einer Elite-Serie (32,60) - passend zu 2 h gebundener Flotte
   hat keinen `piraten_admiral`-Eintrag. Bewusst entscheiden.
 
 **Messkriterien:**
-- `run_admiral_rebalance.mjs` ueber **alle vier Ausbau-Profile**, nicht nur `voll` - die
-  45-%-Schwelle ist gegen `voll` kalibriert und kann bei `mittel`/`schwach` zu frueh greifen.
+- `run_admiral_rebalance.mjs` ueber **alle vier Ausbau-Profile**, nicht nur `voll`. **Erledigt am
+  15.08.2026** - das Skript laeuft jetzt ueber alle vier. Die Sorge, die 45-%-Schwelle koenne bei
+  `mittel`/`schwach` zu frueh greifen, hat sich anders bestaetigt als vermutet: bei `mittel` wird
+  sie nie erreicht (0,6 % Verlust), bei `schwach` immer.
 - **Zielwert erreichte Check-Tiefe: 3-5**, nicht 1 (heute: 1,0 in allen Szenarien).
+  **Nach 4.1 + 4.2 weiterhin 1,00 in drei von vier Profilen** - der Zielwert ist ueber diese
+  beiden Punkte nicht erreichbar, siehe Kasten oben und die Korrektur bei 4.3.
 - `run_aggregate_threshold.mjs` gegen den Boss MIT Mehrfachziel-Salve.
+- **Neu ab 15.08.2026:** jede Aenderung an der Gegnerstaerke wird gegen Abschnitt G von
+  `admiral_defeat.txt` gehalten (Kippbereich 2x bis 4x) und in Schritten von hoechstens 0,5x
+  gemessen, nicht in Verdopplungen.
 
 ---
 
@@ -2606,8 +2753,16 @@ BLOCK A (zusammen messen, hier haengt alles dran)
   -> BLOCK A IST DAMIT VOLLSTAENDIG. Naechster Schritt ist 4 (Block B, Piratenadmiral).
 
 BLOCK B (Piratenadmiral, in sich sequenziell)
-  4. Entscheidung 4.1 + 4.2  Verlust-Kriterium UND contributedPower-Freeze ZUSAMMEN
+  4. Entscheidung 4.1 + 4.2  GESCHLOSSEN 15.08.2026. Verlust-Kriterium = kumulierter
+                       WERT-Anteil, ADMIRAL_DEFEAT_LOSS_SHARE = 0,30 (nicht 0,45);
+                       contributedPower frisch je Check. Beide Reparaturen sind richtig,
+                       aendern aber in drei von vier Ausbaustaenden NICHTS - der Boss
+                       stirbt in Check 1. Messkasten am Kopf von Entscheidung 4.
   5. Entscheidung 4.3 - 4.8  Boss-Anteil, Mechanik, Belohnung, Cooldown
+                       -> 4.3 muss mit UMGEKEHRTEM Vorzeichen neu aufgesetzt werden:
+                          ein hoeherer Boss-Anteil macht den Gegner schwaecher, und auch
+                          0,25 endet zu 100 % mit Sieg in Check 1. Der Hebel ist die
+                          Gegnerstaerke selbst, Kippbereich 2x bis 4x.
 
 BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
   6. Entscheidung 13.3 Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit entkoppeln
@@ -3197,6 +3352,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 15.08.2026 | **Block B, Schritt 4 geschlossen: Entscheidung 4.1 (Verlust-Kriterium) und 4.2 (contributedPower-Freeze) zusammen.** Neues Skript `run_admiral_defeat.mjs`/`admiral_defeat.txt`; `run_admiral_rebalance.mjs`/`admiral_rebalance.txt` umgebaut auf alle vier Ausbau-Profile, kumuliertes Verlustkriterium und frische Machtberechnung. 40 Durchlaeufe je Zelle, Schwellen nachtraeglich auf denselben Ziehungen ausgewertet (Methode aus `run_loot_exponent.mjs`). **Entschieden: Verlustmass ist der kumulierte WERT-Anteil gegen die entsandte Flotte, `ADMIRAL_DEFEAT_LOSS_SHARE = 0,30` statt der vorgeschlagenen 0,45; `contributedPower` wird je Check frisch aus der ueberlebenden Flotte berechnet.** **Vier Befunde, die den Plan korrigieren.** (1) **Die Diagnose zu 4.1 war ueberholt:** `result.retreated` ist nicht in 77-100 % der Kaempfe gesetzt, sondern in **0,0 %** bei `voll`/`voll_noboost`/`mittel` und 0-5 % bei `schwach`. Ursache ist der Overkill-Deckel vom 10.08.2026, der den Verlust je Check auf 0,3-1,1 % drueckt; unterhalb von 21 % zerstoerter Flotte setzt der gestaffelte Rueckzug gar nicht ein. Alle drei Admiral-Messdateien stammten vom 08.08.2026 und damit von vor dem Deckel und vor der Klassen-Neuaustarierung. (2) **Check 2 wird weiterhin nie erreicht, aber aus dem umgekehrten Grund:** der Boss stirbt in Check 1 mit 100 % Wahrscheinlichkeit bei 0,3-1,1 % Flottenverlust. **4.1 und 4.2 aendern daran nichts** - keine Schwelle zwischen 0,30 und 0,60 und kein Modus bewegt eine einzige Zelle der drei realistischen Profile. Die Ziel-Check-Tiefe 3-5 ist ueber diesen Schritt nicht erreichbar. (3) **4.3 hat das Vorzeichen gewechselt:** ein hoeherer `ADMIRAL_STAT_SHARE` macht den Gegner SCHWAECHER (reale Flotte, `voll`: 0,43 Mrd Verlust bei 0,25 gegen 0,00 Mrd bei 0,90), weil der Overkill-Deckel den einen grossen Schuss kappt, waehrend dieselbe Macht auf Eskortschiffe verteilt viele ungedeckelte Schuesse ergibt. Auch 0,25 endet zu 100 % mit Sieg in Check 1 - die Konstante ist als Hebel unbrauchbar geworden. Orientierungsmessung ergaenzt: der brauchbare Bereich liegt zwischen dem **Zwei- und dem Vierfachen** der heutigen Gegnerstaerke, und dazwischen kippt es abrupt von 3 % auf 28-47 % Verlust - dieselbe Alles-oder-Nichts-Eigenschaft wie bei der Raid-Wellenstaerke. (4) **Die Zahlen in 4.5 und 4.8 sind gegen die neuen Rohwerte gestellt:** vernichtete Feindmacht rund 22 Mrd je Durchlauf, Netto-Verlust 0,05-0,15 Mrd, Break-even-K damit 0,0023-0,0099 - der vorgeschlagene K = 0,5 liegt um Faktor 50 bis 200 darueber. Zwoelf Durchlaeufe/Tag waeren bei K = 0,5 **134 Mrd/Tag**, also das 1,7-fache aller uebrigen Einnahmen im spaeten Ausbaustand (76,85) und das 2,4-fache des Elite-Bollwerks. **Methodische Lehre:** die Schwelle wird erst NACH einem vollstaendigen Check geprueft und deshalb systematisch um 7-9 Prozentpunkte ueberschossen - eine Abbruchschwelle ist nicht der Verlust, den man bekommt. |
 | 15.08.2026 | **Niveau-Punkt geschlossen, BLOCK A damit vollstaendig.** Neue Messung `run_income_level.mjs`/`income_level.txt` (40 Durchlaeufe je Zelle). Kernbefund: die Einnahmen liegen bei **216/321/220 Prozent des gesamten Flottenwerts pro Tag** - die Flotte ist keine Ressourcen-Senke, sondern Verbrauchsmaterial, und das Band 3-10 Tage ist fuer "+10 % Flottenwert" nur mit einem Kostenfaktor von 65-220 oder einem Zeitfaktor von 15-411 erreichbar. **Entschieden: Kennzahl umstellen** (Band gilt fuer den naechsten Leiter-Schritt auf der Ressourcen-Seite und fuer eine Flotten-Verdopplung auf der Zeit-Seite), **Einnahmen-Niveau unveraendert lassen**, **Engpass vollstaendig ueber Entscheidung 9** aus 1 Lane (Faktor 3) + additiven Reduktionen fuer Schiffe (Faktor 1-3, nach Ausbaustand gestaffelt) + Basis-Bauzeiten x2. Vollstaendig im neuen Messkasten am Kopf von Entscheidung 9. **Drei Korrekturen an bestehendem Text:** (1) Der Zielwert "Bau-Ausstoss grob in Hoehe der Tageseinnahmen" in Entscheidung 9 ist gestrichen - er widerspricht der Rangentscheidung vom 14.08.2026 direkt, denn ein bandtreffender Ausstoss liegt bei 3-6 gegen 77 Mrd/Tag. (2) Der Anwendungsbereich in 9.1c ("Schiffe: Untergrenze genuegt") ist ueberholt; eine Untergrenze deckelt den Reduktions-Stapel, staffelt ihn aber nicht nach Ausbaustand - genau das ist hier noetig. (3) Die Aussage in Abschnitt 7, "Zeit ist bereits heute der Engpass", ist gemessen falsch: mit 3 Lanes ist die Bauzeit-Seite der Kennzahl **kuerzer** als die Ressourcen-Seite (12 min bis 1,6 h gegen 45 min bis 1,1 h). Erst 1 Lane kippt das. **Defekt in einem Messskript gefunden:** `run_loot_exponent.mjs` uebergab in zwei Auswertungen `true` als Raid-Szenario; das wird zu 1 verrechnet und bedeutete still "Raid unveraendert" statt Variante 6 - die Tabelle "Grosse feste Ausbauziele" fiel dadurch um rund ein Drittel zu niedrig aus (Schiffs-Module mittel 5,44 statt 7,16 Tage). Behoben; `loot_exponent.txt` ist an diesen zwei Tabellen bis zum naechsten Vollauf ueberholt, die Exponenten-Entscheidung selbst ist nicht betroffen. **Zwei Nebenbefunde:** das Elite-Bollwerk stellt 74 % der Einnahmen im spaeten Stand (neuer Punkt in Abschnitt 7), und Abnahmekriterium 5 ist im fruehen Stand heute verletzt (passive Quellen 89 %). |
 | 15.08.2026 | **Beute-Exponent mit korrigiertem Raid-Wert nachgerechnet - 0,85 bestaetigt, deutlicher als zuvor.** `run_loot_exponent.mjs` umgebaut: statt eines festen Werts je verteidigtem Raid bildet es jetzt die beschlossene Variante 6 ab (Beitragsanteile aus `raid_support.txt`, Saettigung ueber die Tagessumme), die drei alten Hypothesen bleiben als Empfindlichkeitspruefung. Ergebnis: Abweichung vom flachen Verlauf **3 % bei 0,85** gegen 13/7/18 % bei den Nachbarwerten - zuvor waren es 14 % als kleinste groesste Abweichung. Ursache: der Raid war die grosse flotten-unabhaengige Einnahme, die den spaeten Stand nach oben zog; mit Variante 6 richtet sich die Kurve von selbst aus. **Raid-Entscheidung und Beute-Exponent stuetzen sich gegenseitig.** Die alte Tabelle in Abschnitt 8 Punkt 1 ist zahlenmaessig ueberholt (mit korrigiertem Raid: 1,19/1,02/0,86, groesste Abweichung 19 %), die Entscheidung war aber nie gefaehrdet. Nebenbefund: der Anker streut ueber drei Laeufe zwischen 0,0939 und 0,0956, also rund 2 % - er ist auf zwei Nachkommastellen belastbar, nicht auf vier. Der Geltungsbereich-Befund verschaerft sich: "nur Solo" ergibt unter Variante 6 ein Verhaeltnis von 0,35 statt 0,97, die Beute-Kurve MUSS auf `groupOps.ts` wirken. Das Zielband 3-10 Tage bleibt unerreicht (1,1-1,2 Stunden) - das ist der Niveau-Punkt in Abschnitt 7. |
 | 15.08.2026 | **Raid-Paket (Block A, Schritt 3) vollstaendig entschieden - alle vier zusammenhaengenden Punkte geschlossen.** Zwei neue Messskripte: `run_raid_yield.mjs`/`raid_yield.txt` (Ertragsmodell ueber die Kontenzahl, reine Arithmetik) und `run_raid_support.mjs`/`raid_support.txt` (Mehrspieler-Raid mit Beitragsanteilen, Gewichtungs-Sweep und Schnappschuss-Vergleich). **(a) Ertrag: Variante 6** - Variante 4 plus Saettigung ueber die Tagessumme, 7,56 Mrd/Tag und 33 % Anteil. **(b) Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`.** **(c) Beitrags-Massstab: unveraendert, Normierungs-Ansatz verworfen.** **(d) Wirtschaftsklassen: kein Handlungsbedarf.** **Vier Befunde, die den bisherigen Plan korrigieren:** (1) Die Zahlen im Kasten bei Entscheidung 3 (14,51 Mrd je Raid, 4,15 Mrd/Tag, 1.800 DM) sind zu NIEDRIG - sie zaehlen nur die Container-Kategorie "Ressourcen" mit dem rohen `chance`-Wert statt `realChance`, ohne Teile, Zeitgutscheine, Freischiffe und Jackpot; aus dem Code sind es 22,07 Mrd und 2.080 DM. Die 6,31 aus der Baseline waren nie falsch, sie zaehlen nur EINEN Raid. Real sind es 3,4 (zwei Spieler mit Chance 1,0, zwei Bots mit 0,7), also 21,4 Mrd/Tag und 58 % Anteil. (2) **Variante 4 allein loest die Skalierung nicht** - gemessen holt der grosse Spieler im Raid eines Bots 71,5 % des Topfes, weil die Wellenstaerke am schwachen Verteidiger haengt; Summe 2,41 Aequivalente statt der erwarteten Flachheit. Die Empfehlung im Kasten war insoweit falsch. (3) Der Loesungsansatz zum Beitrags-Massstab aus Abschnitt 2a Punkt 14 ist **schaedlich, nicht nur wirkungslos**: der absorbierte Anteil liegt im Raid bei 0,0-0,6 % statt 1,6 %, und die Normierung gaebe ihm die halbe Stimme (ein Bot mit 2,2 % ausgeteiltem Schaden kaeme auf 14,2 %). (4) Der **Schnappschuss der ersten Welle ist wirkungslos** (0,6 % gegen 0,5 %) und wirkt nur bei schwachen Konten - als Hebel fuer Verlierbarkeit ungeeignet. **Neu erkannter Zielkorridor:** 7-10 Mrd/Tag, nicht "so niedrig wie moeglich" - unter 7 Mrd ueberschreitet stattdessen das Elite-Bollwerk die 50-Prozent-Marke. **Einzige gesetzte Zahl des Pakets:** die Saettigungsgrenze `S_MAX = 1,5`. **Methodische Lehre:** die falschen Container-Werte entstanden, weil eine Zahl aus einer Beschreibung des Datenmodells gerechnet wurde statt aus dem Modell selbst - dieselbe Fehlerform wie Messregel 16, nur eine Ebene tiefer. Container-Erwartungswerte werden deshalb im neuen Skript aus `CONTAINER_TYPES` inklusive `realChance` und Jackpot berechnet, nicht gesetzt. |

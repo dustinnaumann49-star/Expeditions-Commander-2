@@ -1,4 +1,4 @@
-# Uebergabe - Stand 15.08.2026 (zweite Fassung des Tages)
+# Uebergabe - Stand 15.08.2026 (dritte Fassung des Tages)
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -27,7 +27,10 @@ das passt nicht gleichzeitig in eine Session.
 - **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
   Overkill-Deckel), Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1
   (Beute-Exponent), das gesamte Raid-Paket (Schritt 3) und zuletzt **der Niveau-Punkt aus
-  Abschnitt 7**. Naechster Schritt ist **Schritt 4, Block B (Piratenadmiral)**.
+  Abschnitt 7**.
+- **BLOCK B, SCHRITT 4 IST GESCHLOSSEN** (15.08.2026): Entscheidung 4.1 (Verlust-Kriterium) und
+  4.2 (contributedPower-Freeze). Naechster Schritt ist **Schritt 5, Entscheidung 4.3 bis 4.8** -
+  und der muss teilweise NEU aufgesetzt werden, siehe unten.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -121,12 +124,38 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Schritt 4 der Reihenfolge: Block B, Entscheidung 4.1 + 4.2 (Piratenadmiral - Verlust-Kriterium
-und contributedPower-Freeze ZUSAMMEN).** Block A ist abgeschlossen.
+**Schritt 5 der Reihenfolge: Block B, Entscheidung 4.3 bis 4.8 (Boss-Anteil, Boss-Mechanik,
+Belohnung, Niederlage, Cooldown).** Schritt 4 ist geschlossen.
 
-Vor Block B einmal die Baseline neu festschreiben: die 21,69 Mrd/Tag aus Abschnitt 1 sind
-ueberholt. Gemessen sind jetzt **0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und
-spaeten Ausbaustand (inklusive Allianz-Station, die in der alten Referenztabelle fehlte).
+**Zwei Dinge muessen dort neu aufgesetzt werden, nicht nur kalibriert:**
+1. **4.3 hat das Vorzeichen gewechselt.** Ein hoeherer `ADMIRAL_STAT_SHARE` macht den Gegner
+   SCHWAECHER, nicht staerker - und auch der niedrigste gemessene Wert endet zu 100 % mit einem
+   Sieg in Check 1. Die Konstante ist als Hebel unbrauchbar. Der Hebel ist die Gegnerstaerke
+   selbst; der brauchbare Bereich liegt zwischen dem Zwei- und dem Vierfachen von heute, und
+   dazwischen kippt es abrupt.
+2. **4.5 und 4.8 sind gegen die alte Baseline gerechnet.** Die Rohwerte fuer K liegen jetzt in
+   den beiden Messkaesten dort; der vorgeschlagene K = 0,5 liegt um Faktor 50 bis 200 ueber dem
+   Break-even.
+
+Die Baseline: die 21,69 Mrd/Tag aus Abschnitt 1 sind ueberholt. Gemessen sind
+**0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und spaeten Ausbaustand (inklusive
+Allianz-Station, die in der alten Referenztabelle fehlte); davon stellt das Elite-Bollwerk im
+spaeten Stand rund 56,9 Mrd/Tag.
+
+## Was Schritt 4 am 15.08.2026 ergeben hat
+
+Kurzfassung, vollstaendig im Messkasten am Kopf von Entscheidung 4:
+- **Entschieden: Verlustmass ist der kumulierte WERT-Anteil gegen die entsandte Flotte,
+  `ADMIRAL_DEFEAT_LOSS_SHARE = 0,30`** (nicht die vorgeschlagenen 0,45), und `contributedPower`
+  wird je Check frisch aus der ueberlebenden Flotte berechnet.
+- **Die Diagnose im Plan war ueberholt.** `result.retreated` ist nicht in 77-100 % der Kaempfe
+  gesetzt, sondern in 0,0 % bei den drei realistischen Ausbaustaenden. Der Overkill-Deckel vom
+  10.08.2026 hat den Verlust je Check auf 0,3-1,1 % gedrueckt.
+- **Beide Reparaturen sind richtig und aendern trotzdem nichts.** Der Boss stirbt in Check 1, in
+  drei von vier Profilen mit 100 % Wahrscheinlichkeit. Die Ziel-Check-Tiefe 3-5 ist ueber 4.1/4.2
+  nicht erreichbar - sie haengt an Schritt 5.
+- **Alle Admiral-Messdateien von vor dem 15.08.2026 sind ungueltig** (Stand 08.08.2026, also vor
+  dem Overkill-Deckel und vor der Klassen-Neuaustarierung).
 
 ## Was der Niveau-Punkt am 15.08.2026 ergeben hat
 
