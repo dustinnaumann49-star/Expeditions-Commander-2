@@ -6,8 +6,10 @@ einsteigt und was NICHT im Plan steht.
 ## Einstieg in einen neuen Chat
 
 > Repo: https://github.com/dustinnaumann49-star/Expeditions-Commander-2
-> Synchronisiere dich. Lies `UMSETZUNGSPLAN_BALANCE.md` komplett, Abschnitt 8 zuerst, dann
-> Abschnitt 2a, dann Abschnitt 1b. `README.md` und `FINALE_BALANCE_CHECKLIST.md` nur bei Bedarf.
+> Synchronisiere dich. Lies `UMSETZUNGSPLAN_BALANCE.md` **gezielt, nicht komplett** - die Datei ist
+> ueber 260 KB gross. Abschnitt 8 zuerst, dann Abschnitt 2a, dann Abschnitt 1b, danach nur die
+> Abschnitte, die zur jeweiligen Aufgabe gehoeren. `README.md` und `FINALE_BALANCE_CHECKLIST.md`
+> nur bei Bedarf.
 > Beachte Messregel 16: keine Zahl aus einer Beschreibung uebernehmen, immer gegen den Code
 > pruefen.
 
@@ -15,7 +17,7 @@ einsteigt und was NICHT im Plan steht.
 10. und 13.08.2026 tatsaechlich am Code geaendert wurde. Wer nur Abschnitt 8 liest, haelt den Plan
 faelschlich fuer unangetastet.
 
-**Eine Session pro Block, nicht mehr.** Plan inzwischen ~220 KB, Checkliste 125 KB, README 67 KB -
+**Eine Session pro Block, nicht mehr.** Plan inzwischen ~264 KB, Checkliste 125 KB, README 67 KB -
 das passt nicht gleichzeitig in eine Session.
 
 ## Stand
@@ -35,8 +37,10 @@ das passt nicht gleichzeitig in eine Session.
   fuer die Balance-Bloecke A bis F, aber nicht mehr absolut; der Massstab fuer Ausnahmen steht in
   Abschnitt 8.
 - Die meisten noch offenen Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht.
-  Ausnahmen seit dem 14.08.2026: der Beute-Anker (0,0956 Wert-Einheiten je Punkt vernichteter
-  Feindmacht) und der Beute-Exponent (0,85) sind jetzt gemessen.
+  Ausnahmen seit dem 14.08.2026: der Beute-Anker (rund 0,094-0,096 Wert-Einheiten je Punkt
+  vernichteter Feindmacht - er streut ueber Laeufe um rund 2 %, also nicht auf die dritte
+  Nachkommastelle abstellen) und der Beute-Exponent (0,85) sind jetzt gemessen. Seit dem
+  15.08.2026 zusaetzlich das gesamte Raid-Paket.
 
 ## Was seit dem 10.08.2026 live gegangen ist
 
