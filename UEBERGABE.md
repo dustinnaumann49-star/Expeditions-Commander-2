@@ -1,4 +1,4 @@
-# Uebergabe - Stand 15.08.2026
+# Uebergabe - Stand 15.08.2026 (zweite Fassung des Tages)
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -7,7 +7,7 @@ einsteigt und was NICHT im Plan steht.
 
 > Repo: https://github.com/dustinnaumann49-star/Expeditions-Commander-2
 > Synchronisiere dich. Lies `UMSETZUNGSPLAN_BALANCE.md` **gezielt, nicht komplett** - die Datei ist
-> ueber 260 KB gross. Abschnitt 8 zuerst, dann Abschnitt 2a, dann Abschnitt 1b, danach nur die
+> ueber 270 KB gross. Abschnitt 8 zuerst, dann Abschnitt 2a, dann Abschnitt 1b, danach nur die
 > Abschnitte, die zur jeweiligen Aufgabe gehoeren. `README.md` und `FINALE_BALANCE_CHECKLIST.md`
 > nur bei Bedarf.
 > Beachte Messregel 16: keine Zahl aus einer Beschreibung uebernehmen, immer gegen den Code
@@ -24,11 +24,10 @@ das passt nicht gleichzeitig in eine Session.
 
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
-- **Block A laeuft.** Schritt 1 (Messreihen nach dem Overkill-Deckel) ist erledigt. Geschlossen
-  sind Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1 (Beute-Exponent) und seit
-  dem 15.08.2026 **das gesamte Raid-Paket, Schritt 3** - Entscheidung 3 (Ertrag), die
-  Raid-Schwierigkeit, der Beitrags-Massstab und die Wirtschaftsklassen. Offen in Block A: der
-  Niveau-Punkt aus Abschnitt 7 (Zeit als Haupt-Engpass).
+- **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
+  Overkill-Deckel), Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1
+  (Beute-Exponent), das gesamte Raid-Paket (Schritt 3) und zuletzt **der Niveau-Punkt aus
+  Abschnitt 7**. Naechster Schritt ist **Schritt 4, Block B (Piratenadmiral)**.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -36,6 +35,9 @@ das passt nicht gleichzeitig in eine Session.
   Abschnitt 2a dokumentiert. Die urspruengliche Regel "in dieser Phase kein Code" gilt weiterhin
   fuer die Balance-Bloecke A bis F, aber nicht mehr absolut; der Massstab fuer Ausnahmen steht in
   Abschnitt 8.
+- **Die Baseline 21,69 Mrd/Tag aus Abschnitt 1 ist ueberholt.** Gemessen sind 0,80 / 19,82 /
+  76,85 Mrd/Tag (frueh/mittel/spaet, inkl. Allianz-Station). Jede Zahl im Plan, die gegen die alte
+  Baseline gerechnet ist, ist entsprechend zu lesen.
 - Die meisten noch offenen Zahlen im Plan sind **gerechnet, nicht gemessen**. Das ist Absicht.
   Ausnahmen seit dem 14.08.2026: der Beute-Anker (rund 0,094-0,096 Wert-Einheiten je Punkt
   vernichteter Feindmacht - er streut ueber Laeufe um rund 2 %, also nicht auf die dritte
@@ -119,12 +121,32 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Der Niveau-Punkt aus Abschnitt 7** (Zeit ist Haupt-Engpass, Ressourcen Neben-Engpass -
-Entscheidung 9 ist der Traeger). **Das ist der einzige noch offene Punkt in Block A.**
+**Schritt 4 der Reihenfolge: Block B, Entscheidung 4.1 + 4.2 (Piratenadmiral - Verlust-Kriterium
+und contributedPower-Freeze ZUSAMMEN).** Block A ist abgeschlossen.
 
-Alles andere in Block A ist geschlossen: Messreihen nach dem Overkill-Deckel, Imperator-Einstufung,
-Beute-Exponent (am 15.08.2026 mit korrigiertem Raid-Wert nachgerechnet, 0,85 bestaetigt mit nur
-3 % Abweichung vom flachen Verlauf) und das gesamte Raid-Paket.
+Vor Block B einmal die Baseline neu festschreiben: die 21,69 Mrd/Tag aus Abschnitt 1 sind
+ueberholt. Gemessen sind jetzt **0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und
+spaeten Ausbaustand (inklusive Allianz-Station, die in der alten Referenztabelle fehlte).
+
+## Was der Niveau-Punkt am 15.08.2026 ergeben hat
+
+Kurzfassung, vollstaendig im Messkasten am Kopf von Entscheidung 9:
+- **Die Einnahmen betragen 216 bis 321 Prozent des gesamten Flottenwerts pro Tag.** Man verdient
+  taeglich das Zwei- bis Dreifache der eigenen Flotte. Deshalb war das Zielband nie erreichbar.
+- **Das Zielband 3-10 Tage wird umgestellt statt aufgegeben:** es gilt jetzt fuer den naechsten
+  Leiter-Schritt (Gebaeude/Modul/Forschung) auf der Ressourcen-Seite - dort ist es weitgehend schon
+  erfuellt - und fuer eine Flotten-Verdopplung auf der Zeit-Seite.
+- **Am Einnahmen-Niveau wird nichts geaendert.** Fuer das alte Band waeren Schiffe 65- bis 220-mal
+  teurer noetig gewesen.
+- **Der Engpass kommt komplett aus Entscheidung 9**, und zwar aus schon beschlossenen Teilen:
+  1 Lane (Faktor 3) plus additive Reduktionen fuer Schiffe (Faktor 1 bis 3, je nach Ausbaustand)
+  plus Basis-Bauzeiten mal 2. Ergebnis: Flotten-Verdopplung in 12 Stunden / 2,9 Tagen /
+  11,8 Tagen.
+- **Ein Zielwert in Entscheidung 9 ist gestrichen:** "Bau-Ausstoss grob in Hoehe der
+  Tageseinnahmen" widerspricht der Rangentscheidung direkt.
+- **Zwei Nebenbefunde:** das Elite-Bollwerk stellt 74 % der Einnahmen im spaeten Stand, und
+  Abnahmekriterium 5 (keine Quelle ueber 50 %) ist im fruehen Stand heute mit 89 % passiver
+  Einnahmen verletzt.
 
 ## Was das Raid-Paket am 15.08.2026 ergeben hat
 

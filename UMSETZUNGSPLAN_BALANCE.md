@@ -947,6 +947,66 @@ Waffenpunkt gegen 68-133 bei Standard-Schiffen) sind bei einem einzelnen Exempla
 
 ### Entscheidung 9 - ZEIT ALS ECHTER ENGPASS (Nutzerwunsch, neu)
 
+> **GEMESSEN UND FESTGELEGT AM 15.08.2026 - der Niveau-Punkt aus Abschnitt 7 ist damit geschlossen
+> und Block A vollstaendig.** Messung: `run_income_level.mjs` / `income_level.txt`, 40 Durchlaeufe
+> je Kampfzelle, Einnahmen-Modell wie `run_loot_exponent.mjs` (Exponent 0,85, Raid nach Variante 6),
+> Bau-Ausstoss aus den echten Schiffsdaten und der echten Funktion `bauzeitMultiplier()`.
+>
+> **Befund in einem Satz: Die Einnahmen liegen bei 216 bis 321 Prozent des gesamten Flottenwerts
+> pro Tag. Die Flotte ist keine Senke, sie ist Verbrauchsmaterial.**
+>
+> Daraus folgen vier Festlegungen:
+>
+> **(1) Die Kennzahl wird umgestellt.** "+10 % Flottenwert" wird als Massstab aufgegeben. Sie ist
+> skalenfrei und deshalb in jedem Ausbaustand trivial klein - beim spaeten Stand sind 10 % der
+> Flotte 3,5 Mrd gegen 76,85 Mrd Tageseinnahmen. Neu gilt:
+> - **Ressourcen-Seite:** Band 3-10 Tage fuer den naechsten LEITER-Schritt (Gebaeudestufe,
+>   Modulstufe, Forschungsstufe, Stationsausbau). Das ist bereits weitgehend erfuellt - gemessen
+>   liegen alle Schiffs-Module bei 7,16 Tagen und die volle Heimatbasis V1 bei 9,99 Tagen im
+>   mittleren Stand.
+> - **Zeit-Seite:** Band 3-10 Tage fuer eine **Verdopplung der Flotte** (reine Bauzeit). Heute:
+>   0,24 / 0,70 / 1,97 Tage bei 1 Lane.
+>
+> **(2) Das Einnahmen-Niveau bleibt unveraendert.** Weder der Beute-Anker noch die Schiffskosten
+> werden angefasst. Gemessen waere fuer das Band ein Kostenfaktor von 65 bis 220 auf alle Schiffe
+> noetig - das verschiebt gleichzeitig Entscheidung 6, die Feindstaerke-Skalierung und den am
+> 14.08.2026 gemessenen Anker.
+>
+> **(3) Der Engpass kommt vollstaendig aus diesem Block, und zwar aus bereits beschlossenen
+> Teilen.** Noetig ist beim spaeten Stand ein Gesamtfaktor von rund 15 auf die Schiffs-Bauzeit
+> gegenueber heute. Er setzt sich zusammen aus:
+> - **3 Lanes -> 1 Lane (9.2): Faktor 3.** Steht bereits fest.
+> - **Additive statt multiplikativer Reduktionen (9.1b), ausgeweitet auf SCHIFFE: Faktor rund 3
+>   beim vollen Ausbau, rund 2 im mittleren Stand, rund 1 in der Startphase.** Gemessen faellt der
+>   Multiplikator heute von 9,51e-1 (nichts gebaut) auf 8,61e-2 (Vollausbau) - derselbe
+>   Sechs-Quellen-Stapel, den 9.1b fuer Gebaeude bereits auf additiv umstellt. **Der Anwendungs-
+>   bereich in 9.1c ("Schiffe: Untergrenze genuegt") ist damit ueberholt** - eine Untergrenze
+>   deckelt den Stapel, staffelt ihn aber nicht nach Ausbaustand.
+> - **Basis-Bauzeiten x2.** Bewusste Abweichung von 9.1c. Begruendung dort war, eine Anhebung
+>   traefe nur die Startphase - gemessen betrifft x2 die Startphase mit einer Verdopplungszeit von
+>   6 auf 12 Stunden, also unterhalb jeder Wahrnehmungsschwelle, waehrend ohne sie der mittlere
+>   Stand bei 1,5 Tagen und damit unter dem Band bleibt.
+>
+> **Ergebnis dieser Zusammensetzung (gerechnet auf die gemessenen Ausstosswerte): Flotten-
+> Verdopplung in rund 12 Stunden / 2,9 Tagen / 11,8 Tagen.** Startphase praktisch unangetastet,
+> Band ab dem mittleren Stand getroffen.
+>
+> **(4) Der Zielwert "Bau-Ausstoss grob in der Groessenordnung der Tageseinnahmen" ist gestrichen.**
+> Er stammt aus der Zeit vor der Rangentscheidung und widerspricht ihr direkt: trifft der
+> Bau-Ausstoss das Band, liegt er beim spaeten Stand bei 3-6 Mrd/Tag gegen 77 Mrd/Tag Einnahmen.
+> **Ersatz-Zielwert: der Ueberschuss muss eine ZWEITE Senke finden, nicht kleiner werden.** Die
+> Gebaeude-Leiter leistet das von selbst - gemessen kostet eine einzelne Metallminen-Stufe ab
+> Stufe 41 drei Tage Einnahmen (heute Stufe 36), beim Deuterium-Synthetisierer ab Stufe 36 (heute
+> 30). Die einzige echte Luecke sind die Forschungskosten: alle 21 Forschungen zusammen kosten
+> **2,04 Mrd = 38 Minuten Einnahmen** im spaeten Stand. Das ist der Auftrag an 9.4, und der noetige
+> Faktor liegt bei rund 100, nicht bei 2 oder 3.
+>
+> **Zwei Nebenbefunde aus derselben Messung, beide NICHT Teil dieser Entscheidung:**
+> - **Das Elite-Bollwerk stellt 74 % der Einnahmen im spaeten Stand** (54 % im mittleren). Das
+>   Niveau haengt damit an einem einzigen Inhalt. Steht als neuer Punkt in Abschnitt 7.
+> - **Abnahmekriterium 5 aus Abschnitt 1b ist im fruehen Stand heute verletzt:** die passiven
+>   Quellen (Asteroiden + Heimatbasis) stellen 89 % der Einnahmen. Gehoert zu Entscheidung 12.
+
 > **RANGENTSCHEIDUNG 14.08.2026 (Nutzervorgabe, direkt erfragt):** Von den beiden moeglichen
 > Engpaessen ist **ZEIT der Haupt-Engpass, Ressourcen ein spuerbarer Neben-Engpass** - nicht
 > umgekehrt. Damit ist der neue Niveau-Punkt in Abschnitt 7 entschieden: Weg (c), ergaenzt um einen
@@ -2539,8 +2599,11 @@ BLOCK A (zusammen messen, hier haengt alles dran)
                        Messreihen neu laufen lassen (run_elite, run_raid, run_real_fleet);
                        run_aggregate_threshold und run_sectors sind bereits neu
   2. Entscheidung 2   Beute-Exponent 0,85 + Wrack-Bergung 30 %
-  3. Entscheidung 3   Raid-Ertrag halbieren
+  3. Entscheidung 3   Raid-Ertrag: Variante 6, GESCHLOSSEN 15.08.2026
+  3a. Niveau-Punkt   Abschnitt 7, GESCHLOSSEN 15.08.2026 - Einnahmen-Niveau bleibt, Kennzahl
+                       umgestellt, Engpass vollstaendig ueber Entscheidung 9 (Messkasten dort)
   -> danach ALLE Simulationen neu, dann Baseline neu festschreiben
+  -> BLOCK A IST DAMIT VOLLSTAENDIG. Naechster Schritt ist 4 (Block B, Piratenadmiral).
 
 BLOCK B (Piratenadmiral, in sich sequenziell)
   4. Entscheidung 4.1 + 4.2  Verlust-Kriterium UND contributedPower-Freeze ZUSAMMEN
@@ -2680,8 +2743,39 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 
 ## 7. Nach der Umsetzung neu zu bestimmen
 
-- **NIVEAU der Einnahmen festlegen, nicht nur die Neigung (NEU 14.08.2026, hoechste Prioritaet nach
-  dem Raid).** Bei der Messung zu Entscheidung 1 ist aufgefallen, dass **kein einziger Ausbaustand
+- **NIVEAU der Einnahmen festlegen, nicht nur die Neigung** - **GESCHLOSSEN am 15.08.2026.**
+  Messung: `run_income_level.mjs` / `income_level.txt`, 40 Durchlaeufe je Kampfzelle.
+
+  > **Ergebnis: Das Band 3-10 Tage ist fuer "+10 % Flottenwert" mit KEINER vertretbaren Aenderung
+  > erreichbar. Die Kennzahl war an der falschen Groesse angesetzt.** Sie wird umgestellt, das
+  > Einnahmen-Niveau bleibt unveraendert, und der Engpass wird vollstaendig ueber Entscheidung 9
+  > gestellt. Einzelheiten und die Begruendung im Messkasten am Kopf von Entscheidung 9.
+
+  - **Die Einnahmen betragen 216 / 321 / 220 Prozent des GESAMTEN Flottenwerts pro Tag**
+    (frueh/mittel/spaet: 0,80 / 19,82 / 76,85 Mrd gegen Flottenwerte von 0,37 / 6,18 / 34,99 Mrd,
+    Allianz-Station eingerechnet). Ein Spieler verdient taeglich das Zwei- bis Dreifache seiner
+    kompletten Flotte. Ein Schritt von 10 % ist damit zwangslaeufig in einer Stunde bezahlt - das
+    ist keine Fehlkalibrierung einzelner Werte, sondern eine Groessenordnung.
+  - **Fuer das Band muessten die Tageseinnahmen bei 1 bis 3,3 Prozent des Flottenwerts liegen.**
+    Gemessen als noetiger Faktor: **Schiffe 65- bis 220-mal teurer** (Weg b) oder
+    **Schiffs-Bauzeit 15- bis 411-mal laenger** (Weg c, je nach Ausbaustand und Lane-Zahl).
+  - **Die Zeit-Seite derselben Kennzahl ist heute noch KUERZER als die Ressourcen-Seite.** Mit den
+    heutigen 3 Lanes braucht ein 10-Prozent-Schritt 12 Minuten bis 1,6 Stunden reine Bauzeit gegen
+    45 Minuten bis 1,1 Stunden Einnahmen - "Zeit ist der Haupt-Engpass" ist bisher also **nur
+    beschlossen, nicht gebaut**. Erst mit 1 Lane (Entscheidung 9.2) kippt das Verhaeltnis ab dem
+    mittleren Stand.
+  - **Der Beute-Anker bleibt unangetastet, und die Schiffskosten auch.** Ein Kostenfaktor 65-220
+    wuerde Wert je Machtpunkt (Entscheidung 6), die Feindstaerke-Skalierung und den am 14.08.2026
+    gemessenen Beute-Anker gleichzeitig verschieben - das waere keine Kalibrierung mehr, sondern
+    ein anderes Spiel.
+  - *Nachteil, ausdruecklich genannt:* Wird der Engpass allein ueber die Zeit gestellt, liegt der
+    Bau-Ausstoss beim spaeten Stand bei 3-6 Mrd/Tag gegen 77 Mrd/Tag Einnahmen. **Ressourcen
+    stapeln sich dann dauerhaft um den Faktor 15-25.** Der in Entscheidung 9 formulierte Zielwert
+    "Bau-Ausstoss grob in der Groessenordnung der Tageseinnahmen" ist mit der Rangentscheidung vom
+    14.08.2026 unvereinbar und ist im Messkasten bei Entscheidung 9 ersetzt worden.
+
+- *Urspruengliche Fassung des Punktes, zur Nachvollziehbarkeit erhalten (NEU 14.08.2026):* Bei der
+  Messung zu Entscheidung 1 ist aufgefallen, dass **kein einziger Ausbaustand
   auch nur in die Naehe des Zielbands 3-10 Tage kommt**: gemessen 0,5 bis 3 Stunden bis zum
   naechsten Ausbauschritt (+10 % Flottenwert), und selbst eine Verdopplung der GESAMTEN Flotte
   kostet nur 7 bis 12 Stunden Einnahmen. Ressourcen sind an keiner Stelle des Spiels ein Engpass -
@@ -2702,6 +2796,15 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   mittleren Stand, Heimatbasis V1 = 11,9 Tage) - **das Band stimmt also fuer die einmaligen
   Ausbauziele und verfehlt nur das dauerhafte Flottenwachstum.** Genau die 74 Tage aus der
   Senken-Rechnung: danach bleibt nur noch die Flotte, und die kostet Stunden.
+- **Konzentration auf das Elite-Bollwerk pruefen (NEU 15.08.2026, Nebenbefund aus
+  `income_level.txt`).** Es stellt **54 % der Einnahmen im mittleren und 74 % im spaeten
+  Ausbaustand** - alle uebrigen Quellen zusammen (Solo 6 %, Raid 11 %, passive Quellen 4 %,
+  Allianz-Station 5 %) tragen weniger als ein Viertel. Das gesamte Einnahmen-Niveau haengt damit an
+  einem einzigen Inhalt, und zwar nach der Raid-Senkung noch deutlicher als davor. Zwei Folgen:
+  jede Aenderung am Bollwerk verschiebt sofort die komplette Baseline, und faellt es aus (Bots zu
+  schwach, siehe Schritt 26 der Reihenfolge), bricht das Spiel wirtschaftlich zusammen. **Keine
+  Aenderung in Block A** - das Niveau ist am 15.08.2026 ausdruecklich als unveraendert festgelegt.
+  Zu entscheiden ist nur, ob die Verteilung so bleiben soll.
 - **Beute-Kurve gegen die Startphase pruefen (NEU 14.08.2026).** Nach der Messung verliert der
   frueheste Ausbaustand rund 88 % seiner Missionsbelohnung, weil die heutige Belohnung eine feste
   Container-Menge ist und die neue an der vernichteten Feindmacht haengt. Nach dem Reset ist genau
@@ -3094,6 +3197,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 15.08.2026 | **Niveau-Punkt geschlossen, BLOCK A damit vollstaendig.** Neue Messung `run_income_level.mjs`/`income_level.txt` (40 Durchlaeufe je Zelle). Kernbefund: die Einnahmen liegen bei **216/321/220 Prozent des gesamten Flottenwerts pro Tag** - die Flotte ist keine Ressourcen-Senke, sondern Verbrauchsmaterial, und das Band 3-10 Tage ist fuer "+10 % Flottenwert" nur mit einem Kostenfaktor von 65-220 oder einem Zeitfaktor von 15-411 erreichbar. **Entschieden: Kennzahl umstellen** (Band gilt fuer den naechsten Leiter-Schritt auf der Ressourcen-Seite und fuer eine Flotten-Verdopplung auf der Zeit-Seite), **Einnahmen-Niveau unveraendert lassen**, **Engpass vollstaendig ueber Entscheidung 9** aus 1 Lane (Faktor 3) + additiven Reduktionen fuer Schiffe (Faktor 1-3, nach Ausbaustand gestaffelt) + Basis-Bauzeiten x2. Vollstaendig im neuen Messkasten am Kopf von Entscheidung 9. **Drei Korrekturen an bestehendem Text:** (1) Der Zielwert "Bau-Ausstoss grob in Hoehe der Tageseinnahmen" in Entscheidung 9 ist gestrichen - er widerspricht der Rangentscheidung vom 14.08.2026 direkt, denn ein bandtreffender Ausstoss liegt bei 3-6 gegen 77 Mrd/Tag. (2) Der Anwendungsbereich in 9.1c ("Schiffe: Untergrenze genuegt") ist ueberholt; eine Untergrenze deckelt den Reduktions-Stapel, staffelt ihn aber nicht nach Ausbaustand - genau das ist hier noetig. (3) Die Aussage in Abschnitt 7, "Zeit ist bereits heute der Engpass", ist gemessen falsch: mit 3 Lanes ist die Bauzeit-Seite der Kennzahl **kuerzer** als die Ressourcen-Seite (12 min bis 1,6 h gegen 45 min bis 1,1 h). Erst 1 Lane kippt das. **Defekt in einem Messskript gefunden:** `run_loot_exponent.mjs` uebergab in zwei Auswertungen `true` als Raid-Szenario; das wird zu 1 verrechnet und bedeutete still "Raid unveraendert" statt Variante 6 - die Tabelle "Grosse feste Ausbauziele" fiel dadurch um rund ein Drittel zu niedrig aus (Schiffs-Module mittel 5,44 statt 7,16 Tage). Behoben; `loot_exponent.txt` ist an diesen zwei Tabellen bis zum naechsten Vollauf ueberholt, die Exponenten-Entscheidung selbst ist nicht betroffen. **Zwei Nebenbefunde:** das Elite-Bollwerk stellt 74 % der Einnahmen im spaeten Stand (neuer Punkt in Abschnitt 7), und Abnahmekriterium 5 ist im fruehen Stand heute verletzt (passive Quellen 89 %). |
 | 15.08.2026 | **Beute-Exponent mit korrigiertem Raid-Wert nachgerechnet - 0,85 bestaetigt, deutlicher als zuvor.** `run_loot_exponent.mjs` umgebaut: statt eines festen Werts je verteidigtem Raid bildet es jetzt die beschlossene Variante 6 ab (Beitragsanteile aus `raid_support.txt`, Saettigung ueber die Tagessumme), die drei alten Hypothesen bleiben als Empfindlichkeitspruefung. Ergebnis: Abweichung vom flachen Verlauf **3 % bei 0,85** gegen 13/7/18 % bei den Nachbarwerten - zuvor waren es 14 % als kleinste groesste Abweichung. Ursache: der Raid war die grosse flotten-unabhaengige Einnahme, die den spaeten Stand nach oben zog; mit Variante 6 richtet sich die Kurve von selbst aus. **Raid-Entscheidung und Beute-Exponent stuetzen sich gegenseitig.** Die alte Tabelle in Abschnitt 8 Punkt 1 ist zahlenmaessig ueberholt (mit korrigiertem Raid: 1,19/1,02/0,86, groesste Abweichung 19 %), die Entscheidung war aber nie gefaehrdet. Nebenbefund: der Anker streut ueber drei Laeufe zwischen 0,0939 und 0,0956, also rund 2 % - er ist auf zwei Nachkommastellen belastbar, nicht auf vier. Der Geltungsbereich-Befund verschaerft sich: "nur Solo" ergibt unter Variante 6 ein Verhaeltnis von 0,35 statt 0,97, die Beute-Kurve MUSS auf `groupOps.ts` wirken. Das Zielband 3-10 Tage bleibt unerreicht (1,1-1,2 Stunden) - das ist der Niveau-Punkt in Abschnitt 7. |
 | 15.08.2026 | **Raid-Paket (Block A, Schritt 3) vollstaendig entschieden - alle vier zusammenhaengenden Punkte geschlossen.** Zwei neue Messskripte: `run_raid_yield.mjs`/`raid_yield.txt` (Ertragsmodell ueber die Kontenzahl, reine Arithmetik) und `run_raid_support.mjs`/`raid_support.txt` (Mehrspieler-Raid mit Beitragsanteilen, Gewichtungs-Sweep und Schnappschuss-Vergleich). **(a) Ertrag: Variante 6** - Variante 4 plus Saettigung ueber die Tagessumme, 7,56 Mrd/Tag und 33 % Anteil. **(b) Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`.** **(c) Beitrags-Massstab: unveraendert, Normierungs-Ansatz verworfen.** **(d) Wirtschaftsklassen: kein Handlungsbedarf.** **Vier Befunde, die den bisherigen Plan korrigieren:** (1) Die Zahlen im Kasten bei Entscheidung 3 (14,51 Mrd je Raid, 4,15 Mrd/Tag, 1.800 DM) sind zu NIEDRIG - sie zaehlen nur die Container-Kategorie "Ressourcen" mit dem rohen `chance`-Wert statt `realChance`, ohne Teile, Zeitgutscheine, Freischiffe und Jackpot; aus dem Code sind es 22,07 Mrd und 2.080 DM. Die 6,31 aus der Baseline waren nie falsch, sie zaehlen nur EINEN Raid. Real sind es 3,4 (zwei Spieler mit Chance 1,0, zwei Bots mit 0,7), also 21,4 Mrd/Tag und 58 % Anteil. (2) **Variante 4 allein loest die Skalierung nicht** - gemessen holt der grosse Spieler im Raid eines Bots 71,5 % des Topfes, weil die Wellenstaerke am schwachen Verteidiger haengt; Summe 2,41 Aequivalente statt der erwarteten Flachheit. Die Empfehlung im Kasten war insoweit falsch. (3) Der Loesungsansatz zum Beitrags-Massstab aus Abschnitt 2a Punkt 14 ist **schaedlich, nicht nur wirkungslos**: der absorbierte Anteil liegt im Raid bei 0,0-0,6 % statt 1,6 %, und die Normierung gaebe ihm die halbe Stimme (ein Bot mit 2,2 % ausgeteiltem Schaden kaeme auf 14,2 %). (4) Der **Schnappschuss der ersten Welle ist wirkungslos** (0,6 % gegen 0,5 %) und wirkt nur bei schwachen Konten - als Hebel fuer Verlierbarkeit ungeeignet. **Neu erkannter Zielkorridor:** 7-10 Mrd/Tag, nicht "so niedrig wie moeglich" - unter 7 Mrd ueberschreitet stattdessen das Elite-Bollwerk die 50-Prozent-Marke. **Einzige gesetzte Zahl des Pakets:** die Saettigungsgrenze `S_MAX = 1,5`. **Methodische Lehre:** die falschen Container-Werte entstanden, weil eine Zahl aus einer Beschreibung des Datenmodells gerechnet wurde statt aus dem Modell selbst - dieselbe Fehlerform wie Messregel 16, nur eine Ebene tiefer. Container-Erwartungswerte werden deshalb im neuen Skript aus `CONTAINER_TYPES` inklusive `realChance` und Jackpot berechnet, nicht gesetzt. |
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
