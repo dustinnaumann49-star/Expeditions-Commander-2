@@ -1,4 +1,4 @@
-# Uebergabe - Stand 14.08.2026
+# Uebergabe - Stand 15.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -22,9 +22,15 @@ das passt nicht gleichzeitig in eine Session.
 
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
-- **Block A laeuft.** Schritt 1 (Messreihen nach dem Overkill-Deckel) ist erledigt, Entscheidung 3
-  (Imperator-Einstufung) und Entscheidung 1 (Beute-Exponent) sind geschlossen. Offen in Block A:
-  Entscheidung 2 in ihrer Ertragswirkung und der neue Niveau-Punkt aus Abschnitt 7.
+- **Block A laeuft.** Schritt 1 (Messreihen nach dem Overkill-Deckel) ist erledigt. Geschlossen
+  sind Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1 (Beute-Exponent) und seit
+  dem 15.08.2026 **das gesamte Raid-Paket, Schritt 3** - Entscheidung 3 (Ertrag), die
+  Raid-Schwierigkeit, der Beitrags-Massstab und die Wirtschaftsklassen. Offen in Block A: der
+  Niveau-Punkt aus Abschnitt 7 (Zeit als Haupt-Engpass) und die Nachrechnung des Beute-Exponenten
+  mit dem korrigierten Raid-Wert.
+- **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
+  "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
+  Fassungen dieser Datei standen sie einmal vertauscht.
 - **Am Spielcode wurde seit dem 10.08.2026 erheblich geaendert** - 14 Punkte, vollstaendig in
   Abschnitt 2a dokumentiert. Die urspruengliche Regel "in dieser Phase kein Code" gilt weiterhin
   fuer die Balance-Bloecke A bis F, aber nicht mehr absolut; der Massstab fuer Ausnahmen steht in
@@ -110,11 +116,26 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block A, Schritt 1:** Die uebrigen Messreihen nach dem Overkill-Deckel neu laufen lassen
-(`run_elite`, `run_raid`, `run_real_fleet`); `run_aggregate_threshold`, `run_sectors` und
-`run_classes` sind bereits neu. Danach Entscheidung 2 und 3.
+**`run_loot_exponent.mjs` mit dem korrigierten Raid-Wert neu laufen lassen.** Das Skript rechnete
+mit 4,145 Mrd/Tag je verteidigtem Raid; gemessen sind es 6,31, und die Raid-Entscheidung vom
+15.08.2026 verschiebt das Niveau nochmals. Der Exponent 0,85 duerfte halten (er gewinnt in allen
+drei Raid-Annahmen), aber die Tabelle in Abschnitt 8 Punkt 1 stimmt zahlenmaessig nicht mehr.
 
-**Entscheidung 3 hat sich erheblich erweitert.** Der Raid ist nicht nur zu ertragreich, sondern
-auch zu leicht, und beides skaliert mit der Zahl der Beteiligten. Fuenf Loesungsvarianten stehen im
-Kasten dort, dazu die Kopplung an die Wirtschaftsklassen (Abschnitt 4b) und an den Beitrags-Massstab
-(Abschnitt 2a, Punkt 14). **Diese vier Punkte gehoeren zusammen entschieden.**
+**Danach: der Niveau-Punkt aus Abschnitt 7** (Zeit ist Haupt-Engpass, Ressourcen Neben-Engpass -
+Entscheidung 9 ist der Traeger). Das ist der letzte offene Punkt in Block A.
+
+## Was das Raid-Paket am 15.08.2026 ergeben hat
+
+Kurzfassung, vollstaendig im Kopf von Entscheidung 3:
+- **Ertrag: Variante 6** - fester Container-Topf je Raid nach Beitrag, PLUS Saettigung ueber die
+  Tagessumme. 7,56 Mrd/Tag statt 21,4 im Ist-Zustand, Anteil 33 % statt 58 %.
+- **Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`** - fremde Flotten zaehlen voll in die
+  Feindstaerke. Unterstuetzung lohnt sich trotzdem (3,1 % Verlust statt 10,1 % allein).
+- **Beitrags-Massstab: unveraendert.** Der Normierungs-Vorschlag aus Abschnitt 2a Punkt 14 ist
+  gemessen schaedlich.
+- **Wirtschaftsklassen: kein Handlungsbedarf.** Schmuggler faellt auf +0,35, bleibt vor Prospektor.
+
+**Zwei Zahlen im Plan waren falsch und sind korrigiert:** Ein Raid bringt 22,07 Mrd und 2.080 DM,
+nicht 14,51 Mrd und 1.800 DM - die alte Rechnung zaehlte nur die Container-Kategorie "Ressourcen"
+mit dem rohen `chance`-Wert. Und die Empfehlung "Variante 4" im Kasten war unvollstaendig: allein
+loest sie die Skalierung nicht, weil der grosse Spieler im Raid eines Bots 71,5 % des Topfes holt.

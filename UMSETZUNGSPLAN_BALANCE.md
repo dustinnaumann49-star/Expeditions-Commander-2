@@ -67,13 +67,24 @@ wenig da"). Einnahmen duerfen ins Astronomische wachsen, solange die Ziele mitwa
 | Quelle | Wert/Tag |
 |---|---|
 | Elite-Bollwerk (32,60 Mrd je Serie, real alle 3 Tage) | 10,87 Mrd |
-| Raid (Mi+So, 12/12) | 6,31 Mrd |
+| Raid (Mi+So, 12/12) - EIN verteidigter Raid, real 3,4 (siehe unten) | 6,31 Mrd |
 | Asteroiden (3 Felder) | 2,83 Mrd |
 | Solo-Piraten Hoch | 1,13 Mrd |
 | Heimatbasis V1 voll | 0,55 Mrd |
 | **Summe** | **21,69 Mrd** |
 
-Dunkle Materie: **1.088/Tag** Einnahmen gegen **103/Tag** groesste laufende Senke (Faktor 10,5).
+**KORREKTUR 15.08.2026 (gemessen, `run_raid_yield.mjs`/`raid_yield.txt`):** Die Raid-Zeile ist
+richtig gerechnet, zaehlt aber nur EINEN Raid. Real werden 3,4 verteidigt (zwei namentlich
+hinterlegte Spieler mit Chance 1,0, zwei Bots mit `RAID_SPAWN_CHANCE` 0,7), also **21,4 Mrd/Tag**.
+Die Summe liegt damit im Ist-Zustand nicht bei 21,69, sondern bei **36,8 Mrd/Tag**, der Raid-Anteil
+bei **58 %**. Die im Kasten bei Entscheidung 3 genannten 14,51 Mrd je Raid bzw. 4,15 Mrd/Tag sind
+zu NIEDRIG: sie zaehlen nur die Container-Kategorie "Ressourcen", mit dem rohen `chance`-Wert statt
+der tatsaechlichen Auszahlungswahrscheinlichkeit `realChance`, ohne Teile, Zeitgutscheine,
+Freischiffe und Jackpot. Aus dem Code gerechnet ergibt ein voll gewonnener Raid **22,07 Mrd und
+2.080 DM**.
+
+Dunkle Materie: **1.088/Tag** Einnahmen gegen **103/Tag** groesste laufende Senke (Faktor 10,5) -
+nach derselben Korrektur real **2.020/Tag**, Faktor 19,6.
 Reale Nutzerflotte: 34,99 Mrd Wert, 18,58 Mrd BasePower, 31.276 Schiffe.
 Alle Betraege in Wert-Einheiten (`metall*1 + kristall*1,5 + deuterium*3`, entspricht `TRADE_VALUE`).
 
@@ -414,7 +425,91 @@ Container-Anzahl (`missions.ts:558`). Jede neue Skalierung multipliziert sich da
 
 ---
 
-### Entscheidung 3 - Raid-Ertrag: HALBIEREN
+### Entscheidung 3 - Raid-Ertrag: VARIANTE 6 (fester Topf + Saettigung), GESCHLOSSEN 15.08.2026
+
+> **ENTSCHIEDEN am 15.08.2026, gemessen** (`run_raid_yield.mjs`/`raid_yield.txt` fuer den Ertrag,
+> `run_raid_support.mjs`/`raid_support.txt` fuer Beitraege und Schwierigkeit). Die urspruengliche
+> Halbierung auf 5/3/1 ist damit hinfaellig - sie senkt den Wert, nicht die Skalierung.
+>
+> **(a) Ertrag: Variante 6.** Das ist die im Kasten empfohlene Variante 4 (fester Container-Topf je
+> Raid, nach tatsaechlichem Beitrag verteilt) PLUS eine **Saettigung ueber die Tagessumme der
+> Anteile eines Spielers** - gleiche Bauform wie die Saettigungskurve aus Entscheidung 9.1a,
+> Arbeitswert der Grenze `S_MAX = 1,5` Raid-Aequivalente.
+>
+> **Variante 4 allein reicht nachweislich nicht.** Gemessene Beitragsanteile:
+>
+> | Situation | Anteil des betrachteten Spielers |
+> |---|---|
+> | eigener Raid | 93,2 % |
+> | Raid des zweiten Spielers (der verteidigt) | 4,6 % |
+> | Raid eines Bots (Spieler verstaerkt) | **71,5 %** |
+>
+> Ursache, mechanisch: Die Wellenstaerke bemisst sich am VERTEIDIGER. Beim eigenen Raid ist sie auf
+> die grosse Heimatflotte plus Anlagen zugeschnitten, jede Verstaerkung ist daneben ein
+> Randbeitrag. Beim Bot ist die Welle klein, und die grosse Verstaerkungsflotte erledigt sie fast
+> allein. **Der Ertrag summiert sich damit auf 2,41 Raid-Aequivalente (15,19 Mrd/Tag, 49,7 % der
+> Einnahmen) und waechst weiterhin um rund 0,7 Aequivalente je zusaetzlichem Bot.** Die im Kasten
+> unten stehende Erwartung, Variante 4 bleibe "unabhaengig von der Spielerzahl stabil", trifft nur
+> bei symmetrischen Beitraegen zu - die liegen hier nicht vor.
+>
+> Mit Saettigung: **1,20 Aequivalente, 7,56 Mrd/Tag, 33,0 % der Einnahmen**, Restwachstum nahezu
+> null. Das liegt im Zielkorridor (siehe naechster Absatz).
+>
+> **Der Zielkorridor ist 7 bis 10 Mrd/Tag, nicht "so niedrig wie moeglich".** Das Elite-Bollwerk
+> liefert 10,87 Mrd/Tag. Faellt der Raid unter rund 7 Mrd, ueberschreitet STATT seiner das
+> Elite-Bollwerk die 50-Prozent-Marke. Bei 7,56 Mrd liegen beide grossen Quellen darunter
+> (Raid 33,0 %, Elite 47,4 %).
+>
+> **(b) Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`** (Variante 5 unten, aber voll statt 0,5).
+> Gemessener Flottenverlust des Verteidigers ueber den Sweep:
+>
+> | Gewichtung fremder Flotten | Verlust des Verteidigers |
+> |---|---|
+> | allein, ohne Beistand | 10,1 % |
+> | 0,00 (heutiger Code) | 0,5 % |
+> | 0,50 | 1,7 % |
+> | 1,00 | 3,1 % |
+>
+> **Die Begruendung vom Juli 2026 ist damit gemessen widerlegt:** Auch bei voller Gewichtung bleibt
+> Unterstuetzung klar vorteilhaft (3,1 % statt 10,1 %). Ein halber Wert waere ein Kompromiss ohne
+> Grund - der Sinn der Konstante ist, dass Beistand das Kraefteverhaeltnis nicht verzerrt, und das
+> leistet nur 1,0. Als Kalibrierknopf bleibt sie erhalten.
+>
+> *Ausdruecklich NICHT erreicht:* In allen Faellen werden 12 von 12 Wellen gewonnen. Die Gewichtung
+> macht den Raid teurer, nicht verlierbar. Verlierbarkeit bleibt als eigene Frage offen, siehe
+> Abschnitt 8 Punkt 7.
+>
+> **(c) Beitrags-Massstab: unveraendert lassen.** Der Umbauvorschlag aus Abschnitt 2a Punkt 14
+> (jede Groesse an ihrer eigenen Summe messen, dann mitteln) ist gemessen schaedlich - Herleitung
+> dort.
+>
+> **(d) Wirtschaftsklassen: kein Handlungsbedarf.** Der Schmuggler faellt von +0,92 auf
+> +0,35 Mrd/Tag und bleibt damit vor dem Prospektor (+0,22). Die Rangfolge kippt nicht, der Abstand
+> schrumpft von Faktor 4,2 auf 1,6. Einzelheiten in Abschnitt 4b.
+>
+> **Nachteile, ausdruecklich genannt:**
+> - Die Saettigung ist beim Spielen unsichtbar. Wer nachrechnet, warum der vierte verteidigte Raid
+>   weniger gebracht hat als der erste, findet die Antwort nicht im Spiel. **Der Kampfbericht muss
+>   den eigenen Beitragsanteil und die Saettigung ausweisen**, sonst sieht es wie ein Fehler aus.
+> - `S_MAX = 1,5` ist der einzige gesetzte Wert des Pakets, nicht gemessen. Er ist der Knopf fuer
+>   die spaetere Kalibrierung gegen die neue Baseline.
+> - Zwei Verschlechterungen treffen weiterhin denselben Inhalt (weniger Ertrag UND hoehere
+>   Feindstaerke). Die Vorrangregel aus Abschnitt 8 Punkt 7 bleibt gueltig: muss eine zurueckgenommen
+>   werden, dann der Ertrag, nicht das Risiko.
+>
+> **Verworfen und warum:**
+> - *Variante 1 (Konstanten gegen die Kontenzahl kalibrieren):* muss bei jedem Beitritt wiederholt
+>   werden.
+> - *Variante 2 (Halter bekommen einen Bruchteil):* daempft die Steigung, hebt sie nicht auf, und
+>   loest die Beitragsfrage nicht.
+> - *Variante 3 (Bots ohne Belohnung):* erreicht rechnerisch Flachheit, aber nur weil es zufaellig
+>   genau zwei echte Spieler gibt; ein dritter startet das Wachstum neu. Behandelt zudem das
+>   Symptom - die geparkte Ein-Schiff-Flotte bekaeme im Raid des Partners weiterhin die volle Menge.
+> - *Halbierung auf 5/3/1:* siehe oben.
+
+---
+
+### Ausgangslage und Varianten (Stand vor der Entscheidung, zur Nachvollziehbarkeit erhalten)
 
 **Bezug:** Session 2, Befund 4 / Session 3, Befund 1 (b). **Dateien:** `data/economy.ts`
 (`RAID_WAVE_WIN_SILBER/GOLD/ELITE`).
@@ -436,6 +531,11 @@ Frequenzverdopplung.
 > Ereignisse, jedes voll verguetet**. Der Ertrag skaliert damit **linear mit der Zahl der
 > angreifbaren Accounts** - Bots eingeschlossen. Und da die Belohnung nicht am Beitrag haengt,
 > genuegt eine kleine Halte-Flotte je Verbuendetem.
+>
+> **UEBERHOLT 15.08.2026:** Die folgende Tabelle zaehlt nur die Container-Kategorie "Ressourcen"
+> mit dem rohen `chance`-Wert. Aus dem Code gerechnet sind es 22,07 Mrd und 2.080 DM je Raid,
+> 6,31 Mrd/Tag und 595 DM/Tag bei einem verteidigten Raid. Die Richtung des Befunds bleibt, die
+> Hoehe war zu niedrig. Tabelle zur Nachvollziehbarkeit erhalten.
 >
 > **Nachgerechnet** (`CONTAINER_TYPES` x `RAID_WAVE_WIN_*`, 12/12 gewonnene Wellen):
 >
@@ -539,10 +639,17 @@ Frequenzverdopplung.
 > auf einen Bruchteil, faellt der Schmuggler von +0,92 auf unter +0,25 Mrd/Tag und damit hinter
 > den Prospektor zurueck. **Die Klassenwahl nach der Aenderung neu bewerten, nicht vorher.**
 >
-> **Empfehlung: Variante 4, hilfsweise Variante 2.** Variante 4 trifft die Ursache am genauesten
-> (Belohnung folgt dem Beitrag) und bleibt unabhaengig von der Spielerzahl stabil, ist aber die
-> aufwendigste. Variante 2 (Halter bekommen einen festen Bruchteil) erreicht die Stabilitaet mit
-> deutlich weniger Aufwand, ohne die Beitrags-Frage zu loesen.
+> **Empfehlung (Stand 13.08.2026): Variante 4, hilfsweise Variante 2.** Variante 4 trifft die
+> Ursache am genauesten (Belohnung folgt dem Beitrag) und bleibt unabhaengig von der Spielerzahl
+> stabil, ist aber die aufwendigste. Variante 2 (Halter bekommen einen festen Bruchteil) erreicht
+> die Stabilitaet mit deutlich weniger Aufwand, ohne die Beitrags-Frage zu loesen.
+>
+> **GEPRUEFT UND TEILWEISE WIDERLEGT am 15.08.2026.** Die Annahme "bleibt unabhaengig von der
+> Spielerzahl stabil" gilt nur bei symmetrischen Beitraegen. Gemessen holt der grosse Spieler im
+> Raid eines Bots 71,5 % des Topfes, wodurch Variante 4 die Skalierung nur halbiert. Deshalb um
+> eine Saettigung erweitert (Variante 6, siehe Kopf dieser Entscheidung). Variante 2 waere nicht
+> die richtige Rueckfallebene gewesen - sie ist unter allen Varianten die mit der zweitgroessten
+> Reststeigung.
 
 **Begruendung:** Die Verdopplung von 1x auf 2x/Woche wurde als reiner Kalendereintrag umgesetzt,
 ohne die Belohnung pro Raid gegenzurechnen - die Kommentare an den Konstanten begruenden 10/6/2
@@ -552,6 +659,13 @@ Entscheidung**. Die hoehere Frequenz soll mehr Ereignisse bringen, nicht mehr Er
 
 **Muss zusammen mit Entscheidung 2 gemessen werden**, sonst verschiebt die neue Beute-Skalierung
 die Einnahmen weiter nach oben, bevor eine Senke greift.
+
+**GEMESSEN 15.08.2026, Ergebnis negativ:** Der Schnappschuss bringt 0,6 % Verlust gegen 0,5 % bei
+Neuberechnung - praktisch nichts. Die vermutete Selbstkorrektur kann nur greifen, wenn die Flotte
+tatsaechlich schrumpft; bei starker Verteidigung passiert das nie. Der Mechanismus wirkt also
+ausgerechnet nur bei schwachen Konten, also in der Startphase, wo Entscheidung 10 Totalverluste
+ausschliessen soll. **Als Hebel fuer "Raid verlierbar machen" ist er ungeeignet.** Absatz zur
+Nachvollziehbarkeit erhalten:
 
 **Zusaetzlich pruefen (eigene Bewertung, nicht zwingend):** `resolveOneWave()` rechnet
 `combinedPower` pro Welle NEU aus der bereits dezimierten Flotte. Wer Schiffe verliert, bekommt
@@ -1830,6 +1944,29 @@ temporaer.
 > (`contributionShares()`), die Belohnungsaufteilung (Variante 4 in Entscheidung 3, die denselben
 > Massstab braeuchte) und die Klassenbalance (Abschnitt 4a - ein aufgewerteter Tank-Beitrag
 > veraendert den Wert des Bollwerks ueber den Kampf hinaus).
+>
+> **GESCHLOSSEN am 15.08.2026: Der Massstab bleibt unveraendert, der Loesungsansatz wird
+> VERWORFEN.** Messung `run_raid_support.mjs`/`raid_support.txt`, 5 komplette Raids je
+> Konstellation.
+>
+> - **Der absorbierte Anteil ist im RAID noch kleiner als im Elite-Bollwerk: 0,0 bis 0,6 % statt
+>   1,6 %.** Die 1,6 % stammten aus einem Expeditionsbericht; die Vermutung, bei der
+>   Heimatverteidigung sehe es besser aus, ist widerlegt. Die Verteidigung steckt kaum etwas ein,
+>   weil sie kaum etwas verliert.
+> - **Der Vorschlag kippt ins Gegenteil.** "Je Kategorie normieren, dann mitteln" gibt einer
+>   Groesse, die 0,04 % des Geschehens ausmacht, die halbe Stimme. Gemessen bekaeme Bot 1, der
+>   1,0 von 45 Mrd Schaden austeilt (2,2 %), unter dem neuen Massstab **14,2 %** - allein weil er
+>   zufaellig den groessten Teil einer winzigen absorbierten Menge abbekam. Das ist keine
+>   Aufwertung des Tankens, sondern Verstaerkung von Rauschen.
+> - **Die urspruengliche Sorge um das Bollwerk traegt nicht.** Der reine Tank kommt unter dem
+>   heutigen Massstab auf 4,3 %, ein gleich grosser Standard-Verstaerker auf 5,3 %. Der Unterschied
+>   ist klein genug, um keine Sonderregel zu rechtfertigen.
+> - *Konsequenz fuer die Belohnungsaufteilung:* Variante 6 in Entscheidung 3 nutzt damit denselben
+>   Massstab wie die Punktevergabe - die dort als "bewusst und temporaer" bezeichnete Inkonsistenz
+>   loest sich auf.
+> - *Was offen bleibt:* Wenn Tanken belohnt werden SOLL, braucht es eine andere Bezugsgroesse als
+>   absorbierten Schaden. Der ist in diesem Spiel zu klein, um irgendetwas zu tragen. Das ist eine
+>   Inhaltsfrage, keine Kalibrierung, und gehoert nicht in Block A.
 
 **R11 (Changelog) - erledigt.** Zwei Eintraege (10.08. und 11.08.), fuer Spieler formuliert. Der
 neueste Eintrag war zuvor vom 06.08.2026, waehrend seitdem sechs spuerbare Aenderungen live
@@ -2017,6 +2154,23 @@ Prozentzahl, um mit einem Bonus gleichzuziehen, der ueberall greift. (Dieselbe F
 10.08.2026 bei der Allianz-Station passiert - dort wurde ein Ertrag gegen eine Pro-Spieler-Baseline
 gerechnet, obwohl er sich auf mehrere Spieler verteilt. Bei jeder Prozentangabe zuerst die Basis
 pruefen.)
+
+**GEMESSEN am 15.08.2026 nach der Raid-Entscheidung** (`run_raid_yield.mjs`, M4-Block):
+
+| Fall | Deuterium aus Raids | Anteil am gesamten Deuterium | Schmuggler-Vorteil |
+|---|---|---|---|
+| Ist-Zustand (3,4 Raids) | 1,99 Mrd/Tag | 96,0 % | +0,92 Mrd/Tag |
+| Variante 4 ohne Saettigung | 1,41 Mrd/Tag | 94,4 % | +0,66 Mrd/Tag |
+| **Variante 6 (beschlossen)** | **0,70 Mrd/Tag** | **89,4 %** | **+0,35 Mrd/Tag** |
+
+**Die Rangfolge kippt nicht.** Der Schmuggler bleibt vor dem Prospektor (+0,22 Mrd/Tag), der
+Abstand faellt aber von Faktor 4,2 auf 1,6. Die 97-Prozent-Kopplung ans Raid-Deuterium bleibt
+bestehen - sie sinkt nur auf 89 %, weil die Mine im Verhaeltnis nicht mitwaechst. **Damit ist der
+Punkt (d) des Raid-Pakets geschlossen: kein Handlungsbedarf im Raid-Paket selbst.**
+
+Was dadurch NICHT geloest ist und offen bleibt: der Prospektor hat weiterhin keine laufende Quelle,
+die unabhaengig von Raid oder Bauzeit ist, und faellt strukturell zurueck. Das ist eine
+Inhaltsfrage fuer einen spaeteren Block.
 
 **Kein Handlungsbedarf vor Block A.** Die Rangfolge haengt an zwei Groessen, die dort ohnehin neu
 bestimmt werden: dem Raid-Ertrag (Schmuggler) und der Frage Zeit gegen Ressourcen (Ingenieur).
@@ -2568,27 +2722,29 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   `combatFleetPowerBase()` besteht zu **98,4 % aus Schild und Panzerung und nur zu 1,6 % aus
   Waffen**. Waffen zu bauen laesst die Gegner also praktisch nicht mitwachsen, Panzerung zu bauen
   schon. Beruehrt Entscheidung 6 direkt. Herleitung in Abschnitt 4a.
-- **Raid-SCHWIERIGKEIT gemeinsam mit dem Ertrag entscheiden (NEU 13.08.2026).** Die Wellenstaerke
-  skaliert nur mit der Flotte des VERTEIDIGERS, nicht mit Verstaerker- und Halte-Flotten - im
-  Livebetrieb rund 2 % Verlust bei voller Belohnung. Ausschluss war eine bewusste Entscheidung vom
-  Juli 2026, deren Begruendung der Rechnung nicht standhaelt (siehe Kasten bei Entscheidung 3,
-  Variante 5). **Nur zusammen mit dem Ertrag anfassen.**
-- **Raid-Ertrag gegen die ZAHL DER ACCOUNTS neu rechnen (NEU 11.08.2026, hoechste Prioritaet).**
-  Jeder Verteidiger und Halter bekommt die volle Container-Menge, der Ertrag skaliert also linear
-  mit der Zahl angreifbarer Accounts inklusive Bots. Bei vier verteidigten Raids sind es
-  16,58 Mrd/Tag statt der im Plan gefuehrten 6,31 - **rund 52 % aller Einnahmen und damit ein
-  Verstoss gegen Abnahmekriterium 5 im Ist-Zustand.** Die geplante Halbierung reicht nicht.
-  Vollstaendige Rechnung und drei Loesungsvarianten im Kasten bei Entscheidung 3.
-- **Beitrags-Massstab neu normieren (NEU 13.08.2026).** `contributionShares()` addiert ausgeteilten
-  und absorbierten Schaden - real machen die absorbierten Anteile aber nur rund 1,6 % der Summe aus,
-  wodurch Tanken praktisch keine Punkte bringt und die Begruendung der Funktion ins Leere laeuft.
-  Loesungsansatz (Normierung je Kategorie, dann Mittelung) samt Herleitung in Abschnitt 2a,
-  Punkt 14. **Gemeinsam mit Variante 4 (Belohnungsaufteilung) und Abschnitt 4a (Klassenbalance)
-  entscheiden** - alle drei haengen an demselben Massstab.
-- **Wirtschaftsklassen nach der Raid-Korrektur neu bewerten (NEU 12.08.2026).** Der
-  Schmuggler liegt derzeit mit +0,92 Mrd/Tag klar vor Prospektor (+0,22), aber ausschliesslich ueber
-  das Deuterium aus Raid-Containern - 97 % seines Werts haengen am Raid-Defekt. Nach dessen
-  Korrektur neu messen. Vollstaendige Rechnung in Abschnitt 4b.
+- ~~**Raid-SCHWIERIGKEIT gemeinsam mit dem Ertrag entscheiden (NEU 13.08.2026).**~~
+  **GESCHLOSSEN 15.08.2026: `RAID_ALLY_POWER_WEIGHT = 1,0`.** Gemessen bleibt Unterstuetzung auch
+  bei voller Gewichtung klar vorteilhaft (3,1 % Verlust statt 10,1 % allein) - die Begruendung vom
+  Juli 2026 ist damit widerlegt. Einzelheiten im Kopf von Entscheidung 3. **Neu offen daraus:** der
+  Raid wird dadurch teurer, aber nicht verlierbar (12/12 Wellen in jedem gemessenen Fall). Siehe
+  Abschnitt 8 Punkt 7.
+- ~~**Raid-Ertrag gegen die ZAHL DER ACCOUNTS neu rechnen (NEU 11.08.2026, hoechste Prioritaet).**~~
+  **GESCHLOSSEN 15.08.2026: Variante 6** (fester Topf je Raid nach Beitrag, plus Saettigung ueber
+  die Tagessumme). Ergebnis 7,56 Mrd/Tag und 33 % Anteil gegen 21,4 Mrd/Tag und 58 % im
+  Ist-Zustand. **Zwei Korrekturen an den bisherigen Zahlen dieser Zeile:** der Ist-Zustand ist
+  21,4 Mrd/Tag bei 3,4 real verteidigten Raids (nicht 16,58 bei vier), und die 6,31 aus der
+  Baseline waren nie falsch - sie zaehlen nur einen einzigen Raid. Vollstaendig im Kopf von
+  Entscheidung 3.
+- ~~**Beitrags-Massstab neu normieren (NEU 13.08.2026).**~~ **GESCHLOSSEN 15.08.2026: Massstab
+  bleibt unveraendert, der Normierungs-Ansatz ist verworfen.** Im Raid liegt der absorbierte Anteil
+  bei 0,0 bis 0,6 %, nicht bei 1,6 %, und die vorgeschlagene Normierung wuerde einer Groesse von
+  0,04 % des Geschehens die halbe Stimme geben (gemessen: ein Bot mit 2,2 % ausgeteiltem Schaden
+  kaeme auf 14,2 %). Herleitung in Abschnitt 2a, Punkt 14.
+- ~~**Wirtschaftsklassen nach der Raid-Korrektur neu bewerten (NEU 12.08.2026).**~~
+  **GEMESSEN 15.08.2026:** Der Schmuggler faellt von +0,92 auf +0,35 Mrd/Tag und bleibt damit vor
+  dem Prospektor (+0,22). Die Rangfolge kippt nicht, der Abstand faellt von Faktor 4,2 auf 1,6.
+  Tabelle in Abschnitt 4b. **Offen bleibt nur** die fehlende raid-unabhaengige Quelle des
+  Prospektors - das ist Inhaltsarbeit, keine Kalibrierung.
 - **Wachstumsgrenze der Piratenbasen festlegen (NEU 12.08.2026).** Mit der Aufhebung der
   Ausbaugrenze (Abschnitt 2a, Punkt 10) gibt es KEINE Bremse mehr: sind Gebaeude und Forschung am
   Maximum, fliesst alles unbegrenzt in Schiffe und Verteidigung. Vor dem Reset entscheiden, ob das
@@ -2763,6 +2919,14 @@ Messung: `run_loot_exponent.mjs` / `loot_exponent.txt`, 40 Durchlaeufe je Zelle,
   Abschnitt 1b.
 - *Zweiter Nachteil:* Das Zielband 3-10 Tage bleibt gesetzt und ungemessen. Es ist jetzt zusaetzlich
   nachweislich unerfuellt - die Setzung ist damit nicht bestaetigt, sondern offen.
+- **NACHTRAG 15.08.2026, betrifft die Datengrundlage:** `run_loot_exponent.mjs` rechnete mit
+  4,145 Mrd/Tag je verteidigtem Raid. Gemessen sind es **6,31**, also lag die Setzung um ein
+  Drittel zu niedrig; zusaetzlich veraendert die Raid-Entscheidung vom 15.08.2026 (Variante 6) das
+  Niveau erneut. Die Spalte "Raid x1,0" der Entscheidungstabelle bildet damit weder den alten noch
+  den neuen Zustand ab. **Der Exponent selbst duerfte robust sein** - er wurde ueber drei
+  Raid-Annahmen hinweg nach der kleinsten groessten Abweichung gewaehlt, und 0,85 gewinnt in allen
+  dreien -, aber die Zahlen sind nachzurechnen. Als Messaufgabe in Block A gefuehrt, nicht als
+  Wiederaufnahme der Entscheidung.
 
 Urspruengliche Formulierung der Entscheidungsregel:
 - *Gemessen wird:* fuer einen fruehen, einen mittleren und einen spaeten Ausbaustand die Kennzahl
@@ -2845,6 +3009,20 @@ Es bleibt eine Messaufgabe, keine Entscheidung.
 - *Offen bleibt nur der Mechanismus:* Schnappschuss der ersten Welle gegen Rueckzugsregel
   (README Punkt 27 - der Rueckzug ist bei Raids ausdruecklich abgeschaltet). Das ist eine
   Messfrage, keine Entscheidung.
+- **GEMESSEN am 15.08.2026: Der Schnappschuss taugt dafuer nicht.** 0,6 % Verlust gegen 0,5 % bei
+  Neuberechnung je Welle - der Unterschied liegt im Rauschen. Die vermutete Selbstkorrektur nach
+  unten kann nur greifen, wenn die Flotte tatsaechlich schrumpft; bei starker Verteidigung
+  passiert das nie. Der Mechanismus wirkt also **ausschliesslich bei schwachen Konten**, also genau
+  dort, wo Entscheidung 10 Totalverluste ausschliessen soll.
+- **Auch die volle Feindstaerke-Gewichtung macht den Raid nicht verlierbar** (12/12 Wellen in jedem
+  gemessenen Fall, 3,1 % Verlust). Wer Verlierbarkeit will, muss an die Wellenstaerke selbst
+  (`RAID_WAVE_ROLL`).
+- **Warnung dazu aus `raid.txt`:** Zwischen "10,1 % Verlust" und "95,8 % Verlust bei 10,9 von 12
+  gewonnenen Wellen" liegt fast kein Mittelfeld. Das ist die Abnutzungs-Eigenschaft aus README
+  Punkt 18, und der Rueckzug ist bei Raids abgeschaltet (Punkt 27). **Eine Erhoehung der
+  Wellenstaerke hat deshalb keinen sanften Bereich** - sie kippt von "kaum Verluste" direkt in
+  "fast alles weg". Vor jeder Aenderung hier zuerst Entscheidung 10 (Verlustobergrenze) bauen,
+  nicht danach.
 - *Nachteil, ausdruecklich genannt:* Damit treffen **zwei Verschlechterungen denselben Inhalt** -
   Entscheidung 3 halbiert den Raid-Ertrag, Punkt 7 fuegt ein Verlustrisiko hinzu. Beide muessen
   gemeinsam kalibriert werden, sonst wird der Raid vom Ereignis zur reinen Belastung. **Wenn eine
@@ -2888,6 +3066,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 15.08.2026 | **Raid-Paket (Block A, Schritt 3) vollstaendig entschieden - alle vier zusammenhaengenden Punkte geschlossen.** Zwei neue Messskripte: `run_raid_yield.mjs`/`raid_yield.txt` (Ertragsmodell ueber die Kontenzahl, reine Arithmetik) und `run_raid_support.mjs`/`raid_support.txt` (Mehrspieler-Raid mit Beitragsanteilen, Gewichtungs-Sweep und Schnappschuss-Vergleich). **(a) Ertrag: Variante 6** - Variante 4 plus Saettigung ueber die Tagessumme, 7,56 Mrd/Tag und 33 % Anteil. **(b) Schwierigkeit: `RAID_ALLY_POWER_WEIGHT = 1,0`.** **(c) Beitrags-Massstab: unveraendert, Normierungs-Ansatz verworfen.** **(d) Wirtschaftsklassen: kein Handlungsbedarf.** **Vier Befunde, die den bisherigen Plan korrigieren:** (1) Die Zahlen im Kasten bei Entscheidung 3 (14,51 Mrd je Raid, 4,15 Mrd/Tag, 1.800 DM) sind zu NIEDRIG - sie zaehlen nur die Container-Kategorie "Ressourcen" mit dem rohen `chance`-Wert statt `realChance`, ohne Teile, Zeitgutscheine, Freischiffe und Jackpot; aus dem Code sind es 22,07 Mrd und 2.080 DM. Die 6,31 aus der Baseline waren nie falsch, sie zaehlen nur EINEN Raid. Real sind es 3,4 (zwei Spieler mit Chance 1,0, zwei Bots mit 0,7), also 21,4 Mrd/Tag und 58 % Anteil. (2) **Variante 4 allein loest die Skalierung nicht** - gemessen holt der grosse Spieler im Raid eines Bots 71,5 % des Topfes, weil die Wellenstaerke am schwachen Verteidiger haengt; Summe 2,41 Aequivalente statt der erwarteten Flachheit. Die Empfehlung im Kasten war insoweit falsch. (3) Der Loesungsansatz zum Beitrags-Massstab aus Abschnitt 2a Punkt 14 ist **schaedlich, nicht nur wirkungslos**: der absorbierte Anteil liegt im Raid bei 0,0-0,6 % statt 1,6 %, und die Normierung gaebe ihm die halbe Stimme (ein Bot mit 2,2 % ausgeteiltem Schaden kaeme auf 14,2 %). (4) Der **Schnappschuss der ersten Welle ist wirkungslos** (0,6 % gegen 0,5 %) und wirkt nur bei schwachen Konten - als Hebel fuer Verlierbarkeit ungeeignet. **Neu erkannter Zielkorridor:** 7-10 Mrd/Tag, nicht "so niedrig wie moeglich" - unter 7 Mrd ueberschreitet stattdessen das Elite-Bollwerk die 50-Prozent-Marke. **Einzige gesetzte Zahl des Pakets:** die Saettigungsgrenze `S_MAX = 1,5`. **Methodische Lehre:** die falschen Container-Werte entstanden, weil eine Zahl aus einer Beschreibung des Datenmodells gerechnet wurde statt aus dem Modell selbst - dieselbe Fehlerform wie Messregel 16, nur eine Ebene tiefer. Container-Erwartungswerte werden deshalb im neuen Skript aus `CONTAINER_TYPES` inklusive `realChance` und Jackpot berechnet, nicht gesetzt. |
 | 09.08.2026 | Erstfassung. 11 Entscheidungen, 11 Reparaturen, Reihenfolge in 5 Bloecken, 13 Messregeln. |
 | 09.08.2026 | Abschnitt 1a ergaenzt (Server-Reset als Rahmenbedingung), Entscheidung 12 (Frischling-Bonus) neu, Block F (Startphase) neu. Entscheidung 10 auf blockierend hochgestuft. Begruendung fuer Feindstaerke-Variante (b) ersetzt - die urspruengliche ("entwertet bestehende Investitionen") ist durch den Reset hinfaellig. |
 | 14.08.2026 | **Rangentscheidung zum Engpass: ZEIT ist der Haupt-Engpass, Ressourcen ein spuerbarer Neben-Engpass** (Nutzervorgabe auf direkte Nachfrage, ausgeloest durch den neuen Niveau-Punkt in Abschnitt 7). Damit ist dieser Punkt entschieden statt offen: Weg (c) mit einem Rest von (b), Weg (a) - den gerade erst gemessenen Beute-Anker wieder absenken - ist vom Tisch. **Folge fuer die Reihenfolge:** Entscheidung 9 (Block D, Schritt 14) ist damit nicht mehr eine Entscheidung unter vielen, sondern der Traeger des gesamten Spielgefuehls; was dort zu schwach kalibriert wird, faengt keine andere Stellschraube auf. Die Messlage stuetzt die Vorgabe: der Bauzeit-Multiplikator im Profil "voll" liegt bei 8,062e-8 fuer Gebaeude (praktisch augenblicklich) und 6,683e-2 fuer Schiffe, waehrend drei Bau-Lanes 36 bis 130 Mrd Wert/Tag ausstossen - Zeit bremst im Endspiel heute nur noch bei den teuersten Schiffen, sonst gar nicht. **Ausdruecklich als Widerspruch protokolliert und in Block D mitzuentscheiden:** Sind Ressourcen nie knapp, kostet ein verlorener Kampf nur Wiederaufbau-Zeit - das steht gegen die Geschmacksvorgabe "Verluste spuerbar". Entweder wird der Verlust bewusst als Zeitverlust definiert, oder die Ressourcen muessen genau an dieser Stelle doch beissen. |
