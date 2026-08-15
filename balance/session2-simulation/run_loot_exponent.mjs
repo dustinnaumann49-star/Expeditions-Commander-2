@@ -39,10 +39,16 @@ const CONTAINER_EV = { silber: 60.1e6, gold: 127.2e6, elite: 237.6e6 };
 // Elite-Bollwerk: heutige Belohnung je 6-Check-Serie und reale Frequenz (Abschnitt 1).
 const REWARD_ELITE_SERIES = 32.60e9;
 const ELITE_CADENCE_DAYS = 3;
-// Raid: NICHT die 6,31 Mrd/Tag aus der Baseline in Abschnitt 1 - die gelten laut Korrektur vom
-// 11.08.2026 (Kasten bei Entscheidung 3 / Abschnitt 7) fuer einen falsch gerechneten Einzelraid.
-// Gueltig sind 4,15 Mrd/Tag je verteidigtem Raid, 16,58 Mrd/Tag bei vier.
-const RAID_PER_DEFENDED_PER_DAY = 16.58e9 / 4;
+// Raid: KORRIGIERT am 15.08.2026 (run_raid_yield.mjs). Hier stand 16,58e9/4 = 4,145 Mrd/Tag je
+// verteidigtem Raid, uebernommen aus dem Kasten bei Entscheidung 3. Diese Zahl war zu NIEDRIG - sie
+// zaehlt nur die Container-Kategorie "Ressourcen" mit dem rohen chance-Wert. Aus dem Code gerechnet
+// (alle Kategorien mit realChance, plus Jackpot) sind es 22,07 Mrd je Raid, bei Mi+So also
+// 6,31 Mrd/Tag je verteidigtem Raid. Die 6,31 aus der Baseline in Abschnitt 1 waren nie falsch -
+// sie zaehlen nur EINEN Raid statt der real 3,4.
+// ACHTUNG: loot_exponent.txt im Repo stammt noch aus dem Lauf mit dem alten Wert. Nach der
+// Raid-Entscheidung vom 15.08.2026 (Variante 6) ist das Skript ohnehin neu zu rechnen, dann mit
+// einer eigenen Raid-Annahme fuer Variante 6 statt eines festen Werts je Raid.
+const RAID_PER_DEFENDED_PER_DAY = 6.31e9;
 // Heimatbasis: 554 Mio/Tag bei V1-Vollausbau (Abschnitt 1); frueh/mittel anteilig gesetzt.
 const BASE_INCOME = { frueh: 55e6, mittel: 300e6, spaet: 554e6 };
 // Woechentlicher Asteroiden-Event (Di/Do, x2) als Wochendurchschnitt.

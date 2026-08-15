@@ -59,3 +59,31 @@ bleiben sollten:
   Korrektur vom 11.08.2026 (4,15 Mrd/Tag je Raid), NICHT aus der Baseline-Tabelle in Abschnitt 1.
 
 Laufzeit rund 90 Sekunden bei 40 Durchlaeufen je Zelle.
+
+## Nachtrag 15.08.2026: das Raid-Paket
+
+Zwei neue Skripte fuer Block A, Schritt 3 (Entscheidung 3 und die drei daran haengenden Punkte).
+
+```
+node run_raid_yield.mjs          # M1/M4: Ertragsmodell ueber die Kontenzahl, reine Arithmetik
+node run_raid_support.mjs 5      # M2/M3: Mehrspieler-Raid, Beitragsanteile + Gewichtungs-Sweep
+```
+
+- **`run_raid_yield.mjs` rechnet die Container-Erwartungswerte AUS DEM CODE**, statt sie wie alle
+  frueheren Skripte als Setzung aus Session 1 zu uebernehmen: alle Kategorien mit ihrer
+  tatsaechlichen Auszahlungswahrscheinlichkeit (`cat.realChance`, nicht `cat.chance`) plus die
+  Jackpot-Mechanik. Ergebnis deckt sich mit den alten Setzungen auf unter 1 %. Zum Vergleich gibt
+  es die Rechnung mit aus, die im Kasten bei Entscheidung 3 verwendet wurde - sie liegt um ein
+  Drittel darunter, weil sie nur die Kategorie "Ressourcen" zaehlt. **Bei jeder kuenftigen
+  Container-Rechnung diesen Weg nehmen, nicht die Setzung.**
+- **`run_raid_support.mjs` ist der erste Mehrspieler-Kampflauf ueber `runMultiOwnerCombatInWorker`
+  in dieser Sammlung.** Die Beitragsanteile werden aus den besitzer-bewussten Schluesseln
+  `${ownerKey}:${typeId}` gelesen (README Punkt 16). An die Contributions duerfen ausschliesslich
+  reine Daten uebergeben werden, keine Funktionen - siehe README Punkt 3.
+- Beide Sweeps (`RAID_ALLY_POWER_WEIGHT`, Schnappschuss der ersten Welle) sind im Skript
+  nachgebaut, NICHT im Spielcode. `server/src` bleibt unveraendert.
+- Die entscheidende Konstellation ist **"BOT verteidigt, Spieler verstaerkt"**. Sie fehlte in der
+  ersten Fassung und kehrt das Ergebnis um: dort holt der Verstaerker 71,5 % des Beitrags, waehrend
+  er im Raid eines gleich starken Spielers nur 4,6 % bekommt. Bei kuenftigen Messungen zu
+  Mehrspieler-Belohnungen immer BEIDE Richtungen messen, nicht nur die aus Sicht des grossen
+  Accounts.
