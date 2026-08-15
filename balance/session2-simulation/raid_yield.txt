@@ -67,3 +67,16 @@ Ziel-Anteil | noetiger Ertrag Mrd/Tag | Faktor auf 10/6/2 | entspraeche etwa
 
 Lesehilfe: der Faktor gilt nur bei GENAU vier Konten. Sobald ein Konto dazukommt oder wegfaellt,
 stimmt er nicht mehr - das ist der eigentliche Befund, nicht die Hoehe.
+
+--- M4: Wirtschaftsklassen - Schmuggler haengt am Deuterium aus Raid-Containern ---
+Fall | Raid-Aequivalente | Deuterium aus Raids Mrd/Tag | Anteil am Deuterium | Schmuggler-Vorteil Mrd/Tag
+Ist-Zustand (3,4 Raids)     |              3.40 |                       1.99 |               96.0 % |                       0.92
+Variante 4 ohne Saettigung  |              2.41 |                       1.41 |               94.4 % |                       0.66
+Variante 6 mit Saettigung   |              1.20 |                       0.70 |               89.4 % |                       0.35
+Prospektor zum Vergleich: 0.22 Mrd/Tag (unveraendert, haengt nicht am Raid).
+
+--- Gemessene Beitragsanteile eingesetzt (Quelle: raid_support.txt) ---
+Eigener Raid 93.2 %, Raid des zweiten Spielers 4.6 %, Raid eines Bots 71.5 %
+Summe = 2.41 Raid-Aequivalente unter Variante 4, 1.20 unter Variante 6
+Ertrag: 15.19 Mrd/Tag gegen 7.56 Mrd/Tag
+Raid-Anteil an den Einnahmen: 49.7 % gegen 33.0 %

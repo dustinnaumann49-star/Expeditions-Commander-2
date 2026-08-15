@@ -1,0 +1,39 @@
+=== M2/M3: Raid mit Beistand - Beitragsanteile und Feindstaerke-Gewichtung ===
+12 Wellen je Raid, 5 komplette Raids je Zeile, Verteidiger-Profil "voll"
+
+--- M2: Beitragsanteile im Raid, heutiger Zustand (fremde Flotten zaehlen nicht in die Welle) ---
+Konstellation | Beteiligter | Anteil heute % | Anteil Vorschlag % | Schaden ausgeteilt Mrd | absorbiert Mrd
++ starker Verstaerker | Verteidiger | 94.7 | 91.0 | 71.72 Mrd | 0.34 Mrd
++ starker Verstaerker | Verstaerker gross | 5.3 | 9.0 | 4.02 Mrd | 0.05 Mrd
+  -> absorbierter Anteil an der Gesamtsumme: 0.5 %  (Elite-Bollwerk-Vergleichswert aus Abschnitt 2a: 1,6 %)
++ geparkte Halte-Flotte (1 Schiff) | Verteidiger | 100.0 | 100.0 | 73.88 Mrd | 0.46 Mrd
++ geparkte Halte-Flotte (1 Schiff) | Halte-Flotte 1 Schiff | 0.0 | 0.0 | 0.00 Mrd | 0.00 Mrd
+  -> absorbierter Anteil an der Gesamtsumme: 0.6 %  (Elite-Bollwerk-Vergleichswert aus Abschnitt 2a: 1,6 %)
++ reiner Tank (Bollwerk) | Verteidiger | 95.7 | 88.6 | 68.99 Mrd | 0.25 Mrd
++ reiner Tank (Bollwerk) | Tank/Bollwerk | 4.3 | 11.4 | 3.04 Mrd | 0.06 Mrd
+  -> absorbierter Anteil an der Gesamtsumme: 0.4 %  (Elite-Bollwerk-Vergleichswert aus Abschnitt 2a: 1,6 %)
+BOT verteidigt, Spieler verstaerkt | Verteidiger | 28.5 | 58.9 | 1.23 Mrd | 0.10 Mrd
+BOT verteidigt, Spieler verstaerkt | Spieler (Verstaerkung) | 71.5 | 41.1 | 3.30 Mrd | 0.01 Mrd
+  -> absorbierter Anteil an der Gesamtsumme: 2.3 %  (Elite-Bollwerk-Vergleichswert aus Abschnitt 2a: 1,6 %)
+vier Konten (2 Spieler + 2 Bots) | Verteidiger | 93.2 | 83.2 | 42.17 Mrd | 0.01 Mrd
+vier Konten (2 Spieler + 2 Bots) | zweiter Spieler | 4.6 | 2.6 | 2.09 Mrd | 0.00 Mrd
+vier Konten (2 Spieler + 2 Bots) | Bot 1 | 2.2 | 14.2 | 1.00 Mrd | 0.00 Mrd
+vier Konten (2 Spieler + 2 Bots) | Bot 2 (haltend) | 0.0 | 0.0 | 0.00 Mrd | 0.00 Mrd
+  -> absorbierter Anteil an der Gesamtsumme: 0.0 %  (Elite-Bollwerk-Vergleichswert aus Abschnitt 2a: 1,6 %)
+
+--- M3: RAID_ALLY_POWER_WEIGHT - Wirkung auf Schwierigkeit und Verluste ---
+Konstellation | Gewicht | Wellen gewonnen | Verteidiger Flottenverlust % | Anlagenverlust % | Verluste der Verbuendeten %
+allein (Referenz) | - | 12.0 | 10.1 | 0.1 | -
+vier Konten | 0.00 | 12.0 | 0.5 | 0.0 | zweiter Spieler 0.0, Bot 1 1.2, Bot 2 (haltend) 0.0
+vier Konten | 0.25 | 12.0 | 0.7 | 0.0 | zweiter Spieler 0.0, Bot 1 1.8, Bot 2 (haltend) 0.0
+vier Konten | 0.50 | 12.0 | 1.7 | 0.0 | zweiter Spieler 0.1, Bot 1 3.4, Bot 2 (haltend) 0.0
+vier Konten | 0.75 | 12.0 | 2.7 | 0.0 | zweiter Spieler 0.1, Bot 1 5.4, Bot 2 (haltend) 0.0
+vier Konten | 1.00 | 12.0 | 3.1 | 0.1 | zweiter Spieler 0.2, Bot 1 5.8, Bot 2 (haltend) 0.0
+
+--- Zusatz: Schnappschuss der ersten Welle statt Neuberechnung je Welle ---
+(Entscheidung 3, "zusaetzlich pruefen": heute korrigiert sich der Raid nach unten, weil jede Welle
+ gegen die bereits dezimierte Flotte neu bemessen wird. Frage: wird er damit ueberhaupt verlierbar?)
+Modus | Gewicht | Wellen gewonnen | Verteidiger Flottenverlust % | Anlagenverlust %
+heute (Neuberechnung) | 0.00 | 12.0 | 0.5 | 0.0
+Schnappschuss | 0.00 | 12.0 | 0.6 | 0.0
+Schnappschuss + volles Gewicht | 1.00 | 12.0 | 3.4 | 0.0

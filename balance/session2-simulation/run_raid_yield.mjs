@@ -203,6 +203,34 @@ p('');
 p('Lesehilfe: der Faktor gilt nur bei GENAU vier Konten. Sobald ein Konto dazukommt oder wegfaellt,');
 p('stimmt er nicht mehr - das ist der eigentliche Befund, nicht die Hoehe.');
 
+p('');
+p('--- M4: Wirtschaftsklassen - Schmuggler haengt am Deuterium aus Raid-Containern ---');
+// Gemessene Beitragsanteile aus raid_support.txt (M2): der Verteidiger dominiert seinen eigenen
+// Raid, der starke Verstaerker dominiert den Raid eines schwachen Bots.
+const ANTEIL_EIGENER_RAID = 0.932;
+const ANTEIL_FREMDER_SPIELER = 0.046;
+const ANTEIL_BOT_RAID = 0.715;
+const v4gemessen = ANTEIL_EIGENER_RAID + ANTEIL_FREMDER_SPIELER + 2 * ANTEIL_BOT_RAID;
+const v6gemessen = sat(v4gemessen);
+const DEUT_MINE_PRO_TAG = 82.9e6;      // Deuterium-Synthetisierer Stufe 30, Abschnitt 4b
+const SCHMUGGLER_HEUTE = 0.92e9;       // laufender Vorteil heute, Abschnitt 4b
+const PROSPEKTOR = 0.22e9;
+const deutProTag = (raidAeq) => (perRaid.deut * raidAeq * raidDaysPerWeek) / 7;
+p('Fall | Raid-Aequivalente | Deuterium aus Raids Mrd/Tag | Anteil am Deuterium | Schmuggler-Vorteil Mrd/Tag');
+[['Ist-Zustand (3,4 Raids)', raidsExpected], ['Variante 4 ohne Saettigung', v4gemessen], ['Variante 6 mit Saettigung', v6gemessen]].forEach(([label, aeq]) => {
+  const d = deutProTag(aeq);
+  const anteil = d / (d + DEUT_MINE_PRO_TAG);
+  const schmuggler = SCHMUGGLER_HEUTE * ((d + DEUT_MINE_PRO_TAG) / (deutProTag(raidsExpected) + DEUT_MINE_PRO_TAG));
+  p(`${label.padEnd(27)} | ${aeq.toFixed(2).padStart(17)} | ${mrd(d).padStart(26)} | ${(anteil * 100).toFixed(1).padStart(18)} % | ${mrd(schmuggler).padStart(26)}`);
+});
+p(`Prospektor zum Vergleich: ${mrd(PROSPEKTOR)} Mrd/Tag (unveraendert, haengt nicht am Raid).`);
+p('');
+p('--- Gemessene Beitragsanteile eingesetzt (Quelle: raid_support.txt) ---');
+p(`Eigener Raid ${(ANTEIL_EIGENER_RAID * 100).toFixed(1)} %, Raid des zweiten Spielers ${(ANTEIL_FREMDER_SPIELER * 100).toFixed(1)} %, Raid eines Bots ${(ANTEIL_BOT_RAID * 100).toFixed(1)} %`);
+p(`Summe = ${v4gemessen.toFixed(2)} Raid-Aequivalente unter Variante 4, ${v6gemessen.toFixed(2)} unter Variante 6`);
+p(`Ertrag: ${mrd(perDay(v4gemessen))} Mrd/Tag gegen ${mrd(perDay(v6gemessen))} Mrd/Tag`);
+p(`Raid-Anteil an den Einnahmen: ${((perDay(v4gemessen) / (perDay(v4gemessen) + OTHER_INCOME)) * 100).toFixed(1)} % gegen ${((perDay(v6gemessen) / (perDay(v6gemessen) + OTHER_INCOME)) * 100).toFixed(1)} %`);
+
 const text = out.join('\n');
 console.log(text);
 const fs = await import('node:fs');
