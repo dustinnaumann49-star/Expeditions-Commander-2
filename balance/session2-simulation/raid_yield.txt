@@ -1,0 +1,69 @@
+=== M1: Raid-Ertrag und seine Skalierung ueber die Zahl der Konten ===
+
+--- Container-Erwartungswerte, aus dem Code gerechnet (Wert-Einheiten) ---
+Stufe  | EV gesamt | davon Teile | ohne Teile |    DM | Deuterium | Kastenrechnung Entsch. 3
+silber |      60.1 |        15.2 |       44.9 |  0.00 |       3.4 |                     26.4
+gold   |     127.2 |        21.6 |      105.6 | 19.37 |      13.5 |                     96.4
+elite  |     237.6 |        40.4 |      197.2 | 28.55 |      27.6 |                    183.2
+(Setzung: 1 Spezialteil = 325.000 Wert-Einheiten. Zeitgutscheine mit 0 bewertet.)
+
+--- Ein vollstaendig gewonnener Raid (12 von 12 Wellen) ---
+Container: 120 Silber + 72 Gold + 24 Elite
+Wert: 22.07 Mrd  |  ohne Teile-Setzung: 17.73 Mrd  |  DM: 2080  |  Deuterium: 2.04 Mrd Einheiten
+Zum Vergleich, Rechenweg aus dem Kasten bei Entscheidung 3 (nur Ressourcen, roher chance-Wert): 14.51 Mrd
+
+--- Raids je Raid-Tag, aus dem Zeitplan im Code ---
+2 namentlich hinterlegte Spieler mit Chance 1,0 + 2 Bots mit RAID_SPAWN_CHANCE 0.7
+Erwartungswert: 3.40 Raids je Raid-Tag, 2 Raid-Tage je Woche
+
+--- Ertrag je Spieler und Tag, Ist-Zustand ---
+Konten | Raids/Tag-Mittel | Mrd/Tag | DM/Tag | Anteil an den Gesamteinnahmen
+     1 |             0.29 |    6.31 |    594 |  29.1 %
+     2 |             0.57 |   12.61 |   1189 |  45.1 %
+     3 |             0.86 |   18.92 |   1783 |  55.2 %
+   3.4 |             0.97 |   21.44 |   2021 |  58.2 %
+     4 |             1.14 |   25.23 |   2377 |  62.1 %
+     5 |             1.43 |   31.53 |   2971 |  67.2 %
+     6 |             1.71 |   37.84 |   3566 |  71.1 %
+
+--- Varianten: Ertrag je Spieler und Tag, nach Zahl der angreifbaren Konten ---
+(Raid-Aeq. = Vielfaches eines einzeln verteidigten, voll gewonnenen Raids)
+Variante                  | N=1 Mrd | N=2 Mrd | N=4 Mrd | N=6 Mrd | Zuwachs/Konto | Raid-Anteil N=4 | Elite-Anteil N=4
+V0 Ist-Zustand            |    6.31 |   12.61 |   25.23 |   37.84 |          6.31 |          62.1 % |           26.8 %
+V1 Halbierung 5/3/1       |    3.15 |    6.31 |   12.61 |   18.92 |          3.15 |          45.1 % |           38.8 %
+V2 Halter 25 %            |    6.31 |    7.88 |   11.04 |   14.19 |          1.58 |          41.8 % |           41.1 %
+V2 Halter 10 %            |    6.31 |    6.94 |    8.20 |    9.46 |          0.63 |          34.8 % |           46.1 %
+V3 Bots ohne Belohnung    |    6.31 |   12.61 |   12.61 |   12.61 |          0.00 |          45.1 % |           38.8 %
+V4 Topf, symmetrisch      |    6.31 |    6.31 |    6.31 |    6.31 |          0.00 |          29.1 % |           50.1 %
+V4 Topf, dominant 0,4     |    6.31 |    6.31 |   11.35 |   16.40 |          2.52 |          42.5 % |           40.7 %
+V4 Topf, dominant 0,6     |    6.31 |    7.57 |   15.14 |   22.70 |          3.78 |          49.6 % |           35.6 %
+V3+V4 dominant 0,6        |    6.31 |    7.57 |    7.57 |    7.57 |          0.00 |          33.0 % |           47.4 %
+V6 Topf + Saettigung 1,5  |    4.60 |    5.21 |    7.55 |    8.60 |          0.85 |          32.9 % |           47.4 %
+V6 sym. + Saettigung 1,5  |    4.60 |    4.60 |    4.60 |    4.60 |          0.00 |          23.0 % |           54.4 %
+
+Elite-Bollwerk liefert 10,87 Mrd/Tag (Baseline Abschnitt 1) und ist die zweite grosse Quelle.
+Faellt der Raid zu weit, verletzt statt seiner das Elite-Bollwerk die 50-Prozent-Marke.
+
+--- Dunkle Materie (Senke: 103/Tag) ---
+Variante                  | DM/Tag bei N=4 | Faktor gegen die Senke
+V0 Ist-Zustand            |           2870 |                   27.9
+V1 Halbierung 5/3/1       |           1682 |                   16.3
+V2 Halter 25 %            |           1533 |                   14.9
+V2 Halter 10 %            |           1266 |                   12.3
+V3 Bots ohne Belohnung    |           1682 |                   16.3
+V4 Topf, symmetrisch      |           1087 |                   10.6
+V4 Topf, dominant 0,4     |           1563 |                   15.2
+V4 Topf, dominant 0,6     |           1919 |                   18.6
+V3+V4 dominant 0,6        |           1206 |                   11.7
+V6 Topf + Saettigung 1,5  |           1204 |                   11.7
+V6 sym. + Saettigung 1,5  |            927 |                    9.0
+
+--- Welche Container-Konstante trifft welchen Zielanteil (bei N=4, Ist-Verteilung) ---
+Ziel-Anteil | noetiger Ertrag Mrd/Tag | Faktor auf 10/6/2 | entspraeche etwa
+        50 % |                   15.38 |             0.610 | 6.1/3.7/1.2
+        40 % |                   10.25 |             0.406 | 4.1/2.4/0.8
+        33 % |                    7.58 |             0.300 | 3.0/1.8/0.6
+        25 % |                    5.13 |             0.203 | 2.0/1.2/0.4
+
+Lesehilfe: der Faktor gilt nur bei GENAU vier Konten. Sobald ein Konto dazukommt oder wegfaellt,
+stimmt er nicht mehr - das ist der eigentliche Befund, nicht die Hoehe.
