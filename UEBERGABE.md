@@ -150,9 +150,18 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
+**ZUERST: R14 - RapidFire wirkt bei grossen Flotten nicht.** Nutzerfund vom 17.08.2026, gemessen
+bestaetigt (`probe_rapidfire.mjs`, Messkasten unter der Reparaturtabelle in Abschnitt 3). Dieselbe
+Flotte feuert unter der Aggregationsschwelle 2,2 bis 4,0 Schuesse je Einheit und Runde, darueber
+nur noch rund 1,0 - und jede echte Spielerflotte liegt darueber. Stiller Defekt, keine
+Balance-Frage. **Vor allen weiteren KAMPF-Messungen reparieren**, sonst misst jede weitere Zelle
+eine Engine, in der eine Kernmechanik fehlt. Achtung: die Reparatur beruehrt beide Seiten und
+verschiebt voraussichtlich die Kampfzahlen aus Block A und B.
+
+Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
 entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5. Block B ist seit dem 17.08.2026
-vollstaendig, es steht nichts mehr davor.
+vollstaendig, es steht nichts mehr davor - und 13.3 ist von R14 nicht betroffen, kann also auch
+vorgezogen werden.
 
 Zwei kleine Dinge, die aus Schritt 5 uebrig bleiben und KEINE Messung brauchen, nur eine
 Bestaetigung: der Sieg-Bonus in 4.6 (Vorschlag 2,0x statt 1,5x) und die Deckelung in 4.7 auf die
