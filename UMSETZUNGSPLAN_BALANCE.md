@@ -898,6 +898,27 @@ Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
 >   Entscheidung, keine Nebenwirkung.
 > - **Offene Luecke:** `schwach/real` bei 2x mit Deckel 300 ist nicht gemessen.
 
+> **REICHWEITE DER DECKEL-AENDERUNG - GEMESSEN AM 16.08.2026, entscheidet den Punkt.** Die Sorge,
+> ein hoeherer `MAX_ROUNDS` koennte die gerade geschlossene Baseline aus Block A umwerfen, ist
+> gegenstandslos. Reale Flotte, Profil `voll`, 40 Kaempfe je Sektor mit der jeweiligen
+> `PIRATEN_MULTIPLIER_ROLL`:
+>
+> | Sektor | Runden im Schnitt | max | am Deckel |
+> |---|---|---|---|
+> | piraten_niedrig | 14,7 | 18 | 0 % |
+> | piraten_mittel | 19,6 | 25 | 0 % |
+> | piraten_hoch | 24,6 | 32 | 0 % |
+> | piraten_elite | 35,4 | 45 | 0 % |
+>
+> **Kein anderer Inhalt im Spiel kommt dem Deckel auch nur nahe** - der Elite-Bollwerk-Kampf endet
+> im Schnitt nach 35 Runden, das Maximum ueber alle Sektoren liegt bei 45. Eine Anhebung auf 300
+> aendert ausserhalb von P10 nachweislich nichts und beruehrt weder die Baseline noch Entscheidung
+> 1, 2 oder 3. Der einzige Preis ist Rechenzeit im P10-Kampf (rund das Dreifache), und die laeuft
+> ohnehin im Worker-Thread (Punkt 2 der Code-Doku).
+> **-> EMPFEHLUNG: `MAX_ROUNDS` auf 300, danach Faktor 2,0x plus Forschungsskalierung.** Damit
+> haengt kein Ergebnis mehr an einem Abbruch vor der Entscheidung, `voll` und `mittel` erreichen
+> beide Tiefe 4,08 bei 30 % gegen 0 % Siegquote.
+
 **4.4 Boss-Mechanik statt Boss-Zahl.**
 `RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` - **beide Typen stehen nicht in
 `ADMIRAL_ALLOWED_SHIP_IDS` und koennen den Sektor gar nicht betreten.** Die Anti-Massen-Faehigkeit
@@ -1083,7 +1104,7 @@ Raid-Tag (6,31) und einer Elite-Serie (32,60) - passend zu 2 h gebundener Flotte
   festgelegt wird. Der Deckel wirkt heute als versteckte Schwierigkeits-Stellschraube und
   ausschliesslich zulasten starker Konten (bei `voll` steigt die Siegquote von 47,5 % auf 87,5 %,
   wenn er von 100 auf 1000 angehoben wird, bei `mittel` bewegt er praktisch nichts). Gemessen wird
-  ueber Messbuilds mit ersetzter kompilierter Konstante, der Quellcode bleibt dabei unberuehrt.
+  ueber Messbuilds mit ersetzter kompilierter Konstante, der Quellcode bleibt dabei unberuehrt. **Am 16.08.2026 entschieden vorbereitet:** kein anderer Sektor erreicht den Deckel (piraten_elite im Schnitt 35 Runden, Maximum 45 ueber alle Sektoren), eine Anhebung auf 300 ist damit ohne Nebenwirkung auf die Baseline aus Block A - Empfehlung 300.
 - **Stand Schritt 5 (16.08.2026):** 4.3 gemessen und mit zwei Varianten vorgeschlagen (haengt am
   Deckel), 4.5 entfaellt zugunsten der Beute-Kurve aus Entscheidung 2, 4.6 mit Vorschlag 2,0x,
   4.7 bestaetigt mit Deckelung auf den letzten ueberstandenen Check, 4.8 bestaetigt mit neuer
