@@ -1,0 +1,28 @@
+=== Piratenadmiral, Schritt 5 / M2: Boss mit Forschungsskalierung ===
+Modus "heute" = Boss umgeht getEffectiveStats() (Ist-Zustand, Vergleichswerte in admiral_strength.txt).
+Modus "forschung" = Boss-Werte zusaetzlich mit der Piraten-Forschung skaliert (PIRATE_RESEARCH_SHARE = 1,0).
+Abbruch: kumulierter WERT-Verlust >= 0.30 gegen die entsandte Flotte; contributedPower frisch je Check.
+Rundendeckel MAX_ROUNDS = 100. Eine Zelle je Aufruf, 40 Serien (Messregel 2).
+
+Modus      Profil/Flotte    Faktor  Tiefe    Sieg  Niederl.  Extrakt.  Verl.Ende  BossC1  vernicht.Macht  netto Verlust  Rundendeckel
+forschung  voll/real          1.5x   1.82   87.5%      0.0%     12.5%       4.1%   25.0%       60.82 Mrd       0.76 Mrd         25.0%
+forschung  voll/real            1x   1.00  100.0%      0.0%      0.0%       0.3%    0.0%       34.21 Mrd       0.05 Mrd          0.0%
+forschung  voll/real            2x   5.47    0.0%    100.0%      0.0%      37.6%  100.0%      133.89 Mrd       7.03 Mrd        100.0%
+forschung  voll/real         1.25x   1.00  100.0%      0.0%      0.0%       0.7%    0.0%       44.26 Mrd       0.13 Mrd          0.0%
+forschung  voll/real         1.75x   3.98   40.0%     47.5%     12.5%      20.1%   60.0%      101.65 Mrd       3.77 Mrd         60.0%
+forschung  mittel/real          1x   1.00  100.0%      0.0%      0.0%       0.5%    0.0%       29.24 Mrd       0.10 Mrd          0.0%
+forschung  mittel/real       1.25x   2.35   75.0%      2.5%     22.5%       6.8%   35.0%       52.23 Mrd       1.28 Mrd         35.0%
+forschung  mittel/real        1.5x   4.55   27.5%     60.0%     12.5%      25.1%   72.5%       92.16 Mrd       4.70 Mrd         72.5%
+forschung  mittel/real       1.75x   5.08    0.0%    100.0%      0.0%      35.9%  100.0%      104.88 Mrd       6.72 Mrd        100.0%
+forschung  schwach/real      0.75x   6.00    0.0%     42.5%     57.5%      28.0%  100.0%       60.12 Mrd       5.24 Mrd        100.0%
+forschung  schwach/real         1x   4.92    0.0%    100.0%      0.0%      38.2%  100.0%       57.26 Mrd       7.15 Mrd        100.0%
+forschung  schwach/real      1.25x   3.52    0.0%    100.0%      0.0%      40.6%  100.0%       46.48 Mrd       7.60 Mrd        100.0%
+forschung  voll/gross        1.25x   1.00  100.0%      0.0%      0.0%       1.7%    0.0%        5.23 Mrd       0.04 Mrd          0.0%
+forschung  voll/gross         1.5x   1.45   87.5%     12.5%      0.0%       7.2%   22.5%        6.27 Mrd       0.18 Mrd         22.5%
+forschung  voll/gross        1.75x   3.17   27.5%     72.5%      0.0%      26.8%   75.0%        8.57 Mrd       0.66 Mrd         75.0%
+forschung  mittel/gross       1.5x   3.23   27.5%     72.5%      0.0%      27.1%   72.5%        7.25 Mrd       0.67 Mrd         72.5%
+forschung  schwach/gross        1x   4.45    0.0%    100.0%      0.0%      37.0%  100.0%        6.18 Mrd       0.91 Mrd        100.0%
+forschung  voll/real          1.6x   2.25   77.5%      2.5%     20.0%       7.0%   35.0%       70.77 Mrd       1.31 Mrd         35.0%
+forschung  mittel/real        1.6x   5.55    0.0%     92.5%      7.5%      36.0%  100.0%      110.37 Mrd       6.72 Mrd        100.0%
+forschung  schwach/real       1.5x   2.58    0.0%    100.0%      0.0%      44.3%  100.0%       37.08 Mrd       8.28 Mrd        100.0%
+forschung  schwach/real      1.75x   1.68    0.0%    100.0%      0.0%      43.9%  100.0%       25.13 Mrd       8.20 Mrd        100.0%
