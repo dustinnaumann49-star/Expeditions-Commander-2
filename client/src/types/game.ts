@@ -339,8 +339,12 @@ export interface SkirmishSummary {
   hour: number;
   outcome: string;
   roundsFought: number;
-  npcResults: CombatUnitResult[];
-  playerResults: CombatUnitResult[];
+  // Seit 16.08.2026 optional und bei neuen Berichten immer leer: die Ergebnistabellen stehen
+  // einmal je Bericht in `CombatDetail`/`FarmDetail` statt in jedem Einzelkampf. Alte Berichte
+  // koennen sie noch tragen, bis der Server sie beim naechsten Laden eingefaltet hat.
+  // Spiegel von `server/src/game/types.ts`.
+  npcResults?: CombatUnitResult[];
+  playerResults?: CombatUnitResult[];
   rewards?: RewardSummary;
   replay?: CombatReplay;
 }
@@ -358,6 +362,9 @@ export interface FarmDetail {
   winContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
+  // Gesamttabellen ueber alle Einzelkaempfe der Mission (16.08.2026).
+  npcResults?: CombatUnitResult[];
+  playerResults?: CombatUnitResult[];
   richFinds?: RichFindEntry[];
 }
 
