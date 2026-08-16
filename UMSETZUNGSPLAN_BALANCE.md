@@ -897,6 +897,12 @@ Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
 >   Sieg). P10 wird damit endgueltig Inhalt fuer voll ausgebaute Konten. Das ist eine bewusste
 >   Entscheidung, keine Nebenwirkung.
 > - **Offene Luecke:** `schwach/real` bei 2x mit Deckel 300 ist nicht gemessen.
+> - **BESTAETIGT AM 17.08.2026 NACH 4.4: der Faktor bleibt bei 1,75x.** Mit der beschlossenen
+>   4.4-Mechanik (nur RapidFire, ohne Salve) misst sich `voll`/real auf Tiefe 3,63 und 3,83 bei
+>   42,5 und 37,5 % Sieg gegen 3,98 bei 40 % ohne sie - die Verschiebung liegt innerhalb der
+>   Streuung zweier Laeufe derselben Zelle. Die im Uebergabe-Text erwartete Absenkung unter 1,75x
+>   ist damit **nicht** eingetreten. Einzelheiten im Messkasten bei 4.4; dort steht auch der
+>   Nachteil (Extraktionsquote faellt von 12,5 auf 0-2,5 %).
 
 > **REICHWEITE DER DECKEL-AENDERUNG - GEMESSEN AM 16.08.2026, entscheidet den Punkt.** Die Sorge,
 > ein hoeherer `MAX_ROUNDS` koennte die gerade geschlossene Baseline aus Block A umwerfen, ist
@@ -927,14 +933,116 @@ Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
 > Forschungsskalierung.** Alle Messungen mit Deckel 300 in `admiral_roundcap.txt` bleiben als
 > Beleg dafuer stehen, dass die Entscheidung bewusst und nicht aus Unkenntnis getroffen wurde.
 
-**4.4 Boss-Mechanik statt Boss-Zahl.**
+**4.4 Boss-Mechanik statt Boss-Zahl - GEMESSEN UND ENTSCHIEDEN 17.08.2026.**
 `RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` - **beide Typen stehen nicht in
 `ADMIRAL_ALLOWED_SHIP_IDS` und koennen den Sektor gar nicht betreten.** Die Anti-Massen-Faehigkeit
 des Bosses hat null erreichbare Ziele.
--> Umstellen auf `{ kreuzer: 5, schlachtschiff: 5, bomber: 5, schlachtkreuzer: 4, zerstoerer: 4,
-reaper: 3 }` und `piratenadmiral` in `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen.
--> **Danach zwingend gegenmessen**: Mehrfachziel-Salve zusammen mit Entscheidung 1 kann sehr stark
-ausfallen.
+-> **BESCHLOSSEN: RapidFire umstellen auf `{ kreuzer: 5, schlachtschiff: 5, bomber: 5,
+schlachtkreuzer: 4, zerstoerer: 4, reaper: 3 }`. Die Mehrfachziel-Salve wird VERWORFEN -
+`piratenadmiral` kommt NICHT in `MULTI_TARGET_VOLLEY_SHIPS`, und `ZIELERFASSUNG_BASE` bekommt
+KEINEN Eintrag fuer ihn.** Begruendung im Messkasten.
+-> **Der fehlende `ZIELERFASSUNG_BASE`-Eintrag ist ab sofort eine tragende Setzung, keine Luecke.**
+Er ist der einzige Grund, warum die Salve nicht feuert. Er sieht wie genau die Sorte stiller
+Ausweichwert aus, die Messregel 15 beschreibt, und muss im Code als bewusst ausgelassen
+kommentiert werden - sonst traegt ihn eine spaetere Aufraeumrunde nach und sprengt die Balance
+lautlos.
+
+> **SCHRITT 5 - GEMESSEN AM 17.08.2026** (`run_aggregate_threshold.mjs` und neu
+> `run_aggregate_threshold_44.mjs` -> `aggregate_threshold_44.txt`, `run_admiral_bossscale.mjs`
+> -> `admiral_bossscale_44.txt`, Beleg `probe_admiral_shots.mjs`). 40 Laeufe je Zelle, Messbuilds
+> ueber `make_messbuild_44.mjs` nach dem Verfahren von M3 - der Quellcode blieb unberuehrt.
+> Gemessene Varianten: **V1** nur RapidFire, **V2** V1 + Salve + `ZIELERFASSUNG_BASE` 0,35,
+> **V3** wie V2 mit RapidFire ueber alle zehn erlaubten Typen, **V2b** wie V2 mit 0,55.
+>
+> **(1) Der Vorschlag besteht aus ZWEI Wirkpfaden voellig verschiedener Groessenordnung, und einer
+> davon war im Plan gar nicht sichtbar.** Die Mehrfachziel-Salve haengt an
+> `getZielerfassungAccuracy()`, und die liefert **0**, wenn der Schuetzentyp keinen Eintrag in
+> `ZIELERFASSUNG_BASE` hat - `piratenadmiral` hat keinen. **Der Eintrag in
+> `MULTI_TARGET_VOLLEY_SHIPS` allein waere toter Code gewesen.** Gemessen, ein Kampf je Variante:
+>
+> | Variante | Zielerfassung | Schuesse je Runde | Runden bis Ende |
+> |---|---|---|---|
+> | V0 (heute) | 0,00 | **1,0** | 100 (Deckel) |
+> | V1 (nur RapidFire) | 0,00 | 5,3 | 48 |
+> | V2 (+ Salve) | 0,95 | 39,0 | **2** |
+> | V3 (Salve, zehn Typen) | 0,95 | 47,5 | **2** |
+>
+> **Der Boss feuert heute exakt einen Schuss je Runde** - seine RF-Ziele sind nicht erreichbar,
+> also gibt es auch keinen einzigen Folgeschuss. Die 5,3 bei V1 sind der Erwartungswert der
+> Folgeschuss-Kette bei RF 5 (1/(1-0,8) = 5). Die 0,95 bei V2/V3 sind Basis 0,35 plus 0,06 je
+> Forschungsstufe, die der Boss ueber `PIRATE_RESEARCH_SHARE = 1,0` mitbekommt - der Basiswert
+> selbst ist deshalb fast gleichgueltig (V2b mit 0,55 misst sich identisch).
+>
+> **(2) Die Salve ist mit KEINEM Gegnerstaerke-Faktor kalibrierbar.** `voll`/real, volle Serie:
+>
+> | Faktor | V2: Tiefe | Sieg | Niederlage | Verlust am Ende |
+> |---|---|---|---|---|
+> | 0,1x | 1,00 | 100 % | 0 % | 3,5 % |
+> | 0,25x | 1,00 | 100 % | 0 % | 10,8 % |
+> | 0,5x | 1,00 | 100 % | 0 % | 23,7 % |
+> | 0,75x | 1,00 | 7,5 % | 92,5 % | 42,4 % |
+> | 1x | 1,00 | 0 % | 100 % | 43,5 % |
+> | 1,75x | 1,00 | 0 % | 100 % | 45,3 % |
+>
+> **Die Check-Tiefe bleibt ueber den gesamten Suchraum bei 1,00**, und zwischen 0,5x und 0,75x
+> kippt der Ausgang von 100 % Sieg auf 92,5 % Niederlage. Das ist exakt die
+> Alles-oder-Nichts-Eigenschaft, an der `ADMIRAL_STAT_SHARE` schon gescheitert ist: die Salve
+> entscheidet den Kampf in Runde 1-2, und ein Inhalt, der vor Check 2 entschieden ist, kann die
+> Zieltiefe 3-5 grundsaetzlich nicht erreichen. V3 ist noch haerter (51-52,5 % Wertverlust je
+> Check), weil der Boss dann zusaetzlich Imperator und Salvenschiffe trifft, also die teuersten
+> Einzelschiffe der Flotte.
+>
+> **(3) Die Faehigkeit ist strukturell nicht anti-Masse, sondern anti-klein.** Die Verluste je
+> Runde sind doppelt gedeckelt: der Overkill-Deckel (Entscheidung 1) begrenzt EINEN Treffer auf
+> rund fuenf Einheiten, `MAX_SHOTS_PER_UNIT` die Schuesse auf 50. Damit steht eine ABSOLUTE
+> Obergrenze an Abschuessen je Runde, deren ANTEIL mit wachsender Flotte faellt. Mischflotte,
+> Faktor 1,75x, V1:
+>
+> | Flotte (Stueck) | V0 Verlust | V1 Verlust |
+> |---|---|---|
+> | 405 | 65,9 % | **100 %** |
+> | 456 | 52,7 % | 100 % |
+> | 1.800 | 10,6 % | 57,6 % |
+> | 4.500 | 2,4 % | **16,5 %** |
+>
+> Der Code-Kommentar bei `RAPIDFIRE.piratenadmiral` beschreibt die Absicht als "bestraft Masse an
+> kleinen Schiffen ganz natuerlich" - **gemessen bewirkt die Mechanik das Gegenteil.** Dieselbe
+> Umkehrung wie bei `ADMIRAL_STAT_SHARE` (15.08.2026) und aus derselben Ursache: seit dem
+> Overkill-Deckel zahlt sich konzentrierter Einzelschaden gegen grosse Stapel nicht mehr aus.
+> Bestaetigt an der Gegenprobe `voll`/gross bei 1,75x: Tiefe 3,17 -> **1,05**, Sieg 27,5 -> 17,5 %,
+> waehrend dieselbe Aenderung bei `voll`/real fast nichts bewegt.
+>
+> **(4) An der Aggregationsschwelle gibt es keine Klippe** (Messregel 13 erfuellt). Mischflotte,
+> Aggregation setzt zwischen 99 und 101 fuer alle sechs Typen gleichzeitig ein: V0 57,6 -> 52,7 %,
+> V1 100 -> 100 %. **Der Einzeltyp-Aufbau des Altskripts taugt fuer diese Frage nicht mehr**: bei
+> nur einem Schiffstyp ist die Salve definitionsgemaess wirkungslos (V1/V2/V3/V2b messen sich dort
+> auf die Nachkommastelle gleich), und ab V1 sind alle Zellen bis 150 Kreuzer mit 100 % Verlust
+> saturiert. Deshalb der Mischflotten-Aufbau in `run_aggregate_threshold_44.mjs`.
+>
+> **(5) Der Faktor aus 4.3 bleibt bei 1,75x.** `voll`/real mit V1, zwei unabhaengige Laeufe:
+> Tiefe **3,63** und **3,83** bei 42,5 % und 37,5 % Sieg - gegen 3,98 bei 40 % ohne 4.4. Die
+> Erwartung, 4.4 hebe die effektive Gegnerstaerke spuerbar, hat sich fuer die reale Flotte **nicht
+> bestaetigt**; die Verschiebung liegt innerhalb der Streuung zweier Laeufe derselben Zelle.
+> Nachbarzellen mit V1: 1,25x -> Tiefe 1,00 (100 % Sieg), 1,5x -> 2,35 (80 %), 1,6x -> 2,40 (75 %).
+> **Ausdruecklicher Nachteil:** die Extraktionsquote faellt von 12,5 % auf 0-2,5 %. Mehr Serien
+> enden am Verlust-Kriterium statt an einer Spielerentscheidung - die Extraktion bleibt damit
+> schwaecher, als 4.3 sie haben wollte.
+>
+> **(6) Die offene Luecke ist geschlossen.** `schwach`/real bei 1,75x **mit** der 4.4-Mechanik:
+> Tiefe **1,52**, 0 % Sieg, 43,2 % Verlust (ohne 4.4: Tiefe 1,68). `mittel` ist praktisch
+> unberuehrt (1,5x: 4,22 gegen 4,55, beide 27,5 % Sieg; 1,75x: 4,63 gegen 5,08, beide 0 % Sieg).
+>
+> **Warum trotzdem umstellen und nicht alles lassen:** eine Faehigkeit, die auf Ziele zeigt, die
+> den Sektor nicht betreten duerfen, ist ein stiller Ausweichwert (Messregel 15) und faellt beim
+> naechsten Lesen des Codes wieder als Defekt auf. V1 kostet fuer die reale Flotte nichts an
+> Kalibrierung und macht den Boss fuer kleinere Flotten spuerbar gefaehrlicher - was zum bereits
+> beschlossenen Charakter von P10 als Endspiel-Inhalt passt.
+> **Nachteil, ausdruecklich genannt:** mit sechs statt zehn RF-Typen werden Imperator,
+> Salvenkreuzer, Salvendreadnought und Sandronator vom Boss praktisch nicht mehr beschossen,
+> sobald ein Standardtyp praesent ist - bei nicht leerem RF-Pool zielt er ausschliesslich daraus.
+> Eine reine Spezialschiff-Flotte umgeht die Faehigkeit vollstaendig. Das wird bewusst in Kauf
+> genommen (zehn Typen kosten gemessen 51-52,5 % Wertverlust je Check); **der Gegenzug, falls es
+> ausgenutzt wird, ist ein RF-Eintrag mit niedrigem Wert fuer diese vier Typen, nicht die Salve.**
 
 **4.5 Belohnung proportional statt fest.**
 `ADMIRAL_EXTRACTION_BASE` und `ADMIRAL_EXTRACTION_GROWTH_PER_CHECK` entfallen, ersetzt durch
@@ -1114,12 +1222,19 @@ Raid-Tag (6,31) und einer Elite-Serie (32,60) - passend zu 2 h gebundener Flotte
   ausschliesslich zulasten starker Konten (bei `voll` steigt die Siegquote von 47,5 % auf 87,5 %,
   wenn er von 100 auf 1000 angehoben wird, bei `mittel` bewegt er praktisch nichts). Gemessen wird
   ueber Messbuilds mit ersetzter kompilierter Konstante, der Quellcode bleibt dabei unberuehrt. **Am 16.08.2026 entschieden vorbereitet:** kein anderer Sektor erreicht den Deckel (piraten_elite im Schnitt 35 Runden, Maximum 45 ueber alle Sektoren), eine Anhebung auf 300 ist damit ohne Nebenwirkung auf die Baseline aus Block A - Empfehlung 300.
-- **Stand Schritt 5 (16.08.2026):** 4.3 gemessen und entschieden (Deckel 100, Faktor 1,75x plus
-  Boss-Forschungsskalierung), 4.5 entfaellt zugunsten der Beute-Kurve aus Entscheidung 2, 4.6 mit Vorschlag 2,0x,
-  4.7 bestaetigt mit Deckelung auf den letzten ueberstandenen Check, 4.8 bestaetigt mit neuer
-  Begruendung. **Offen bleibt 4.4** (Boss-RapidFire und Mehrfachziel-Salve) - die Gegenmessung mit
-  `run_aggregate_threshold.mjs` steht noch aus und hebt die effektive Gegnerstaerke, verschiebt
-  den in 4.3 vorgeschlagenen Faktor also erneut.
+- `run_aggregate_threshold.mjs` gegen den Boss MIT Mehrfachziel-Salve. **Erledigt am 17.08.2026 -
+  mit einem Befund zum Messwerkzeug selbst:** der Einzeltyp-Aufbau des Skripts kann die Salve
+  grundsaetzlich nicht abbilden (sie trifft je ein Exemplar PRO Typ, bei einem Typ ist das ein
+  normaler Treffer) und ist ab der 4.4-Mechanik ausserdem saturiert. Dafuer gibt es jetzt
+  `run_aggregate_threshold_44.mjs` mit Mischflotte. **Wer kuenftig eine Mehrfachziel-Faehigkeit
+  misst, braucht mehrere Zieltypen in der Testflotte** - sonst misst er sie gar nicht.
+- **SCHRITT 5 GESCHLOSSEN am 17.08.2026.** 4.3 entschieden (Deckel 100, Faktor 1,75x plus
+  Boss-Forschungsskalierung, nach 4.4 gegengemessen und bestaetigt), **4.4 entschieden**
+  (RapidFire umstellen, Mehrfachziel-Salve verworfen), 4.5 entfaellt zugunsten der Beute-Kurve aus
+  Entscheidung 2, 4.6 mit Vorschlag 2,0x, 4.7 bestaetigt mit Deckelung auf den letzten
+  ueberstandenen Check, 4.8 bestaetigt mit neuer Begruendung. Damit ist **Block B vollstaendig**.
+  Offen bleiben nur die beiden Vorschlaege 4.6 und 4.7, die keine weitere Messung brauchen,
+  sondern eine Bestaetigung.
 
 ---
 
@@ -3559,6 +3674,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 17.08.2026 | **Block B, Schritt 5 geschlossen: Entscheidung 4.4 gemessen und entschieden, Faktor aus 4.3 gegengemessen und bestaetigt. Block B ist damit vollstaendig.** Neu: `run_aggregate_threshold_44.mjs` (Mischflotte), `make_messbuild_44.mjs` (Messbuilds V1/V2/V3/V2b nach dem Verfahren von M3), `probe_admiral_shots.mjs`; Ausgaben in `aggregate_threshold_44.txt` und `admiral_bossscale_44.txt`. 40 Laeufe je Zelle, Quellcode unberuehrt. **Entschieden: RapidFire des Bosses auf die sechs Standardtypen aus `ADMIRAL_ALLOWED_SHIP_IDS` umstellen, die Mehrfachziel-Salve VERWERFEN.** **Fuenf Befunde, die den Plan korrigieren.** (1) **Der Vorschlag in 4.4 bestand aus zwei Wirkpfaden, von denen einer im Plan gar nicht sichtbar war und der andere ohne eine dritte, nirgends erwaehnte Aenderung wirkungslos geblieben waere.** Die Mehrfachziel-Salve haengt an `getZielerfassungAccuracy()`, die ohne `ZIELERFASSUNG_BASE`-Eintrag **0** liefert - `piratenadmiral` hat keinen. Der Eintrag in `MULTI_TARGET_VOLLEY_SHIPS` allein waere toter Code gewesen. Gemessen feuert der Boss heute **exakt einen Schuss je Runde** (RF-Ziele nicht erreichbar, also kein einziger Folgeschuss), mit umgestelltem RapidFire 5,3 und mit Salve 39-47,5. (2) **Die Salve ist mit keinem Gegnerstaerke-Faktor kalibrierbar:** die Check-Tiefe bleibt von 0,1x bis 1,75x konstant bei 1,00, und zwischen 0,5x und 0,75x kippt der Ausgang von 100 % Sieg auf 92,5 % Niederlage. Der Kampf ist nach zwei Runden entschieden - die Zieltiefe 3-5 ist damit grundsaetzlich unerreichbar. Dieselbe Alles-oder-Nichts-Eigenschaft wie bei `ADMIRAL_STAT_SHARE`. (3) **Die Faehigkeit ist strukturell anti-klein statt anti-Masse.** Overkill-Deckel (fuenf Einheiten je Treffer) und `MAX_SHOTS_PER_UNIT` (50) setzen eine ABSOLUTE Obergrenze an Abschuessen je Runde; ihr Anteil faellt mit wachsender Flotte. Gemessen 100 % Verlust bei 405 Schiffen gegen 16,5 % bei 4.500. Der Code-Kommentar ("bestraft Masse an kleinen Schiffen ganz natuerlich") beschreibt damit das Gegenteil des tatsaechlichen Verhaltens. (4) **Der Faktor aus 4.3 bleibt bei 1,75x** - die im Uebergabe-Text erwartete Absenkung ist nicht eingetreten: `voll`/real misst sich mit 4.4 auf Tiefe 3,63/3,83 bei 42,5/37,5 % Sieg gegen 3,98 bei 40 % ohne, also innerhalb der Streuung zweier Laeufe derselben Zelle. Nachteil: die Extraktionsquote faellt von 12,5 auf 0-2,5 %. Offene Luecke geschlossen: `schwach`/real bei 1,75x mit 4.4 ergibt Tiefe 1,52 (ohne: 1,68). (5) **Befund am Messwerkzeug:** `run_aggregate_threshold.mjs` stellt dem Boss eine Flotte aus EINEM Typ gegenueber und kann eine Mehrfachziel-Faehigkeit deshalb prinzipiell nicht messen (V1/V2/V3/V2b liegen dort auf die Nachkommastelle gleich); ab der 4.4-Mechanik sind seine Zellen zusaetzlich saturiert. **Nebenbefund zu einer bestehenden Messdatei:** `run_admiral_roundcap.mjs` rechnet mit `metall + kristall + 2 x deuterium`, `TRADE_VALUE` im Code ist `1 / 1,5 / 3`. Die Messflotte kommt dadurch auf 21,57 statt 26,72 Mrd; die Spalte "netto Verlust" in `admiral_roundcap.txt` ist um rund 19 % zu niedrig. Die Deckel-Aussage bleibt gueltig (innerhalb der Datei dieselbe Formel), aber die dortige Zelle Deckel 100 / 1,75x ist nicht direkt mit `admiral_bossscale.txt` vergleichbar - die Differenz Tiefe 3,63 gegen 3,98 ist Streuung, kein Formelfehler. **Methodische Lehre:** eine Faehigkeit, die aus mehreren Bedingungen besteht, muss VOR der Messung im Code auf alle Bedingungen geprueft werden; hier haette die im Plan beschriebene Aenderung zur Haelfte gar nicht gewirkt und waere als "gemessen und harmlos" ins Protokoll gegangen. |
 | 16.08.2026 | **`MAX_ROUNDS` bleibt bei 100 - Nutzerentscheidung, letzter Blocker von 4.3 damit weg.** Die Messung hatte gezeigt, dass der Rundendeckel heute balance-relevant ist und ungleich wirkt (bei `voll` steigt die Siegquote von 47,5 auf 87,5 %, wenn er auf 1000 geht, bei `mittel` bewegt er nichts), und eine Anhebung auf 300 waere ohne Nebenwirkung auf die Baseline moeglich gewesen (kein anderer Sektor kommt dem Deckel nahe, Elite-Bollwerk im Schnitt 35 Runden). **Der Nutzer hat sich bewusst dagegen entschieden:** OGame-basierte Spiele begrenzen ueblicherweise auf 6-8 Runden, 100 ist im Vergleich sehr grosszuegig. Damit ist der Deckel kein Artefakt und kein Sicherheitsnetz, sondern eine Gestaltungsentscheidung - wer den Boss nicht im Gefechtsfenster kleinbekommt, bekommt ihn nicht. Zweiter Grund: 300 Runden verdreifachen die Rechenzeit je P10-Kampf, was die (normalen, erwarteten) CPU-Spitzen im Worker-Thread entsprechend verlaengert haette. **Folge: 4.3 steht auf Faktor 1,75x plus Forschungsskalierung des Bosses**, `voll` erreicht damit Check-Tiefe 3,63-3,98 bei 40-47 % Sieg, 35-48 % Abbruch und 12-18 % Extraktion. |
 | 16.08.2026 | **Block B, Schritt 5 gemessen: Entscheidung 4.3 bis 4.8.** Drei neue Skripte (`run_admiral_strength.mjs`/`admiral_strength.txt`, `run_admiral_bossscale.mjs`/`admiral_bossscale.txt`, `run_admiral_roundcap.mjs`/`admiral_roundcap.txt`) plus die Ertragsrechnung `run_admiral_economics.mjs`/`admiral_economics.txt`; 40 Serien je Zelle, Faktorschritte von hoechstens 0,5x, volle Serie statt nur Check 1. **Vier Befunde, die den Plan korrigieren.** (1) **Ein einzelner Gegnerstaerke-Faktor kann die Zieltiefe 3-5 nicht treffen.** Ueber die volle Serie liegt das brauchbare Fenster bei `voll` zwischen 2,5x und 3,5x, bei `mittel` zwischen 1,5x und 2,0x, `schwach` verliert schon bei 1,0x - die Fenster ueberlappen nicht. Die Check-Tiefe ist dabei **nicht monoton**: mehr Gegnerstaerke macht die Serie kuerzer, weil bereits Check 1 die 30-%-Schwelle reisst. Abschnitt G von `admiral_defeat.txt` konnte das nicht zeigen, weil er nur Check 1 misst. (2) **Der fehlende Hebel ist die Forschungsskalierung des Bosses** - bisher als Randnotiz unter "Ausserdem" gefuehrt. `sideBStatsOverride` umgeht `getEffectiveStats()`: die Eskorte bekommt ueber `PIRATE_RESEARCH_SHARE = 1,0` den vollen Forschungsstand, der Boss nicht. Mit Skalierung schrumpft die Spanne zwischen den Ausbaustaenden von rund 4:1 auf rund 1,5:1, und ein Faktor von 1,75x (Deckel 100) bzw. 2,0x (Deckel 300) trifft die Zieltiefe mit einer echten Mischung der Ausgaenge. (3) **`MAX_ROUNDS = 100` ist heute eine balance-relevante Konstante und wirkt ungleich** - bei `voll` steigt die Siegquote von 47,5 % auf 87,5 %, wenn der Deckel von 100 auf 1000 angehoben wird, bei `mittel` bewegt er praktisch nichts. Ein gegen Deckel 100 kalibrierter Faktor ist gegen ein Artefakt kalibriert; der Deckel gehoert vor 4.3 entschieden. Gemessen ueber Messbuilds mit ersetzter kompilierter Konstante, Quellcode unberuehrt. (4) **4.5 entfaellt: ein freier K widerspricht Entscheidung 2.** Deren Geltungsbereich schliesst `groupOps.ts` ein, P10 laeuft dort - ein linearer `ADMIRAL_LOOT_PER_DESTROYED_POWER` waere die einzige ungedaempft mit der Flottengroesse wachsende Einnahme im Spiel. Mit der Beute-Kurve gerechnet: die vernichtete Feindmacht vervierfacht sich (22,6 -> 110 Mrd), die Beute steigt nur um Faktor 3,4, der Verlust dagegen linear - je haerter der Boss, desto schlechter das Geschaeft, fuer `mittel` und `schwach` sogar negativ. Der Break-even-Befund aus Schritt 4 ist damit gegenstandslos, die Risikopraemie muss vollstaendig ueber 4.6 kommen (Vorschlag: 2,0x statt 1,5x). **Nebenbefunde:** die "3,8 h Hinflug" in 4.8 sind keine Konstante, sondern `galaxyDurationMs()` am langsamsten Schiff - in beiden Messflotten der Imperator (speed 100), Ergebnis 0,08 bis 0,82 h je nach Distanz und damit 9 bis 21 moegliche Durchlaeufe/Tag; das Kampffenster sind 6 x 10 min = 1 h, nicht die 4 h aus `PIRATEN_CHECK_INTERVAL_MS`. Ohne jeden Cooldown liegt P10 mit der Beute-Kurve bei 12 Mrd/Tag statt der frueher gerechneten 134 - der Cooldown bleibt richtig, ist aber eine Geschmacksentscheidung und keine Notbremse mehr. **Methodische Lehre:** eine Orientierungsmessung an einem einzelnen Check darf nicht als Rahmen fuer eine Serien-Entscheidung verwendet werden; sie hat hier einen Kippbereich von 2x-4x ausgewiesen, wo der tatsaechliche bei 1,25x-2x liegt. |
 | 15.08.2026 | **Block B, Schritt 4 geschlossen: Entscheidung 4.1 (Verlust-Kriterium) und 4.2 (contributedPower-Freeze) zusammen.** Neues Skript `run_admiral_defeat.mjs`/`admiral_defeat.txt`; `run_admiral_rebalance.mjs`/`admiral_rebalance.txt` umgebaut auf alle vier Ausbau-Profile, kumuliertes Verlustkriterium und frische Machtberechnung. 40 Durchlaeufe je Zelle, Schwellen nachtraeglich auf denselben Ziehungen ausgewertet (Methode aus `run_loot_exponent.mjs`). **Entschieden: Verlustmass ist der kumulierte WERT-Anteil gegen die entsandte Flotte, `ADMIRAL_DEFEAT_LOSS_SHARE = 0,30` statt der vorgeschlagenen 0,45; `contributedPower` wird je Check frisch aus der ueberlebenden Flotte berechnet.** **Vier Befunde, die den Plan korrigieren.** (1) **Die Diagnose zu 4.1 war ueberholt:** `result.retreated` ist nicht in 77-100 % der Kaempfe gesetzt, sondern in **0,0 %** bei `voll`/`voll_noboost`/`mittel` und 0-5 % bei `schwach`. Ursache ist der Overkill-Deckel vom 10.08.2026, der den Verlust je Check auf 0,3-1,1 % drueckt; unterhalb von 21 % zerstoerter Flotte setzt der gestaffelte Rueckzug gar nicht ein. Alle drei Admiral-Messdateien stammten vom 08.08.2026 und damit von vor dem Deckel und vor der Klassen-Neuaustarierung. (2) **Check 2 wird weiterhin nie erreicht, aber aus dem umgekehrten Grund:** der Boss stirbt in Check 1 mit 100 % Wahrscheinlichkeit bei 0,3-1,1 % Flottenverlust. **4.1 und 4.2 aendern daran nichts** - keine Schwelle zwischen 0,30 und 0,60 und kein Modus bewegt eine einzige Zelle der drei realistischen Profile. Die Ziel-Check-Tiefe 3-5 ist ueber diesen Schritt nicht erreichbar. (3) **4.3 hat das Vorzeichen gewechselt:** ein hoeherer `ADMIRAL_STAT_SHARE` macht den Gegner SCHWAECHER (reale Flotte, `voll`: 0,43 Mrd Verlust bei 0,25 gegen 0,00 Mrd bei 0,90), weil der Overkill-Deckel den einen grossen Schuss kappt, waehrend dieselbe Macht auf Eskortschiffe verteilt viele ungedeckelte Schuesse ergibt. Auch 0,25 endet zu 100 % mit Sieg in Check 1 - die Konstante ist als Hebel unbrauchbar geworden. Orientierungsmessung ergaenzt: der brauchbare Bereich liegt zwischen dem **Zwei- und dem Vierfachen** der heutigen Gegnerstaerke, und dazwischen kippt es abrupt von 3 % auf 28-47 % Verlust - dieselbe Alles-oder-Nichts-Eigenschaft wie bei der Raid-Wellenstaerke. (4) **Die Zahlen in 4.5 und 4.8 sind gegen die neuen Rohwerte gestellt:** vernichtete Feindmacht rund 22 Mrd je Durchlauf, Netto-Verlust 0,05-0,15 Mrd, Break-even-K damit 0,0023-0,0099 - der vorgeschlagene K = 0,5 liegt um Faktor 50 bis 200 darueber. Zwoelf Durchlaeufe/Tag waeren bei K = 0,5 **134 Mrd/Tag**, also das 1,7-fache aller uebrigen Einnahmen im spaeten Ausbaustand (76,85) und das 2,4-fache des Elite-Bollwerks. **Methodische Lehre:** die Schwelle wird erst NACH einem vollstaendigen Check geprueft und deshalb systematisch um 7-9 Prozentpunkte ueberschossen - eine Abbruchschwelle ist nicht der Verlust, den man bekommt. |

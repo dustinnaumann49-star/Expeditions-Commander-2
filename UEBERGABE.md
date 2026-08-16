@@ -30,10 +30,10 @@ das passt nicht gleichzeitig in eine Session.
   Abschnitt 7**.
 - **BLOCK B, SCHRITT 4 IST GESCHLOSSEN** (15.08.2026): Entscheidung 4.1 (Verlust-Kriterium) und
   4.2 (contributedPower-Freeze).
-- **BLOCK B, SCHRITT 5 IST GEMESSEN, ABER NOCH NICHT GESCHLOSSEN** (16.08.2026). 4.3 hat eine
-  Empfehlung mit Messlage, 4.5 entfaellt, 4.6/4.7/4.8 haben Vorschlaege. **Offen ist allein 4.4**
-  (Boss-RapidFire und Mehrfachziel-Salve) - und weil 4.4 die effektive Gegnerstaerke hebt, muss
-  der Faktor aus 4.3 danach noch einmal nachgezogen werden. Einzelheiten unten.
+- **BLOCK B IST VOLLSTAENDIG** (17.08.2026). Schritt 5 ist geschlossen: 4.3 steht auf Faktor 1,75x
+  plus Boss-Forschungsskalierung (nach 4.4 gegengemessen und bestaetigt), **4.4 ist entschieden**
+  (RapidFire umstellen, Mehrfachziel-Salve verworfen), 4.5 entfaellt, 4.6/4.7/4.8 haben
+  Vorschlaege, die keine Messung mehr brauchen. Einzelheiten unten.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -121,6 +121,17 @@ von `admiral_defeat.txt` misst nur Check 1 und wies einen Kippbereich von 2x bis
 volle Serie liegt er bei 1,25x bis 2x. Am 16.08.2026 waere fast gegen den falschen Bereich
 kalibriert worden.
 
+**Eine Faehigkeit aus mehreren Bedingungen vor der Messung auf ALLE Bedingungen pruefen.** Die in
+4.4 beschriebene Aenderung haette zur Haelfte gar nicht gewirkt: die Mehrfachziel-Salve braucht
+neben dem Eintrag in `MULTI_TARGET_VOLLEY_SHIPS` und der RapidFire-Tabelle noch einen
+`ZIELERFASSUNG_BASE`-Eintrag, den der Boss nicht hat - ohne ihn ist die Trefferchance 0. Ohne die
+Code-Pruefung waere das als "gemessen und harmlos" ins Protokoll gegangen.
+
+**Eine Mehrfachziel-Faehigkeit braucht mehrere Zieltypen in der Testflotte.**
+`run_aggregate_threshold.mjs` stellt dem Boss 90 bis 400 Kreuzer gegenueber - bei einem einzigen
+Typ ist die Salve definitionsgemaess ein normaler Treffer. Vier Varianten massen sich dort auf die
+Nachkommastelle gleich, obwohl sie in der Mischflotte um Faktor 20 auseinanderliegen.
+
 **Vor dem Kalibrieren pruefen, ob eine Sicherheitskonstante mitentscheidet.** `MAX_ROUNDS` galt als
 reines Sicherheitsnetz und war tatsaechlich der Grund, warum starke Konten den Boss nicht toeteten.
 Ein Faktor, der dagegen kalibriert wird, ist gegen ein Artefakt kalibriert.
@@ -139,20 +150,13 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block B, Schritt 5 zu Ende bringen: Entscheidung 4.4, danach den Faktor aus 4.3 nachziehen.**
-Alles andere in Schritt 5 ist gemessen und mit Vorschlag versehen.
+**Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
+entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5. Block B ist seit dem 17.08.2026
+vollstaendig, es steht nichts mehr davor.
 
-1. **4.4 messen.** `RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` zeigt auf zwei
-   Schiffstypen, die den Sektor gar nicht betreten duerfen - die Anti-Massen-Faehigkeit des Bosses
-   hat null erreichbare Ziele. Umstellen auf die tatsaechlich erlaubten Typen und `piratenadmiral`
-   in `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen, dann gegen `run_aggregate_threshold.mjs` an beiden
-   Seiten der Aggregationsschwelle gegenmessen.
-2. **Faktor nachziehen.** 4.4 hebt die effektive Gegnerstaerke, also `run_admiral_bossscale.mjs`
-   bei Deckel 100 noch einmal um 1,75x herum laufen lassen. Dabei faellt die eine offene Luecke mit
-   ab: `schwach/real` bei 1,75x ist nur ohne die 4.4-Mechanik gemessen (Tiefe 1,68).
-3. **Schritt 5 schliessen**, Protokolleintrag mit den Endwerten.
-4. Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der
-   Aufruf-Haeufigkeit entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5.
+Zwei kleine Dinge, die aus Schritt 5 uebrig bleiben und KEINE Messung brauchen, nur eine
+Bestaetigung: der Sieg-Bonus in 4.6 (Vorschlag 2,0x statt 1,5x) und die Deckelung in 4.7 auf die
+bis zum letzten UEBERSTANDENEN Check gesicherte Beute.
 
 **Messaufwand:** die Sweeps vom 16.08.2026 liefen bei Deckel 100 in etwa fuenf Minuten - da der
 Deckel bei 100 bleibt, gilt das weiter. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
@@ -163,6 +167,34 @@ Die Baseline: die 21,69 Mrd/Tag aus Abschnitt 1 sind ueberholt. Gemessen sind
 **0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und spaeten Ausbaustand (inklusive
 Allianz-Station, die in der alten Referenztabelle fehlte); davon stellt das Elite-Bollwerk im
 spaeten Stand 56,58 Mrd/Tag.
+
+## Was 4.4 am 17.08.2026 ergeben hat
+
+Vollstaendig im Messkasten bei Entscheidung 4.4. Messdateien: `aggregate_threshold_44.txt`,
+`admiral_bossscale_44.txt`. Neue Skripte: `make_messbuild_44.mjs`, `run_aggregate_threshold_44.mjs`,
+`probe_admiral_shots.mjs`.
+
+- **Entschieden: RapidFire des Bosses auf die sechs Standardtypen umstellen, die
+  Mehrfachziel-Salve VERWERFEN.** Der Faktor aus 4.3 bleibt bei 1,75x.
+- **Der Plan-Vorschlag hatte eine unsichtbare dritte Bedingung.** Die Salve haengt an
+  `getZielerfassungAccuracy()`, die ohne `ZIELERFASSUNG_BASE`-Eintrag 0 liefert - der Boss hat
+  keinen. Der Eintrag in `MULTI_TARGET_VOLLEY_SHIPS` allein waere toter Code gewesen. **Der
+  fehlende Eintrag ist jetzt eine tragende Setzung und muss im Code als bewusst ausgelassen
+  kommentiert werden**, sonst traegt ihn eine spaetere Aufraeumrunde nach und sprengt die Balance
+  lautlos.
+- **Der Boss feuert heute exakt einen Schuss je Runde.** Mit umgestelltem RapidFire sind es 5,3,
+  mit Salve 39-47,5 - und dann ist der Kampf nach zwei Runden entschieden.
+- **Die Salve ist mit keinem Faktor kalibrierbar:** Check-Tiefe konstant 1,00 von 0,1x bis 1,75x,
+  Kippen zwischen 0,5x und 0,75x von 100 % Sieg auf 92,5 % Niederlage.
+- **Die Faehigkeit ist anti-klein, nicht anti-Masse.** Overkill-Deckel und `MAX_SHOTS_PER_UNIT`
+  deckeln die Abschuesse je Runde absolut; anteilig faellt der Schaden mit wachsender Flotte
+  (100 % Verlust bei 405 Schiffen, 16,5 % bei 4.500). Der Code-Kommentar behauptet das Gegenteil.
+- **Der erwartete Faktor-Rutsch ist ausgeblieben.** `voll/real` misst sich mit 4.4 auf Tiefe
+  3,63/3,83 gegen 3,98 ohne - Streuung, keine Verschiebung. Nachteil: die Extraktionsquote faellt
+  von 12,5 auf 0-2,5 %. Offene Luecke geschlossen: `schwach/real` bei 1,75x mit 4.4 ergibt 1,52.
+- **Befund am Messwerkzeug:** `run_aggregate_threshold.mjs` hat nur EINEN Schiffstyp in der
+  Testflotte und kann eine Mehrfachziel-Faehigkeit deshalb prinzipiell nicht messen. Dafuer gibt
+  es jetzt die Mischflotten-Fassung.
 
 ## Was Schritt 5 am 16.08.2026 ergeben hat
 
