@@ -7,7 +7,8 @@ import { SHIP_MODULES } from './data/shipModules.js';
 import { DEFENSE_MODULES } from './data/defenseModules.js';
 import { GALAXY_SYSTEMS, GALAXY_POSITIONS, PIRATE_SPY_CHECK_INTERVAL_MS } from './data/galaxyConstants.js';
 import { nextWeeklyCheckpoint, RAID_FALLBACK_SCHEDULE, RAID_SCHEDULE_BY_USERNAME } from './data/economy.js';
-import type { GalaxyPosition, PlayerState } from './types.js';
+import type { GalaxyPosition, PlayerState, CombatDetail, FarmDetail, CombatUnitResult } from './types.js';
+import { foldSkirmishTables } from './messages.js';
 import { loadGameStateJson, saveGameStateJson, listAllUsers, getUserById } from '../db.js';
 
 // Zufaellige, freie Galaxie-Position vergeben (siehe README). Scannt dafuer die bereits
@@ -267,6 +268,49 @@ export function loadPlayerState(userId: number): PlayerState {
     if (parsed.stats[key] === undefined) (parsed.stats as any)[key] = statsDefaults[key];
   });
   if (!parsed.stats.containersOpened) parsed.stats.containersOpened = { silber: 0, gold: 0, elite: 0 };
+
+  // ---- Einmalige Verkleinerung bestehender Berichte (16.08.2026) ----
+  // Bis hierher trug JEDER Einzelkampf eines gesammelten Berichts seine beiden vollstaendigen
+  // Ergebnistabellen selbst. Gemessen ueber `[Spielstand-Felder]`: 998,6 KB von 1477,6 KB eines
+  // einzigen Spielstands, also 68 %. Neue Berichte entstehen seit dieser Aenderung schon
+  // aggregiert (`recordSkirmish()`), die BESTEHENDEN 200 Nachrichten je Spieler wuerden ohne
+  // diesen Schritt aber noch wochenlang mitgeschleppt - und sie liegen im Ladepfad, den
+  // `processOverdueRaidsForOtherUsers()` bei jedem tick() fuer alle anderen Nutzer durchlaeuft.
+  //
+  // Die Zahlen gehen dabei NICHT verloren: sie werden vorher in die Gesamttabellen des Berichts
+  // gefaltet, exakt so, wie es ein heute erzeugter Bericht auch tun wuerde. Idempotent - ist ein
+  // Bericht bereits gefaltet, findet `foldSkirmishTables()` keine Tabellen mehr und tut nichts.
+  // Der laufende Raid bekommt seine Gesamttabellen nachgereicht, damit ein Abschlussbericht
+  // mitten in einem bereits laufenden Raid nicht mit leeren Tabellen herauskommt.
+  if (Array.isArray(parsed.messages)) {
+    parsed.messages.forEach((m) => {
+      const detail = m.detail as CombatDetail | FarmDetail | null;
+      if (detail && 'skirmishes' in detail) foldSkirmishTables(detail.skirmishes, detail as any);
+    });
+  }
+  // ACHTUNG: `foldSkirmishTables()` SETZT die Felder seines Ziel-Objekts. Ein Objektliteral als
+  // Ziel zu uebergeben wuerde das Ergebnis still verwerfen - deshalb hier ein benanntes Ziel, das
+  // danach zurueckgeschrieben wird.
+  if (parsed.raid?.waveLog?.length) {
+    const ziel: { npcResults?: CombatUnitResult[]; playerResults?: CombatUnitResult[] } = {
+      npcResults: parsed.raid.waveTotals?.npc,
+      playerResults: parsed.raid.waveTotals?.player,
+    };
+    if (foldSkirmishTables(parsed.raid.waveLog, ziel)) {
+      parsed.raid.waveTotals = { npc: ziel.npcResults ?? [], player: ziel.playerResults ?? [] };
+    }
+  }
+  parsed.missions?.forEach((mission) => {
+    if (!mission.skirmishLog?.length) return;
+    const ziel: { npcResults?: CombatUnitResult[]; playerResults?: CombatUnitResult[] } = {
+      npcResults: mission.skirmishTotals?.npc,
+      playerResults: mission.skirmishTotals?.player,
+    };
+    if (foldSkirmishTables(mission.skirmishLog, ziel)) {
+      mission.skirmishTotals = { npc: ziel.npcResults ?? [], player: ziel.playerResults ?? [] };
+    }
+  });
+
   return parsed;
 }
 

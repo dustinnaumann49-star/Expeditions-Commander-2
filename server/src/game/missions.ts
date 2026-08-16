@@ -37,7 +37,7 @@ import {
   rollBattleModifier,
   fleetSizeRewardMultiplier,
 } from './combat.js';
-import { pushMessage } from './messages.js';
+import { pushMessage, recordSkirmish } from './messages.js';
 import { recordEnemyKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { runCombatInWorker } from './combatRunner.js';
@@ -296,7 +296,8 @@ async function runAsteroidEscortCheck(state: PlayerState, mission: Mission) {
   });
 
   if (!mission.skirmishLog) mission.skirmishLog = [];
-  mission.skirmishLog.push({
+  if (!mission.skirmishTotals) mission.skirmishTotals = { npc: [], player: [] };
+  recordSkirmish(mission.skirmishLog, mission.skirmishTotals, {
     hour: mission.processedHours,
     outcome: `${outcome}. Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${rewardText}`,
     roundsFought: result.roundsFought,
@@ -630,7 +631,8 @@ async function runHourlyCheck(state: PlayerState, mission: Mission) {
   // gemeinsamer Abschlussbericht bei Rueckkehr statt bis zu 4 Einzel-Nachrichten pro Mission
   // (siehe finalizeMission()).
   if (!mission.skirmishLog) mission.skirmishLog = [];
-  mission.skirmishLog.push({
+  if (!mission.skirmishTotals) mission.skirmishTotals = { npc: [], player: [] };
+  recordSkirmish(mission.skirmishLog, mission.skirmishTotals, {
     hour: mission.processedHours,
     outcome: `${outcome}${waveText}${defenseText} (${result.roundsFought} Runde${result.roundsFought === 1 ? '' : 'n'}). Eigene Verluste: ${lossText}. Feindliche Verluste: ${npcLossText}.${teileText}${lootText}${captainText}${containerWinText}${modifierText}${sandronatorText}`,
     roundsFought: result.roundsFought,
@@ -667,8 +669,12 @@ function abortMissionDestroyed(state: PlayerState, mission: Mission) {
           sektorName: mission.sektorId,
           outcome: 'Flotte vollständig vernichtet',
           roundsFought: 0,
-          npcResults: [],
-          playerResults: mission.skirmishLog.flatMap((s) => s.playerResults),
+          // Die Einzelkaempfe tragen ihre Tabellen seit dem 16.08.2026 nicht mehr selbst -
+          // stattdessen die ueber die Mission aufsummierten Gesamttabellen (siehe
+          // `mergeUnitResults()` in `messages.ts`). Frueher stand hier ein flatMap ueber alle
+          // Einzelkaempfe, das bei einer 24h-Mission dieselbe Flotte 24-mal aufgelistet haette.
+          npcResults: mission.skirmishTotals?.npc ?? [],
+          playerResults: mission.skirmishTotals?.player ?? [],
         }
       : undefined
   );
@@ -726,6 +732,8 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
     winContainers: winContainer && totalWinContainers > 0 ? { tier: winContainer.tier, count: totalWinContainers } : undefined,
     fleetReturned: { ...mission.ships },
     skirmishes: mission.skirmishLog,
+    npcResults: mission.skirmishTotals?.npc,
+    playerResults: mission.skirmishTotals?.player,
     richFinds: mission.richFindLog,
   };
   let richFindText = '';
@@ -740,10 +748,9 @@ export function finalizeMission(state: PlayerState, mission: Mission) {
   }
   let skirmishText = '';
   if (mission.skirmishLog && mission.skirmishLog.length > 0) {
-    const totalLost = mission.skirmishLog.reduce(
-      (sum, s) => sum + s.playerResults.reduce((a, p) => a + (p.lost || 0), 0),
-      0
-    );
+    // Verluste kommen seit dem 16.08.2026 aus der Gesamttabelle statt aus den Einzelkaempfen -
+    // dort steht `lost` bereits ueber alle Kaempfe aufsummiert (siehe `mergeUnitResults()`).
+    const totalLost = (mission.skirmishTotals?.player ?? []).reduce((a, p) => a + (p.lost || 0), 0);
     const ruhigeStunden = mission.processedHours - mission.skirmishLog.length;
     const details = [ruhigeStunden > 0 ? `${ruhigeStunden} ruhig` : null, totalLost > 0 ? `insgesamt ${totalLost} Schiff(e) verloren` : null]
       .filter(Boolean)

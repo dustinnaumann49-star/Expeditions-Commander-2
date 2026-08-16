@@ -331,8 +331,16 @@ export interface SkirmishSummary {
   hour: number;
   outcome: string;
   roundsFought: number;
-  npcResults: CombatUnitResult[];
-  playerResults: CombatUnitResult[];
+  // OPTIONAL seit 16.08.2026 und bei neuen Berichten IMMER leer. Frueher trug jeder Einzelkampf
+  // seine beiden vollstaendigen Ergebnistabellen selbst - bei einer 24h-Asteroiden-Mission mit
+  // stuendlichem Kontakt waren das bis zu 24 Tabellenpaare in EINER Nachricht (gemessen ~170 KB).
+  // Die Zahlen stehen jetzt einmal je Bericht in `FarmDetail`/`CombatDetail`
+  // (`npcResults`/`playerResults`), aufsummiert ueber alle Einzelkaempfe. Herleitung und die zwei
+  // unterschiedlichen Summierungs-Regeln stehen bei `mergeUnitResults()` in `messages.ts`.
+  // Die Felder bleiben im Typ, weil alte Spielstaende sie noch enthalten koennen, bis
+  // `loadPlayerState()` sie beim naechsten Laden eingefaltet hat.
+  npcResults?: CombatUnitResult[];
+  playerResults?: CombatUnitResult[];
   rewards?: RewardSummary;
   replay?: CombatReplay;
 }
@@ -363,6 +371,10 @@ export interface Mission {
   // Asteroiden-Missionen die Nachrichten schnell ueberfuellen (bis zu 4 Zwischenberichte pro
   // Mission, ohne dass der Spieler zwischendurch etwas tun kann).
   skirmishLog?: SkirmishSummary[];
+  // Laufende Gesamttabellen ueber alle Einzelkaempfe dieser Mission (16.08.2026). Werden bei jedem
+  // Kampf fortgeschrieben (`recordSkirmish()` in `messages.ts`) und beim Abschlussbericht in den
+  // `FarmDetail` uebernommen - die Einzelkaempfe tragen ihre Tabellen dadurch nicht mehr selbst.
+  skirmishTotals?: { npc: CombatUnitResult[]; player: CombatUnitResult[] };
   // Nur fuer Asteroiden-Felder (siehe ASTEROID_RICH_FIND_CHANCE in economy.ts): gesammelte Treffer
   // der stuendlichen "reicher Fund"-Chance, die den bis dahin akkumulierten Ertrag verdoppelt hat.
   // Analog zu skirmishLog erst im Abschlussbericht bei Rueckkehr zugestellt statt als
@@ -464,6 +476,11 @@ export interface FarmDetail {
   winContainers?: { tier: 'silber' | 'gold' | 'elite'; count: number };
   fleetReturned?: Record<string, number>;
   skirmishes?: SkirmishSummary[];
+  // Gesamttabellen ueber ALLE Einzelkaempfe der Mission (16.08.2026). Ersetzen die frueheren
+  // Tabellen je Einzelkampf in `skirmishes` - siehe `mergeUnitResults()` in `messages.ts`.
+  // Optional, weil Berichte ohne Kampfkontakt (reines Mining) keine haben.
+  npcResults?: CombatUnitResult[];
+  playerResults?: CombatUnitResult[];
   richFinds?: RichFindEntry[];
 }
 
@@ -570,6 +587,10 @@ export interface RaidState {
   // JEDES Beteiligten CombatDetail.skirmishes). `hour` in jedem SkirmishSummary-Eintrag traegt
   // hier die WELLEN-Nummer (1..RAID_WAVE_COUNT), kein echter Stunden-Bezug.
   waveLog: SkirmishSummary[];
+  // Gegenstueck zu `Mission.skirmishTotals` (16.08.2026): Gesamttabellen ueber alle Wellen. Der
+  // Raid liegt bei jedem tick() im Ladepfad von `processOverdueRaidsForOtherUsers()` und wurde
+  // gemessen 123-139 KB gross, praktisch vollstaendig aus den Tabellen je Welle.
+  waveTotals?: { npc: CombatUnitResult[]; player: CombatUnitResult[] };
 }
 
 export interface FleetPreset {

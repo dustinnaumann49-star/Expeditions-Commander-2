@@ -42,7 +42,7 @@ import { DEFENSE_REPAIR_PERCENT, BATTLE_MODIFIER_LABELS } from './data/combatCon
 const RAID_FLEET_POWER_WEIGHT = 0.7;
 const RAID_DEFENSE_POWER_WEIGHT = 0.3;
 import { CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT } from './data/classes.js';
-import { pushMessage } from './messages.js';
+import { pushMessage, recordSkirmish } from './messages.js';
 import { recordEnemyKills, contributionShares, scaleKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
@@ -114,6 +114,7 @@ function spawnRaidAt(state: PlayerState, checkpointTime: number): void {
     wavesWon: 0,
     accumulatedDestroyed: 0,
     waveLog: [],
+    waveTotals: { npc: [], player: [] },
   };
   const prepMin = Math.round(RAID_PREP_MS / 60000);
   const totalMin = Math.round((arrivalTime - checkpointTime) / 60000);
@@ -272,7 +273,8 @@ async function processRaidWaves(state: PlayerState, currentUserId?: number, curr
   while (raid.wavesProcessed < raid.waveTimes.length && Date.now() >= raid.waveTimes[raid.wavesProcessed]) {
     if (!hasAnyDefense(state)) {
       const fromWave = raid.wavesProcessed + 1;
-      raid.waveLog.push({
+      if (!raid.waveTotals) raid.waveTotals = { npc: [], player: [] };
+      recordSkirmish(raid.waveLog, raid.waveTotals, {
         hour: fromWave,
         outcome:
           fromWave === 1
@@ -356,7 +358,8 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
     // Seltener Randfall - keine Angreifer generiert, Welle zaehlt kampflos als gewonnen.
     raid.wavesProcessed++;
     raid.wavesWon++;
-    raid.waveLog.push({
+    if (!raid.waveTotals) raid.waveTotals = { npc: [], player: [] };
+    recordSkirmish(raid.waveLog, raid.waveTotals, {
       hour: waveNumber,
       outcome: `Welle ${waveNumber}/${raid.waveTimes.length}: keine Angreifer gefunden - Welle übersprungen.`,
       roundsFought: 0,
@@ -480,7 +483,8 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   // Verteidiger noch fuer Verstaerker/haltende Flotten) - stattdessen EIN Eintrag in
   // raid.waveLog, der spaeter bei finalizeRaidWaves() in JEDES Beteiligten Abschlussbericht
   // eingebettet wird (dieselbe Referenz fuer alle, da der Kampfverlauf gemeinsam ist).
-  raid.waveLog.push({
+  if (!raid.waveTotals) raid.waveTotals = { npc: [], player: [] };
+  recordSkirmish(raid.waveLog, raid.waveTotals, {
     hour: waveNumber,
     outcome: `${outcome} (${result.roundsFought} Runden). Verluste: ${lossText}. Verteidigung zu ${Math.round(defenseRepairPercentFor(state.playerClass) * 100)}% repariert.${modifierText}`,
     roundsFought: result.roundsFought,
@@ -656,8 +660,8 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
     sektorName: 'Heimatbasis',
     outcome,
     roundsFought: 0,
-    npcResults: [],
-    playerResults: [],
+    npcResults: raid.waveTotals?.npc ?? [],
+    playerResults: raid.waveTotals?.player ?? [],
     skirmishes: raid.waveLog,
   });
   reinforcerStates.forEach(({ r, playerState }, i) => {
@@ -669,8 +673,8 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,
         roundsFought: 0,
-        npcResults: [],
-        playerResults: [],
+        npcResults: raid.waveTotals?.npc ?? [],
+        playerResults: raid.waveTotals?.player ?? [],
         skirmishes: raid.waveLog,
       }
     );
@@ -685,8 +689,8 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
         sektorName: `Heimatbasis von ${ownerUsername}`,
         outcome,
         roundsFought: 0,
-        npcResults: [],
-        playerResults: [],
+        npcResults: raid.waveTotals?.npc ?? [],
+        playerResults: raid.waveTotals?.player ?? [],
         skirmishes: raid.waveLog,
       }
     );
