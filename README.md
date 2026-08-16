@@ -382,6 +382,21 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   verschicken - EIN gemeinsamer Bericht bei Rückkehr, jeder Check aufklappbar. Raids nutzen
   dasselbe Prinzip über `RaidState.waveLog`. Elite-Bollwerk/Piratenadmiral NICHT - deren Berichte
   bleiben pro Check einzeln.
+- **Die Einzelkämpfe tragen KEINE eigenen Ergebnistabellen mehr (16.08.2026).** Sie stehen einmal
+  je Bericht in `FarmDetail`/`CombatDetail` (`npcResults`/`playerResults`), aufsummiert über alle
+  Kämpfe; pro Einzelkampf bleiben Ausgangstext, Rundenzahl, Beute und Replay. Anlass: gemessen über
+  die Startup-Ausgabe `[Spielstand-Felder]` waren **998,6 KB von 1477,6 KB eines Spielstands allein
+  Skirmish-Blöcke** - eine 24h-Asteroiden-Mission mit stündlichem Kontakt trug bis zu 24
+  Tabellenpaare in EINER Nachricht (~170 KB). Die Replays waren mit 64,8 KB NICHT das Problem.
+  Das schlug doppelt durch, weil `processOverdueRaidsForOtherUsers()` bei jedem `tick()` die
+  vollständigen Spielstände aller anderen Nutzer lädt und bei aktivem Raid auch speichert.
+  **Zwei Summierungs-Regeln, siehe `mergeUnitResults()` in `messages.ts`:** NPC-Stückzahlen werden
+  addiert (jede Stunde/Welle bringt frische Gegner), auf Spielerseite dagegen stammt die entsandte
+  Menge aus dem ERSTEN und die überlebende aus dem LETZTEN Kampf - sonst wiese eine 24h-Mission die
+  24-fache Flotte aus. `loadPlayerState()` faltet bestehende Berichte beim nächsten Laden einmalig
+  nach (verlustfrei, idempotent). Gemessen an einem 24-Kontakte-Bericht: 151,5 KB auf 40,1 KB.
+  **Lehre: die Sammel-Entscheidung hat Nachrichten-ANZAHL gegen Nachrichten-GRÖSSE getauscht, und
+  die Größe hat niemand nachgemessen.**
 - **Bugfix (Nutzer-Fund 04.08.2026): `processMissions()` bekam Fehler-Isolation pro Mission.**
   Bisher lief `processMissions()` (missions.ts) OHNE try/catch pro Mission - eine Exception
   IRGENDWO in `tickMission()` (z.B. im Kampf-Worker bei einem Check, der die komplette
