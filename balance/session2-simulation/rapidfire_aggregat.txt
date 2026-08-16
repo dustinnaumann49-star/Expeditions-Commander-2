@@ -1,0 +1,26 @@
+
+--- EINZEL-Pfad (unter allen Schwellen): 40 je Typ, 0/6 Schuetzentypen aggregiert, 20 Laeufe ---
+Schuetze          Schuesse je Einheit/Runde   RF-Ausloesungen
+schwer                            2.24             414.1
+kreuzer                           2.56             528.9
+schlachtschiff                    3.29             765.3
+schlachtkreuzer                   3.91             971.5
+zerstoerer                        3.98             995.9
+reaper                            3.74             915.0
+
+--- AGGREGAT-Pfad (ueber allen Schwellen): 400 je Typ, 5/6 Schuetzentypen aggregiert, 20 Laeufe ---
+Schuetze          Schuesse je Einheit/Runde   RF-Ausloesungen
+schwer                            1.32            5257.6
+kreuzer                           0.97               0.0
+schlachtschiff                    1.04               0.0
+schlachtkreuzer                   1.13               0.0
+zerstoerer                        1.07               0.0
+reaper                            1.08               0.0
+
+Lesart:
+- Ein Schuss je Einheit und Runde bedeutet: RapidFire findet nicht statt.
+- Schwellen: Kreuzer-Klasse 100, Elite-Klasse 50, Jaeger-Klasse 500 (STACK_AGGREGATE_THRESHOLD_BY_TYPE).
+  Der schwere Jaeger liegt mit 400 Stueck noch UNTER seiner Schwelle und laeuft deshalb in beiden
+  Durchlaeufen ueber den Einzel-Pfad - er ist die Kontrolle.
+- Ursachen in fireShotsAggregateShooters(): Verduennung ueber rfEligibleShare, Verteilung der
+  Zusatzschuesse nach Stueckzahl statt auf das Konterziel, rapidFireTriggers wird nicht gezaehlt.
