@@ -360,11 +360,18 @@ function SkirmishList({ skirmishes, unitLabel, title }: { skirmishes: SkirmishSu
               // Endgueltige Loesung: der Scroll-Bereich sitzt jetzt eng um die breite Tabelle
               // selbst (`.table-scroll` in `UnitTable`), hier steht wieder ein normaler Rahmen.
               // Nichts ragt mehr aus dem Wellen-Rahmen heraus, die Ecken bleiben sauber.
+              // Seit 16.08.2026 tragen neue Einzelkaempfe KEINE eigenen Ergebnistabellen mehr -
+              // sie stehen einmal je Bericht weiter unten/oben als Gesamttabelle (Grund und
+              // Messwerte bei `mergeUnitResults()` in `server/src/game/messages.ts`). Alte,
+              // noch nicht migrierte Berichte koennen sie hier aber weiterhin haben, deshalb
+              // beides unterstuetzen statt hart auf das eine oder andere zu setzen.
               <div style={{ padding: '10px' }}>
-                <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
+                {sk.npcResults && sk.playerResults && (
+                  <CombatSummaryBars npcResults={sk.npcResults} playerResults={sk.playerResults} />
+                )}
                 <RewardTable rows={combatRewardRows(sk.rewards)} />
-                <UnitTable title="Piraten (NPC)" units={sk.npcResults} />
-                {groupByOwner(sk.playerResults).map(([owner, units]) => (
+                {sk.npcResults && sk.npcResults.length > 0 && <UnitTable title="Piraten (NPC)" units={sk.npcResults} />}
+                {groupByOwner(sk.playerResults || []).map(([owner, units]) => (
                   <UnitTable key={owner} title={owner} units={units} />
                 ))}
               </div>
@@ -463,6 +470,18 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
               </div>
             )}
             <RichFindList finds={msg.detail.richFinds || []} />
+            {/* Gesamttabellen ueber alle Piraten-Kontakte der Mission (16.08.2026): entsandte
+                Menge aus dem ersten Kampf, ueberlebende aus dem letzten, Verluste und Zaehler
+                aufsummiert. Frueher stand dieselbe Aufstellung in JEDEM Einzelkampf. */}
+            {msg.detail.npcResults && msg.detail.npcResults.length > 0 && (
+              <>
+                <h4 style={{ marginTop: 16, marginBottom: 6 }}>Kämpfe insgesamt</h4>
+                <UnitTable title="Piraten (NPC)" units={msg.detail.npcResults} />
+                {groupByOwner(msg.detail.playerResults || []).map(([owner, units]) => (
+                  <UnitTable key={owner} title={owner} units={units} />
+                ))}
+              </>
+            )}
             <SkirmishList skirmishes={msg.detail.skirmishes || []} unitLabel="Stunde" title="Piraten-Kontakte während der Mission" />
           </>
         ) : (
@@ -477,6 +496,15 @@ function DetailModal({ msg, onClose }: { msg: GameMessage; onClose: () => void }
             {msg.detail.skirmishes && msg.detail.skirmishes.length > 0 ? (
               <>
                 <RewardTable rows={combatRewardRows(msg.detail.rewards)} />
+                {msg.detail.npcResults.length > 0 && (
+                  <>
+                    <h4 style={{ marginTop: 16, marginBottom: 6 }}>Wellen insgesamt</h4>
+                    <UnitTable title="Piraten (NPC)" units={msg.detail.npcResults} />
+                    {groupByOwner(msg.detail.playerResults).map(([owner, units]) => (
+                      <UnitTable key={owner} title={owner} units={units} />
+                    ))}
+                  </>
+                )}
                 <SkirmishList skirmishes={msg.detail.skirmishes} unitLabel="Welle" title="Wellen-Verlauf" />
               </>
             ) : (
