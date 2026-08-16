@@ -1,0 +1,63 @@
+=== Piratenadmiral, Schritt 5 / M4: Ertrag und Kadenz (4.5 bis 4.8) ===
+
+Beute-Kurve aus Entscheidung 2: Beute = 0.0956 x 11.60 Mrd x (vernichtete Macht / 11.60 Mrd)^0.85
+Wrack-Bergung 30 %. Massstab Elite-Bollwerk: 7.07 Mrd netto je gebundener Flottenstunde.
+
+=== A. Reisezeit und Obergrenze der Durchlaeufe je Tag ===
+
+Der Anflug haengt am LANGSAMSTEN Schiff. Der Imperator (speed 100) ist in P10 erlaubt.
+Formel: 10 s + 925 x Wurzel(Distanz x 10 / Tempo).
+Kampffenster: 6 Checks x 10 min = 1 h.
+
+Flotte  langsamstes Schiff  Tempo  Distanz  Anflug   Hin+Rueck+Kampf  max. Durchlaeufe/Tag
+real    imperator             100        1   0.08 h           1.17 h                  20.5
+real    imperator             100       25   0.41 h           1.82 h                  13.2
+real    imperator             100      100   0.82 h           2.63 h                   9.1
+gross   imperator             100        1   0.08 h           1.17 h                  20.5
+gross   imperator             100       25   0.41 h           1.82 h                  13.2
+gross   imperator             100      100   0.82 h           2.63 h                   9.1
+
+=== B. Ertrag je Durchlauf nach der beschlossenen Beute-Kurve (ohne Sieg-Bonus) ===
+
+Zelle                             Flottenwert  vernicht.Macht     Beute  netto Verlust    netto/Durchlauf   je Flottenstd.
+IST-ZUSTAND  voll 1x  Deckel 100    26.72 Mrd       22.59 Mrd  1.95 Mrd       0.06 Mrd           1.90 Mrd         1.04 Mrd
+M2  voll 1,75x  Deckel 100          26.72 Mrd      101.65 Mrd  7.02 Mrd       3.76 Mrd           3.26 Mrd         1.79 Mrd
+M3  voll 1,75x  Deckel 100          26.72 Mrd       96.22 Mrd  6.70 Mrd       3.31 Mrd           3.39 Mrd         1.86 Mrd
+M3  voll 2x     Deckel 300          26.72 Mrd      110.34 Mrd  7.52 Mrd       5.11 Mrd           2.42 Mrd         1.33 Mrd
+M3  mittel 1,5x Deckel 300          26.72 Mrd       88.98 Mrd  6.27 Mrd       4.88 Mrd           1.39 Mrd         0.76 Mrd
+M3  mittel 2x   Deckel 300          26.72 Mrd       92.05 Mrd  6.45 Mrd       7.48 Mrd          -1.03 Mrd        -0.57 Mrd
+M3  schwach 1x  Deckel 300          26.72 Mrd       32.26 Mrd  2.65 Mrd       7.95 Mrd          -5.30 Mrd        -2.92 Mrd
+M2  voll/gross 1,75x Deckel 100      3.52 Mrd        8.57 Mrd  0.86 Mrd       0.66 Mrd           0.20 Mrd         0.11 Mrd
+
+=== C. Sieg-Bonus (4.6) und Niederlage-Anteil (4.7) - Erwartungswert je Durchlauf ===
+
+Annahme 4.7: bei Niederlage wird nur ein Anteil der bis dahin gesicherten Beute ausgezahlt.
+Der Sieg-Bonus wirkt nur auf die Sieg-Faelle, der Niederlage-Anteil nur auf die uebrigen.
+
+Zelle                             Sieganteil   Bonus 1,0x   Bonus 1,5x   Bonus 2,0x   (Niederlage-Anteil 0,50)
+IST-ZUSTAND  voll 1x  Deckel 100      100.0%     1.90 Mrd     2.88 Mrd     3.85 Mrd
+M2  voll 1,75x  Deckel 100             40.0%     1.15 Mrd     2.56 Mrd     3.96 Mrd
+M3  voll 1,75x  Deckel 100             47.5%     1.63 Mrd     3.22 Mrd     4.81 Mrd
+M3  voll 2x     Deckel 300             30.0%    -0.21 Mrd     0.91 Mrd     2.04 Mrd
+M3  mittel 1,5x Deckel 300             30.0%    -0.81 Mrd     0.13 Mrd     1.07 Mrd
+M3  mittel 2x   Deckel 300              0.0%    -4.26 Mrd    -4.26 Mrd    -4.26 Mrd
+M3  schwach 1x  Deckel 300              0.0%    -6.63 Mrd    -6.63 Mrd    -6.63 Mrd
+M2  voll/gross 1,75x Deckel 100        27.5%    -0.11 Mrd     0.00 Mrd     0.12 Mrd
+
+=== D. Kadenz (4.8): Tagesbeitrag gegen die Baseline 76,85 Mrd/Tag im spaeten Stand ===
+
+Bewertet wird die empfohlene Zelle. Ohne Cooldown zaehlt die Reisezeit-Obergrenze aus A.
+
+Leitzelle: M3  voll 2x     Deckel 300
+  Beute je Durchlauf            7.52 Mrd
+  netto Verlust je Durchlauf    5.11 Mrd
+  Erwartungswert (Bonus 1,5x)   0.91 Mrd
+  gebundene Flottenzeit         1.82 h
+
+Cooldown              Durchlaeufe/Tag   Tagesbeitrag   Anteil an 76,85 Mrd   je Flottenstunde
+ohne (Reisezeit)                 13.2      12.06 Mrd                 15.7%           0.50 Mrd
+6 h                               4.0       3.65 Mrd                  4.8%           0.50 Mrd
+12 h                              2.0       1.83 Mrd                  2.4%           0.50 Mrd
+24 h                              1.0       0.91 Mrd                  1.2%           0.50 Mrd
+
+Zum Vergleich: Elite-Bollwerk 7.07 Mrd je Flottenstunde, 56.58 Mrd/Tag.
