@@ -148,15 +148,14 @@ Alles andere in Schritt 5 ist gemessen und mit Vorschlag versehen.
    in `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen, dann gegen `run_aggregate_threshold.mjs` an beiden
    Seiten der Aggregationsschwelle gegenmessen.
 2. **Faktor nachziehen.** 4.4 hebt die effektive Gegnerstaerke, also `run_admiral_bossscale.mjs`
-   bei Deckel 300 noch einmal um 2,0x herum laufen lassen. Dabei faellt die eine offene Luecke mit
-   ab: `schwach/real` bei 2,0x mit Deckel 300 ist nicht gemessen.
+   bei Deckel 100 noch einmal um 1,75x herum laufen lassen. Dabei faellt die eine offene Luecke mit
+   ab: `schwach/real` bei 1,75x ist nur ohne die 4.4-Mechanik gemessen (Tiefe 1,68).
 3. **Schritt 5 schliessen**, Protokolleintrag mit den Endwerten.
 4. Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der
    Aufruf-Haeufigkeit entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5.
 
-**Messaufwand realistisch einplanen:** mit Rundendeckel 300 kostet jeder P10-Kampf rund das
-Dreifache. Die Sweeps vom 16.08.2026 liefen bei Deckel 100 in etwa fuenf Minuten; dieselbe Matrix
-bei 300 dauert 15 bis 20 Minuten. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
+**Messaufwand:** die Sweeps vom 16.08.2026 liefen bei Deckel 100 in etwa fuenf Minuten - da der
+Deckel bei 100 bleibt, gilt das weiter. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
 Ergebnis sofort in die Datei anhaengen) - ein Vollauf ueber alle Zellen schreibt seine Tabellen
 erst am Ende und ist bei einem Abbruch komplett verloren. Genau das ist am 16.08.2026 passiert.
 
@@ -181,10 +180,11 @@ Kurzfassung, vollstaendig in den Messkaesten bei Entscheidung 4.3 bis 4.8. Messd
   Ausbaustaenden von rund 4:1 auf rund 1,5:1. Das stand bisher als Randnotiz unter "Ausserdem".
 - **`MAX_ROUNDS = 100` ist heute eine balance-relevante Konstante und wirkt ungleich** - bei
   `voll` steigt die Siegquote von 47,5 auf 87,5 %, wenn der Deckel auf 1000 geht, bei `mittel`
-  bewegt er praktisch nichts. **Kein anderer Sektor kommt dem Deckel nahe** (Elite-Bollwerk im
-  Schnitt 35 Runden, Maximum 45 ueber alle Sektoren), eine Anhebung auf 300 ist also ohne
-  Nebenwirkung auf die Baseline. **Empfehlung: Deckel 300, dann Faktor 2,0x plus
-  Forschungsskalierung.**
+  bewegt er praktisch nichts. Eine Anhebung waere ohne Nebenwirkung moeglich gewesen (kein anderer
+  Sektor kommt dem Deckel nahe, Elite-Bollwerk im Schnitt 35 Runden). **ENTSCHIEDEN am 16.08.2026:
+  der Deckel BLEIBT bei 100** - OGame-basierte Spiele begrenzen ueblicherweise auf 6-8 Runden, 100
+  ist im Vergleich sehr grosszuegig. Der Deckel ist damit eine bewusste Gestaltungsentscheidung,
+  kein Artefakt. **Folge: 4.3 steht auf Faktor 1,75x plus Forschungsskalierung des Bosses.**
 - **4.5 entfaellt.** Ein freier `ADMIRAL_LOOT_PER_DESTROYED_POWER` widerspricht Entscheidung 2,
   deren Geltungsbereich `groupOps.ts` einschliesst - P10 laeuft dort. Mit der Beute-Kurve
   gerechnet: die vernichtete Feindmacht vervierfacht sich (22,6 -> 110 Mrd), die Beute steigt nur
