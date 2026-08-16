@@ -8,7 +8,7 @@ import { runGlobalHeartbeat } from './game/heartbeat.js';
 import { ensureBotUsers } from './game/bot.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
 import { checkModuleIntegrity } from './game/moduleIntegrity.js';
-import { listGameStateSizes } from './db.js';
+import { listGameStateSizes, listGameStateFieldSizes } from './db.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
 // zuverlaessig, aber unklar ob der Server tatsaechlich den neuesten Commit ausfuehrt). Liest den
@@ -89,6 +89,36 @@ app.listen(PORT, async () => {
     sizes.forEach((s) => console.log(`  ${(s.bytes / 1024).toFixed(0).padStart(6)} KB  ${s.username}${s.isBot ? ' (Bot)' : ''}`));
   } catch (err) {
     console.error('Spielstand-Groessen-Fehler:', err);
+  }
+
+  // Ergaenzung 16.08.2026: WELCHES Feld traegt die Groesse? Die Zeilen oben zeigen nur die Summe.
+  // Anlass: `processOverdueRaidsForOtherUsers` frisst 98 % der tick()-Zeit und laedt dabei fuer
+  // jeden anderen Nutzer den vollen Spielstand - die Kosten sind Nutzerzahl x Spielstandgroesse.
+  // Ein Konto liegt beim Fuenffachen dessen, was 200 Nachrichten mit Replays erklaeren wuerden.
+  // Rein lesend, laeuft einmalig beim Start. Kann wieder entfernt werden, sobald die Ursache
+  // gefunden und behoben ist.
+  try {
+    const kb = (b: number) => `${(b / 1024).toFixed(1)} KB`;
+    listGameStateFieldSizes().forEach((r) => {
+      console.log(`[Spielstand-Felder] ${r.username}${r.isBot ? ' (Bot)' : ''} - ${kb(r.bytes)}:`);
+      r.fields.forEach((f) => {
+        const anteil = r.bytes > 0 ? ((f.bytes / r.bytes) * 100).toFixed(0) : '0';
+        console.log(
+          `  ${f.key.padEnd(22)}${kb(f.bytes).padStart(9)}${(anteil + ' %').padStart(6)}`
+          + (f.count !== null ? `  ${f.count} Eintraege` : '')
+        );
+      });
+      if (r.messages) {
+        const m = r.messages;
+        const je = m.count > 0 ? kb(m.bytes / m.count) : '0 KB';
+        console.log(
+          `  -> Nachrichten ${m.count} Stueck, ${je} im Schnitt`
+          + `, davon Replays ${kb(m.replayBytes)}, Skirmishes ${kb(m.skirmishBytes)}`
+        );
+      }
+    });
+  } catch (err) {
+    console.error('Spielstand-Felder-Fehler:', err);
   }
 
   // KI-Spieler-Accounts (KI-Vega/KI-Nyx) throttled wieder eingefuehrt (30.07.2026, siehe README

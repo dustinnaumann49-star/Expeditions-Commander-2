@@ -277,6 +277,64 @@ export function listGameStateSizes(): { userId: number; username: string; isBot:
     .map((r: any) => ({ userId: r.userId, username: r.username, isBot: !!r.isBot, bytes: r.bytes || 0 }));
 }
 
+// Diagnose-Ergaenzung (16.08.2026): WELCHES Feld macht einen Spielstand gross?
+// `listGameStateSizes()` oben beantwortet nur "wie gross", nicht "warum". Anlass: der Sweep
+// `processOverdueRaidsForOtherUsers` frisst 98 % der tick()-Zeit (1310 von 1329 ms), und er laedt
+// fuer JEDEN anderen Nutzer den vollstaendigen Spielstand. Die Kosten sind damit
+// Nutzerzahl x Spielstandgroesse - und ein Konto liegt bei 1478 KB, also rund dem Fuenffachen
+// dessen, was die Code-Doku fuer 200 Nachrichten mit Kampf-Replays angibt (~260 KB je Spieler).
+// Solange nicht feststeht, welches Feld waechst, waere jede Optimierung am Sweep Symptomkur.
+//
+// Im Gegensatz zu `listGameStateSizes()` wird hier GEPARST - das kostet bei wenigen Konten
+// einmalig beim Start ein paar Millisekunden und ist bewusst nicht fuer den laufenden Betrieb
+// gedacht. Rein lesend, es wird nichts geschrieben.
+export interface GameStateFieldReport {
+  username: string;
+  isBot: boolean;
+  bytes: number;
+  fields: { key: string; bytes: number; count: number | null }[];
+  messages: { count: number; bytes: number; replayBytes: number; skirmishBytes: number } | null;
+}
+
+export function listGameStateFieldSizes(topFields = 5): GameStateFieldReport[] {
+  const rows = db
+    .prepare(
+      `SELECT u.username AS username, u.is_bot AS isBot, g.state_json AS json, LENGTH(g.state_json) AS bytes
+       FROM game_states g JOIN users u ON u.id = g.user_id
+       ORDER BY bytes DESC`
+    )
+    .all() as { username: string; isBot: number; json: string; bytes: number }[];
+
+  const size = (v: unknown) => Buffer.byteLength(JSON.stringify(v ?? null), 'utf8');
+
+  return rows.map((r) => {
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(r.json) as Record<string, unknown>;
+    } catch {
+      // Ein unlesbarer Stand darf die Diagnose der uebrigen nicht verhindern.
+      return { username: r.username, isBot: !!r.isBot, bytes: r.bytes || 0, fields: [], messages: null };
+    }
+
+    const fields = Object.entries(parsed)
+      .map(([key, v]) => ({ key, bytes: size(v), count: Array.isArray(v) ? v.length : null }))
+      .sort((a, b) => b.bytes - a.bytes)
+      .slice(0, topFields);
+
+    const msgs = Array.isArray(parsed.messages) ? (parsed.messages as any[]) : null;
+    const messages = msgs
+      ? {
+          count: msgs.length,
+          bytes: size(msgs),
+          replayBytes: msgs.reduce((s, m) => s + size(m?.detail?.replay), 0),
+          skirmishBytes: msgs.reduce((s, m) => s + size(m?.detail?.skirmishes), 0),
+        }
+      : null;
+
+    return { username: r.username, isBot: !!r.isBot, bytes: r.bytes || 0, fields, messages };
+  });
+}
+
 export function saveGameStateJson(userId: number, stateJson: string): void {
   db.prepare(
     `INSERT INTO game_states (user_id, state_json, updated_at) VALUES (?, ?, ?)
