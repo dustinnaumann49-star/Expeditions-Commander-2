@@ -1,0 +1,41 @@
+=== Piratenadmiral, Schritt 5 / M4: Gegnerstaerke-Faktor NACH Entscheidung 4.4 ===
+Anschluss an admiral_bossscale.txt (M2). Identischer Aufbau und identisches Skript
+(run_admiral_bossscale.mjs, Modus "forschung", Deckel MAX_ROUNDS = 100, Abbruch bei kumuliertem
+WERT-Verlust >= 0,30, contributedPower frisch je Check, 40 Serien je Zelle, eine Zelle je Aufruf).
+EINZIGE Aenderung gegenueber M2: die Boss-Mechanik aus 4.4, geladen ueber einen Messbuild
+(make_messbuild_44.mjs), Quellcode unberuehrt.
+
+Varianten:
+  V1  RAPIDFIRE.piratenadmiral auf die sechs Standardtypen aus ADMIRAL_ALLOWED_SHIP_IDS.
+      Die Mehrfachziel-Salve ist NICHT aktiv: sie haengt an getZielerfassungAccuracy(), die ohne
+      ZIELERFASSUNG_BASE-Eintrag 0 liefert. Wirkt allein ueber die Folgeschuss-Kette (bis
+      MAX_SHOTS_PER_UNIT = 50 statt bisher genau einem Schuss je Runde).
+  V2  V1 + ZIELERFASSUNG_BASE = 0,35 + piratenadmiral in MULTI_TARGET_VOLLEY_SHIPS.
+  V3  wie V2, RAPIDFIRE ueber alle zehn erlaubten Typen.
+
+Zum Vergleich der Ausgangswert aus M2 (ohne 4.4):
+  forschung  voll/real   1.75x   Tiefe 3.98   40.0% Sieg   47.5% Niederl.   12.5% Extrakt.
+
+Modus      Profil/Flotte    Faktor  Tiefe    Sieg  Niederl.  Extrakt.  Verl.Ende  BossC1  vernicht.Macht  netto Verlust  Rundendeckel
+### VARIANTE V1 (nur RAPIDFIRE, Salve inert) ###
+forschung  voll/real         1.75x   3.83   37.5%     60.0%      2.5%      23.7%   62.5%       95.15 Mrd       4.44 Mrd         62.5%
+### VARIANTE V2 (RF + Salve, Zielerfassung 0,35) ###
+forschung  voll/real         1.75x   1.00    0.0%    100.0%      0.0%      45.3%  100.0%       17.72 Mrd       8.48 Mrd        100.0%
+forschung  voll/real            1x   1.00    0.0%    100.0%      0.0%      43.5%  100.0%       10.32 Mrd       8.13 Mrd        100.0%
+forschung  voll/real          0.5x   1.00  100.0%      0.0%      0.0%      23.7%    0.0%       17.11 Mrd       4.44 Mrd          0.0%
+forschung  voll/real         0.25x   1.00  100.0%      0.0%      0.0%      10.8%    0.0%        8.65 Mrd       2.02 Mrd          0.0%
+forschung  voll/real          0.1x   1.00  100.0%      0.0%      0.0%       3.5%    0.0%        3.40 Mrd       0.66 Mrd          0.0%
+forschung  voll/real         0.75x   1.00    7.5%     92.5%      0.0%      42.4%   92.5%        8.76 Mrd       7.93 Mrd         92.5%
+### VARIANTE V3 (RF zehn Typen + Salve) ###
+forschung  voll/real         1.75x   1.00    0.0%    100.0%      0.0%      52.5%  100.0%        8.11 Mrd       9.81 Mrd          0.0%
+forschung  voll/real         0.75x   1.00    0.0%    100.0%      0.0%      51.0%  100.0%        7.33 Mrd       9.53 Mrd        100.0%
+### VARIANTE V1, Faktor-Sweep voll/real ###
+forschung  voll/real          1.5x   2.35   80.0%     15.0%      5.0%       8.6%   47.5%       70.17 Mrd       1.61 Mrd         47.5%
+forschung  voll/real         1.25x   1.00  100.0%      0.0%      0.0%       1.1%    0.0%       44.92 Mrd       0.20 Mrd          0.0%
+forschung  voll/real          1.6x   2.40   75.0%     17.5%      7.5%      10.5%   45.0%       72.66 Mrd       1.96 Mrd         45.0%
+forschung  voll/real         1.75x   3.63   42.5%     57.5%      0.0%      21.5%   57.5%       92.74 Mrd       4.02 Mrd         57.5%
+### VARIANTE V1, uebrige Profile ###
+forschung  mittel/real        1.5x   4.22   27.5%     72.5%      0.0%      27.3%   72.5%       83.27 Mrd       5.11 Mrd         72.5%
+forschung  mittel/real       1.75x   4.63    0.0%    100.0%      0.0%      38.5%  100.0%       93.40 Mrd       7.19 Mrd        100.0%
+forschung  schwach/real      1.75x   1.52    0.0%    100.0%      0.0%      43.2%  100.0%       23.31 Mrd       8.08 Mrd        100.0%
+forschung  voll/gross        1.75x   1.05   17.5%     82.5%      0.0%      34.6%   82.5%        3.06 Mrd       0.85 Mrd         82.5%

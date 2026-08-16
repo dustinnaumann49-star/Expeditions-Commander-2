@@ -1,4 +1,8 @@
-const D = '../../server/dist/game';
+// Standard ist der normale Build aus server/dist. Ist MESSBUILD gesetzt (absoluter Pfad auf eine
+// dist-KOPIE mit ersetzten kompilierten Konstanten, siehe make_messbuild_44.mjs bzw. das Verfahren
+// aus run_admiral_roundcap.mjs), laden alle Spielmodule stattdessen von dort - Quellcode bleibt
+// unberuehrt. Ohne die Variable verhaelt sich diese Datei exakt wie zuvor.
+const D = process.env.MESSBUILD ? `${process.env.MESSBUILD}/game` : '../../server/dist/game';
 export const combat = await import(`${D}/combat.js`);
 export const simulator = await import(`${D}/simulator.js`);
 export const runner = await import(`${D}/combatRunner.js`);

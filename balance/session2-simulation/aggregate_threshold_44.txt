@@ -1,0 +1,171 @@
+=== Entscheidung 4.4: Boss-RapidFire / Mehrfachziel-Salve an der Aggregationsschwelle ===
+Gegenmessung nach Messregel 13 (jede Einheit mit hohem Einzelschaden an BEIDEN Seiten der
+Schwelle testen) und dem Messkriterium bei 4.4 ("run_aggregate_threshold.mjs gegen den Boss MIT
+Mehrfachziel-Salve"). 40 Laeufe je Zelle (Messregel 2), Schwelle Kreuzer = 100.
+
+Aufbau unveraendert aus run_aggregate_threshold.mjs: 1 Piratenadmiral mit fester Power 2e9
+(14% Waffen / 5% Schild / 81% Panzerung) gegen n Kreuzer, research = {} (also KEIN
+Zielerfassungs-Bonus - der Boss laeuft hier auf seinem reinen Basiswert), allowRetreat = false.
+
+Varianten (Messbuilds, Quellcode unberuehrt - siehe make_messbuild_44.mjs):
+  V0  Ist-Zustand: RAPIDFIRE.piratenadmiral = {leicht:10, schwer:8} - beide Typen im Sektor
+      nicht zugelassen, RF-Pool damit immer leer.
+  V1  RAPIDFIRE auf die sechs Standardtypen aus ADMIRAL_ALLOWED_SHIP_IDS umgestellt.
+      Salve NICHT aktiv (haengt an getZielerfassungAccuracy(), die ohne ZIELERFASSUNG_BASE-
+      Eintrag 0 liefert). Wirkt allein ueber die Folgeschuss-Kette.
+  V2  V1 + ZIELERFASSUNG_BASE.piratenadmiral = 0,35 + piratenadmiral in MULTI_TARGET_VOLLEY_SHIPS.
+  V3  wie V2, aber RAPIDFIRE ueber alle zehn erlaubten Typen.
+  V2b wie V2 mit ZIELERFASSUNG_BASE = 0,55 (Empfindlichkeitspruefung).
+
+--- V0 (Ist-Zustand), 40 Laeufe ---
+Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
+     90        nein   100.0         37.0      41.2%         24 Mio
+     99        nein   100.0         37.4      37.8%         25 Mio
+    101          ja   100.0         34.8      34.5%         23 Mio
+    150          ja   100.0         33.6      22.4%         22 Mio
+    400          ja   100.0         26.3       6.6%         17 Mio
+
+--- V1 (nur RAPIDFIRE, sechs Typen; Salve inert), 40 Laeufe ---
+Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
+     90        nein    49.8         90.0     100.0%         59 Mio
+     99        nein    51.9         99.0     100.0%         65 Mio
+    101          ja    53.5        101.0     100.0%         66 Mio
+    150          ja    79.7        149.8      99.9%         98 Mio
+    400          ja   100.0        176.2      44.1%        116 Mio
+
+--- V2 (RF sechs Typen + Salve, Zielerfassung 0,35), 40 Laeufe ---
+Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
+     90        nein    49.0         90.0     100.0%         59 Mio
+     99        nein    51.3         99.0     100.0%         65 Mio
+    101          ja    56.6        101.0     100.0%         66 Mio
+    150          ja    81.2        149.6      99.7%         98 Mio
+    400          ja   100.0        176.8      44.2%        116 Mio
+
+--- V3 (RF zehn Typen + Salve, Zielerfassung 0,35), 40 Laeufe ---
+Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
+     90        nein    48.0         90.0     100.0%         59 Mio
+     99        nein    52.3         99.0     100.0%         65 Mio
+    101          ja    53.5        101.0     100.0%         66 Mio
+    150          ja    81.0        150.0     100.0%         99 Mio
+    400          ja   100.0        175.8      43.9%        115 Mio
+
+--- V2b (RF sechs Typen + Salve, Zielerfassung 0,55), 40 Laeufe ---
+Kreuzer  aggregiert  Runden  Verlust Stk  Verlust %  Verlust Wert
+     90        nein    49.5         90.0     100.0%         59 Mio
+     99        nein    53.3         99.0     100.0%         65 Mio
+    101          ja    55.5        101.0     100.0%         66 Mio
+    150          ja    80.8        149.7      99.8%         98 Mio
+    400          ja   100.0        177.5      44.4%        117 Mio
+
+=== TEIL 2: MISCHFLOTTE (run_aggregate_threshold_44.mjs) ===
+Grund: Teil 1 stellt dem Boss eine Flotte aus EINEM Typ gegenueber - die Mehrfachziel-Salve trifft
+je ein Exemplar PRO Typ und ist bei einem Typ definitionsgemaess wirkungslos. Gemessen liegen
+V1/V2/V3/V2b dort auf die Nachkommastelle gleich, und ab V1 sind die Zellen bis 150 Kreuzer
+saturiert (100 % Verlust). Teil 1 kann die Frage von 4.4 damit nicht beantworten.
+
+Aufbau Teil 2: sechs Standardtypen aus ADMIRAL_ALLOWED_SHIP_IDS, Kreuzer-Klasse voll und
+Elite-Klasse halb besetzt; Gegner ueber den echten generateAdmiralEncounter(), davon NUR der Boss
+(Eskorte weggelassen, um die Boss-Mechanik zu isolieren), Feindstaerke = Flottenmacht x 1,30
+(Mittelwert ADMIRAL_MULTIPLIER_ROLL) x Faktor 1,75 mit forschungsskaliertem Boss - also der
+beschlossene Stand von 4.3. Profil voll (Forschung 10), allowRetreat = false.
+Die Aggregation setzt zwischen n=99 und n=101 fuer ALLE sechs Typen gleichzeitig ein.
+
+--- V0 (Ist-Zustand), 40 Laeufe, Profil voll, Faktor 1.75x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                 100.0        267.0      65.9%       0.32 Mrd
+   99        447  keine                                 100.0        257.6      57.6%       0.30 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0        240.3      52.7%       0.28 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0        237.9      35.2%       0.28 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0        191.3      10.6%       0.22 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0        108.0       2.4%       0.12 Mrd
+
+--- V1 (nur RAPIDFIRE, sechs Typen; Salve inert), 40 Laeufe, Profil voll, Faktor 1.75x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                  36.1        405.0     100.0%       0.47 Mrd
+   99        447  keine                                  40.9        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   42.5        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   61.2        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0       1037.0      57.6%       1.22 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper  100.0        742.4      16.5%       0.83 Mrd
+
+--- V2 (RF sechs Typen + Salve, Zielerfassung 0,35), 40 Laeufe, Profil voll, Faktor 1.75x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   1.2        405.0     100.0%       0.47 Mrd
+   99        447  keine                                   1.4        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.7        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    4.2       1800.0     100.0%       2.11 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   10.7       4500.0     100.0%       5.27 Mrd
+
+--- V3 (RF zehn Typen + Salve, Zielerfassung 0,35), 40 Laeufe, Profil voll, Faktor 1.75x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   1.1        405.0     100.0%       0.47 Mrd
+   99        447  keine                                   1.5        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.6        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    4.5       1800.0     100.0%       2.11 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   10.2       4500.0     100.0%       5.27 Mrd
+
+--- V2b (RF sechs Typen + Salve, Zielerfassung 0,55), 40 Laeufe, Profil voll, Faktor 1.75x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   1.0        405.0     100.0%       0.47 Mrd
+   99        447  keine                                   1.3        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.3        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.2        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    4.4       1800.0     100.0%       2.11 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   11.3       4500.0     100.0%       5.27 Mrd
+
+--- V2, Faktor 1.0x, 40 Laeufe, Profil voll, Faktor 1x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   1.9        405.0     100.0%       0.47 Mrd
+   99        447  keine                                   1.9        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.9        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    4.5       1800.0     100.0%       2.11 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper   11.4       4500.0     100.0%       5.27 Mrd
+
+--- V2, Faktor 0.5x, 40 Laeufe, Profil voll, Faktor 0.5x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   2.3        405.0     100.0%       0.47 Mrd
+   99        447  keine                                   2.3        447.0     100.0%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.3        456.0     100.0%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0        675.0     100.0%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    4.3       1800.0     100.0%       2.11 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    5.8       3409.1      75.8%       4.12 Mrd
+
+--- V2, Faktor 0.25x, 40 Laeufe, Profil voll, Faktor 0.25x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   2.0        401.3      99.1%       0.47 Mrd
+   99        447  keine                                   2.0        445.5      99.7%       0.52 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0        450.5      98.8%       0.53 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.2        674.0      99.9%       0.79 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0       1208.8      67.2%       1.46 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    2.0       1461.5      32.5%       1.81 Mrd
+
+--- V2, Faktor 0.1x, 40 Laeufe, Profil voll, Faktor 0.1x, Boss forschungsskaliert ---
+  n  Flotte Stk  aggregierte Typen                    Runden  Verlust Stk  Verlust %  Verlust Wert
+   90        405  keine                                   1.0        261.5      64.6%       0.31 Mrd
+   99        447  keine                                   1.0        265.3      59.3%       0.32 Mrd
+  101        456  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.0        286.3      62.8%       0.34 Mrd
+  150        675  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.0        367.7      54.5%       0.45 Mrd
+  400       1800  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.0        551.4      30.6%       0.67 Mrd
+ 1000       4500  kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/reaper    1.0        669.5      14.9%       0.83 Mrd
+
+=== TEIL 3: Schusszahl des Bosses je Runde (probe_admiral_shots.mjs) ===
+Ein Kampf je Variante, Mischflotte 675 Schiffe, Profil voll, Faktor 1,75x, Boss forschungsskaliert.
+Belegt, warum der Plan-Vorschlag aus zwei Wirkpfaden VOLLIG verschiedener Groessenordnung besteht.
+
+V0   Runden  100 | Zielerfassung 0.00 | Schuesse    100 = 1.0 je Runde | Treffer     59 | RF-Ausloesungen      0
+V1   Runden   48 | Zielerfassung 0.00 | Schuesse    252 = 5.3 je Runde | Treffer    142 | RF-Ausloesungen    204
+V2   Runden    2 | Zielerfassung 0.95 | Schuesse     78 = 39.0 je Runde | Treffer     58 | RF-Ausloesungen    206
+V3   Runden    2 | Zielerfassung 0.95 | Schuesse     95 = 47.5 je Runde | Treffer     61 | RF-Ausloesungen    215
+
+Lesart:
+- V0: der Boss feuert EXAKT einen Schuss je Runde. Seine RF-Ziele (leicht/schwer) duerfen den
+  Sektor nicht betreten, der RF-Pool ist immer leer, es gibt keinen einzigen Folgeschuss.
+- V1: Zielerfassung bleibt 0,00 - die Salve waere selbst dann inert, wenn piratenadmiral in
+  MULTI_TARGET_VOLLEY_SHIPS stuende. Die Steigerung auf 5,3 Schuesse je Runde kommt allein aus der
+  Folgeschuss-Kette und entspricht dem Erwartungswert 1/(1-0,8) = 5 bei RF 5.
+- V2/V3: mit ZIELERFASSUNG_BASE-Eintrag steigt die Zielerfassung auf 0,95 (Basis 0,35 plus
+  0,06/Stufe aus der ueber PIRATE_RESEARCH_SHARE = 1,0 uebernommenen Spielerforschung). Der Kampf
+  ist nach zwei Runden entschieden.
