@@ -2674,6 +2674,44 @@ Quote.
 > jede weitere Zelle eine Engine, in der eine Kernmechanik fehlt. Block C (Entscheidung 13.3, Bot-
 > und Basis-Wachstum) ist davon **nicht** betroffen und kann vorher laufen.
 
+> **WIE VIEL VERSCHIEBT DIE REPARATUR? GEMESSEN AM 17.08.2026** (`run_r14_delta.mjs` ->
+> `r14_delta.txt`). Verfahren: derselbe Sektorkampf zweimal, einmal mit dem normalen Build und
+> einmal mit einem Messbuild, in dem `stackAggregateThresholdFor()` 1e9 liefert - dort laeuft alles
+> ueber den Einzel-Pfad, RapidFire wirkt also wie gedacht. Gemischte Flotte, 2.550 Schiffe,
+> 1,74 Mrd Wert, Profil `voll`, 40 Laeufe je Zelle, Feindstaerke gewuerfelt aus
+> `PIRATEN_MULTIPLIER_ROLL`:
+>
+> | Sektor | Runden mit / ohne Aggregation | Verlust mit | Verlust ohne | Gegner vernichtet |
+> |---|---|---|---|---|
+> | piraten_mittel | 18,6 / **5,8** | 1,5 % | **0,1 %** | 100 % / 100 % |
+> | piraten_hoch | 26,1 / **7,8** | 2,7 % | **1,3 %** | 100 % / 100 % |
+> | piraten_elite | 33,6 / **10,4** | 5,8 % | **7,6 %** | 100 % / 100 % |
+>
+> **Drei Befunde, die den Umfang der Nacharbeit stark eingrenzen:**
+> 1. **Die Kaempfe werden rund dreimal kuerzer** - das ist der RapidFire-Effekt, und er ist gross.
+> 2. **Die BEUTE-Seite bewegt sich nicht.** Der Gegner wird in beiden Faellen zu 100 % vernichtet,
+>    die vernichtete Feindmacht ist damit identisch. Beute-Anker, Beute-Exponent 0,85 und die
+>    Einnahmen-Baseline 0,80 / 19,82 / 76,85 Mrd haengen an dieser Groesse - **sie sind nicht
+>    betroffen.**
+> 3. **Die Richtung ist nicht einheitlich.** Bei `mittel` und `hoch` sinkt der eigene Verlust,
+>    bei `elite` STEIGT er (5,8 -> 7,6 %). Grund: die NPC-Flotten sind ebenfalls aggregiert und
+>    gewinnen ihr RapidFire genauso zurueck. Die Annahme "die Reparatur staerkt den Spieler"
+>    waere falsch gewesen.
+>
+> **Einschraenkung dieser Messung, ausdruecklich:** der Messbuild schaltet die Aggregation KOMPLETT
+> ab und damit auch den Aggregat-Schadenspfad, nicht nur die RapidFire-Naeherung. Die Tabelle ist
+> deshalb eine **Obergrenze** fuer die Verzerrung des gesamten Aggregat-Pfades, nicht der isolierte
+> R14-Anteil. Sie taugt zugleich als **Abnahmetest**: nach der Reparatur muessen beide Spalten
+> zusammenfallen - tun sie es nicht, ist noch etwas anderes im Aggregat-Pfad ergebnisrelevant.
+>
+> **Neu zu messen ist danach nicht der Plan, sondern die Verlust-Seite:** die Sektor-Serien aus
+> Block A Schritt 1 und die Admiral-Zellen aus Block B. Bei P10 ist der kumulierte WERT-Verlust das
+> Abbruchkriterium (`ADMIRAL_DEFEAT_LOSS_SHARE = 0,30`), die Check-Tiefe reagiert dort direkt auf
+> diese Groesse - **der Faktor 1,75x aus 4.3 ist die Zahl mit dem groessten Risiko.**
+> Entscheidungen, die als VERGLEICH unter identischen Bedingungen getroffen wurden (Exponent 0,85
+> gegen seine Nachbarn, `MAX_ROUNDS` 100 gegen 300, Schwelle 0,30 gegen 0,45, und 4.4 selbst), sind
+> nicht beruehrt - beide Seiten des Vergleichs verschieben sich gleich.
+
 ---
 
 ## 4b. Wirtschaftsklassen: gemessen am 12.08.2026, Entscheidung offen

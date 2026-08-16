@@ -155,8 +155,18 @@ bestaetigt (`probe_rapidfire.mjs`, Messkasten unter der Reparaturtabelle in Absc
 Flotte feuert unter der Aggregationsschwelle 2,2 bis 4,0 Schuesse je Einheit und Runde, darueber
 nur noch rund 1,0 - und jede echte Spielerflotte liegt darueber. Stiller Defekt, keine
 Balance-Frage. **Vor allen weiteren KAMPF-Messungen reparieren**, sonst misst jede weitere Zelle
-eine Engine, in der eine Kernmechanik fehlt. Achtung: die Reparatur beruehrt beide Seiten und
-verschiebt voraussichtlich die Kampfzahlen aus Block A und B.
+eine Engine, in der eine Kernmechanik fehlt.
+
+**Was danach neu zu messen ist - und was NICHT.** Gemessen am 17.08.2026 (`r14_delta.txt`,
+derselbe Kampf mit und ohne Aggregation): die Kaempfe werden rund dreimal kuerzer, aber der Gegner
+wird in beiden Faellen zu 100 % vernichtet. **Die Beute-Seite bewegt sich also nicht** - Beute-Anker,
+Exponent 0,85 und die Baseline 0,80 / 19,82 / 76,85 Mrd bleiben gueltig. Es verschiebt sich die
+VERLUST-Seite (mittel 1,5 -> 0,1 %, hoch 2,7 -> 1,3 %, elite 5,8 -> **7,6 %** - die Richtung ist
+nicht einheitlich, weil NPC-Flotten ihr RapidFire genauso zurueckbekommen). Neu zu erheben sind
+deshalb die Sektor-Serien aus Block A Schritt 1 und die Admiral-Zellen aus Block B; **die Zahl mit
+dem groessten Risiko ist der Faktor 1,75x aus 4.3**, weil dort der Wertverlust selbst das
+Abbruchkriterium ist. Vergleichs-Entscheidungen (Exponent gegen Nachbarwerte, `MAX_ROUNDS`,
+Schwelle 0,30, 4.4) sind nicht betroffen.
 
 Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
 entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5. Block B ist seit dem 17.08.2026
