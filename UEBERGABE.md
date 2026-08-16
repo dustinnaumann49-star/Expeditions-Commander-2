@@ -1,4 +1,4 @@
-# Uebergabe - Stand 15.08.2026 (dritte Fassung des Tages)
+# Uebergabe - Stand 16.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -7,7 +7,7 @@ einsteigt und was NICHT im Plan steht.
 
 > Repo: https://github.com/dustinnaumann49-star/Expeditions-Commander-2
 > Synchronisiere dich. Lies `UMSETZUNGSPLAN_BALANCE.md` **gezielt, nicht komplett** - die Datei ist
-> ueber 270 KB gross. Abschnitt 8 zuerst, dann Abschnitt 2a, dann Abschnitt 1b, danach nur die
+> ueber 300 KB gross. Abschnitt 8 zuerst, dann Abschnitt 2a, dann Abschnitt 1b, danach nur die
 > Abschnitte, die zur jeweiligen Aufgabe gehoeren. `README.md` und `FINALE_BALANCE_CHECKLIST.md`
 > nur bei Bedarf.
 > Beachte Messregel 16: keine Zahl aus einer Beschreibung uebernehmen, immer gegen den Code
@@ -29,8 +29,11 @@ das passt nicht gleichzeitig in eine Session.
   (Beute-Exponent), das gesamte Raid-Paket (Schritt 3) und zuletzt **der Niveau-Punkt aus
   Abschnitt 7**.
 - **BLOCK B, SCHRITT 4 IST GESCHLOSSEN** (15.08.2026): Entscheidung 4.1 (Verlust-Kriterium) und
-  4.2 (contributedPower-Freeze). Naechster Schritt ist **Schritt 5, Entscheidung 4.3 bis 4.8** -
-  und der muss teilweise NEU aufgesetzt werden, siehe unten.
+  4.2 (contributedPower-Freeze).
+- **BLOCK B, SCHRITT 5 IST GEMESSEN, ABER NOCH NICHT GESCHLOSSEN** (16.08.2026). 4.3 hat eine
+  Empfehlung mit Messlage, 4.5 entfaellt, 4.6/4.7/4.8 haben Vorschlaege. **Offen ist allein 4.4**
+  (Boss-RapidFire und Mehrfachziel-Salve) - und weil 4.4 die effektive Gegnerstaerke hebt, muss
+  der Faktor aus 4.3 danach noch einmal nachgezogen werden. Einzelheiten unten.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -45,7 +48,10 @@ das passt nicht gleichzeitig in eine Session.
   Ausnahmen seit dem 14.08.2026: der Beute-Anker (rund 0,094-0,096 Wert-Einheiten je Punkt
   vernichteter Feindmacht - er streut ueber Laeufe um rund 2 %, also nicht auf die dritte
   Nachkommastelle abstellen) und der Beute-Exponent (0,85) sind jetzt gemessen. Seit dem
-  15.08.2026 zusaetzlich das gesamte Raid-Paket.
+  15.08.2026 zusaetzlich das gesamte Raid-Paket, seit dem 16.08.2026 die Gegnerstaerke des
+  Piratenadmirals.
+- **Der Elite-Anteil an der Baseline ist 56,58 Mrd/Tag**, nicht 56,9. Der gerundete Wert steht an
+  mehreren Stellen im Plan; massgeblich ist `income_level.txt`.
 
 ## Was seit dem 10.08.2026 live gegangen ist
 
@@ -110,6 +116,15 @@ Serverstart.
 erfahrungsgemaess unvollstaendig: **vor jeder Server-Aenderung im Client nach dem Funktionsnamen
 greppen.** Konstanten gehoeren ueber `/game/data` an den Client, nicht als zweite hartkodierte Zahl.
 
+**Eine Messung an einem einzelnen Check ist kein Rahmen fuer eine Serien-Entscheidung.** Abschnitt G
+von `admiral_defeat.txt` misst nur Check 1 und wies einen Kippbereich von 2x bis 4x aus; ueber die
+volle Serie liegt er bei 1,25x bis 2x. Am 16.08.2026 waere fast gegen den falschen Bereich
+kalibriert worden.
+
+**Vor dem Kalibrieren pruefen, ob eine Sicherheitskonstante mitentscheidet.** `MAX_ROUNDS` galt als
+reines Sicherheitsnetz und war tatsaechlich der Grund, warum starke Konten den Boss nicht toeteten.
+Ein Faktor, der dagegen kalibriert wird, ist gegen ein Artefakt kalibriert.
+
 **Selbstgebaute Simulationen sind erst dann Beweismittel, wenn sie einen bekannten realen Zustand
 reproduzieren.** Am 12.08.2026 zeigte eine eigens gebaute Wirtschaftssimulation keinen Unterschied
 zwischen kaputtem und repariertem Code und liess den Bot auf 2,5 Billionen Metall wachsen - drei
@@ -124,23 +139,68 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Schritt 5 der Reihenfolge: Block B, Entscheidung 4.3 bis 4.8 (Boss-Anteil, Boss-Mechanik,
-Belohnung, Niederlage, Cooldown).** Schritt 4 ist geschlossen.
+**Block B, Schritt 5 zu Ende bringen: Entscheidung 4.4, danach den Faktor aus 4.3 nachziehen.**
+Alles andere in Schritt 5 ist gemessen und mit Vorschlag versehen.
 
-**Zwei Dinge muessen dort neu aufgesetzt werden, nicht nur kalibriert:**
-1. **4.3 hat das Vorzeichen gewechselt.** Ein hoeherer `ADMIRAL_STAT_SHARE` macht den Gegner
-   SCHWAECHER, nicht staerker - und auch der niedrigste gemessene Wert endet zu 100 % mit einem
-   Sieg in Check 1. Die Konstante ist als Hebel unbrauchbar. Der Hebel ist die Gegnerstaerke
-   selbst; der brauchbare Bereich liegt zwischen dem Zwei- und dem Vierfachen von heute, und
-   dazwischen kippt es abrupt.
-2. **4.5 und 4.8 sind gegen die alte Baseline gerechnet.** Die Rohwerte fuer K liegen jetzt in
-   den beiden Messkaesten dort; der vorgeschlagene K = 0,5 liegt um Faktor 50 bis 200 ueber dem
-   Break-even.
+1. **4.4 messen.** `RAPIDFIRE.piratenadmiral = { leicht: 10, schwer: 8 }` zeigt auf zwei
+   Schiffstypen, die den Sektor gar nicht betreten duerfen - die Anti-Massen-Faehigkeit des Bosses
+   hat null erreichbare Ziele. Umstellen auf die tatsaechlich erlaubten Typen und `piratenadmiral`
+   in `MULTI_TARGET_VOLLEY_SHIPS` aufnehmen, dann gegen `run_aggregate_threshold.mjs` an beiden
+   Seiten der Aggregationsschwelle gegenmessen.
+2. **Faktor nachziehen.** 4.4 hebt die effektive Gegnerstaerke, also `run_admiral_bossscale.mjs`
+   bei Deckel 300 noch einmal um 2,0x herum laufen lassen. Dabei faellt die eine offene Luecke mit
+   ab: `schwach/real` bei 2,0x mit Deckel 300 ist nicht gemessen.
+3. **Schritt 5 schliessen**, Protokolleintrag mit den Endwerten.
+4. Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der
+   Aufruf-Haeufigkeit entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5.
+
+**Messaufwand realistisch einplanen:** mit Rundendeckel 300 kostet jeder P10-Kampf rund das
+Dreifache. Die Sweeps vom 16.08.2026 liefen bei Deckel 100 in etwa fuenf Minuten; dieselbe Matrix
+bei 300 dauert 15 bis 20 Minuten. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
+Ergebnis sofort in die Datei anhaengen) - ein Vollauf ueber alle Zellen schreibt seine Tabellen
+erst am Ende und ist bei einem Abbruch komplett verloren. Genau das ist am 16.08.2026 passiert.
 
 Die Baseline: die 21,69 Mrd/Tag aus Abschnitt 1 sind ueberholt. Gemessen sind
 **0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und spaeten Ausbaustand (inklusive
 Allianz-Station, die in der alten Referenztabelle fehlte); davon stellt das Elite-Bollwerk im
-spaeten Stand rund 56,9 Mrd/Tag.
+spaeten Stand 56,58 Mrd/Tag.
+
+## Was Schritt 5 am 16.08.2026 ergeben hat
+
+Kurzfassung, vollstaendig in den Messkaesten bei Entscheidung 4.3 bis 4.8. Messdateien:
+`admiral_strength.txt`, `admiral_bossscale.txt`, `admiral_roundcap.txt`, `admiral_economics.txt`.
+
+- **Ein einzelner Gegnerstaerke-Faktor trifft die Zieltiefe 3-5 nicht.** Ueber die volle Serie
+  gemessen liegt das brauchbare Fenster bei `voll` zwischen 2,5x und 3,5x, bei `mittel` zwischen
+  1,5x und 2,0x, `schwach` verliert schon bei 1,0x - die Fenster ueberlappen nicht. Die Tiefe ist
+  ausserdem **nicht monoton**: mehr Gegnerstaerke macht die Serie kuerzer, weil bereits Check 1 die
+  30-%-Schwelle reisst.
+- **Der fehlende Hebel ist die Forschungsskalierung des Bosses.** `sideBStatsOverride` umgeht
+  `getEffectiveStats()`: die Eskorte bekommt ueber `PIRATE_RESEARCH_SHARE = 1,0` den vollen
+  Forschungsstand des Spielers, der Boss nicht. Mit Skalierung schrumpft die Spanne zwischen den
+  Ausbaustaenden von rund 4:1 auf rund 1,5:1. Das stand bisher als Randnotiz unter "Ausserdem".
+- **`MAX_ROUNDS = 100` ist heute eine balance-relevante Konstante und wirkt ungleich** - bei
+  `voll` steigt die Siegquote von 47,5 auf 87,5 %, wenn der Deckel auf 1000 geht, bei `mittel`
+  bewegt er praktisch nichts. **Kein anderer Sektor kommt dem Deckel nahe** (Elite-Bollwerk im
+  Schnitt 35 Runden, Maximum 45 ueber alle Sektoren), eine Anhebung auf 300 ist also ohne
+  Nebenwirkung auf die Baseline. **Empfehlung: Deckel 300, dann Faktor 2,0x plus
+  Forschungsskalierung.**
+- **4.5 entfaellt.** Ein freier `ADMIRAL_LOOT_PER_DESTROYED_POWER` widerspricht Entscheidung 2,
+  deren Geltungsbereich `groupOps.ts` einschliesst - P10 laeuft dort. Mit der Beute-Kurve
+  gerechnet: die vernichtete Feindmacht vervierfacht sich (22,6 -> 110 Mrd), die Beute steigt nur
+  um Faktor 3,4, der Verlust dagegen linear. **Je haerter der Boss, desto schlechter das
+  Geschaeft** - fuer `mittel` und `schwach` sogar negativ. Der Break-even-Befund aus Schritt 4 ist
+  damit gegenstandslos, die Risikopraemie muss vollstaendig ueber 4.6 kommen (Vorschlag 2,0x statt
+  1,5x).
+- **Zwei Zahlen in 4.8 waren falsch.** Das Kampffenster sind 6 x 10 min = 1 h, nicht die 4 h aus
+  `PIRATEN_CHECK_INTERVAL_MS`; die "3,8 h Hinflug" sind keine Konstante, sondern
+  `galaxyDurationMs()` am langsamsten Schiff - in beiden Messflotten der Imperator (speed 100),
+  also 0,08 bis 0,82 h je nach Distanz und damit 9 bis 21 moegliche Durchlaeufe/Tag. Ohne jeden
+  Cooldown liegt P10 mit der Beute-Kurve bei 12 Mrd/Tag statt der frueher gerechneten 134 - der
+  Cooldown bleibt richtig, ist aber eine Geschmacksentscheidung und keine Notbremse mehr.
+- **Entscheidung 10 blockiert 4.3 nicht.** Der Verlust saettigt ueber alle Zellen bei 48-55 % und
+  bleibt damit unter Abnahmekriterium 1 (70 %); die Obergrenze wirkt fuer P10 bereits ueber den
+  gestaffelten Einzelschiff-Rueckzug.
 
 ## Was Schritt 4 am 15.08.2026 ergeben hat
 
