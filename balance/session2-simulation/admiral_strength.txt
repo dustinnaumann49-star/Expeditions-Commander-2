@@ -1,0 +1,158 @@
+=== Piratenadmiral, Schritt 5 / M1: Gegnerstaerke ueber die VOLLE Serie ===
+40 Serien je Zelle, 7 Faktoren x 6 Zellen.
+Kriterium 4.1: kumulierter WERT-Verlust >= 0.30 gegen die entsandte Flotte; contributedPower frisch je Check (4.2).
+Gegner je Check = frische Flottenmacht x [1.1 / 1.3 / 1.5] x 1.15^n x FAKTOR.
+
+=== A. Check-Tiefe und Ausgang je Faktor, Schwelle 0,30 (Zielwert Tiefe 3-5) ===
+
+Profil/Flotte      Faktor  Tiefe    Sieg  Niederl.  Extrakt.  Verl.Ende  Verl.C1  Boss lebt n.C1
+voll/real             1x   1.00  100.0%      0.0%      0.0%       0.3%     0.3%            0.0%
+voll/real           1.5x   1.00  100.0%      0.0%      0.0%       1.0%     1.0%            0.0%
+voll/real             2x   1.00  100.0%      0.0%      0.0%       2.9%     2.9%            0.0%
+voll/real           2.5x   1.00  100.0%      0.0%      0.0%       5.9%     5.9%            0.0%
+voll/real             3x   1.68   70.0%     30.0%      0.0%      18.2%     9.9%           45.0%
+voll/real           3.5x   1.88   32.5%     67.5%      0.0%      33.3%    15.0%           67.5%
+voll/real             4x   1.73    0.0%    100.0%      0.0%      48.0%    25.8%          100.0%
+
+mittel/real           1x   1.00  100.0%      0.0%      0.0%       0.5%     0.5%            0.0%
+mittel/real         1.5x   1.00  100.0%      0.0%      0.0%       2.2%     2.2%            0.0%
+mittel/real           2x   2.98   52.5%     47.5%      0.0%      24.5%     5.4%           80.0%
+mittel/real         2.5x   3.20    0.0%    100.0%      0.0%      45.0%     8.3%          100.0%
+mittel/real           3x   2.33    0.0%    100.0%      0.0%      47.2%    16.4%          100.0%
+mittel/real         3.5x   1.57    0.0%    100.0%      0.0%      53.3%    34.0%          100.0%
+mittel/real           4x   1.40    0.0%    100.0%      0.0%      55.2%    40.0%          100.0%
+
+schwach/real          1x   4.90    0.0%    100.0%      0.0%      38.9%     3.1%          100.0%
+schwach/real        1.5x   2.58    0.0%    100.0%      0.0%      44.3%    11.8%          100.0%
+schwach/real          2x   1.23    0.0%    100.0%      0.0%      45.8%    37.5%          100.0%
+schwach/real        2.5x   1.00    0.0%    100.0%      0.0%      47.6%    47.6%          100.0%
+schwach/real          3x   1.00    0.0%    100.0%      0.0%      51.1%    51.1%          100.0%
+schwach/real        3.5x   1.00    0.0%    100.0%      0.0%      51.5%    51.5%          100.0%
+schwach/real          4x   1.00    0.0%    100.0%      0.0%      51.5%    51.5%          100.0%
+
+voll/gross            1x   1.00  100.0%      0.0%      0.0%       0.7%     0.7%            0.0%
+voll/gross          1.5x   1.00  100.0%      0.0%      0.0%       1.3%     1.3%            0.0%
+voll/gross            2x   1.00  100.0%      0.0%      0.0%       2.5%     2.5%            0.0%
+voll/gross          2.5x   1.00  100.0%      0.0%      0.0%       3.8%     3.8%            0.0%
+voll/gross            3x   1.68   65.0%     35.0%      0.0%      18.3%     9.0%           42.5%
+voll/gross          3.5x   2.13   22.5%     77.5%      0.0%      32.4%    13.2%           77.5%
+voll/gross            4x   2.20    0.0%    100.0%      0.0%      43.3%    17.4%          100.0%
+
+mittel/gross          1x   1.00  100.0%      0.0%      0.0%       0.9%     0.9%            0.0%
+mittel/gross        1.5x   1.00  100.0%      0.0%      0.0%       2.8%     2.8%            0.0%
+mittel/gross          2x   2.10   65.0%     35.0%      0.0%      19.3%     7.8%           57.5%
+mittel/gross        2.5x   2.83    0.0%    100.0%      0.0%      40.4%    12.2%          100.0%
+mittel/gross          3x   2.35    0.0%    100.0%      0.0%      40.9%    16.0%          100.0%
+mittel/gross        3.5x   2.02    0.0%    100.0%      0.0%      47.0%    20.4%          100.0%
+mittel/gross          4x   1.60    0.0%    100.0%      0.0%      47.4%    28.8%          100.0%
+
+schwach/gross         1x   4.45    0.0%    100.0%      0.0%      35.6%     5.4%          100.0%
+schwach/gross       1.5x   2.70    0.0%    100.0%      0.0%      38.9%    11.2%          100.0%
+schwach/gross         2x   1.90    0.0%    100.0%      0.0%      47.9%    21.8%          100.0%
+schwach/gross       2.5x   1.35    0.0%    100.0%      0.0%      53.9%    41.4%          100.0%
+schwach/gross         3x   1.00    0.0%    100.0%      0.0%      54.6%    54.6%          100.0%
+schwach/gross       3.5x   1.00    0.0%    100.0%      0.0%      55.4%    55.4%          100.0%
+schwach/gross         4x   1.00    0.0%    100.0%      0.0%      55.5%    55.5%          100.0%
+
+=== B. Empfindlichkeit gegen die Schwelle (dieselben Ziehungen) ===
+
+Profil/Flotte      Faktor  Tiefe T=0.30  Tiefe T=0.40  Tiefe T=0.45  Verl. T=0.30  Verl. T=0.40  Verl. T=0.45
+voll/real             1x         1.00         1.00         1.00         0.3%         0.3%         0.3%
+voll/real           1.5x         1.00         1.00         1.00         1.0%         1.0%         1.0%
+voll/real             2x         1.00         1.00         1.00         2.9%         2.9%         2.9%
+voll/real           2.5x         1.00         1.00         1.00         5.9%         5.9%         5.9%
+voll/real             3x         1.68         1.90         1.95        18.2%        22.6%        23.3%
+voll/real           3.5x         1.88         2.15         2.25        33.3%        40.2%        42.7%
+voll/real             4x         1.73         2.13         2.27        48.0%        59.8%        63.9%
+
+mittel/real           1x         1.00         1.00         1.00         0.5%         0.5%         0.5%
+mittel/real         1.5x         1.00         1.00         1.00         2.2%         2.2%         2.2%
+mittel/real           2x         2.98         3.17         3.33        24.5%        28.1%        31.0%
+mittel/real         2.5x         3.20         3.52         3.75        45.0%        53.1%        58.4%
+mittel/real           3x         2.33         2.77         2.88        47.2%        59.2%        61.7%
+mittel/real         3.5x         1.57         1.63         1.63        53.3%        54.9%        54.9%
+mittel/real           4x         1.40         1.40         1.40        55.2%        55.2%        55.2%
+
+schwach/real          1x         4.90         5.55         5.72        38.9%        50.1%        53.9%
+schwach/real        1.5x         2.58         3.08         3.17        44.3%        56.5%        58.7%
+schwach/real          2x         1.23         1.55         1.60        45.8%        55.7%        57.1%
+schwach/real        2.5x         1.00         1.07         1.35        47.6%        49.7%        57.4%
+schwach/real          3x         1.00         1.00         1.00        51.1%        51.1%        51.1%
+schwach/real        3.5x         1.00         1.00         1.00        51.5%        51.5%        51.5%
+schwach/real          4x         1.00         1.00         1.00        51.5%        51.5%        51.5%
+
+voll/gross            1x         1.00         1.00         1.00         0.7%         0.7%         0.7%
+voll/gross          1.5x         1.00         1.00         1.00         1.3%         1.3%         1.3%
+voll/gross            2x         1.00         1.00         1.00         2.5%         2.5%         2.5%
+voll/gross          2.5x         1.00         1.00         1.00         3.8%         3.8%         3.8%
+voll/gross            3x         1.68         1.93         2.05        18.3%        22.0%        23.9%
+voll/gross          3.5x         2.13         2.63         2.83        32.4%        42.3%        46.5%
+voll/gross            4x         2.20         2.60         2.83        43.3%        52.7%        57.9%
+
+mittel/gross          1x         1.00         1.00         1.00         0.9%         0.9%         0.9%
+mittel/gross        1.5x         1.00         1.00         1.00         2.8%         2.8%         2.8%
+mittel/gross          2x         2.10         2.33         2.50        19.3%        22.2%        24.6%
+mittel/gross        2.5x         2.83         3.38         3.65        40.4%        50.4%        56.1%
+mittel/gross          3x         2.35         2.90         3.00        40.9%        54.0%        56.1%
+mittel/gross        3.5x         2.02         2.33         2.48        47.0%        55.4%        58.9%
+mittel/gross          4x         1.60         1.90         2.10        47.4%        56.6%        62.0%
+
+schwach/gross         1x         4.45         5.35         5.65        35.6%        47.7%        52.8%
+schwach/gross       1.5x         2.70         3.38         3.70        38.9%        52.3%        59.2%
+schwach/gross         2x         1.90         2.27         2.42        47.9%        57.9%        61.5%
+schwach/gross       2.5x         1.35         1.45         1.50        53.9%        57.3%        58.7%
+schwach/gross         3x         1.00         1.00         1.00        54.6%        54.6%        54.6%
+schwach/gross       3.5x         1.00         1.00         1.00        55.4%        55.4%        55.4%
+schwach/gross         4x         1.00         1.00         1.00        55.5%        55.5%        55.5%
+
+=== C. Ertragsseite je Faktor, Schwelle 0,30 - Rohwerte fuer 4.5 bis 4.8 ===
+
+Profil/Flotte      Faktor  vernicht. Feindmacht  Verlust brutto  netto n. 30% Bergung  Rundendeckel
+voll/real             1x             22.59 Mrd        0.07 Mrd              0.05 Mrd          0.0%
+voll/real           1.5x             32.47 Mrd        0.28 Mrd              0.19 Mrd          0.0%
+voll/real             2x             45.00 Mrd        0.78 Mrd              0.55 Mrd          0.0%
+voll/real           2.5x             57.54 Mrd        1.59 Mrd              1.11 Mrd          0.0%
+voll/real             3x             73.89 Mrd        4.86 Mrd              3.40 Mrd         30.0%
+voll/real           3.5x             73.49 Mrd        8.91 Mrd              6.24 Mrd         50.0%
+voll/real             4x             61.26 Mrd       12.82 Mrd              8.98 Mrd         62.5%
+
+mittel/real           1x             21.73 Mrd        0.13 Mrd              0.09 Mrd          0.0%
+mittel/real         1.5x             33.62 Mrd        0.58 Mrd              0.40 Mrd          0.0%
+mittel/real           2x             76.18 Mrd        6.55 Mrd              4.59 Mrd         47.5%
+mittel/real         2.5x             81.28 Mrd       12.02 Mrd              8.41 Mrd         87.5%
+mittel/real           3x             64.21 Mrd       12.61 Mrd              8.83 Mrd         70.0%
+mittel/real         3.5x             43.02 Mrd       14.23 Mrd              9.96 Mrd         20.0%
+mittel/real           4x             34.89 Mrd       14.74 Mrd             10.32 Mrd          0.0%
+
+schwach/real          1x             57.46 Mrd       10.40 Mrd              7.28 Mrd         97.5%
+schwach/real        1.5x             36.95 Mrd       11.85 Mrd              8.29 Mrd         77.5%
+schwach/real          2x             17.44 Mrd       12.24 Mrd              8.57 Mrd         37.5%
+schwach/real        2.5x             10.83 Mrd       12.71 Mrd              8.90 Mrd         35.0%
+schwach/real          3x              6.74 Mrd       13.66 Mrd              9.56 Mrd          0.0%
+schwach/real        3.5x              5.14 Mrd       13.75 Mrd              9.62 Mrd          0.0%
+schwach/real          4x              3.71 Mrd       13.75 Mrd              9.62 Mrd          0.0%
+
+voll/gross            1x              2.75 Mrd        0.02 Mrd              0.02 Mrd          0.0%
+voll/gross          1.5x              4.16 Mrd        0.04 Mrd              0.03 Mrd          0.0%
+voll/gross            2x              5.55 Mrd        0.09 Mrd              0.06 Mrd          0.0%
+voll/gross          2.5x              6.65 Mrd        0.13 Mrd              0.09 Mrd          0.0%
+voll/gross            3x              9.02 Mrd        0.65 Mrd              0.45 Mrd         35.0%
+voll/gross          3.5x             10.16 Mrd        1.14 Mrd              0.80 Mrd         75.0%
+voll/gross            4x             10.64 Mrd        1.53 Mrd              1.07 Mrd         95.0%
+
+mittel/gross          1x              2.69 Mrd        0.03 Mrd              0.02 Mrd          0.0%
+mittel/gross        1.5x              4.03 Mrd        0.10 Mrd              0.07 Mrd          0.0%
+mittel/gross          2x              7.10 Mrd        0.68 Mrd              0.48 Mrd         35.0%
+mittel/gross        2.5x              8.82 Mrd        1.42 Mrd              1.00 Mrd         97.5%
+mittel/gross          3x              8.45 Mrd        1.44 Mrd              1.01 Mrd         97.5%
+mittel/gross        3.5x              8.36 Mrd        1.66 Mrd              1.16 Mrd         92.5%
+mittel/gross          4x              7.05 Mrd        1.67 Mrd              1.17 Mrd         70.0%
+
+schwach/gross         1x              6.20 Mrd        1.25 Mrd              0.88 Mrd        100.0%
+schwach/gross       1.5x              5.18 Mrd        1.37 Mrd              0.96 Mrd        100.0%
+schwach/gross         2x              4.20 Mrd        1.69 Mrd              1.18 Mrd         75.0%
+schwach/gross       2.5x              2.79 Mrd        1.90 Mrd              1.33 Mrd         40.0%
+schwach/gross         3x              1.67 Mrd        1.92 Mrd              1.35 Mrd         27.5%
+schwach/gross       3.5x              1.15 Mrd        1.95 Mrd              1.37 Mrd          0.0%
+schwach/gross         4x              0.96 Mrd        1.96 Mrd              1.37 Mrd          0.0%
+
