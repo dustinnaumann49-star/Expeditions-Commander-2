@@ -9,6 +9,7 @@ import { ensureBotUsers } from './game/bot.js';
 import { ensurePirateBases } from './game/pirateBaseState.js';
 import { checkModuleIntegrity } from './game/moduleIntegrity.js';
 import { listGameStateSizes, listGameStateFieldSizes } from './db.js';
+import { loadPlayerState, savePlayerState } from './game/state.js';
 
 // Diagnose-Marker (Nutzerentscheidung Juli 2026: Deploy-Verwirrung auf Coolify - Webhook feuert
 // zuverlaessig, aber unklar ob der Server tatsaechlich den neuesten Commit ausfuehrt). Liest den
@@ -119,6 +120,42 @@ app.listen(PORT, async () => {
     });
   } catch (err) {
     console.error('Spielstand-Felder-Fehler:', err);
+  }
+
+  // ---- Migrationen einmal aktiv anstossen (16.08.2026) ----
+  // `loadPlayerState()` migriert Spielstaende beim Laden, aber wirksam wird das erst, wenn der
+  // Stand danach auch GESPEICHERT wird - also beim naechsten tick() des jeweiligen Kontos. Die
+  // Diagnose-Ausgabe oben liest dagegen roh aus der Datenbank und lief bisher VOR jeder Migration:
+  // sie zeigte deshalb zwangslaeufig noch die alten Groessen, was am 16.08.2026 wie ein Fehlschlag
+  // der Migration aussah, obwohl keiner vorlag. Hier wird jede Migration deshalb einmal aktiv
+  // durchgezogen, statt auf den Heartbeat zu warten, und das Ergebnis direkt danach gemessen.
+  // Fehler-Isolation pro Konto nach dem Muster aus `runGlobalHeartbeat()`: ein kaputter Stand darf
+  // nicht alle folgenden ueberspringen.
+  try {
+    const vorher = listGameStateSizes();
+    const summe = (l: { bytes: number }[]) => l.reduce((a, b) => a + b.bytes, 0);
+    vorher.forEach((s) => {
+      try {
+        savePlayerState(loadPlayerState(s.userId));
+      } catch (err) {
+        console.error(`[Migration] Fehler bei Nutzer ${s.userId} (${s.username}):`, err);
+      }
+    });
+    const nachher = listGameStateSizes();
+    const alt = summe(vorher);
+    const neuGesamt = summe(nachher);
+    console.log(
+      `[Migration] ${vorher.length} Konten durchgezogen: ${(alt / 1024).toFixed(0)} KB -> `
+      + `${(neuGesamt / 1024).toFixed(0)} KB`
+      + (alt > 0 ? ` (${(100 - (neuGesamt / alt) * 100).toFixed(0)} % kleiner)` : '')
+    );
+    nachher.forEach((s) => {
+      const v = vorher.find((x) => x.userId === s.userId);
+      const diff = v && v.bytes > 0 ? ` (vorher ${(v.bytes / 1024).toFixed(0)} KB)` : '';
+      console.log(`  ${(s.bytes / 1024).toFixed(0).padStart(6)} KB  ${s.username}${s.isBot ? ' (Bot)' : ''}${diff}`);
+    });
+  } catch (err) {
+    console.error('Migrations-Durchlauf-Fehler:', err);
   }
 
   // KI-Spieler-Accounts (KI-Vega/KI-Nyx) throttled wieder eingefuehrt (30.07.2026, siehe README
