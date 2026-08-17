@@ -1355,10 +1355,38 @@ function fireShots(
 // ===== Aggregat-SCHUETZEN (grosse Stapel als Angreifer) =====
 // Statt jede Einheit einzeln feuern zu lassen (das war der eigentliche Performance-Killer bei
 // grossen Flotten), wird die GESAMTE Schusszahl des Stapels ueber den Erwartungswert der
-// RapidFire-Kette + Normalverteilungs-Sampling berechnet (sampleBinomial oben), dann proportional
+// RapidFire-Kette + Normalverteilungs-Sampling berechnet (sampleBinomial oben) und anschliessend
 // auf die Ziel-"Eimer" (normale Einzel-Ziel-Pool als EIN Eimer + jedes gegnerische Aggregat als
-// eigener Eimer) verteilt. Pro Eimer wird die Trefferzahl wieder per sampleBinomial bestimmt und in
-// EINEM Rutsch angewendet - kein Schuss-fuer-Schuss-Loop mehr fuer den Aggregat-Anteil des Kampfes.
+// eigener Eimer) verteilt. Pro Aggregat-Eimer wird die Trefferzahl wieder per sampleBinomial
+// bestimmt und in EINEM Rutsch angewendet - kein Schuss-fuer-Schuss-Loop fuer den Aggregat-Anteil.
+//
+// R14 (Nutzerfund 17.08.2026, Reparatur): die Naeherung hat RapidFire praktisch weggerundet.
+// Gemessen (probe_rapidfire.mjs) feuerte dieselbe Flotte unter der Aggregationsschwelle 2,2-4,0
+// Schuesse je Einheit und Runde, darueber nur noch rund 1,0 - und da die Schwellen bei 500/100/50
+// liegen, laeuft JEDE echte Spielerflotte ueber diesen Pfad. Drei Ursachen, alle hier behoben:
+//   1. Die Folgeschuss-Kette wurde mit dem ANTEIL des Konterziels an allen lebenden Zielen
+//      verduennt (`rfEligibleShare`). Im Einzel-Pfad kettet ein Schuetze weiter, SOBALD sein
+//      Konterziel ueberhaupt vorhanden ist - die Zielerfassung sucht es gezielt heraus. Seit der
+//      RF-Neuordnung vom 04.08.2026 (genau EIN RF-Ziel je Standardschiff) fiel dieser Anteil auf
+//      rund ein Sechstel, und damit fiel RapidFire faktisch aus. Jetzt wird exakt die
+//      Ein-Schuss-Kettenwahrscheinlichkeit des Einzel-Pfads nachgebildet (siehe unten).
+//   2. Die gewonnenen Zusatzschuesse wurden proportional zur Stueckzahl auf ALLE Ziel-Eimer
+//      verteilt - der gezielte Konter, der eigentliche Zweck von RapidFire, existierte hier nicht.
+//      Jetzt wird die Schusszahl in einen GEZIELTEN Anteil (Zielerfassung geglueckt -> nur
+//      RF-anfaellige Eimer) und einen ungezielten Anteil (alle Eimer) aufgeteilt.
+//   3. `rapidFireTriggers` wurde nie hochgezaehlt, deshalb stand im Kampfbericht 0.
+// R14b (gleicher Anlass): Aggregat-Schuetzen bekamen hart `overkillFraction = 0` uebergeben,
+// waehrend fireShots() den echten `getDurchschlagFraction(researchShooter)` durchreicht. Der
+// frueher hier stehende Kommentar begruendete das mit dem Individual-Zweig INNERHALB dieser
+// Funktion, der selbst 0 uebergab - zirkulaer. Damit war der Durchschlag fuer grosse Stapel
+// abgeschaltet, obwohl die Aggregation laut Entscheidung 1 das Kampfergebnis nicht veraendern
+// darf. Jetzt beide Zweige mit demselben Faktor wie der Einzel-Pfad.
+//
+// PERFORMANCE (unveraendert die Vorgabe): die Rechenzeit darf nur von der Anzahl VERSCHIEDENER
+// Typen abhaengen, nicht von der Stueckzahl. Der Erwartungswert unten kostet O(RF-Zieltypen +
+// Aggregate) je Stapel; die Aggregat-Eimer werden weiterhin gebuendelt abgerechnet. Nur der
+// (per Definition unter der Schwelle liegende, also kleine) Einzel-Ziel-Pool wird schussweise
+// abgearbeitet - genau wie bisher.
 function fireShotsAggregateShooters(
   shooterStacks: AggregateStack[],
   targets: CombatUnit[],
@@ -1373,6 +1401,19 @@ function fireShotsAggregateShooters(
   battleModifier: BattleModifierType | null = null
 ) {
   const MAX_SHOTS_PER_UNIT = 50;
+  // R14b: derselbe Durchschlags-Faktor wie im Einzel-Pfad (fireShots()).
+  const overkillFraction = getDurchschlagFraction(researchShooter);
+  // Einmal pro Aufruf aufgebaut und ueber alle Schuetzen-Stapel hinweg mitgefuehrt (nicht pro
+  // Stapel neu) - dadurch sieht ein spaeterer Stapel die Abschuesse eines frueheren, genau wie
+  // mehrere Schuetzen innerhalb eines fireShots()-Aufrufs. `targets.length` war dafuer ohnehin
+  // ungeeignet, weil dort in derselben Runde bereits getoetete Einheiten noch mitgezaehlt wurden.
+  const alivePool = new AliveTargetPool(targets);
+  const typedPool = new AliveTargetsByType(targets);
+  const onKill = (unit: CombatUnit) => {
+    alivePool.remove(unit);
+    typedPool.remove(unit);
+  };
+
   shooterStacks.forEach((stack) => {
     if (!stack.active || stack.hpPoolCur <= 0) return;
     const count = aggAliveCount(stack);
@@ -1381,89 +1422,184 @@ function fireShotsAggregateShooters(
     let precision = getPrecisionChance(researchShooter, applyPlayerResearch, stack.typeId);
     let critChance = getCritChance(researchShooter, applyPlayerResearch, stack.typeId);
     const rfMap = RAPIDFIRE[stack.typeId] || {};
-    const hasRFPotential = Object.keys(rfMap).length > 0;
+    const rfTypeIds = Object.keys(rfMap);
+    const hasRFPotential = rfTypeIds.length > 0;
     let accuracy = hasRFPotential ? getZielerfassungAccuracy(researchShooter, stack.typeId) : 0;
     if (battleModifier === 'nebel' && applyPlayerResearch) precision *= 0.85;
     if (battleModifier === 'sensorstoerung' && applyPlayerResearch) accuracy *= 0.8;
     if (battleModifier === 'strahlungssturm' && !applyPlayerResearch) critChance = Math.min(1, critChance * 1.5);
 
-    // Erwartete Folgeschuss-Kette: gewichteter Durchschnitt der RapidFire-Chance ueber die aktuell
-    // lebenden, RF-faehigen Zieltypen (gewichtet nach deren Anteil an ALLEN lebenden Zielen) -
-    // ergibt denselben Erwartungswert wie das Original (geometrische Reihe), ohne die Kette pro
-    // Schiff einzeln zu simulieren.
-    const aliveIndividualCount = targets.length;
+    const aliveIndividualCount = alivePool.size;
     const aliveAggTargets = targetAggregates.filter((a) => a.active && a.hpPoolCur > 0);
-    const totalAliveTargets = aliveIndividualCount + aliveAggTargets.reduce((s, a) => s + aggAliveCount(a), 0);
+    const aggWeights = aliveAggTargets.map((a) => aggAliveCount(a));
+    const totalAggWeight = aggWeights.reduce((s, w) => s + w, 0);
+    const totalAliveTargets = aliveIndividualCount + totalAggWeight;
+    if (totalAliveTargets <= 0) return;
+
+    // ---- RF-anfaellige Ziele: Stueckzahl-Gewichte und gewichtete RF-Chancen ----
+    // Individual-Ziele je RF-Zieltyp (O(RF-Zieltypen), nicht O(Zielanzahl)) ...
+    const rfIndividual: { typeId: string; weight: number; rf: number }[] = [];
+    let rfIndividualWeight = 0;
+    let rfChanceSum = 0; // Summe (Gewicht x RF-Chance) ueber alle RF-anfaelligen Ziele
+    if (hasRFPotential) {
+      for (const typeId of rfTypeIds) {
+        const weight = typedPool.arrayFor(typeId).length;
+        if (weight <= 0) continue;
+        const rf = getRapidFireChance(stack.typeId, typeId, applyPlayerResearch);
+        rfIndividual.push({ typeId, weight, rf });
+        rfIndividualWeight += weight;
+        rfChanceSum += weight * rf;
+      }
+    }
+    // ... und die RF-anfaelligen gegnerischen Aggregate.
+    const rfAggIdx: number[] = [];
+    let rfAggWeight = 0;
+    if (hasRFPotential) {
+      aliveAggTargets.forEach((a, i) => {
+        if (rfMap[a.typeId] === undefined) return;
+        rfAggIdx.push(i);
+        rfAggWeight += aggWeights[i];
+        rfChanceSum += aggWeights[i] * getRapidFireChance(stack.typeId, a.typeId, applyPlayerResearch);
+      });
+    }
+    const rfTotalWeight = rfIndividualWeight + rfAggWeight;
+
+    // ---- Erwartete Folgeschuss-Kette, exakt nach der Logik des Einzel-Pfads ----
+    // Dort laeuft JEDER Schuss so ab: mit Wahrscheinlichkeit `accuracy` (Zielerfassung) wird
+    // GEZIELT aus den RF-anfaelligen Zielen gewaehlt, sonst zufaellig aus allen lebenden Zielen.
+    // Anschliessend wird die Folgeschuss-Chance des tatsaechlich gewaehlten Ziels gewuerfelt
+    // (bei Treffer wie bei Fehlschuss). Der Erwartungswert je Schuss ist damit:
+    //   accuracy x E[RF-Chance | Ziel aus RF-Pool] + (1 - accuracy) x E[RF-Chance | Ziel beliebig]
+    // Der frueher hier verwendete Ausdruck `accuracy x rfEligibleShare x avgRfChance` unterschlug
+    // den ersten Summanden: er behandelte auch den GEZIELTEN Schuss so, als traefe er das
+    // Konterziel nur mit dessen Haeufigkeitsanteil (siehe R14 im Kopfkommentar).
     let expectedContinuation = 0;
-    if (hasRFPotential && totalAliveTargets > 0) {
-      const individualRfWeight = targets.filter((t) => rfMap[t.typeId] !== undefined).length;
-      const aggRfWeight = aliveAggTargets.filter((a) => rfMap[a.typeId] !== undefined).reduce((s, a) => s + aggAliveCount(a), 0);
-      const rfEligibleShare = (individualRfWeight + aggRfWeight) / totalAliveTargets;
-      // Durchschnittlicher RF-Wert der anfaelligen Ziele (grobe Naeherung: Durchschnitt aller im
-      // Mapping gelisteten Chancen, gewichtet ist bei der geringen Anzahl Zieltypen nicht noetig).
-      const rfChances = Object.keys(rfMap).map((tid) => getRapidFireChance(stack.typeId, tid, applyPlayerResearch));
-      const avgRfChance = rfChances.length > 0 ? rfChances.reduce((a, b) => a + b, 0) / rfChances.length : 0;
-      expectedContinuation = accuracy * rfEligibleShare * avgRfChance;
+    if (hasRFPotential && rfTotalWeight > 0) {
+      const inRfPool = rfChanceSum / rfTotalWeight; // gezielter Schuss
+      const overAllTargets = rfChanceSum / totalAliveTargets; // ungezielter Schuss
+      expectedContinuation = accuracy * inRfPool + (1 - accuracy) * overAllTargets;
     }
     const expectedShotsPerUnit = Math.min(MAX_SHOTS_PER_UNIT, 1 / Math.max(0.0001, 1 - expectedContinuation));
     const meanShots = count * expectedShotsPerUnit;
     const stddevShots = Math.sqrt(count) * expectedShotsPerUnit * 0.5;
     let totalShots = Math.round(meanShots + gaussianRandom() * stddevShots);
     totalShots = Math.max(count, Math.min(count * MAX_SHOTS_PER_UNIT, totalShots));
-    if (totalAliveTargets <= 0 || totalShots <= 0) return;
+    if (totalShots <= 0) return;
 
     const shooterKey = aggStatKey(stack);
     shooterStats.shotsFired[shooterKey] = (shooterStats.shotsFired[shooterKey] || 0) + totalShots;
+    // R14, Teildefekt 3: jeder Schuss oberhalb des ersten je Einheit stammt aus einer
+    // RapidFire-Ausloesung. Kleine Abweichung zum Einzel-Pfad, bewusst in Kauf genommen: dort
+    // zaehlt auch eine Ausloesung mit, die am MAX_SHOTS_PER_UNIT-Deckel keinen Schuss mehr
+    // gewaehrt - hier zaehlt nur, was tatsaechlich gefeuert wurde.
+    const rfTriggers = Math.max(0, totalShots - count);
+    if (rfTriggers > 0) shooterStats.rapidFireTriggers[shooterKey] = (shooterStats.rapidFireTriggers[shooterKey] || 0) + rfTriggers;
 
-    // Schuesse proportional auf die Ziel-"Eimer" verteilen: normale Einzel-Pool (ein Eimer) +
-    // jedes gegnerische Aggregat (je ein Eimer) - gewichtet nach lebender Stueckzahl.
-    const buckets: { weight: number; isIndividual: boolean; agg?: AggregateStack }[] = [];
-    if (aliveIndividualCount > 0) buckets.push({ weight: aliveIndividualCount, isIndividual: true });
-    aliveAggTargets.forEach((a) => buckets.push({ weight: aggAliveCount(a), isIndividual: false, agg: a }));
-    const totalBucketWeight = buckets.reduce((s, b) => s + b.weight, 0);
-    if (totalBucketWeight <= 0) return;
+    // ---- Schuesse aufteilen: GEZIELT (Zielerfassung geglueckt) vs. ungezielt ----
+    // R14, Teildefekt 2: gezielte Schuesse gehen ausschliesslich auf RF-anfaellige Eimer, nicht
+    // mehr anteilig auf alles. Ist kein RF-anfaelliges Ziel vorhanden, gibt es auch keinen
+    // gezielten Anteil - dann verhaelt sich der Stapel wie zuvor.
+    const aimedShots = rfTotalWeight > 0 ? sampleBinomial(totalShots, accuracy) : 0;
+    const randomShots = totalShots - aimedShots;
 
-    buckets.forEach((bucket) => {
-      const shotsAtBucket = Math.round(totalShots * (bucket.weight / totalBucketWeight));
-      if (shotsAtBucket <= 0) return;
-
-      if (bucket.isIndividual) {
-        // Kleine Pool (per Definition unter STACK_AGGREGATE_THRESHOLD) - einzeln abhandeln reicht
-        // performancemaessig locker aus, nutzt dieselbe Trefferlogik wie normale Schuetzen.
-        const pool = new AliveTargetPool(targets);
-        for (let i = 0; i < shotsAtBucket && pool.size > 0; i++) {
-          const target = pickRandom(pool.array);
-          if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, stack.typeId)) continue;
-          shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + 1;
-          const isCrit = critChance > 0 && Math.random() < critChance;
-          if (isCrit) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + 1;
-          const dmg = stack.waffen * (isCrit ? getCritDamageMultiplier(stack.typeId) : 1);
-          shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dmg;
-          applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, 0, targetsSharedShieldPool, (u) => pool.remove(u), undefined);
-        }
-      } else if (bucket.agg) {
-        const hits = sampleBinomial(shotsAtBucket, precision * (1 - getEvasionChance(researchTarget, !applyPlayerResearch, bucket.agg.typeId, stack.typeId)));
-        const crits = sampleBinomial(hits, critChance);
-        if (hits > 0) {
-          shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + hits;
-          if (crits > 0) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + crits;
-          const dealt = applyAggregateDamage(
-            bucket.agg,
-            hits,
-            crits,
-            stack.waffen,
-            dmgTakenTarget,
-            shieldDmgTakenTarget,
-            aggStatKey(bucket.agg),
-            // Aggregat-SCHUETZEN bekommen bewusst keinen Durchschlag - identisch zum
-            // Individual-Zweig direkt darueber, der applyHitToTarget(..., 0, ...) aufruft.
-            0,
-            stack.typeId
-          );
-          shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dealt;
-        }
+    // Schuesse je Aggregat-Eimer einsammeln (Index-parallel zu aliveAggTargets).
+    const shotsPerAgg = new Array<number>(aliveAggTargets.length).fill(0);
+    let shotsAtIndividual = 0;
+    if (aimedShots > 0) {
+      const toIndividual = Math.round(aimedShots * (rfIndividualWeight / rfTotalWeight));
+      shotsAtIndividual += toIndividual;
+      let rest = aimedShots - toIndividual;
+      for (const i of rfAggIdx) {
+        if (rest <= 0) break;
+        const share = rfAggWeight > 0 ? aggWeights[i] / rfAggWeight : 0;
+        const s = Math.min(rest, Math.round(aimedShots * share));
+        shotsPerAgg[i] += s;
+        rest -= s;
       }
+      if (rest > 0 && rfAggIdx.length > 0) shotsPerAgg[rfAggIdx[0]] += rest;
+      else if (rest > 0) shotsAtIndividual += rest;
+    }
+    if (randomShots > 0) {
+      const toIndividual = Math.round(randomShots * (aliveIndividualCount / totalAliveTargets));
+      shotsAtIndividual += toIndividual;
+      let rest = randomShots - toIndividual;
+      for (let i = 0; i < aliveAggTargets.length; i++) {
+        if (rest <= 0) break;
+        const share = totalAggWeight > 0 ? aggWeights[i] / totalAggWeight : 0;
+        const s = Math.min(rest, Math.round(randomShots * share));
+        shotsPerAgg[i] += s;
+        rest -= s;
+      }
+      if (rest > 0 && aliveAggTargets.length > 0) shotsPerAgg[0] += rest;
+      else if (rest > 0) shotsAtIndividual += rest;
+    }
+
+    // ---- Aggregat-Eimer: gebuendelt abrechnen (unabhaengig von der Stueckzahl) ----
+    aliveAggTargets.forEach((agg, i) => {
+      const shotsAtBucket = shotsPerAgg[i];
+      if (shotsAtBucket <= 0) return;
+      const hits = sampleBinomial(shotsAtBucket, precision * (1 - getEvasionChance(researchTarget, !applyPlayerResearch, agg.typeId, stack.typeId)));
+      if (hits <= 0) return;
+      const crits = sampleBinomial(hits, critChance);
+      shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + hits;
+      if (crits > 0) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + crits;
+      const dealt = applyAggregateDamage(
+        agg,
+        hits,
+        crits,
+        stack.waffen,
+        dmgTakenTarget,
+        shieldDmgTakenTarget,
+        aggStatKey(agg),
+        overkillFraction,
+        stack.typeId
+      );
+      shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dealt;
     });
+
+    // ---- Einzel-Ziel-Pool: schussweise, wie bisher (dieser Pool liegt per Definition unter der
+    // Aggregationsschwelle, ist also klein). Gezielte Schuesse waehlen zuerst den RF-Zieltyp
+    // (gewichtet nach lebender Stueckzahl, O(RF-Zieltypen)) und daraus eine zufaellige Einheit -
+    // das entspricht der Auswahl aus dem RF-Pool im Einzel-Pfad, ohne dessen Pool-Kopie je Schuss.
+    const aimedAtIndividual = rfIndividualWeight > 0 && aimedShots > 0
+      ? Math.min(shotsAtIndividual, Math.round(aimedShots * (rfIndividualWeight / rfTotalWeight)))
+      : 0;
+    const fireOne = (target: CombatUnit | undefined) => {
+      if (!target) return;
+      if (!rollHit(target, precision, researchTarget, !applyPlayerResearch, battleModifier, stack.typeId)) return;
+      shooterStats.hits[shooterKey] = (shooterStats.hits[shooterKey] || 0) + 1;
+      const isCrit = critChance > 0 && Math.random() < critChance;
+      if (isCrit) shooterStats.crits[shooterKey] = (shooterStats.crits[shooterKey] || 0) + 1;
+      const dmg = stack.waffen * (isCrit ? getCritDamageMultiplier(stack.typeId) : 1);
+      shooterStats.dmgDealt[shooterKey] = (shooterStats.dmgDealt[shooterKey] || 0) + dmg;
+      applyHitToTarget(target, dmg, dmgTakenTarget, shieldDmgTakenTarget, targets, overkillFraction, targetsSharedShieldPool, onKill, typedPool);
+    };
+    for (let i = 0; i < aimedAtIndividual && alivePool.size > 0; i++) {
+      // Gewichte hier bewusst live aus typedPool lesen: Konterziele sterben waehrend der Salve,
+      // und ein Schuss auf einen leeren Typ waere ein stiller Blindschuss.
+      let liveRfWeight = 0;
+      for (const e of rfIndividual) liveRfWeight += typedPool.arrayFor(e.typeId).length;
+      if (liveRfWeight <= 0) {
+        // Kein Konterziel mehr da - im Einzel-Pfad faellt die Zielerfassung dann auf ein
+        // beliebiges lebendes Ziel zurueck.
+        fireOne(pickRandom(alivePool.array));
+        continue;
+      }
+      let roll = Math.random() * liveRfWeight;
+      let picked: CombatUnit | undefined;
+      for (const e of rfIndividual) {
+        const bucket = typedPool.arrayFor(e.typeId);
+        if (roll < bucket.length) {
+          picked = bucket[Math.floor(Math.random() * bucket.length)];
+          break;
+        }
+        roll -= bucket.length;
+      }
+      fireOne(picked || pickRandom(alivePool.array));
+    }
+    for (let i = aimedAtIndividual; i < shotsAtIndividual && alivePool.size > 0; i++) {
+      fireOne(pickRandom(alivePool.array));
+    }
   });
 }
 
