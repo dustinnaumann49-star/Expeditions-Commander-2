@@ -14,3 +14,13 @@ voll / kleine Flotte + kleine Verteidigung: 22.07 Mrd pro Raid, 44.15 Mrd pro Wo
 schwach / kleine Flotte: 20.00 Mrd pro Raid, 40.01 Mrd pro Woche (Mi+So), 5.72 Mrd/Tag, DM 3776/Woche
 Obergrenze bei 12/12: 22.07 Mrd pro Raid, 44.15 Mrd pro Woche
 Verlust bei nicht-perfekter Abwehr: 25% des Ressourcenbestands, EINMAL pro Raid
+
+=== NEUMESSUNG NACH R14 + R14b, 17.08.2026, 40 komplette Raids je Fall ===
+=== Raid: 12 Wellen, 40 komplette Raids je Fall ===
+Fall | oWellen gewonnen | perfekt (12/12)% | oFlottenverlust% | oVerteidigungsverlust% | oBergungs-DM
+voll / grosse Flotte + volle Verteidigung | 12.0 | 100 | 12.7 | 20.8 | 20.0
+voll ohne Kampf-Boost | 12.0 | 100 | 26.8 | 44.8 | 20.0
+mittel / grosse Flotte | 12.0 | 100 | 23.8 | 13.8 | 20.0
+voll / kleine Flotte + kleine Verteidigung | 12.0 | 100 | 13.2 | 91.9 | 20.0
+schwach / kleine Flotte | 10.9 | 0 | 94.4 | 69.5 | 20.0
+

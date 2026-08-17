@@ -1,0 +1,15 @@
+--- VORHER (Stand vor R14), 10 Laeufe, 20.700 Schiffe, Profil voll ---
+Sektor            ms je Kampf   Runden   Schiffe Gegner
+piraten_mittel           14 ms     20.5          17.700
+piraten_elite            10 ms     30.7          25.799
+
+--- NACHHER (mit R14 + R14b), 10 Laeufe, 20.700 Schiffe, Profil voll ---
+Sektor            ms je Kampf   Runden   Schiffe Gegner
+piraten_mittel           10 ms      9.2          16.196
+piraten_elite             4 ms     17.2          26.609
+
+--- SKALIERUNGSTEST 10x (mit R14 + R14b), 5 Laeufe, 207.000 Schiffe, Profil voll ---
+Sektor            ms je Kampf   Runden   Schiffe Gegner
+piraten_mittel           14 ms      8.6         152.714
+piraten_elite             6 ms     21.6         312.367
+

@@ -11,3 +11,17 @@ Einsatz                 Siege   Belohnung    Verlust  Netto heute  Netto +30% Be
 Solo Hoch (24h)           4.6    1.16 Mrd   2.52 Mrd    -1.37 Mrd           -0.61 Mrd             79.76 Mrd
 Elite-Bollwerk (Serie)    6.0   32.60 Mrd   7.13 Mrd    25.47 Mrd           27.61 Mrd            125.06 Mrd
 
+
+=== NEUMESSUNG NACH R14 + R14b, 17.08.2026, 40 Durchlaeufe je Zeile ===
+(entspricht dem 5.7-fachen der Session-2-Referenzflotte)
+
+--- Profil voll, 40 Durchlaeufe je Zeile ---
+Einsatz                 Siege   Belohnung    Verlust  Netto heute  Netto +30% Bergung  vernicht. Feindmacht
+Solo Hoch (24h)           4.5    1.14 Mrd   4.40 Mrd    -3.26 Mrd           -1.94 Mrd             79.51 Mrd
+Elite-Bollwerk (Serie)    6.0   32.60 Mrd   9.20 Mrd    23.40 Mrd           26.16 Mrd            124.70 Mrd
+
+--- Profil mittel, 40 Durchlaeufe je Zeile ---
+Einsatz                 Siege   Belohnung    Verlust  Netto heute  Netto +30% Bergung  vernicht. Feindmacht
+Solo Hoch (24h)           4.3    1.08 Mrd   4.49 Mrd    -3.40 Mrd           -2.06 Mrd             73.20 Mrd
+Elite-Bollwerk (Serie)    6.0   32.60 Mrd  11.07 Mrd    21.53 Mrd           24.85 Mrd            119.72 Mrd
+

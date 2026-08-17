@@ -39,3 +39,7 @@ forschung  mittel/real        1.5x   4.22   27.5%     72.5%      0.0%      27.3%
 forschung  mittel/real       1.75x   4.63    0.0%    100.0%      0.0%      38.5%  100.0%       93.40 Mrd       7.19 Mrd        100.0%
 forschung  schwach/real      1.75x   1.52    0.0%    100.0%      0.0%      43.2%  100.0%       23.31 Mrd       8.08 Mrd        100.0%
 forschung  voll/gross        1.75x   1.05   17.5%     82.5%      0.0%      34.6%   82.5%        3.06 Mrd       0.85 Mrd         82.5%
+forschung  voll/real         1.75x   3.85    0.0%    100.0%      0.0%      36.6%  100.0%       71.41 Mrd       6.84 Mrd        100.0%
+forschung  voll/real          1.5x   2.70   57.5%     42.5%      0.0%      20.6%   70.0%       61.23 Mrd       3.86 Mrd         70.0%
+forschung  voll/real         1.25x   1.43   95.0%      5.0%      0.0%       8.6%   25.0%       45.95 Mrd       1.62 Mrd         25.0%
+forschung  voll/real          1.6x   2.85   40.0%     60.0%      0.0%      23.2%   60.0%       61.16 Mrd       4.34 Mrd         60.0%

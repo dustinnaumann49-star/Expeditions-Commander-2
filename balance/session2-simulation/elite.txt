@@ -20,3 +20,13 @@ Konstellation | Sieg% | oVerlust Spieler 1% | oVerlust Spieler 2%
 voll + mittel | 100 | 1.6 | 2.5
 voll + schwach | 100 | 1.0 | 2.6
 voll + schwach (kleine Flotte) | 100 | 0.7 | 0.1
+
+=== NEUMESSUNG NACH R14 + R14b, 17.08.2026, 40 Laeufe je Konstellation ===
+GESAMT pro Spieler pro 24h-Serie: 32.60 Mrd + 737 DM
+
+=== Elite-Bollwerk Mehrspieler-Check, 40 Laeufe je Konstellation ===
+Konstellation | Sieg% | oVerlust Spieler 1% | oVerlust Spieler 2%
+2x voll | 100 | 3.3 | 3.3
+voll + mittel | 100 | 1.3 | 2.0
+voll + schwach | 100 | 0.5 | 1.5
+voll + schwach (kleine Flotte) | 100 | 0.4 | 0.0

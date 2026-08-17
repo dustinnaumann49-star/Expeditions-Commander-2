@@ -8,12 +8,17 @@
 // Defekts und zugleich der Abnahmetest fuer die Reparatur: nach R14 muessen beide Zahlen
 // zusammenfallen.
 //
-// Aufruf: [MESSBUILD=...] node run_r14_delta.mjs <label> [laeufe] [datei]
+// Aufruf: [MESSBUILD=...] node run_r14_delta.mjs <label> [laeufe] [datei] [sektor]
+//
+// 17.08.2026 ergaenzt: optionales viertes Argument <sektor>. Ohne Angabe laufen wie bisher alle
+// drei Sektoren in einem Aufruf; mit Angabe genau einer - so lassen sich die Zellen scheibenweise
+// messen und das Ergebnis sofort anhaengen (Messregel aus der Uebergabe: ein Vollauf schreibt
+// seine Tabelle erst am Ende und ist bei einem Abbruch komplett verloren).
 import { appendFileSync } from 'node:fs';
 import { combat, runner, sectors, stateFor, value, pct } from './lib4.mjs';
 import { SHIPS } from '../../server/dist/game/data/ships.js';
 
-const [, , LABEL, RUNS_S, OUT_S] = process.argv;
+const [, , LABEL, RUNS_S, OUT_S, SEKTOR_S] = process.argv;
 const RUNS = Number(RUNS_S || 40);
 const OUT = OUT_S || 'r14_delta.txt';
 
@@ -29,7 +34,9 @@ const startValue = fleetValue(FLEET);
 
 const lines = [`--- ${LABEL}, ${RUNS} Laeufe je Sektor, Profil voll ---`, 'Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet'];
 
-for (const sektorId of ['piraten_mittel', 'piraten_hoch', 'piraten_elite']) {
+const SEKTOREN = SEKTOR_S ? [SEKTOR_S] : ['piraten_mittel', 'piraten_hoch', 'piraten_elite'];
+
+for (const sektorId of SEKTOREN) {
   // Feindstaerke wie im Spiel: gewuerfelt aus PIRATEN_MULTIPLIER_ROLL (Messregel 16 - aus dem
   // Code gelesen, nicht aus einer Beschreibung; Eintraege koennen selbst Bereiche sein).
   const roll = () => {

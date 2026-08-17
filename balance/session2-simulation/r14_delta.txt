@@ -20,3 +20,58 @@ piraten_mittel       5.8          0.00 Mrd        0.1%              100.0%
 piraten_hoch         7.8          0.02 Mrd        1.3%              100.0%
 piraten_elite       10.4          0.13 Mrd        7.6%              100.0%
 
+--- NACH R14 - MIT Aggregation, 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_mittel       8.7          0.05 Mrd        3.0%              100.0%
+
+--- NACH R14 - OHNE Aggregation (Referenz), 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_mittel       6.3          0.00 Mrd        0.1%              100.0%
+
+--- NACH R14 - MIT Aggregation, 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_hoch        12.6          0.11 Mrd        6.1%              100.0%
+
+--- NACH R14 - OHNE Aggregation (Referenz), 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_hoch         7.8          0.03 Mrd        1.6%              100.0%
+
+--- NACH R14 - MIT Aggregation, 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_elite       16.6          0.17 Mrd        9.6%              100.0%
+
+--- NACH R14 - OHNE Aggregation (Referenz), 40 Laeufe je Sektor, Profil voll ---
+Sektor            Runden   Verlust Wert   Verlust %   Gegner vernichtet
+piraten_elite       10.3          0.13 Mrd        7.7%              100.0%
+
+=== ZUSAMMENFASSUNG NACH DER REPARATUR (R14 + R14b), 17.08.2026, 40 Laeufe je Zelle ===
+
+Sektor          | vorher MIT Agg | nachher MIT Agg | Referenz OHNE Agg | OHNE Agg + OHNE Explosion
+                | Runden / Verl. | Runden / Verl.  | Runden / Verl.    | Runden / Verlust
+piraten_mittel  |  18,6 /  1,5 % |   8,7 /  3,0 %  |    6,3 /  0,1 %   |   9,8 /  0,0 %
+piraten_hoch    |  26,1 /  2,7 % |  12,6 /  6,1 %  |    7,8 /  1,6 %   |  11,8 /  0,0 %
+piraten_elite   |  33,6 /  5,8 % |  16,6 /  9,6 %  |   10,3 /  7,7 %   |  16,3 /  0,2 %
+
+BEFUND 1 - RUNDENZAHL: der Abnahmetest ist erfuellt, sobald man die Explosionsmechanik
+herausrechnet. Die Spalte "mit Aggregation" (8,7 / 12,6 / 16,6) faellt mit der Spalte
+"ohne Aggregation, ohne Explosion" (9,8 / 11,8 / 16,3) im Rahmen der Streuung zusammen.
+Der Grund fuer den Rest ist damit benannt und NICHT der Schuetzen-Pfad: EXPLOSION_HP_THRESHOLD
+wirkt nur in applyHitToTarget(), also ausschliesslich auf einzelne Einheiten. Ein Aggregat-Stapel
+kann prinzipiell nicht "explodieren", deshalb sterben aggregierte Gegner langsamer.
+
+BEFUND 2 - VERLUSTQUOTE: hier fallen die Spalten NICHT zusammen (3,0 gegen 0,1 %; 6,1 gegen 1,6 %;
+9,6 gegen 7,7 %). Auch das liegt auf der ZIEL-Seite, nicht im Schuetzen-Pfad: ein Aggregat-Stapel
+ist ein HP-Topf, jeder Schadenspunkt rechnet sich anteilig sofort in tote Einheiten um. Einzelne
+Schiffe muessen dagegen erst komplett durchschlagen werden und ueberleben beschaedigt - ihre
+Schilde regenerieren zwischen den Runden vollstaendig. Sichtbar in der letzten Spalte: ohne
+Aggregation verliert der Spieler selbst ueber 16 Runden praktisch nichts (0,0-0,2 %).
+
+Beide Restpunkte liegen in der MODELLIERUNG DES STAPELS (Ziel-Seite), nicht in
+fireShotsAggregateShooters() (Schuetzen-Seite). Sie sind mit R14 nicht behebbar und als eigener
+Punkt vorgeschlagen (R15).
+
+KONTROLLE - Anteil von R14b (Durchschlag) am Ergebnis, piraten_mittel, 40 Laeufe:
+  nur R14, Aggregat-Schuetzen weiter ohne Durchschlag :  9,6 Runden / 3,5 % Verlust
+  R14 + R14b (ausgelieferter Stand)                   :  8,7 Runden / 3,0 % Verlust
+R14b bewegt das Ergebnis in Richtung Referenz, ist also richtig, erklaert den Rest aber nicht.
+

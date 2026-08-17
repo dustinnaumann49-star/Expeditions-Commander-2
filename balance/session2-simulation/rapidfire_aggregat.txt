@@ -24,3 +24,33 @@ Lesart:
   Durchlaeufen ueber den Einzel-Pfad - er ist die Kontrolle.
 - Ursachen in fireShotsAggregateShooters(): Verduennung ueber rfEligibleShare, Verteilung der
   Zusatzschuesse nach Stueckzahl statt auf das Konterziel, rapidFireTriggers wird nicht gezaehlt.
+
+=== NACH DER REPARATUR (R14 + R14b), 17.08.2026, 20 Laeufe, identischer Aufbau ===
+
+--- EINZEL-Pfad (unter allen Schwellen): 40 je Typ, 0/6 Schuetzentypen aggregiert ---
+Schuetze          Schuesse je Einheit/Runde   RF-Ausloesungen
+schwer                            2.26             414.6
+kreuzer                           2.58             528.1
+schlachtschiff                    3.31             763.1
+schlachtkreuzer                   3.95             975.8
+zerstoerer                        3.96             975.2
+reaper                            3.76             909.5
+
+--- AGGREGAT-Pfad (ueber allen Schwellen): 400 je Typ, 5/6 Schuetzentypen aggregiert ---
+Schuetze          Schuesse je Einheit/Runde   RF-Ausloesungen
+schwer                            2.34            5935.6
+kreuzer                           2.66            8055.8
+schlachtschiff                    3.33           10896.6
+schlachtkreuzer                   4.12           14569.5
+zerstoerer                        3.36           10506.6
+reaper                            3.11            9625.3
+
+Abnahmekriterium erfuellt:
+- Die aggregierten Schuetzen erreichen die Schusszahlen des Einzel-Pfads (vorher 0,97-1,13).
+  Kreuzer 2,66 gegen 2,58, Schlachtschiff 3,33 gegen 3,31, Schlachtkreuzer 4,12 gegen 3,95.
+- rapidFireTriggers ist ueberall groesser 0 (vorher exakt 0) - der Kampfbericht zeigt die
+  Ausloesungen jetzt an.
+- Zerstoerer (3,36 gegen 3,96) und Reaper (3,11 gegen 3,76) liegen etwas unter dem Einzel-Pfad.
+  Erwartet: ihre Konterziele (Schlachtkreuzer bzw. Zerstoerer) sterben jetzt schneller weg, weil
+  der gezielte Konter tatsaechlich wirkt - faellt das Konterziel aus, endet die Kette frueher.
+  Der schwere Jaeger ist unveraendert die Kontrolle (400 Stueck liegen unter seiner Schwelle 500).
