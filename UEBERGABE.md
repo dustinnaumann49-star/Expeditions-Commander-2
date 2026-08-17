@@ -1,4 +1,4 @@
-# Uebergabe - Stand 16.08.2026
+# Uebergabe - Stand 17.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -22,6 +22,12 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
+- **R14 IST ERLEDIGT** (17.08.2026), zusammen mit dem bei der Umsetzung gefundenen **R14b**
+  (Durchschlag im Aggregat-Pfad). Neu aufgetaucht ist **R15** - siehe unten. Die Kampf-Engine ist
+  damit wieder vollstaendig; alle KAMPF-Messungen von vor dem 17.08.2026 sind gegen eine Engine
+  gelaufen, in der RapidFire fuer grosse Flotten faktisch abgeschaltet war.
+- **Achtung, eine geschlossene Entscheidung ist wieder offen: der Faktor 1,75x aus 4.3.** Er war
+  die als riskant benannte Zahl, und das Risiko ist eingetreten. Einzelheiten unten.
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
 - **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
@@ -30,10 +36,13 @@ das passt nicht gleichzeitig in eine Session.
   Abschnitt 7**.
 - **BLOCK B, SCHRITT 4 IST GESCHLOSSEN** (15.08.2026): Entscheidung 4.1 (Verlust-Kriterium) und
   4.2 (contributedPower-Freeze).
-- **BLOCK B IST VOLLSTAENDIG** (17.08.2026). Schritt 5 ist geschlossen: 4.3 steht auf Faktor 1,75x
-  plus Boss-Forschungsskalierung (nach 4.4 gegengemessen und bestaetigt), **4.4 ist entschieden**
+- **BLOCK B war vollstaendig, IST ES SEIT R14 NICHT MEHR GANZ.** Schritt 5 war geschlossen: 4.3
+  stand auf Faktor 1,75x plus Boss-Forschungsskalierung (nach 4.4 gegengemessen und bestaetigt),
+  **4.4 ist entschieden**
   (RapidFire umstellen, Mehrfachziel-Salve verworfen), 4.5 entfaellt, 4.6/4.7/4.8 haben
-  Vorschlaege, die keine Messung mehr brauchen. Einzelheiten unten.
+  Vorschlaege, die keine Messung mehr brauchen. **Seit dem 17.08.2026 ist davon nur 4.3 wieder
+  offen** (Faktor, Kandidat 1,6x) - 4.4, 4.5 und die uebrigen Punkte bleiben unberuehrt, weil sie
+  Vergleiche unter gleichen Bedingungen waren. Einzelheiten unten.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -150,37 +159,94 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**ZUERST: R14 - RapidFire wirkt bei grossen Flotten nicht.** Nutzerfund vom 17.08.2026, gemessen
-bestaetigt (`probe_rapidfire.mjs`, Messkasten unter der Reparaturtabelle in Abschnitt 3). Dieselbe
-Flotte feuert unter der Aggregationsschwelle 2,2 bis 4,0 Schuesse je Einheit und Runde, darueber
-nur noch rund 1,0 - und jede echte Spielerflotte liegt darueber. Stiller Defekt, keine
-Balance-Frage. **Vor allen weiteren KAMPF-Messungen reparieren**, sonst misst jede weitere Zelle
-eine Engine, in der eine Kernmechanik fehlt.
+**ZUERST: den Faktor aus 4.3 neu bestimmen.** Nach der R14-Reparatur ist `voll`/real bei 1,75x
+umgekippt: Check-Tiefe 3,85 (sieht unveraendert aus), aber die Siegquote faellt von 42,5 auf
+**0,0 %** und der Wertverlust steigt von 21,5 auf **36,6 %** - die Serie endet jetzt ausnahmslos am
+Verlustkriterium statt am Kampfausgang. Gemessener Sweep: 1,25x -> Tiefe 1,43 bei 95 % Sieg,
+1,5x -> 2,70 bei 57,5 %, **1,6x -> 2,85 bei 40,0 % Sieg und 23,2 % Verlust**, 1,75x -> 3,85 bei
+0 %. **Kandidat ist 1,6x**, weil er das alte Verhalten bei 1,75x am genauesten reproduziert.
+Fehlt: dieselbe Zelle fuer `mittel`/real und `schwach`/real bei 1,6x (Aufruf
+`node run_admiral_bossscale.mjs forschung mittel real 1.6 40 admiral_bossscale_44.txt`, davor
+`node make_messbuild_44.mjs` und mit `MESSBUILD=<pfad>/messbuild_44_V1` messen). *Zu erwarten und
+vorab zu akzeptieren:* Zielband 3-5 und eine brauchbare Siegquote sind nach R14 nicht mehr
+gleichzeitig erreichbar - der Verlust waechst schneller, als die Serie lang wird.
 
-**Was danach neu zu messen ist - und was NICHT.** Gemessen am 17.08.2026 (`r14_delta.txt`,
-derselbe Kampf mit und ohne Aggregation): die Kaempfe werden rund dreimal kuerzer, aber der Gegner
-wird in beiden Faellen zu 100 % vernichtet. **Die Beute-Seite bewegt sich also nicht** - Beute-Anker,
-Exponent 0,85 und die Baseline 0,80 / 19,82 / 76,85 Mrd bleiben gueltig. Es verschiebt sich die
-VERLUST-Seite (mittel 1,5 -> 0,1 %, hoch 2,7 -> 1,3 %, elite 5,8 -> **7,6 %** - die Richtung ist
-nicht einheitlich, weil NPC-Flotten ihr RapidFire genauso zurueckbekommen). Neu zu erheben sind
-deshalb die Sektor-Serien aus Block A Schritt 1 und die Admiral-Zellen aus Block B; **die Zahl mit
-dem groessten Risiko ist der Faktor 1,75x aus 4.3**, weil dort der Wertverlust selbst das
-Abbruchkriterium ist. Vergleichs-Entscheidungen (Exponent gegen Nachbarwerte, `MAX_ROUNDS`,
-Schwelle 0,30, 4.4) sind nicht betroffen.
-
-Danach **Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
-entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5. Block B ist seit dem 17.08.2026
-vollstaendig, es steht nichts mehr davor - und 13.3 ist von R14 nicht betroffen, kann also auch
-vorgezogen werden.
+**Danach Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
+entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5, und von R14 nicht betroffen.
 
 Zwei kleine Dinge, die aus Schritt 5 uebrig bleiben und KEINE Messung brauchen, nur eine
 Bestaetigung: der Sieg-Bonus in 4.6 (Vorschlag 2,0x statt 1,5x) und die Deckelung in 4.7 auf die
 bis zum letzten UEBERSTANDENEN Check gesicherte Beute.
 
-**Messaufwand:** die Sweeps vom 16.08.2026 liefen bei Deckel 100 in etwa fuenf Minuten - da der
-Deckel bei 100 bleibt, gilt das weiter. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
+## Was R14 am 17.08.2026 ergeben hat
+
+Vollstaendig im Messkasten **R14 - REPARATUR** unter der Reparaturtabelle in Abschnitt 3.
+Messdateien: `rapidfire_aggregat.txt`, `r14_delta.txt`, `r14_perf.txt`. Neue Skripte:
+`make_messbuild_r14.mjs`, `run_r14_perf.mjs`; `run_r14_delta.mjs` nimmt jetzt optional einen
+einzelnen Sektor entgegen (scheibenweise messen).
+
+- **Behoben, alles in `fireShotsAggregateShooters()`:** der Erwartungswert der Folgeschuss-Kette
+  bildet jetzt die Ein-Schuss-Logik des Einzel-Pfads exakt ab; die Schuesse werden in einen
+  gezielten Anteil (nur auf RF-anfaellige Ziele) und einen ungezielten aufgeteilt, statt alles
+  proportional zur Stueckzahl zu streuen; `rapidFireTriggers` wird gezaehlt. **Die
+  Aggregationsschwellen sind unberuehrt** - sie waren nie das Problem.
+- **R14b, bei der Umsetzung gefunden und auf Nutzerentscheidung mitgeliefert:** Aggregat-Schuetzen
+  bekamen hart `overkillFraction = 0`, obwohl der Einzel-Pfad den echten
+  `getDurchschlagFraction()` durchreicht. Der Code-Kommentar begruendete das mit dem
+  Individual-Zweig innerhalb derselben Funktion, der selbst 0 uebergab - zirkulaer.
+- **Gemessen (Abnahme 1):** aggregierte Schuetzen erreichen die Schusszahlen des Einzel-Pfads
+  (Kreuzer 0,97 -> 2,66 gegen 2,58 einzeln; Schlachtschiff 1,04 -> 3,33 gegen 3,31),
+  `rapidFireTriggers` ueberall groesser 0 statt exakt 0.
+- **Gemessen (Abnahme 3, Laufzeit):** 20.700 Schiffe kosten 10 statt 14 ms je Kampf - die
+  Reparatur macht Kaempfe SCHNELLER, weil sie nur noch halb so viele Runden dauern.
+  Skalierungstest mit **207.000 Schiffen**: praktisch derselbe Wert. Die Rechenzeit haengt
+  weiterhin an der Typenzahl, nicht an der Stueckzahl.
+- **Abnahme 2 nur teilweise - und das ist ein eigener Befund.** Die Rundenzahl faellt mit der
+  Referenz zusammen, die Verlustquote nicht. Ursache diagnostiziert und ausdruecklich NICHT im
+  Schuetzen-Pfad: eine Kontrollzelle "ohne Aggregation UND ohne Explosionsmechanik" reproduziert
+  die Rundenzahl des Aggregat-Pfads exakt.
+
+## R15 - der Rest liegt auf der ZIEL-Seite der Aggregation
+
+Neu am 17.08.2026, aus dem R14-Abnahmetest, im Plan als eigener Punkt eingetragen. Zwei Ursachen:
+
+1. **Aggregat-Stapel koennen nicht explodieren.** `EXPLOSION_HP_THRESHOLD` wirkt nur in
+   `applyHitToTarget()`, also ausschliesslich auf einzelne Einheiten - aggregierte Gegner sterben
+   dadurch langsamer.
+2. **Ein Stapel ist ein HP-Topf.** Jeder Schadenspunkt rechnet sich anteilig sofort in tote
+   Einheiten um; einzelne Schiffe muessen erst komplett durchschlagen werden, ueberleben
+   beschaedigt und regenerieren ihren Schild zwischen den Runden vollstaendig. Deshalb verliert
+   der Spieler ohne Aggregation ueber 16 Runden praktisch nichts (0,0-0,2 %), mit Aggregation
+   3,0-9,6 %.
+
+Punkt 2 ist die groessere Zahl und der schwerere Eingriff - er beruehrt die Grundmodellierung des
+Stapels, nicht nur eine Formel. **Vorschlag: nicht vorziehen**, solange die Sektor- und
+Admiral-Werte gerade frisch erhoben sind. *Nachteil, ausdruecklich:* wird R15 spaeter umgesetzt,
+sind genau diese Verlustzahlen ein zweites Mal neu zu messen.
+
+## Was nach R14 neu erhoben wurde - und was NICHT
+
+Neu erhoben (je 40 Laeufe, Messregel 2):
+- **Elite-Serie praktisch unveraendert** (Verlust 3,2 -> 3,3 % bei "2x voll"). Die Beute-Rechnung
+  der Serie ist ohnehin nicht kampfabhaengig.
+- **Raid: Flottenverlust 10,1 -> 13,3 %, Verteidigungsverlust 0,1 -> 22,5 %.** Der zweite Wert ist
+  der auffaellige - die Heimatverteidigung ist aggregiert (Schwelle 100) und bekommt jetzt das
+  RapidFire der Angreifer voll ab. "Voll ohne Kampf-Boost" springt von 14,6 auf 26,9 %.
+- **Reale Flotte: Solo Hoch netto +0,11 -> -2,97 Mrd/Tag** (also jetzt ein Verlustgeschaeft),
+  Elite netto 28,32 -> 21,65 Mrd. *Einschraenkung, ausdruecklich:* der alte Stand hatte nur
+  5 Durchlaeufe und lag damit unter Messregel 2 - ein Teil der Differenz ist Messqualitaet, nicht
+  Wirkung von R14.
+- **Admiral `voll`/real** - siehe oben, das ist die gerissene Zahl.
+
+Nicht betroffen und **nicht** neu erhoben: die Beute-Seite. Der Gegner wird mit und ohne
+Aggregation zu 100 % vernichtet, damit bleiben Beute-Anker, Exponent 0,85 und die Baseline
+0,80 / 19,82 / 76,85 Mrd gueltig. Ebenso unberuehrt: `MAX_ROUNDS` 100, Schwelle 0,30 und 4.4
+selbst - alles Vergleiche unter gleichen Bedingungen.
+
+**Messaufwand:** die Delta- und Sektorzellen liefen jeweils in Sekunden bis gut einer Minute, die
+Admiral-Zellen in rund 30 Sekunden. **Messlaeufe scheibenweise starten** (eine Zelle je Aufruf,
 Ergebnis sofort in die Datei anhaengen) - ein Vollauf ueber alle Zellen schreibt seine Tabellen
-erst am Ende und ist bei einem Abbruch komplett verloren. Genau das ist am 16.08.2026 passiert.
+erst am Ende und ist bei einem Abbruch komplett verloren.
 
 Die Baseline: die 21,69 Mrd/Tag aus Abschnitt 1 sind ueberholt. Gemessen sind
 **0,80 / 19,82 / 76,85 Mrd/Tag** fuer den fruehen, mittleren und spaeten Ausbaustand (inklusive

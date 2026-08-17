@@ -903,6 +903,29 @@ Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
 >   Streuung zweier Laeufe derselben Zelle. Die im Uebergabe-Text erwartete Absenkung unter 1,75x
 >   ist damit **nicht** eingetreten. Einzelheiten im Messkasten bei 4.4; dort steht auch der
 >   Nachteil (Extraktionsquote faellt von 12,5 auf 0-2,5 %).
+> - **UEBERHOLT AM 17.08.2026 NACH R14: 1,75x ist nicht mehr tragfaehig.** Alle Zahlen dieses
+>   Kastens sind gegen eine Engine gemessen, in der RapidFire fuer grosse Flotten faktisch
+>   abgeschaltet war. Neu erhoben mit derselben Zelle (`voll`/real, Modus `forschung`, Messbuild
+>   V1, 40 Serien): Tiefe **3,85** - sieht weiter nach Zielband aus, aber die Siegquote faellt von
+>   42,5 auf **0,0 %** und der Wertverlust steigt von 21,5 auf **36,6 %**. Die Serie endet damit
+>   nicht mehr am Kampfausgang, sondern ausnahmslos am Verlustkriterium
+>   (`ADMIRAL_DEFEAT_LOSS_SHARE = 0,30`) - genau das Risiko, das die Uebergabe fuer diese Zahl
+>   benannt hatte. Sweep zur Einordnung, gleiche Bedingungen:
+>
+>   | Faktor | Check-Tiefe | Sieg | Wertverlust |
+>   |---|---|---|---|
+>   | 1,25x | 1,43 | 95,0 % | 8,6 % |
+>   | 1,5x | 2,70 | 57,5 % | 20,6 % |
+>   | **1,6x** | **2,85** | **40,0 %** | **23,2 %** |
+>   | 1,75x | 3,85 | 0,0 % | 36,6 % |
+>
+>   **Kandidat: 1,6x.** Er reproduziert das alte Verhalten bei 1,75x am genauesten (dort 3,63 Tiefe
+>   bei 42,5 % Sieg und 21,5 % Verlust). *Ausdruecklich genannter Nachteil:* die Check-Tiefe liegt
+>   damit bei 2,85 und damit unter dem Zielband 3-5 - das Zielband und die Siegquote sind nach R14
+>   nicht mehr gleichzeitig erreichbar, weil der Verlust schneller waechst als die Serie lang wird.
+>   **Nicht festschreiben, bevor `mittel`/real und `schwach`/real bei 1,6x gemessen sind** - die
+>   Fenster der Ausbaustaende ueberlappten schon vorher nicht (siehe oben), und die Serie ist nicht
+>   monoton.
 
 > **REICHWEITE DER DECKEL-AENDERUNG - GEMESSEN AM 16.08.2026, entscheidet den Punkt.** Die Sorge,
 > ein hoeherer `MAX_ROUNDS` koennte die gerade geschlossene Baseline aus Block A umwerfen, ist
@@ -2614,7 +2637,7 @@ Quote.
 | R11 | **ERLEDIGT 11.08.2026** (Abschnitt 2a, Punkt 7) - zwei Eintraege fuer 10.08. und 11.08. Ursprungstext: Changelog-Eintrag - Balance-Aenderungen dieser Groessenordnung sind fuer Spieler sichtbar | `data/changelog.ts` | S4-Konsistenz |
 | R13 | **ERLEDIGT 11.08.2026 mit Absicherung** (Abschnitt 2a, Punkt 7) - persoenliche Obergrenze mit Ratsche, damit niemand rueckwirkend ausgesperrt wird. Ursprungstext: **`totalOwnedShips()` zaehlt nicht "ueberall".** Sie summiert nur `state.fleet` + `buildQueue`, NICHT Missionen, Galaxie-Entsendungen und Gruppen-Operationen. Dadurch laesst sich `MAX_PLAYER_SHIPS` unbeabsichtigt ueberschreiten: Flotte wegschicken, zuhause bis zum Limit nachbauen, Flotte kehrt zurueck. Zusaetzlich fliessen Container-Freischiffe (`inventory.ts:174`) und Missionsrueckkehrer (`missions.ts:691`) ohne Limitpruefung in die Flotte. **Exakt derselbe Fehler wurde fuer die Einzel-Limits schon behoben** (`countShipEverywhere`, samt Kommentar in `actions.ts`) - bei `totalOwnedShips` nie nachgezogen. **Achtung bei der Umsetzung:** die Korrektur macht die Zaehlung STRENGER. Erst anwenden, wenn der tatsaechliche Gesamtbestand inkl. unterwegs befindlicher Schiffe bekannt ist, sonst blockiert sie den Spieler sofort wieder | `game/actions.ts:198`, `data/combatConstants.ts` | Nutzerfund 09.08.2026 |
 | R12 | **ERLEDIGT 10.08.2026** (siehe Abschnitt 2a), umgesetzt in `game/moduleIntegrity.ts`. Ursprungstext: **Startpruefung fuer zusammengesetzte Modul-IDs.** `moduleBoostFactor()`/`moduleReductionFactor()` liefern bei unbekannter ID still 1 - dieselbe Fehlerklasse wie der auseinandergelaufene `defenseFactor` (R4) und der tote `ADMIRAL_ESCORT_BASE`. Beim Serverstart pruefen, ob jede im Code gebildete Modul-ID eine Definition hat, und sonst laut melden. Kleiner Aufwand, macht diese ganze Fehlerklasse dauerhaft sichtbar | `game/actions.ts`, `index.ts` | 09.08.2026 |
-| R14 | **NEU 17.08.2026, Nutzerfund - RapidFire wirkt bei grossen Flotten praktisch nicht mehr.** Nutzermeldung: "RF funktioniert ausser bei Salvenschiffen und Imperator gar nicht mehr, seit sie nur noch EIN RF-Ziel haben, die Werte springen nicht mehr." Gemessen bestaetigt (`probe_rapidfire.mjs`), und es ist ein Defekt im Aggregat-Pfad, keine Balance-Frage - Einzelheiten im Kasten unter der Tabelle | `game/combat.ts` (`fireShotsAggregateShooters()`) | Nutzerfund 17.08.2026 |
+| R14 | **ERLEDIGT 17.08.2026** (Messkasten "R14 - REPARATUR" unter der Tabelle). Behoben sind alle drei Teildefekte im Aggregat-Pfad plus ein vierter, bei der Umsetzung gefundener (**R14b**, fehlender Durchschlag bei Aggregat-Schuetzen). Neu aufgetaucht und NICHT behoben: zwei ziel-seitige Abweichungen der Aggregation (Vorschlag **R15**). Ursprungstext: **NEU 17.08.2026, Nutzerfund - RapidFire wirkt bei grossen Flotten praktisch nicht mehr.** Nutzermeldung: "RF funktioniert ausser bei Salvenschiffen und Imperator gar nicht mehr, seit sie nur noch EIN RF-Ziel haben, die Werte springen nicht mehr." Gemessen bestaetigt (`probe_rapidfire.mjs`), und es ist ein Defekt im Aggregat-Pfad, keine Balance-Frage - Einzelheiten im Kasten unter der Tabelle | `game/combat.ts` (`fireShotsAggregateShooters()`) | Nutzerfund 17.08.2026 |
 
 ---
 
@@ -2711,6 +2734,94 @@ Quote.
 > Entscheidungen, die als VERGLEICH unter identischen Bedingungen getroffen wurden (Exponent 0,85
 > gegen seine Nachbarn, `MAX_ROUNDS` 100 gegen 300, Schwelle 0,30 gegen 0,45, und 4.4 selbst), sind
 > nicht beruehrt - beide Seiten des Vergleichs verschieben sich gleich.
+
+> **R14 - REPARATUR, 17.08.2026. Umgesetzt und gegengemessen.**
+> Geaendert wurde ausschliesslich `fireShotsAggregateShooters()` in `server/src/game/combat.ts`.
+> Die Aggregationsschwellen sind unangetastet (500 / 100 / 50) - sie waren nur ein Messtrick fuer
+> den Vergleich, die Aggregation selbst bleibt vollstaendig erhalten.
+>
+> **Was am Code geaendert wurde:**
+> 1. **Erwartungswert der Folgeschuss-Kette.** Der bisherige Ausdruck
+>    `accuracy x rfEligibleShare x avgRfChance` behandelte auch den GEZIELTEN Schuss so, als traefe
+>    er sein Konterziel nur mit dessen Haeufigkeitsanteil. Jetzt wird die Ein-Schuss-Kette des
+>    Einzel-Pfads exakt nachgebildet:
+>    `accuracy x E[RF-Chance | Ziel aus RF-Pool] + (1 - accuracy) x E[RF-Chance | Ziel beliebig]`,
+>    beide Erwartungswerte stueckzahlgewichtet. Kosten: O(RF-Zieltypen + Aggregate).
+> 2. **Gezielter Konter.** Die Schusszahl wird in einen gezielten Anteil (Zielerfassung geglueckt -
+>    geht ausschliesslich auf RF-anfaellige Eimer) und einen ungezielten Anteil (alle Eimer)
+>    aufgeteilt, statt alles proportional zur Stueckzahl zu streuen. Im Einzel-Ziel-Pool wird dafuer
+>    erst der RF-Zieltyp gewichtet gewaehlt, dann eine Einheit daraus - das vermeidet die
+>    Pool-Kopie je Schuss, die der Einzel-Pfad dort macht.
+> 3. **`rapidFireTriggers`** wird gezaehlt (jeder Schuss oberhalb des ersten je Einheit).
+> 4. **R14b, bei der Umsetzung gefunden:** Aggregat-Schuetzen bekamen hart `overkillFraction = 0`,
+>    waehrend `fireShots()` den echten `getDurchschlagFraction()` durchreicht - der Durchschlag war
+>    fuer grosse Stapel also abgeschaltet. Der Code-Kommentar begruendete das mit dem
+>    Individual-Zweig INNERHALB derselben Funktion, der selbst 0 uebergab: zirkulaer. Jetzt beide
+>    Zweige mit demselben Faktor wie der Einzel-Pfad. **Nutzerentscheidung vom 17.08.2026, mit
+>    R14 zusammen ausgeliefert.**
+> 5. Nebenbei: die Ziel-Pools werden einmal je Aufruf statt je Stapel aufgebaut, damit ein
+>    spaeterer Stapel die Abschuesse eines frueheren sieht (vorher zaehlte `targets.length` in
+>    derselben Runde bereits getoetete Einheiten mit).
+>
+> **Abnahmetest 1 - `probe_rapidfire.mjs` (`rapidfire_aggregat.txt`), 20 Laeufe: BESTANDEN.**
+>
+> | Schuetze | Einzel-Pfad | Aggregat VORHER | Aggregat NACHHER |
+> |---|---|---|---|
+> | Kreuzer | 2,58 | 0,97 | **2,66** |
+> | Schlachtschiff | 3,31 | 1,04 | **3,33** |
+> | Schlachtkreuzer | 3,95 | 1,13 | **4,12** |
+> | Zerstoerer | 3,96 | 1,07 | **3,36** |
+> | Reaper | 3,76 | 1,07 | **3,11** |
+>
+> `rapidFireTriggers` ist ueberall groesser 0 (vorher exakt 0) - der Kampfbericht zeigt die
+> Ausloesungen wieder an, das war der sichtbare Teil der Nutzermeldung. Zerstoerer und Reaper
+> liegen leicht unter dem Einzel-Pfad, weil ihre Konterziele jetzt schneller wegsterben - das ist
+> die Wirkung des gezielten Konters, kein Restdefekt.
+>
+> **Abnahmetest 2 - `run_r14_delta.mjs` (`r14_delta.txt`), 40 Laeufe je Zelle: TEILWEISE.**
+>
+> | Sektor | vorher MIT Agg | nachher MIT Agg | Referenz OHNE Agg | OHNE Agg + OHNE Explosion |
+> |---|---|---|---|---|
+> | piraten_mittel | 18,6 / 1,5 % | **8,7 / 3,0 %** | 6,3 / 0,1 % | 9,8 / 0,0 % |
+> | piraten_hoch | 26,1 / 2,7 % | **12,6 / 6,1 %** | 7,8 / 1,6 % | 11,8 / 0,0 % |
+> | piraten_elite | 33,6 / 5,8 % | **16,6 / 9,6 %** | 10,3 / 7,7 % | 16,3 / 0,2 % |
+>
+> Die Rundenzahl faellt zusammen, sobald die Explosionsmechanik herausgerechnet ist (8,7/12,6/16,6
+> gegen 9,8/11,8/16,3). Die Verlustquote faellt nicht zusammen. **Beide Restpunkte liegen auf der
+> ZIEL-Seite der Aggregation, nicht im Schuetzen-Pfad** - siehe R15 unten. Der Anteil von R14b ist
+> mitgemessen: ohne ihn 9,6 Runden / 3,5 % statt 8,7 / 3,0 % bei `piraten_mittel`, er bewegt das
+> Ergebnis also in Richtung Referenz.
+>
+> **Abnahmetest 3 - Laufzeit (`r14_perf.txt`, neues Skript `run_r14_perf.mjs`): BESTANDEN.**
+> Gemischte Flotte mit 20.700 Schiffen, alle acht Typen aggregiert, 10 Laeufe:
+> `piraten_mittel` 14 -> **10 ms** je Kampf, `piraten_elite` 10 -> **4 ms**. Die Kaempfe werden
+> insgesamt schneller, weil sie nur noch halb so viele Runden dauern. Skalierungstest mit dem
+> Zehnfachen (**207.000 Schiffe**): 14 bzw. 6 ms - praktisch derselbe Wert. **Die Rechenzeit haengt
+> weiterhin an der Typenzahl, nicht an der Stueckzahl**, die Vorgabe ist eingehalten.
+>
+> **Messregel 8 vorab erfuellt:** im Client nach dem Funktionsnamen und nach `rapidfire`/
+> `rapidFireTriggers` gegreppt. `client/src/lib/combatInfo.ts` liest die RF-Tabelle ueber
+> `gameData.rapidfire` vom Server (keine zweite hartkodierte Zahl), `Nachrichten.tsx` zeigt nur den
+> gelieferten Zaehler an. **Keine Client-Aenderung noetig** - der Zaehler wird von selbst wieder
+> sichtbar.
+
+> **R15 - NEU 17.08.2026, aus dem R14-Abnahmetest. Die Aggregation verzerrt auch die ZIEL-Seite.**
+> Kein Schuetzen-Problem und mit R14 nicht behebbar, deshalb als eigener Punkt. Zwei Ursachen,
+> beide belegt (`r14_delta.txt`):
+> 1. **Aggregat-Stapel koennen nicht explodieren.** `EXPLOSION_HP_THRESHOLD` wirkt nur in
+>    `applyHitToTarget()`, also ausschliesslich auf einzelne Einheiten. Aggregierte Gegner sterben
+>    dadurch langsamer - das erklaert die verbleibende Rundendifferenz VOLLSTAENDIG (Kontrollzelle
+>    "ohne Aggregation, ohne Explosion" faellt mit "mit Aggregation" zusammen).
+> 2. **Ein Stapel ist ein HP-Topf**, jeder Schadenspunkt rechnet sich anteilig sofort in tote
+>    Einheiten um. Einzelne Schiffe muessen erst komplett durchschlagen werden, ueberleben
+>    beschaedigt und regenerieren ihren Schild zwischen den Runden vollstaendig. Deshalb verliert
+>    der Spieler ohne Aggregation ueber 16 Runden praktisch nichts (0,0-0,2 %), mit Aggregation
+>    3,0-9,6 %.
+> **Einordnung:** Punkt 2 ist die groessere Zahl und zugleich der schwerere Eingriff - er beruehrt
+> die Grundmodellierung des Stapels, nicht nur eine Formel. Vorschlag: vor Block C ansehen, aber
+> NICHT vorziehen, solange die Sektor- und Admiral-Werte gerade frisch erhoben sind. **Ausdruecklich
+> genannter Nachteil dieses Vorschlags:** die jetzt erhobenen Verlustzahlen sind damit ein zweites
+> Mal neu zu messen, falls R15 spaeter umgesetzt wird.
 
 ---
 
@@ -3771,6 +3882,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 17.08.2026 | **R14 repariert, gegengemessen und ausgeliefert - plus R14b (Durchschlag) auf Nutzerentscheidung, plus neuer Punkt R15.** Geaendert wurde ausschliesslich `fireShotsAggregateShooters()` in `server/src/game/combat.ts`; die Aggregationsschwellen sind unberuehrt geblieben, die Aggregation selbst bleibt vollstaendig erhalten (sie war nie das Problem, nur die RapidFire-Naeherung darin). Vollstaendige Einzelheiten im Messkasten **R14 - REPARATUR** unter der Reparaturtabelle in Abschnitt 3. **Abnahmetest 1 bestanden** (`rapidfire_aggregat.txt`): aggregierte Schuetzen erreichen die Schusszahlen des Einzel-Pfads (Kreuzer 0,97 -> 2,66 gegen 2,58; Schlachtschiff 1,04 -> 3,33 gegen 3,31), `rapidFireTriggers` ueberall groesser 0 statt exakt 0. **Abnahmetest 3 bestanden** (`r14_perf.txt`, neues Skript `run_r14_perf.mjs`): 20.700 Schiffe kosten 10 statt 14 ms je Kampf, weil die Kaempfe nur noch halb so viele Runden dauern; ein Skalierungstest mit **207.000 Schiffen** landet beim praktisch selben Wert - die Rechenzeit haengt weiterhin an der Typenzahl, nicht an der Stueckzahl. **Abnahmetest 2 nur teilweise** (`r14_delta.txt`): die Rundenzahl faellt mit der Referenz zusammen, die Verlustquote nicht. Die Ursache ist diagnostiziert und liegt NICHT im Schuetzen-Pfad - eine Kontrollzelle ohne Aggregation UND ohne Explosionsmechanik reproduziert die Rundenzahl des Aggregat-Pfads exakt. Daraus **R15**: Aggregat-Stapel koennen nicht explodieren, und ein Stapel als HP-Topf rechnet jeden Schadenspunkt sofort anteilig in tote Einheiten um, waehrend einzelne Schiffe beschaedigt ueberleben und ihren Schild zwischen den Runden voll regenerieren. **R14b** war ein Fund bei der Umsetzung: Aggregat-Schuetzen bekamen hart `overkillFraction = 0`, obwohl `fireShots()` den echten `getDurchschlagFraction()` durchreicht - der Kommentar begruendete das mit dem Individual-Zweig innerhalb derselben Funktion, der selbst 0 uebergab (zirkulaer). Gemessen bewegt R14b das Ergebnis in Richtung Referenz (9,6 -> 8,7 Runden bei `piraten_mittel`), erklaert den Rest aber nicht. **Messregel 8 vorab erfuellt:** im Client gegreppt, `combatInfo.ts` liest die RF-Tabelle ueber `gameData.rapidfire` vom Server, keine zweite hartkodierte Zahl - keine Client-Aenderung noetig. **Neu erhoben, weil die Verlust-Seite sich verschiebt:** Elite-Serie praktisch unveraendert (3,2 -> 3,3 % Verlust), Raid Flottenverlust 10,1 -> 13,3 % und **Verteidigungsverlust 0,1 -> 22,5 %**, reale Flotte Solo Hoch netto +0,11 -> **-2,97 Mrd/Tag** und Elite netto 28,32 -> 21,65 Mrd (Achtung: der alte Stand hatte nur 5 Durchlaeufe, also unter Messregel 2 - ein Teil der Differenz ist Messqualitaet). **Die Zahl mit dem groessten Risiko ist gerissen:** Admiral-Zelle `voll/real` bei 1,75x, Modus `forschung`, Messbuild V1 - Tiefe 3,85 sieht weiter nach Zielband aus, aber die Siegquote faellt von 42,5 auf **0,0 %** und der Verlust steigt von 21,5 auf 36,6 %; die Serie endet jetzt IMMER am Verlustkriterium statt am Kampfausgang. Sweep dazu: 1,25x -> Tiefe 1,43 / 95 % Sieg, 1,5x -> 2,70 / 57,5 %, **1,6x -> 2,85 / 40,0 % Sieg / 23,2 % Verlust**. 1,6x kommt dem alten Verhalten bei 1,75x am naechsten und ist der Kandidat; festschreiben erst nach der vollen Serie ueber `mittel` und `schwach`. |
 | 17.08.2026 | **Nutzerfund: RapidFire wirkt bei grossen Flotten praktisch nicht mehr - neu als R14.** Meldung des Nutzers beim Spielen ("RF funktioniert ausser bei Salvenschiffen und Imperator gar nicht mehr, seit sie nur noch EIN Ziel haben, die Werte springen nicht mehr"). Gemessen bestaetigt mit `probe_rapidfire.mjs`: dieselbe Flotte unter der Aggregationsschwelle feuert 2,24 bis 4,03 Schuesse je Einheit und Runde, darueber nur noch 0,97 bis 1,13 - **ein Schuss je Einheit heisst, RapidFire findet nicht statt.** Da die Schwellen bei 100 (Kreuzer-Klasse) und 50 (Elite-Klasse) liegen, laeuft jede echte Spielerflotte ueber den Aggregat-Pfad. **Drei Ursachen in `fireShotsAggregateShooters()`:** die Folgeschuss-Kette wird ueber `rfEligibleShare` mit dem Anteil des Konterziels an ALLEN Zielen verduennt (im Einzel-Pfad genuegt dessen blosse Anwesenheit) - **hier schlaegt die RF-Neuordnung vom 04.08.2026 durch, weil ein einzelnes RF-Ziel den Anteil auf rund ein Sechstel druckt**; die gewonnenen Schuesse werden proportional zur Stueckzahl verteilt statt auf das Konterziel gelenkt; und `rapidFireTriggers` wird dort nie hochgezaehlt, weshalb der Kampfbericht 0 zeigt. **Einordnung:** stiller Defekt nach dem Massstab aus Abschnitt 8, keine Balance-Frage - die Aggregation ist eine Performance-Optimierung und darf das Kampfergebnis nicht veraendern. Zweiter Fall derselben Fehlerform im selben Codepfad nach Entscheidung 1 (Overkill-Deckel). **Folgen ausdruecklich genannt:** die Reparatur beruehrt beide Seiten (NPC-Flotten sind ebenfalls aggregiert, `NPC_RF_VS_JAEGER_FACTOR = 0,5` wirkt nur auf der NPC-Seite) - welche Seite netto gewinnt, ist offen und muss gemessen werden; und sie verschiebt voraussichtlich die Kampfzahlen aus Block A und B, die alle gegen eine Engine ohne wirksames RapidFire gelaufen sind. Aussage 32 der Code-Doku ("RapidFire ist das entscheidende Gegenmittel gegen Jaegerschwaerme") gilt nur im Einzel-Pfad, also praktisch nie. **Empfohlene Reihenfolge:** R14 vor weiteren KAMPF-Messungen; Block C (13.3) ist nicht betroffen und kann davor laufen. |
 | 17.08.2026 | **Block B, Schritt 5 geschlossen: Entscheidung 4.4 gemessen und entschieden, Faktor aus 4.3 gegengemessen und bestaetigt. Block B ist damit vollstaendig.** Neu: `run_aggregate_threshold_44.mjs` (Mischflotte), `make_messbuild_44.mjs` (Messbuilds V1/V2/V3/V2b nach dem Verfahren von M3), `probe_admiral_shots.mjs`; Ausgaben in `aggregate_threshold_44.txt` und `admiral_bossscale_44.txt`. 40 Laeufe je Zelle, Quellcode unberuehrt. **Entschieden: RapidFire des Bosses auf die sechs Standardtypen aus `ADMIRAL_ALLOWED_SHIP_IDS` umstellen, die Mehrfachziel-Salve VERWERFEN.** **Fuenf Befunde, die den Plan korrigieren.** (1) **Der Vorschlag in 4.4 bestand aus zwei Wirkpfaden, von denen einer im Plan gar nicht sichtbar war und der andere ohne eine dritte, nirgends erwaehnte Aenderung wirkungslos geblieben waere.** Die Mehrfachziel-Salve haengt an `getZielerfassungAccuracy()`, die ohne `ZIELERFASSUNG_BASE`-Eintrag **0** liefert - `piratenadmiral` hat keinen. Der Eintrag in `MULTI_TARGET_VOLLEY_SHIPS` allein waere toter Code gewesen. Gemessen feuert der Boss heute **exakt einen Schuss je Runde** (RF-Ziele nicht erreichbar, also kein einziger Folgeschuss), mit umgestelltem RapidFire 5,3 und mit Salve 39-47,5. (2) **Die Salve ist mit keinem Gegnerstaerke-Faktor kalibrierbar:** die Check-Tiefe bleibt von 0,1x bis 1,75x konstant bei 1,00, und zwischen 0,5x und 0,75x kippt der Ausgang von 100 % Sieg auf 92,5 % Niederlage. Der Kampf ist nach zwei Runden entschieden - die Zieltiefe 3-5 ist damit grundsaetzlich unerreichbar. Dieselbe Alles-oder-Nichts-Eigenschaft wie bei `ADMIRAL_STAT_SHARE`. (3) **Die Faehigkeit ist strukturell anti-klein statt anti-Masse.** Overkill-Deckel (fuenf Einheiten je Treffer) und `MAX_SHOTS_PER_UNIT` (50) setzen eine ABSOLUTE Obergrenze an Abschuessen je Runde; ihr Anteil faellt mit wachsender Flotte. Gemessen 100 % Verlust bei 405 Schiffen gegen 16,5 % bei 4.500. Der Code-Kommentar ("bestraft Masse an kleinen Schiffen ganz natuerlich") beschreibt damit das Gegenteil des tatsaechlichen Verhaltens. (4) **Der Faktor aus 4.3 bleibt bei 1,75x** - die im Uebergabe-Text erwartete Absenkung ist nicht eingetreten: `voll`/real misst sich mit 4.4 auf Tiefe 3,63/3,83 bei 42,5/37,5 % Sieg gegen 3,98 bei 40 % ohne, also innerhalb der Streuung zweier Laeufe derselben Zelle. Nachteil: die Extraktionsquote faellt von 12,5 auf 0-2,5 %. Offene Luecke geschlossen: `schwach`/real bei 1,75x mit 4.4 ergibt Tiefe 1,52 (ohne: 1,68). (5) **Befund am Messwerkzeug:** `run_aggregate_threshold.mjs` stellt dem Boss eine Flotte aus EINEM Typ gegenueber und kann eine Mehrfachziel-Faehigkeit deshalb prinzipiell nicht messen (V1/V2/V3/V2b liegen dort auf die Nachkommastelle gleich); ab der 4.4-Mechanik sind seine Zellen zusaetzlich saturiert. **Nebenbefund zu einer bestehenden Messdatei:** `run_admiral_roundcap.mjs` rechnet mit `metall + kristall + 2 x deuterium`, `TRADE_VALUE` im Code ist `1 / 1,5 / 3`. Die Messflotte kommt dadurch auf 21,57 statt 26,72 Mrd; die Spalte "netto Verlust" in `admiral_roundcap.txt` ist um rund 19 % zu niedrig. Die Deckel-Aussage bleibt gueltig (innerhalb der Datei dieselbe Formel), aber die dortige Zelle Deckel 100 / 1,75x ist nicht direkt mit `admiral_bossscale.txt` vergleichbar - die Differenz Tiefe 3,63 gegen 3,98 ist Streuung, kein Formelfehler. **Methodische Lehre:** eine Faehigkeit, die aus mehreren Bedingungen besteht, muss VOR der Messung im Code auf alle Bedingungen geprueft werden; hier haette die im Plan beschriebene Aenderung zur Haelfte gar nicht gewirkt und waere als "gemessen und harmlos" ins Protokoll gegangen. |
 | 16.08.2026 | **`MAX_ROUNDS` bleibt bei 100 - Nutzerentscheidung, letzter Blocker von 4.3 damit weg.** Die Messung hatte gezeigt, dass der Rundendeckel heute balance-relevant ist und ungleich wirkt (bei `voll` steigt die Siegquote von 47,5 auf 87,5 %, wenn er auf 1000 geht, bei `mittel` bewegt er nichts), und eine Anhebung auf 300 waere ohne Nebenwirkung auf die Baseline moeglich gewesen (kein anderer Sektor kommt dem Deckel nahe, Elite-Bollwerk im Schnitt 35 Runden). **Der Nutzer hat sich bewusst dagegen entschieden:** OGame-basierte Spiele begrenzen ueblicherweise auf 6-8 Runden, 100 ist im Vergleich sehr grosszuegig. Damit ist der Deckel kein Artefakt und kein Sicherheitsnetz, sondern eine Gestaltungsentscheidung - wer den Boss nicht im Gefechtsfenster kleinbekommt, bekommt ihn nicht. Zweiter Grund: 300 Runden verdreifachen die Rechenzeit je P10-Kampf, was die (normalen, erwarteten) CPU-Spitzen im Worker-Thread entsprechend verlaengert haette. **Folge: 4.3 steht auf Faktor 1,75x plus Forschungsskalierung des Bosses**, `voll` erreicht damit Check-Tiefe 3,63-3,98 bei 40-47 % Sieg, 35-48 % Abbruch und 12-18 % Extraktion. |
