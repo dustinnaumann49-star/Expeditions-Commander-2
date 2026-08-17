@@ -109,6 +109,42 @@ Raid-Bericht sind erledigt.
 entfallen - die Korrektur ist mit einer Ratschen-Obergrenze abgesichert, die niemanden rueckwirkend
 aussperrt.
 
+## Gesetzt und NICHT neu aufzurollen: Stack-Aggregation statt Einzelberechnung
+
+Festgehalten am 17.08.2026, weil dieser Vorschlag bei Kaltstarts immer wieder von selbst entsteht -
+zuletzt in derselben Sitzung, in der R14 repariert wurde.
+
+**Wie es dazu kam.** Ursprünglich wurde jedes Schiff einzeln berechnet, ohne Aggregat. Bei grossen
+Flotten führte das zu CPU-Last über 300 % und minutenlangen Kampfberechnungen. Der Nutzer stand
+damals vor genau zwei Möglichkeiten: **Stack-Aggregation** oder **Schiffsbegrenzung pro Mission**
+(dann wäre die Einzelberechnung erhalten geblieben). **Er hat sich bewusst für die Aggregation
+entschieden, weil grosse Flottenzahlen zum Spielgefühl gehören.**
+
+**Diese Entscheidung bleibt.** Sie ist am 17.08.2026 ausdrücklich bestätigt worden, nachdem der
+Gegenentwurf (wenige Einheiten mit hohen Werten, Staffeln statt Einzelschiffen, Piraten stärker
+statt zahlreicher, Begrenzung der Schiffstypen je Mission) durchgesprochen war. Ausschlaggebend ist
+nicht die Technik, sondern das Spielgefühl: **zwei Spieler, und für die zweite Person sind viele
+Schiffe der Kern des Spiels.** Ein Umbau, der das abschafft, ist deshalb keine Option - unabhängig
+davon, wie sauber er rechnen würde.
+
+**Für Folge-Chats heisst das:**
+- Vorschläge in Richtung "Einzelberechnung wiederherstellen", "Schiffe pro Mission begrenzen",
+  "Staffeln statt Einzelschiffen", "1 Schiff ersetzt 500" NICHT erneut aufmachen. Sie sind geprüft
+  und aus einem nicht-technischen Grund verworfen.
+- Fehler IM Aggregat-Pfad bleiben selbstverständlich Fehler und werden behoben (so geschehen bei
+  Entscheidung 1 und bei R14/R14b). Der Massstab ist unverändert: die Aggregation ist eine reine
+  Performance-Optimierung und darf das Kampfergebnis nicht verändern.
+- **R15 ist die bekannte Restabweichung** (Aggregat-Ziele explodieren nicht, Stapel rechnet Schaden
+  sofort anteilig in Verluste um). Dokumentiert, nicht dringend, und ausdrücklich KEIN Anlass, die
+  Grundsatzfrage neu zu stellen.
+
+**Der eigentliche Schmerzpunkt liegt woanders.** Die Nutzerbeobachtung lautet: "bei rund 400.000
+Schiffen lohnt sich kein Flug mehr, die Verluste übersteigen den Gewinn." Das ist gemessen richtig
+(Solo Hoch -2,97 Mrd/Tag), hängt aber an der **Beutekurve und am Einnahmen-Niveau**, nicht an der
+Aggregation: die Beute wächst mit Exponent 0,85 unterproportional, der Verlust linear. Das ist im
+Plan als offener Punkt geführt (Abschnitt 7, Niveau-Punkt). Der beschlossene Server-Reset stellt
+ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
+
 ## Fallen, die schon zugeschnappt sind
 
 **Die README im Repo hat KEINE nummerierten Punkte mehr.** Eine aeltere Fassung mit 33 nummerierten
