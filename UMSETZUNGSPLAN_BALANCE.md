@@ -927,6 +927,60 @@ Siegchance, 3,05 Mrd Verlust. Faktor 2,9 im Verlust.
 >   Fenster der Ausbaustaende ueberlappten schon vorher nicht (siehe oben), und die Serie ist nicht
 >   monoton.
 
+> **GESCHLOSSEN AM 17.08.2026: 4.3 STEHT AUF FAKTOR 1,6x** (plus Forschungsskalierung des Bosses,
+> Deckel 100, `ADMIRAL_STAT_SHARE` unveraendert 0,55). Die fehlenden Zellen sind gemessen, dazu
+> zwei Vergleichszellen bei 1,5x und ein zweiter unabhaengiger Lauf der Kandidatenzelle
+> (`admiral_bossscale_44.txt`, Modus `forschung`, Messbuild V1, 40 Serien je Zelle).
+>
+> | Faktor | voll/real | mittel/real | schwach/real |
+> |---|---|---|---|
+> | 1,25x | 1,43 / 95,0 % / 8,6 % | - | - |
+> | 1,5x | 2,70 / **57,5 %** / 20,6 % | 4,22 / 0,0 % / 36,3 % | 1,63 / 0,0 % / 40,1 % |
+> | **1,6x** | **2,85 / 40,0 % / 23,2 %**<br>**2,70 / 45,0 % / 23,1 %** | **3,80 / 0,0 % / 35,0 %** | **1,57 / 0,0 % / 52,2 %** |
+> | 1,75x | 3,85 / 0,0 % / 36,6 % | - | - |
+>
+> (Check-Tiefe / Siegquote / Wertverlust am Ende. Zwei Zeilen bei 1,6x = zwei unabhaengige Laeufe.)
+>
+> **(a) Die Streuung ist bestimmt und kleiner als der Entscheidungsabstand.** Zwei Laeufe derselben
+> Zelle `voll`/real 1,6x ergeben 2,85/40,0 %/23,2 % und 2,70/45,0 %/23,1 % - rund 5 Prozentpunkte
+> Siegquote, der Verlust praktisch deckungsgleich. Der Abstand zwischen 1,5x und 1,6x betraegt
+> 12,5-17,5 Punkte und liegt damit klar darueber. **Die Entscheidung ist nicht rauschgetrieben** -
+> das war nach den 3,63/3,83-Doppelmessungen vom 16./17.08. ausdruecklich zu pruefen.
+>
+> **(b) Entschieden wurde auf `voll`/real, und das ist eine Setzung, keine Messung.** P10 ist seit
+> dem 16.08.2026 ausdruecklich Endspiel-Inhalt ("`schwach` gewinnt in keiner Variante mehr"), also
+> ist der voll ausgebaute Stand der massgebliche. 1,6x trifft dort das zuvor akzeptierte Verhalten
+> fast exakt: 40,0-45,0 % Sieg gegen frueher 42,5 %, 23,1-23,2 % Verlust gegen frueher 21,5 %.
+>
+> **(c) Fuer `mittel` ist der Faktor gar kein Hebel mehr.** 1,5x und 1,6x sind dort praktisch
+> ununterscheidbar: 0 % Sieg in beiden Faellen, 36,3 gegen 35,0 % Verlust. Nur die Tiefe bewegt
+> sich, und zwar **nach unten bei hoeherem Faktor** (4,22 -> 3,80) - die Nicht-Monotonie aus
+> Schritt 5 ist damit ein zweites Mal bestaetigt, diesmal innerhalb eines einzigen Profils.
+> **Was `mittel` entscheidet, ist R14, nicht 4.3.**
+>
+> **(d) `schwach` ist der einzige Ausbaustand, den die Wahl spuerbar trifft** - und zwar zum
+> Schlechteren: 40,1 % Verlust bei 1,5x gegen **52,2 %** bei 1,6x, damit im Saettigungsband 48-55 %,
+> in dem die Serie sofort am Verlustkriterium endet (Tiefe 1,57). *Ausdruecklicher Nachteil der
+> Entscheidung.* Er wird in Kauf genommen, weil `schwach` bereits am 16.08.2026 bewusst
+> abgeschrieben wurde; wer das revidieren will, revidiert diese Entscheidung, nicht den Faktor.
+>
+> **(e) Das Zielband 3-5 wird bei `voll` von keinem Faktor mehr mit einer Siegquote erreicht.**
+> 1,75x liefert 3,85 bei 0 % Sieg, 1,6x 2,70-2,85 bei 40-45 %. Das war vorab akzeptiert und ist
+> hiermit belegt statt vermutet. Bemerkenswert: `mittel` liegt bei 1,6x mit 3,80 IM Zielband, aber
+> ohne einen einzigen Sieg - die Check-Tiefe allein ist damit endgueltig kein brauchbares
+> Abnahmemass mehr. **Fuer kuenftige Kalibrierungen an P10: Tiefe UND Ausgangsverteilung gemeinsam
+> lesen, nie die Tiefe allein.**
+>
+> **(f) Nicht angefasst und ausdruecklich unveraendert:** `MAX_ROUNDS` 100, Schwelle 0,30,
+> Entscheidung 4.4 (RapidFire auf sechs Typen, Salve verworfen), Beute-Anker, Exponent 0,85,
+> Baseline 0,80 / 19,82 / 76,85 Mrd. Alles Vergleiche unter gleichen Bedingungen, von R14 nicht
+> beruehrt.
+>
+> **(g) Dokumentationsschuld beglichen:** `admiral_bossscale_44.txt` enthielt die Nach-R14-Zeilen
+> ohne Kennzeichnung unter der Ueberschrift der Vor-R14-Messreihe. Die Zelle `voll/real 1,75x`
+> stand dadurch dreimal mit 37,5 %, 42,5 % und 0,0 % Sieg in derselben Datei, ohne erkennbaren
+> Grund. Eine Trennmarke ist eingezogen; **keine Zahl wurde geaendert.**
+
 > **REICHWEITE DER DECKEL-AENDERUNG - GEMESSEN AM 16.08.2026, entscheidet den Punkt.** Die Sorge,
 > ein hoeherer `MAX_ROUNDS` koennte die gerade geschlossene Baseline aus Block A umwerfen, ist
 > gegenstandslos. Reale Flotte, Profil `voll`, 40 Kaempfe je Sektor mit der jeweiligen
@@ -1850,6 +1904,65 @@ ist es nicht**. Eine Basis waechst also schneller, je oefter jemand in die Galax
 -> Entscheidungsschritt an einen Zeitstempel auf der Basis haengen (z.B. hoechstens alle N Minuten),
 nicht an den Ladevorgang. Kleine Aenderung, aber **Voraussetzung fuer jede reproduzierbare Messung
 an Entscheidung 5**.
+
+> **UMGESETZT UND GEMESSEN AM 17.08.2026 (Block C, Schritt 6).** Neues Feld `nextEconomyTurn` auf
+> `PirateBaseState`, neue Konstanten `PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS = 2 Minuten` (gleich
+> `HEARTBEAT_INTERVAL_MS`) und `PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP = 30`. Messung:
+> `run_base_growth_133.mjs` / `base_growth_133.txt`, Messbuilds ueber `make_messbuild_133.mjs`
+> (Intervall auf 1 s heruntergesetzt, damit die Mechanik in Sekunden statt Stunden sichtbar wird;
+> Quellcode unberuehrt, Verfahren wie bei 4.4).
+>
+> **Abnahmekriterium erfuellt:** bei rund 11.000-facher Aufruf-Zahl ueber dasselbe Zeitfenster
+> liefen vorher **x10.514 bis x10.895** so viele Bau-Entscheidungsschritte, nachher **x0,95 bis
+> x1,00**. Die Ergebnisse sind damit identisch, wie in den Messkriterien oben gefordert.
+>
+> **Drei Befunde, die den Plan korrigieren:**
+>
+> **(1) Die Begruendung in 13.3 traegt so nicht - das WACHSTUM hing schon vorher nicht an den
+> Aufrufen.** Gemessen wurden die Ausgaben je Zeitfenster mit x0,94 bzw. x1,00 bereits im
+> Vorher-Stand, in beiden Kapitalstaenden und aus zwei verschiedenen Gruenden: bei einer reichen
+> Basis binden die **Bau-Slots** (Warteschlangen stehen nach wenigen Zuegen auf 11/11, und die
+> eingereihten Auftraege laufen 12 min bis 12 h), bei einer frischen Basis bindet der
+> **Ressourcenstand** (das Geld ist nach dem ersten Zug weg). Der Satz "eine Basis waechst
+> schneller, je oefter jemand in die Galaxie schaut" ist in dieser Form **nicht bestaetigt**.
+> **Was die Aenderung weiterhin traegt, ist Punkt 5b (Reproduzierbarkeit) und die Rechenlast** -
+> rund 10.500 vollstaendige Entscheidungsschritte in 20 Sekunden, je Basis und je Client, dieselbe
+> Familie wie die Cross-User-Sweeps vom 12.08.2026. *Grenze der Messung ausdruecklich:* 20 Sekunden
+> zeigen keinen Effekt, der ueber Stunden entsteht (leer stehende Slots zwischen zwei
+> Fertigstellungen). Gerechnet, nicht gemessen: bei 2 Minuten Intervall gegen 12 min bis 12 h
+> Auftragslaufzeit steht ein Slot hoechstens 2 Minuten leer, also wenige Prozent.
+>
+> **(2) Ein Zeitstempel allein genuegt nicht - er muss im RASTER weitergesetzt werden.** Die erste
+> Fassung (`nextEconomyTurn = jetzt + Intervall`, kein Nachholen) mass **x1,18 statt x1,00**: kommt
+> ein Aufruf wenige Millisekunden VOR der Faelligkeit, faellt der Zug aus und wird nie nachgeholt.
+> Produktiv waere genau das der Regelfall gewesen, weil der Heartbeat denselben 2-Minuten-Takt hat
+> wie das Intervall. Ausgeliefert ist deshalb `nextEconomyTurn += Intervall` je faelligem Zug, mit
+> gedeckeltem Nachholen. **Wer das Intervall aendert, muss diese Kopplung mitdenken.**
+>
+> **(3) Zweiter Fundort derselben Fehlerform, im Plan nicht erwaehnt: `/api/heartbeat` laeuft ohne
+> `requireAuth`.** Da `runBotTurn()` einmal je Heartbeat einen vollstaendigen
+> Bau-Entscheidungsschritt jedes Bots ausfuehrt, liess sich damit das **Bot**-Wachstum durch
+> wiederholte Aufrufe des Endpunkts beliebig beschleunigen - dieselbe Aufruf-Abhaengigkeit eine
+> Ebene hoeher. Behoben ueber `HEARTBEAT_MIN_INTERVAL_MS = 60 s` in `heartbeat.ts`; der Endpunkt
+> meldet innerhalb des Fensters `skipped`. *Nachteil:* ein manueller Testaufruf wirkt dort nicht
+> mehr sofort. Der Wert liegt bewusst unter `HEARTBEAT_INTERVAL_MS` (2 min), damit der interne Takt
+> nie uebersprungen wird.
+>
+> **Zwei Fehlversuche am Messwerkzeug, bewusst protokolliert** - beide sahen wie ein Befund aus:
+> der erste Aufbau mass Einheiten statt Zuege ("x0,94, also kein Defekt" - gemessen wurde das
+> Slot-Limit), und der Zaehler stand zunaechst hinter einer kompilierten `for`-Schleife OHNE
+> geschweifte Klammern und zaehlte dadurch Ladevorgaenge statt Zuege ("x10.082, Drosselung
+> wirkungslos"). Dieselbe Lehre wie bei der verworfenen Wirtschaftssimulation vom 12.08.2026.
+>
+> **Messregel 8 erfuellt:** im Client gegreppt (`loadPirateBase`, `runEconomyBotTurn`,
+> `nextOffensiveCheck`, `runGlobalHeartbeat`). Ein Spiegel gefunden - `DebugPirateBaseState` in
+> `client/src/types/game.ts` bildet `PirateBaseState` nach; das neue Feld ist dort und in der
+> Debug-Route ergaenzt und wird in `pages/Debug.tsx` als "naechster Bau-Zug" angezeigt, damit die
+> Drosselung im laufenden Betrieb ueberpruefbar ist.
+>
+> **Offen und ausdruecklich NICHT mit erledigt:** die Wachstumsrate der Basen ueber Tage. Sie
+> braucht die gefaelschte Uhr aus Abschnitt 1b. Bis dahin bleibt der Messpunkt in Abschnitt 7
+> bestehen.
 
 **13.4 Entscheidung 9 trifft Bots haerter als Spieler.**
 Bots und Basen teilen sich `MAX_BUILD_SLOTS`, `MAX_DEFENSE_SLOTS` und `MAX_RESEARCH_SLOTS` mit den
@@ -3882,6 +3995,8 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 17.08.2026 | **Entscheidung 4.3 nach R14 neu bestimmt und GESCHLOSSEN: Faktor 1,6x** (plus Boss-Forschungsskalierung, Deckel 100, `ADMIRAL_STAT_SHARE` unveraendert 0,55). Gemessen mit `run_admiral_bossscale.mjs`, Modus `forschung`, Messbuild V1 aus `make_messbuild_44.mjs`, 40 Serien je Zelle, scheibenweise nach `admiral_bossscale_44.txt`. Vollstaendig im Messkasten bei 4.3. **Gemessene Zellen:** `mittel/real` 1,6x -> Tiefe 3,80 / 0,0 % Sieg / 35,0 % Verlust, `schwach/real` 1,6x -> 1,57 / 0,0 % / 52,2 %. **Ueber den Auftrag hinaus zusaetzlich erhoben, weil die Entscheidung sonst nicht belastbar gewesen waere:** zwei Vergleichszellen bei 1,5x (`mittel` 4,22 / 0,0 % / 36,3 %; `schwach` 1,63 / 0,0 % / 40,1 %) und ein zweiter unabhaengiger Lauf der Kandidatenzelle `voll/real` 1,6x (2,70 / 45,0 % / 23,1 % gegen 2,85 / 40,0 % / 23,2 % im ersten Lauf). **Vier Befunde.** (1) **Die Streuung ist jetzt bestimmt und kleiner als der Entscheidungsabstand:** rund 5 Prozentpunkte Siegquote zwischen zwei Laeufen derselben Zelle, gegen 12,5-17,5 Punkte Abstand zwischen 1,5x und 1,6x. Die Wahl ist damit nicht rauschgetrieben - das war nach den 3,63/3,83-Doppelmessungen vom 16./17.08. ausdruecklich zu pruefen. (2) **Fuer `mittel` ist der Faktor gar kein Hebel mehr:** 1,5x und 1,6x sind praktisch ununterscheidbar (beide 0 % Sieg, 36,3 gegen 35,0 % Verlust), nur die Tiefe bewegt sich - und zwar NACH UNTEN bei hoeherem Faktor (4,22 -> 3,80). Die Nicht-Monotonie aus Schritt 5 ist damit ein zweites Mal bestaetigt, diesmal innerhalb eines einzigen Profils. Was `mittel` entscheidet, ist R14, nicht 4.3. (3) **`schwach` ist der einzige Ausbaustand, den die Wahl spuerbar trifft, und zwar zum Schlechteren:** 40,1 % Verlust bei 1,5x gegen 52,2 % bei 1,6x, damit im Saettigungsband 48-55 %. Ausdruecklicher Nachteil, in Kauf genommen, weil `schwach` am 16.08.2026 bewusst abgeschrieben wurde. (4) **Die Check-Tiefe allein ist als Abnahmemass endgueltig unbrauchbar:** `mittel` liegt bei 1,6x mit 3,80 IM Zielband 3-5, ohne einen einzigen Sieg. Kuenftige Kalibrierungen an P10 muessen Tiefe UND Ausgangsverteilung gemeinsam lesen. **Entschieden wurde auf `voll`/real** - eine Setzung, keine Messung: P10 ist seit dem 16.08.2026 ausdruecklich Endspiel-Inhalt, und 1,6x trifft dort das zuvor akzeptierte Verhalten fast exakt (40,0-45,0 % Sieg gegen frueher 42,5 %, 23,1-23,2 % Verlust gegen 21,5 %). Das Zielband 3-5 wird bei `voll` von keinem Faktor mehr mit einer Siegquote erreicht - vorab akzeptiert, jetzt belegt. **Nicht angefasst:** `MAX_ROUNDS` 100, Schwelle 0,30, Entscheidung 4.4, Beute-Anker, Exponent 0,85, Baseline 0,80 / 19,82 / 76,85 Mrd. **Dokumentationsschuld beglichen:** `admiral_bossscale_44.txt` fuehrte die Nach-R14-Zeilen ohne Kennzeichnung unter der Ueberschrift der Vor-R14-Reihe, wodurch die Zelle `voll/real 1,75x` dreimal mit 37,5 / 42,5 / 0,0 % Sieg in derselben Datei stand; Trennmarke eingezogen, **keine Zahl geaendert**. |
+| 17.08.2026 | **Block C, Schritt 6 erledigt: Entscheidung 13.3 umgesetzt und gegengemessen.** Neues Feld `nextEconomyTurn` auf `PirateBaseState`, neue Konstanten `PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS` (2 Min., gleich `HEARTBEAT_INTERVAL_MS`) und `PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP` (30). Neue Skripte `make_messbuild_133.mjs` und `run_base_growth_133.mjs`, Ausgabe `base_growth_133.txt`; Messbuilds mit auf 1 s heruntergesetztem Intervall nach dem Verfahren von 4.4, Quellcode unberuehrt. **Abnahmekriterium aus Entscheidung 13 erfuellt:** bei rund 11.000-facher Aufruf-Zahl ueber dasselbe Zeitfenster liefen vorher x10.514-10.895 so viele Bau-Entscheidungsschritte, nachher x0,95-1,00. **Drei Befunde, die den Plan korrigieren.** (1) **Die Begruendung in 13.3 traegt so nicht - das WACHSTUM hing schon vorher nicht an den Aufrufen** (Ausgaben x0,94 bzw. x1,00 bereits im Vorher-Stand, in beiden Kapitalstaenden). Bei einer reichen Basis binden die Bau-Slots (Warteschlangen stehen nach wenigen Zuegen auf 11/11, eingereihte Auftraege laufen 12 min bis 12 h), bei einer frischen Basis bindet der Ressourcenstand (das Geld ist nach dem ersten Zug weg). Der Satz "eine Basis waechst schneller, je oefter jemand in die Galaxie schaut" ist in dieser Form NICHT bestaetigt. Was die Aenderung traegt, ist Punkt 5b (Reproduzierbarkeit - eine Groesse, die zwischen zwei Laeufen um Faktor 10.000 schwanken kann, ist als Messgrundlage unbrauchbar) und die Rechenlast, dieselbe Familie wie die Cross-User-Sweeps vom 12.08.2026. *Grenze ausdruecklich:* 20 Sekunden zeigen keinen Effekt, der ueber Stunden entsteht; gerechnet, nicht gemessen, steht ein frei gewordener Slot bei 2 Minuten Intervall hoechstens 2 Minuten leer, also wenige Prozent. Der Langzeit-Nachweis braucht die gefaelschte Uhr aus Abschnitt 1b und bleibt offen. (2) **Ein Zeitstempel allein genuegt nicht - er muss im RASTER weitergesetzt werden.** Die erste Fassung (`nextEconomyTurn = jetzt + Intervall`, kein Nachholen) mass x1,18 statt x1,00: ein Aufruf wenige Millisekunden vor der Faelligkeit laesst den Zug ausfallen, und produktiv waere genau das der Regelfall, weil der Heartbeat denselben 2-Minuten-Takt hat. Ausgeliefert ist `+= Intervall` je faelligem Zug mit gedeckeltem Nachholen. (3) **Zweiter Fundort derselben Fehlerform, im Plan nicht erwaehnt:** `GET /api/heartbeat` laeuft bewusst ohne `requireAuth`, und weil `runBotTurn()` einmal je Heartbeat einen vollstaendigen Bau-Entscheidungsschritt jedes Bots ausfuehrt, liess sich damit das BOT-Wachstum durch wiederholte Aufrufe beliebig beschleunigen. Behoben ueber `HEARTBEAT_MIN_INTERVAL_MS` (60 s); der Endpunkt meldet innerhalb des Fensters `skipped`. *Nachteil:* ein manueller Testaufruf wirkt dort nicht mehr sofort. **Zwei Fehlversuche am Messwerkzeug, bewusst protokolliert, beide sahen wie ein Befund aus:** der erste Aufbau mass Einheiten statt Zuege ("x0,94, also kein Defekt" - gemessen wurde das Slot-Limit), und der Zaehler stand zunaechst hinter einer kompilierten `for`-Schleife OHNE geschweifte Klammern und zaehlte dadurch Ladevorgaenge statt Zuege ("x10.082, Drosselung wirkungslos"). Dieselbe Lehre wie bei der verworfenen Wirtschaftssimulation vom 12.08.2026: ein Messwerkzeug ist erst dann Beweismittel, wenn es an einem bekannten Zustand gegengeprueft wurde. **Messregel 8 erfuellt:** im Client gegreppt, ein Spiegel gefunden (`DebugPirateBaseState` in `client/src/types/game.ts` bildet `PirateBaseState` nach) - Feld dort und in der Debug-Route ergaenzt, `pages/Debug.tsx` zeigt jetzt den naechsten faelligen Bau-Zug an, damit die Drosselung im Betrieb pruefbar ist. **README nachgezogen**, dabei eine dort noch stehende veraltete Aussage korrigiert (`RESOURCE_CAP` begrenze das Ressourcen-Wachstum - der Deckel heisst seit dem 12.08.2026 `LOOT_BASIS_CAP` und wirkt nur noch auf die Beute). |
 | 17.08.2026 | **R14 repariert, gegengemessen und ausgeliefert - plus R14b (Durchschlag) auf Nutzerentscheidung, plus neuer Punkt R15.** Geaendert wurde ausschliesslich `fireShotsAggregateShooters()` in `server/src/game/combat.ts`; die Aggregationsschwellen sind unberuehrt geblieben, die Aggregation selbst bleibt vollstaendig erhalten (sie war nie das Problem, nur die RapidFire-Naeherung darin). Vollstaendige Einzelheiten im Messkasten **R14 - REPARATUR** unter der Reparaturtabelle in Abschnitt 3. **Abnahmetest 1 bestanden** (`rapidfire_aggregat.txt`): aggregierte Schuetzen erreichen die Schusszahlen des Einzel-Pfads (Kreuzer 0,97 -> 2,66 gegen 2,58; Schlachtschiff 1,04 -> 3,33 gegen 3,31), `rapidFireTriggers` ueberall groesser 0 statt exakt 0. **Abnahmetest 3 bestanden** (`r14_perf.txt`, neues Skript `run_r14_perf.mjs`): 20.700 Schiffe kosten 10 statt 14 ms je Kampf, weil die Kaempfe nur noch halb so viele Runden dauern; ein Skalierungstest mit **207.000 Schiffen** landet beim praktisch selben Wert - die Rechenzeit haengt weiterhin an der Typenzahl, nicht an der Stueckzahl. **Abnahmetest 2 nur teilweise** (`r14_delta.txt`): die Rundenzahl faellt mit der Referenz zusammen, die Verlustquote nicht. Die Ursache ist diagnostiziert und liegt NICHT im Schuetzen-Pfad - eine Kontrollzelle ohne Aggregation UND ohne Explosionsmechanik reproduziert die Rundenzahl des Aggregat-Pfads exakt. Daraus **R15**: Aggregat-Stapel koennen nicht explodieren, und ein Stapel als HP-Topf rechnet jeden Schadenspunkt sofort anteilig in tote Einheiten um, waehrend einzelne Schiffe beschaedigt ueberleben und ihren Schild zwischen den Runden voll regenerieren. **R14b** war ein Fund bei der Umsetzung: Aggregat-Schuetzen bekamen hart `overkillFraction = 0`, obwohl `fireShots()` den echten `getDurchschlagFraction()` durchreicht - der Kommentar begruendete das mit dem Individual-Zweig innerhalb derselben Funktion, der selbst 0 uebergab (zirkulaer). Gemessen bewegt R14b das Ergebnis in Richtung Referenz (9,6 -> 8,7 Runden bei `piraten_mittel`), erklaert den Rest aber nicht. **Messregel 8 vorab erfuellt:** im Client gegreppt, `combatInfo.ts` liest die RF-Tabelle ueber `gameData.rapidfire` vom Server, keine zweite hartkodierte Zahl - keine Client-Aenderung noetig. **Neu erhoben, weil die Verlust-Seite sich verschiebt:** Elite-Serie praktisch unveraendert (3,2 -> 3,3 % Verlust), Raid Flottenverlust 10,1 -> 13,3 % und **Verteidigungsverlust 0,1 -> 22,5 %**, reale Flotte Solo Hoch netto +0,11 -> **-2,97 Mrd/Tag** und Elite netto 28,32 -> 21,65 Mrd (Achtung: der alte Stand hatte nur 5 Durchlaeufe, also unter Messregel 2 - ein Teil der Differenz ist Messqualitaet). **Die Zahl mit dem groessten Risiko ist gerissen:** Admiral-Zelle `voll/real` bei 1,75x, Modus `forschung`, Messbuild V1 - Tiefe 3,85 sieht weiter nach Zielband aus, aber die Siegquote faellt von 42,5 auf **0,0 %** und der Verlust steigt von 21,5 auf 36,6 %; die Serie endet jetzt IMMER am Verlustkriterium statt am Kampfausgang. Sweep dazu: 1,25x -> Tiefe 1,43 / 95 % Sieg, 1,5x -> 2,70 / 57,5 %, **1,6x -> 2,85 / 40,0 % Sieg / 23,2 % Verlust**. 1,6x kommt dem alten Verhalten bei 1,75x am naechsten und ist der Kandidat; festschreiben erst nach der vollen Serie ueber `mittel` und `schwach`. |
 | 17.08.2026 | **Nutzerfund: RapidFire wirkt bei grossen Flotten praktisch nicht mehr - neu als R14.** Meldung des Nutzers beim Spielen ("RF funktioniert ausser bei Salvenschiffen und Imperator gar nicht mehr, seit sie nur noch EIN Ziel haben, die Werte springen nicht mehr"). Gemessen bestaetigt mit `probe_rapidfire.mjs`: dieselbe Flotte unter der Aggregationsschwelle feuert 2,24 bis 4,03 Schuesse je Einheit und Runde, darueber nur noch 0,97 bis 1,13 - **ein Schuss je Einheit heisst, RapidFire findet nicht statt.** Da die Schwellen bei 100 (Kreuzer-Klasse) und 50 (Elite-Klasse) liegen, laeuft jede echte Spielerflotte ueber den Aggregat-Pfad. **Drei Ursachen in `fireShotsAggregateShooters()`:** die Folgeschuss-Kette wird ueber `rfEligibleShare` mit dem Anteil des Konterziels an ALLEN Zielen verduennt (im Einzel-Pfad genuegt dessen blosse Anwesenheit) - **hier schlaegt die RF-Neuordnung vom 04.08.2026 durch, weil ein einzelnes RF-Ziel den Anteil auf rund ein Sechstel druckt**; die gewonnenen Schuesse werden proportional zur Stueckzahl verteilt statt auf das Konterziel gelenkt; und `rapidFireTriggers` wird dort nie hochgezaehlt, weshalb der Kampfbericht 0 zeigt. **Einordnung:** stiller Defekt nach dem Massstab aus Abschnitt 8, keine Balance-Frage - die Aggregation ist eine Performance-Optimierung und darf das Kampfergebnis nicht veraendern. Zweiter Fall derselben Fehlerform im selben Codepfad nach Entscheidung 1 (Overkill-Deckel). **Folgen ausdruecklich genannt:** die Reparatur beruehrt beide Seiten (NPC-Flotten sind ebenfalls aggregiert, `NPC_RF_VS_JAEGER_FACTOR = 0,5` wirkt nur auf der NPC-Seite) - welche Seite netto gewinnt, ist offen und muss gemessen werden; und sie verschiebt voraussichtlich die Kampfzahlen aus Block A und B, die alle gegen eine Engine ohne wirksames RapidFire gelaufen sind. Aussage 32 der Code-Doku ("RapidFire ist das entscheidende Gegenmittel gegen Jaegerschwaerme") gilt nur im Einzel-Pfad, also praktisch nie. **Empfohlene Reihenfolge:** R14 vor weiteren KAMPF-Messungen; Block C (13.3) ist nicht betroffen und kann davor laufen. |
 | 17.08.2026 | **Block B, Schritt 5 geschlossen: Entscheidung 4.4 gemessen und entschieden, Faktor aus 4.3 gegengemessen und bestaetigt. Block B ist damit vollstaendig.** Neu: `run_aggregate_threshold_44.mjs` (Mischflotte), `make_messbuild_44.mjs` (Messbuilds V1/V2/V3/V2b nach dem Verfahren von M3), `probe_admiral_shots.mjs`; Ausgaben in `aggregate_threshold_44.txt` und `admiral_bossscale_44.txt`. 40 Laeufe je Zelle, Quellcode unberuehrt. **Entschieden: RapidFire des Bosses auf die sechs Standardtypen aus `ADMIRAL_ALLOWED_SHIP_IDS` umstellen, die Mehrfachziel-Salve VERWERFEN.** **Fuenf Befunde, die den Plan korrigieren.** (1) **Der Vorschlag in 4.4 bestand aus zwei Wirkpfaden, von denen einer im Plan gar nicht sichtbar war und der andere ohne eine dritte, nirgends erwaehnte Aenderung wirkungslos geblieben waere.** Die Mehrfachziel-Salve haengt an `getZielerfassungAccuracy()`, die ohne `ZIELERFASSUNG_BASE`-Eintrag **0** liefert - `piratenadmiral` hat keinen. Der Eintrag in `MULTI_TARGET_VOLLEY_SHIPS` allein waere toter Code gewesen. Gemessen feuert der Boss heute **exakt einen Schuss je Runde** (RF-Ziele nicht erreichbar, also kein einziger Folgeschuss), mit umgestelltem RapidFire 5,3 und mit Salve 39-47,5. (2) **Die Salve ist mit keinem Gegnerstaerke-Faktor kalibrierbar:** die Check-Tiefe bleibt von 0,1x bis 1,75x konstant bei 1,00, und zwischen 0,5x und 0,75x kippt der Ausgang von 100 % Sieg auf 92,5 % Niederlage. Der Kampf ist nach zwei Runden entschieden - die Zieltiefe 3-5 ist damit grundsaetzlich unerreichbar. Dieselbe Alles-oder-Nichts-Eigenschaft wie bei `ADMIRAL_STAT_SHARE`. (3) **Die Faehigkeit ist strukturell anti-klein statt anti-Masse.** Overkill-Deckel (fuenf Einheiten je Treffer) und `MAX_SHOTS_PER_UNIT` (50) setzen eine ABSOLUTE Obergrenze an Abschuessen je Runde; ihr Anteil faellt mit wachsender Flotte. Gemessen 100 % Verlust bei 405 Schiffen gegen 16,5 % bei 4.500. Der Code-Kommentar ("bestraft Masse an kleinen Schiffen ganz natuerlich") beschreibt damit das Gegenteil des tatsaechlichen Verhaltens. (4) **Der Faktor aus 4.3 bleibt bei 1,75x** - die im Uebergabe-Text erwartete Absenkung ist nicht eingetreten: `voll`/real misst sich mit 4.4 auf Tiefe 3,63/3,83 bei 42,5/37,5 % Sieg gegen 3,98 bei 40 % ohne, also innerhalb der Streuung zweier Laeufe derselben Zelle. Nachteil: die Extraktionsquote faellt von 12,5 auf 0-2,5 %. Offene Luecke geschlossen: `schwach`/real bei 1,75x mit 4.4 ergibt Tiefe 1,52 (ohne: 1,68). (5) **Befund am Messwerkzeug:** `run_aggregate_threshold.mjs` stellt dem Boss eine Flotte aus EINEM Typ gegenueber und kann eine Mehrfachziel-Faehigkeit deshalb prinzipiell nicht messen (V1/V2/V3/V2b liegen dort auf die Nachkommastelle gleich); ab der 4.4-Mechanik sind seine Zellen zusaetzlich saturiert. **Nebenbefund zu einer bestehenden Messdatei:** `run_admiral_roundcap.mjs` rechnet mit `metall + kristall + 2 x deuterium`, `TRADE_VALUE` im Code ist `1 / 1,5 / 3`. Die Messflotte kommt dadurch auf 21,57 statt 26,72 Mrd; die Spalte "netto Verlust" in `admiral_roundcap.txt` ist um rund 19 % zu niedrig. Die Deckel-Aussage bleibt gueltig (innerhalb der Datei dieselbe Formel), aber die dortige Zelle Deckel 100 / 1,75x ist nicht direkt mit `admiral_bossscale.txt` vergleichbar - die Differenz Tiefe 3,63 gegen 3,98 ist Streuung, kein Formelfehler. **Methodische Lehre:** eine Faehigkeit, die aus mehreren Bedingungen besteht, muss VOR der Messung im Code auf alle Bedingungen geprueft werden; hier haette die im Plan beschriebene Aenderung zur Haelfte gar nicht gewirkt und waere als "gemessen und harmlos" ins Protokoll gegangen. |

@@ -1,0 +1,53 @@
+Expeditions-Commander-2 - Aenderungspaket vom 17.08.2026
+========================================================
+Inhalt: Entscheidung 4.3 (Faktor nach R14 neu bestimmt) und Entscheidung 13.3
+(Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit entkoppelt).
+
+Die Ordnerstruktur entspricht dem Repo - der Inhalt kann direkt darueber gelegt werden.
+
+GEAENDERTE DATEIEN
+------------------
+server/src/game/pirateBaseState.ts   13.3: neue Konstanten PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS
+                                     (2 Min.) und PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP (30);
+                                     runEconomyBotTurn() haengt jetzt am Zeitraster statt am
+                                     Ladevorgang. runEconomyTick() bleibt ungedrosselt.
+                                     Veralteter Kommentar ("bewusst UNGEDROSSELT wie bei den
+                                     Bots") korrigiert - er war doppelt falsch.
+server/src/game/types.ts             13.3: Feld nextEconomyTurn auf PirateBaseState.
+server/src/game/heartbeat.ts         13.3, zweiter Fundort: HEARTBEAT_MIN_INTERVAL_MS (60 s).
+                                     GET /api/heartbeat laeuft ohne requireAuth und liess sich
+                                     zur Beschleunigung des Bot-Wachstums missbrauchen.
+                                     Rueckgabetyp um `skipped?: boolean` erweitert.
+server/src/game/routes.ts            13.3: nextEconomyTurn in GET /game/debug/npcs.
+client/src/types/game.ts             Messregel 8: Spiegel DebugPirateBaseState nachgezogen.
+client/src/pages/Debug.tsx           Messregel 8: zeigt den naechsten faelligen Bau-Zug an.
+
+README.md                            Abschnitt "KI-Spieler & Piratenbasen" auf den neuen Stand;
+                                     dabei eine veraltete Aussage korrigiert (RESOURCE_CAP heisst
+                                     seit 12.08.2026 LOOT_BASIS_CAP und begrenzt nur die Beute).
+UMSETZUNGSPLAN_BALANCE.md            Messkasten 4.3 geschlossen (Faktor 1,6x), Entscheidung 13.3
+                                     mit Befunden, zwei neue Protokolleintraege.
+UEBERGABE.md                         Stand, Einstieg fuer den naechsten Chat, zwei neue Fallen.
+
+balance/session2-simulation/admiral_bossscale_44.txt
+                                     Neue Messzeilen (mittel/schwach bei 1,6x, Vergleichszellen
+                                     1,5x, zweiter Lauf voll/real 1,6x) PLUS eine Trennmarke vor
+                                     den Nach-R14-Zeilen. KEINE bestehende Zahl geaendert.
+
+NEUE DATEIEN
+------------
+balance/session2-simulation/make_messbuild_133.mjs   Messbuilds fuer 13.3 (Quellcode unberuehrt).
+balance/session2-simulation/run_base_growth_133.mjs  Abnahmemessung zu 13.3.
+balance/session2-simulation/base_growth_133.txt      Ergebnisse und Befund.
+
+NICHT IM PAKET
+--------------
+- messbuild_*-Verzeichnisse (erzeugte dist-Kopien, gehoeren nicht ins Repo).
+- server/dist und node_modules.
+- balance/session2-simulation/data/ (Wegwerf-Datenbank der Messung).
+
+NACH DEM EINSPIELEN
+-------------------
+Im Ordner server:  npm install && npx tsc
+Beide Seiten uebersetzen mit diesem Stand fehlerfrei (Server: tsc, Client: tsc --noEmit).
+Der Kampf-Worker laedt immer aus dist/ - ohne frischen Build misst/laeuft der alte Stand.

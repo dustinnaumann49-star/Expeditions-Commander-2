@@ -636,17 +636,35 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   exakt dieselben Aktionsfunktionen wie ein Mensch. `runBotTurn()` läuft im Heartbeat NACH
   `tick()`/`processMissions()`/`processRaidTimer()` (Reihenfolge kritisch - siehe Kernbugfix
   unten). Wirtschafts-Entscheidungslogik (`runEconomyBotTurn()` in `economyBotTurn.ts`, geteilt
-  mit Piratenbasen) ungedrosselt, da ohne Kampf-Risiko. Kampfauslösende Aktionen (Piratenbasis-
+  mit Piratenbasen) ohne eigene Drosselung, da ohne Kampf-Risiko - der Takt kommt vollständig vom
+  Heartbeat. **Wichtig dazu:** `GET /api/heartbeat` läuft bewusst ohne `requireAuth` und ist damit
+  von außen auslösbar; weil jeder Durchlauf einen vollständigen Bau-Entscheidungsschritt jedes Bots
+  ausführt, ließ sich das Bot-Wachstum darüber beliebig beschleunigen. Seit dem 17.08.2026 greift
+  `HEARTBEAT_MIN_INTERVAL_MS` (60 s) in `heartbeat.ts`; innerhalb des Fensters antwortet der
+  Endpunkt mit `skipped: true`, ein manueller Testaufruf wirkt dann nicht sofort. Der Wert liegt
+  bewusst unter `HEARTBEAT_INTERVAL_MS` (2 Min.), damit der interne Takt nie übersprungen wird.
+  Kampfauslösende Aktionen (Piratenbasis-
   Angriff, `piraten_elite`-Beitritt) sind eigens gedrosselt (`BOT_COMBAT_ACTION_CHANCE`) UND
   vergleichen vorab die eigene gegen die gegnerische Gesamtstärke (`combatFleetPowerBase()`,
   `ATTACK_POWER_SAFETY_MARGIN` = 1,15) - nur bei klarem Vorteil wird tatsächlich angegriffen,
   sonst wächst die Flotte erst weiter.
 - **Piratenbasen** (`pirateBaseState.ts`, `PirateBaseState`): 4 der 12 möglichen Positionen aktiv,
   vollwertiger `PlayerState` pro Basis (synthetische negative `userId`, taucht nie in
-  `listAllUsers()` auf). Wachsen wie ein Spieler (`runEconomyBotTurn()` bei jedem Laden),
-  ungedrosselt. Feste Mindest-Garnison (`SEED_FLEET`/`SEED_DEFENSE`, ~5.300 Schiffe/~1.120
+  `listAllUsers()` auf). Wachsen wie ein Spieler (`runEconomyBotTurn()`). **Der Bau-Entscheidungs-
+  schritt hängt seit dem 17.08.2026 an der UHR, nicht mehr am Ladevorgang** (`nextEconomyTurn` auf
+  der Basis, `PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS` = 2 Min. = `HEARTBEAT_INTERVAL_MS`, also genau
+  ein Zug je Heartbeat). Vorher lief er bei JEDEM Laden - und geladen wird eine Basis bei jedem
+  Aufruf der Galaxie-Ansicht, jedem Spionageflug und jedem Angriff; gemessen waren das bis zu
+  **10.500 vollständige Entscheidungsschritte in 20 Sekunden** je Basis. Zwei Punkte, die beim
+  Ändern des Intervalls mitgedacht werden müssen: der Zeitstempel wird im RASTER weitergesetzt
+  (`+= Intervall`, gedeckelt über `PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP`), NICHT auf
+  "jetzt + Intervall" - sonst lässt ein Aufruf kurz vor Fälligkeit den Zug ausfallen, was bei
+  gleichem Takt wie der Heartbeat der Regelfall wäre. Und `runEconomyTick()` (Ressourcen-
+  Produktion) bleibt bewusst UNGEDROSSELT, weil es ohnehin zeitbasiert rechnet.
+  Feste Mindest-Garnison (`SEED_FLEET`/`SEED_DEFENSE`, ~5.300 Schiffe/~1.120
   Verteidigungsanlagen) als Floor-Up bei jedem Laden - kann nur stärker werden, nie schwächer;
-  "unzerstörbare Basis". `RESOURCE_CAP` verhindert unbegrenztes Ressourcen-Wachstum.
+  "unzerstörbare Basis". `LOOT_BASIS_CAP` (bis 12.08.2026 `RESOURCE_CAP`) begrenzt NUR noch die
+  Beute, nicht mehr den Lagerbestand - der Ausbau einer Basis ist bewusst unbegrenzt.
   Offensiv-KI greift Spieler/Bots selbst an (`runAllPirateBaseOffensiveTurns()`, einmal pro
   Heartbeat), aber mit langem Cooldown (`PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN/MAX_MS`, 48-96h pro
   Basis) UND derselben Stärke-Abwägung wie die Bots (`PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN`).

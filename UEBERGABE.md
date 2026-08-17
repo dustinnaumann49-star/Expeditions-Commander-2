@@ -1,4 +1,4 @@
-# Uebergabe - Stand 17.08.2026
+# Uebergabe - Stand 17.08.2026 (zweite Fassung des Tages)
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -26,8 +26,12 @@ das passt nicht gleichzeitig in eine Session.
   (Durchschlag im Aggregat-Pfad). Neu aufgetaucht ist **R15** - siehe unten. Die Kampf-Engine ist
   damit wieder vollstaendig; alle KAMPF-Messungen von vor dem 17.08.2026 sind gegen eine Engine
   gelaufen, in der RapidFire fuer grosse Flotten faktisch abgeschaltet war.
-- **Achtung, eine geschlossene Entscheidung ist wieder offen: der Faktor 1,75x aus 4.3.** Er war
-  die als riskant benannte Zahl, und das Risiko ist eingetreten. Einzelheiten unten.
+- **4.3 IST WIEDER GESCHLOSSEN - der Faktor steht jetzt auf 1,6x** (17.08.2026, nach R14 neu
+  bestimmt). 1,75x war die als riskant benannte Zahl, das Risiko ist eingetreten und die Zahl ist
+  ersetzt. Einzelheiten unten und im Messkasten bei 4.3.
+- **BLOCK C, SCHRITT 6 IST ERLEDIGT: Entscheidung 13.3** (Bot- und Basis-Wachstum von der
+  Aufruf-Haeufigkeit entkoppelt). Damit ist der Messblocker aus Punkt 5b weg - Messungen an den
+  Piratenbasen sind ab jetzt reproduzierbar. Einzelheiten unten.
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
 - **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
@@ -36,13 +40,11 @@ das passt nicht gleichzeitig in eine Session.
   Abschnitt 7**.
 - **BLOCK B, SCHRITT 4 IST GESCHLOSSEN** (15.08.2026): Entscheidung 4.1 (Verlust-Kriterium) und
   4.2 (contributedPower-Freeze).
-- **BLOCK B war vollstaendig, IST ES SEIT R14 NICHT MEHR GANZ.** Schritt 5 war geschlossen: 4.3
-  stand auf Faktor 1,75x plus Boss-Forschungsskalierung (nach 4.4 gegengemessen und bestaetigt),
-  **4.4 ist entschieden**
-  (RapidFire umstellen, Mehrfachziel-Salve verworfen), 4.5 entfaellt, 4.6/4.7/4.8 haben
-  Vorschlaege, die keine Messung mehr brauchen. **Seit dem 17.08.2026 ist davon nur 4.3 wieder
-  offen** (Faktor, Kandidat 1,6x) - 4.4, 4.5 und die uebrigen Punkte bleiben unberuehrt, weil sie
-  Vergleiche unter gleichen Bedingungen waren. Einzelheiten unten.
+- **BLOCK B IST WIEDER VOLLSTAENDIG** (17.08.2026, zweite Fassung). Schritt 5: **4.3 steht auf
+  Faktor 1,6x** plus Boss-Forschungsskalierung, **4.4 ist entschieden** (RapidFire umstellen,
+  Mehrfachziel-Salve verworfen), 4.5 entfaellt, 4.6/4.7/4.8 haben Vorschlaege, die keine Messung
+  mehr brauchen. R14 hatte davon nur 4.3 wieder aufgerissen; 4.4, 4.5 und die uebrigen Punkte
+  blieben unberuehrt, weil sie Vergleiche unter gleichen Bedingungen waren.
 - **Achtung bei der Nummerierung:** "Entscheidung 3" in Abschnitt 2 ist der RAID-ERTRAG,
   "Abschnitt 8, Punkt 3" ist die IMPERATOR-Einstufung. Zwei verschiedene Dinge. In frueheren
   Fassungen dieser Datei standen sie einmal vertauscht.
@@ -147,6 +149,19 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein Messwerkzeug misst nicht automatisch das, wonach gefragt ist.** Am 17.08.2026 bei 13.3
+zweimal hintereinander passiert, beide Male sah das falsche Ergebnis wie ein Befund aus:
+(a) gemessen wurden gebaute Einheiten statt Bau-Entscheidungsschritte - Ergebnis "x0,94, also kein
+Defekt", tatsaechlich gemessen wurde das Slot-Limit, das im kurzen Zeitfenster viel frueher bindet;
+(b) der Zaehler stand hinter einer kompilierten `for`-Schleife OHNE geschweifte Klammern und zaehlte
+dadurch Ladevorgaenge statt Zuege - Ergebnis "x10.082, Drosselung wirkungslos". **Vor der Auswertung
+pruefen, ob der Messwert ueberhaupt die Groesse ist, um die es geht, und ob ein anderer Engpass
+frueher bindet.**
+
+**Eine Kennzahl kann im Zielband liegen und trotzdem nichts wert sein.** `mittel`/real erreicht bei
+1,6x eine Check-Tiefe von 3,80, also mitten im Zielband 3-5 - bei 0 % Siegquote. Die Tiefe allein
+sagt nichts; sie muss immer zusammen mit der Ausgangsverteilung gelesen werden.
+
 **Die README im Repo hat KEINE nummerierten Punkte mehr.** Eine aeltere Fassung mit 33 nummerierten
 Punkten kursiert und wird bei Kaltstarts immer wieder mitgeliefert; sie ist an mehreren Stellen
 sachlich falsch (Imperator-Baulimit, Salvenschiff-Limits, Asteroiden-Laufzeit, Kampf-Performance um
@@ -195,24 +210,63 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**ZUERST: den Faktor aus 4.3 neu bestimmen.** Nach der R14-Reparatur ist `voll`/real bei 1,75x
-umgekippt: Check-Tiefe 3,85 (sieht unveraendert aus), aber die Siegquote faellt von 42,5 auf
-**0,0 %** und der Wertverlust steigt von 21,5 auf **36,6 %** - die Serie endet jetzt ausnahmslos am
-Verlustkriterium statt am Kampfausgang. Gemessener Sweep: 1,25x -> Tiefe 1,43 bei 95 % Sieg,
-1,5x -> 2,70 bei 57,5 %, **1,6x -> 2,85 bei 40,0 % Sieg und 23,2 % Verlust**, 1,75x -> 3,85 bei
-0 %. **Kandidat ist 1,6x**, weil er das alte Verhalten bei 1,75x am genauesten reproduziert.
-Fehlt: dieselbe Zelle fuer `mittel`/real und `schwach`/real bei 1,6x (Aufruf
-`node run_admiral_bossscale.mjs forschung mittel real 1.6 40 admiral_bossscale_44.txt`, davor
-`node make_messbuild_44.mjs` und mit `MESSBUILD=<pfad>/messbuild_44_V1` messen). *Zu erwarten und
-vorab zu akzeptieren:* Zielband 3-5 und eine brauchbare Siegquote sind nach R14 nicht mehr
-gleichzeitig erreichbar - der Verlust waechst schneller, als die Serie lang wird.
-
-**Danach Block C, Schritt 6: Entscheidung 13.3** (Bot- und Basis-Wachstum von der Aufruf-Haeufigkeit
-entkoppeln). Laut Abschnitt 5 zwingend vor Entscheidung 5, und von R14 nicht betroffen.
+**Block C weiterfuehren.** Schritt 6 (Entscheidung 13.3) ist am 17.08.2026 erledigt; als naechstes
+stehen die uebrigen Punkte aus Block C an, danach Entscheidung 5 (die 13.3 blockiert hatte - der
+Blocker ist jetzt weg).
 
 Zwei kleine Dinge, die aus Schritt 5 uebrig bleiben und KEINE Messung brauchen, nur eine
 Bestaetigung: der Sieg-Bonus in 4.6 (Vorschlag 2,0x statt 1,5x) und die Deckelung in 4.7 auf die
 bis zum letzten UEBERSTANDENEN Check gesicherte Beute.
+
+**R15 bleibt bewusst liegen** (siehe unten) - dokumentiert, nicht dringend, und ausdruecklich kein
+Anlass, die Aggregations-Grundsatzfrage neu zu stellen.
+
+## Was 4.3 am 17.08.2026 ergeben hat (zweite Fassung, nach R14)
+
+Vollstaendig im Messkasten bei Entscheidung 4.3. Messdatei: `admiral_bossscale_44.txt` (die
+Nach-R14-Zeilen stehen dort jetzt unter einer eigenen Trennmarke - alles darueber ist gegen die
+alte Engine gelaufen und nicht vergleichbar).
+
+- **ENTSCHIEDEN: Faktor 1,6x**, plus Boss-Forschungsskalierung, Deckel 100,
+  `ADMIRAL_STAT_SHARE` unveraendert 0,55.
+
+  | Faktor | voll/real | mittel/real | schwach/real |
+  |---|---|---|---|
+  | 1,5x | 2,70 / 57,5 % / 20,6 % | 4,22 / 0,0 % / 36,3 % | 1,63 / 0,0 % / 40,1 % |
+  | **1,6x** | **2,85 / 40,0 % / 23,2 %** und **2,70 / 45,0 % / 23,1 %** | **3,80 / 0,0 % / 35,0 %** | **1,57 / 0,0 % / 52,2 %** |
+  | 1,75x | 3,85 / 0,0 % / 36,6 % | - | - |
+
+  (Check-Tiefe / Siegquote / Wertverlust. Zwei Zeilen bei 1,6x = zwei unabhaengige Laeufe.)
+- **Die Streuung ist bestimmt und kleiner als der Entscheidungsabstand** - rund 5 Prozentpunkte
+  zwischen zwei Laeufen derselben Zelle gegen 12,5-17,5 Punkte zwischen 1,5x und 1,6x.
+- **Fuer `mittel` ist der Faktor kein Hebel mehr** (1,5x und 1,6x ununterscheidbar, beide 0 % Sieg).
+  Die Tiefe faellt dort sogar bei hoeherem Faktor - Nicht-Monotonie zum zweiten Mal bestaetigt.
+- **`schwach` trifft die Wahl spuerbar, und zwar zum Schlechteren** (40,1 -> 52,2 % Verlust).
+  Ausdruecklicher Nachteil, in Kauf genommen, weil `schwach` am 16.08.2026 abgeschrieben wurde.
+- **Die Check-Tiefe allein ist als Abnahmemass unbrauchbar geworden:** `mittel` liegt bei 1,6x mit
+  3,80 IM Zielband 3-5 und gewinnt trotzdem nie. **Tiefe und Ausgangsverteilung ab jetzt immer
+  zusammen lesen.**
+
+## Was 13.3 am 17.08.2026 ergeben hat
+
+Vollstaendig im Messkasten bei Entscheidung 13.3. Messdatei: `base_growth_133.txt`. Neue Skripte:
+`make_messbuild_133.mjs`, `run_base_growth_133.mjs`.
+
+- **Umgesetzt:** `nextEconomyTurn` auf `PirateBaseState`, `PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS`
+  (2 Min. = `HEARTBEAT_INTERVAL_MS`), `PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP` (30). Abnahme
+  erfuellt: Bau-Entscheidungsschritte vorher x10.514-10.895 bei 11.000-facher Aufruf-Zahl, nachher
+  x0,95-1,00.
+- **Die Begruendung im Plan traegt so nicht.** Das WACHSTUM hing schon vorher nicht an den
+  Aufrufen - bei reicher Basis binden die Bau-Slots, bei frischer Basis der Ressourcenstand. Was
+  die Aenderung traegt, ist Reproduzierbarkeit (Punkt 5b) und Rechenlast.
+- **Der Zeitstempel muss im RASTER weitergesetzt werden**, nicht auf "jetzt + Intervall" - sonst
+  faellt ein Zug aus, wenn ein Aufruf kurz vor der Faelligkeit kommt (gemessen x1,18 statt x1,00).
+  Bei gleichem Takt wie der Heartbeat waere das produktiv der Regelfall gewesen.
+- **Zweiter Fundort derselben Fehlerform:** `GET /api/heartbeat` laeuft ohne `requireAuth`, damit
+  liess sich das BOT-Wachstum von aussen beschleunigen. `HEARTBEAT_MIN_INTERVAL_MS` (60 s) greift
+  jetzt; der Endpunkt meldet innerhalb des Fensters `skipped`.
+- **Offen geblieben:** die Wachstumsrate der Basen ueber Tage. Braucht die gefaelschte Uhr aus
+  Abschnitt 1b, bleibt Messpunkt in Abschnitt 7.
 
 ## Was R14 am 17.08.2026 ergeben hat
 
