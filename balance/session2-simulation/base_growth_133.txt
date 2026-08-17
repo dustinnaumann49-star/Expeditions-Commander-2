@@ -1,0 +1,73 @@
+=== Entscheidung 13.3 - Bau-Entscheidungsschritt von der Aufruf-Haeufigkeit entkoppeln ===
+Abnahmekriterium (Plan, Entscheidung 13): Basiswachstum zweimal mit unterschiedlich vielen
+Galaxie-Aufrufen messen - die Ergebnisse muessen IDENTISCH sein.
+
+Gemessen ueber ein identisches Zeitfenster; einziger Unterschied ist die Zahl der
+loadPirateBase()-Aufrufe. "vorher" = dist-Kopie VOR der Aenderung (ungedrosselt),
+"nachher" = Messbuild mit PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS = 1000 ms (produktiv 120000 ms;
+heruntergesetzt, damit die Mechanik in Sekunden statt Stunden sichtbar wird).
+Startkapital je Zelle identisch (5 Mrd je Ressource), Basis vor jeder Zelle zurueckgesetzt.
+
+Gezaehlt wird runEconomyBotTurn() = ein vollstaendiger Bau-Entscheidungsschritt.
+
+Stand    Kapital  Aufrufe   Bau-Zuege  Zuege/s  Dauer   +Schiffe  +Verteid.  Warteschl.  ausgegeben
+vorher   gross        20         21      1.0   20.0s         0          0          11     79.4 Mio
+vorher   gross    220786     220787  11039.4   20.0s         0          0          11     75.0 Mio
+  -> [vorher/gross] Aufrufe x11039  ->  Bau-Zuege x10513.67, Ausgaben x0.94   (Ziel nach 13.3: beide x1,00)
+vorher   klein        20         21      1.0   20.0s         0          0           3      0.4 Mio
+vorher   klein    228799     228800  11440.0   20.0s         0          0           3      0.4 Mio
+  -> [vorher/klein] Aufrufe x11440  ->  Bau-Zuege x10895.24, Ausgaben x1.00   (Ziel nach 13.3: beide x1,00)
+nachher  gross        20         21      1.0   20.0s         0          0          11     72.2 Mio
+nachher  gross    239860         20      1.0   20.0s         0          0          11     67.7 Mio
+  -> [nachher/gross] Aufrufe x11993  ->  Bau-Zuege x0.95, Ausgaben x0.94   (Ziel nach 13.3: beide x1,00)
+nachher  klein        20         21      1.0   20.0s         0          0           3      0.4 Mio
+nachher  klein    274654         21      1.1   20.0s         0          0           3      0.4 Mio
+  -> [nachher/klein] Aufrufe x13733  ->  Bau-Zuege x1.00, Ausgaben x1.00   (Ziel nach 13.3: beide x1,00)
+
+----------------------------------------------------------------------------------------------------
+BEFUND (17.08.2026)
+----------------------------------------------------------------------------------------------------
+1. DER DEFEKT IST BESTAETIGT, ABER NICHT IN DER FORM, IN DER 13.3 IHN BESCHREIBT.
+   Die Zahl der Bau-ENTSCHEIDUNGSSCHRITTE hing massiv an der Aufruf-Haeufigkeit: bei rund
+   11.000-facher Aufruf-Zahl liefen rund 10.500-mal so viele Zuege. Nach der Aenderung x0,95-1,00.
+   Das Abnahmekriterium aus Entscheidung 13 ("die Ergebnisse muessen identisch sein") ist erfuellt.
+
+2. DAS TATSAECHLICHE WACHSTUM HING DAGEGEN SCHON VORHER NICHT AN DEN AUFRUFEN (Ausgaben x0,94
+   bzw. x1,00 bereits im Vorher-Stand). Zwei verschiedene Gruende, beide gemessen:
+   - Kapital "gross": die Warteschlangen stehen nach wenigen Zuegen auf 11/11 (3 Schiffe +
+     3 Verteidigung + 4 Forschung + 1 Gebaeude). Es bindet das SLOT-Limit. Gemessene Laufzeiten
+     der eingereihten Auftraege: Reaper 12 min, Solarkraftwerk 86 min, Waffenforschung 12 h - in
+     20 Sekunden wird nichts frei, jeder weitere Zug ist folgenlos.
+   - Kapital "klein" (frische Basis nach dem Reset): das Geld ist nach dem ersten Zug weg
+     (0,4 Mio ausgegeben, 3 Auftraege). Es bindet der RESSOURCENSTAND.
+   Der Satz aus 13.3 "Eine Basis waechst also schneller, je oefter jemand in die Galaxie schaut"
+   ist damit in dieser Form NICHT bestaetigt.
+
+3. WAS BLEIBT UND DIE AENDERUNG WEITERHIN TRAEGT:
+   - Reproduzierbarkeit (Entscheidung 5b): eine Groesse, die zwischen zwei Laeufen um Faktor
+     10.000 schwanken kann, ist als Messgrundlage unbrauchbar, auch wenn sie im gemessenen
+     Fenster folgenlos bleibt. Das war die eigentliche Begruendung.
+   - Rechenlast: rund 10.500 unnoetige vollstaendige Bau-Entscheidungsschritte in 20 Sekunden,
+     bei JEDEM Galaxie-Aufruf JEDES Clients und fuer JEDE der vier aktiven Basen. Das gehoert in
+     dieselbe Familie wie die Cross-User-Sweeps vom 12.08.2026 (alle 3 s statt alle 30 s).
+
+4. GRENZE DIESER MESSUNG, AUSDRUECKLICH: 20 Sekunden koennen einen Effekt nicht zeigen, der ueber
+   Stunden entsteht - naemlich Slots, die zwischen zwei Fertigstellungen leer stehen. GERECHNET
+   (nicht gemessen): bei einem Intervall von 2 Minuten gegen Auftragslaufzeiten von 12 Minuten bis
+   12 Stunden steht ein frei gewordener Slot hoechstens 2 Minuten leer, das sind wenige Prozent.
+   Ein Nachweis ueber Tage braucht die gefaelschte Uhr aus Abschnitt 1b und ist hier NICHT
+   erbracht. Wer die Wachstumsrate der Basen belastbar braucht, misst sie dort.
+
+5. FEHLVERSUCHE, BEWUSST PROTOKOLLIERT (beide sahen wie ein Befund aus und waren Messfehler):
+   - Erster Aufbau mass Einheiten/Ausgaben statt Zuege -> "x0,94, also kein Defekt". Falsch, siehe
+     Punkt 2: gemessen wurde das Slot-Limit.
+   - Der Zaehler stand zunaechst hinter einer for-Schleife OHNE geschweifte Klammern und zaehlte
+     dadurch Ladevorgaenge statt Zuege -> "x10.082, Drosselung wirkungslos". Ebenfalls falsch.
+   Dieselbe Lehre wie bei der verworfenen Wirtschaftssimulation vom 12.08.2026: ein Messwerkzeug
+   ist erst dann Beweismittel, wenn es an einem bekannten Zustand gegengeprueft wurde.
+
+6. EINE ZWISCHENFASSUNG DER AENDERUNG IST AN DIESER MESSUNG GESCHEITERT und wurde verworfen:
+   `nextEconomyTurn = jetzt + Intervall` (kein Nachholen) ergab x1,18 statt x1,00, weil ein Aufruf
+   wenige Millisekunden vor der Faelligkeit den Zug ausfallen laesst. Produktiv waere das der
+   Regelfall gewesen, weil der Heartbeat denselben 2-Minuten-Takt hat. Die ausgelieferte Fassung
+   setzt den Zeitstempel deshalb im RASTER weiter (`+= Intervall`, mit gedeckeltem Nachholen).
