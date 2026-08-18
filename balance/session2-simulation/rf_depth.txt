@@ -196,3 +196,17 @@ gemischt gleich     3797       2.16    2.5%           46.9%              1.01   
 gemischt real       3604       2.09   75.0%           41.0%              0.86     83.4
 Spannweite Wertverlust: 15.8% (nur Elite) bis 46.9% (gemischt gleich) = Faktor 2.97
 
+--- NEBENWIRKUNGS-GEGENMESSUNG A+E (18.08.2026) ---
+Raid, 10 komplette Raids je Fall (run_raid.mjs, lib4):
+  IST                        voll/gross: Flottenverlust 14.2 %, Verteidigungsverlust 27.3 %
+  A+E                        voll/gross: Flottenverlust 19.2 %, Verteidigungsverlust  0.0 %
+  A+E, Anlagen-RF unveraendert voll/gross: Flottenverlust 20.2 %, Verteidigungsverlust  0.0 %
+  -> der Verteidigungsverlust faellt NICHT wegen der Anlagen-RF, sondern weil die
+     Klassen-RF der ANGREIFER deren gezielte Schuesse auf die verteidigenden SCHIFFE
+     umlenkt. Schaden wandert von der Verteidigung auf die Flotte.
+Elite-Bollwerk, 10 Laeufe je Konstellation (run_elite.mjs, lib4):
+  2x voll:        IST 3.2 / 3.2 %   ->  A+E 5.3 / 5.3 %   (Siegquote unveraendert 100 %)
+  voll + mittel:  IST 2.0 / 2.9 %   ->  A+E 2.1 / 3.1 %
+  voll + schwach: IST 0.5 / 1.4 %   ->  A+E 0.6 / 1.7 %
+  -> unkritisch, Groessenordnung unveraendert.
+

@@ -82,14 +82,16 @@ function tabelleFuer(klasse, abdeckung) {
 // Bewusst als MUTATION am exportierten Objekt angehaengt statt als Ersetzung des Objekt-Literals:
 // robuster gegen Formatierungsaenderungen des Compilers, und die ESM-Live-Bindung sorgt dafuer,
 // dass combat.js dieselbe (mutierte) Instanz sieht.
-function constPatchFuer(abdeckung) {
+function constPatchFuer(abdeckung, defenseKlassenRf = true) {
   const rfPatch = {};
   Object.entries(KLASSEN).forEach(([klasse, ids]) => {
     ids.forEach((id) => (rfPatch[id] = tabelleFuer(klasse, abdeckung)));
   });
   rfPatch.bomber = { ...rfPatch.bomber, ...BOMBER_GEGEN_ANLAGEN };
-  Object.entries(DEF_KLASSE).forEach(([defId, klasse]) => (rfPatch[defId] = tabelleFuer(klasse, abdeckung)));
-  rfPatch.plasmawerfer = { ...rfPatch.plasmawerfer, ...PLASMA_EXTRA };
+  if (defenseKlassenRf) {
+    Object.entries(DEF_KLASSE).forEach(([defId, klasse]) => (rfPatch[defId] = tabelleFuer(klasse, abdeckung)));
+    rfPatch.plasmawerfer = { ...rfPatch.plasmawerfer, ...PLASMA_EXTRA };
+  }
 
   return `
 // ===== MESSBUILD: Klassen-RapidFire (nur Messkopie, Quellcode unveraendert) =====
@@ -141,13 +143,13 @@ const WEIGHTS_PATCHED = `function weightsForProfile(profile, poolLength) {
     return POOL_KLASSE.map((k) => anteil[k] / proKlasse[k]);
 }`;
 
-function baueVariante(name, abdeckung, mitProfilen) {
+function baueVariante(name, abdeckung, mitProfilen, defenseKlassenRf = true) {
   const target = resolve('.', name);
   if (existsSync(target)) rmSync(target, { recursive: true });
   cpSync(DIST, target, { recursive: true });
 
   const constFile = resolve(target, 'game/data/combatConstants.js');
-  appendFileSync(constFile, constPatchFuer(abdeckung));
+  appendFileSync(constFile, constPatchFuer(abdeckung, defenseKlassenRf));
 
   if (mitProfilen) {
     const combatFile = resolve(target, 'game/combat.js');
@@ -175,10 +177,15 @@ const EVASION_PATCH = `
 SIZE_MISMATCH_EVASION_BONUS.klein.gross = 0.20;
 SIZE_MISMATCH_EVASION_BONUS.mittel.gross = 0.08;
 `;
-const eName = `messbuild_rf_ae${S}`;
-baueVariante(eName, ABDECKUNG_A, false);
-appendFileSync(resolve('.', eName, 'game/data/combatConstants.js'), EVASION_PATCH);
-console.log(`${eName} -> [+ Ausweichbonus klein/gross 0.45 -> 0.20, mittel/gross 0.18 -> 0.08]`);
+for (const [eName, defRf] of [[`messbuild_rf_ae${S}`, true], [`messbuild_rf_ae${S}_defalt`, false]]) {
+  baueVariante(eName, ABDECKUNG_A, false, defRf);
+  appendFileSync(resolve('.', eName, 'game/data/combatConstants.js'), EVASION_PATCH);
+  console.log(`${eName} -> [+ Ausweichbonus 0.20/0.08]${defRf ? '' : ' [Verteidigungsanlagen behalten ihr heutiges RF]'}`);
+}
+// Warum die zweite Fassung: mit Klassen-RF fuer Verteidigungsanlagen faellt der
+// Verteidigungsverlust im Raid gemessen von 27,3 % auf 0,0 % - die Anlagen werden vollstaendig
+// unantastbar. Das ist die Beschwerde des Nutzers vom 18.08.2026, nur schlimmer. Die Fassung
+// '_defalt' laesst die Anlagen deshalb auf ihrer heutigen RF-Tabelle.
 
 console.log(`RF-Wert innerhalb der abgedeckten Klassen: ${RF_KLASSE}`);
 console.log('Quellcode unberuehrt:', resolve('../../server/src/game/data/combatConstants.ts'));

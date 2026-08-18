@@ -1,4 +1,6 @@
-import * as L from './lib.mjs';
+// lib4 statt lib: verhaelt sich ohne MESSBUILD identisch (lib.mjs == lib3.mjs, lib4 ergaenzt nur
+// die Messbuild-Aufloesung), erlaubt aber die Gegenmessung einer Variante ohne Quellcode-Aenderung.
+import * as L from './lib4.mjs';
 
 const { RAID_WAVE_ROLL, RAID_WAVE_COUNT, RAID_MIN_TARGET_POWER,
         RAID_WAVE_WIN_SILBER, RAID_WAVE_WIN_GOLD, RAID_WAVE_WIN_ELITE,

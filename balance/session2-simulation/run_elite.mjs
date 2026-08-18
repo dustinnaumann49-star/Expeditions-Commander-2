@@ -1,4 +1,6 @@
-import * as L from './lib.mjs';
+// lib4 statt lib: verhaelt sich ohne MESSBUILD identisch (lib.mjs == lib3.mjs, lib4 ergaenzt nur
+// die Messbuild-Aufloesung), erlaubt aber die Gegenmessung einer Variante ohne Quellcode-Aenderung.
+import * as L from './lib4.mjs';
 
 const cfg = L.sectors.SEKTOR_CONFIG.piraten_elite;
 const CONTAINER_EV = { silber: 60.1e6, gold: 127.2e6, elite: 237.6e6 };
