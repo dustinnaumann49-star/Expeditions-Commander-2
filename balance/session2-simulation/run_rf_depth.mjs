@@ -51,20 +51,32 @@ const shipValue = (id) => (byId[id]?.cost ? value(byId[id].cost) : 0);
 const fleetValue = (f) => Object.entries(f).reduce((s, [id, n]) => s + n * shipValue(id), 0);
 
 // Aufstellungen: je Klasse gleichmaessig auf ZIEL_POWER verteilt (Macht, nicht Stueckzahl).
+// "gemischt gleich" verteilt die Macht auf alle acht Typen zu gleichen Teilen - das ist eine
+// KONSTRUKTION, keine reale Flotte. "gemischt real" benutzt stattdessen die Stueckzahl-Relationen
+// der Referenzflotte FLEET_LARGE (lib4.mjs), also jaegerlastig wie ein echter Spielstand, und
+// skaliert sie auf dieselbe Gesamt-Macht. Beide Zeilen stehen nebeneinander, weil die erste Runde
+// die gemischte Flotte als schlechteste Wahl ausgewiesen hat - das kann eine Eigenschaft sein oder
+// ein Artefakt der Gleichverteilung.
 const AUFSTELLUNGEN = {
   'nur Jaeger': ['leicht', 'schwer'],
   'nur Kreuzer': ['kreuzer', 'schlachtschiff', 'bomber'],
   'nur Elite': ['schlachtkreuzer', 'zerstoerer', 'reaper'],
-  gemischt: ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'],
+  'gemischt gleich': ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'],
+  'gemischt real': { leicht: 2000, schwer: 1500, kreuzer: 1000, schlachtschiff: 600, bomber: 300, schlachtkreuzer: 400, zerstoerer: 300, reaper: 200 },
 };
 
-function baueFlotte(ids) {
-  const proTyp = ZIEL_POWER / ids.length;
+function baueFlotte(spec) {
+  if (Array.isArray(spec)) {
+    const proTyp = ZIEL_POWER / spec.length;
+    const f = {};
+    spec.forEach((id) => (f[id] = Math.max(1, Math.round(proTyp / combat.shipPowerBase(id)))));
+    return f;
+  }
+  // Stueckzahl-Relationen beibehalten, Gesamtmacht auf ZIEL_POWER skalieren.
+  const roh = combat.combatFleetPowerBase(spec);
+  const faktor = ZIEL_POWER / roh;
   const f = {};
-  ids.forEach((id) => {
-    const p = combat.shipPowerBase(id);
-    f[id] = Math.max(1, Math.round(proTyp / p));
-  });
+  Object.entries(spec).forEach(([id, n]) => (f[id] = Math.max(1, Math.round(n * faktor))));
   return f;
 }
 
@@ -77,8 +89,8 @@ const lines = [
 ];
 
 const verluste = [];
-for (const [name, ids] of Object.entries(AUFSTELLUNGEN)) {
-  const fleet = baueFlotte(ids);
+for (const [name, spec] of Object.entries(AUFSTELLUNGEN)) {
+  const fleet = baueFlotte(spec);
   const startWert = fleetValue(fleet);
   const power = combat.combatFleetPowerBase(fleet);
   let lost = 0, rounds = 0, wins = 0;

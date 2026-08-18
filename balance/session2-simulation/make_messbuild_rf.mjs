@@ -16,11 +16,19 @@
 //        ueberwiegend Elite-Klasse, 'kampfgruppe' ueberwiegend Kreuzer-Klasse. Heute benutzen alle
 //        drei Profile denselben vollstaendigen Pool und unterscheiden sich nur in der
 //        Gewichtungskurve - deshalb enthaelt JEDE Welle jeden Typ.
+//   C  = eigene Klasse PLUS die Klasse darunter ("die Groesseren kontern die Kleineren").
+//        Grund: unter A gewinnt die Jaeger-Masse weiterhin jede Zelle, weil sie ueberhaupt keinen
+//        Gegner hat (gemessen 18,4 % -> 8,5 % Verlust, also noch besser als vorher). Unter C
+//        kontert die Kreuzer-Klasse die Jaeger-Klasse, die Elite-Klasse die Kreuzer-Klasse.
+//   CB = C plus die geschaerften Wellenprofile aus B.
 //
 // WICHTIG: vorher im Server `npx tsc` laufen lassen - der Messbuild ist eine Kopie von dist/,
 // ohne frischen Build kopiert man den alten Stand (Messregel 1).
 //
-// Aufruf: node make_messbuild_rf.mjs
+// Aufruf: node make_messbuild_rf.mjs [rfWert]
+//   Der RF-Wert innerhalb der abgedeckten Klassen ist der Kalibrier-Regler und steckt im
+//   Ordnernamen (messbuild_rf_c4, messbuild_rf_c6, ...), damit zwei Werte nebeneinander
+//   messbar bleiben.
 import { cpSync, readFileSync, writeFileSync, appendFileSync, rmSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -37,11 +45,17 @@ const KLASSEN = {
   elite: ['schlachtkreuzer', 'zerstoerer', 'reaper'],
 };
 
-// RF-Wert innerhalb der eigenen Klasse. Einheitlich statt der heutigen Mischung 3/4/5, weil
+// RF-Wert innerhalb der abgedeckten Klassen. Einheitlich statt der heutigen Mischung 3/4/5, weil
 // "jeder Konter ist gleich stark" der begreifbarste Zustand ist. 4 liegt in der Mitte der heutigen
 // Werte. DAS IST DER KALIBRIER-REGLER dieser Variante - die Diagnose fragt zuerst, OB die
 // Flottenzusammensetzung ueberhaupt etwas aendert, nicht wie stark.
-const RF_KLASSE = 4;
+const RF_KLASSE = Number(process.argv[2] || 4);
+
+// Welche Klassen ein Schiff der jeweiligen Klasse abdeckt.
+const ABDECKUNG_A = { jaeger: ['jaeger'], kreuzer: ['kreuzer'], elite: ['elite'] };
+// C: eigene Klasse plus die Klasse darunter. Die Jaeger-Klasse hat nichts unter sich und bleibt
+// deshalb bei ihrer eigenen - sie bekommt unter C ihren Gegner von OBEN (Kreuzer-Klasse).
+const ABDECKUNG_C = { jaeger: ['jaeger'], kreuzer: ['kreuzer', 'jaeger'], elite: ['elite', 'kreuzer'] };
 
 // Verteidigungsanlagen nach Geschuetzgroesse auf die drei Klassen abgebildet.
 const DEF_KLASSE = {
@@ -58,9 +72,9 @@ const BOMBER_GEGEN_ANLAGEN = { raketenwerfer: 20, leichteslaser: 20, schwereslas
 // Plasmawerfer behaelt sein RF gegen den Imperator (steht in keiner der drei Klassen).
 const PLASMA_EXTRA = { imperator: 2 };
 
-function tabelleFuer(klasse) {
+function tabelleFuer(klasse, abdeckung) {
   const t = {};
-  KLASSEN[klasse].forEach((id) => (t[id] = RF_KLASSE));
+  abdeckung[klasse].forEach((k) => KLASSEN[k].forEach((id) => (t[id] = RF_KLASSE)));
   return t;
 }
 
@@ -68,16 +82,17 @@ function tabelleFuer(klasse) {
 // Bewusst als MUTATION am exportierten Objekt angehaengt statt als Ersetzung des Objekt-Literals:
 // robuster gegen Formatierungsaenderungen des Compilers, und die ESM-Live-Bindung sorgt dafuer,
 // dass combat.js dieselbe (mutierte) Instanz sieht.
-const rfPatch = {};
-Object.entries(KLASSEN).forEach(([klasse, ids]) => {
-  ids.forEach((id) => (rfPatch[id] = tabelleFuer(klasse)));
-});
-rfPatch.bomber = { ...rfPatch.bomber, ...BOMBER_GEGEN_ANLAGEN };
-Object.entries(DEF_KLASSE).forEach(([defId, klasse]) => (rfPatch[defId] = tabelleFuer(klasse)));
-rfPatch.plasmawerfer = { ...rfPatch.plasmawerfer, ...PLASMA_EXTRA };
+function constPatchFuer(abdeckung) {
+  const rfPatch = {};
+  Object.entries(KLASSEN).forEach(([klasse, ids]) => {
+    ids.forEach((id) => (rfPatch[id] = tabelleFuer(klasse, abdeckung)));
+  });
+  rfPatch.bomber = { ...rfPatch.bomber, ...BOMBER_GEGEN_ANLAGEN };
+  Object.entries(DEF_KLASSE).forEach(([defId, klasse]) => (rfPatch[defId] = tabelleFuer(klasse, abdeckung)));
+  rfPatch.plasmawerfer = { ...rfPatch.plasmawerfer, ...PLASMA_EXTRA };
 
-const CONST_PATCH = `
-// ===== MESSBUILD RF-A: Klassen-RapidFire (nur Messkopie, Quellcode unveraendert) =====
+  return `
+// ===== MESSBUILD: Klassen-RapidFire (nur Messkopie, Quellcode unveraendert) =====
 const __RF_KLASSEN_PATCH = ${JSON.stringify(rfPatch, null, 2)};
 for (const [attacker, table] of Object.entries(__RF_KLASSEN_PATCH)) {
     RAPIDFIRE[attacker] = table;
@@ -87,6 +102,7 @@ for (const [attacker, table] of Object.entries(__RF_KLASSEN_PATCH)) {
 // Eintrag, weil es bisher gar kein RF-Ziel hatte - mit Klassen-RF braucht es einen.
 ZIELERFASSUNG_BASE['leicht'] = 0.25;
 `;
+}
 
 // ===== Patch 2: weightsForProfile (combat.js) =====
 // Der Pool aus generatePiratenFleet()/generateFallbackFleet() ist die Reihenfolge aus SHIPS,
@@ -125,13 +141,13 @@ const WEIGHTS_PATCHED = `function weightsForProfile(profile, poolLength) {
     return POOL_KLASSE.map((k) => anteil[k] / proKlasse[k]);
 }`;
 
-function baueVariante(name, mitProfilen) {
+function baueVariante(name, abdeckung, mitProfilen) {
   const target = resolve('.', name);
   if (existsSync(target)) rmSync(target, { recursive: true });
   cpSync(DIST, target, { recursive: true });
 
   const constFile = resolve(target, 'game/data/combatConstants.js');
-  appendFileSync(constFile, CONST_PATCH);
+  appendFileSync(constFile, constPatchFuer(abdeckung));
 
   if (mitProfilen) {
     const combatFile = resolve(target, 'game/combat.js');
@@ -139,9 +155,30 @@ function baueVariante(name, mitProfilen) {
     if (!src.includes(WEIGHTS_ANCHOR)) throw new Error('Anker weightsForProfile nicht gefunden');
     writeFileSync(combatFile, src.replace(WEIGHTS_ANCHOR, WEIGHTS_PATCHED));
   }
-  console.log(`${name} -> ${target}${mitProfilen ? '   [Klassen-RF + geschaerfte Wellenprofile]' : '   [nur Klassen-RF]'}`);
+  console.log(`${name} -> ${target}${mitProfilen ? '   [+ geschaerfte Wellenprofile]' : ''}`);
 }
 
-baueVariante('messbuild_rf_a', false);
-baueVariante('messbuild_rf_ab', true);
+const S = RF_KLASSE;
+baueVariante(`messbuild_rf_a${S}`, ABDECKUNG_A, false);
+baueVariante(`messbuild_rf_ab${S}`, ABDECKUNG_A, true);
+baueVariante(`messbuild_rf_c${S}`, ABDECKUNG_C, false);
+baueVariante(`messbuild_rf_cb${S}`, ABDECKUNG_C, true);
+
+// ===== Diagnose-Variante A+E =====
+// Klassen-RF UND abgesenkter Groessenklassen-Ausweichbonus (heute klein/gross 0,45,
+// mittel/gross 0,18, Deckel EVASION_MAX_SIZE_MISMATCH 0,75). Grund: unter A wie unter C gewinnt
+// die Jaeger-Masse jede gemessene Zelle. Diese Variante prueft die Vermutung, dass der Hebel
+// dafuer NICHT die RF-Tabelle ist, sondern dieser Bonus. Sie ist ausdruecklich eine MESSUNG, kein
+// Vorschlag - eine Mechanikaenderung braucht eine eigene Entscheidung.
+const EVASION_PATCH = `
+// ===== MESSBUILD RF-E: Groessenklassen-Ausweichbonus abgesenkt =====
+SIZE_MISMATCH_EVASION_BONUS.klein.gross = 0.20;
+SIZE_MISMATCH_EVASION_BONUS.mittel.gross = 0.08;
+`;
+const eName = `messbuild_rf_ae${S}`;
+baueVariante(eName, ABDECKUNG_A, false);
+appendFileSync(resolve('.', eName, 'game/data/combatConstants.js'), EVASION_PATCH);
+console.log(`${eName} -> [+ Ausweichbonus klein/gross 0.45 -> 0.20, mittel/gross 0.18 -> 0.08]`);
+
+console.log(`RF-Wert innerhalb der abgedeckten Klassen: ${RF_KLASSE}`);
 console.log('Quellcode unberuehrt:', resolve('../../server/src/game/data/combatConstants.ts'));
