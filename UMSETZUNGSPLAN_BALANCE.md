@@ -362,6 +362,55 @@ waechst der Netto-Ertrag dauerhaft weiter (6,18 Mrd Flotte -> +0,99 Mrd/Tag; 34,
 wirken (Elite-Bollwerk). Ohne das ist der Exponent nicht bestimmbar, Herleitung in Abschnitt 8,
 Punkt 1.
 
+> **OFFEN, ZWINGEND MIT ZU ENTSCHEIDEN (18.08.2026, aus der Nutzerfrage nach einem Koop-Anreiz):
+> WELCHE BEZUGSGROESSE bekommt die Kurve bei MEHREREN Teilnehmern?** Der Satz oben sagt nur, DASS
+> die Kurve auf `groupOps.ts` wirken muss, nicht WIE. Genau daran haengt aber die gesamte
+> Koop-Frage, und die Antwort faellt hier - ein zusaetzlicher "Bonus je Teilnehmer" ist daneben
+> weder noetig noch sinnvoll.
+>
+> **Gemessen am 18.08.2026** (`run_elite_coop.mjs` / `elite_coop.txt`, 40 Serien je Zelle, volle
+> 6-Check-Expedition, Verluste in Wert): die vernichtete Feindmacht verdoppelt sich mit dem zweiten
+> Teilnehmer exakt (18,85 -> 38,04 Mrd, Faktor **2,02**), weil `runGroupHourlyCheck()` die
+> Wellenstaerke aus der SUMME aller Teilnehmerflotten bildet. Der Exponent 0,85 macht daraus
+> 2^0,85 = 1,80.
+>
+> | Variante | je Teilnehmer | Haushalt bei n=2 |
+> |---|---|---|
+> | **V1** Kurve auf die GESAMTE vernichtete Macht, jeder bekommt sie voll | **x1,82** | x3,64 |
+> | **V2** Kurve auf den eigenen Beitragsanteil | x1,01 (neutral) | x2,02 |
+> | **V3** Kurve auf die Gesamtmacht, geteilt durch die Teilnehmerzahl | x0,91 | x1,82 |
+>
+> V1 hochgerechnet: n=3 je Spieler x2,57 (Haushalt x7,70), n=4 x3,28 (x13,11), n=5 x3,96 (x19,80).
+> **Der Anreiz waechst nicht linear, sondern beschleunigt sich**, weil jeder die volle Kurve auf die
+> gemeinsame Beute bekommt - bei fuenf Teilnehmern liefert der Haushalt das Vierfache dessen, was
+> dieselben Flotten getrennt erwirtschaften.
+>
+> **Zwei Punkte, ohne die V1 nicht haltbar ist:**
+> 1. `checkShipsAllowed()` prueft nur Schiffstypen, **keine Mindestmenge**. In V1 bekaeme ein
+>    Teilnehmer mit einem einzigen Kreuzer dieselbe volle Kurve wie der mit der ganzen Flotte, und er
+>    erhoeht die Feindstaerke praktisch nicht - die optimale Spielweise waere die Alibi-Flotte. Es
+>    braucht einen Mindestbeitrag oder eine Beitragsgewichtung. `contributionShares()` (seit
+>    13.08.2026, Schaden ausgeteilt + absorbiert) liegt als Groesse bereits vor; sie wird heute nur
+>    fuer die Abschusspunkte benutzt. **Damit ist die Belohnungsfrage aus Entscheidung 3,
+>    Variante 4 hier zum zweiten Mal faellig** - beides gehoert zusammen entschieden.
+> 2. **Alle Belohnungszahlen des Plans zum Elite-Bollwerk sind gegen den SOLO-Fall gerechnet.** Die
+>    169,68 Mrd je Serie (Kasten weiter unten) waeren unter V1 bei zwei Teilnehmern rund 307 Mrd je
+>    Spieler. Das verschiebt Baseline, Abnahmekriterium 5 und die gesamte Einordnung des
+>    Piratenadmirals (Abschnitt 4.6/4.8 rechnen gegen den Elite-Ertrag je Flottenstunde).
+>
+> **Nutzerentscheidung 18.08.2026 zum Verfahren:** nicht jetzt entscheiden, sondern zusammen mit
+> Block A, Schritt 2 kalibrieren, wenn die Kurve tatsaechlich gebaut wird - sonst faellt dieselbe
+> Entscheidung zweimal. Die Ausgangslage ist damit gemessen und dokumentiert, die Zahl bleibt offen.
+>
+> **Ausgangslage HEUTE, zum Vergleich mitgemessen** (dieselbe Flotte solo gegen zu zweit, 40 Serien
+> je Zelle): die Belohnung je Teilnehmer ist identisch, die Verluste sind zu zweit in allen vier
+> gemessenen Zellen hoeher (+0,2 bis +2,7 Prozentpunkte, gleiches Vorzeichen ueberall). Der einzige
+> heute vorhandene Koop-Vorteil ist der Grossflotten-Bonus, der mit der Flottensumme rechnet - bei
+> der Referenzflotte steht er solo wie gemeinsam am Deckel x1,50 und aendert nichts, bei kleinen
+> Flotten steigt er von x1,44 auf x1,50 (voll) bzw. x1,20 auf x1,24 (schwach), also +0,51 bzw.
+> +1,83 Mrd je Teilnehmer. **Gemeinsam fliegen lohnt sich heute ausgerechnet dort, wo es niemand
+> bemerkt (Aufbauphase), und ist neutral bis leicht negativ, wo die Spieler tatsaechlich stehen.**
+
 > **Achtung, gegen die Erwartung des Plans:** Die Beute-Kurve ist per Saldo KEINE Bremse, sondern
 > fuer grosse Flotten eine deutliche Erhoehung und fuer kleine eine deutliche Kuerzung. Grund: Heute
 > ist die Belohnung eine FESTE Container-Menge je gewonnenem Check, voellig unabhaengig von der
@@ -3654,15 +3703,29 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
   mehr), weil die gemeinsame Flotte tiefer im Aggregat-Pfad liegt. Der Vergleich ist mit
   `run_elite.mjs` billig zu haben und sollte vor jeder Entscheidung stehen.
 
-  **Vier Hebel, wenn ein Anreiz gewollt ist:** (1) fremde Flottenmacht unterproportional in
-  `totalSentPower` rechnen - Gegenstueck zu `RAID_ALLY_POWER_WEIGHT`, das beim Raid bewusst auf 1,0
-  steht; (2) Belohnungsaufschlag je zusaetzlichem Teilnehmer; (3) Rendezvous-Kosten senken oder
-  erlassen; (4) Start erst ab zwei Teilnehmern erlauben - Zwang statt Anreiz, schlechteste Variante,
-  weil der Inhalt damit fuer den ausfaellt, der allein spielt. **Hebel 1 ist der guenstigste**, weil
-  er nur die Verlustseite bewegt; **Hebel 2 der teuerste**, weil das Elite-Bollwerk im spaeten
-  Ausbaustand bereits 74 % aller Einnahmen stellt und jede Erhoehung dort ein ohnehin verletztes
-  Abnahmekriterium weiter verschiebt. Gehoert neben Entscheidung 3 entschieden (dort steht die
-  gleiche Frage fuer die Raid-Belohnung), nicht nebenbei in einem Umsetzungsschritt.
+  **GEMESSEN UND VERLAGERT AM 18.08.2026.** Der fehlende Vergleich ist nachgeholt
+  (`run_elite_coop.mjs` / `elite_coop.txt`, 40 Serien je Zelle, volle 6-Check-Expedition, Verluste
+  in Wert statt Stueckzahl): **die Belohnung je Teilnehmer ist solo und zu zweit identisch, die
+  Verluste sind zu zweit in allen vier Zellen hoeher** (+0,2 / +2,7 / +1,3 / +1,9 Prozentpunkte,
+  gleiches Vorzeichen ueberall, also keine reine Streuung). Die Nutzerbeobachtung ist damit in
+  beiden Teilen bestaetigt; das Ausmass der Mehrverluste liegt bei rund einem Zehntel dessen, was
+  der Ausbaustand ausmacht. Einziger heute vorhandener Vorteil: der Grossflotten-Bonus rechnet mit
+  der Flottensumme - bei der Referenzflotte steht er solo wie gemeinsam am Deckel x1,50, bei kleinen
+  Flotten steigt er von x1,44 auf x1,50 bzw. x1,20 auf x1,24. **Gemeinsam fliegen lohnt sich also
+  ausgerechnet in der Aufbauphase, wo es niemand bemerkt.** Rendezvous-Kosten gerechnet: 2,3 bis
+  4,9 h Anflug und 0,7 bis 3,3 Mio Wert Deuterium fuer den Mitflieger - vom Nutzer ausdruecklich als
+  in Ordnung eingestuft, die Belohnungsseite ist der Punkt.
+
+  **Die Entscheidung selbst ist nach Entscheidung 2 verlagert** (Nutzerentscheidung 18.08.2026):
+  unter der Beute-Kurve haengt die Belohnung an der vernichteten Feindmacht, und die verdoppelt sich
+  mit dem zweiten Teilnehmer exakt (gemessener Faktor 2,02). Damit faellt der Koop-Anreiz
+  automatisch mit der Frage an, welche Bezugsgroesse die Kurve bei mehreren Teilnehmern bekommt -
+  V1 ergibt x1,82 je Teilnehmer, V2 neutral, V3 x0,91. Ein separater "Bonus je Teilnehmer" waere
+  daneben ueberfluessig. **Vollstaendiger Messkasten und die drei Varianten stehen bei
+  Entscheidung 2**; dort auch der Grund, warum V1 ohne Mindestbeitrag nicht haltbar ist
+  (`checkShipsAllowed()` kennt keine Mindestmenge). Die uebrigen frueher notierten Hebel
+  (unterproportionale Feindstaerke, Rendezvous-Kosten, Startzwang ab zwei Teilnehmern) bleiben als
+  Alternativen bestehen, sind aber nachrangig, solange die Bezugsgroesse der Kurve offen ist.
 
 - **NIVEAU der Einnahmen festlegen, nicht nur die Neigung** - **GESCHLOSSEN am 15.08.2026.**
   Messung: `run_income_level.mjs` / `income_level.txt`, 40 Durchlaeufe je Kampfzelle.
@@ -4118,6 +4181,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 18.08.2026 | **Koop-Frage zum Elite-Bollwerk gemessen und nach Entscheidung 2 verlagert** (Nutzerfrage: "Belohnung bleibt gleich, Spieler sehen keinen Zweck darin, gemeinsam zu fliegen"). Neues Skript `run_elite_coop.mjs`, Protokoll `elite_coop.txt`, 40 Serien je Zelle ueber die volle 6-Check-Expedition, Verluste in WERT statt Stueckzahl - der Vergleich "dieselbe Flotte solo gegen zu zweit" hatte in `run_elite.mjs` schlicht gefehlt, dort stehen nur Mehrspieler-Konstellationen gegeneinander und nur Einzel-Checks. **Beobachtung in beiden Teilen bestaetigt:** Belohnung je Teilnehmer identisch, Verluste zu zweit in allen vier Zellen hoeher (+0,2 / +2,7 / +1,3 / +1,9 Prozentpunkte, gleiches Vorzeichen). **Der eigentliche Befund liegt aber woanders:** unter Entscheidung 2 haengt die Beute an der vernichteten Feindmacht, und die verdoppelt sich mit dem zweiten Teilnehmer exakt (18,85 -> 38,04 Mrd, Faktor 2,02), weil die Wellenstaerke an der SUMME aller Teilnehmerflotten haengt. **Die Koop-Frage faellt damit automatisch mit Entscheidung 2** - je nach Bezugsgroesse der Kurve x1,82 (V1), x1,01 (V2) oder x0,91 (V3) je Teilnehmer; ein separater Bonus je Teilnehmer waere ueberfluessig. Der Plan sagte bisher nur, DASS die Kurve auf `groupOps.ts` wirken muss, nicht WIE bei mehreren Teilnehmern - diese Luecke ist jetzt als offener Unterpunkt bei Entscheidung 2 dokumentiert, samt zwei Bedingungen: `checkShipsAllowed()` kennt keine Mindestmenge (in V1 waere die Alibi-Flotte optimal, `contributionShares()` liegt als Gewicht bereits vor - dieselbe Frage wie Entscheidung 3, Variante 4), und saemtliche Elite-Belohnungszahlen des Plans (169,68 Mrd je Serie) sind gegen den Solo-Fall gerechnet, unter V1 waeren es bei zwei Teilnehmern rund 307 Mrd je Spieler. **Nutzerentscheidung zum Verfahren:** nicht jetzt festlegen, sondern mit Block A, Schritt 2 zusammen kalibrieren. Nebenbefund: der Grossflotten-Bonus ist der einzige heute wirksame Koop-Vorteil und greift nur bei kleinen Flotten (x1,44 -> x1,50 bzw. x1,20 -> x1,24) - gemeinsam fliegen lohnt sich also ausgerechnet dort, wo es niemand bemerkt. |
 | 18.08.2026 | **Block C, Schritt 7 erledigt: Entscheidung 5 umgesetzt und gegengemessen (Piratenbasen).** Neue Datei `game/pirateBaseCombat.ts` (reiner Rechenteil, bewusst OHNE Datenbank-Bezug, damit Messskripte ihn importieren koennen), neue Konstanten in `data/economy.ts` (`PIRATE_BASE_MULTIPLIER_ROLL` [1,15/1,45/1,70-1,90], `PIRATE_BASE_DEFENSE_FACTOR` 0,16, `PIRATE_BASE_RECOVERY_MS` 20 h, `PIRATE_BASE_MAX_ATTRITION` 0,35, `PIRATE_BASE_REGEN_MS` 3 Tage, Beute-Kurve `LOOT_CURVE_*`), Seed-Konstanten aus `pirateBaseState.ts` dorthin verschoben. `LOOT_BASIS_CAP` und `PIRATE_BASE_LOOT_PERCENT` ersatzlos gestrichen. Messskript `run_pirate_base.mjs` neu geschrieben, Protokoll in `pirate_base.txt` (Abschnitte 1-6), 40 Laeufe je Zelle. **Vier Befunde, drei davon ueber diese Entscheidung hinaus.** (1) **Alle drei geplanten Kandidaten lagen UNTER dem Abnahmeband** (2,1-4,4 % Wertverlust je Angriff, aus Solo Hoch bzw. Elite je Check): A 1,0 %, B 1,6 %, C 2,0 % bei der realen Flotte. Erst der nachgezogene Kandidat D trifft mit 2,9 %. Die noetige Tabelle liegt damit NOMINAL ueber der des Elite-Bollwerks und erzeugt trotzdem weniger Verlust - Ursachen: fodder-lastiger Grundbestand statt der Wellenprofile aus `pickWaveProfile()`, kein Piratenkapitaen, keine Kampf-Modifikatoren, Einzelkampf statt sechs Checks in Folge. **Gleiche Zahl heisst hier nicht gleiche Schwierigkeit.** (2) **Der eigentliche Hebel war die Forschung, nicht die Stueckzahl:** `sideBStatsOverride` umgeht `computePirateResearch()`, die Basis kaempfte mit ihrer EIGENEN Forschung (frisch: Stufe 0), waehrend jeder Sektor-Pirat ueber `PIRATE_RESEARCH_SHARE = 1,0` den vollen Stand des Angreifers bekommt - dritte Fundstelle desselben Musters nach Entscheidung 4.3. Behoben ueber `garrisonResearch()` (elementweises Maximum). (3) **Ohne Attritions-Deckel loeschte EIN Angriff der realen Flotte die komplette Garnison** (Welle zu 100 % vernichtet = 100 % Verlustanteil auf den Bestand); die Basis waere danach rechnerisch Monate wertlos gewesen - das tote Feature waere nur um vier Angriffe verschoben worden. Erst Deckel 0,35 plus der Wiederaufbau aus 5a ergibt ein Gleichgewicht: taegliches Abfarmen pendelt sich bei 83 % Gefechtsbereitschaft und -14 % Beute ein. (4) **Der Ausbaustand schlaegt staerker durch als die Tabelle:** dieselbe kleine Flotte verliert mit voller Forschung 4,2 %, mit schwacher 56,9 % - Piratenbasen bleiben Inhalt fuer entwickelte Flotten; der Hebel dagegen waere ein Forschungsanteil unter 1,0, nicht die Tabelle. **Ertrag:** 1,60 Mrd netto je Angriff, 5,9-6,4 Mrd/Tag bei vier Basen, rund 8 % der Baseline - zwischen Solo Hoch (-3,26/Tag) und Elite (+23,4 je Serie), wie gefordert. **Messregel 8 erfuellt:** im Client gegreppt (`Galaxie.tsx`, `types/game.ts`, `Debug.tsx` angepasst - der bisherige "Machtwert" liess den falschen Schluss auf die Schwierigkeit zu) und im Server ein stiller Ausfall gefunden: `bot.ts` verglich die eigene Flotte gegen den BESTAND einer Basis mal `ATTACK_POWER_SAFETY_MARGIN`, Bots haetten nie wieder eine Basis angegriffen. **Zwei Planpunkte als veraltet bestaetigt:** die geforderte Neuberechnung von `RESOURCE_CAP` zielte ins Leere (heisst seit 12.08.2026 `LOOT_BASIS_CAP`, wirkte nur noch auf die Beute, faellt jetzt ganz weg), und der Baseline-Bezug "0,3 %" in der Begruendung rechnete noch gegen die alte 21,69 Mrd. **Offen geblieben und ausdruecklich vermerkt:** die Beute-Kurve aus Entscheidung 2 steht damit erstmals im Spielcode, aber NUR fuer die Piratenbasen - Block A, Schritt 2 (missions.ts/groupOps.ts, plus Wrack-Bergung 30 %) ist weiterhin nicht gebaut, obwohl Block A als vollstaendig gilt. |
 | 18.08.2026 | **Entscheidung 4.6 und 4.7 bestaetigt und geschlossen** (Nutzerentscheidung, kein Messbedarf): Sieg-Bonus **2,0x** statt 1,5x, und die 50 % bei Niederlage gelten auf die bis zum letzten UEBERSTANDENEN Check gesicherte Beute. Damit ist von Block B nur noch 4.8 (Cooldown) offen; gebaut ist von 4.x weiterhin nichts. |
 | 18.08.2026 | **Neuer offener Punkt in Abschnitt 7 (Nutzerbeobachtung): kein Anreiz, das Elite-Bollwerk gemeinsam zu fliegen.** Die Feindstaerke skaliert mit der SUMME aller Teilnehmerflotten, die Belohnung geht jedem voll zu - gemeinsames Fliegen ist damit rechnerisch neutral, plus Rendezvous-Kosten fuer den Mitflieger. Einzige gemessene Ausnahme: die Piraten erben den DURCHSCHNITT der Forschung, ungleiche Paare kaempfen deshalb leichter (elite.txt: 3,3 % gegen 0,5/1,5 %). Der eigentliche Vergleich (dieselbe Flotte solo gegen zu zweit) ist NIE gemessen worden. Vier Hebel notiert, Entscheidung bewusst nach hinten gestellt - gehoert neben Entscheidung 3, weil das Elite-Bollwerk 74 % der spaeten Einnahmen stellt. |

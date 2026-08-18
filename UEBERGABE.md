@@ -235,6 +235,20 @@ Angriffen" geworden. Aufgefallen ist es nur, weil die Serien-Messung ueber FUENF
 Angriffe lief statt ueber einen. **Wer eine Ressource abbaubar macht, misst nicht den ersten
 Abbau, sondern den fuenften.**
 
+**Eine Frage kann in einer bereits getroffenen Entscheidung schon beantwortet sein - nur nicht
+sichtbar.** Der Nutzer fragte am 18.08.2026 nach einem Belohnungsaufschlag je Teilnehmer fuers
+Elite-Bollwerk. Die richtige Antwort war kein neuer Bonus, sondern eine Luecke in Entscheidung 2:
+dort stand, DASS die Beute-Kurve auf `groupOps.ts` wirken muss, aber nicht WIE bei mehreren
+Teilnehmern - und weil die Feindstaerke an der Flottensumme haengt, entscheidet genau das ueber den
+Koop-Anreiz (x1,82 / x1,01 / x0,91 je nach Bezugsgroesse). **Vor jedem neuen Regler pruefen, ob eine
+offene Entscheidung denselben Effekt ohnehin schon steuert.**
+
+**Ein Messskript kann die naheliegendste Zelle auslassen.** `run_elite.mjs` misst seit Wochen
+Mehrspieler-Konstellationen gegeneinander - aber nie dieselbe Flotte solo gegen zu zweit, also genau
+die Frage, um die es beim Elite-Bollwerk geht. Zusaetzlich misst es Verluste in STUECKZAHLEN, was
+1 leichten Jaeger wie 1 Imperator gewichtet, und nur einen Einzel-Check statt der Serie. **Bevor man
+eine Frage fuer ungeklaert haelt, pruefen, ob das vorhandene Skript sie ueberhaupt stellt.**
+
 **Coolify haelt nur die Ausgabe des aktuell laufenden Containers.** Bei jedem Redeploy ist das
 Protokoll weg. Logs VOR dem Deploy abrufen, sonst ist die Spur verloren.
 
@@ -255,12 +269,15 @@ unabhaengig und koennen in beliebiger Reihenfolge laufen.
   Entscheidung 5 als `LOOT_CURVE_*` in `data/economy.ts` - beim Nachbauen DIESE Konstanten benutzen,
   keine zweite Kurve anlegen. Achtung: das verschiebt die Baseline und damit alle Zellen, die gegen
   sie gerechnet sind.
-- **Kein Anreiz, das Elite-Bollwerk gemeinsam zu fliegen** (Nutzerbeobachtung 18.08.2026, jetzt in
-  Abschnitt 7 des Plans). Die Feindstaerke skaliert mit der SUMME aller Teilnehmerflotten, die
-  Belohnung geht jedem voll zu - gemeinsam fliegen ist damit neutral statt besser, und der
-  Mitflieger zahlt zusaetzlich Rendezvous-Flugzeit und Treibstoff. Vier Hebel stehen dort;
-  ungemessen ist ausgerechnet der naheliegendste Vergleich (dieselbe Flotte solo gegen zu zweit).
-  Gehoert neben Entscheidung 3 entschieden, nicht nebenbei.
+- **Kein Anreiz, das Elite-Bollwerk gemeinsam zu fliegen** (Nutzerbeobachtung 18.08.2026).
+  **Gemessen und beantwortet, die Entscheidung liegt jetzt bei Entscheidung 2.** Der fehlende
+  Vergleich ist nachgeholt (`run_elite_coop.mjs` / `elite_coop.txt`): Belohnung je Teilnehmer solo
+  und zu zweit identisch, Verluste zu zweit in allen vier Zellen hoeher. Entscheidend ist aber, dass
+  die Beute unter Entscheidung 2 an der vernichteten Feindmacht haengt - und die verdoppelt sich mit
+  dem zweiten Teilnehmer exakt (Faktor 2,02). Je nach Bezugsgroesse der Kurve ergibt das x1,82,
+  x1,01 oder x0,91 je Teilnehmer. **Ein separater Koop-Bonus ist damit ueberfluessig**; die Frage
+  faellt mit Block A, Schritt 2. Messkasten und die zwei Bedingungen (Mindestbeitrag, verschobene
+  Baseline) stehen bei Entscheidung 2.
 
 **R15 bleibt bewusst liegen** (siehe unten) - dokumentiert, nicht dringend, und ausdruecklich kein
 Anlass, die Aggregations-Grundsatzfrage neu zu stellen.
