@@ -1210,6 +1210,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Fehler behoben, der dazu führen konnte, dass über längere Zeit gar keine Raids/Notruf-Events mehr ausgelöst wurden: ein Problem bei einem Spieler konnte die Prüfung für alle anderen Spieler dauerhaft blockieren. Jeder Spieler wird jetzt unabhängig von den anderen geprüft.',
       'Schildkuppeln nachträglich mit angepasst: nach der Verteidigungsanlagen-Überarbeitung war ihr gemeinsamer Schild-Puffer gegenüber den jetzt viel stärkeren Einzelschilden komplett bedeutungslos geworden – deutlich angehoben, damit er wieder als echter Schutz für die gesamte Verteidigungslinie wirkt.',
       'Kampfberichte zeigen jetzt zusätzlich "Schaden ausgeteilt" – vorher gab es nur "Schaden" (in Wirklichkeit erlittener Schaden), was leicht mit der eigenen Feuerkraft verwechselt werden konnte. Jetzt lässt sich der tatsächliche Beitrag jedes Schiffstyps zum Kampf fair ablesen.',
+      'Flotten-Vorlagen funktionieren jetzt auch bei gemeinsamen Expeditionen – sowohl beim Anlegen als auch beim Annehmen einer Einladung. Es sind dieselben Vorlagen wie im Sektor-Tab, du musst also nichts doppelt anlegen. Schiffe, die im jeweiligen Einsatz nicht mitfliegen dürfen (z.B. Mining-Schiffe aus einer Asteroiden-Vorlage) oder die du gerade nicht in ausreichender Zahl hast, werden beim Übernehmen automatisch weggelassen bzw. auf deinen Bestand gekürzt – mit einem kurzen Hinweis, was angepasst wurde.',
     ],
   },
 ];
