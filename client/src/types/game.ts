@@ -129,7 +129,12 @@ export interface PirateBaseSummary {
   id: string;
   system: number;
   position: number;
+  // ACHTUNG (Entscheidung 5, 18.08.2026): `power` ist NICHT die Staerke, gegen die man kaempft -
+  // die Welle einer Basis skaliert mit der eigenen Flottenmacht. `power`/`readiness` sagen, wie
+  // viel die Basis noch aufbieten kann, `recoveringUntil`, ab wann sie wieder angreifbar ist.
   power: number;
+  readiness: number;
+  recoveringUntil: number | null;
 }
 
 export interface PirateAttackDeployment {
@@ -836,6 +841,7 @@ export interface DebugPirateBaseState {
   outgoingAttacks: number;
   nextOffensiveCheck: number | null;
   nextEconomyTurn: number | null; // Entscheidung 13.3: naechster faelliger Bau-Entscheidungsschritt
+  recoveringUntil: number | null; // Entscheidung 5: Ende der Erholungszeit nach einem Angriff
   buildQueueLength: number;
   defenseQueueLength: number;
   researchQueueLength: number;
