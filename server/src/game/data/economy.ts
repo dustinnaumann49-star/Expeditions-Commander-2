@@ -720,3 +720,111 @@ export const RELOCATE_BASE_COST_DM = 300;
 // Multiplikator muss den kompletten Ausgleich daher allein ueber die Minen-Produktion leisten,
 // nicht nur den Wegfall des Mining-Schiff-Ertrags. 2.5x war dafuer zu niedrig angesetzt.
 export const NPC_PRODUCTION_BONUS_MULTIPLIER = 6;
+
+// ========== PIRATENBASEN: GARNISON, BEUTE, ERHOLUNG (Entscheidung 5, Block C Schritt 7) ==========
+// Umgesetzt am 18.08.2026. Bis dahin war die Garnison ein FESTER Bestand (SEED_FLEET/SEED_DEFENSE
+// mit Floor-Up bei jedem Laden): fuer kleine Flotten unspielbar (gemessen 89,5-89,6 % Wertverlust),
+// fuer entwickelte Flotten bedeutungslos (0,0-0,3 % Verlust bei 32,2 Mio Beute, also 0,04 % eines
+// Tageseinkommens im spaeten Ausbaustand). Beides ist dieselbe Ursache: eine feste Gegnerstaerke
+// gegen eine wachsende Flotte (Messregel 12).
+//
+// Diese Konstanten lagen bis zum 18.08.2026 in pirateBaseState.ts. Sie stehen jetzt hier, weil
+// pirateBaseState.ts ueber state.ts die produktive Datenbank oeffnet und damit von einem Messskript
+// nicht importierbar ist - `run_pirate_base.mjs` hat sie deshalb per Hand gespiegelt, genau die
+// Fehlerform aus Messregel 16. Der reine Rechenteil liegt in game/pirateBaseCombat.ts.
+
+// Start-/Grundbestand einer frischen Basis. WICHTIG: seit dem 18.08.2026 KEINE Untergrenze mehr
+// (Entscheidung 5a) - eine Basis kann unter diesen Bestand fallen und muss ihn selbst wieder
+// aufbauen. Der Wert ist weiterhin der Bezugspunkt fuer die Gefechtsbereitschaft (siehe
+// garrisonReadiness() in pirateBaseCombat.ts).
+export const PIRATE_BASE_SEED_FLEET: Record<string, number> = {
+  leicht: 2000, schwer: 1500, kreuzer: 800, schlachtschiff: 400, bomber: 300, schlachtkreuzer: 150, zerstoerer: 100, reaper: 50,
+};
+export const PIRATE_BASE_SEED_DEFENSE: Record<string, number> = {
+  raketenwerfer: 400, leichteslaser: 300, schwereslaser: 200, gausskanone: 100, ionengeschuetz: 80, plasmawerfer: 40,
+};
+export const PIRATE_BASE_SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+// Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
+// aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
+export const PIRATE_BASE_SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
+
+// Feindstaerke der Basis-Garnison als Anteil der ANGREIFENDEN Flottenmacht - exakt dasselbe
+// 50/30/20-Wuerfelprinzip wie PIRATEN_MULTIPLIER_ROLL in sectors.ts (siehe pick503020()).
+//
+// GEMESSEN am 18.08.2026, 40 Laeufe je Zelle, 4 Kandidaten x 3 Flottengroessen (pirate_base.txt).
+// Zielband: 2,1 bis 4,4 % Wertverlust je Angriff - das ist Solo Hoch bzw. Elite-Bollwerk, jeweils
+// auf EINEN Check heruntergerechnet (4,40 bzw. 9,20 Mrd Verlust ueber 6 Checks bei 34,99 Mrd
+// Flottenwert, real_fleet.txt).
+//
+// WICHTIG, sonst wirkt diese Tabelle wie ein Ausreisser: sie liegt NOMINAL ueber der des
+// Elite-Bollwerks [0,90 / 1,20 / 1,55], erzeugt aber WENIGER Verlust. Gemessen bei der realen
+// Flotte: 0,85/1,10/1,20-1,40 -> 1,6 %, 0,95/1,25/1,50 -> 2,0 %, erst diese Tabelle -> 2,9 %.
+// Drei Gruende, alle bekannt und gewollt:
+//   - Die Welle besteht aus dem, was die Basis gebaut hat - der Grundbestand ist mit 2.000 leichten
+//     Jaegern von 5.300 Schiffen deutlich fodder-lastiger als die Wellenprofile der Sektoren
+//     (schwarm/kampfgruppe/elitekader, siehe pickWaveProfile()). Gleiche Macht, billigere Ziele.
+//   - Kein Piratenkapitaen und keine Kampf-Modifikatoren/Wellen-Ausreisser an der Basis.
+//   - Kein Missionsverlauf: ein einzelner Kampf statt sechs aufeinanderfolgender Checks gegen eine
+//     bereits angeschlagene Flotte.
+// Wer die Tabelle spaeter aendert, aendert deshalb NICHT die Schwierigkeit im selben Verhaeltnis -
+// immer nachmessen (run_pirate_base.mjs kandidat), nie aus der Zahl schliessen.
+export const PIRATE_BASE_MULTIPLIER_ROLL: [number, number, number | [number, number]] = [1.15, 1.45, [1.70, 1.90]];
+
+// Verteidigungsanlagen-Anteil, analog defenseFactor in SEKTOR_CONFIG (Hoch 0,15, Elite 0,18) -
+// bewusst dazwischen. Wird SEPARAT von der Flotte skaliert, genau wie in missions.ts/groupOps.ts,
+// sonst haengt der Anlagen-Anteil am Zufall der Basis-Bauentscheidungen statt an einer Kennzahl.
+export const PIRATE_BASE_DEFENSE_FACTOR = 0.16;
+
+// Erholungszeit der Garnison nach einem Angriff (Entscheidung 5, "ZWINGEND mitliefern": Schranke
+// gegen Dauer-Farming). OHNE diese Schranke waere die Basis die mit Abstand beste Farmroute des
+// Spiels: der Hin- und Rueckflug dauert je nach Distanz 0,16 bis 1,64 Stunden (galaxyDurationMs()
+// am langsamsten Schiff), also 15 bis 100 moegliche Angriffe pro Tag und Basis.
+// 20 Stunden statt 24: ein fester Tagesrhythmus wandert sonst jeden Tag weiter nach hinten.
+// Bei 4 aktiven Basen sind das hoechstens 4-5 Angriffe pro Tag fuer den ganzen Haushalt.
+export const PIRATE_BASE_RECOVERY_MS = 20 * 60 * 60 * 1000;
+
+// Hoechster Anteil des ECHTEN Basisbestands, den ein einzelner Angriff vernichten kann - egal wie
+// vollstaendig die Welle geschlagen wurde. GEMESSEN NOETIG GEWORDEN (18.08.2026): ohne diese
+// Grenze loeschte EIN Angriff der realen Flotte die komplette Garnison (Welle zu 100 % vernichtet
+// -> Verlustanteil 100 % auf jeden Einheitentyp). Die Basis waere danach dauerhaft wertlos gewesen:
+// bei rund 14 Mio Wert Eigenproduktion am Tag braucht sie fuer 2,08 Mrd Garnison rechnerisch
+// Monate. Damit haette Entscheidung 5 das tote Feature nicht beseitigt, sondern nur seinen
+// Zeitpunkt verschoben - vier Angriffe, danach vier leere Basen.
+export const PIRATE_BASE_MAX_ATTRITION = 0.35;
+
+// Zeit, in der eine vollstaendig ausgeduennte Garnison wieder auf Grundbestand waechst - die
+// "Erholungszeit statt einer festen Untergrenze", die Nachtrag 5a als Ersatz fuer den gestrichenen
+// Floor-Up ausdruecklich verlangt. Der Wiederaufbau laeuft NUR bis zum Grundbestand; was eine Basis
+// darueber hinaus selbst gebaut hat, waechst weiter ueber ihre eigene Wirtschaft nach
+// (runEconomyBotTurn), nicht ueber diesen Weg.
+// 3 Tage passen zur Erholungszeit oben: nach einer 20-Stunden-Pause sind rund 28 % des
+// Grundbestands nachgewachsen, ein taeglicher Angreifer trifft also auf eine leicht, aber nicht
+// beliebig ausgeduennte Basis (gemessen in pirate_base.txt, Punkt 5).
+export const PIRATE_BASE_REGEN_MS = 3 * 24 * 60 * 60 * 1000;
+// Rechenschritt des Wiederaufbaus. Eine Basis wird alle 2 Minuten geladen (Heartbeat); ohne einen
+// Mindestschritt wuerde der Zuwachs je Ladevorgang bei den seltenen Typen unter 1 Stueck liegen und
+// beim Runden dauerhaft verschwinden - der Reaper-Bestand waere nie nachgewachsen.
+export const PIRATE_BASE_REGEN_STEP_MS = 60 * 60 * 1000;
+
+// ===== Beute-Kurve (Entscheidung 2, Mechanik) =====
+// Beute = ANKER_WERT * (vernichtete Feindmacht / ANKER_MACHT)^EXPONENT, in Wert-Einheiten
+// (TRADE_VALUE: Metall 1, Kristall 1,5, Deuterium 3).
+// Anker und Exponent sind GEMESSEN, nicht gesetzt: loot_exponent.txt vom 14./15.08.2026,
+// 40 Durchlaeufe je Zelle - der mittlere Ausbaustand behaelt seine heutige Solo-Belohnung
+// (1,05 Mrd Wert bei 11,18 Mrd vernichteter Feindmacht), der Exponent 0,85 hat mit 3 % die
+// kleinste Abweichung von einem flachen Ertragsverlauf.
+// ACHTUNG Geltungsbereich: Entscheidung 2 gilt zusaetzlich fuer missions.ts und groupOps.ts
+// (Block A, Schritt 2) - DORT IST SIE NOCH NICHT VERDRAHTET. Diese Konstanten sind bewusst
+// allgemein gehalten, damit die spaetere Umstellung dieselbe Kurve benutzt und nicht eine zweite.
+// Der Anker streut ueber Laeufe um rund 2 % - nicht auf die dritte Nachkommastelle abstellen.
+export const LOOT_CURVE_EXPONENT = 0.85;
+export const LOOT_CURVE_ANCHOR_POWER = 11_180_000_000;
+export const LOOT_CURVE_ANCHOR_VALUE = 1_050_000_000;
+// Niveau-Stellschraube fuer die Piratenbasen allein (1,0 = exakt der Solo-Anker). Getrennt von den
+// drei Konstanten darueber, damit eine Niveau-Korrektur an den Basen nicht die Kurve fuer alle
+// anderen Inhalte mitverschiebt.
+export const PIRATE_BASE_LOOT_FACTOR = 1.0;
+// Aufteilung des Beutewerts auf die drei Ressourcen im Verhaeltnis des Solo-Sektors Hoch
+// (winResources 5,0M / 3,0M / 1,5M). In Wert-Einheiten gerechnet, damit die Summe exakt dem
+// Kurvenwert entspricht: 5 + 3*1,5 + 1,5*3 = 14 Anteile.
+export const PIRATE_BASE_LOOT_SPLIT = { metall: 5 / 14, kristall: 3 / 14, deuterium: 1.5 / 14 };
