@@ -188,6 +188,11 @@ export function GalaxiePage() {
             const pirateBaseSummary = pirateBaseSummaries.find((b) => b.system === system && b.position === pos);
             const alreadyAttackingBase = pirateBaseSummary && state.pirateAttacks.some((a) => a.baseId === pirateBaseSummary.id);
             const alreadySpyingBase = pirateBaseSummary && state.spyMissions.some((m) => m.baseId === pirateBaseSummary.id);
+            // Restliche Erholungszeit der Basis (Entscheidung 5). serverNow() statt Date.now(),
+            // sonst laeuft die Anzeige bei abweichender Client-Uhr gegen einen falschen Nullpunkt.
+            const baseRecoveringMs = pirateBaseSummary?.recoveringUntil
+              ? Math.max(0, pirateBaseSummary.recoveringUntil - now)
+              : 0;
             const sektor = sektorenInSystem.find((s) => s.position === pos);
             const stationHere = stationsInSystem.find((s) => s.position === pos);
             const event = eventsInSystem.find((e) => e.position === pos);
@@ -227,12 +232,27 @@ export function GalaxiePage() {
                     <p style={{ color: 'var(--danger)', fontWeight: 600 }}>🏴‍☠️ Piratenbasis</p>
                     {pirateBaseSummary ? (
                       <>
-                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
-                          Machtwert: {pirateBaseSummary.power.toLocaleString('de-DE')}
+                        {/* Entscheidung 5 (18.08.2026): Die Garnison skaliert mit der eigenen
+                            Flotte - der Machtwert ist deshalb NICHT die Schwierigkeit, sondern nur
+                            das Reservoir, aus dem die Basis ihre Welle stellt. Die alte Anzeige
+                            "Machtwert: X" liess genau den falschen Schluss zu. */}
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 2 }}>
+                          Garnisons-Reserve: {pirateBaseSummary.power.toLocaleString('de-DE')} · Bereitschaft{' '}
+                          {Math.round(pirateBaseSummary.readiness * 100)}%
                         </p>
+                        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6 }}>
+                          Gegenwehr richtet sich nach deiner eingesetzten Flotte.
+                        </p>
+                        {baseRecoveringMs > 0 && (
+                          <p style={{ fontSize: 11, color: 'var(--accent-kristall)', marginBottom: 6 }}>
+                            Erholt sich noch: {formatTime(baseRecoveringMs)}
+                          </p>
+                        )}
                         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {alreadyAttackingBase ? (
                             <span style={{ fontSize: 12, color: 'var(--accent-kristall)' }}>Angriff unterwegs</span>
+                          ) : baseRecoveringMs > 0 ? (
+                            <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Nicht angreifbar</span>
                           ) : (
                             <button
                               className="qty-btn"

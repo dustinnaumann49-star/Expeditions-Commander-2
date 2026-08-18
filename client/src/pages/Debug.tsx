@@ -179,6 +179,10 @@ export function DebugPage() {
                   : p.nextEconomyTurn <= Date.now()
                     ? 'fällig'
                     : `in ${Math.ceil((p.nextEconomyTurn - Date.now()) / 1000)} s`
+              } · Erholung (Entscheidung 5): ${
+                p.recoveringUntil === null || p.recoveringUntil <= Date.now()
+                  ? 'angreifbar'
+                  : `noch ${Math.ceil((p.recoveringUntil - Date.now()) / 60000)} min`
               }`}
               state={p}
               gameData={gameData}
