@@ -5,8 +5,8 @@ import { runEconomyBotTurn } from './economyBotTurn.js';
 import { listMyGroupOperations, respondToGroupOperation, startGroupOperation, createGroupOperation } from './groupOps.js';
 import { startHoldDeployment } from './galaxy.js';
 import { startPirateBaseAttack, listActivePirateBaseSummaries } from './pirateBaseState.js';
+import type { PirateBaseSummary } from './pirateBaseState.js';
 import { startSpyProbe } from './spyMissions.js';
-import { combatFleetPowerBase } from './combat.js';
 import { ACTIVE_PIRATE_BASE_IDS } from './data/galaxyConstants.js';
 import { MAX_BUILD_SLOTS } from './data/combatConstants.js';
 import type { PlayerState } from './types.js';
@@ -32,12 +32,13 @@ const BOT_ACTION_CHANCE = 0.3;
 // neue Elite-Expeditionen unten.
 const BOT_COMBAT_ACTION_CHANCE = 0.05;
 
-// Sicherheitsspanne fuer die Angriffs-Abwaegung unten (siehe maybeAttackPirateBase) - Bots sollen
-// nicht schon bei knappem Gleichstand angreifen (Muenzwurf-Risiko), sondern einen spuerbaren
-// Staerke-Vorteil abwarten. Nutzerentscheidung (30.07.2026): "sie muessen abwaegen koennen, ob sich
-// ein Angriff lohnt" - gilt analog fuer die Piratenbasen-Offensiv-KI selbst, siehe
-// PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN in pirateBaseState.ts.
-const ATTACK_POWER_SAFETY_MARGIN = 1.15;
+// ENTFALLEN AM 18.08.2026 (Entscheidung 5): Hier stand ATTACK_POWER_SAFETY_MARGIN = 1.15, die
+// Sicherheitsspanne, mit der ein Bot die eigene Angriffsflotte gegen den BESTAND einer Piratenbasis
+// verglichen hat. Seit die Garnison mit der angreifenden Flotte skaliert, gibt es keine feste
+// Gegnerstaerke mehr, gegen die man abwaegen koennte - die Abwaegung laeuft jetzt ueber
+// Erholungszeit und Gefechtsbereitschaft (siehe maybeAttackPirateBase). Die gleichnamige Spanne der
+// Basis-Offensiv-KI (PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN in pirateBaseState.ts) bleibt
+// unveraendert bestehen: sie zielt auf die Verteidigung eines SPIELERS, und die skaliert nicht mit.
 
 const COMBAT_SHIP_IDS = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff', 'bomber', 'schlachtkreuzer', 'zerstoerer', 'reaper'];
 
@@ -166,10 +167,11 @@ function maybeHoldAtHumans(state: PlayerState, humanUserIds: number[]): void {
 // langsam Flotte aufbauen, ANSTATT bei jeder Zufallschance blind mit einem festen 15%-Haeppchen
 // loszuschlagen - deshalb erst die tatsaechliche Basis-Staerke (listActivePirateBaseSummaries(),
 // bereits vorhandene, kostenguenstige Zusammenfassung) gegen die geplante Angriffsflotte pruefen und
-// nur bei einem klaren Vorteil (ATTACK_POWER_SAFETY_MARGIN) tatsaechlich angreifen - sonst wird die
-// Basis lieber uebersprungen, die Flotte waechst beim naechsten Zug weiter.
+// nur bei lohnendem Ziel tatsaechlich angreifen - sonst wird die Basis lieber uebersprungen, die
+// Flotte waechst beim naechsten Zug weiter. Womit "lohnend" gemessen wird, hat sich mit
+// Entscheidung 5 geaendert, siehe unten im Rumpf.
 async function maybeAttackPirateBase(state: PlayerState): Promise<void> {
-  let baseSummaries: { id: string; power: number }[] | null = null;
+  let baseSummaries: PirateBaseSummary[] | null = null;
   for (const baseId of ACTIVE_PIRATE_BASE_IDS) {
     const alreadyAttacking = state.pirateAttacks.some((a) => a.baseId === baseId);
     if (alreadyAttacking) continue;
@@ -187,10 +189,20 @@ async function maybeAttackPirateBase(state: PlayerState): Promise<void> {
     if (total < 5) continue;
 
     if (!baseSummaries) baseSummaries = await listActivePirateBaseSummaries(); // nur einmal pro Zug laden, nicht pro Basis
-    const basePower = baseSummaries.find((b) => b.id === baseId)?.power ?? Infinity;
-    if (combatFleetPowerBase(selection) < basePower * ATTACK_POWER_SAFETY_MARGIN) continue; // (noch) zu schwach - lieber abwarten
+    const summary = baseSummaries.find((b) => b.id === baseId);
+    // GEAENDERT AM 18.08.2026 (Entscheidung 5): Hier stand der Vergleich der eigenen Auswahl gegen
+    // `summary.power` mal ATTACK_POWER_SAFETY_MARGIN. Dieser Vergleich ist seit der mitskalierenden
+    // Garnison sinnlos geworden - die Basis stellt eine Welle in Hoehe der ANGREIFENDEN Macht, ihr
+    // Bestand ist nicht mehr die Gegnerstaerke. Waere der Vergleich stehen geblieben, haetten Bots
+    // eine Basis erst ab dem 1,15-fachen ihres Gesamtbestands angegriffen, also praktisch nie:
+    // ein stiller Ausfall genau der Art, vor der Messregel 8 warnt.
+    // Neu abgewogen wird jetzt an den zwei Groessen, die tatsaechlich noch etwas aussagen:
+    // Erholungszeit (angreifbar?) und Gefechtsbereitschaft (lohnt sich die Beute?).
+    if (!summary) continue;
+    if (summary.recoveringUntil && summary.recoveringUntil > Date.now()) continue; // erholt sich noch
+    if (summary.readiness < 0.5) continue; // ausgeduennte Basis - Beute waere kaum der Verluste wert
 
-    startPirateBaseAttack(state, baseId, selection);
+    await startPirateBaseAttack(state, baseId, selection); // async seit Entscheidung 5 (prueft die Erholungszeit der Basis)
   }
 }
 

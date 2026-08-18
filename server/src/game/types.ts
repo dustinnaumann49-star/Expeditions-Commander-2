@@ -138,6 +138,14 @@ export interface PirateBaseState {
   // gedrosselt - nur der Entscheidungsschritt haengt jetzt an der Uhr statt am Ladevorgang.
   // Siehe PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS in pirateBaseState.ts.
   nextEconomyTurn: number | null;
+  // Entscheidung 5 (18.08.2026): Ende der Erholungszeit nach einem Angriff. Bis dahin ist die Basis
+  // nicht erneut angreifbar (Pruefung in startPirateBaseAttack UND bei der Ankunft, siehe dort) -
+  // die Schranke gegen Dauer-Farming, ohne die eine Basis 15 bis 100 Mal am Tag angeflogen werden
+  // koennte. Siehe PIRATE_BASE_RECOVERY_MS in data/economy.ts.
+  recoveringUntil: number | null;
+  // Entscheidung 5a: Zeitpunkt der letzten Garnisons-Regeneration. Zeitbasiert statt ladebasiert -
+  // siehe loadPirateBase(). Ersetzt zusammen mit recoveringUntil den gestrichenen Floor-Up.
+  lastGarrisonRegenAt: number | null;
 }
 
 // Angriffsflug EINER Piratenbasis GEGEN einen Spieler/Bot (Basis als Angreifer, Gegenrichtung zu

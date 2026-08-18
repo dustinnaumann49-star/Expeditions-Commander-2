@@ -9,6 +9,24 @@ import { DEFENSES } from './data/defenses.js';
 import { defaultPlayerState, loadPlayerState, savePlayerState } from './state.js';
 import { runEconomyTick } from './actions.js';
 import { runEconomyBotTurn } from './economyBotTurn.js';
+import {
+  PIRATE_BASE_SEED_FLEET,
+  PIRATE_BASE_SEED_DEFENSE,
+  PIRATE_BASE_SEED_RESOURCES,
+  PIRATE_BASE_SEED_BUILDINGS,
+  PIRATE_BASE_RECOVERY_MS,
+  PIRATE_BASE_REGEN_STEP_MS,
+} from './data/economy.js';
+import {
+  rollPirateBaseGarrison,
+  garrisonResearch,
+  garrisonPower,
+  garrisonReadiness,
+  pirateBaseLoot,
+  isDefenseUnitId,
+  attritionShare,
+  regenerateGarrison,
+} from './pirateBaseCombat.js';
 import type {
   PlayerState,
   PirateBaseState,
@@ -52,63 +70,32 @@ function syntheticUserIdFor(id: string): number {
   return SYNTHETIC_USER_ID_BASE - PIRATE_BASE_IDS.indexOf(id);
 }
 
-// Start-/Mindestbestand. Seit Entfernung der Piratenbasen-Autonomie (README Punkt 98, 28.07.2026)
-// bauen Basen selbst NICHTS mehr dazu - dieser Bestand ist damit nicht mehr nur ein "Startwert",
-// sondern die DAUERHAFTE Garnisonsstaerke jeder aktiven Basis. Nutzerentscheidung (28.07.2026,
-// zweite Ueberarbeitung): auf "stark" angehoben - eine feste Wache dieser Groessenordnung soll auch
-// grosse Spieler-Flotten ernsthaft fordern, nicht nur symbolischen Widerstand leisten. Bewusst
-// gemischte Tier-Zusammensetzung statt nur billiger Fodder-Schiffe (analog zum "kampfgruppe"/
-// "elitekader"-Wellenprofil, siehe pickWaveProfile() in combat.ts). Salvenschiffe/Imperator
-// bewusst NICHT enthalten (README Punkt 24: MUESSEN aus jeder NPC-Flottengenerierung ausgeschlossen
-// bleiben). Mehrere Typen liegen bewusst ueber STACK_AGGREGATE_THRESHOLD (300) - lastet die neue
-// Aggregat-Kampf-Engine aus, bleibt aber performant (siehe README Punkt 103).
-// Dient weiterhin als Mindestwert bei der Migration bereits bestehender (alter, schwaecherer)
-// Basen (siehe migrateLegacyBase() UND der Floor-Up-Schritt in loadPirateBase() unten) - eine
-// Basis kann durch eine spaetere Anhebung dieser Konstanten also nachtraeglich staerker werden,
-// aber nie schwaecher.
-const SEED_FLEET: Record<string, number> = {
-  leicht: 2000, schwer: 1500, kreuzer: 800, schlachtschiff: 400, bomber: 300, schlachtkreuzer: 150, zerstoerer: 100, reaper: 50,
-};
-const SEED_DEFENSE: Record<string, number> = {
-  raketenwerfer: 400, leichteslaser: 300, schwereslaser: 200, gausskanone: 100, ionengeschuetz: 80, plasmawerfer: 40,
-};
-const SEED_RESOURCES = { metall: 150000, kristall: 90000, deuterium: 40000 };
+// Start-/Grundbestand einer Basis. Liegt seit dem 18.08.2026 in data/economy.ts
+// (PIRATE_BASE_SEED_FLEET/-DEFENSE/-RESOURCES/-BUILDINGS) - Grund und Herkunft dort im Kommentar.
+//
+// GEAENDERT AM 18.08.2026 (Entscheidung 5a): Diese Werte sind KEINE Untergrenze mehr. Hier stand
+// zuvor "die DAUERHAFTE Garnisonsstaerke jeder aktiven Basis", durchgesetzt ueber einen Floor-Up
+// bei jedem Laden - eine Basis konnte durch Angriffe nie schwaecher werden. Genau dieser Boden hat
+// die Startphase blockiert: gemessen 89,5 % Wertverlust fuer eine Aufbau-Flotte, unabhaengig davon,
+// ob die Garnison mitskaliert. Ein Angriff kann eine Basis jetzt tatsaechlich ausduennen; sie baut
+// den Bestand ueber runEconomyBotTurn() selbst wieder auf, und bis dahin sinkt ihre
+// Gefechtsbereitschaft (garrisonReadiness() in pirateBaseCombat.ts).
 
-// Ressourcen-Obergrenze (Nutzerentscheidung 28.07.2026, NACHKALIBRIERT): Basen produzieren
-// weiterhin passiv ueber runEconomyTick() (siehe Kommentar bei loadPirateBase()), koennen ihre
-// Bestaende aber seit der Autonomie-Entfernung nie mehr selbst ausgeben - ohne Deckel waeren sie
-// mit der Zeit unbegrenzt reich geworden, ohne dass sich ihre Staerke (SEED_FLEET/SEED_DEFENSE)
-// mitveraendert haette.
-// Der erste Wurf (15M/9M/4M) war zu niedrig angesetzt, OHNE gegen die tatsaechliche passive
-// Produktionsrate der SEED_BUILDINGS (unten) gegengerechnet zu werden: Metallmine Stufe 4 mit dem
-// NPC_PRODUCTION_BONUS_MULTIPLIER (1,5x) produziert ~87.800 Metall/h - der alte Deckel war damit
-// bereits nach ~7-9 Tagen erreicht und kappte danach jedes weitere Wachstum, obwohl die Basis noch
-// lange nicht "ausgereift" war. Neu kalibriert auf ~3 Wochen (504h) ungebremstes Wachstum bis zum
-// Anschlag, im Verhaeltnis der TATSAECHLICHEN Produktionsraten (Metall:Kristall:Deuterium ≈
-// 7,3:3,3:1, nicht das willkuerliche SEED_RESOURCES-Verhaeltnis von vorher) - eine "reife" Basis
-// liefert damit bei PIRATE_BASE_LOOT_PERCENT=0.35 pro vollem Beutezug ca. 15,4M/7M/2,1M, spuerbar
-// mehr als ein Silber-Container und in Metall-Reichweite eines Gold-Containers - angemessen fuer
-// eine Basis, die eine ~5.300-Schiffe-Garnison durchbrechen muss.
-// UMGEWIDMET am 12.08.2026 (Nutzerentscheidung): Diese Werte begrenzen jetzt ausschliesslich die
-// BEUTE, nicht mehr den Lagerbestand der Basis.
+// ENTFALLEN AM 18.08.2026 (Entscheidung 5, Beute-Mechanik): Hier standen `LOOT_BASIS_CAP`
+// (44M/20M/6M) und `PIRATE_BASE_LOOT_PERCENT` (0,35). Sie sind ersatzlos gestrichen, WEIL DIE
+// BEUTE NICHT MEHR AM LAGERBESTAND HAENGT, sondern an der tatsaechlich vernichteten Garnison
+// (pirateBaseLoot() in pirateBaseCombat.ts, Kurve aus Entscheidung 2).
 //
-// Grund: Der Deckel erfuellte zwei Aufgaben gleichzeitig, von denen nur eine beabsichtigt war.
-// Gewollt war die Beute-Kalibrierung (oben beschrieben). Ungewollt war die Nebenwirkung, dass ein
-// Gebaeude, dessen Kosten den Deckel uebersteigen, fuer eine Basis NIE bezahlbar wird - nachgerechnet
-// endete der Ausbau bei Metallmine 22, Kristallmine 20, Deuterium-Synthetisierer 19,
-// Roboterfabrik 14 und Nanitenfabrik 6. Danach waere jede weitere Produktion wieder vollstaendig in
-// Verteidigung geflossen, also derselbe Zustand wie vor der Behebung der Sparfalle
-// (economyBotTurn.ts), nur auf hoeherem Niveau. Erklaerte Absicht des Nutzers ist, dass Basen und
-// Bots unbegrenzt dasselbe tun koennen wie Spieler.
+// Der Deckel war zuletzt (12.08.2026) vom Lagerbestand entkoppelt worden und wirkte nur noch auf
+// die Beute - genau die Groesse, die es jetzt nicht mehr gibt. Der im Umsetzungsplan bei
+// Entscheidung 5 geforderte Punkt "RESOURCE_CAP neu rechnen" (Kommentar rechnete mit
+// NPC_PRODUCTION_BONUS_MULTIPLIER 1,5 und 3 Wochen, tatsaechlich sind es 6 und 6,5 Tage) geht damit
+// ins Leere und ist erledigt, ohne dass eine neue Zahl bestimmt werden musste.
 //
-// Die Beute bleibt dadurch EXAKT wie kalibriert: hoechstens 35 % von 44M/20M/6M, also 15,4M/7M/2,1M
-// pro vollem Beutezug - unabhaengig davon, wie reich die Basis darueber hinaus wird.
-// ACHTUNG bei kuenftigen Aenderungen: Wer diese Zahlen anpasst, aendert NUR noch die Beute. Die
-// Ausbaugrenze ist damit entfallen und darf nicht versehentlich ueber diesen Weg wieder entstehen.
-const LOOT_BASIS_CAP = { metall: 44000000, kristall: 20000000, deuterium: 6000000 };
-// Kleine Mining-Basis als Wirtschafts-Starthilfe, sonst haette eine frische Basis zwar Ressourcen,
-// aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
-const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
+// Was dadurch entfaellt und bewusst in Kauf genommen ist: der Ressourcenbestand einer Basis wird
+// von Angriffen nicht mehr angetastet. Er ist jetzt reiner Treibstoff ihres eigenen Ausbaus - und
+// damit indirekt doch beutewirksam, weil eine reichere Basis mehr Garnison baut und eine staerkere
+// Garnison mehr Beute traegt.
 
 // Entscheidung 13.3 (Umsetzungsplan Balance, Block C): Mindestabstand zwischen zwei BAU-
 // Entscheidungsschritten einer Basis. Vorher lief runEconomyBotTurn() bei JEDEM loadPirateBase(),
@@ -143,16 +130,16 @@ function buildSeedState(id: string): PlayerState {
   const pos = POSITION_BY_ID.get(id)!;
   const state = defaultPlayerState(syntheticUserIdFor(id));
   state.galaxyPosition = { system: pos.system, position: pos.position };
-  state.resources = { ...SEED_RESOURCES, dm: 0 };
-  Object.entries(SEED_FLEET).forEach(([shipId, qty]) => (state.fleet[shipId] = qty));
-  Object.entries(SEED_DEFENSE).forEach(([defId, qty]) => (state.defense[defId] = qty));
-  Object.entries(SEED_BUILDINGS).forEach(([buildingId, level]) => (state.buildings[buildingId] = level));
+  state.resources = { ...PIRATE_BASE_SEED_RESOURCES, dm: 0 };
+  Object.entries(PIRATE_BASE_SEED_FLEET).forEach(([shipId, qty]) => (state.fleet[shipId] = qty));
+  Object.entries(PIRATE_BASE_SEED_DEFENSE).forEach(([defId, qty]) => (state.defense[defId] = qty));
+  Object.entries(PIRATE_BASE_SEED_BUILDINGS).forEach(([buildingId, level]) => (state.buildings[buildingId] = level));
   return state;
 }
 
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
-  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null };
+  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null, recoveringUntil: null, lastGarrisonRegenAt: null };
 }
 
 // Einmalig beim Serverstart aufgerufen (analog ensureBotUsers()) - legt fehlende aktive Basen an,
@@ -168,8 +155,11 @@ export function ensurePirateBases(): void {
 // Migration (Nutzerentscheidung Juli 2026, "Piraten sollen genau wie Spieler wachsen"-Umbau):
 // bestehende Basen aus dem VORHERIGEN, schlanken System (nur {fleet, defense, resources,
 // lastGrowthAt}, siehe Git-Historie) haben kein `state`-Feld - werden hier auf einen vollwertigen
-// PlayerState umgestellt, ihr bisheriger Bestand fliesst dabei (nach oben angehoben auf den neuen
-// Mindestwert) mit ein, damit keine bereits erspielte Staerke verloren geht.
+// PlayerState umgestellt, ihr bisheriger Bestand fliesst dabei mit ein.
+// GEAENDERT AM 18.08.2026 (Entscheidung 5a): der Bestand wird NICHT mehr auf den Seed-Wert
+// angehoben ("nach oben angehoben auf den neuen Mindestwert"). Es gibt keinen Mindestwert mehr -
+// eine alte, schwaechere Basis bleibt schwaecher und baut selbst auf. Der Seed dient nur noch als
+// Ausgangswert fuer Typen, die im Altbestand gar nicht vorkommen.
 function isLegacyShape(raw: any): boolean {
   return raw && typeof raw === 'object' && !raw.state;
 }
@@ -177,16 +167,16 @@ function isLegacyShape(raw: any): boolean {
 function migrateLegacyBase(raw: any, id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
   const state = buildSeedState(id);
-  Object.entries(SEED_FLEET).forEach(([shipId]) => {
-    state.fleet[shipId] = Math.max(state.fleet[shipId] || 0, raw.fleet?.[shipId] || 0);
+  Object.entries(PIRATE_BASE_SEED_FLEET).forEach(([shipId]) => {
+    if (raw.fleet?.[shipId] !== undefined) state.fleet[shipId] = raw.fleet[shipId];
   });
-  Object.entries(SEED_DEFENSE).forEach(([defId]) => {
-    state.defense[defId] = Math.max(state.defense[defId] || 0, raw.defense?.[defId] || 0);
+  Object.entries(PIRATE_BASE_SEED_DEFENSE).forEach(([defId]) => {
+    if (raw.defense?.[defId] !== undefined) state.defense[defId] = raw.defense[defId];
   });
   (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
     state.resources[res] = Math.max(state.resources[res] || 0, raw.resources?.[res] || 0);
   });
-  return { id, system: pos.system, position: pos.position, state, attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null };
+  return { id, system: pos.system, position: pos.position, state, attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null, recoveringUntil: null, lastGarrisonRegenAt: null };
 }
 
 // Lazy bei jedem Laden angewendet (Angriff/Spionage/Galaxie-Ansicht) UND explizit einmal pro
@@ -211,16 +201,27 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   if (!base.attacks) base.attacks = []; // Bestandsdaten von vor der Offensiv-KI (siehe runPirateBaseOffensiveTurn())
   if (base.nextOffensiveCheck === undefined) base.nextOffensiveCheck = null; // Bestandsdaten von vor dem Cooldown-Umbau
   if (base.nextEconomyTurn === undefined) base.nextEconomyTurn = null; // Bestandsdaten von vor Entscheidung 13.3
-  // Floor-Up (Nutzerentscheidung 28.07.2026): garantiert die dauerhafte Mindest-Garnisonsstaerke
-  // (SEED_FLEET/SEED_DEFENSE) - eine Basis kann durch Wachstum staerker werden, aber nie unter
-  // diesen Mindestwert fallen (weder durch eine spaetere Anhebung der Konstante bei alten Basen,
-  // noch durch Verluste aus einem Angriff - "unzerstoerbare Basis"-Design, siehe Kommentar oben).
-  Object.entries(SEED_FLEET).forEach(([shipId, qty]) => {
-    base.state.fleet[shipId] = Math.max(base.state.fleet[shipId] || 0, qty);
-  });
-  Object.entries(SEED_DEFENSE).forEach(([defId, qty]) => {
-    base.state.defense[defId] = Math.max(base.state.defense[defId] || 0, qty);
-  });
+  if (base.recoveringUntil === undefined) base.recoveringUntil = null; // Bestandsdaten von vor Entscheidung 5
+  if (base.lastGarrisonRegenAt === undefined) base.lastGarrisonRegenAt = null; // dito
+  // Wiederaufbau der Garnison bis zum Grundbestand (Nachtrag 5a). Zeitbasiert, NICHT ladebasiert -
+  // derselbe Fehler wie vor Entscheidung 13.3 waere hier sonst sofort wieder da (eine Basis
+  // erholte sich schneller, je oefter jemand die Galaxie aufruft). Der Mindestschritt verhindert
+  // zusaetzlich, dass der Zuwachs bei seltenen Typen im Runden verschwindet.
+  const regenNow = Date.now();
+  if (base.lastGarrisonRegenAt === null) {
+    base.lastGarrisonRegenAt = regenNow;
+  } else if (regenNow - base.lastGarrisonRegenAt >= PIRATE_BASE_REGEN_STEP_MS) {
+    regenerateGarrison(base.state.fleet, base.state.defense, regenNow - base.lastGarrisonRegenAt);
+    base.lastGarrisonRegenAt = regenNow;
+  }
+  // ENTFERNT AM 18.08.2026 (Entscheidung 5a): Hier stand ein Floor-Up, das den Bestand bei JEDEM
+  // Laden wieder auf PIRATE_BASE_SEED_FLEET/-DEFENSE anhob ("unzerstoerbare Basis"-Design). Eine
+  // Basis konnte dadurch weder durch Angriffe noch auf andere Weise unter den Startbestand fallen -
+  // und weil der Boden zuerst greift, haette die mitskalierende Garnison aus Entscheidung 5 die
+  // Startphase gar nicht erreicht: eine Aufbau-Flotte trifft weiterhin auf 5.300 Kampfschiffe bis
+  // hinauf zum Reaper, egal wie klein sie ist. Der Ersatz fuer das "unzerstoerbar"-Design ist die
+  // Erholungszeit (PIRATE_BASE_RECOVERY_MS) plus der Wiederaufbau durch runEconomyBotTurn(), nicht
+  // mehr eine feste Untergrenze.
   await runEconomyTick(base.state);
   // Entscheidung 13.3: Der Bau-Entscheidungsschritt haengt jetzt an der UHR, nicht mehr am
   // Ladevorgang. runEconomyTick() darueber bleibt bewusst UNGEDROSSELT - die Ressourcen-Produktion
@@ -268,11 +269,18 @@ export async function listActivePirateBases(): Promise<PirateBaseState[]> {
 
 // Leichtgewichtige Anzeige-Zusammenfassung fuer die Galaxie-Uebersicht (siehe routes.ts) - keine
 // exakten Zahlen, nur ein grober Machtwert, den der Client z.B. als Bedrohungsstufe anzeigen kann.
+// ERGAENZT AM 18.08.2026 (Entscheidung 5): `power` ist seitdem NICHT mehr die Staerke, gegen die
+// man kaempft - die Welle skaliert mit der eigenen Flotte (siehe rollPirateBaseGarrison()). `power`
+// und `readiness` sagen jetzt, wie viel die Basis noch aufbieten KANN; `recoveringUntil` sagt, ab
+// wann sie wieder angreifbar ist. Der Client muss beides zeigen, sonst sieht ein Spieler eine
+// Machtzahl und schliesst daraus auf die Schwierigkeit - das waere ab jetzt schlicht falsch.
 export interface PirateBaseSummary {
   id: string;
   system: number;
   position: number;
   power: number;
+  readiness: number;
+  recoveringUntil: number | null;
 }
 
 export async function listActivePirateBaseSummaries(): Promise<PirateBaseSummary[]> {
@@ -281,19 +289,28 @@ export async function listActivePirateBaseSummaries(): Promise<PirateBaseSummary
     id: b.id,
     system: b.system,
     position: b.position,
-    power: Math.round(combatFleetPowerBase({ ...b.state.fleet, ...b.state.defense })),
+    power: Math.round(garrisonPower(b.state.fleet, b.state.defense)),
+    readiness: garrisonReadiness(b.state.fleet, b.state.defense),
+    recoveringUntil: b.recoveringUntil,
   }));
 }
 
-// Anteil der AKTUELL gelagerten Basis-Ressourcen, der bei einem erfolgreichen Angriff gestohlen
-// wird (nicht vom Basis-Maximum, siehe RAID_LOOT_PERCENT-Vorbild in raids.ts fuer dasselbe Muster).
-const PIRATE_BASE_LOOT_PERCENT = 0.35;
-
 // ========== ANGRIFF STARTEN ==========
 
-export function startPirateBaseAttack(state: PlayerState, baseId: string, ships: Record<string, number>): ActionResult {
+export async function startPirateBaseAttack(state: PlayerState, baseId: string, ships: Record<string, number>): Promise<ActionResult> {
   if (!state.galaxyPosition) return { ok: false, error: 'Dir ist noch keine Galaxie-Position zugewiesen.' };
   if (!ACTIVE_PIRATE_BASE_IDS.includes(baseId)) return { ok: false, error: 'Unbekannte oder nicht angreifbare Piratenbasis.' };
+
+  // Erholungszeit (Entscheidung 5, Schranke gegen Dauer-Farming). Bewusst BEIM ABSCHICKEN geprueft
+  // und nicht erst bei Ankunft: eine Flotte, die 40 Minuten fliegt und dann ohne Beute zurueckkommt,
+  // ist die schlechtere Rueckmeldung. Bei Ankunft wird trotzdem noch einmal geprueft (siehe
+  // resolvePirateBaseAttack) - zwei gleichzeitig gestartete Fluege koennen sonst dieselbe
+  // Erholungspause umgehen.
+  const base = await loadPirateBase(baseId);
+  if (base?.recoveringUntil && base.recoveringUntil > Date.now()) {
+    const restMin = Math.ceil((base.recoveringUntil - Date.now()) / 60000);
+    return { ok: false, error: `Die Basis erholt sich noch von einem Angriff - wieder angreifbar in ${restMin} Minuten.` };
+  }
 
   const selected: Record<string, number> = {};
   for (const [id, qty] of Object.entries(ships)) {
@@ -365,12 +382,21 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
     return;
   }
   const pState = base.state;
+  const now = Date.now();
 
+  // ===== ENTSCHEIDUNG 5: die Garnison skaliert mit der angreifenden Flotte =====
+  // Vorher trat der KOMPLETTE Bestand der Basis an, unabhaengig davon, wer angreift. Genau daraus
+  // kamen die beiden gemessenen Extreme (89,5 % Wertverlust fuer eine Aufbau-Flotte, 0,0-0,3 % fuer
+  // eine entwickelte). Jetzt stellt die Basis eine Welle in der Groessenordnung der ANGREIFENDEN
+  // Macht - Zusammensetzung aus ihrem echten Bestand, Menge nach PIRATE_BASE_MULTIPLIER_ROLL,
+  // gedaempft durch ihre Gefechtsbereitschaft. Herleitung im Kopf von pirateBaseCombat.ts.
+  const sentPower = combatFleetPowerBase(deployment.ships);
+  const garrison = rollPirateBaseGarrison(pState.fleet, pState.defense, sentPower);
   const npcCombined: Record<string, number> = {};
-  Object.entries(pState.fleet).forEach(([id, qty]) => {
+  Object.entries(garrison.ships).forEach(([id, qty]) => {
     if (qty > 0) npcCombined[id] = qty;
   });
-  Object.entries(pState.defense).forEach(([id, qty]) => {
+  Object.entries(garrison.defenses).forEach(([id, qty]) => {
     if (qty > 0) npcCombined[id] = (npcCombined[id] || 0) + qty;
   });
   const npcIds = Object.keys(npcCombined);
@@ -379,22 +405,31 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
   let npcResults: CombatUnitResult[] = [];
   let playerResults: CombatUnitResult[] = [];
   let roundsFought = 0;
+  let destroyedPower = 0;
 
   if (npcIds.length === 0) {
-    // Basis war leer (leergefarmt oder noch nicht nachgewachsen) - kein Kampf noetig, direkter Loot.
-    anyNpcDestroyed = true;
+    // Basis hat nichts mehr aufzubieten (leergefarmt und noch nicht nachgewachsen) - kein Kampf.
+    // ACHTUNG, geaendert am 18.08.2026: hier gab es frueher trotzdem die volle Beute
+    // ("direkter Loot"), weil die Beute am Lagerbestand hing. Da sie jetzt an der vernichteten
+    // Garnison haengt, gibt eine leere Basis konsequenterweise NICHTS - sonst waere die
+    // leergefarmte Basis die beste Beutequelle des Spiels.
+    anyNpcDestroyed = false;
   } else {
-    // Die Piratenbasis wirtschaftet jetzt "genau wie ein Spieler" (eigene Forschung/Klasse) -
-    // ihre effektiven Kampfwerte werden deshalb genau wie bei einem echten Spieler ueber
-    // getEffectiveStats() berechnet und per sideBStatsOverride durchgereicht (dasselbe bereits
-    // bestehende Muster wie beim Piratenkapitaen/Piratenadmiral), statt der vorherigen reinen
-    // baseStats() ohne jeden Bonus.
+    // Die Piratenbasis wirtschaftet "genau wie ein Spieler" (eigene Forschung/Klasse) - ihre
+    // effektiven Kampfwerte laufen deshalb ueber getEffectiveStats() und per sideBStatsOverride
+    // (dasselbe Muster wie beim Piratenkapitaen/Piratenadmiral).
+    // GEAENDERT AM 18.08.2026: die Forschung ist nicht mehr die der Basis ALLEIN, sondern das
+    // Maximum aus ihrer eigenen und der des Angreifers (garrisonResearch(), Begruendung dort) -
+    // sonst kaempft die Basis mit Forschungsstufe 0, waehrend jeder Sektor-Pirat ueber
+    // PIRATE_RESEARCH_SHARE den vollen Stand des Angreifers bekommt, und die Multiplikator-Tabelle
+    // meint etwas voellig anderes als bei den Sektoren.
+    const effectiveResearch = garrisonResearch(pState.research, state.research);
     const sideBStatsOverride: Record<string, CombatStats> = {};
     npcIds.forEach((id) => {
       sideBStatsOverride[id] = getEffectiveStats(
         id,
-        pState.research,
-        pState.defense,
+        effectiveResearch,
+        garrison.defenses,
         isBoosterActive(pState, 'kampf'),
         pState.playerClass,
         pState.shipModules
@@ -412,15 +447,21 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
     });
     roundsFought = result.roundsFought;
 
+    // Verlustanteil je Einheitentyp - wird unten auf den ECHTEN Bestand der Basis angewandt.
+    // Nicht die absolute Stueckzahl: die Welle kann groesser oder kleiner als der Bestand sein.
+    const lossShareById: Record<string, number> = {};
+
     npcResults = npcIds.map((id) => {
-      const isDefenseUnit = DEFENSES.some((d) => d.id === id);
+      const isDefenseUnit = isDefenseUnitId(id);
       const eff = sideBStatsOverride[id];
       const sent = npcCombined[id];
       const survivedCount = result.survivorsB[id] || 0;
       const destroyedCount = sent - survivedCount;
       if (destroyedCount > 0) anyNpcDestroyed = true;
-      if (isDefenseUnit) pState.defense[id] = survivedCount;
-      else pState.fleet[id] = survivedCount;
+      lossShareById[id] = sent > 0 ? destroyedCount / sent : 0;
+      // Vernichtete Feindmacht als Beute-Grundlage (Entscheidung 2/5) - dieselbe Groesse, an der
+      // auch der Beute-Anker gemessen wurde: rohe BasePower, ohne Forschung.
+      destroyedPower += combatFleetPowerBase({ [id]: destroyedCount });
       return {
         id,
         name: shipName(id),
@@ -440,6 +481,20 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
         shieldDmgTaken: Math.round(result.shieldDmgTakenB[id] || 0),
         shieldRegen: Math.round(result.shieldRegenB[id] || 0),
       };
+    });
+
+    // Verluste auf den echten Bestand durchschlagen lassen (siehe Punkt 3 im Kopfkommentar von
+    // pirateBaseCombat.ts). Ohne diesen Schritt waere die Basis wieder unangreifbar: man haette
+    // nur Verstaerkungswellen vernichtet, ohne der Basis selbst etwas zu nehmen - und die
+    // Erholungszeit unten haette nichts, wovon sie sich erholt.
+    Object.entries(lossShareById).forEach(([id, share]) => {
+      if (share <= 0) return;
+      const applied = attritionShare(share); // Deckel, siehe PIRATE_BASE_MAX_ATTRITION
+      if (isDefenseUnitId(id)) {
+        pState.defense[id] = Math.floor((pState.defense[id] || 0) * (1 - applied));
+      } else {
+        pState.fleet[id] = Math.floor((pState.fleet[id] || 0) * (1 - applied));
+      }
     });
 
     playerResults = Object.keys(deployment.ships).map((id) => {
@@ -467,30 +522,43 @@ async function resolvePirateBaseAttack(state: PlayerState, deployment: PirateAtt
     });
   }
 
+  // Zweite Pruefung der Erholungszeit (die erste steht in startPirateBaseAttack). Zwei Flotten
+  // koennen gleichzeitig unterwegs sein und beide vor der ersten Aufloesung gestartet worden sein;
+  // ohne diese Pruefung liesse sich die Pause durch parallele Fluege umgehen. Der Kampf findet
+  // trotzdem statt - die Garnison steht ja da -, nur Beute gibt es keine.
+  const stillRecovering = base.recoveringUntil !== null && base.recoveringUntil > now;
+
   let lootText = '';
   let loot: { metall: number; kristall: number; deuterium: number } | undefined;
-  if (anyNpcDestroyed) {
-    // Beute-Grundlage ist der Bestand, gedeckelt auf LOOT_BASIS_CAP - der tatsaechliche Bestand
-    // darf hoeher liegen (die Basis baut damit weiter aus), die Beute waechst aber nicht mit.
-    loot = {
-      metall: Math.round(Math.min(pState.resources.metall, LOOT_BASIS_CAP.metall) * PIRATE_BASE_LOOT_PERCENT),
-      kristall: Math.round(Math.min(pState.resources.kristall, LOOT_BASIS_CAP.kristall) * PIRATE_BASE_LOOT_PERCENT),
-      deuterium: Math.round(Math.min(pState.resources.deuterium, LOOT_BASIS_CAP.deuterium) * PIRATE_BASE_LOOT_PERCENT),
-    };
-    pState.resources.metall -= loot.metall;
-    pState.resources.kristall -= loot.kristall;
-    pState.resources.deuterium -= loot.deuterium;
+  if (anyNpcDestroyed && !stillRecovering) {
+    // Beute aus der vernichteten Garnison statt aus dem Lagerbestand (Entscheidung 5 + 2).
+    loot = pirateBaseLoot(destroyedPower);
     state.resources.metall += loot.metall;
     state.resources.kristall += loot.kristall;
     state.resources.deuterium += loot.deuterium;
     state.stats.resourcesLooted += loot.metall + loot.kristall + loot.deuterium;
     lootText = ` Beute erbeutet: ${loot.metall.toLocaleString('de-DE')} Metall, ${loot.kristall.toLocaleString('de-DE')} Kristall, ${loot.deuterium.toLocaleString('de-DE')} Deuterium.`;
+  } else if (anyNpcDestroyed && stillRecovering) {
+    lootText = ' Die Basis war bereits ausgeplündert - keine Beute.';
   }
+
+  // Erholungszeit setzen, sobald ueberhaupt gekaempft wurde (auch bei einem abgewehrten Angriff -
+  // sonst waere ein aussichtsloser Wegwerf-Angriff das Mittel, um die Pause NICHT auszuloesen und
+  // gleich danach mit der grossen Flotte nachzusetzen).
+  if (npcIds.length > 0) base.recoveringUntil = now + PIRATE_BASE_RECOVERY_MS;
 
   savePirateBase(base);
 
   const outcome = npcIds.length === 0 ? 'Basis leer vorgefunden' : anyNpcDestroyed ? 'Angriff erfolgreich' : 'Angriff abgewehrt - keine Verluste beim Gegner';
-  const messageText = `Angriff auf Piratenbasis ${deployment.targetSystem}:${deployment.targetPosition}: ${outcome}.${lootText}`;
+  // Die tatsaechlich gewuerfelte Feindstaerke gehoert in den Bericht - genau die Luecke, die am
+  // 05.08.2026 bei den Solo-Sektoren aufgefallen ist ("Normale Welle" fuer jeden Check, egal was
+  // gewuerfelt wurde). `Bereitschaft` erklaert zusaetzlich, warum eine frisch ausgeplünderte Basis
+  // schwaecher antritt als dieselbe Basis eine Woche spaeter.
+  const waveText =
+    npcIds.length === 0
+      ? ''
+      : ` Feindstärke ${Math.round(garrison.multiplier * 100)}% deiner Flotte, Garnisons-Bereitschaft ${Math.round(garrison.readiness * 100)}%.`;
+  const messageText = `Angriff auf Piratenbasis ${deployment.targetSystem}:${deployment.targetPosition}: ${outcome}.${waveText}${lootText}`;
   const detail: CombatDetail = {
     sektorName: `Piratenbasis ${deployment.targetSystem}:${deployment.targetPosition}`,
     outcome,
