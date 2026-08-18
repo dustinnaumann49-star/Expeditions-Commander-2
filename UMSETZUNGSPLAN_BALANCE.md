@@ -1171,13 +1171,20 @@ ungesicherte Beute.
 > **Folge: die Praemie fuer das Boss-Risiko muss vollstaendig ueber 4.6 kommen, nicht ueber die
 > Beute je Punkt Feindmacht.**
 
-**4.6 Sieg-Bonus:** `ADMIRAL_VICTORY_BONUS` (fester Betrag) -> **Faktor 1,5** auf die angesammelte
-Beute. `ADMIRAL_VICTORY_DM` bleibt bei **200**.
+**4.6 Sieg-Bonus:** `ADMIRAL_VICTORY_BONUS` (fester Betrag) -> ~~**Faktor 1,5**~~ **Faktor 2,0** auf
+die angesammelte Beute. `ADMIRAL_VICTORY_DM` bleibt bei **200**.
+**BESTAETIGT UND GESCHLOSSEN 18.08.2026** (Nutzerentscheidung, kein Messbedarf): der Vorschlag 2,0x
+aus dem Kasten unten gilt. Damit ist Block B bis auf 4.8 (Cooldown) inhaltlich entschieden; gebaut
+ist von 4.x weiterhin nichts, `ADMIRAL_VICTORY_BONUS` steht im Code unveraendert als fester Betrag.
 
 **4.7 Niederlage entschaerfen:** Heute verfaellt bei `defeat` die Beute ALLER bereits ueberstandenen
 Checks - zusammen mit durchschnittlich 62 % Flottenverlust eine doppelte Bestrafung.
 -> Bei Niederlage **50 %** der angesammelten Beute auszahlen statt 0. Die Extraktions-Entscheidung
 bleibt sinnvoll, weil Weitermachen die Haelfte riskiert.
+**BESTAETIGT UND GESCHLOSSEN 18.08.2026** (Nutzerentscheidung, kein Messbedarf): 50 % **auf die bis
+zum letzten UEBERSTANDENEN Check gesicherte Beute**, nicht auf die des verlorenen Checks - sonst
+zahlt der Niederlage-Pfad bei hoher Check-Tiefe mehr als ein frueher Sieg. Die Deckelung ist Teil
+der Entscheidung, nicht eine Umsetzungsfrage.
 
 > **SCHRITT 5 - GERECHNET AM 16.08.2026. Faktor 1,5 traegt die Praemie nicht.** Erwartungswert je
 > Durchlauf (Beute nach der Kurve, Sieg-Bonus nur auf die Sieg-Faelle, 50 % auf die uebrigen,
@@ -1375,7 +1382,72 @@ dieselbe Schranke, die oben ohnehin gegen Dauer-Farming gefordert ist.
 jedem Laden einen kompletten Bau-Entscheidungsschritt aus, und die Basen werden bei jedem Aufruf der
 Galaxie-Ansicht geladen. Die Wachstumsrate einer Basis haengt damit an der Anzahl der Client-Aufrufe
 und ist nicht reproduzierbar. Solange das so ist, misst man an den Basen Rauschen. Siehe
-Entscheidung 13.3.
+Entscheidung 13.3. **ERLEDIGT 17.08.2026** (Block C, Schritt 6) - der Messblocker ist weg.
+
+---
+
+**UMGESETZT UND GEGENGEMESSEN AM 18.08.2026 (Block C, Schritt 7). GESCHLOSSEN.**
+Messprotokoll: `balance/session2-simulation/pirate_base.txt`, Abschnitte 1-6 unter der Ueberschrift
+"ENTSCHEIDUNG 5 UMGESETZT". Messskript `run_pirate_base.mjs` (neu geschrieben, siehe unten).
+
+**Was gebaut wurde:**
+
+| Teil | Umsetzung | Wert |
+|---|---|---|
+| Garnison skaliert mit | `rollPirateBaseGarrison()` in neuem `game/pirateBaseCombat.ts`, 50/30/20-Wurf wie die Sektoren | `PIRATE_BASE_MULTIPLIER_ROLL` = [1,15 / 1,45 / 1,70-1,90] |
+| Anlagen-Anteil | eigener Faktor, getrennt skaliert wie in `missions.ts` | `PIRATE_BASE_DEFENSE_FACTOR` = 0,16 (Hoch 0,15, Elite 0,18) |
+| Boden weg (5a) | Floor-Up in `loadPirateBase()` ersatzlos gestrichen, Migration hebt nicht mehr an | - |
+| Erholungszeit | Pruefung beim Absenden UND bei Ankunft | `PIRATE_BASE_RECOVERY_MS` = 20 h |
+| Wiederaufbau (5a) | zeitbasiert bis zum Grundbestand, `regenerateGarrison()` | `PIRATE_BASE_REGEN_MS` = 3 Tage |
+| Attritions-Deckel | hoechster Bestandsverlust je Angriff | `PIRATE_BASE_MAX_ATTRITION` = 0,35 |
+| Beute aus vernichteter Garnison | `pirateBaseLoot()`, Kurve aus Entscheidung 2 | Anker 1,05 Mrd bei 11,18 Mrd, Exponent 0,85 |
+
+**Die geforderte Neuberechnung von `RESOURCE_CAP` ist ersatzlos entfallen, nicht erledigt.** Die
+Konstante heisst seit dem 12.08.2026 `LOOT_BASIS_CAP` und wirkte nur noch auf die Beute - und die
+haengt jetzt an der vernichteten Garnison. `LOOT_BASIS_CAP` und `PIRATE_BASE_LOOT_PERCENT` sind
+damit gestrichen. Der Punkt oben zielte ins Leere; die Angabe "3 Wochen" im alten Kommentar rechnete
+ausserdem noch mit `NPC_PRODUCTION_BONUS_MULTIPLIER = 1,5` statt der heutigen 6 (real 6,5 Tage).
+
+**Drei Befunde, die ueber diese Entscheidung hinaus gelten:**
+
+1. **Gleiche Multiplikator-Zahl heisst NICHT gleiche Schwierigkeit.** Die ausgelieferte Tabelle liegt
+   nominal ueber der des Elite-Bollwerks [0,90/1,20/1,55] und erzeugt trotzdem weniger Verlust
+   (2,9 % gegen 4,4 % je Check). Alle drei zuerst geplanten Kandidaten (A 1,0 % / B 1,6 % / C 2,0 %
+   bei der realen Flotte) lagen UNTER dem Abnahmeband von 2,1-4,4 %; erst der nachgezogene Kandidat D
+   trifft es. Ursachen: fodder-lastiger Grundbestand statt der Wellenprofile aus `pickWaveProfile()`,
+   kein Piratenkapitaen, keine Kampf-Modifikatoren, Einzelkampf statt sechs Checks in Folge. **Wer
+   diese Tabelle spaeter anfasst, muss neu messen und darf nicht aus der Zahl schliessen.**
+2. **Die Forschungsangleichung war der eigentliche Hebel, nicht die Stueckzahl.**
+   `sideBStatsOverride` umgeht `getEffectiveStats()`/`computePirateResearch()` - die Basis kaempfte
+   mit ihrer EIGENEN Forschung (frische Basis: Stufe 0), waehrend jeder Sektor-Pirat ueber
+   `PIRATE_RESEARCH_SHARE = 1,0` den vollen Stand des Angreifers bekommt. Ohne den Angleich
+   (`garrisonResearch()`, elementweises Maximum) waere dieselbe Zahl an der Basis ein deutlich
+   schwaecherer Gegner als im Sektor. **Dritte Fundstelle desselben Musters** nach Entscheidung 4.3
+   (Boss ohne Forschungsskalierung) - `sideBStatsOverride` ist der gemeinsame Nenner. Bei jeder
+   kuenftigen Nutzung dieses Parameters zuerst pruefen, welcher Forschungsstand dort eigentlich
+   hineingehoert.
+3. **Der Ausbaustand schlaegt staerker durch als die Tabelle.** Dieselbe kleine Flotte verliert mit
+   voller Forschung 4,2 %, mit schwacher 56,9 %. Weil die Garnison mindestens auf dem
+   Forschungsstand des Angreifers kaempft, liegt der Vorsprung eines entwickelten Spielers allein in
+   Klasse, Modulen und Booster - die ein Anfaenger nicht hat. Piratenbasen bleiben Inhalt fuer
+   entwickelte Flotten. **Offener Hebel, falls das anders gewollt ist:** nicht die Tabelle, sondern
+   ein Forschungsanteil der Garnison unter 1,0.
+
+**Ertragsseite:** ein Angriff der realen Flotte bringt netto rund 1,60 Mrd; vier Basen bei 20 h
+Erholung ergeben 5,9-6,4 Mrd/Tag, also rund 8 % der Baseline (76,85 Mrd) - zwischen Solo Hoch
+(-3,26 Mrd/Tag) und Elite-Bollwerk (+23,4 Mrd je Serie), wie gefordert.
+
+**Beim Bauen aufgefallen, beide Male stille Fehler:**
+- Ohne Attritions-Deckel loeschte EIN Angriff der realen Flotte die komplette Garnison (Welle zu
+  100 % vernichtet = 100 % Verlustanteil auf den Bestand). Die Basis waere danach rechnerisch
+  Monate lang wertlos gewesen - das tote Feature waere nicht beseitigt, sondern um vier Angriffe
+  verschoben worden. Erst der Deckel plus der Wiederaufbau aus 5a ergibt ein Gleichgewicht
+  (taegliches Abfarmen pendelt sich bei rund 83 % Gefechtsbereitschaft und -14 % Beute ein).
+- `bot.ts` verglich die eigene Angriffsflotte gegen den BESTAND einer Basis mal
+  `ATTACK_POWER_SAFETY_MARGIN`. Mit der mitskalierenden Garnison haetten Bots nie wieder eine Basis
+  angegriffen. Ersetzt durch Erholungszeit- und Bereitschaftspruefung (Messregel 8 hat das gefunden).
+
+---
 
 ---
 
@@ -3389,6 +3461,12 @@ BLOCK A (zusammen messen, hier haengt alles dran)
                        Messreihen neu laufen lassen (run_elite, run_raid, run_real_fleet);
                        run_aggregate_threshold und run_sectors sind bereits neu
   2. Entscheidung 2   Beute-Exponent 0,85 + Wrack-Bergung 30 %
+                       -> ACHTUNG (18.08.2026): die ENTSCHEIDUNG ist geschlossen, der CODE nicht.
+                          Weder Exponent noch Bergung stehen in missions.ts/groupOps.ts;
+                          fleetSizeRewardMultiplier() laeuft dort unveraendert weiter. Die Kurve
+                          existiert seit Entscheidung 5 als lootValueFromDestroyedPower-Konstanten
+                          in data/economy.ts und wird nur von den Piratenbasen benutzt. Wer
+                          Schritt 2 baut, benutzt DIESE Konstanten, nicht eine zweite Kurve.
   3. Entscheidung 3   Raid-Ertrag: Variante 6, GESCHLOSSEN 15.08.2026
   3a. Niveau-Punkt   Abschnitt 7, GESCHLOSSEN 15.08.2026 - Einnahmen-Niveau bleibt, Kennzahl
                        umgestellt, Engpass vollstaendig ueber Entscheidung 9 (Messkasten dort)
@@ -3408,9 +3486,16 @@ BLOCK B (Piratenadmiral, in sich sequenziell)
                           Gegnerstaerke selbst, Kippbereich 2x bis 4x.
 
 BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
-  6. Entscheidung 13.3 Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit entkoppeln
-                       -> Voraussetzung fuer JEDE reproduzierbare Messung an Entscheidung 5
-  7. Entscheidung 5   Piratenbasen (+ Schranke gegen Dauer-Farming! + SEED_FLEET-Boden, 5a)
+  6. Entscheidung 13.3 ERLEDIGT am 17.08.2026 - Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit
+                       entkoppelt, Messblocker aus 5b damit weg
+  7. Entscheidung 5   ERLEDIGT am 18.08.2026 - Garnison skaliert mit (Tabelle
+                       [1,15/1,45/1,70-1,90]), SEED_FLEET-Boden gestrichen (5a), Schranke gegen
+                       Dauer-Farming zweiteilig (Erholungszeit 20 h + Attritions-Deckel 0,35 mit
+                       Wiederaufbau ueber 3 Tage), Beute aus der vernichteten Garnison.
+                       Messkasten am Kopf von Entscheidung 5, Protokoll in pirate_base.txt.
+                       -> OFFEN GEBLIEBEN: die Beute-Kurve aus Entscheidung 2 ist damit erstmals
+                          im Spielcode, aber NUR fuer die Piratenbasen. Schritt 2 (missions.ts,
+                          groupOps.ts) ist weiterhin nicht gebaut, siehe dort.
   8. Entscheidung 6   Schiffs-Tiers
   9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
                        vorgezogen erledigt, siehe Abschnitt 2a)
@@ -3540,6 +3625,44 @@ korrigierbar, diese beiden nicht ohne einen zweiten Reset.
 ---
 
 ## 7. Nach der Umsetzung neu zu bestimmen
+
+- **NEU 18.08.2026 (Nutzerbeobachtung): Warum sollte man das Elite-Bollwerk ueberhaupt GEMEINSAM
+  fliegen?** Meldung des Nutzers aus dem Livebetrieb: "man kann solo wie gemeinsam fliegen, die
+  Belohnung bleibt gleich, die Spieler sehen keinen Zweck darin, gemeinsam zu fliegen, ausser dass
+  die Verluste erhoeht sind."
+
+  **Am Code nachvollzogen, die Beobachtung traegt.** `runGroupHourlyCheck()` bildet
+  `totalSentPower` als SUMME aller Teilnehmerflotten und setzt `targetPower = totalSentPower x
+  Wurf` - zwei Spieler bekommen also den doppelt so starken Gegner. Die Belohnungen
+  (`lootBase`, `winResources`, garantierte Container, Teile, Kapitaen) gehen dagegen JEDEM
+  Teilnehmer voll zu, unabhaengig von der Teilnehmerzahl (README-Punkt 5, im Plan bekraeftigt bei
+  Entscheidung 3: "Gemeinsame Expeditionen behalten die volle Belohnung je Teilnehmer"). Rechnerisch
+  ist gemeinsames Fliegen damit NEUTRAL, nicht besser: gleiche Belohnung, proportional gleich
+  starker Gegner. Der Grossflotten-Bonus wuerde zwar mit der Summe wachsen, ist aber bei
+  `FLEET_SIZE_BONUS_CAP = 0,5` gedeckelt und laut `elite.txt` schon bei 5,44 Mrd Power am Anschlag -
+  bei den heutigen Flotten also auch solo. Dazu kommt ein echter Nachteil: die Rendezvous-Pflicht
+  kostet den Mitflieger zusaetzliche Flugzeit und Treibstoff.
+
+  Eine Ausnahme ist gemessen: die Piraten bekommen den DURCHSCHNITT der Forschung aller Teilnehmer
+  (`computePirateResearch`). Mit ungleich entwickelten Spielern wird der Gegner dadurch schwaecher -
+  `elite.txt`, 40 Laeufe: "2x voll" 3,3 %/3,3 % Verlust, "voll + schwach" 0,5 %/1,5 %. Zwischen zwei
+  gleich weit entwickelten Spielern bringt das nichts.
+
+  **Nicht gemessen ist der eigentliche Vergleich:** dieselbe Flotte solo gegen zu zweit. `elite.txt`
+  enthaelt nur Mehrspieler-Konstellationen. Ob der Eindruck "Verluste sind hoeher" ueber die
+  Neutralitaet hinausgeht, ist damit offen; ein Kandidat waere R15 (aggregierte Stapel verlieren
+  mehr), weil die gemeinsame Flotte tiefer im Aggregat-Pfad liegt. Der Vergleich ist mit
+  `run_elite.mjs` billig zu haben und sollte vor jeder Entscheidung stehen.
+
+  **Vier Hebel, wenn ein Anreiz gewollt ist:** (1) fremde Flottenmacht unterproportional in
+  `totalSentPower` rechnen - Gegenstueck zu `RAID_ALLY_POWER_WEIGHT`, das beim Raid bewusst auf 1,0
+  steht; (2) Belohnungsaufschlag je zusaetzlichem Teilnehmer; (3) Rendezvous-Kosten senken oder
+  erlassen; (4) Start erst ab zwei Teilnehmern erlauben - Zwang statt Anreiz, schlechteste Variante,
+  weil der Inhalt damit fuer den ausfaellt, der allein spielt. **Hebel 1 ist der guenstigste**, weil
+  er nur die Verlustseite bewegt; **Hebel 2 der teuerste**, weil das Elite-Bollwerk im spaeten
+  Ausbaustand bereits 74 % aller Einnahmen stellt und jede Erhoehung dort ein ohnehin verletztes
+  Abnahmekriterium weiter verschiebt. Gehoert neben Entscheidung 3 entschieden (dort steht die
+  gleiche Frage fuer die Raid-Belohnung), nicht nebenbei in einem Umsetzungsschritt.
 
 - **NIVEAU der Einnahmen festlegen, nicht nur die Neigung** - **GESCHLOSSEN am 15.08.2026.**
   Messung: `run_income_level.mjs` / `income_level.txt`, 40 Durchlaeufe je Kampfzelle.
@@ -3995,6 +4118,9 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 18.08.2026 | **Block C, Schritt 7 erledigt: Entscheidung 5 umgesetzt und gegengemessen (Piratenbasen).** Neue Datei `game/pirateBaseCombat.ts` (reiner Rechenteil, bewusst OHNE Datenbank-Bezug, damit Messskripte ihn importieren koennen), neue Konstanten in `data/economy.ts` (`PIRATE_BASE_MULTIPLIER_ROLL` [1,15/1,45/1,70-1,90], `PIRATE_BASE_DEFENSE_FACTOR` 0,16, `PIRATE_BASE_RECOVERY_MS` 20 h, `PIRATE_BASE_MAX_ATTRITION` 0,35, `PIRATE_BASE_REGEN_MS` 3 Tage, Beute-Kurve `LOOT_CURVE_*`), Seed-Konstanten aus `pirateBaseState.ts` dorthin verschoben. `LOOT_BASIS_CAP` und `PIRATE_BASE_LOOT_PERCENT` ersatzlos gestrichen. Messskript `run_pirate_base.mjs` neu geschrieben, Protokoll in `pirate_base.txt` (Abschnitte 1-6), 40 Laeufe je Zelle. **Vier Befunde, drei davon ueber diese Entscheidung hinaus.** (1) **Alle drei geplanten Kandidaten lagen UNTER dem Abnahmeband** (2,1-4,4 % Wertverlust je Angriff, aus Solo Hoch bzw. Elite je Check): A 1,0 %, B 1,6 %, C 2,0 % bei der realen Flotte. Erst der nachgezogene Kandidat D trifft mit 2,9 %. Die noetige Tabelle liegt damit NOMINAL ueber der des Elite-Bollwerks und erzeugt trotzdem weniger Verlust - Ursachen: fodder-lastiger Grundbestand statt der Wellenprofile aus `pickWaveProfile()`, kein Piratenkapitaen, keine Kampf-Modifikatoren, Einzelkampf statt sechs Checks in Folge. **Gleiche Zahl heisst hier nicht gleiche Schwierigkeit.** (2) **Der eigentliche Hebel war die Forschung, nicht die Stueckzahl:** `sideBStatsOverride` umgeht `computePirateResearch()`, die Basis kaempfte mit ihrer EIGENEN Forschung (frisch: Stufe 0), waehrend jeder Sektor-Pirat ueber `PIRATE_RESEARCH_SHARE = 1,0` den vollen Stand des Angreifers bekommt - dritte Fundstelle desselben Musters nach Entscheidung 4.3. Behoben ueber `garrisonResearch()` (elementweises Maximum). (3) **Ohne Attritions-Deckel loeschte EIN Angriff der realen Flotte die komplette Garnison** (Welle zu 100 % vernichtet = 100 % Verlustanteil auf den Bestand); die Basis waere danach rechnerisch Monate wertlos gewesen - das tote Feature waere nur um vier Angriffe verschoben worden. Erst Deckel 0,35 plus der Wiederaufbau aus 5a ergibt ein Gleichgewicht: taegliches Abfarmen pendelt sich bei 83 % Gefechtsbereitschaft und -14 % Beute ein. (4) **Der Ausbaustand schlaegt staerker durch als die Tabelle:** dieselbe kleine Flotte verliert mit voller Forschung 4,2 %, mit schwacher 56,9 % - Piratenbasen bleiben Inhalt fuer entwickelte Flotten; der Hebel dagegen waere ein Forschungsanteil unter 1,0, nicht die Tabelle. **Ertrag:** 1,60 Mrd netto je Angriff, 5,9-6,4 Mrd/Tag bei vier Basen, rund 8 % der Baseline - zwischen Solo Hoch (-3,26/Tag) und Elite (+23,4 je Serie), wie gefordert. **Messregel 8 erfuellt:** im Client gegreppt (`Galaxie.tsx`, `types/game.ts`, `Debug.tsx` angepasst - der bisherige "Machtwert" liess den falschen Schluss auf die Schwierigkeit zu) und im Server ein stiller Ausfall gefunden: `bot.ts` verglich die eigene Flotte gegen den BESTAND einer Basis mal `ATTACK_POWER_SAFETY_MARGIN`, Bots haetten nie wieder eine Basis angegriffen. **Zwei Planpunkte als veraltet bestaetigt:** die geforderte Neuberechnung von `RESOURCE_CAP` zielte ins Leere (heisst seit 12.08.2026 `LOOT_BASIS_CAP`, wirkte nur noch auf die Beute, faellt jetzt ganz weg), und der Baseline-Bezug "0,3 %" in der Begruendung rechnete noch gegen die alte 21,69 Mrd. **Offen geblieben und ausdruecklich vermerkt:** die Beute-Kurve aus Entscheidung 2 steht damit erstmals im Spielcode, aber NUR fuer die Piratenbasen - Block A, Schritt 2 (missions.ts/groupOps.ts, plus Wrack-Bergung 30 %) ist weiterhin nicht gebaut, obwohl Block A als vollstaendig gilt. |
+| 18.08.2026 | **Entscheidung 4.6 und 4.7 bestaetigt und geschlossen** (Nutzerentscheidung, kein Messbedarf): Sieg-Bonus **2,0x** statt 1,5x, und die 50 % bei Niederlage gelten auf die bis zum letzten UEBERSTANDENEN Check gesicherte Beute. Damit ist von Block B nur noch 4.8 (Cooldown) offen; gebaut ist von 4.x weiterhin nichts. |
+| 18.08.2026 | **Neuer offener Punkt in Abschnitt 7 (Nutzerbeobachtung): kein Anreiz, das Elite-Bollwerk gemeinsam zu fliegen.** Die Feindstaerke skaliert mit der SUMME aller Teilnehmerflotten, die Belohnung geht jedem voll zu - gemeinsames Fliegen ist damit rechnerisch neutral, plus Rendezvous-Kosten fuer den Mitflieger. Einzige gemessene Ausnahme: die Piraten erben den DURCHSCHNITT der Forschung, ungleiche Paare kaempfen deshalb leichter (elite.txt: 3,3 % gegen 0,5/1,5 %). Der eigentliche Vergleich (dieselbe Flotte solo gegen zu zweit) ist NIE gemessen worden. Vier Hebel notiert, Entscheidung bewusst nach hinten gestellt - gehoert neben Entscheidung 3, weil das Elite-Bollwerk 74 % der spaeten Einnahmen stellt. |
 | 17.08.2026 | **Entscheidung 4.3 nach R14 neu bestimmt und GESCHLOSSEN: Faktor 1,6x** (plus Boss-Forschungsskalierung, Deckel 100, `ADMIRAL_STAT_SHARE` unveraendert 0,55). Gemessen mit `run_admiral_bossscale.mjs`, Modus `forschung`, Messbuild V1 aus `make_messbuild_44.mjs`, 40 Serien je Zelle, scheibenweise nach `admiral_bossscale_44.txt`. Vollstaendig im Messkasten bei 4.3. **Gemessene Zellen:** `mittel/real` 1,6x -> Tiefe 3,80 / 0,0 % Sieg / 35,0 % Verlust, `schwach/real` 1,6x -> 1,57 / 0,0 % / 52,2 %. **Ueber den Auftrag hinaus zusaetzlich erhoben, weil die Entscheidung sonst nicht belastbar gewesen waere:** zwei Vergleichszellen bei 1,5x (`mittel` 4,22 / 0,0 % / 36,3 %; `schwach` 1,63 / 0,0 % / 40,1 %) und ein zweiter unabhaengiger Lauf der Kandidatenzelle `voll/real` 1,6x (2,70 / 45,0 % / 23,1 % gegen 2,85 / 40,0 % / 23,2 % im ersten Lauf). **Vier Befunde.** (1) **Die Streuung ist jetzt bestimmt und kleiner als der Entscheidungsabstand:** rund 5 Prozentpunkte Siegquote zwischen zwei Laeufen derselben Zelle, gegen 12,5-17,5 Punkte Abstand zwischen 1,5x und 1,6x. Die Wahl ist damit nicht rauschgetrieben - das war nach den 3,63/3,83-Doppelmessungen vom 16./17.08. ausdruecklich zu pruefen. (2) **Fuer `mittel` ist der Faktor gar kein Hebel mehr:** 1,5x und 1,6x sind praktisch ununterscheidbar (beide 0 % Sieg, 36,3 gegen 35,0 % Verlust), nur die Tiefe bewegt sich - und zwar NACH UNTEN bei hoeherem Faktor (4,22 -> 3,80). Die Nicht-Monotonie aus Schritt 5 ist damit ein zweites Mal bestaetigt, diesmal innerhalb eines einzigen Profils. Was `mittel` entscheidet, ist R14, nicht 4.3. (3) **`schwach` ist der einzige Ausbaustand, den die Wahl spuerbar trifft, und zwar zum Schlechteren:** 40,1 % Verlust bei 1,5x gegen 52,2 % bei 1,6x, damit im Saettigungsband 48-55 %. Ausdruecklicher Nachteil, in Kauf genommen, weil `schwach` am 16.08.2026 bewusst abgeschrieben wurde. (4) **Die Check-Tiefe allein ist als Abnahmemass endgueltig unbrauchbar:** `mittel` liegt bei 1,6x mit 3,80 IM Zielband 3-5, ohne einen einzigen Sieg. Kuenftige Kalibrierungen an P10 muessen Tiefe UND Ausgangsverteilung gemeinsam lesen. **Entschieden wurde auf `voll`/real** - eine Setzung, keine Messung: P10 ist seit dem 16.08.2026 ausdruecklich Endspiel-Inhalt, und 1,6x trifft dort das zuvor akzeptierte Verhalten fast exakt (40,0-45,0 % Sieg gegen frueher 42,5 %, 23,1-23,2 % Verlust gegen 21,5 %). Das Zielband 3-5 wird bei `voll` von keinem Faktor mehr mit einer Siegquote erreicht - vorab akzeptiert, jetzt belegt. **Nicht angefasst:** `MAX_ROUNDS` 100, Schwelle 0,30, Entscheidung 4.4, Beute-Anker, Exponent 0,85, Baseline 0,80 / 19,82 / 76,85 Mrd. **Dokumentationsschuld beglichen:** `admiral_bossscale_44.txt` fuehrte die Nach-R14-Zeilen ohne Kennzeichnung unter der Ueberschrift der Vor-R14-Reihe, wodurch die Zelle `voll/real 1,75x` dreimal mit 37,5 / 42,5 / 0,0 % Sieg in derselben Datei stand; Trennmarke eingezogen, **keine Zahl geaendert**. |
 | 17.08.2026 | **Block C, Schritt 6 erledigt: Entscheidung 13.3 umgesetzt und gegengemessen.** Neues Feld `nextEconomyTurn` auf `PirateBaseState`, neue Konstanten `PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS` (2 Min., gleich `HEARTBEAT_INTERVAL_MS`) und `PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP` (30). Neue Skripte `make_messbuild_133.mjs` und `run_base_growth_133.mjs`, Ausgabe `base_growth_133.txt`; Messbuilds mit auf 1 s heruntergesetztem Intervall nach dem Verfahren von 4.4, Quellcode unberuehrt. **Abnahmekriterium aus Entscheidung 13 erfuellt:** bei rund 11.000-facher Aufruf-Zahl ueber dasselbe Zeitfenster liefen vorher x10.514-10.895 so viele Bau-Entscheidungsschritte, nachher x0,95-1,00. **Drei Befunde, die den Plan korrigieren.** (1) **Die Begruendung in 13.3 traegt so nicht - das WACHSTUM hing schon vorher nicht an den Aufrufen** (Ausgaben x0,94 bzw. x1,00 bereits im Vorher-Stand, in beiden Kapitalstaenden). Bei einer reichen Basis binden die Bau-Slots (Warteschlangen stehen nach wenigen Zuegen auf 11/11, eingereihte Auftraege laufen 12 min bis 12 h), bei einer frischen Basis bindet der Ressourcenstand (das Geld ist nach dem ersten Zug weg). Der Satz "eine Basis waechst schneller, je oefter jemand in die Galaxie schaut" ist in dieser Form NICHT bestaetigt. Was die Aenderung traegt, ist Punkt 5b (Reproduzierbarkeit - eine Groesse, die zwischen zwei Laeufen um Faktor 10.000 schwanken kann, ist als Messgrundlage unbrauchbar) und die Rechenlast, dieselbe Familie wie die Cross-User-Sweeps vom 12.08.2026. *Grenze ausdruecklich:* 20 Sekunden zeigen keinen Effekt, der ueber Stunden entsteht; gerechnet, nicht gemessen, steht ein frei gewordener Slot bei 2 Minuten Intervall hoechstens 2 Minuten leer, also wenige Prozent. Der Langzeit-Nachweis braucht die gefaelschte Uhr aus Abschnitt 1b und bleibt offen. (2) **Ein Zeitstempel allein genuegt nicht - er muss im RASTER weitergesetzt werden.** Die erste Fassung (`nextEconomyTurn = jetzt + Intervall`, kein Nachholen) mass x1,18 statt x1,00: ein Aufruf wenige Millisekunden vor der Faelligkeit laesst den Zug ausfallen, und produktiv waere genau das der Regelfall, weil der Heartbeat denselben 2-Minuten-Takt hat. Ausgeliefert ist `+= Intervall` je faelligem Zug mit gedeckeltem Nachholen. (3) **Zweiter Fundort derselben Fehlerform, im Plan nicht erwaehnt:** `GET /api/heartbeat` laeuft bewusst ohne `requireAuth`, und weil `runBotTurn()` einmal je Heartbeat einen vollstaendigen Bau-Entscheidungsschritt jedes Bots ausfuehrt, liess sich damit das BOT-Wachstum durch wiederholte Aufrufe beliebig beschleunigen. Behoben ueber `HEARTBEAT_MIN_INTERVAL_MS` (60 s); der Endpunkt meldet innerhalb des Fensters `skipped`. *Nachteil:* ein manueller Testaufruf wirkt dort nicht mehr sofort. **Zwei Fehlversuche am Messwerkzeug, bewusst protokolliert, beide sahen wie ein Befund aus:** der erste Aufbau mass Einheiten statt Zuege ("x0,94, also kein Defekt" - gemessen wurde das Slot-Limit), und der Zaehler stand zunaechst hinter einer kompilierten `for`-Schleife OHNE geschweifte Klammern und zaehlte dadurch Ladevorgaenge statt Zuege ("x10.082, Drosselung wirkungslos"). Dieselbe Lehre wie bei der verworfenen Wirtschaftssimulation vom 12.08.2026: ein Messwerkzeug ist erst dann Beweismittel, wenn es an einem bekannten Zustand gegengeprueft wurde. **Messregel 8 erfuellt:** im Client gegreppt, ein Spiegel gefunden (`DebugPirateBaseState` in `client/src/types/game.ts` bildet `PirateBaseState` nach) - Feld dort und in der Debug-Route ergaenzt, `pages/Debug.tsx` zeigt jetzt den naechsten faelligen Bau-Zug an, damit die Drosselung im Betrieb pruefbar ist. **README nachgezogen**, dabei eine dort noch stehende veraltete Aussage korrigiert (`RESOURCE_CAP` begrenze das Ressourcen-Wachstum - der Deckel heisst seit dem 12.08.2026 `LOOT_BASIS_CAP` und wirkt nur noch auf die Beute). |
 | 17.08.2026 | **R14 repariert, gegengemessen und ausgeliefert - plus R14b (Durchschlag) auf Nutzerentscheidung, plus neuer Punkt R15.** Geaendert wurde ausschliesslich `fireShotsAggregateShooters()` in `server/src/game/combat.ts`; die Aggregationsschwellen sind unberuehrt geblieben, die Aggregation selbst bleibt vollstaendig erhalten (sie war nie das Problem, nur die RapidFire-Naeherung darin). Vollstaendige Einzelheiten im Messkasten **R14 - REPARATUR** unter der Reparaturtabelle in Abschnitt 3. **Abnahmetest 1 bestanden** (`rapidfire_aggregat.txt`): aggregierte Schuetzen erreichen die Schusszahlen des Einzel-Pfads (Kreuzer 0,97 -> 2,66 gegen 2,58; Schlachtschiff 1,04 -> 3,33 gegen 3,31), `rapidFireTriggers` ueberall groesser 0 statt exakt 0. **Abnahmetest 3 bestanden** (`r14_perf.txt`, neues Skript `run_r14_perf.mjs`): 20.700 Schiffe kosten 10 statt 14 ms je Kampf, weil die Kaempfe nur noch halb so viele Runden dauern; ein Skalierungstest mit **207.000 Schiffen** landet beim praktisch selben Wert - die Rechenzeit haengt weiterhin an der Typenzahl, nicht an der Stueckzahl. **Abnahmetest 2 nur teilweise** (`r14_delta.txt`): die Rundenzahl faellt mit der Referenz zusammen, die Verlustquote nicht. Die Ursache ist diagnostiziert und liegt NICHT im Schuetzen-Pfad - eine Kontrollzelle ohne Aggregation UND ohne Explosionsmechanik reproduziert die Rundenzahl des Aggregat-Pfads exakt. Daraus **R15**: Aggregat-Stapel koennen nicht explodieren, und ein Stapel als HP-Topf rechnet jeden Schadenspunkt sofort anteilig in tote Einheiten um, waehrend einzelne Schiffe beschaedigt ueberleben und ihren Schild zwischen den Runden voll regenerieren. **R14b** war ein Fund bei der Umsetzung: Aggregat-Schuetzen bekamen hart `overkillFraction = 0`, obwohl `fireShots()` den echten `getDurchschlagFraction()` durchreicht - der Kommentar begruendete das mit dem Individual-Zweig innerhalb derselben Funktion, der selbst 0 uebergab (zirkulaer). Gemessen bewegt R14b das Ergebnis in Richtung Referenz (9,6 -> 8,7 Runden bei `piraten_mittel`), erklaert den Rest aber nicht. **Messregel 8 vorab erfuellt:** im Client gegreppt, `combatInfo.ts` liest die RF-Tabelle ueber `gameData.rapidfire` vom Server, keine zweite hartkodierte Zahl - keine Client-Aenderung noetig. **Neu erhoben, weil die Verlust-Seite sich verschiebt:** Elite-Serie praktisch unveraendert (3,2 -> 3,3 % Verlust), Raid Flottenverlust 10,1 -> 13,3 % und **Verteidigungsverlust 0,1 -> 22,5 %**, reale Flotte Solo Hoch netto +0,11 -> **-2,97 Mrd/Tag** und Elite netto 28,32 -> 21,65 Mrd (Achtung: der alte Stand hatte nur 5 Durchlaeufe, also unter Messregel 2 - ein Teil der Differenz ist Messqualitaet). **Die Zahl mit dem groessten Risiko ist gerissen:** Admiral-Zelle `voll/real` bei 1,75x, Modus `forschung`, Messbuild V1 - Tiefe 3,85 sieht weiter nach Zielband aus, aber die Siegquote faellt von 42,5 auf **0,0 %** und der Verlust steigt von 21,5 auf 36,6 %; die Serie endet jetzt IMMER am Verlustkriterium statt am Kampfausgang. Sweep dazu: 1,25x -> Tiefe 1,43 / 95 % Sieg, 1,5x -> 2,70 / 57,5 %, **1,6x -> 2,85 / 40,0 % Sieg / 23,2 % Verlust**. 1,6x kommt dem alten Verhalten bei 1,75x am naechsten und ist der Kandidat; festschreiben erst nach der vollen Serie ueber `mittel` und `schwach`. |

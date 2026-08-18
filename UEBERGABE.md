@@ -1,4 +1,4 @@
-# Uebergabe - Stand 17.08.2026 (zweite Fassung des Tages)
+# Uebergabe - Stand 18.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -32,6 +32,15 @@ das passt nicht gleichzeitig in eine Session.
 - **BLOCK C, SCHRITT 6 IST ERLEDIGT: Entscheidung 13.3** (Bot- und Basis-Wachstum von der
   Aufruf-Haeufigkeit entkoppelt). Damit ist der Messblocker aus Punkt 5b weg - Messungen an den
   Piratenbasen sind ab jetzt reproduzierbar. Einzelheiten unten.
+- **BLOCK C, SCHRITT 7 IST ERLEDIGT: Entscheidung 5** (18.08.2026, Piratenbasen). Garnison skaliert
+  mit der angreifenden Flotte, `SEED_FLEET`-Boden gestrichen (5a), Schranke gegen Dauer-Farming
+  zweiteilig (Erholungszeit 20 h begrenzt die Haeufigkeit, Attritions-Deckel 0,35 plus Wiederaufbau
+  ueber 3 Tage begrenzen den Ertrag), Beute aus der vernichteten Garnison. Naechster Schritt in
+  Block C ist 8 (Entscheidung 6, Schiffs-Tiers) - die Schritte 8 bis 12 sind voneinander
+  unabhaengig.
+- **4.6 UND 4.7 SIND GESCHLOSSEN** (18.08.2026, ohne Messung bestaetigt): Sieg-Bonus **2,0x**,
+  Niederlage-Auszahlung 50 % **auf die bis zum letzten ueberstandenen Check gesicherte Beute**. Von
+  Block B ist damit nur noch 4.8 (Cooldown) offen.
 - **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
 - **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
@@ -63,6 +72,15 @@ das passt nicht gleichzeitig in eine Session.
   Piratenadmirals.
 - **Der Elite-Anteil an der Baseline ist 56,58 Mrd/Tag**, nicht 56,9. Der gerundete Wert steht an
   mehreren Stellen im Plan; massgeblich ist `income_level.txt`.
+- **ACHTUNG, ENTGEGEN DER OBIGEN ZEILE "BLOCK A IST VOLLSTAENDIG": Schritt 2 (Entscheidung 2) ist
+  ENTSCHIEDEN, aber NICHT GEBAUT** (gefunden am 18.08.2026 bei Entscheidung 5). Weder der
+  Beute-Exponent 0,85 noch die Wrack-Bergung 30 % stehen in `missions.ts`/`groupOps.ts`;
+  `fleetSizeRewardMultiplier()` laeuft dort unveraendert. "Vollstaendig" bezieht sich auf die
+  ENTSCHEIDUNGEN und MESSUNGEN, nicht auf den Code. Die Kurve existiert seit dem 18.08.2026 als
+  `LOOT_CURVE_*` in `data/economy.ts` und wird bisher nur von den Piratenbasen benutzt - wer
+  Schritt 2 baut, benutzt DIESE Konstanten und legt keine zweite Kurve an.
+- **Solo Hoch netto: massgeblich ist `real_fleet.txt` mit -3,26 (voll) / -3,40 (mittel) Mrd/Tag.**
+  Die frueher hier genannten -2,97 stammen aus einem aelteren Lauf.
 
 ## Was seit dem 10.08.2026 live gegangen ist
 
@@ -201,6 +219,22 @@ reproduzieren.** Am 12.08.2026 zeigte eine eigens gebaute Wirtschaftssimulation 
 zwischen kaputtem und repariertem Code und liess den Bot auf 2,5 Billionen Metall wachsen - drei
 Groessenordnungen ueber der Realitaet. Belegt wurde am Ende ueber den echten Datenbankzustand.
 
+**Eine Konstante, gegen die abgewogen wird, kann durch eine andere Aenderung bedeutungslos werden -
+ohne dass irgendetwas bricht.** `bot.ts` verglich die geplante Angriffsflotte gegen den BESTAND
+einer Piratenbasis mal `ATTACK_POWER_SAFETY_MARGIN`. Seit die Garnison mit dem Angreifer skaliert
+(18.08.2026), ist der Bestand nicht mehr die Gegnerstaerke - die Bedingung waere praktisch nie mehr
+erfuellt gewesen und Bots haetten nie wieder eine Basis angegriffen. Kein Fehler, keine Warnung, nur
+eine Funktion, die aufhoert zu wirken. **Bei jeder Aenderung an einer Gegnerstaerke pruefen, welche
+ABWAEGUNGEN sich auf die alte Groesse stuetzen.**
+
+**Eine Bremse gegen Dauer-Farming kann den Inhalt auch ganz toeten.** Beim ersten Bau von
+Entscheidung 5 loeschte EIN Angriff der realen Flotte die komplette Garnison einer Basis (die Welle
+war zu 100 % vernichtet, also traf der Verlustanteil 100 % auf jeden Einheitentyp). Rechnerisch
+waere die Basis Monate lang wertlos gewesen - aus "totes Feature" waere "totes Feature nach vier
+Angriffen" geworden. Aufgefallen ist es nur, weil die Serien-Messung ueber FUENF aufeinanderfolgende
+Angriffe lief statt ueber einen. **Wer eine Ressource abbaubar macht, misst nicht den ersten
+Abbau, sondern den fuenften.**
+
 **Coolify haelt nur die Ausgabe des aktuell laufenden Containers.** Bei jedem Redeploy ist das
 Protokoll weg. Logs VOR dem Deploy abrufen, sonst ist die Spur verloren.
 
@@ -210,16 +244,54 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block C weiterfuehren.** Schritt 6 (Entscheidung 13.3) ist am 17.08.2026 erledigt; als naechstes
-stehen die uebrigen Punkte aus Block C an, danach Entscheidung 5 (die 13.3 blockiert hatte - der
-Blocker ist jetzt weg).
+**Block C weiterfuehren.** Schritt 6 (13.3) und Schritt 7 (Entscheidung 5) sind erledigt. Als
+naechstes steht Schritt 8 an (Entscheidung 6, Schiffs-Tiers); die Schritte 8 bis 12 sind voneinander
+unabhaengig und koennen in beliebiger Reihenfolge laufen.
 
-Zwei kleine Dinge, die aus Schritt 5 uebrig bleiben und KEINE Messung brauchen, nur eine
-Bestaetigung: der Sieg-Bonus in 4.6 (Vorschlag 2,0x statt 1,5x) und die Deckelung in 4.7 auf die
-bis zum letzten UEBERSTANDENEN Check gesicherte Beute.
+**Zwei Dinge, die aufgeschoben, aber nicht vergessen sind:**
+
+- **Block A, Schritt 2 ist entschieden, aber nicht gebaut.** Der Beute-Exponent 0,85 und die
+  Wrack-Bergung 30 % stehen nicht in `missions.ts`/`groupOps.ts`. Die Kurve existiert seit
+  Entscheidung 5 als `LOOT_CURVE_*` in `data/economy.ts` - beim Nachbauen DIESE Konstanten benutzen,
+  keine zweite Kurve anlegen. Achtung: das verschiebt die Baseline und damit alle Zellen, die gegen
+  sie gerechnet sind.
+- **Kein Anreiz, das Elite-Bollwerk gemeinsam zu fliegen** (Nutzerbeobachtung 18.08.2026, jetzt in
+  Abschnitt 7 des Plans). Die Feindstaerke skaliert mit der SUMME aller Teilnehmerflotten, die
+  Belohnung geht jedem voll zu - gemeinsam fliegen ist damit neutral statt besser, und der
+  Mitflieger zahlt zusaetzlich Rendezvous-Flugzeit und Treibstoff. Vier Hebel stehen dort;
+  ungemessen ist ausgerechnet der naheliegendste Vergleich (dieselbe Flotte solo gegen zu zweit).
+  Gehoert neben Entscheidung 3 entschieden, nicht nebenbei.
 
 **R15 bleibt bewusst liegen** (siehe unten) - dokumentiert, nicht dringend, und ausdruecklich kein
 Anlass, die Aggregations-Grundsatzfrage neu zu stellen.
+
+## Was Entscheidung 5 am 18.08.2026 ergeben hat
+
+Vollstaendig im Messkasten am Kopf von Entscheidung 5 und in `pirate_base.txt`. Vier Punkte, die
+ueber die Entscheidung hinaus gelten:
+
+1. **Alle drei geplanten Kandidaten lagen unter dem Abnahmeband.** 2,1-4,4 % Wertverlust je Angriff
+   war das Ziel (Solo Hoch bzw. Elite, je Check); gemessen bei der realen Flotte: A 1,0 %, B 1,6 %,
+   C 2,0 %. Erst ein nachgezogener Kandidat D [1,15/1,45/1,70-1,90] trifft mit 2,9 %. **Die
+   ausgelieferte Tabelle liegt damit nominal ueber der des Elite-Bollwerks und erzeugt trotzdem
+   weniger Verlust** - fodder-lastiger Grundbestand statt Wellenprofil, kein Kapitaen, keine
+   Modifikatoren, Einzelkampf statt sechs Checks. Gleiche Zahl heisst nicht gleiche Schwierigkeit.
+2. **`sideBStatsOverride` ist die dritte Fundstelle desselben Musters** (nach 4.3): wo dieser
+   Parameter benutzt wird, laeuft die Forschungsskalierung aus `computePirateResearch()` NICHT mit.
+   Die Basis kaempfte mit ihrer eigenen Forschung, frisch also Stufe 0. Bei jeder kuenftigen
+   Nutzung zuerst pruefen, welcher Forschungsstand dort hineingehoert.
+3. **Der Ausbaustand schlaegt staerker durch als jede Tabelle.** Dieselbe kleine Flotte verliert mit
+   voller Forschung 4,2 %, mit schwacher 56,9 %. Weil die Garnison mindestens auf dem Stand des
+   Angreifers kaempft, liegt dessen Vorsprung allein in Klasse, Modulen und Booster. Piratenbasen
+   bleiben Inhalt fuer entwickelte Flotten; der Hebel dagegen waere ein Forschungsanteil unter 1,0,
+   nicht die Tabelle.
+4. **Zwei Planpunkte haben sich als veraltet bestaetigt:** die geforderte Neuberechnung von
+   `RESOURCE_CAP` zielte ins Leere (heisst seit 12.08.2026 `LOOT_BASIS_CAP`, wirkte nur noch auf die
+   Beute, faellt jetzt ganz weg), und der Baseline-Bezug "0,3 %" in der Begruendung rechnete gegen
+   die alte 21,69 Mrd.
+
+Ertrag zur Einordnung: 1,60 Mrd netto je Angriff, bei vier Basen und 20 h Erholung rund
+5,9-6,4 Mrd/Tag - etwa 8 % der Baseline, zwischen Solo Hoch (-3,26/Tag) und Elite (+23,4 je Serie).
 
 ## Was 4.3 am 17.08.2026 ergeben hat (zweite Fassung, nach R14)
 

@@ -74,6 +74,9 @@ server/
                                       "Halten", Raid-Verteidigungs-Einbindung, Basis verlegen
   src/game/galaxyPositions.ts        "Ist diese Galaxie-Position frei?" (Spieler/Basen/Sektoren)
   src/game/pirateBaseState.ts        Piratenbasen: Wachstum, Angriff-verarbeiten, Offensiv-KI
+  src/game/pirateBaseCombat.ts       Piratenbasen-Kampfrechnung: mitskalierende Garnison, Beute aus
+                                      vernichteter Garnison, Wiederaufbau. BEWUSST ohne db-Bezug,
+                                      damit Messskripte die echte Rechnung importieren koennen
   src/game/galaxyEvents.ts           Galaxie-Ereignisse (Wrack/Handelskonvoi): Spawn, Bergung
   src/game/groupOps.ts               Multiplayer: Elite-Bollwerk/Piratenadmiral (Einladen/
                                       Rendezvous/Starten, Belohnung)
@@ -670,13 +673,40 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   "jetzt + Intervall" - sonst lässt ein Aufruf kurz vor Fälligkeit den Zug ausfallen, was bei
   gleichem Takt wie der Heartbeat der Regelfall wäre. Und `runEconomyTick()` (Ressourcen-
   Produktion) bleibt bewusst UNGEDROSSELT, weil es ohnehin zeitbasiert rechnet.
-  Feste Mindest-Garnison (`SEED_FLEET`/`SEED_DEFENSE`, ~5.300 Schiffe/~1.120
-  Verteidigungsanlagen) als Floor-Up bei jedem Laden - kann nur stärker werden, nie schwächer;
-  "unzerstörbare Basis". `LOOT_BASIS_CAP` (bis 12.08.2026 `RESOURCE_CAP`) begrenzt NUR noch die
-  Beute, nicht mehr den Lagerbestand - der Ausbau einer Basis ist bewusst unbegrenzt.
+  **Angriff auf eine Basis: die Garnison skaliert seit dem 18.08.2026 mit der angreifenden Flotte**
+  (Entscheidung 5 des Balance-Plans, Rechenteil in `pirateBaseCombat.ts`, Konstanten in
+  `data/economy.ts`). Die Basis stellt eine Welle in Höhe der ANGREIFENDEN Machtsumme, gewürfelt
+  über `PIRATE_BASE_MULTIPLIER_ROLL` (50/30/20 wie bei den Sektoren), zusammengesetzt aus dem, was
+  sie tatsächlich gebaut hat, und gedämpft durch ihre Gefechtsbereitschaft. Vier Punkte, die
+  zusammengehören und nicht einzeln geändert werden dürfen:
+  - Die Wellenstärke ist NICHT am Bestand gedeckelt (die Basis "ruft Verstärkung", dieselbe Fiktion
+    wie in jedem Piraten-Sektor). Ein Deckel am Bestand hätte genau den Zustand konserviert, den
+    die Änderung beseitigen soll: 0 % Verlust für entwickelte Flotten.
+  - Verluste treffen den ECHTEN Bestand, aber als Anteil und gedeckelt auf
+    `PIRATE_BASE_MAX_ATTRITION` (0,35). Ohne diesen Deckel löschte EIN Angriff einer entwickelten
+    Flotte die komplette Garnison, und die Basis wäre auf Monate wertlos gewesen.
+  - Der frühere Floor-Up auf `SEED_FLEET`/`SEED_DEFENSE` ("unzerstörbare Basis") ist ERSATZLOS
+    GESTRICHEN. An seine Stelle treten Erholungszeit (`PIRATE_BASE_RECOVERY_MS`, 20 h, geprüft beim
+    Absenden UND bei Ankunft) und zeitbasierter Wiederaufbau bis zum Grundbestand
+    (`regenerateGarrison()`, 3 Tage). Der Grundbestand ist damit Startwert und Bezugsgröße der
+    Gefechtsbereitschaft, KEINE Untergrenze mehr.
+  - Die Garnison kämpft mit `max(eigene Forschung, Forschung des Angreifers)` (`garrisonResearch()`).
+    Grund: `sideBStatsOverride` umgeht `computePirateResearch()`, eine frische Basis hätte sonst
+    Forschungsstufe 0, während jeder Sektor-Pirat den vollen Stand des Angreifers bekommt.
+  Die **Beute** kommt seither aus der tatsächlich vernichteten Garnison (`pirateBaseLoot()`, Kurve
+  `LOOT_CURVE_*`: Anker 1,05 Mrd Wert bei 11,18 Mrd vernichteter Feindmacht, Exponent 0,85), nicht
+  mehr aus dem Lagerbestand. `LOOT_BASIS_CAP` und `PIRATE_BASE_LOOT_PERCENT` sind damit entfallen;
+  der Ressourcenbestand einer Basis wird von Angriffen nicht mehr angetastet und ist reiner
+  Treibstoff ihres eigenen Ausbaus, der bewusst unbegrenzt bleibt.
+  **Anzeige-Falle:** der in `Galaxie.tsx` gezeigte Wert ist seitdem die Garnisons-RESERVE, nicht die
+  Schwierigkeit. Wer daraus wieder eine Bedrohungsstufe macht, zeigt etwas Falsches an.
   Offensiv-KI greift Spieler/Bots selbst an (`runAllPirateBaseOffensiveTurns()`, einmal pro
   Heartbeat), aber mit langem Cooldown (`PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN/MAX_MS`, 48-96h pro
-  Basis) UND derselben Stärke-Abwägung wie die Bots (`PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN`).
+  Basis) UND einer eigenen Stärke-Abwägung (`PIRATE_BASE_ATTACK_POWER_SAFETY_MARGIN`) - die zielt
+  auf die Verteidigung eines SPIELERS und bleibt deshalb gültig, während die gleichnamige Abwägung
+  der Bots gegen Basen am 18.08.2026 entfallen musste: gegen eine mitskalierende Garnison gibt es
+  keine feste Gegnerstärke mehr, gegen die man abwägen könnte (Bots prüfen jetzt Erholungszeit und
+  Gefechtsbereitschaft).
   Eine frische/reaktivierte Basis würfelt erst ihren ersten Cooldown statt sofort anzugreifen.
 - **CPU-Spitzen-Vorfall (Juli 2026, wichtigster Betriebs-Lernpunkt)**: KI-Bots UND Piratenbasen-
   Offensiv-KI liefen früher mit hoher Frequenz ohne Entscheidungspause und lösten echte
