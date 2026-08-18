@@ -1,53 +1,67 @@
-Expeditions-Commander-2 - Aenderungspaket vom 17.08.2026
+Expeditions-Commander-2 - Aenderungspaket vom 18.08.2026
 ========================================================
-Inhalt: Entscheidung 4.3 (Faktor nach R14 neu bestimmt) und Entscheidung 13.3
-(Bot-/Basis-Wachstum von der Aufruf-Haeufigkeit entkoppelt).
+Flotten-Vorlagen im Multiplayer-Tab (Elite-Bollwerk P9 und Piratenadmiral P10).
 
 Die Ordnerstruktur entspricht dem Repo - der Inhalt kann direkt darueber gelegt werden.
+Baut auf dem Paket vom 17.08.2026 auf (README.md enthaelt beide Staende).
+
+NEUE DATEI
+----------
+client/src/components/FleetPresetBar.tsx
+    Gemeinsame Vorlagen-Leiste (speichern + uebernehmen + loeschen).
+    Filtert beim Uebernehmen auf die an dieser Stelle erlaubten Schiffstypen und klemmt auf den
+    aktuellen Bestand; was dabei wegfaellt, wird als kurzer Hinweis angezeigt statt still
+    geschluckt.
 
 GEAENDERTE DATEIEN
 ------------------
-server/src/game/pirateBaseState.ts   13.3: neue Konstanten PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS
-                                     (2 Min.) und PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP (30);
-                                     runEconomyBotTurn() haengt jetzt am Zeitraster statt am
-                                     Ladevorgang. runEconomyTick() bleibt ungedrosselt.
-                                     Veralteter Kommentar ("bewusst UNGEDROSSELT wie bei den
-                                     Bots") korrigiert - er war doppelt falsch.
-server/src/game/types.ts             13.3: Feld nextEconomyTurn auf PirateBaseState.
-server/src/game/heartbeat.ts         13.3, zweiter Fundort: HEARTBEAT_MIN_INTERVAL_MS (60 s).
-                                     GET /api/heartbeat laeuft ohne requireAuth und liess sich
-                                     zur Beschleunigung des Bot-Wachstums missbrauchen.
-                                     Rueckgabetyp um `skipped?: boolean` erweitert.
-server/src/game/routes.ts            13.3: nextEconomyTurn in GET /game/debug/npcs.
-client/src/types/game.ts             Messregel 8: Spiegel DebugPirateBaseState nachgezogen.
-client/src/pages/Debug.tsx           Messregel 8: zeigt den naechsten faelligen Bau-Zug an.
+client/src/pages/Multiplayer.tsx
+    Vorlagen-Leiste an BEIDEN Flotten-Auswahlen ergaenzt: Expedition anlegen (Zeile ~414) und
+    Einladung annehmen (Zeile ~238). Die zweite Stelle ist die wichtigere - dort tippte bisher
+    jeder eingeladene Spieler seine Flotte von Hand.
 
-README.md                            Abschnitt "KI-Spieler & Piratenbasen" auf den neuen Stand;
-                                     dabei eine veraltete Aussage korrigiert (RESOURCE_CAP heisst
-                                     seit 12.08.2026 LOOT_BASIS_CAP und begrenzt nur die Beute).
-UMSETZUNGSPLAN_BALANCE.md            Messkasten 4.3 geschlossen (Faktor 1,6x), Entscheidung 13.3
-                                     mit Befunden, zwei neue Protokolleintraege.
-UEBERGABE.md                         Stand, Einstieg fuer den naechsten Chat, zwei neue Fallen.
+client/src/pages/Sektor.tsx
+    Auf dieselbe Komponente umgestellt. Die Vorlagen-Liste sass vorher weit oben auf der Seite,
+    ausserhalb der geoeffneten Sektor-Karte; sie sitzt jetzt in der Karte direkt unter der
+    Schiffsauswahl. Damit erbt der Sektor-Tab auch das Filtern und Klemmen, das dort vorher
+    fehlte (`setSelection(p.ships)` war ungeprueft). Nicht mehr benoetigte Props entfernt
+    (presetName/setPresetName/savePreset).
 
-balance/session2-simulation/admiral_bossscale_44.txt
-                                     Neue Messzeilen (mittel/schwach bei 1,6x, Vergleichszellen
-                                     1,5x, zweiter Lauf voll/real 1,6x) PLUS eine Trennmarke vor
-                                     den Nach-R14-Zeilen. KEINE bestehende Zahl geaendert.
+server/src/game/groupOps.ts
+    Neue Funktionen allowedShipIdsForOperation() und checkShipsAllowed(), benutzt in BEIDEN
+    Pfaden (createGroupOperation und respondToGroupOperation).
+    Vorher gab es nur die P10-Sonderregel, und die stand als kopierter Block zweimal im File;
+    fuer P9 (Elite-Bollwerk) und fuer Notruf-Events fehlte die Pruefung ganz.
 
-NEUE DATEIEN
-------------
-balance/session2-simulation/make_messbuild_133.mjs   Messbuilds fuer 13.3 (Quellcode unberuehrt).
-balance/session2-simulation/run_base_growth_133.mjs  Abnahmemessung zu 13.3.
-balance/session2-simulation/base_growth_133.txt      Ergebnisse und Befund.
+server/src/game/data/changelog.ts
+    Spielerlesbarer Eintrag zur neuen Funktion.
 
-NICHT IM PAKET
---------------
-- messbuild_*-Verzeichnisse (erzeugte dist-Kopien, gehoeren nicht ins Repo).
-- server/dist und node_modules.
-- balance/session2-simulation/data/ (Wegwerf-Datenbank der Messung).
+README.md
+    Dateistruktur, Frontend-Konventionen (Vorlagen-Regeln), Multiplayer-Whitelist, Kurz-Changelog.
+
+WARUM DIE SERVER-AENDERUNG DAZUGEHOERT
+--------------------------------------
+Eine im Asteroiden-Feld gespeicherte Vorlage enthaelt Mining-Schiffe. Die Auswahl-Listen rendern
+nur die jeweils erlaubten Typen - ungefiltert stuenden solche Eintraege UNSICHTBAR in der Auswahl
+und gingen trotzdem an den Server. Fuer P10 haette der Server sie abgelehnt, fuer P9 waeren sie
+tatsaechlich mitgeflogen und aus der Flotte abgezogen worden.
+Der Client filtert das jetzt heraus - aber die Oberflaeche allein abzusichern reicht nicht,
+deshalb die zweite Ebene auf dem Server. Erreichbar war die Luecke vorher nicht, weil die Auswahl
+immer leer startete.
+
+GEPRUEFT
+--------
+- server: npx tsc fehlerfrei; beide Aufrufstellen von checkShipsAllowed im Kompilat verifiziert.
+- client: npx tsc --noEmit fehlerfrei, npx vite build erfolgreich.
+- Filter/Klemmen an einer realistischen Asteroiden-Vorlage durchgespielt:
+  Vorlage {mining 120, begleitschiff 40, kreuzer 300, leicht 500, imperator 2} bei Bestand
+  {mining 120, begleitschiff 40, kreuzer 180, leicht 500, imperator 1}
+    -> P9  Elite-Bollwerk : kreuzer 180, leicht 500, imperator 1
+                            (weg: mining, begleitschiff; gekuerzt: kreuzer, imperator)
+    -> P10 Piratenadmiral : kreuzer 180, imperator 1
+                            (weg: mining, begleitschiff, leicht; gekuerzt: kreuzer, imperator)
 
 NACH DEM EINSPIELEN
 -------------------
 Im Ordner server:  npm install && npx tsc
-Beide Seiten uebersetzen mit diesem Stand fehlerfrei (Server: tsc, Client: tsc --noEmit).
-Der Kampf-Worker laedt immer aus dist/ - ohne frischen Build misst/laeuft der alte Stand.
+Der Kampf-Worker laedt immer aus dist/ - ohne frischen Build laeuft der alte Stand.

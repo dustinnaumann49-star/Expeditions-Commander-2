@@ -130,6 +130,7 @@ client/
 
   src/components/ResourceBar.tsx     Kopfleiste: Ressourcen, Energie, Uhr, Warn-Badges
   src/components/BuildQueue.tsx      Fortschrittsbalken für Bau-Warteschlangen
+  src/components/FleetPresetBar.tsx  Flotten-Vorlagen speichern/übernehmen (Sektor UND Multiplayer)
   src/components/InfoModal.tsx       Popup mit vollem Detailwissen
   src/components/LoreModal.tsx       Popup bei Klick auf Schiffs-/Verteidigungs-/Forschungsnamen
   src/components/ShipBuildCard.tsx / DefenseBuildCard.tsx   Wiederverwendbare Baukarten
@@ -183,6 +184,14 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 - Jeder Mehrspieler-Kampfbericht ist aufklappbar, gruppiert nach Spielername (`ownerUsername`).
 - Elite-Bollwerk (`piraten_elite`) und Piratenadmiral (`piraten_admiral`) sind die einzigen
   Missionen für gemeinsame Expeditionen, alle anderen Sektoren bleiben Solo.
+- **Welche Schiffstypen in eine Gruppen-Operation dürfen, entscheidet EINE Funktion:**
+  `allowedShipIdsForOperation()` in `groupOps.ts`, geprüft über `checkShipsAllowed()` in BEIDEN
+  Pfaden (Operation anlegen und Einladung annehmen). P10 = `ADMIRAL_ALLOWED_SHIP_IDS`, P9 =
+  Kampfschiffe + Imperator, Notruf-Events = nur Kampfschiffe - identisch zu `availableIds` im
+  Client. Bis 18.08.2026 gab es serverseitig NUR die P10-Regel, und die stand als kopierter Block
+  zweimal im File; für P9 fehlte sie ganz. Unerreichbar war das nur, solange die Auswahl im Client
+  immer leer startete - mit den Flotten-Vorlagen (siehe Frontend-Konventionen) wäre es erreichbar
+  geworden.
 - `npm run dev` im Server startet `tsc --watch` + `tsx watch` parallel - der Worker-Thread braucht
   immer die kompilierte `dist/`-Version, auch im Dev-Modus.
 - Neue Server-Routen → `routes.ts`, neue Client-API-Aufrufe → `api/client.ts` + `GameContext.tsx`,
@@ -748,6 +757,19 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
 
 ### Frontend-Konventionen
 
+- **Flotten-Vorlagen liegen am SPIELER, nicht am Sektor** (`state.presets`, Server `presets.ts`,
+  max. 10). Dieselbe Vorlage lässt sich deshalb an allen drei Flotten-Auswahlen verwenden:
+  Sektor-Mission, gemeinsame Expedition anlegen (P9/P10) und **Einladung annehmen**. Alle drei
+  benutzen `components/FleetPresetBar.tsx` - beim Hinzufügen einer weiteren Flotten-Auswahl diese
+  Komponente einsetzen, statt die Leiste erneut zu bauen. Bis 18.08.2026 gab es sie nur in
+  `Sektor.tsx`; im Multiplayer-Tab musste jeder Teilnehmer seine Flotte von Hand eintippen.
+- **Beim Übernehmen einer Vorlage MUSS auf `availableIds` gefiltert und auf den Bestand geklemmt
+  werden** (macht `FleetPresetBar` zentral). Grund: eine im Asteroiden-Feld gespeicherte Vorlage
+  enthält Mining-Schiffe, und die Auswahl-Listen rendern nur die jeweils erlaubten Typen - solche
+  Einträge stünden sonst UNSICHTBAR in der Auswahl und gingen trotzdem an den Server. Die alte
+  Fassung in `Sektor.tsx` tat beides nicht (`setSelection(p.ships)` ungeprüft); der Server fing
+  nur den Bestandsfall mit einer Fehlermeldung ab.
+
 - `InfoTable`/`InfoModal`-Zeilen nutzen `.info-list`/`.info-list-row`, nicht rohe Tabellen.
 - Händler/Schrotthändler nutzen `ship-grid`/`ship-card` mit Bildern, Ressourcentausch über
   anklickbare Icon-Chips statt `<select>`.
@@ -867,3 +889,7 @@ spielerlesbare Version derselben Ereignisse steht in `server/src/game/data/chang
   konnte den gesamten Tick abwerfen und dadurch bereits gepushte Nachrichten/Fortschritt spurlos
   verschwinden lassen (Nutzer-Fund: Flotte im Piraten-Sektor Hoch komplett verloren, keine
   Nachricht erhalten).
+- Flotten-Vorlagen jetzt auch im Multiplayer-Tab (Expedition anlegen UND Einladung annehmen), nicht
+  mehr nur im Sektor-Tab; gemeinsame Komponente `FleetPresetBar` filtert beim Uebernehmen auf die
+  hier erlaubten Schiffstypen und klemmt auf den Bestand. Dabei die fehlende Server-Whitelist fuer
+  P9/Notruf-Events nachgezogen (`allowedShipIdsForOperation()`), vorher nur P10 und doppelt kopiert.
