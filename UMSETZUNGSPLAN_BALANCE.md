@@ -2219,6 +2219,110 @@ Monate entfernt. **Nicht blockierend fuer den Reset.**
 
 ---
 
+### Entscheidung 16 - RapidFire nach Klassen statt Konter-Leiter: GEMESSEN, NICHT GEBAUT (NEU 18.08.2026)
+
+> **Stand: vollstaendig gemessen, bewusst NICHT umgesetzt.** Der Umbau ist gesperrt, bis
+> Entscheidung 10 steht (siehe "Sperren" unten). Messdatei: `balance/session2-simulation/rf_depth.txt`.
+> Neue Skripte: `make_messbuild_rf.mjs` (Varianten A / A+B / C / C+B / A+E / A+E+D, RF-Wert als
+> Argument), `run_rf_depth.mjs`. `run_raid.mjs` und `run_elite.mjs` laufen jetzt ueber `lib4.mjs`
+> und sind damit gegen einen Messbuild messbar; `run_raid.mjs` nimmt Reparaturquote und
+> Verteidigungs-Gewicht als Umgebungsvariablen entgegen.
+
+**Bezug:** Nutzerbefund 18.08.2026 ("die RF kommt mir falsch vor, Kaempfe kommen linear vor statt
+mit Tiefe und Spannung" - ausdruecklich NICHT "RF funktioniert nicht", das war R14).
+**Dateien, falls gebaut:** `data/combatConstants.ts` (`RAPIDFIRE`, `ZIELERFASSUNG_BASE`,
+`SIZE_MISMATCH_EVASION_BONUS`).
+
+**Ausgangslage im Code (geprueft, Messregel 16):**
+- Die heutige RF-Tabelle ist eine **Leiter, kein Ring**: `leicht: {}` kontert nichts, Bomber und
+  Reaper werden von KEINEM Standard-Kampfschiff gekontert. Der Code-Kommentar nennt sie trotzdem
+  "Stein-Schere-Papier-Kette".
+- **Alle drei Wellenprofile benutzen denselben vollstaendigen Pool** (`weightsForProfile()` in
+  `combat.ts`), `kampfgruppe` sogar gleichverteilt. Jede Welle enthaelt jeden Typ - deshalb ist in
+  jedem Kampf jeder Konter bedient, auf beiden Seiten, und alles mittelt sich weg. **Das ist die
+  Ursache des Nutzerbefunds, nicht die Form der RF-Tabelle.**
+
+**Gemessene Varianten** (gleiche Flotten-MACHT statt gleichem Wert, damit jede Aufstellung denselben
+Gegner bekommt und die RF-Frage nicht mit Entscheidung 6 vermischt wird; Sektor `piraten_hoch`,
+Feindstaerke fest, 40 Laeufe je Zelle):
+
+- **A - Klassen-RF:** jedes Schiff kontert die komplette eigene UI-Klasse (`SHIP_GROUPS`), waehlt
+  aber weiterhin EIN Ziel. Nutzeridee.
+- **B - geschaerfte Wellenprofile:** 75/20/5 je Klasse statt derselben flachen Kurve.
+- **C - eigene Klasse plus die darunter.**
+- **A+E:** A plus abgesenktem `SIZE_MISMATCH_EVASION_BONUS` (klein/gross 0,45 -> 0,20,
+  mittel/gross 0,18 -> 0,08).
+- **A+E+D:** zusaetzlich eine Belagerungs-Rolle gegen Verteidigungsanlagen.
+
+**Ergebnisse (umkaempfte Zelle, Feindstaerke 2,0x - bei realistischen 0,85x gewinnt JEDE
+Aufstellung zu 100 %, dort ist die Frage nicht messbar):**
+
+| Welle | Zustand | nur Jaeger | nur Kreuzer | nur Elite |
+|---|---|---|---|---|
+| Kampfgruppe | IST | 100 % / 17,3 | **0 % / 47,5** | **0 % / 47,4** |
+| | A | 100 % / 9,4 | 75 % / 31,6 | 100 % / 23,3 |
+| | C | 100 % / 13,6 | **0 % / 47,7** | 100 % / 14,3 |
+| | A+E | 100 % / 16,6 | 100 % / 25,5 | 100 % / 17,0 |
+| Elitekader | IST | 100 % / 14,3 | 0 % / 47,5 | 0 % / 47,6 |
+| | A+E | 100 % / 22,0 | 93 % / 30,2 | **100 % / 15,8** |
+
+(Siegquote / Wertverlust. 47,x % ist die Saettigung durch den Rueckzug, kein Verlauf.)
+
+**Fuenf Befunde:**
+1. **Im Ist-Zustand ist die Wahl der Flotte keine Wahl.** Jaeger gewinnen jede Zelle jeder Welle,
+   und das Wellenprofil aendert am Ergebnis der Elite-Flotte nichts (47,4 / 47,5 / 47,6 %).
+2. **A holt die Kreuzer- und die Elite-Klasse zurueck** und macht das Wellenprofil erstmals
+   relevant (Elite 47,2 / 23,3 / 16,6 % statt dreimal 47,x).
+3. **C ist schlechter als A** - es verschiebt das Problem nur von der Elite- auf die
+   Kreuzer-Klasse (0 % Sieg in allen drei Wellen).
+4. **Erst A+E kippt die Jaeger-Dominanz.** Gegen eine Elite-Welle ist die Elite-Flotte dort zum
+   ERSTEN MAL in der gesamten Messreihe die beste Wahl (15,8 gegen 22,0 %). Der Hebel ist also
+   nicht die RF-Tabelle, sondern der Groessenklassen-Ausweichbonus.
+5. **B liefert fuer sich genommen nichts** (A und A+B liegen im Streubereich) und schadet der
+   gemischten Flotte (Schwarm-Welle 93 % -> 0 % Sieg). Die gewaehlte Schaerfe 75/20/5 ist
+   allerdings hart; eine milde Fassung ist ungemessen. **Nutzerentscheidung 18.08.2026: B bleibt
+   vorerst draussen.**
+
+**Der entscheidende Befund - Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung:**
+Im Raid faellt der Verteidigungsverlust von 27,3 % auf **0,0 %**. Drei Regler dagegen geprueft, alle
+wirkungslos: Reparaturquote 0,70 -> 0,40, Verteidigungs-Gewicht 0,3 -> 0,6, eigene Belagerungs-RF
+gegen Anlagen (A+E+D), auch in Kombination und auch mit RF-Wert 3. **Es ist kein eigener Defekt,
+sondern ein Symptom:** die verteidigende Seite wird so viel staerker, dass die Wellen fallen, bevor
+Schaden bis zu den Anlagen durchkommt. Dieselbe Richtung zeigen die Sektor-Zellen (Kreuzer/Elite von
+0 auf 100 % Siegquote). Elite-Bollwerk unkritisch (3,2 -> 5,3 % bei "2x voll", Siegquote unveraendert).
+
+**Nebenbefund:** das Verteidigungs-Gewicht ist ueberhaupt kein Hebel - 0,3 auf 0,6 bewegt den Raid
+praktisch nicht (14,2 -> 13,2 % Flottenverlust), weil die Anlagen gegenueber der Flotte zu wenig
+Macht stellen. Die Gegnerstaerke im Raid haengt faktisch allein an der Flotte.
+
+**Sperren - warum das NICHT jetzt gebaut wird:**
+- **Entscheidung 6 sagt woertlich "RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance
+  aus Session 2 mitverschieben."** Genau das ist gemessen eingetreten.
+- Der Ausgleich muesste ueber die Gegnerstaerke laufen. `PIRATEN_MULTIPLIER_ROLL` bestimmt aber die
+  Einnahmen, und Baseline (0,80 / 19,82 / 76,85 Mrd), Beute-Anker und Exponent 0,85 sind
+  geschlossen. `RAID_WAVE_ROLL` ist nach Abschnitt 8 Punkt 7 ausdruecklich erst NACH Entscheidung 10
+  anzufassen ("keine sanfte Zone").
+- Die Reparaturquote ist nach Abschnitt 4a bewusst nicht angefasst; das Bollwerk gewinnt heute
+  **nur** ueber den Verteidigungsanlagen-Verlust, eine Senkung nimmt ihm seinen einzigen Vorteil.
+- Nach dem Massstab aus Abschnitt 8 ist der Umbau **kein stiller Defekt**, sondern eine
+  Design-Aenderung - also nicht vorziehbar.
+
+**Entscheidung: A plus abgesenkter Ausweichbonus ist der Kandidat, terminiert NACH Entscheidung 10
+und nach Block A.** B bleibt draussen, C ist verworfen. *Nachteil, ausdruecklich:* der Nutzerbefund
+bleibt bis dahin bestehen, und ein Teil dieser Messwerte ist nach Entscheidung 10 und Block A ein
+zweites Mal zu erheben - dasselbe Muster wie bei R14.
+
+**Offen und ungemessen:** der RF-Wert (gemessen wurde 4, gegengeprueft 3), die Hoehe des
+abgesenkten Ausweichbonus (0,20 / 0,08 ist gesetzt), und eine milde Fassung von B.
+
+**Anzeige-Luecke, unabhaengig davon:** der Groessenklassen-Ausweichbonus wird im Client NIRGENDS
+angezeigt. `combatInfo.ts` zeigt nur `evasionBase` plus Forschung - die Info-Karte meldet also
+z.B. 12 % Ausweichchance, waehrend im Kampf gegen grosse Schiffe bis zu 75 % gelten. Das ist ein
+eigener Grund dafuer, dass sich das Kampfsystem "unbegreiflich" anfuehlt, und unabhaengig von
+Entscheidung 16 nachziehbar (Konstante ueber `/game/data`, wie bei `rapidfire`/`zielerfassungBase`).
+
+---
+
 ## 2a. Vorgezogene Umsetzung am 10.08.2026 (ausserhalb der Blockreihenfolge)
 
 **Nutzerentscheidung.** Ausloeser waren zwei eigene Beobachtungen beim Spielen: die Heimatbasis hat
@@ -3549,6 +3653,14 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
   9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
                        vorgezogen erledigt, siehe Abschnitt 2a)
  10. Entscheidung 10  Heimatverteidigung
+                       -> SPERRT Entscheidung 16 (RapidFire nach Klassen). Solange sie nicht
+                          gebaut ist, darf RAID_WAVE_ROLL nicht angefasst werden (Abschnitt 8,
+                          Punkt 7), und ohne diesen Ausgleich ist der RF-Umbau ein globaler
+                          Spieler-Buff - gemessen am 18.08.2026, siehe Entscheidung 16.
+ 10a. Entscheidung 16  RapidFire nach Klassen + abgesenkter Groessen-Ausweichbonus
+                       -> vollstaendig gemessen (rf_depth.txt), NICHT gebaut. Erst nach
+                          Entscheidung 10 UND nach Block A, weil der noetige Ausgleich ueber
+                          die Gegnerstaerke die Einnahmen-Baseline beruehrt.
  11. Entscheidung 12  Frischling-Bonus additiv
                        -> VORGEZOGEN aus Block F (09.08.2026): Abnahmekriterium 5 der Simulation
                           misst genau diesen Bonus. Stuende 12 dahinter, wuerde der erste
@@ -4181,6 +4293,9 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 18.08.2026 | **RapidFire nach Klassen vollstaendig gemessen und als Entscheidung 16 eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund beim Spielen ("die RF kommt mir falsch vor, Kaempfe kommen linear vor") - ausdruecklich NICHT dieselbe Meldung wie bei R14, RapidFire wirkt seit dem 17.08.2026 wieder. **Code-Ursache des Befunds gefunden und sie liegt nicht in der RF-Tabelle:** alle drei Wellenprofile benutzen denselben vollstaendigen Pool (`weightsForProfile()`), `kampfgruppe` sogar gleichverteilt - jede Welle enthaelt jeden Typ, damit ist in jedem Kampf jeder Konter bedient und alles mittelt sich weg. Zusaetzlich ist die heutige Tabelle eine Leiter, kein Ring (`leicht: {}` kontert nichts, Bomber und Reaper werden von keinem Standardschiff gekontert), obwohl der Code-Kommentar sie "Stein-Schere-Papier-Kette" nennt. **Gemessen wurden vier Varianten** (Nutzeridee A = Klassen-RF mit einem Ziel; B = geschaerfte Wellenprofile; C = eigene Klasse plus die darunter; E = abgesenkter Groessen-Ausweichbonus), je 40 Laeufe, gleiche Flotten-MACHT statt gleichem Wert, damit die RF-Frage nicht mit Entscheidung 6 vermischt wird. **Erste Messrunde war unbrauchbar und das ist die Lehre daraus:** bei realistischer Feindstaerke (0,85x) gewinnt jede Aufstellung zu 100 % bei 1-7 % Verlust - die Frage "zaehlt die Zusammensetzung" ist dort gar nicht messbar. Erst bei 2,0x wird sie es. **Ergebnisse:** im Ist-Zustand gewinnen Jaeger jede Zelle jeder Welle, und das Wellenprofil aendert am Ergebnis der Elite-Flotte NICHTS (47,4 / 47,5 / 47,6 % Verlust bei 0 % Sieg) - die Wahl der Flotte ist heute keine Wahl. A holt Kreuzer- und Elite-Klasse zurueck (0 % -> 75-100 % Sieg) und macht das Wellenprofil erstmals relevant. C ist schlechter als A (verschiebt das Problem auf die Kreuzer-Klasse). B liefert allein nichts und schadet der gemischten Flotte, **Nutzerentscheidung: B bleibt draussen.** Erst A+E kippt die Jaeger-Dominanz - gegen eine Elite-Welle ist die Elite-Flotte dort zum ersten Mal in der gesamten Messreihe die beste Wahl (15,8 gegen 22,0 %). **Der teuerste Befund kam aus der Gegenmessung:** im Raid faellt der Verteidigungsverlust unter A von 27,3 auf **0,0 %**, und drei Regler dagegen sind wirkungslos (Reparaturquote 0,70 -> 0,40, Verteidigungs-Gewicht 0,3 -> 0,6, eigene Belagerungs-RF gegen Anlagen, auch kombiniert, auch mit RF-Wert 3). Es ist kein eigener Defekt, sondern ein Symptom: **Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung zwischen den Klassen.** Damit braucht der Umbau zwingend einen Ausgleich ueber die Gegnerstaerke - und genau der ist gesperrt: `PIRATEN_MULTIPLIER_ROLL` beruehrt die geschlossene Einnahmen-Baseline, `RAID_WAVE_ROLL` darf nach Abschnitt 8 Punkt 7 erst nach Entscheidung 10 angefasst werden, und die Reparaturquote steht nach Abschnitt 4a bewusst unangetastet (das Bollwerk gewinnt heute NUR ueber den Verteidigungsanlagen-Verlust). **Entscheidung 6 sagt woertlich "RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance aus Session 2 mitverschieben"; genau das ist gemessen eingetreten.** Kandidat bleibt A+E, terminiert nach Entscheidung 10 und Block A. Nebenbefund: das Verteidigungs-Gewicht ist ueberhaupt kein Hebel (0,3 -> 0,6 bewegt den Raid um einen Prozentpunkt), weil die Anlagen gegenueber der Flotte zu wenig Macht stellen. Zweiter Nebenbefund: der Groessenklassen-Ausweichbonus wird im Client nirgends angezeigt - die Info-Karte meldet 12 % Ausweichchance, im Kampf gegen grosse Schiffe gelten bis zu 75 %. |
+| 18.08.2026 | **Stack-Aggregation auf Nutzerfrage erneut geprueft und erneut bestaetigt - diesmal mit Zahlen.** Der Nutzer hat die Grundsatzfrage selbst wieder aufgemacht ("lieber Schiffe begrenzen und jedes einzeln simulieren, aber nicht ueber 1 Sekunde Latenz"). Gemessen mit dem vorhandenen Messbuild aus R14 (`stackAggregateThresholdFor` = 1e9, also Aggregation komplett aus), gemischte Flotte, Gegner jeweils aehnlich gross: **1.260 Schiffe 136 ms, 6.300 Schiffe 702 ms, 12.600 Schiffe 1.668 ms, 25.200 Schiffe 5.524 ms** - die Ein-Sekunden-Grenze liegt damit bei rund **8.000 eigenen Schiffen**. Mit Aggregation dagegen 29-77 ms bei denselben Flotten, und die Rechenzeit haengt weiterhin an der Typenzahl statt an der Stueckzahl (Bestaetigung des R14-Skalierungstests mit 207.000 Schiffen). **Nutzerentscheidung: Aggregation bleibt.** Begruendung diesmal nicht nur Spielgefuehl, sondern eine konkrete Zelle: am Raid-Tag treffen eigene Flotte, Verteidigungsanlagen und fremde Verstaerkung in EINEM Kampf zusammen - die 8.000 waeren dort die Obergrenze fuer die Summe aller Beteiligten, nicht fuer eine Flotte. **Nicht umgesetzt, aber als Option festgehalten:** heute ist Aggregation alles-oder-nichts pro Typ (ueber der Schwelle wird der GANZE Typ ein einziger Stapel). Eine gedeckelte Stapelgroesse - 50.000 Jaeger als 100 Stapel zu 500 statt als einer - waere der Mittelweg zwischen Genauigkeit (R15) und Rechenzeit und ist mit demselben Messbuild-Verfahren messbar. |
+| 18.08.2026 | **Block B ist entschieden, aber NIRGENDS gebaut** (gefunden beim Code-Abgleich fuer Entscheidung 16, gleiche Fehlerform wie bei Block A Schritt 2). Im Code steht weder `ADMIRAL_DEFEAT_LOSS_SHARE` (4.1), noch wird `contributedPower` je Check frisch berechnet (4.2 - `groupOps.ts` setzt es einmal beim Flottenstart), noch der Faktor 1,6x samt Boss-Forschungsskalierung (4.3 - `ADMIRAL_MULTIPLIER_ROLL` steht unveraendert auf 1,10/1,30/1,50), noch die Umstellung des Boss-RapidFire auf die sechs Standardtypen (4.4 - die Zeile lautet weiterhin `piratenadmiral: { leicht: 10, schwer: 8 }`). **Wichtig fuer Entscheidung 16:** 4.4 ist selbst eine RF-Aenderung - wer die RF-Tabelle umbaut, ohne sie mitzunehmen, baut sie zweimal. |
 | 18.08.2026 | **Koop-Frage zum Elite-Bollwerk gemessen und nach Entscheidung 2 verlagert** (Nutzerfrage: "Belohnung bleibt gleich, Spieler sehen keinen Zweck darin, gemeinsam zu fliegen"). Neues Skript `run_elite_coop.mjs`, Protokoll `elite_coop.txt`, 40 Serien je Zelle ueber die volle 6-Check-Expedition, Verluste in WERT statt Stueckzahl - der Vergleich "dieselbe Flotte solo gegen zu zweit" hatte in `run_elite.mjs` schlicht gefehlt, dort stehen nur Mehrspieler-Konstellationen gegeneinander und nur Einzel-Checks. **Beobachtung in beiden Teilen bestaetigt:** Belohnung je Teilnehmer identisch, Verluste zu zweit in allen vier Zellen hoeher (+0,2 / +2,7 / +1,3 / +1,9 Prozentpunkte, gleiches Vorzeichen). **Der eigentliche Befund liegt aber woanders:** unter Entscheidung 2 haengt die Beute an der vernichteten Feindmacht, und die verdoppelt sich mit dem zweiten Teilnehmer exakt (18,85 -> 38,04 Mrd, Faktor 2,02), weil die Wellenstaerke an der SUMME aller Teilnehmerflotten haengt. **Die Koop-Frage faellt damit automatisch mit Entscheidung 2** - je nach Bezugsgroesse der Kurve x1,82 (V1), x1,01 (V2) oder x0,91 (V3) je Teilnehmer; ein separater Bonus je Teilnehmer waere ueberfluessig. Der Plan sagte bisher nur, DASS die Kurve auf `groupOps.ts` wirken muss, nicht WIE bei mehreren Teilnehmern - diese Luecke ist jetzt als offener Unterpunkt bei Entscheidung 2 dokumentiert, samt zwei Bedingungen: `checkShipsAllowed()` kennt keine Mindestmenge (in V1 waere die Alibi-Flotte optimal, `contributionShares()` liegt als Gewicht bereits vor - dieselbe Frage wie Entscheidung 3, Variante 4), und saemtliche Elite-Belohnungszahlen des Plans (169,68 Mrd je Serie) sind gegen den Solo-Fall gerechnet, unter V1 waeren es bei zwei Teilnehmern rund 307 Mrd je Spieler. **Nutzerentscheidung zum Verfahren:** nicht jetzt festlegen, sondern mit Block A, Schritt 2 zusammen kalibrieren. Nebenbefund: der Grossflotten-Bonus ist der einzige heute wirksame Koop-Vorteil und greift nur bei kleinen Flotten (x1,44 -> x1,50 bzw. x1,20 -> x1,24) - gemeinsam fliegen lohnt sich also ausgerechnet dort, wo es niemand bemerkt. |
 | 18.08.2026 | **Block C, Schritt 7 erledigt: Entscheidung 5 umgesetzt und gegengemessen (Piratenbasen).** Neue Datei `game/pirateBaseCombat.ts` (reiner Rechenteil, bewusst OHNE Datenbank-Bezug, damit Messskripte ihn importieren koennen), neue Konstanten in `data/economy.ts` (`PIRATE_BASE_MULTIPLIER_ROLL` [1,15/1,45/1,70-1,90], `PIRATE_BASE_DEFENSE_FACTOR` 0,16, `PIRATE_BASE_RECOVERY_MS` 20 h, `PIRATE_BASE_MAX_ATTRITION` 0,35, `PIRATE_BASE_REGEN_MS` 3 Tage, Beute-Kurve `LOOT_CURVE_*`), Seed-Konstanten aus `pirateBaseState.ts` dorthin verschoben. `LOOT_BASIS_CAP` und `PIRATE_BASE_LOOT_PERCENT` ersatzlos gestrichen. Messskript `run_pirate_base.mjs` neu geschrieben, Protokoll in `pirate_base.txt` (Abschnitte 1-6), 40 Laeufe je Zelle. **Vier Befunde, drei davon ueber diese Entscheidung hinaus.** (1) **Alle drei geplanten Kandidaten lagen UNTER dem Abnahmeband** (2,1-4,4 % Wertverlust je Angriff, aus Solo Hoch bzw. Elite je Check): A 1,0 %, B 1,6 %, C 2,0 % bei der realen Flotte. Erst der nachgezogene Kandidat D trifft mit 2,9 %. Die noetige Tabelle liegt damit NOMINAL ueber der des Elite-Bollwerks und erzeugt trotzdem weniger Verlust - Ursachen: fodder-lastiger Grundbestand statt der Wellenprofile aus `pickWaveProfile()`, kein Piratenkapitaen, keine Kampf-Modifikatoren, Einzelkampf statt sechs Checks in Folge. **Gleiche Zahl heisst hier nicht gleiche Schwierigkeit.** (2) **Der eigentliche Hebel war die Forschung, nicht die Stueckzahl:** `sideBStatsOverride` umgeht `computePirateResearch()`, die Basis kaempfte mit ihrer EIGENEN Forschung (frisch: Stufe 0), waehrend jeder Sektor-Pirat ueber `PIRATE_RESEARCH_SHARE = 1,0` den vollen Stand des Angreifers bekommt - dritte Fundstelle desselben Musters nach Entscheidung 4.3. Behoben ueber `garrisonResearch()` (elementweises Maximum). (3) **Ohne Attritions-Deckel loeschte EIN Angriff der realen Flotte die komplette Garnison** (Welle zu 100 % vernichtet = 100 % Verlustanteil auf den Bestand); die Basis waere danach rechnerisch Monate wertlos gewesen - das tote Feature waere nur um vier Angriffe verschoben worden. Erst Deckel 0,35 plus der Wiederaufbau aus 5a ergibt ein Gleichgewicht: taegliches Abfarmen pendelt sich bei 83 % Gefechtsbereitschaft und -14 % Beute ein. (4) **Der Ausbaustand schlaegt staerker durch als die Tabelle:** dieselbe kleine Flotte verliert mit voller Forschung 4,2 %, mit schwacher 56,9 % - Piratenbasen bleiben Inhalt fuer entwickelte Flotten; der Hebel dagegen waere ein Forschungsanteil unter 1,0, nicht die Tabelle. **Ertrag:** 1,60 Mrd netto je Angriff, 5,9-6,4 Mrd/Tag bei vier Basen, rund 8 % der Baseline - zwischen Solo Hoch (-3,26/Tag) und Elite (+23,4 je Serie), wie gefordert. **Messregel 8 erfuellt:** im Client gegreppt (`Galaxie.tsx`, `types/game.ts`, `Debug.tsx` angepasst - der bisherige "Machtwert" liess den falschen Schluss auf die Schwierigkeit zu) und im Server ein stiller Ausfall gefunden: `bot.ts` verglich die eigene Flotte gegen den BESTAND einer Basis mal `ATTACK_POWER_SAFETY_MARGIN`, Bots haetten nie wieder eine Basis angegriffen. **Zwei Planpunkte als veraltet bestaetigt:** die geforderte Neuberechnung von `RESOURCE_CAP` zielte ins Leere (heisst seit 12.08.2026 `LOOT_BASIS_CAP`, wirkte nur noch auf die Beute, faellt jetzt ganz weg), und der Baseline-Bezug "0,3 %" in der Begruendung rechnete noch gegen die alte 21,69 Mrd. **Offen geblieben und ausdruecklich vermerkt:** die Beute-Kurve aus Entscheidung 2 steht damit erstmals im Spielcode, aber NUR fuer die Piratenbasen - Block A, Schritt 2 (missions.ts/groupOps.ts, plus Wrack-Bergung 30 %) ist weiterhin nicht gebaut, obwohl Block A als vollstaendig gilt. |
 | 18.08.2026 | **Entscheidung 4.6 und 4.7 bestaetigt und geschlossen** (Nutzerentscheidung, kein Messbedarf): Sieg-Bonus **2,0x** statt 1,5x, und die 50 % bei Niederlage gelten auf die bis zum letzten UEBERSTANDENEN Check gesicherte Beute. Damit ist von Block B nur noch 4.8 (Cooldown) offen; gebaut ist von 4.x weiterhin nichts. |

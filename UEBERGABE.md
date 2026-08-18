@@ -22,6 +22,20 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
+- **NEU 18.08.2026 (Abend): RapidFire nach Klassen ist vollstaendig gemessen und als
+  Entscheidung 16 im Plan eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund
+  ("die RF kommt mir falsch vor, Kaempfe kommen linear vor"), NICHT dieselbe Meldung wie bei R14.
+  Kandidat ist Variante A (jedes Schiff kontert die eigene Klasse, waehlt aber EIN Ziel) plus
+  abgesenktem Groessen-Ausweichbonus. **Gesperrt bis Entscheidung 10 steht**, Einzelheiten unten
+  und im Messkasten bei Entscheidung 16. Messdatei `rf_depth.txt`.
+- **NEU 18.08.2026 (Abend): Block B ist entschieden, aber nirgends gebaut.** 4.1 bis 4.4 stehen
+  nicht im Code (kein `ADMIRAL_DEFEAT_LOSS_SHARE`, `contributedPower` nur beim Flottenstart,
+  `ADMIRAL_MULTIPLIER_ROLL` unveraendert 1,10/1,30/1,50, Boss-RapidFire unveraendert). Gleiche
+  Fehlerform wie bei Block A Schritt 2 - "geschlossen" heisst in diesem Plan ENTSCHIEDEN, nicht
+  GEBAUT. Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.
+- **NEU 18.08.2026 (Abend): die Aggregations-Grundsatzfrage ist erneut gestellt und erneut
+  geschlossen worden** - diesmal vom Nutzer selbst, und diesmal mit Zahlen. Siehe den Abschnitt
+  "Gesetzt und NICHT neu aufzurollen" unten.
 - **R14 IST ERLEDIGT** (17.08.2026), zusammen mit dem bei der Umsetzung gefundenen **R14b**
   (Durchschlag im Aggregat-Pfad). Neu aufgetaucht ist **R15** - siehe unten. Die Kampf-Engine ist
   damit wieder vollstaendig; alle KAMPF-Messungen von vor dem 17.08.2026 sind gegen eine Engine
@@ -147,6 +161,29 @@ nicht die Technik, sondern das Spielgefühl: **zwei Spieler, und für die zweite
 Schiffe der Kern des Spiels.** Ein Umbau, der das abschafft, ist deshalb keine Option - unabhängig
 davon, wie sauber er rechnen würde.
 
+**Erneut gestellt und erneut geschlossen am 18.08.2026 - diesmal mit Zahlen.** Der Nutzer hat die
+Frage selbst wieder aufgemacht ("lieber Schiffe begrenzen und jedes einzeln simulieren, aber nicht
+ueber 1 Sekunde Latenz"). Gemessen mit dem Messbuild aus R14 (Aggregation komplett aus), gemischte
+Flotte, Gegner jeweils aehnlich gross:
+
+| eigene Schiffe | mit Aggregat | ohne Aggregat |
+|---|---|---|
+| 1.260 | - | 136 ms |
+| 6.300 | 77 ms | 702 ms |
+| 12.600 | - | 1.668 ms |
+| 25.200 | 29 ms | 5.524 ms |
+
+Die Ein-Sekunden-Grenze liegt damit bei rund **8.000 eigenen Schiffen**. **Nutzerentscheidung:
+Aggregation bleibt** - und die Begruendung ist diesmal nicht nur Spielgefuehl, sondern eine
+konkrete Zelle: am Raid-Tag treffen eigene Flotte, Verteidigungsanlagen und fremde Verstaerkung in
+EINEM Kampf zusammen, die 8.000 waeren dort die Obergrenze fuer die Summe aller Beteiligten.
+
+**Festgehalten, nicht umgesetzt:** heute ist die Aggregation alles-oder-nichts je Typ - ueber der
+Schwelle wird der GANZE Typ zu einem einzigen Stapel. Eine gedeckelte Stapelgroesse (50.000 Jaeger
+als 100 Stapel zu 500 statt als einer) waere der Mittelweg zwischen Genauigkeit (R15) und
+Rechenzeit und mit demselben Messbuild-Verfahren messbar. Das ist die einzige Richtung in diesem
+Themenfeld, die noch offen ist.
+
 **Für Folge-Chats heisst das:**
 - Vorschläge in Richtung "Einzelberechnung wiederherstellen", "Schiffe pro Mission begrenzen",
   "Staffeln statt Einzelschiffen", "1 Schiff ersetzt 500" NICHT erneut aufmachen. Sie sind geprüft
@@ -166,6 +203,36 @@ Plan als offener Punkt geführt (Abschnitt 7, Niveau-Punkt). Der beschlossene Se
 ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
+
+**Ein Vorschlag kann gegen die eigene Sperrliste laufen, ohne dass es auffaellt.** Am 18.08.2026
+stand am Ende der RF-Messung der Vorschlag, die Gegnerstaerke nachzuziehen
+(`PIRATEN_MULTIPLIER_ROLL`, `RAID_WAVE_ROLL`) und die Reparaturquote zu senken. **Alle drei waren
+gesperrt** - die Sektorstaerke beruehrt die geschlossene Einnahmen-Baseline, `RAID_WAVE_ROLL` darf
+nach Abschnitt 8 Punkt 7 erst nach Entscheidung 10 angefasst werden, und die Reparaturquote steht
+nach Abschnitt 4a bewusst unangetastet (das Bollwerk gewinnt heute NUR ueber den
+Verteidigungsanlagen-Verlust, eine Senkung nimmt ihm seinen einzigen gemessenen Vorteil). Der
+Nutzer hat es gefunden, nicht die Messung. **Vor jedem Vorschlag, der eine Konstante anfasst,
+zuerst pruefen, ob sie in einer geschlossenen Entscheidung vorkommt** - `grep` auf den
+Konstantennamen im Plan kostet zehn Sekunden.
+
+**Ein Umbau kann ein globaler Buff sein statt einer Umverteilung - und das sieht man erst an der
+dritten Zelle.** Klassen-RapidFire sah in den Sektor-Zellen wie eine Angleichung zwischen den
+Klassen aus (Kreuzer/Elite von 0 auf 100 % Siegquote). Die Raid-Gegenmessung zeigte, dass auch die
+starke Seite gewinnt: der Verteidigungsverlust faellt auf 0,0 %, weil die Wellen fallen, bevor
+Schaden bis zu den Anlagen durchkommt. **Bei jeder Aenderung an einer Kampfregel mindestens eine
+Zelle messen, in der der Spieler NICHT der Angreifer ist.**
+
+**Ein Symptom kann drei Regler ueberleben.** Bevor die 0,0 % als "globaler Buff" erkannt waren,
+sind drei naheliegende Ursachen geprueft und alle widerlegt worden: Reparaturquote, Verteidigungs-
+Gewicht und eine eigene Belagerungs-RF gegen Anlagen, auch in Kombination und mit schwaecherem
+RF-Wert. **Wenn kein Regler wirkt, ist die Ursache eine Ebene hoeher.**
+
+**Eine Kennzahl in einer Zelle, die ohnehin jeder gewinnt, misst nichts.** Die erste RF-Messrunde
+lief bei realistischer Feindstaerke (0,85x) - dort gewinnt jede Aufstellung zu 100 % bei 1-7 %
+Verlust, und die Spannweite zwischen den Aufstellungen ist Rauschen. Erst bei 2,0x wurde die Frage
+"zaehlt die Zusammensetzung ueberhaupt" messbar. **Vor der Messung pruefen, ob die Zelle die Frage
+entscheiden KANN** (verwandt mit der `mittel`/1,6x-Falle weiter unten, aber die andere Richtung:
+dort lag die Kennzahl im Zielband bei 0 % Sieg, hier bei 100 %).
 
 **Ein Messwerkzeug misst nicht automatisch das, wonach gefragt ist.** Am 17.08.2026 bei 13.3
 zweimal hintereinander passiert, beide Male sah das falsche Ergebnis wie ein Befund aus:
@@ -261,6 +328,16 @@ Antwort war eine voellig andere als die Vermutung.
 **Block C weiterfuehren.** Schritt 6 (13.3) und Schritt 7 (Entscheidung 5) sind erledigt. Als
 naechstes steht Schritt 8 an (Entscheidung 6, Schiffs-Tiers); die Schritte 8 bis 12 sind voneinander
 unabhaengig und koennen in beliebiger Reihenfolge laufen.
+
+**Neu am 18.08.2026 (Abend), fuer die Reihenfolge wichtig:** Entscheidung 16 (RapidFire nach
+Klassen) ist gemessen und haengt an Entscheidung 10 - wer den RF-Umbau will, zieht Schritt 10 vor,
+nicht Schritt 8. Vorbereitende Messungen liegen fertig vor (`rf_depth.txt`, Messbuilds ueber
+`make_messbuild_rf.mjs`), sie sind nach Entscheidung 10 und Block A allerdings teilweise neu zu
+erheben.
+
+**Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.** Block A Schritt 2
+und der gesamte Block B sind entschieden, aber nicht gebaut. "Geschlossen" heisst in diesem Plan
+ENTSCHIEDEN.
 
 **Zwei Dinge, die aufgeschoben, aber nicht vergessen sind:**
 
