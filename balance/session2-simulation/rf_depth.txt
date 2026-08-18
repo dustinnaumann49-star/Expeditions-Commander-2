@@ -210,3 +210,21 @@ Elite-Bollwerk, 10 Laeufe je Konstellation (run_elite.mjs, lib4):
   voll + schwach: IST 0.5 / 1.4 %   ->  A+E 0.6 / 1.7 %
   -> unkritisch, Groessenordnung unveraendert.
 
+--- VERTEIDIGUNGSSEITE, Gegenmessung 18.08.2026 (run_raid.mjs, 10 Raids je Fall, Fall 'voll/gross') ---
+Zustand                                          Flottenverlust  Verteidigungsverlust
+IST (Reparatur 0.70, Gewicht 0.3)                    14.2 %             27.3 %
+nur Gewicht 0.6                                      13.2 %             25.6 %   <- Gewicht bindet nicht
+Reparatur 0.40/0.60 + Gewicht 0.6                    12.9 %             41.7 %
+A+E                                                  19.2 %              0.0 %
+A+E + Verteidigungspaket (0.40/0.60, 0.6)            19.0 %              0.0 %   <- Paket holt es NICHT zurueck
+A+E+D (zusaetzlich Belagerungs-RF gegen Anlagen)      15.8 %              0.0 %   <- Belagerung holt es NICHT zurueck
+A+E+D mit RF-Wert 3 statt 4                          19.9 %              0.0 %
+
+BEFUND: der Verteidigungsverlust von 0 % ist KEIN eigener Defekt und mit keinem der drei
+geprueften Regler (Reparaturquote, Verteidigungs-Gewicht, Belagerungs-RF) zurueckzuholen.
+Er ist ein SYMPTOM: Klassen-RF macht die verteidigende Seite insgesamt so viel staerker, dass
+die Wellen zu frueh fallen und ueberhaupt kein Schaden mehr bis zu den Anlagen durchkommt.
+Dieselbe Richtung zeigen die Sektor-Zellen (Kreuzer/Elite 0 % -> 100 % Siegquote).
+-> Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung zwischen Klassen. Wer ihn
+   einbaut, muss die Gegnerstaerke nachziehen (PIRATEN_MULTIPLIER_ROLL / RAID_WAVE_ROLL).
+

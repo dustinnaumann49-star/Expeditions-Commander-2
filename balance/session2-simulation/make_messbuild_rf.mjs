@@ -72,6 +72,15 @@ const BOMBER_GEGEN_ANLAGEN = { raketenwerfer: 20, leichteslaser: 20, schwereslas
 // Plasmawerfer behaelt sein RF gegen den Imperator (steht in keiner der drei Klassen).
 const PLASMA_EXTRA = { imperator: 2 };
 
+// Belagerungs-Rolle gegen stationaere Anlagen. Ohne sie werden Verteidigungsanlagen unter
+// Klassen-RF praktisch nie mehr getroffen: die gezielten Schuesse der Angreifer (seit R14 sauber
+// vom ungezielten Anteil getrennt) finden unter den verteidigenden SCHIFFEN genug RF-Ziele und
+// landen nie auf den Anlagen. Gemessen: Verteidigungsverlust 27,3 % -> 0,0 %, und weder die
+// Reparaturquote noch das Verteidigungs-Gewicht holen das zurueck.
+const ANLAGEN_LEICHT = ['raketenwerfer', 'leichteslaser', 'schwereslaser'];
+const ANLAGEN_SCHWER = ['ionengeschuetz', 'gausskanone', 'plasmawerfer'];
+const BELAGERUNG = { jaeger: [], kreuzer: ANLAGEN_LEICHT, elite: ANLAGEN_SCHWER };
+
 function tabelleFuer(klasse, abdeckung) {
   const t = {};
   abdeckung[klasse].forEach((k) => KLASSEN[k].forEach((id) => (t[id] = RF_KLASSE)));
@@ -82,10 +91,13 @@ function tabelleFuer(klasse, abdeckung) {
 // Bewusst als MUTATION am exportierten Objekt angehaengt statt als Ersetzung des Objekt-Literals:
 // robuster gegen Formatierungsaenderungen des Compilers, und die ESM-Live-Bindung sorgt dafuer,
 // dass combat.js dieselbe (mutierte) Instanz sieht.
-function constPatchFuer(abdeckung, defenseKlassenRf = true) {
+function constPatchFuer(abdeckung, defenseKlassenRf = true, mitBelagerung = false) {
   const rfPatch = {};
   Object.entries(KLASSEN).forEach(([klasse, ids]) => {
-    ids.forEach((id) => (rfPatch[id] = tabelleFuer(klasse, abdeckung)));
+    ids.forEach((id) => {
+      rfPatch[id] = tabelleFuer(klasse, abdeckung);
+      if (mitBelagerung) BELAGERUNG[klasse].forEach((defId) => (rfPatch[id][defId] = RF_KLASSE));
+    });
   });
   rfPatch.bomber = { ...rfPatch.bomber, ...BOMBER_GEGEN_ANLAGEN };
   if (defenseKlassenRf) {
@@ -143,13 +155,13 @@ const WEIGHTS_PATCHED = `function weightsForProfile(profile, poolLength) {
     return POOL_KLASSE.map((k) => anteil[k] / proKlasse[k]);
 }`;
 
-function baueVariante(name, abdeckung, mitProfilen, defenseKlassenRf = true) {
+function baueVariante(name, abdeckung, mitProfilen, defenseKlassenRf = true, mitBelagerung = false) {
   const target = resolve('.', name);
   if (existsSync(target)) rmSync(target, { recursive: true });
   cpSync(DIST, target, { recursive: true });
 
   const constFile = resolve(target, 'game/data/combatConstants.js');
-  appendFileSync(constFile, constPatchFuer(abdeckung, defenseKlassenRf));
+  appendFileSync(constFile, constPatchFuer(abdeckung, defenseKlassenRf, mitBelagerung));
 
   if (mitProfilen) {
     const combatFile = resolve(target, 'game/combat.js');
@@ -186,6 +198,12 @@ for (const [eName, defRf] of [[`messbuild_rf_ae${S}`, true], [`messbuild_rf_ae${
 // Verteidigungsverlust im Raid gemessen von 27,3 % auf 0,0 % - die Anlagen werden vollstaendig
 // unantastbar. Das ist die Beschwerde des Nutzers vom 18.08.2026, nur schlimmer. Die Fassung
 // '_defalt' laesst die Anlagen deshalb auf ihrer heutigen RF-Tabelle.
+
+// A+E+D: wie A+E, zusaetzlich die Belagerungs-Rolle gegen Anlagen (siehe BELAGERUNG oben).
+const dName = `messbuild_rf_aed${S}`;
+baueVariante(dName, ABDECKUNG_A, false, true, true);
+appendFileSync(resolve('.', dName, 'game/data/combatConstants.js'), EVASION_PATCH);
+console.log(`${dName} -> [+ Ausweichbonus 0.20/0.08] [+ Belagerung gegen Anlagen]`);
 
 console.log(`RF-Wert innerhalb der abgedeckten Klassen: ${RF_KLASSE}`);
 console.log('Quellcode unberuehrt:', resolve('../../server/src/game/data/combatConstants.ts'));

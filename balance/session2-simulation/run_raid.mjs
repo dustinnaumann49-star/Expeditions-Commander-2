@@ -7,6 +7,15 @@ const { RAID_WAVE_ROLL, RAID_WAVE_COUNT, RAID_MIN_TARGET_POWER,
         RAID_SALVAGE_DM_PER_KILL, RAID_SALVAGE_DM_MAX, RAID_LOOT_PERCENT } = L.economy;
 const { DEFENSE_REPAIR_PERCENT } = L.cc;
 
+// 18.08.2026: Reparaturquote und Verteidigungs-Gewicht sind ab hier ueberschreibbar, damit die
+// Verteidigungsseite gegengemessen werden kann, ohne den Quellcode anzufassen. Ohne die beiden
+// Umgebungsvariablen verhaelt sich das Skript exakt wie zuvor (0,70 bzw. 0,90 fuer Bollwerk, 0,3).
+// Die Gewichte stehen in raids.ts als modul-lokale Konstanten (RAID_FLEET_POWER_WEIGHT /
+// RAID_DEFENSE_POWER_WEIGHT) und sind nicht exportiert - dieses Skript repliziert sie ohnehin.
+const REPAIR = process.env.REPAIR !== undefined ? Number(process.env.REPAIR) : DEFENSE_REPAIR_PERCENT;
+const REPAIR_BOLLWERK = process.env.REPAIR_BOLLWERK !== undefined ? Number(process.env.REPAIR_BOLLWERK) : 0.9;
+const DEF_WEIGHT = process.env.DEF_WEIGHT !== undefined ? Number(process.env.DEF_WEIGHT) : 0.3;
+
 // Container-Erwartungswerte in Wert-Einheiten, aus Session 1 uebernommen
 const CONTAINER_EV = { silber: 60.1e6, gold: 127.2e6, elite: 237.6e6 };
 const CONTAINER_DM = { silber: 0, gold: 19.4, elite: 28.6 };
@@ -18,7 +27,7 @@ async function runRaid(profile, fleet, defense) {
   const st = L.stateFor(profile, 1);
   st.fleet = { ...fleet };
   st.defense = { ...defense };
-  const repair = st.playerClass === 'bollwerk' ? 0.9 : DEFENSE_REPAIR_PERCENT;
+  const repair = st.playerClass === 'bollwerk' ? REPAIR_BOLLWERK : REPAIR;
 
   let wavesWon = 0, destroyedTotal = 0;
   const waveFactors = [];
@@ -32,7 +41,7 @@ async function runRaid(profile, fleet, defense) {
     let defensePower = 0, fleetPower = 0;
     defIds.forEach((id) => { const b = L.combat.baseStats(id); defensePower += st.defense[id] * (b.waffen + b.schild + b.panzerung); });
     shipIds.forEach((id) => { const b = L.combat.baseStats(id); fleetPower += st.fleet[id] * (b.waffen + b.schild + b.panzerung); });
-    const combinedPower = fleetPower * 0.7 + defensePower * 0.3;
+    const combinedPower = fleetPower * 0.7 + defensePower * DEF_WEIGHT;
 
     const domePool = L.combat.computeDomeSharedPool(st.defense, st.research, !!st.activeBoosters.kampf, st.playerClass, st.shipModules);
     const waveFactor = L.combat.pick503020(RAID_WAVE_ROLL);
