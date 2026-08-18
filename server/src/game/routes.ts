@@ -722,6 +722,7 @@ gameRouter.get('/debug/npcs', async (_req: AuthedRequest, res) => {
       research: b.state.research,
       outgoingAttacks: b.attacks.filter((a) => !a.resolved).length,
       nextOffensiveCheck: b.nextOffensiveCheck,
+      nextEconomyTurn: b.nextEconomyTurn, // Entscheidung 13.3: macht die Drosselung im Betrieb pruefbar
       buildQueueLength: b.state.buildQueue.length,
       defenseQueueLength: b.state.defenseQueue.length,
       researchQueueLength: b.state.researchQueue.length,

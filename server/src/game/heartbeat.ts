@@ -36,8 +36,26 @@ const SLOW_USER_TICK_MS = 500;
 const SLOW_PHASE_MS = 1000;
 const SLOW_HEARTBEAT_TOTAL_MS = 3000;
 
-export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; errors: number }> {
+// Entscheidung 13.3 (17.08.2026), zweiter Fundort derselben Fehlerform: `/api/heartbeat` in
+// index.ts laeuft BEWUSST ohne requireAuth (manuell/extern ausloesbar). Da runBotTurn() unten
+// einmal je Heartbeat einen vollstaendigen Bau-Entscheidungsschritt jedes Bots ausfuehrt, liess
+// sich das Bot-Wachstum durch wiederholte Aufrufe dieses Endpunkts beliebig beschleunigen -
+// dieselbe Aufruf-Abhaengigkeit wie bei den Piratenbasen (siehe
+// PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS in pirateBaseState.ts), nur eine Ebene hoeher.
+//
+// Der Mindestabstand liegt bewusst DEUTLICH unter HEARTBEAT_INTERVAL_MS (2 Minuten), damit der
+// regulaere interne Takt nie versehentlich uebersprungen wird, falls ein Durchlauf einmal ein paar
+// Sekunden zu frueh kommt. Nachteil ausdruecklich: ein manueller Testaufruf per Browser wirkt
+// innerhalb dieses Fensters nicht mehr sofort, sondern meldet `skipped`.
+const HEARTBEAT_MIN_INTERVAL_MS = 60 * 1000;
+let lastHeartbeatRun = 0;
+
+export async function runGlobalHeartbeat(): Promise<{ usersProcessed: number; errors: number; skipped?: boolean }> {
   const heartbeatStart = Date.now();
+  if (heartbeatStart - lastHeartbeatRun < HEARTBEAT_MIN_INTERVAL_MS) {
+    return { usersProcessed: 0, errors: 0, skipped: true };
+  }
+  lastHeartbeatRun = heartbeatStart;
   const users = listAllUsers();
   let errors = 0;
   for (const u of users) {

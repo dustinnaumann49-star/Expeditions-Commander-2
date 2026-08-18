@@ -130,6 +130,14 @@ export interface PirateBaseState {
   // Cooldown statt Zufallschance PRO Heartbeat (Nutzerentscheidung Juli 2026: 1-2x/Tag statt alle
   // paar Minuten - siehe PIRATE_BASE_OFFENSIVE_COOLDOWN_MIN/MAX_MS in pirateBaseState.ts).
   nextOffensiveCheck: number | null;
+  // Entscheidung 13.3 (17.08.2026): Zeitstempel fuer den naechsten BAU-Entscheidungsschritt
+  // (runEconomyBotTurn()). Vorher lief der bei JEDEM Laden der Basis - und geladen wird sie bei
+  // jedem Aufruf der Galaxie-Ansicht. Eine Basis wuchs dadurch schneller, je oefter jemand in die
+  // Galaxie schaut; das machte jede Messung an den Basen unreproduzierbar (siehe Entscheidung 5b).
+  // Die Ressourcen-Produktion (runEconomyTick()) war und bleibt zeitbasiert und ist NICHT
+  // gedrosselt - nur der Entscheidungsschritt haengt jetzt an der Uhr statt am Ladevorgang.
+  // Siehe PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS in pirateBaseState.ts.
+  nextEconomyTurn: number | null;
 }
 
 // Angriffsflug EINER Piratenbasis GEGEN einen Spieler/Bot (Basis als Angreifer, Gegenrichtung zu

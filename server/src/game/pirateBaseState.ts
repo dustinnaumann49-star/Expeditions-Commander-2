@@ -110,6 +110,35 @@ const LOOT_BASIS_CAP = { metall: 44000000, kristall: 20000000, deuterium: 600000
 // aber keine eigene Produktion und wuerde nach dem Verbrauchen des Startkapitals stagnieren.
 const SEED_BUILDINGS: Record<string, number> = { metallmine: 4, kristallmine: 3, deuteriummine: 2, solarkraftwerk: 4 };
 
+// Entscheidung 13.3 (Umsetzungsplan Balance, Block C): Mindestabstand zwischen zwei BAU-
+// Entscheidungsschritten einer Basis. Vorher lief runEconomyBotTurn() bei JEDEM loadPirateBase(),
+// und geladen wird eine Basis bei jedem Aufruf der Galaxie-Ansicht (listActivePirateBaseSummaries()
+// in routes.ts), bei jedem Spionageflug und bei jedem Angriff. Das Wachstum einer Basis hing damit
+// an der Zahl der Client-Aufrufe statt an der Zeit - eine Basis wuchs schneller, je oefter jemand
+// in die Galaxie schaute, und keine Messung an den Basen war reproduzierbar (Entscheidung 5b).
+//
+// Bewusst GLEICH HEARTBEAT_INTERVAL_MS (index.ts, 2 Minuten): der Heartbeat laedt ueber
+// runAllPirateBaseOffensiveTurns() -> listActivePirateBases() ohnehin alle aktiven Basen. Mit
+// diesem Wert bekommt eine Basis also genau EINEN Zug je Heartbeat - deterministisch, unabhaengig
+// von Client-Aufrufen, und im selben Takt wie ein KI-Mitspieler (runBotTurn() in bot.ts laeuft
+// ebenfalls einmal je Heartbeat). Wer den Wert aendert, aendert damit die Wachstumsrate der Basen
+// und muss sie neu messen - siehe balance/session2-simulation/base_growth_133.txt.
+//
+// BEWUSST OHNE NACHHOLEN: nach einer Server-Auszeit werden verpasste Zuege NICHT nachgeholt.
+// Nachteil ausdruecklich: eine Basis waechst waehrend eines Ausfalls gar nicht weiter (die
+// Ressourcen laufen ueber runEconomyTick() trotzdem auf, sie werden nur spaeter verbaut). Vorteil:
+// keine Lastspitze beim ersten Laden nach dem Neustart und keine zweite Frequenzabhaengigkeit,
+// diesmal von der Ausfalldauer.
+const PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS = 2 * 60 * 1000;
+
+// Obergrenze fuer das Nachholen verpasster Zuege in EINEM Ladevorgang (30 Zuege = 1 Stunde bei
+// obigem Intervall). Ohne Deckel wuerde eine Basis nach einer laengeren Server-Auszeit beim ersten
+// Laden hunderte Zuege am Stueck ausfuehren - genau die Lastspitze, wegen der die Cross-User-Sweeps
+// am 12.08.2026 gedrosselt werden mussten. Nachteil ausdruecklich: nach einer Auszeit von mehr als
+// einer Stunde wachsen die Basen langsamer als die Uhr hergibt. Das ist die konservative Richtung
+// und betrifft nur den Ausnahmefall; im Normalbetrieb ist dueTurns immer 0 oder 1.
+const PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP = 30;
+
 function buildSeedState(id: string): PlayerState {
   const pos = POSITION_BY_ID.get(id)!;
   const state = defaultPlayerState(syntheticUserIdFor(id));
@@ -123,7 +152,7 @@ function buildSeedState(id: string): PlayerState {
 
 function seedPirateBase(id: string): PirateBaseState {
   const pos = POSITION_BY_ID.get(id)!;
-  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [], nextOffensiveCheck: null };
+  return { id, system: pos.system, position: pos.position, state: buildSeedState(id), attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null };
 }
 
 // Einmalig beim Serverstart aufgerufen (analog ensureBotUsers()) - legt fehlende aktive Basen an,
@@ -157,18 +186,23 @@ function migrateLegacyBase(raw: any, id: string): PirateBaseState {
   (['metall', 'kristall', 'deuterium'] as const).forEach((res) => {
     state.resources[res] = Math.max(state.resources[res] || 0, raw.resources?.[res] || 0);
   });
-  return { id, system: pos.system, position: pos.position, state, attacks: [], nextOffensiveCheck: null };
+  return { id, system: pos.system, position: pos.position, state, attacks: [], nextOffensiveCheck: null, nextEconomyTurn: null };
 }
 
 // Lazy bei jedem Laden angewendet (Angriff/Spionage/Galaxie-Ansicht) UND explizit einmal pro
 // Heartbeat fuer ALLE aktiven Basen (siehe listActivePirateBases(), aufgerufen aus heartbeat.ts ueber
-// runAllPirateBaseOffensiveTurns()) - Basen wachsen throttled wieder eigenstaendig (30.07.2026,
-// README Punkt 127, Korrektur derselben Wiedereinfuehrung wie die KI-Mitspieler): bauen/forschen/
-// minen genau wie ein KI-Mitspieler (runEconomyBotTurn() in economyBotTurn.ts - baut/forscht/
-// verteidigt, aber OHNE Asteroiden-Mining-Fluege, siehe NPC_PRODUCTION_BONUS_MULTIPLIER in
-// economy.ts fuer den stattdessen erhoehten Minen-Produktions-Ausgleich). Bewusst
-// UNGEDROSSELT (wie bei den Bots) - loest selbst NIE Kampf aus, nur die Offensiv-KI unten tut das,
-// und die ist ueber einen langen Cooldown stark gedrosselt.
+// runAllPirateBaseOffensiveTurns()) - Basen wachsen eigenstaendig (30.07.2026, Korrektur derselben
+// Wiedereinfuehrung wie die KI-Mitspieler): bauen/forschen/minen genau wie ein KI-Mitspieler
+// (runEconomyBotTurn() in economyBotTurn.ts - baut/forscht/verteidigt, aber OHNE
+// Asteroiden-Mining-Fluege, siehe NPC_PRODUCTION_BONUS_MULTIPLIER in economy.ts fuer den
+// stattdessen erhoehten Minen-Produktions-Ausgleich).
+//
+// GEAENDERT AM 17.08.2026 (Entscheidung 13.3): Hier stand "Bewusst UNGEDROSSELT (wie bei den
+// Bots)" - beides war unzutreffend. Die Bots sind sehr wohl getaktet (runBotTurn() laeuft nur im
+// Heartbeat, also alle 2 Minuten), und ungedrosselt bedeutete hier: ein vollstaendiger
+// Bau-Entscheidungsschritt PRO LADEVORGANG, also pro Galaxie-Aufruf eines beliebigen Clients.
+// Der Entscheidungsschritt haengt jetzt an PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS statt am Laden;
+// die Ressourcen-Produktion (runEconomyTick()) bleibt unveraendert bei jedem Laden.
 export async function loadPirateBase(id: string): Promise<PirateBaseState | null> {
   const json = getPirateBaseJson(id);
   if (!json) return null;
@@ -176,6 +210,7 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
   const base: PirateBaseState = isLegacyShape(raw) ? migrateLegacyBase(raw, id) : (raw as PirateBaseState);
   if (!base.attacks) base.attacks = []; // Bestandsdaten von vor der Offensiv-KI (siehe runPirateBaseOffensiveTurn())
   if (base.nextOffensiveCheck === undefined) base.nextOffensiveCheck = null; // Bestandsdaten von vor dem Cooldown-Umbau
+  if (base.nextEconomyTurn === undefined) base.nextEconomyTurn = null; // Bestandsdaten von vor Entscheidung 13.3
   // Floor-Up (Nutzerentscheidung 28.07.2026): garantiert die dauerhafte Mindest-Garnisonsstaerke
   // (SEED_FLEET/SEED_DEFENSE) - eine Basis kann durch Wachstum staerker werden, aber nie unter
   // diesen Mindestwert fallen (weder durch eine spaetere Anhebung der Konstante bei alten Basen,
@@ -187,7 +222,33 @@ export async function loadPirateBase(id: string): Promise<PirateBaseState | null
     base.state.defense[defId] = Math.max(base.state.defense[defId] || 0, qty);
   });
   await runEconomyTick(base.state);
-  runEconomyBotTurn(base.state);
+  // Entscheidung 13.3: Der Bau-Entscheidungsschritt haengt jetzt an der UHR, nicht mehr am
+  // Ladevorgang. runEconomyTick() darueber bleibt bewusst UNGEDROSSELT - die Ressourcen-Produktion
+  // ist zeitbasiert und damit ohnehin korrekt; sie hier zu drosseln waere sogar falsch, weil dann
+  // erst beim naechsten faelligen Zug produziert wuerde.
+  //
+  // Die Zahl der Zuege ergibt sich aus der VERSTRICHENEN ZEIT, nicht aus der Zahl der Aufrufe:
+  // `nextEconomyTurn` wird je faelligem Zug um genau ein Intervall weitergesetzt, nicht auf
+  // "jetzt + Intervall". Das ist der Unterschied zwischen einem Raster und einem Nachlauf.
+  // GRUND, gemessen am 17.08.2026 (base_growth_133.txt): mit "jetzt + Intervall" hing das Ergebnis
+  // weiterhin am Aufruf-Zeitpunkt - kommt ein Aufruf wenige Millisekunden VOR der Faelligkeit,
+  // faellt der Zug aus und wird nie nachgeholt. Gemessen waren das 17 statt 20 Zuegen, also
+  // x1,18 statt der geforderten x1,00. Produktiv traefe genau dieser Fall zu, weil der Heartbeat
+  // (2 Minuten) denselben Takt hat wie das Intervall.
+  const now = Date.now();
+  let dueTurns = 0;
+  if (base.nextEconomyTurn === null) {
+    dueTurns = 1; // frische oder migrierte Basis: einmal sofort, danach im Raster
+    base.nextEconomyTurn = now + PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS;
+  } else {
+    while (now >= base.nextEconomyTurn && dueTurns < PIRATE_BASE_ECONOMY_TURN_MAX_CATCHUP) {
+      dueTurns++;
+      base.nextEconomyTurn += PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS;
+    }
+    // Laenger als der Deckel weg gewesen: Raster neu ansetzen, statt dauerhaft hinterherzulaufen.
+    if (now >= base.nextEconomyTurn) base.nextEconomyTurn = now + PIRATE_BASE_ECONOMY_TURN_INTERVAL_MS;
+  }
+  for (let i = 0; i < dueTurns; i++) runEconomyBotTurn(base.state);
   // 12.08.2026: Der Deckel wird NICHT mehr auf den Lagerbestand angewandt - siehe LOOT_BASIS_CAP.
   // Vorher stand hier ein Kappen der Ressourcen nach jedem Zug, was den AUSBAU der Basis
   // unbeabsichtigt hart begrenzt hat (ein Gebaeude, das mehr kostet als der Deckel hergibt, wurde
