@@ -5,6 +5,7 @@ import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { InfoModal, InfoTable } from '../components/InfoModal';
 import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
+import FleetPresetBar from '../components/FleetPresetBar';
 import { useGalaxyPreview } from '../lib/useGalaxyPreview';
 import { SimulatorView } from './Simulator';
 import { WeeklyEventBanner } from '../components/WeeklyEventBanner';
@@ -31,9 +32,6 @@ function SektorCard({
   setSelection,
   fleet,
   now,
-  presetName,
-  setPresetName,
-  savePreset,
   sendMission,
   setSelectedSektor,
   recallMission,
@@ -53,9 +51,6 @@ function SektorCard({
   setSelection: (fn: (p: Record<string, number>) => Record<string, number>) => void;
   fleet: Record<string, number>;
   now: number;
-  presetName: string;
-  setPresetName: (v: string) => void;
-  savePreset: (name: string, ships: Record<string, number>) => void;
   sendMission: (sektorId: string, ships: Record<string, number>) => void;
   setSelectedSektor: (id: string | null) => void;
   recallMission: (missionId: string) => void;
@@ -182,18 +177,16 @@ function SektorCard({
             })()}
             {preview.loading && <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>Berechne Flugroute...</p>}
             {preview.preview && !preview.loading && <p style={{ fontSize: 13, marginTop: 6 }}>Anflugzeit: {formatTime(preview.preview.durationMs)} (Rückflug identisch)</p>}
-            <div className="qty-row" style={{ marginTop: 8 }}>
-              <input className="qty-input" placeholder="Name für Vorlage" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
-              <button
-                className="qty-btn"
-                onClick={() => {
-                  savePreset(presetName, selection);
-                  setPresetName('');
-                }}
-              >
-                Als Vorlage speichern
-              </button>
-            </div>
+            {/* Speichern UND Uebernehmen sitzen jetzt beisammen in der Karte (18.08.2026) - vorher
+                stand die Vorlagen-Liste weit oben auf der Seite, ausserhalb der geoeffneten Karte,
+                und das Uebernehmen filterte weder auf die hier erlaubten Schiffstypen noch auf den
+                Bestand. Siehe FleetPresetBar. */}
+            <FleetPresetBar
+              availableIds={availableIds}
+              fleet={fleet}
+              selection={selection}
+              setSelection={(ships) => setSelection(() => ships)}
+            />
             <div className="build-row">
               <button
                 className="qty-btn"
@@ -546,11 +539,10 @@ function MissionStatus({
 }
 
 export function SektorPage() {
-  const { gameData, state, sendMission, recallMission, savePreset, deletePreset, sektorPositions, error } = useGame();
+  const { gameData, state, sendMission, recallMission, sektorPositions, error } = useGame();
   const [tab, setTab] = useState('asteroid');
   const [selectedSektor, setSelectedSektor] = useState<string | null>(null);
   const [selection, setSelection] = useState<Record<string, number>>({});
-  const [presetName, setPresetName] = useState('');
   const [infoSektorId, setInfoSektorId] = useState<string | null>(null);
   const [fleetMissionId, setFleetMissionId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
@@ -602,27 +594,6 @@ export function SektorPage() {
         );
       })()}
 
-      {state.presets.length > 0 && (
-        <div className="queue-box" style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Gespeicherte Flotten-Vorlagen</h3>
-          {state.presets.map((p) => (
-            <div className="queue-item" key={p.id}>
-              <span>
-                {p.name} ({Object.entries(p.ships).map(([id, c]) => `${id} x${c}`).join(', ')})
-              </span>
-              <span>
-                <button className="qty-btn" onClick={() => setSelection(p.ships)}>
-                  In Auswahl übernehmen
-                </button>{' '}
-                <button className="qty-btn" onClick={() => deletePreset(p.id)}>
-                  Löschen
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="sub-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {SEKTOR_KLASSEN.map((k) => (
           <button key={k.id} className={`nav-btn${tab === k.id ? ' active' : ''}`} style={{ flex: '0 0 auto' }} onClick={() => setTab(k.id)}>
@@ -664,9 +635,6 @@ export function SektorPage() {
               setSelection={setSelection}
               fleet={state.fleet}
               now={now}
-              presetName={presetName}
-              setPresetName={setPresetName}
-              savePreset={savePreset}
               sendMission={sendMission}
               setSelectedSektor={setSelectedSektor}
               recallMission={recallMission}

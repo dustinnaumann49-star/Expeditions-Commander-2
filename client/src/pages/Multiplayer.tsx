@@ -5,6 +5,7 @@ import { PageSkeleton } from '../components/PageSkeleton';
 import { serverNow } from '../lib/serverTime';
 import { formatTime } from '../lib/format';
 import { shipName, SHIP_GROUPS } from '../lib/combatInfo';
+import FleetPresetBar from '../components/FleetPresetBar';
 import { RaidHilfePage } from './RaidHilfe';
 import { SektorInfoBox } from './Sektor';
 import { InfoModal, InfoTable } from '../components/InfoModal';
@@ -236,6 +237,8 @@ function PendingInviteCard({
         Deine Flotte fliegt nach Annahme zuerst zu {creator?.username} (Rendezvous), bevor es gemeinsam weitergeht.
       </p>
       <FleetPicker gameData={gameData} availableIds={availableIds} fleet={fleet} selection={sel} setSelection={setSel} />
+      {/* Vorlagen auch hier: der Eingeladene tippt seine Flotte sonst genauso von Hand wie der Ersteller. */}
+      <FleetPresetBar availableIds={availableIds} fleet={fleet} selection={sel} setSelection={(ships) => setSel(() => ships)} />
       <div className="build-row">
         <span>
           {rendezvousPreview.loading && 'Berechne Flugroute...'}
@@ -412,6 +415,12 @@ function ExpeditionEventsView() {
             </p>
           )}
           <FleetPicker gameData={gameData} availableIds={pickableShipIds} fleet={state.fleet} selection={selection} setSelection={setSelection} />
+          <FleetPresetBar
+            availableIds={pickableShipIds}
+            fleet={state.fleet}
+            selection={selection}
+            setSelection={(ships) => setSelection(ships)}
+          />
 
           <p style={{ fontSize: 13, marginTop: 10, marginBottom: 6 }}>Spieler einladen:</p>
           {users
