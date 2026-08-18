@@ -1,6 +1,6 @@
 import { getUserById, getGroupOperationJson, saveGroupOperationJson, listGroupOperationsJson, deleteGroupOperation } from '../db.js';
 import { SEKTOR_CONFIG, PIRATEN_MULTIPLIER_ROLL, sektorDefenseFactor } from './data/sectors.js';
-import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, PIRATEN_CHECK_INTERVAL_MS, PIRATEN_CHECK_COUNT, getEscalationMultiplier } from './data/economy.js';
+import { MISSION_TRAVEL_MS, MISSION_DURATION_MS, PIRATEN_CHECK_INTERVAL_MS, PIRATEN_CHECK_COUNT, getEscalationMultiplier, COMBAT_SHIP_IDS } from './data/economy.js';
 import {
   getEffectiveStats,
   baseStats,
@@ -86,13 +86,10 @@ export function createGroupOperation(
     if (qty > 0 && (state.fleet[id] || 0) < qty) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
   }
   // Boss-Gefecht (Sektor P10): nur Kreuzer-Klasse und aufwaerts erlaubt - macht "wenige grosse
-  // Schiffe" mechanisch zur Pflicht, nicht nur zur Empfehlung (siehe README Punkt 76).
-  if (sektorId === 'piraten_admiral') {
-    const disallowed = Object.entries(ships).find(([id, qty]) => qty > 0 && !ADMIRAL_ALLOWED_SHIP_IDS.includes(id));
-    if (disallowed) {
-      return { ok: false, error: `${shipName(disallowed[0])} ist im Piratenadmiral-Gefecht nicht erlaubt - nur Kreuzer-Klasse und größere Schiffe.` };
-    }
-  }
+  // Schiffe" mechanisch zur Pflicht, nicht nur zur Empfehlung. Fuer P9 gilt die entsprechende
+  // Liste (Kampfschiffe + Imperator); beides steckt in allowedShipIdsForOperation().
+  const notAllowed = checkShipsAllowed(kind, sektorId, ships);
+  if (notAllowed) return notAllowed;
   const invitees = inviteUserIds.filter((id) => id !== state.userId);
   for (const uid of invitees) {
     if (!getUserById(uid)) return { ok: false, error: 'Ein eingeladener Spieler existiert nicht.' };
@@ -143,6 +140,37 @@ export function listMyGroupOperations(userId: number): GroupOperation[] {
 
 // ========== EINLADUNG ANNEHMEN / ABLEHNEN ==========
 
+/**
+ * Welche Schiffstypen darf ein Teilnehmer in diese Operation einbringen?
+ *
+ * EINE Quelle fuer beide Pfade (Anlegen und Annehmen) und fuer beide Operations-Arten. Vorher gab
+ * es nur die P10-Sonderregel, und die stand als kopierter Block zweimal im File.
+ *
+ * ANLASS (18.08.2026): Bis dahin startete die Auswahl im Client immer leer, und der `FleetPicker`
+ * zeigt ohnehin nur erlaubte Typen an - eine Server-Pruefung fuer P9 war deshalb nie noetig. Mit
+ * den Flotten-Vorlagen im Multiplayer-Tab (dieselben Vorlagen wie im Sektor-Tab) ist das nicht
+ * mehr so: eine im Asteroiden-Feld gespeicherte Vorlage kann Mining-Schiffe enthalten, die der
+ * Picker NICHT rendert und die dadurch unsichtbar in der Auswahl stehen blieben. Der Client
+ * filtert sie jetzt beim Uebernehmen heraus - aber die Oberflaeche allein abzusichern reicht
+ * nicht, deshalb hier die zweite Ebene.
+ */
+function allowedShipIdsForOperation(kind: 'expedition' | 'event', sektorId: string | undefined): string[] {
+  if (sektorId === 'piraten_admiral') return ADMIRAL_ALLOWED_SHIP_IDS;
+  // Expeditionen (P9 - Elite-Bollwerk) erlauben alle Kampfschiffe plus Imperator, Notruf-Events
+  // nur die Kampfschiffe - identisch zu `availableIds` in `Multiplayer.tsx`.
+  return kind === 'expedition' ? [...COMBAT_SHIP_IDS, 'imperator'] : [...COMBAT_SHIP_IDS];
+}
+
+function checkShipsAllowed(kind: 'expedition' | 'event', sektorId: string | undefined, ships: Record<string, number>): ActionResult | null {
+  const allowed = allowedShipIdsForOperation(kind, sektorId);
+  const disallowed = Object.entries(ships).find(([id, qty]) => qty > 0 && !allowed.includes(id));
+  if (!disallowed) return null;
+  if (sektorId === 'piraten_admiral') {
+    return { ok: false, error: `${shipName(disallowed[0])} ist im Piratenadmiral-Gefecht nicht erlaubt - nur Kreuzer-Klasse und größere Schiffe.` };
+  }
+  return { ok: false, error: `${shipName(disallowed[0])} kann bei dieser Operation nicht mitfliegen.` };
+}
+
 export function respondToGroupOperation(state: PlayerState, opId: string, accept: boolean, ships: Record<string, number>): ActionResult {
   const op = loadOp(opId);
   if (!op) return { ok: false, error: 'Operation nicht gefunden.' };
@@ -162,12 +190,8 @@ export function respondToGroupOperation(state: PlayerState, opId: string, accept
   for (const [id, qty] of Object.entries(ships)) {
     if (qty > 0 && (state.fleet[id] || 0) < qty) return { ok: false, error: 'Nicht genug Schiffe verfügbar.' };
   }
-  if (op.sektorId === 'piraten_admiral') {
-    const disallowed = Object.entries(ships).find(([id, qty]) => qty > 0 && !ADMIRAL_ALLOWED_SHIP_IDS.includes(id));
-    if (disallowed) {
-      return { ok: false, error: `${shipName(disallowed[0])} ist im Piratenadmiral-Gefecht nicht erlaubt - nur Kreuzer-Klasse und größere Schiffe.` };
-    }
-  }
+  const notAllowed = checkShipsAllowed(op.kind, op.sektorId, ships);
+  if (notAllowed) return notAllowed;
   Object.entries(ships).forEach(([id, qty]) => {
     if (qty > 0) state.fleet[id] -= qty;
   });
