@@ -19,3 +19,136 @@ klein (Aufbau)              0.37 Mrd     0.33 Mrd       89.6%     32.2 Mio  -0.3
 gross                       4.23 Mrd     0.02 Mrd        0.5%     32.2 Mio   0.01 Mrd
 real (Session 3)           31.57 Mrd     0.00 Mrd        0.0%     32.2 Mio   0.03 Mrd
 nur Jaeger (gleicher Wert wie gross)  5.58 Mrd     0.01 Mrd        0.2%     32.2 Mio   0.02 Mrd
+
+=== ENTSCHEIDUNG 5 UMGESETZT (18.08.2026) - NEUE MESSREIHE ===
+Alles darueber ist gegen den ALTEN Stand gelaufen (feste Garnison, Beute = 35 % des
+gedeckelten Lagerbestands) und mit den Zeilen darunter NICHT vergleichbar.
+
+--- 1. Bezugsgroessen ---
+  Grundbestand einer frischen Basis: 5300 Schiffe + 1120 Anlagen
+  Machtwert dieses Grundbestands (= 100 % Gefechtsbereitschaft): 2.08 Mrd
+  Wuerfeltabelle (ausgeliefert): [0.85 / 1.1 / 1.2-1.4]
+  Zum Vergleich piraten_hoch: [0.7 / 0.95 / 0.95-1.2], piraten_elite: [0.9 / 1.2 / 1.55]
+  Anlagen-Faktor 0.16 (Hoch 0.15, Elite 0.18)
+  Erholungszeit 20 h -> hoechstens 1.2 Angriffe je Basis und Tag
+
+--- 2. Beute-Kurve (Entscheidung 2), Kontrollpunkte ---
+    1.00 Mrd vernichtete Feindmacht -> 0.13 Mrd Beutewert
+    5.00 Mrd vernichtete Feindmacht -> 0.53 Mrd Beutewert
+   11.18 Mrd vernichtete Feindmacht -> 1.05 Mrd Beutewert
+   20.00 Mrd vernichtete Feindmacht -> 1.72 Mrd Beutewert
+   50.00 Mrd vernichtete Feindmacht -> 3.75 Mrd Beutewert
+  Ankerprobe (muss 1,05 Mrd ergeben): 1.05 Mrd
+
+--- 3. Abnahmeband je Angriff (aus real_fleet.txt, reale Flotte 34,99 Mrd) ---
+  Solo Hoch 4,40 Mrd / 6 Checks = 2,1 % je Check | Elite 9,20 Mrd / 6 Checks = 4,4 % je Check
+
+--- 4. Kandidaten-Sweep, 40 Laeufe je Zelle, frische Basis (100 % Bereitschaft) ---
+Kandidat B [0.85/1.1/1.2-1.4] · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 103.2% · Welle zu 100.0% vernichtet · vernichtete Macht 24.88 Mrd
+   Verlust 0.50 Mrd = 1.6% · Beute 2.07 Mrd · Netto 1.57 Mrd · Totalverluste 0/40
+Kandidat C [0.95/1.25/1.5] · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 112.1% · Welle zu 100.0% vernichtet · vernichtete Macht 26.73 Mrd
+   Verlust 0.62 Mrd = 2.0% · Beute 2.20 Mrd · Netto 1.58 Mrd · Totalverluste 0/40
+Kandidat A [0.75/1/1.05-1.25] · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 84.8% · Welle zu 100.0% vernichtet · vernichtete Macht 21.04 Mrd
+   Verlust 0.31 Mrd = 1.0% · Beute 1.79 Mrd · Netto 1.48 Mrd · Totalverluste 0/40
+Kandidat A [0.75/1/1.05-1.25] · Flotte klein (0.37 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 94.4% · Welle zu 100.0% vernichtet · vernichtete Macht 0.31 Mrd
+   Verlust 0.00 Mrd = 1.1% · Beute 0.05 Mrd · Netto 0.05 Mrd · Totalverluste 0/40
+Kandidat B [0.85/1.1/1.2-1.4] · Flotte klein (0.37 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 95.5% · Welle zu 100.0% vernichtet · vernichtete Macht 0.32 Mrd
+   Verlust 0.00 Mrd = 1.1% · Beute 0.05 Mrd · Netto 0.05 Mrd · Totalverluste 0/40
+Kandidat C [0.95/1.25/1.5] · Flotte klein (0.37 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 110.5% · Welle zu 100.0% vernichtet · vernichtete Macht 0.36 Mrd
+   Verlust 0.01 Mrd = 1.5% · Beute 0.06 Mrd · Netto 0.05 Mrd · Totalverluste 0/40
+Kandidat A [0.75/1/1.05-1.25] · Flotte gross (4.23 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 94.0% · Welle zu 100.0% vernichtet · vernichtete Macht 2.99 Mrd
+   Verlust 0.04 Mrd = 1.0% · Beute 0.34 Mrd · Netto 0.30 Mrd · Totalverluste 0/40
+Kandidat B [0.85/1.1/1.2-1.4] · Flotte gross (4.23 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 97.9% · Welle zu 100.0% vernichtet · vernichtete Macht 3.10 Mrd
+   Verlust 0.05 Mrd = 1.1% · Beute 0.35 Mrd · Netto 0.31 Mrd · Totalverluste 0/40
+Kandidat C [0.95/1.25/1.5] · Flotte gross (4.23 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 121.2% · Welle zu 100.0% vernichtet · vernichtete Macht 3.73 Mrd
+   Verlust 0.08 Mrd = 1.8% · Beute 0.41 Mrd · Netto 0.34 Mrd · Totalverluste 0/40
+Kandidat D [1.15/1.45/1.7-1.9] · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 134.6% · Welle zu 100.0% vernichtet · vernichtete Macht 31.43 Mrd
+   Verlust 0.93 Mrd = 2.9% · Beute 2.52 Mrd · Netto 1.60 Mrd · Totalverluste 0/40
+Kandidat D [1.15/1.45/1.7-1.9] · Flotte gross (4.23 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 141.5% · Welle zu 100.0% vernichtet · vernichtete Macht 4.28 Mrd
+   Verlust 0.11 Mrd = 2.6% · Beute 0.46 Mrd · Netto 0.35 Mrd · Totalverluste 0/40
+Kandidat D [1.15/1.45/1.7-1.9] · Flotte klein (0.37 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 148.8% · Welle zu 100.0% vernichtet · vernichtete Macht 0.47 Mrd
+   Verlust 0.02 Mrd = 4.2% · Beute 0.07 Mrd · Netto 0.06 Mrd · Totalverluste 0/40
+Kandidat D [1.15/1.45/1.7-1.9] · Flotte klein (0.37 Mrd, Profil schwach) · 40 Laeufe
+   o Feindstaerke 133.8% · Welle zu 66.9% vernichtet · vernichtete Macht 0.27 Mrd
+   Verlust 0.21 Mrd = 56.9% · Beute 0.04 Mrd · Netto -0.17 Mrd · Totalverluste 0/40
+Kandidat B [0.85/1.1/1.2-1.4] · Flotte klein (0.37 Mrd, Profil schwach) · 40 Laeufe
+   o Feindstaerke 102.9% · Welle zu 95.9% vernichtet · vernichtete Macht 0.32 Mrd
+   Verlust 0.08 Mrd = 21.1% · Beute 0.05 Mrd · Netto -0.03 Mrd · Totalverluste 0/40
+Kandidat C [0.95/1.25/1.5] · Flotte klein (0.37 Mrd, Profil schwach) · 40 Laeufe
+   o Feindstaerke 115.6% · Welle zu 83.6% vernichtet · vernichtete Macht 0.30 Mrd
+   Verlust 0.14 Mrd = 36.6% · Beute 0.05 Mrd · Netto -0.09 Mrd · Totalverluste 0/40
+--- 5. Farm-Serie gegen DIESELBE Basis (ausgelieferte Tabelle D), Schranke gegen Dauer-Farming ---
+Farm-Serie, je 20 h Erholung dazwischen · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe je Angriff
+   Angriff 1: Bereitschaft 100.0% · Beute 2.53 Mrd · Verlust 3.0%
+   Angriff 2: Bereitschaft 92.7% · Beute 2.30 Mrd · Verlust 2.2%
+   Angriff 3: Bereitschaft 87.9% · Beute 2.39 Mrd · Verlust 2.5%
+   Angriff 4: Bereitschaft 84.7% · Beute 2.24 Mrd · Verlust 2.0%
+   Angriff 5: Bereitschaft 82.7% · Beute 2.18 Mrd · Verlust 1.8%
+Farm-Serie, je 20 h Erholung dazwischen · Flotte klein (0.37 Mrd, Profil schwach) · 40 Laeufe je Angriff
+   Angriff 1: Bereitschaft 100.0% · Beute 0.04 Mrd · Verlust 55.3%
+   Angriff 2: Bereitschaft 95.2% · Beute 0.04 Mrd · Verlust 55.5%
+   Angriff 3: Bereitschaft 92.2% · Beute 0.05 Mrd · Verlust 47.9%
+   Angriff 4: Bereitschaft 89.4% · Beute 0.05 Mrd · Verlust 40.6%
+   Angriff 5: Bereitschaft 87.6% · Beute 0.05 Mrd · Verlust 38.2%
+
+--- 6. Auswertung und Entscheidung (18.08.2026) ---
+Verlust je Angriff in % des eingesetzten Flottenwerts, Profil voll, 40 Laeufe je Zelle:
+Kandidat (o Feindstaerke) | klein 0,37 Mrd | gross 4,23 Mrd | real 31,57 Mrd
+A [0,75/1,00/1,05-1,25]   | 1,1 %          | 1,0 %          | 1,0 %
+B [0,85/1,10/1,20-1,40]   | 1,1 %          | 1,1 %          | 1,6 %
+C [0,95/1,25/1,50]        | 1,5 %          | 1,8 %          | 2,0 %
+D [1,15/1,45/1,70-1,90]   | 4,2 %          | 2,6 %          | 2,9 %
+Abnahmeband war 2,1 bis 4,4 % (Solo Hoch bzw. Elite, je Check). ALLE DREI URSPRUENGLICHEN
+KANDIDATEN LIEGEN DARUNTER - deshalb D nachgezogen und ausgeliefert.
+
+ERSTER BEFUND, wichtig fuer kuenftige Aenderungen: Die noetige Tabelle liegt NOMINAL ueber der des
+Elite-Bollwerks [0,90/1,20/1,55], erzeugt aber weniger Verlust als dieses. Gleiche Zahl heisst an
+der Basis also NICHT gleiche Schwierigkeit. Gruende: fodder-lastiger Grundbestand (2.000 leichte
+Jaeger von 5.300 Schiffen) statt der Wellenprofile der Sektoren, kein Piratenkapitaen, keine
+Kampf-Modifikatoren, und ein Einzelkampf statt sechs Checks gegen eine schon angeschlagene Flotte.
+
+ZWEITER BEFUND: Der Ausbaustand schlaegt staerker durch als die Tabelle. Dieselbe kleine Flotte
+verliert mit voller Forschung 4,2 %, mit schwacher 56,9 % (Kandidat D; bei B 21,1 %, bei C 36,6 %).
+Ursache ist die Forschungsangleichung der Garnison (garrisonResearch): die Basis kaempft immer
+mindestens auf dem Forschungsstand des Angreifers, der Vorsprung eines entwickelten Spielers liegt
+also allein in Klasse, Modulen und Booster - die ein Anfaenger nicht hat. Piratenbasen bleiben damit
+Inhalt fuer entwickelte Flotten. Das war vorher genauso (89,5 % Verlust), ist aber nicht mehr eine
+Wand, sondern ein Verhaeltnis: keine Totalverluste in 40/40 Laeufen, und der Verlust faellt mit dem
+Ausbaustand. Wenn Anfaenger dort etwas holen koennen sollen, ist der Hebel NICHT die Tabelle,
+sondern der Forschungsanteil der Garnison (heute PIRATE_RESEARCH_SHARE = 1,0).
+
+ERTRAGSSEITE, gegen die Baseline gelesen:
+  Ein Angriff der realen Flotte: Beute 2,52 Mrd, Verlust 0,93 Mrd, Netto rund 1,60 Mrd.
+  Vier Basen, ein Angriff je Basis und Tag (Erholungszeit 20 h): rund 5,9 bis 6,4 Mrd netto/Tag.
+  Zum Vergleich: Solo Hoch -3,26 Mrd/Tag (netto, nach R14), Elite-Bollwerk +23,4 Mrd je Serie,
+  Baseline spaet 76,85 Mrd/Tag. Die Basen liegen damit bei rund 8 % der Tageseinnahmen und wie
+  gefordert zwischen Solo Hoch und Elite-Bollwerk - auf der Risiko- wie auf der Ertragsseite.
+
+SCHRANKE GEGEN DAUER-FARMING, gemessen (Punkt 5 oben):
+  Ohne Deckel loeschte EIN Angriff der realen Flotte die komplette Garnison (Welle zu 100 %
+  vernichtet -> 100 % Verlustanteil auf den Bestand). Die Basis waere danach auf Monate wertlos
+  gewesen - das tote Feature waere nur um vier Angriffe verschoben worden. Mit
+  PIRATE_BASE_MAX_ATTRITION 0,35 und dem Wiederaufbau aus 5a pendelt sich taegliches Abfarmen bei
+  rund 83 % Gefechtsbereitschaft ein, die Beute sinkt von 2,53 auf 2,18 Mrd (-14 %) und bleibt dort
+  stabil. Erholungszeit begrenzt die Haeufigkeit, Gefechtsbereitschaft den Ertrag.
+Kandidat D [1.15/1.45/1.7-1.9] · Flotte real (31.57 Mrd, Profil voll) · 40 Laeufe
+   o Feindstaerke 136.3% · Welle zu 100.0% vernichtet · vernichtete Macht 31.78 Mrd
+   Verlust 0.96 Mrd = 3.0% · Beute 2.55 Mrd · Netto 1.59 Mrd · Totalverluste 0/40
+
+--- 7. Bestaetigungslauf gegen den ausgelieferten Stand (nach Deckel + Wiederaufbau) ---
+Kandidat D, reale Flotte, 40 Laeufe: Feindstaerke 136,3 %, Verlust 3,0 %, Beute 2,55 Mrd,
+Netto 1,59 Mrd, 0/40 Totalverluste. Deckt sich mit dem Sweep-Wert von 2,9 % - der Attritions-Deckel
+und der Wiederaufbau veraendern den EINZELangriff erwartungsgemaess nicht, sie wirken erst in der
+Serie (Punkt 5).
