@@ -835,6 +835,7 @@ export interface DebugPirateBaseState {
   research: Record<string, number>;
   outgoingAttacks: number;
   nextOffensiveCheck: number | null;
+  nextEconomyTurn: number | null; // Entscheidung 13.3: naechster faelliger Bau-Entscheidungsschritt
   buildQueueLength: number;
   defenseQueueLength: number;
   researchQueueLength: number;
