@@ -1,0 +1,93 @@
+
+=== SOLO GEGEN ZU ZWEIT, dieselbe Flotte, 40 Serien je Zelle (18.08.2026) ===
+Profil voll, Flotte gross (4.23 Mrd Wert, 2.72 Mrd Power), 6 Checks je Serie
+Solo      | Verlust 1.16 Mrd = 27.4% | Belohnung 32.59 Mrd + 734 DM | Netto 31.43 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Zu zweit  | Verlust 1.17 Mrd = 27.6% | Belohnung 32.63 Mrd + 744 DM | Netto 31.47 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Differenz je Teilnehmer: Verlust 0.3 Prozentpunkte, Belohnung 0.05 Mrd, Netto 0.03 Mrd
+
+=== SOLO GEGEN ZU ZWEIT, dieselbe Flotte, 40 Serien je Zelle (18.08.2026) ===
+Profil mittel, Flotte gross (4.23 Mrd Wert, 2.72 Mrd Power), 6 Checks je Serie
+Solo      | Verlust 1.09 Mrd = 25.9% | Belohnung 32.63 Mrd + 744 DM | Netto 31.54 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Zu zweit  | Verlust 1.21 Mrd = 28.6% | Belohnung 32.59 Mrd + 734 DM | Netto 31.38 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Differenz je Teilnehmer: Verlust 2.7 Prozentpunkte, Belohnung -0.05 Mrd, Netto -0.16 Mrd
+
+=== SOLO GEGEN ZU ZWEIT, dieselbe Flotte, 40 Serien je Zelle (18.08.2026) ===
+Profil voll, Flotte klein (0.37 Mrd Wert, 0.28 Mrd Power), 6 Checks je Serie
+Solo      | Verlust 0.15 Mrd = 40.5% | Belohnung 32.15 Mrd + 745 DM | Netto 32.00 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.44
+Zu zweit  | Verlust 0.16 Mrd = 41.9% | Belohnung 32.66 Mrd + 750 DM | Netto 32.51 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Differenz je Teilnehmer: Verlust 1.3 Prozentpunkte, Belohnung 0.51 Mrd, Netto 0.51 Mrd
+
+=== SOLO GEGEN ZU ZWEIT, dieselbe Flotte, 40 Serien je Zelle (18.08.2026) ===
+Profil schwach, Flotte klein (0.37 Mrd Wert, 0.28 Mrd Power), 6 Checks je Serie
+Solo      | Verlust 0.34 Mrd = 91.3% | Belohnung 17.87 Mrd + 537 DM | Netto 17.53 Mrd | Siege 4.58/6 | Perfekt 42.5% | Grossflotten-Bonus x1.20
+Zu zweit  | Verlust 0.35 Mrd = 93.2% | Belohnung 19.70 Mrd + 561 DM | Netto 19.36 Mrd | Siege 4.75/6 | Perfekt 50.0% | Grossflotten-Bonus x1.24
+Differenz je Teilnehmer: Verlust 1.9 Prozentpunkte, Belohnung 1.83 Mrd, Netto 1.82 Mrd
+
+--- Rendezvous-Kosten des Mitfliegers (gerechnet, nicht gemessen) ---
+Referenzflotte gross, Geschwindigkeit 125 (Profil voll):
+  gleiches System, andere Position: 2,34 h Anflug, 247.149 Deuterium (0,7 Mio Wert)
+  3 Systeme entfernt:               3,97 h Anflug, 716.251 Deuterium (2,1 Mio Wert)
+  20 Systeme entfernt:              4,93 h Anflug, 1.103.770 Deuterium (3,3 Mio Wert)
+Der Ersteller zahlt davon nichts. Gegen eine Belohnung von rund 32 Mrd je Serie ist der
+RESSOURCEN-Anteil belanglos (0,01 %); die ZEIT ist es nicht: 2,3 bis 4,9 Stunden zusaetzlich auf
+eine 24-Stunden-Expedition plus Rueckweg, in denen die Flotte nichts tut.
+
+--- Auswertung (18.08.2026) ---
+1. DIE BELOHNUNG IST IDENTISCH. In allen vier Zellen liegt die Belohnung je Teilnehmer solo und zu
+   zweit gleich auf (Abweichungen unter 0,2 % sind Streuung ueber 40 Serien) - AUSSER dort, wo der
+   Grossflotten-Bonus noch nicht am Deckel steht, siehe Punkt 3. Die Nutzerbeobachtung
+   "Belohnung bleibt gleich" ist damit bestaetigt.
+2. DIE VERLUSTE SIND ZU ZWEIT DURCHGEHEND HOEHER, aber nur wenig: +0,3 / +2,7 / +1,3 / +1,9
+   Prozentpunkte in den vier Zellen. Alle vier zeigen dasselbe Vorzeichen, was gegen reine Streuung
+   spricht; die Groessenordnung liegt aber bei einem Zehntel dessen, was der Ausbaustand ausmacht.
+   Der Eindruck "die Verluste sind erhoeht" trifft also zu, das Ausmass ist klein.
+3. DER EINZIGE ECHTE VORTEIL LIEGT BEI KLEINEN FLOTTEN - und ist heute unsichtbar. Der
+   Grossflotten-Bonus rechnet mit der SUMME beider Flotten: bei der grossen Referenzflotte steht er
+   solo wie gemeinsam am Deckel x1,50, es aendert sich nichts. Bei der kleinen Flotte steigt er von
+   x1,44 auf x1,50 (voll) bzw. von x1,20 auf x1,24 (schwach) - das sind +0,51 Mrd bzw. +1,83 Mrd
+   Belohnung je Teilnehmer und Serie. Fuer schwach/klein kommt hinzu, dass die Serie oefter komplett
+   durchgehalten wird (Perfekt-Anteil 42,5 % gegen 50,0 %, Siege 4,58 gegen 4,75 von 6).
+   FAZIT: Gemeinsam fliegen lohnt sich ausgerechnet dort, wo es heute niemand merkt (Aufbauphase),
+   und ist genau dort neutral bis leicht negativ, wo die Spieler tatsaechlich stehen.
+
+=== NACHTRAG: Wirkung von Entscheidung 2 auf die Koop-Frage (18.08.2026) ===
+
+=== SOLO GEGEN ZU ZWEIT, dieselbe Flotte, 40 Serien je Zelle (18.08.2026) ===
+Profil voll, Flotte gross (4.23 Mrd Wert, 2.72 Mrd Power), 6 Checks je Serie
+Solo      | Verlust 1.27 Mrd = 29.9% | Belohnung 32.63 Mrd + 742 DM | Netto 31.36 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Zu zweit  | Verlust 1.28 Mrd = 30.2% | Belohnung 32.60 Mrd + 737 DM | Netto 31.33 Mrd | Siege 6.00/6 | Perfekt 100.0% | Grossflotten-Bonus x1.50
+Differenz je Teilnehmer: Verlust 0.2 Prozentpunkte, Belohnung -0.02 Mrd, Netto -0.03 Mrd
+
+Vernichtete Feindmacht je Serie: solo 18.85 Mrd, zu zweit 38.04 Mrd (Faktor 2.02)
+  Entscheidung 2, V1 (jeder bekommt die Kurve auf die GESAMTE vernichtete Macht):
+    solo 1.64 Mrd je Spieler | zu zweit 2.97 Mrd je Spieler = x1.82
+  Entscheidung 2, V2 (jeder bekommt die Kurve auf seinen BEITRAGSANTEIL, hier 1/n):
+    solo 1.64 Mrd je Spieler | zu zweit 1.65 Mrd je Spieler = x1.01
+  Entscheidung 2, V3 (Kurve auf die Gesamtmacht, dann durch die Teilnehmerzahl geteilt):
+    solo 1.64 Mrd je Spieler | zu zweit 1.49 Mrd je Spieler = x0.91
+
+--- Auswertung des Nachtrags ---
+DIE KOOP-FRAGE BEANTWORTET SICH MIT ENTSCHEIDUNG 2 VON SELBST - je nachdem, welche Bezugsgroesse
+die Kurve in einer Gruppen-Expedition bekommt. Gemessen: die vernichtete Feindmacht verdoppelt sich
+mit dem zweiten Teilnehmer exakt wie erwartet (Faktor 2,02), weil die Wellenstaerke an der SUMME
+aller Teilnehmerflotten haengt. Der Exponent 0,85 macht daraus 2^0,85 = 1,80 je Teilnehmer.
+
+  V1 (Kurve auf die gesamte vernichtete Macht, jeder bekommt sie voll): x1,82 je Teilnehmer
+  V2 (Kurve auf den eigenen Beitragsanteil): x1,01 - also neutral, Zustand wie heute
+  V3 (Kurve auf die Gesamtmacht, geteilt durch die Teilnehmerzahl): x0,91 - schlechter als solo
+
+Hochgerechnet fuer V1 (Skalierung aus der Messung uebernommen):
+  n=2: je Spieler x1,82, Haushalt x3,64 (getrennt fliegen waere x2)
+  n=3: je Spieler x2,57, Haushalt x7,70 (getrennt x3)
+  n=4: je Spieler x3,28, Haushalt x13,11 (getrennt x4)
+  n=5: je Spieler x3,96, Haushalt x19,80 (getrennt x5)
+
+WICHTIG: In V1 ist der Anreiz nicht linear, sondern beschleunigt sich mit jedem Teilnehmer, weil
+JEDER die volle Kurve auf die gemeinsame Beute bekommt. Bei 5 Teilnehmern liefert der Haushalt das
+Vierfache dessen, was dieselben Flotten getrennt erwirtschaften. Das ist ein Koop-Anreiz weit ueber
+das hinaus, was in diesem Gespraech gefragt war.
+
+ZWEITER PUNKT, unabhaengig von der Variante: `checkShipsAllowed()` prueft heute nur Schiffstypen,
+KEINE Mindestmenge. In V1 bekommt ein Teilnehmer mit einem einzigen Kreuzer dieselbe volle Kurve wie
+der mit der ganzen Flotte, und er erhoeht die Feindstaerke praktisch nicht. Die optimale Spielweise
+waere damit die Alibi-Flotte. Ohne Mindestbeitrag oder Beitragsgewichtung ist V1 nicht haltbar.

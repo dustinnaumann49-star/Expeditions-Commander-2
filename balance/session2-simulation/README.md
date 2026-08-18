@@ -11,7 +11,10 @@ cd ../balance/session4-simulation
 node run_station.mjs               # Allianz-Station: Kosten/Ertrag/Bauzeit, reine Arithmetik
 node run_ships.mjs 4               # Schiffsbalance: Tier-Progression, RF-Kette, Duelle bei gleichem Wert
 node run_admiral.mjs 6             # Piratenadmiral: komplette 6-Check-Serien, Eskalation, Extraktion
-node run_pirate_base.mjs 3         # Piratenbasen-Angriff: Verluste gegen Beute-Deckel
+node run_pirate_base.mjs kontext   # Piratenbasen: Bezugsgroessen, Beute-Kurve, Abnahmeband
+node run_pirate_base.mjs kandidat D real 40   # Piratenbasen: eine Sweep-Zelle (Entscheidung 5)
+node run_pirate_base.mjs serie real 5 40      # Piratenbasen: Farm-Serie gegen dieselbe Basis
+node run_elite_coop.mjs voll 40 gross         # Elite-Bollwerk: dieselbe Flotte solo gegen zu zweit
 node run_admiral_rebalance.mjs 5  # P10-Neubalancierung: Boss-Anteil, Verlustkriterium, Beute-Koeffizient
 node run_aggregate_threshold.mjs 6  # Overkill-Schutz an der Aggregations-Schwelle (Regressionstest)
 node run_loot_exponent.mjs 40      # Beute-Exponent (Entscheidung 1): drei Ausbaustaende, vier Exponenten
@@ -29,10 +32,18 @@ Die `.txt`-Dateien sind die Rohausgaben, aus denen die Tabellen im Session-4-Abs
 - **Duelle bei gleichem Wert** (`run_ships.mjs`) laufen bewusst mit Forschung 0, ohne Booster,
   Klasse und Module und mit `allowRetreat: false` - damit misst die Matrix die reine
   Schiff-gegen-Schiff-Relation der Basiswerte, nicht den Ausbaustand eines Spielers.
-- **Piratenbasen** (`run_pirate_base.mjs`) haben eine FESTE Garnison (kein `PIRATEN_MULTIPLIER_ROLL`),
-  darum ist hier - anders als bei den Sektoren - die absolute Flottengroesse entscheidend.
-  `SEED_FLEET`/`SEED_DEFENSE`/`RESOURCE_CAP` sind in `pirateBaseState.ts` nicht exportiert und im
-  Skript gespiegelt; bei Aenderungen dort hier nachziehen.
+- **Piratenbasen** (`run_pirate_base.mjs`) - VOLLSTAENDIG NEU GESCHRIEBEN AM 18.08.2026
+  (Entscheidung 5). Hier stand zuvor: feste Garnison, kein Multiplikator-Wurf, absolute
+  Flottengroesse entscheidend, Konstanten im Skript gespiegelt. **Alles davon gilt nicht mehr.** Die
+  Garnison skaliert jetzt mit der angreifenden Flotte (`PIRATE_BASE_MULTIPLIER_ROLL`), und die
+  Konstanten stehen in `data/economy.ts`, der Rechenteil in `game/pirateBaseCombat.ts` - beides ohne
+  Datenbank-Bezug und direkt importiert. **Es wird nichts mehr gespiegelt**, genau das war der
+  Anlass. Drei Modi: `kontext`, `kandidat`, `serie` (siehe Kopf der Datei).
+- **Elite-Bollwerk solo gegen gemeinsam** (`run_elite_coop.mjs`, 18.08.2026) misst dieselbe Flotte
+  mit einem und mit zwei Teilnehmern ueber die volle 6-Check-Serie, Verluste in WERT statt
+  Stueckzahlen, und rechnet die drei moeglichen Bezugsgroessen der Beute-Kurve (Entscheidung 2)
+  durch. Ergaenzt `run_elite.mjs`, das nur Mehrspieler-Konstellationen gegeneinander und nur
+  Einzel-Checks misst - der Solo-Vergleich fehlte dort.
 - **Admiral-Serien** (`run_admiral.mjs`) nutzen ein Verlust-Kriterium (45 % Wertverlust in einem
   Check) statt `result.retreated` - siehe Session-2-Befund 2: mit dem heutigen Code endet praktisch
   jeder Durchlauf schon in Check 1, die Eskalationskurve waere sonst gar nicht messbar.
