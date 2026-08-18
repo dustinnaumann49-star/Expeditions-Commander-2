@@ -173,7 +173,13 @@ export function DebugPage() {
             <EntityCard
               key={p.id}
               title={`🏴‍☠️ Piratenbasis 1:${p.system}:${p.position}`}
-              subtitle={`Angriffsflüge unterwegs: ${p.outgoingAttacks}`}
+              subtitle={`Angriffsflüge unterwegs: ${p.outgoingAttacks} · nächster Bau-Zug: ${
+                p.nextEconomyTurn === null
+                  ? 'sofort'
+                  : p.nextEconomyTurn <= Date.now()
+                    ? 'fällig'
+                    : `in ${Math.ceil((p.nextEconomyTurn - Date.now()) / 1000)} s`
+              }`}
               state={p}
               gameData={gameData}
             />
