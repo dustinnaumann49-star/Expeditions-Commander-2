@@ -11,7 +11,8 @@ einsteigt und was NICHT im Plan steht.
 > Abschnitte, die zur jeweiligen Aufgabe gehoeren. `README.md` und `FINALE_BALANCE_CHECKLIST.md`
 > nur bei Bedarf.
 > Beachte Messregel 16: keine Zahl aus einer Beschreibung uebernehmen, immer gegen den Code
-> pruefen.
+> pruefen. Und beachte den Abschnitt "Arbeitsregel: WANN Code geaendert wird" - bis zum
+> Server-Neustart wird nicht gebaut, ausser ich frage ausdruecklich danach.
 
 **Abschnitt 2a ist neu und der wichtigste Teil fuer den Einstieg** - dort steht, was zwischen dem
 10. und 13.08.2026 tatsaechlich am Code geaendert wurde. Wer nur Abschnitt 8 liest, haelt den Plan
@@ -20,11 +21,50 @@ faelschlich fuer unangetastet.
 **Eine Session pro Block, nicht mehr.** Plan inzwischen ~264 KB, Checkliste 125 KB, README 67 KB -
 das passt nicht gleichzeitig in eine Session.
 
+## Arbeitsregel: WANN Code geaendert wird (ab 19.08.2026)
+
+**Am Ende des Balance-Plans steht ein Server-Neustart. Alle Spielstaende werden zurueckgesetzt,
+alle fangen mit der neuen Balance neu an.** Daraus folgt die Regel fuer jede Session bis dahin:
+
+**Balance-Aenderungen werden GESAMMELT, nicht einzeln ausgeliefert.** Sie wirken auf Spielstaende,
+die es nach dem Neustart nicht mehr gibt - frueh hochladen bringt nichts und kostet nur
+Abstimmung. Gemeint sind Kurven, Konstanten, Sektor-Werte, Kosten, Belohnungen, Kampfmechanik.
+
+**Drei Kategorien, danach entscheiden:**
+
+| Kategorie | Beispiele | Wann hoch |
+|---|---|---|
+| Sofort | Abstuerze, Fehler, Performance, kaputte Anzeigen | sofort - betrifft das laufende Spiel, unabhaengig vom Neustart |
+| Sammeln | alles aus dem Balance-Plan | erst zum Neustart, gebuendelt |
+| Immer | `UMSETZUNGSPLAN_BALANCE.md`, `UEBERGABE.md`, Messprotokolle | jede Session - das ist Arbeitsstand, kein Spielstand |
+
+**Fuer die Umsetzungs-Sessions heisst das konkret:**
+
+1. **Nicht bauen, ohne zu fragen.** Planen, messen, kalibrieren, dokumentieren - Code nur auf
+   ausdrueckliche Nachfrage des Nutzers ("kann das eingebaut werden, wird es empfohlen?"). Ein
+   knappes "Go" auf einen Loesungsansatz ist KEINE Freigabe zum Einbauen; im Zweifel nachfragen.
+2. **ABER: aktiv darauf hinweisen, wenn eine Aenderung zwingend vorgezogen werden muss.** Es gibt
+   Faelle, in denen Warten teurer ist als Bauen - etwa wenn ein Messergebnis ohne die Aenderung
+   nicht reproduzierbar bleibt, wenn zwei Entscheidungen sonst zweimal kalibriert werden muessten,
+   oder wenn ein Fehler das laufende Spiel beschaedigt. **Dann sagen, warum, und den Nutzer
+   entscheiden lassen.** Solange kein solcher Zwang besteht, wird auch nicht gebaut.
+3. **Doku und Code duerfen nie auseinanderlaufen.** Wenn ein Schritt kalibriert, aber nicht gebaut
+   ist, muss das an JEDER Stelle stehen, die ihn erwaehnt - Messkasten, Reihenfolge-Abschnitt,
+   Aenderungsprotokoll, Uebergabe. Am 19.08.2026 war das kurzzeitig nicht der Fall (der Plan
+   meldete "GEBAUT", im Repo stand nichts) und musste nachtraeglich korrigiert werden.
+4. **Messwerte aus einem lokalen Messbuild IMMER als solche kennzeichnen** - im Protokoll und im
+   Kopf des Skripts. Sonst laeuft eine spaetere Session das Skript, es scheitert an einem
+   fehlenden Import, und der Fehlschlag sieht aus wie ein Defekt.
+
+**Empfehlung fuer den Neustart selbst:** das gesammelte Gesamtpaket ein paar Tage VOR dem Wipe auf
+den alten Staenden laufen lassen. Die Zahlen stimmen dort nicht, aber es zeigt, ob etwas kaputt
+ist, ob Berichte seltsam aussehen, ob eine Anzeige leer bleibt. Sonst gehen rund fuenfzehn
+Entscheidungen gleichzeitig live, die einzeln simuliert, aber nie zusammen gespielt wurden - und
+R14 wie Entscheidung 10 sind beide Belege dafuer, dass ein gemessener Mechanismus im echten Ablauf
+anders wirken kann als in der Simulation.
+
 ## Stand
 
-- **NEUE ARBEITSREGEL ab 19.08.2026, gilt fuer alles Weitere: Code-Aenderungen erst, wenn der
-  ganze Plan steht.** Vorher nur planen, messen und dokumentieren - eingebaut wird ausschliesslich
-  auf ausdrueckliche Nachfrage des Nutzers ("kann das eingebaut werden, wird es empfohlen").
 - **NEU 19.08.2026 (Abend): Block A Schritt 2 ist VOLLSTAENDIG KALIBRIERT, aber NICHT GEBAUT.**
   Alle Konstanten stehen fest, der Einbau ist mechanisch. **Im Repo steht davon keine Zeile:** kein
   `game/loot.ts`, kein `LOOT_CURVE_SOLO_CHECK_POWER`, `fleetSizeRewardMultiplier()` laeuft in
