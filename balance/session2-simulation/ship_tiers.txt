@@ -1,0 +1,290 @@
+--- IST (Stand 18.08.2026, nach R14/R14b) | Wert je Machtpunkt, statisch aus dem Code ---
+Wert = Metall + 1,5 x Kristall + 3 x Deuterium (TRADE_VALUE). Power = Waffen + Schild + Panzerung (Basiswerte).
+Die Spalte "Power x8" gilt nur fuer die Salvenschiffe: combatFleetPowerBase() zaehlt sie mit
+MULTI_TARGET_POWER_CORRECTION = 8, und DAS ist die Groesse, an der die Gegnerstaerke haengt.
+
+Schiff                Wert       Power      Wert/Power   Power x8    Wert/(Power x8)
+leicht                    0.14M     121.800         1.11           -                 -
+schwer                    0.29M     244.200         1.18           -                 -
+kreuzer                   0.66M     494.100         1.33           -                 -
+schlachtschiff            0.94M     856.800         1.10           -                 -
+bomber                    1.59M     918.000         1.73           -                 -
+schlachtkreuzer           1.35M     716.000         1.89           -                 -
+zerstoerer                1.44M     900.000         1.60           -                 -
+reaper                    1.36M     861.000         1.59           -                 -
+salvenjaeger              4.30M      79.250        54.26     634.000              6.78
+salvenkreuzer            12.70M     283.200        44.84   2.265.600              5.61
+salvendreadnought        32.40M     554.200        58.46   4.433.600              7.31
+imperator               975.00M   3.900.000       250.00           -                 -
+
+--- IST | Duelle leicht | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+leicht: 4444 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+schwer              2083    0.0%                452                     236        -216
+kreuzer              913    0.0%                200                     376         175
+schlachtschiff       634    0.0%                111                     345         234
+bomber               377    0.0%                 34                     593         558
+schlachtkreuzer      444  100.0%                 43                     599         556
+zerstoerer           416    0.0%                 64                     512         448
+reaper               439    0.0%                 71                     497         426
+Mittlere Netto-Bilanz leicht: 312 Mio
+
+--- IST | Duelle schwer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schwer: 2083 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444  100.0%                105                     600         495
+kreuzer              913    0.0%                365                     333         -33
+schlachtschiff       634    0.0%                123                     374         251
+bomber               377  100.0%                 36                     599         563
+schlachtkreuzer      444  100.0%                 45                     599         554
+zerstoerer           416    0.0%                 68                     564         496
+reaper               439    0.0%                 77                     547         471
+Mittlere Netto-Bilanz schwer: 400 Mio
+
+--- IST | Duelle kreuzer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+kreuzer: 913 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                373                     203        -171
+schwer              2083  100.0%                117                     600         483
+schlachtschiff       634    0.0%                600                      50        -549
+bomber               377    0.0%                 94                     459         365
+schlachtkreuzer      444    0.0%                121                     452         331
+zerstoerer           416    0.0%                171                     365         194
+reaper               439    0.0%                190                     346         155
+Mittlere Netto-Bilanz kreuzer: 115 Mio
+
+--- IST | Duelle schlachtschiff | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schlachtschiff: 634 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                344                     113        -231
+schwer              2083    0.0%                373                     125        -248
+kreuzer              913  100.0%                 48                     600         552
+bomber               377    0.0%                 76                     526         450
+schlachtkreuzer      444    0.0%                599                     146        -453
+zerstoerer           416    0.0%                156                     425         269
+reaper               439    0.0%                175                     404         229
+Mittlere Netto-Bilanz schlachtschiff: 81 Mio
+
+--- IST | Duelle bomber | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+bomber: 377 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                592                      35        -557
+schwer              2083    0.0%                599                      37        -562
+kreuzer              913    0.0%                457                      96        -361
+schlachtschiff       634    0.0%                525                      78        -447
+schlachtkreuzer      444    0.0%                271                     148        -122
+zerstoerer           416    0.0%                361                     110        -251
+reaper               439    0.0%                404                      89        -315
+Mittlere Netto-Bilanz bomber: -374 Mio
+
+--- IST | Duelle schlachtkreuzer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schlachtkreuzer: 444 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                599                      44        -555
+schwer              2083    0.0%                599                      47        -553
+kreuzer              913    0.0%                448                     124        -325
+schlachtschiff       634  100.0%                139                     599         460
+bomber               377    0.0%                145                     273         128
+zerstoerer           416    0.0%                599                      23        -576
+reaper               439    0.0%                378                     144        -235
+Mittlere Netto-Bilanz schlachtkreuzer: -237 Mio
+
+--- IST | Duelle zerstoerer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+zerstoerer: 416 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                511                      66        -445
+schwer              2083    0.0%                562                      70        -492
+kreuzer              913    0.0%                362                     173        -189
+schlachtschiff       634    0.0%                421                     159        -263
+bomber               377    0.0%                109                     362         254
+schlachtkreuzer      444  100.0%                 21                     599         579
+reaper               439    0.0%                599                      44        -556
+Mittlere Netto-Bilanz zerstoerer: -159 Mio
+
+--- IST | Duelle reaper | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+reaper: 439 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                496                      73        -423
+schwer              2083    0.0%                546                      78        -468
+kreuzer              913    0.0%                341                     194        -147
+schlachtschiff       634    0.0%                400                     179        -221
+bomber               377    0.0%                 87                     404         317
+schlachtkreuzer      444    0.0%                142                     380         238
+zerstoerer           416  100.0%                 40                     599         559
+Mittlere Netto-Bilanz reaper: -21 Mio
+
+--- IST | Sektor piraten_hoch, Feindstaerke 0.85x | 40 Laeufe je Typ | gleicher WERT 600 Mio je Flotte | Profil voll ---
+Schiff              Stk    Sieg%   Wertverlust %   Wertverlust Mio   Runden
+leicht              4444  100.0%            2.0%                12     22.8
+schwer              2083  100.0%            1.0%                 6     17.1
+kreuzer              913  100.0%            5.2%                31     18.9
+schlachtschiff       634  100.0%            6.0%                36     30.0
+bomber               377  100.0%            0.0%                 0     29.7
+schlachtkreuzer      444  100.0%            1.3%                 8     19.9
+zerstoerer           416  100.0%            3.9%                23     23.9
+reaper               439  100.0%            0.0%                 0     20.0
+salvenjaeger         139  100.0%           15.2%                91     11.2
+salvenkreuzer         47    0.0%          100.0%               597     18.6
+salvendreadnought     18    0.0%          100.0%               583     13.2
+imperator              1  100.0%            0.0%                 0     10.8
+
+--- IST | Sektor piraten_hoch, Feindstaerke 2x | 40 Laeufe je Typ | gleicher WERT 600 Mio je Flotte | Profil voll ---
+Schiff              Stk    Sieg%   Wertverlust %   Wertverlust Mio   Runden
+leicht              4444  100.0%           20.8%               125     79.6
+schwer              2083  100.0%           14.1%                85     52.9
+kreuzer              913    0.0%           47.1%               283     60.1
+schlachtschiff       634    0.0%           47.4%               284     31.1
+bomber               377    0.0%           47.1%               282     72.3
+schlachtkreuzer      444    0.0%           47.3%               283     42.7
+zerstoerer           416    0.0%           47.4%               284     31.0
+reaper               439   50.0%           39.0%               234     89.8
+salvenjaeger         139    0.0%           93.5%               559      8.8
+salvenkreuzer         47    0.0%          100.0%               597      6.4
+salvendreadnought     18    0.0%          100.0%               583      5.2
+imperator              1  100.0%            0.0%                 0     14.6
+
+--- NACH der Kostenaenderung (Ziel 1,15) | Wert je Machtpunkt, statisch aus dem Code ---
+Wert = Metall + 1,5 x Kristall + 3 x Deuterium (TRADE_VALUE). Power = Waffen + Schild + Panzerung (Basiswerte).
+Die Spalte "Power x8" gilt nur fuer die Salvenschiffe: combatFleetPowerBase() zaehlt sie mit
+MULTI_TARGET_POWER_CORRECTION = 8, und DAS ist die Groesse, an der die Gegnerstaerke haengt.
+
+Schiff                Wert       Power      Wert/Power   Power x8    Wert/(Power x8)
+leicht                    0.14M     121.800         1.11           -                 -
+schwer                    0.29M     244.200         1.18           -                 -
+kreuzer                   0.57M     494.100         1.15           -                 -
+schlachtschiff            0.94M     856.800         1.10           -                 -
+bomber                    1.06M     918.000         1.15           -                 -
+schlachtkreuzer           0.82M     716.000         1.15           -                 -
+zerstoerer                1.03M     900.000         1.15           -                 -
+reaper                    0.99M     861.000         1.15           -                 -
+salvenjaeger              4.30M      79.250        54.26     634.000              6.78
+salvenkreuzer            12.70M     283.200        44.84   2.265.600              5.61
+salvendreadnought        32.40M     554.200        58.46   4.433.600              7.31
+imperator               975.00M   3.900.000       250.00           -                 -
+
+--- NACH | Duelle leicht | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+leicht: 4444 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+schwer              2083    0.0%                452                     236        -217
+kreuzer             1057    0.0%                254                     305          51
+schlachtschiff       634    0.0%                112                     345         234
+bomber               567    0.0%                 80                     355         276
+schlachtkreuzer      727    0.0%                118                     295         177
+zerstoerer           579    0.0%                120                     318         198
+reaper               606    0.0%                131                     307         176
+Mittlere Netto-Bilanz leicht: 128 Mio
+
+--- NACH | Duelle schwer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schwer: 2083 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444  100.0%                105                     600         495
+kreuzer             1057    0.0%                466                     250        -216
+schlachtschiff       634    0.0%                123                     374         251
+bomber               567    0.0%                 87                     389         302
+schlachtkreuzer      727    0.0%                130                     328         198
+zerstoerer           579    0.0%                133                     350         218
+reaper               606    0.0%                145                     338         193
+Mittlere Netto-Bilanz schwer: 206 Mio
+
+--- NACH | Duelle kreuzer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+kreuzer: 1057 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                302                     256         -46
+schwer              2083  100.0%                 83                     600         517
+schlachtschiff       634    0.0%                600                      72        -528
+bomber               567    0.0%                154                     316         162
+schlachtkreuzer      727    0.0%                231                     242          10
+zerstoerer           579    0.0%                236                     263          28
+reaper               606    0.0%                259                     247         -12
+Mittlere Netto-Bilanz kreuzer: 19 Mio
+
+--- NACH | Duelle schlachtschiff | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schlachtschiff: 634 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                344                     113        -231
+schwer              2083    0.0%                373                     125        -248
+kreuzer             1057  100.0%                 68                     600         532
+bomber               567    0.0%                186                     291         105
+schlachtkreuzer      727    0.0%                599                      34        -565
+zerstoerer           579    0.0%                291                     230         -61
+reaper               606    0.0%                321                     211        -109
+Mittlere Netto-Bilanz schlachtschiff: -83 Mio
+
+--- NACH | Duelle bomber | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+bomber: 567 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                354                      81        -273
+schwer              2083    0.0%                388                      89        -299
+kreuzer             1057    0.0%                315                     155        -160
+schlachtschiff       634    0.0%                289                     188        -101
+schlachtkreuzer      727    0.0%                311                     115        -196
+zerstoerer           579    0.0%                319                     138        -181
+reaper               606    0.0%                353                     120        -233
+Mittlere Netto-Bilanz bomber: -206 Mio
+
+--- NACH | Duelle schlachtkreuzer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+schlachtkreuzer: 727 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                294                     119        -175
+schwer              2083    0.0%                327                     132        -195
+kreuzer             1057    0.0%                239                     234          -5
+schlachtschiff       634  100.0%                 31                     599         568
+bomber               567    0.0%                113                     313         200
+zerstoerer           579    0.0%                600                      38        -562
+reaper               606    0.0%                267                     228         -38
+Mittlere Netto-Bilanz schlachtkreuzer: -30 Mio
+
+--- NACH | Duelle zerstoerer | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+zerstoerer: 579 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                317                     122        -195
+schwer              2083    0.0%                348                     134        -214
+kreuzer             1057    0.0%                261                     237         -23
+schlachtschiff       634    0.0%                227                     294          67
+bomber               567    0.0%                136                     322         186
+schlachtkreuzer      727  100.0%                 34                     600         565
+reaper               606    0.0%                599                      45        -554
+Mittlere Netto-Bilanz zerstoerer: -24 Mio
+
+--- NACH | Duelle reaper | 40 Laeufe je Paarung | Budget 600 Mio Wert je Seite | Basiswerte, kein Rueckzug ---
+reaper: 606 Stk
+Gegner            Stk    Sieg%   eig. Verlust Mio   Gegner vernichtet Mio   Netto Mio
+leicht              4444    0.0%                305                     133        -172
+schwer              2083    0.0%                336                     147        -189
+kreuzer             1057    0.0%                244                     261          16
+schlachtschiff       634    0.0%                208                     324         116
+bomber               567    0.0%                118                     355         237
+schlachtkreuzer      727    0.0%                227                     267          40
+zerstoerer           579  100.0%                 41                     599         558
+Mittlere Netto-Bilanz reaper: 87 Mio
+
+--- NACH | Sektor piraten_hoch, Feindstaerke 0.85x | 40 Laeufe je Typ | gleicher WERT 600 Mio je Flotte | Profil voll ---
+Schiff              Stk    Sieg%   Wertverlust %   Wertverlust Mio   Runden
+leicht              4444  100.0%            1.9%                12     22.7
+schwer              2083  100.0%            1.0%                 6     17.1
+kreuzer             1057  100.0%            5.8%                35     20.1
+schlachtschiff       634  100.0%            6.2%                37     29.8
+bomber               567  100.0%            1.5%                 9     34.6
+schlachtkreuzer      727  100.0%            2.8%                17     24.3
+zerstoerer           579  100.0%            4.4%                26     26.6
+reaper               606  100.0%            0.6%                 4     24.4
+salvenjaeger         139  100.0%           15.1%                90     11.2
+salvenkreuzer         47    0.0%           99.6%               595     19.2
+salvendreadnought     18    0.0%          100.0%               583     13.2
+imperator              1  100.0%            0.0%                 0      9.5
+
+--- NACH | Sektor piraten_hoch, Feindstaerke 2x | 40 Laeufe je Typ | gleicher WERT 600 Mio je Flotte | Profil voll ---
+Schiff              Stk    Sieg%   Wertverlust %   Wertverlust Mio   Runden
+leicht              4444  100.0%           20.7%               124     79.5
+schwer              2083  100.0%           14.1%                85     52.9
+kreuzer             1057    0.0%           47.2%               283     49.5
+schlachtschiff       634    0.0%           47.4%               284     31.1
+bomber               567    0.0%           47.2%               283     53.7
+schlachtkreuzer      727    0.0%           47.4%               285     34.0
+zerstoerer           579    0.0%           47.5%               284     29.3
+reaper               606    0.0%           47.1%               282     67.4
+salvenjaeger         139    0.0%           94.1%               563      9.0
+salvenkreuzer         47    0.0%          100.0%               597      6.5
+salvendreadnought     18    0.0%          100.0%               583      5.2
+imperator              1  100.0%            0.0%                 0     13.7
+

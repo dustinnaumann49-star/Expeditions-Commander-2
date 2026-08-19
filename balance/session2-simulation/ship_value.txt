@@ -34,3 +34,7 @@ salvendreadnought         30    417.5 Mio     100       0.8       11.2 Mio
      2x    12664   12.35 Mrd     5.44 Mrd     100       2.3        288 Mio
      4x    25316   22.43 Mrd    10.83 Mrd     100       2.5        561 Mio
      8x    50526   37.15 Mrd    21.34 Mrd     100       3.0       1114 Mio
+
+=== ACHTUNG: alles oberhalb dieser Marke ist VOR R14/R14b gelaufen (vor dem 17.08.2026),
+=== also gegen eine Engine, in der RapidFire im Aggregat-Pfad praktisch nicht stattfand.
+=== Fuer Entscheidung 6 nicht mehr verwenden. Fortsetzung in ship_tiers.txt (Schritt 8, 18.08.2026).

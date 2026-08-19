@@ -69,3 +69,7 @@ Von Standard-Kampfschiffen NICHT per RapidFire gekonterte Typen: Bomber, Reaper
   Salvenkreuzer        kontert: Kreuzer, Schlachtschiff, Bomber
   Salvendreadnought    kontert: Schlachtkreuzer, Zerstörer, Reaper
   Imperator            kontert: Leichter Jäger, Schwerer Jäger, Kreuzer, Schlachtschiff, Bomber, Schlachtkreuzer, Zerstörer, Reaper
+
+=== ACHTUNG: alles oberhalb dieser Marke ist VOR R14/R14b gelaufen (vor dem 17.08.2026),
+=== also gegen eine Engine, in der RapidFire im Aggregat-Pfad praktisch nicht stattfand.
+=== Fuer Entscheidung 6 nicht mehr verwenden. Fortsetzung in ship_tiers.txt (Schritt 8, 18.08.2026).
