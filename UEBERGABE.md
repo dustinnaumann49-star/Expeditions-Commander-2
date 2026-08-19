@@ -22,34 +22,46 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
-- **NEU 19.08.2026 (Abend): BLOCK A IST VOLLSTAENDIG - Schritt 2 ist gebaut und gegengemessen.**
-  Beute-Kurve global (neues Modul `game/loot.ts`, benutzt von `missions.ts`, `groupOps.ts` UND
-  `pirateBaseCombat.ts` - es gibt jetzt genau EINE Kurve im Code), Wrack-Bergung 30 %,
-  `fleetSizeRewardMultiplier()` entfernt. Messkasten am Kopf von Entscheidung 2, Protokoll
-  `loot_curve.txt`.
+- **NEUE ARBEITSREGEL ab 19.08.2026, gilt fuer alles Weitere: Code-Aenderungen erst, wenn der
+  ganze Plan steht.** Vorher nur planen, messen und dokumentieren - eingebaut wird ausschliesslich
+  auf ausdrueckliche Nachfrage des Nutzers ("kann das eingebaut werden, wird es empfohlen").
+- **NEU 19.08.2026 (Abend): Block A Schritt 2 ist VOLLSTAENDIG KALIBRIERT, aber NICHT GEBAUT.**
+  Alle Konstanten stehen fest, der Einbau ist mechanisch. **Im Repo steht davon keine Zeile:** kein
+  `game/loot.ts`, kein `LOOT_CURVE_SOLO_CHECK_POWER`, `fleetSizeRewardMultiplier()` laeuft in
+  `missions.ts`/`groupOps.ts` unveraendert weiter, `winResources` der drei Solo-Sektoren stehen auf
+  den alten Betraegen. Bauanleitung und alle Zahlen im Messkasten am Kopf von Entscheidung 2,
+  Protokoll `loot_curve.txt`.
+- **Die Messung lief gegen einen LOKALEN Messbuild** mit diesen Aenderungen (Verfahren wie
+  `make_messbuild_rf.mjs`, nur ohne eigenes Skript, weil ganze Funktionen betroffen waren).
+  **`run_loot_curve.mjs` und `run_income_baseline_v2.mjs` laufen gegen den heutigen Repo-Stand
+  NICHT** - sie importieren `game/loot.js`, das es dort nicht gibt. Wer die Zahlen nachpruefen
+  will, baut zuerst die Bauanleitung ein.
+- **Empfehlung zum Einbauzeitpunkt: nach Block B.** Der Piratenadmiral braucht dieselbe Kurve,
+  zweimal kalibrieren waere unnoetige Arbeit.
 - **Die offene Koop-Frage ist entschieden: V2 plus 15 % je Mitflieger, gedeckelt bei 3.**
   Gemessen x1,146 (mittel) und x1,155 (spaet) Netto je Teilnehmer. **V1 ist verworfen aus einem
   Grund, den die Messung in `elite_coop.txt` nicht zeigen konnte: Bots nehmen Elite-Einladungen
   automatisch an** (`bot.ts`, 30 % ihrer Flotte). Unter V1 waeren zwei eingeladene Bots ein
   Ein-Klick-Einkommensmultiplikator gewesen. **Lehre fuer kuenftige Koop-Regeln: bei jeder Regel,
   die mit der Teilnehmerzahl skaliert, zuerst pruefen, ob Bots teilnehmen koennen.**
-- **NEUE BASELINE: 0,98 / 19,57 / 61,11 Mrd** (vorher 0,80 / 19,82 / 76,85). Jede Zelle im Plan,
-  die gegen die alte Zahl gerechnet ist, ist damit veraltet. **ACHTUNG beim Vergleich: darin
-  stecken ZWEI Aenderungen** - auch der Flottenwert ist durch Entscheidung 6 von
+- **BASELINE NACH DEM EINBAU: 0,98 / 19,57 / 61,11 Mrd.** Das ist eine VORHERSAGE, kein Ist-Stand.
+  **Bis zum Einbau gilt weiter 0,80 / 19,82 / 76,85.** ACHTUNG beim spaeteren Vergleich: in der
+  Differenz stecken ZWEI Aenderungen - auch der Flottenwert ist durch Entscheidung 6 von
   0,37/6,18/34,99 auf 0,32/5,52/29,27 Mrd gefallen. Wer 61,11 gegen 76,85 haelt, vergleicht
   beides auf einmal.
-- **Nutzerentscheidung 19.08.2026: Container sind ein Extra, nicht die Hauptquelle.** Vorher
-  stellten sie 94 % des Solo-Belohnungswerts. Jetzt faellt der Container-Fund einmal je MISSION
-  statt je gewonnenem Check, und `winResources` traegt den Rest (x13,8 angehoben). **Bewusst NICHT
-  ueber die Container-INHALTE geloest** - `CONTAINER_TYPES` haengt an Raids und Elite-Bollwerk, und
+- **Nutzerentscheidung 19.08.2026: Container sollen ein Extra sein, nicht die Hauptquelle.** Heute
+  stellen sie 94 % des Solo-Belohnungswerts. Vorgesehen: der Container-Fund faellt einmal je
+  MISSION statt je gewonnenem Check, und `winResources` traegt den Rest (x13,8). **Bewusst NICHT
+  ueber die Container-INHALTE zu loesen** - `CONTAINER_TYPES` haengt an Raids und Elite-Bollwerk, und
   Entscheidung 3 ist gegen genau diese Inhalte geschlossen; eine Kuerzung dort haette sie wieder
   aufgerissen.
 - **Nutzerentscheidung 19.08.2026: der Imperator bekommt KEINE Wrack-Bergung.** Prestige-Schiff,
-  kaputt ist kaputt, keine Teile-Rueckgabe. Umgesetzt ueber `COST_BY_ID` in `loot.ts`: Einheiten
-  ohne Ressourcen-Kosten sind ausgenommen.
-- **`PIRATEN_MULTIPLIER_ROLL` und `RAID_WAVE_ROLL` sind freigegeben.** Beide Sperren fuer
-  Entscheidung 16 sind gefallen (Entscheidung 10 gebaut, Block A vollstaendig, Baseline steht).
-  Offen und ungemessen bleiben dort der RF-Wert und die Hoehe des Ausweichbonus.
+  kaputt ist kaputt, keine Teile-Rueckgabe. Beim Einbau ueber die Kosten-Tabelle loesen: Einheiten
+  ohne Ressourcen-Kosten sind ausgenommen (der Imperator ist die einzige).
+- **`RAID_WAVE_ROLL` ist freigegeben, `PIRATEN_MULTIPLIER_ROLL` NICHT.** Entscheidung 10 ist
+  gebaut, damit faellt die erste Sperre. Die zweite haengt an der Einnahmen-Baseline, und die hat
+  sich real noch nicht verschoben - Block A Schritt 2 ist nur kalibriert. **Die Sperre faellt mit
+  dem Einbau, nicht mit der Messung.**
 - **NEU 19.08.2026: Block C, Schritt 10 ist erledigt - und Entscheidung 16 ist damit
   entsperrt.** Entscheidung 10 wurde umgesetzt, aber mit einem ANDEREN Mechanismus als im Plan
   vorgeschlagen: der dort genannte Flotten-Rueckzug wurde gebaut, gemessen und als wirkungslos
@@ -138,6 +150,9 @@ das passt nicht gleichzeitig in eine Session.
   ENTSCHEIDUNGEN und MESSUNGEN, nicht auf den Code. Die Kurve existiert seit dem 18.08.2026 als
   `LOOT_CURVE_*` in `data/economy.ts` und wird bisher nur von den Piratenbasen benutzt - wer
   Schritt 2 baut, benutzt DIESE Konstanten und legt keine zweite Kurve an.
+  **Stand 19.08.2026: unveraendert gueltig.** Der Schritt ist seitdem zusaetzlich vollstaendig
+  KALIBRIERT (alle Konstanten gemessen, Koop-Frage entschieden, Bauanleitung im Messkasten am Kopf
+  von Entscheidung 2) - am Code hat sich nichts geaendert.
 - **Solo Hoch netto: massgeblich ist `real_fleet.txt` mit -3,26 (voll) / -3,40 (mittel) Mrd/Tag.**
   Die frueher hier genannten -2,97 stammen aus einem aelteren Lauf.
 
@@ -407,25 +422,25 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Entscheidung 16 (Schritt 10a) ist jetzt vollstaendig frei.** Beide Sperren sind gefallen:
-Entscheidung 10 ist gebaut, Block A ist vollstaendig, und die Baseline steht neu
-(0,98 / 19,57 / 61,11 Mrd). **`RAID_WAVE_ROLL` UND `PIRATEN_MULTIPLIER_ROLL` duerfen angefasst
-werden.** Die Messungen liegen fertig vor (`rf_depth.txt`, Messbuilds ueber
-`make_messbuild_rf.mjs`), sind nach Entscheidung 10 und Block A aber teilweise neu zu erheben.
-Offen und ungemessen sind der RF-Wert und die Hoehe des Ausweichbonus.
+**Entscheidung 16 (Schritt 10a) ist halb frei.** `RAID_WAVE_ROLL` darf angefasst werden
+(Entscheidung 10 ist gebaut), `PIRATEN_MULTIPLIER_ROLL` nicht - dessen Sperre haengt an der
+Einnahmen-Baseline, und Block A Schritt 2 ist nur kalibriert, nicht gebaut. Die Messungen liegen
+fertig vor (`rf_depth.txt`, Messbuilds ueber `make_messbuild_rf.mjs`), sind nach Entscheidung 10
+aber teilweise neu zu erheben. Offen und ungemessen sind der RF-Wert und die Hoehe des
+Ausweichbonus.
 
 **Sonst Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
 (Entscheidung 6) und Schritt 10 (Entscheidung 10) sind erledigt. Offen sind Schritt 9
 (Allianz-Station), Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1 - **die Sperre ist weg,
 Block A steht jetzt**).
 
-**Was Block A Schritt 2 bewusst offen gelassen hat, in der Reihenfolge der Dringlichkeit:**
+**Was Block A Schritt 2 bewusst offen laesst, in der Reihenfolge der Dringlichkeit:**
 1. **Piratenadmiral P10 hat weder Kurve noch Bergung.** Seine Belohnungsmechanik ist Block B
    (4.6/4.7 entschieden, nicht gebaut) - jetzt kalibrieren hiesse zweimal kalibrieren. Wer Block B
    baut, zieht beides dort mit ein.
 2. **Raids haben keine Bergung.** Entscheidung 3 ist gegen den heutigen Raid-Ertrag geschlossen;
    eine 30-%-Rueckerstattung auf Verteidigungsverluste wuerde sie wieder aufmachen.
-3. **Die drei Solo-Stufen sind beim fruehesten Ausbaustand ununterscheidbar** (netto 0,25 / 0,25 /
+3. **Die drei Solo-Stufen waeren nach dem Einbau beim fruehesten Ausbaustand ununterscheidbar** (netto 0,25 / 0,25 /
    0,27 Mrd, gefordert waeren +30 % je Stufe). Gehoert zu Entscheidung 12.
 4. **Elite-Container sind beim fruehen Ausbaustand 84 % von 5,92 Mrd je Serie** - das Sechsfache
    der Tageseinnahmen. Keine Folge dieses Schritts, aber jetzt sichtbar.
@@ -438,8 +453,8 @@ erheben.
 
 **Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.** Der gesamte
 Block B (4.1 bis 4.8) ist entschieden, aber nicht gebaut. "Geschlossen" heisst in diesem Plan
-ENTSCHIEDEN. (Block A Schritt 2 stand hier bis zum 19.08.2026 als zweites Beispiel - der ist jetzt
-gebaut.)
+ENTSCHIEDEN. Block A Schritt 2 ist seit dem 19.08.2026 der dritte Fall dieser Art, nur eine Stufe weiter:
+entschieden UND vollstaendig kalibriert, trotzdem nicht gebaut.
 
 **Zwei Dinge, die aufgeschoben, aber nicht vergessen sind:**
 
