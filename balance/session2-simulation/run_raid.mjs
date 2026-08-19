@@ -22,7 +22,7 @@ const CONTAINER_DM = { silber: 0, gold: 19.4, elite: 28.6 };
 
 // Repliziert resolveOneWave() aus raids.ts: Feindstaerke wird PRO WELLE aus der AKTUELLEN
 // (bereits dezimierten) Flotte+Verteidigung neu berechnet, Verteidigungsanlagen werden nach
-// jeder Welle zu DEFENSE_REPAIR_PERCENT wiederhergestellt, allowRetreat = false.
+// jeder Welle zu DEFENSE_REPAIR_PERCENT wiederhergestellt, retreatMode 'fleetOnly' (bis 19.08.2026: kein Rueckzug ueberhaupt).
 async function runRaid(profile, fleet, defense) {
   const st = L.stateFor(profile, 1);
   st.fleet = { ...fleet };
@@ -31,16 +31,46 @@ async function runRaid(profile, fleet, defense) {
 
   let wavesWon = 0, destroyedTotal = 0;
   const waveFactors = [];
+  // Entscheidung 10, Variante 2 (19.08.2026): Rueckzug AUS DEM RAID statt nur aus der Welle.
+  // Sinkt die verbliebene Flottenmacht unter WITHDRAW_SHARE der Ausgangsmacht, nimmt die Flotte an
+  // den restlichen Wellen nicht mehr teil - die Verteidigungsanlagen kaempfen allein weiter.
+  // Grund: der wellenweise Rueckzug (Variante 1) hat gemessen NICHTS gebracht, weil zurueckgezogene
+  // Schiffe in der naechsten der zwoelf Wellen wieder mitkaempfen und ueber die Serie trotzdem
+  // aufgerieben werden. WITHDRAW_SHARE = 0 schaltet den Mechanismus ab (Ist-Zustand).
+  const WITHDRAW_SHARE = process.env.WITHDRAW !== undefined ? Number(process.env.WITHDRAW) : 0;
+  const CAP_SHARE = process.env.CAP !== undefined ? Number(process.env.CAP) : 0;
+  const RESERVE_SHARE = process.env.RESERVE !== undefined ? Number(process.env.RESERVE) : 0;
+  const startFleetPower = L.combat.combatFleetPowerBase(fleet);
+  let fleetWithdrawn = false;
   for (let w = 0; w < RAID_WAVE_COUNT; w++) {
-    const shipIds = Object.keys(st.fleet).filter((id) => st.fleet[id] > 0);
+    if (WITHDRAW_SHARE > 0 && !fleetWithdrawn
+        && L.combat.combatFleetPowerBase(st.fleet) < startFleetPower * WITHDRAW_SHARE) {
+      fleetWithdrawn = true;
+    }
+    // Entscheidung 10, Variante 4 (19.08.2026): RESERVE statt Rueckzug. Ein fester Anteil der
+    // Ausgangsflotte wird gar nicht erst in die Wellen geschickt und kann deshalb auch nicht
+    // sterben. Braucht KEINE Aenderung an der Kampf-Engine und haelt die Untergrenze exakt ein -
+    // im Gegensatz zu den Varianten 1-3, die alle daran scheitern, dass kleine Schiffe INNERHALB
+    // einer Welle vernichtet werden, ohne je die 30-%-HP-Schwelle eines Rueckzugs zu durchlaufen.
+    // RESERVE = 0 schaltet den Mechanismus ab (Ist-Zustand).
+    const inWelle = {};
+    Object.keys(st.fleet).forEach((id) => {
+      const reserviert = RESERVE_SHARE > 0 ? Math.floor((fleet[id] || 0) * RESERVE_SHARE) : 0;
+      inWelle[id] = Math.max(0, st.fleet[id] - reserviert);
+    });
+    const shipIds = fleetWithdrawn ? [] : Object.keys(inWelle).filter((id) => inWelle[id] > 0);
     const defIds = Object.keys(st.defense).filter((id) => st.defense[id] > 0);
     const defenderShips = {};
-    shipIds.forEach((id) => (defenderShips[id] = st.fleet[id]));
+    shipIds.forEach((id) => (defenderShips[id] = inWelle[id]));
     defIds.forEach((id) => (defenderShips[id] = st.defense[id]));
 
     let defensePower = 0, fleetPower = 0;
     defIds.forEach((id) => { const b = L.combat.baseStats(id); defensePower += st.defense[id] * (b.waffen + b.schild + b.panzerung); });
-    shipIds.forEach((id) => { const b = L.combat.baseStats(id); fleetPower += st.fleet[id] * (b.waffen + b.schild + b.panzerung); });
+    // Die Wellenstaerke richtet sich nach der GANZEN Flotte, nicht nur nach dem eingesetzten Teil -
+    // sonst waere die Reserve ein doppelter Vorteil: weniger Risiko UND schwaechere Gegner. Gemessen
+    // sank der Flottenverlust bei entwickelten Konten sonst von 13,5 auf 4,9 %, was dem Ziel der
+    // Entscheidung (Startphase absichern, Endspiel nicht verbilligen) zuwiderlaeuft.
+    Object.keys(st.fleet).forEach((id) => { const b = L.combat.baseStats(id); fleetPower += st.fleet[id] * (b.waffen + b.schild + b.panzerung); });
     const combinedPower = fleetPower * 0.7 + defensePower * DEF_WEIGHT;
 
     const domePool = L.combat.computeDomeSharedPool(st.defense, st.research, !!st.activeBoosters.kampf, st.playerClass, st.shipModules);
@@ -59,14 +89,42 @@ async function runRaid(profile, fleet, defense) {
       research: st.research,
       defenseCounts: st.defense,
       sharedShieldPoolA: domePool,
-      allowRetreat: false,
+      // MUSS mit raids.ts uebereinstimmen. Das Skript repliziert den Raid, es liest die
+      // Einstellung nicht aus - stand hier 'none', waehrend raids.ts laengst 'fleetOnly' setzt,
+      // wuerde die Messung stillschweigend den alten Zustand messen (Entscheidung 10, 19.08.2026).
+      retreatMode: 'fleetOnly',
       battleModifier,
       playerClass: st.playerClass,
       kampfBoostActive: !!st.activeBoosters.kampf,
       shipModules: st.shipModules,
     });
 
-    shipIds.forEach((id) => { st.fleet[id] = result.survivorsA[id] || 0; });
+    shipIds.forEach((id) => { st.fleet[id] = (st.fleet[id] - inWelle[id]) + (result.survivorsA[id] || 0); });
+    // Entscheidung 10, Variante 3 (19.08.2026): harte VERLUSTOBERGRENZE ueber den ganzen Raid.
+    // Sobald der kumulierte Flottenverlust CAP_SHARE der Ausgangsflotte erreicht, wird der
+    // ueberschiessende Teil wiederhergestellt ("die Flotte bricht den Kontakt ab") und nimmt an den
+    // restlichen Wellen nicht mehr teil. Grund: weder der wellenweise Rueckzug (Variante 1) noch der
+    // Rueckzug zwischen den Wellen (Variante 2) verhindern den Totalverlust - bei schwachem Ausbau
+    // werden kleine Schiffe in EINER Welle vernichtet, ohne je die 30-%-HP-Schwelle zu durchlaufen,
+    // an der ein Rueckzug ausloesen wuerde. CAP_SHARE = 0 schaltet die Obergrenze ab (Ist-Zustand).
+    if (CAP_SHARE > 0 && !fleetWithdrawn) {
+      const restPower = L.combat.combatFleetPowerBase(st.fleet);
+      const bodenPower = startFleetPower * (1 - CAP_SHARE);
+      if (restPower < bodenPower) {
+        // Die ueberschiessenden Verluste dieser Welle werden zurueckgenommen: die betroffenen
+        // Schiffe haben den Kontakt abgebrochen statt zu sterben. WICHTIG: hoechstens so viele, wie
+        // in DIESE Welle geschickt wurden - sonst wuerden Schiffe wiederbelebt, die schon vor der
+        // Welle nicht mehr da waren, und die Verlustquote koennte negativ werden (in der ersten
+        // Fassung genau passiert: -28,4 %).
+        const faktor = restPower > 0 ? bodenPower / restPower : 0;
+        if (faktor > 1) {
+          shipIds.forEach((id) => {
+            st.fleet[id] = Math.min(defenderShips[id], Math.round(st.fleet[id] * faktor));
+          });
+        }
+        fleetWithdrawn = true;
+      }
+    }
     defIds.forEach((id) => {
       const sent = st.defense[id];
       const surv = result.survivorsA[id] || 0;
@@ -109,19 +167,24 @@ const CASES = [
 
 const N = Number(process.argv[2] || 8);
 console.log(`=== Raid: ${RAID_WAVE_COUNT} Wellen, ${N} komplette Raids je Fall ===`);
-console.log('Fall | oWellen gewonnen | perfekt (12/12)% | oFlottenverlust% | oVerteidigungsverlust% | oBergungs-DM');
+// min-max-Spalte fuer den Flottenverlust ist Pflicht: die Spannweite eines einzelnen Raids ist
+// groesser als die meisten gemessenen Effekte (teuer gelernt am 11.08.2026 bei der Klassen-Messung).
+console.log('Fall | oWellen gewonnen | perfekt (12/12)% | oFlottenverlust% | Flottenverlust min-max | oVerteidigungsverlust% | oBergungs-DM');
 const results = {};
 for (const [profile, fleet, defense, label] of CASES) {
   let wonSum = 0, perfect = 0, fl = 0, dl = 0, dm = 0;
+  let flMin = Infinity, flMax = -Infinity;
   for (let i = 0; i < N; i++) {
     const r = await runRaid(profile, fleet, defense);
     wonSum += r.wavesWon;
     if (r.wavesWon >= RAID_WAVE_COUNT) perfect++;
     fl += r.fleetLoss; dl += r.defLoss; dm += r.salvageDm;
+    flMin = Math.min(flMin, r.fleetLoss); flMax = Math.max(flMax, r.fleetLoss);
   }
   results[label] = wonSum / N;
   console.log([label, (wonSum / N).toFixed(1), ((perfect / N) * 100).toFixed(0),
-    ((fl / N) * 100).toFixed(1), ((dl / N) * 100).toFixed(1), (dm / N).toFixed(1)].join(' | '));
+    ((fl / N) * 100).toFixed(1), `${(flMin * 100).toFixed(1)}-${(flMax * 100).toFixed(1)}`,
+    ((dl / N) * 100).toFixed(1), (dm / N).toFixed(1)].join(' | '));
 }
 
 console.log();

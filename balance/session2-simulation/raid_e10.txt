@@ -1,0 +1,45 @@
+=== Entscheidung 10 - Heimatverteidigung, Messreihe vom 19.08.2026 ===
+run_raid.mjs, 30 komplette Raids je Fall (Messregel aus Abschnitt 4a: Raid-Streuung ist groesser
+als die meisten Effekte), min-max-Spalte fuer den Flottenverlust neu.
+
+Fall "schwach / kleine Flotte" ist die Zelle, um die es geht - nach dem Reset sind ALLE Konten so.
+
+Variante                                   Wellen  Flottenverlust  min-max      Verteidigung
+IST (kein Rueckzug)                          11.0      92.2 %      41.8-100.0      69.2 %
+V1 Rueckzug nur der Flotte je Welle          10.8      95.5 %      72.4-100.0      82.8 %
+V2 Rueckzug aus dem Raid, Schwelle 0.5       11.0      82.1 %      40.4-100.0      63.2 %
+V2 Rueckzug aus dem Raid, Schwelle 0.3       11.1      85.3 %      17.0-100.0      72.7 %
+V3 Verlustobergrenze 0.6 (nachtraeglich)     10.9      80.5 %      53.2-100.0      73.0 %
+V3 Verlustobergrenze 0.5 (nachtraeglich)     11.0      73.6 %      32.5-100.0      66.1 %
+V4 Reserve 0.40, Welle aus eingesetzter Fl.  11.2      51.4 %       9.2-60.0       69.9 %
+V4 Reserve 0.25, Welle aus eingesetzter Fl.  11.0      66.6 %      18.5-75.2       70.2 %
+V4 Reserve 0.40, Welle aus GANZER Flotte      0.6      60.0 %      60.0-60.0      100.0 %
+V4 Reserve 0.25, Welle aus GANZER Flotte      1.2      75.2 %      75.2-75.2      100.0 %
+
+Entwickelte Konten (Fall "voll / grosse Flotte + volle Verteidigung"), zum Vergleich:
+IST 13.5 % | V1 13.9 % | V2/0.5 13.3 % | V3/0.6 12.9 %
+V4 Reserve 0.40 eingesetzt 4.9 % | V4 Reserve 0.40 ganze Flotte 18.7 %
+V4 Reserve 0.25 eingesetzt 7.5 % | V4 Reserve 0.25 ganze Flotte 15.9 %
+
+BEFUND 1: Der in Entscheidung 10 vorgeschlagene Mechanismus funktioniert nicht.
+"Die Flotte darf sich absetzen, die Anlagen kaempfen weiter" (V1) aendert am Totalverlust nichts
+(92.2 -> 95.5 %) und laesst zusaetzlich mehr Anlagen sterben (69.2 -> 82.8 %). Ursache: der
+Rueckzug loest aus, wenn eine Einheit auf 30 % IHRER Panzerung faellt - bei schwachem Ausbau werden
+kleine Schiffe in EINER Welle vernichtet und durchlaufen dieses Fenster nie. Ausserdem kaempfen
+zurueckgezogene Schiffe in der naechsten der zwoelf Wellen wieder mit.
+
+BEFUND 2: Eine nachtraegliche Obergrenze kann den Boden nicht halten (V3). Sobald ein ganzer
+Schiffstyp in einer Welle ausgeloescht ist, gibt es nichts mehr, das man "zurueckhalten" koennte -
+ausser man belebt tote Schiffe wieder (erste Fassung: Verlustquoten bis -28,4 %, also negativ).
+
+BEFUND 3: Nur die Reserve haelt die Grenze exakt (V4: 60.0-60.0 bzw. 75.2-75.2, keine Streuung
+mehr nach oben). Sie hat aber eine Kehrseite, je nachdem, woraus die Wellenstaerke berechnet wird:
+- aus der EINGESETZTEN Flotte: die Reserve ist ein doppelter Vorteil (weniger Risiko UND
+  schwaechere Wellen). Entwickelte Konten fallen von 13.5 auf 4.9 % Verlust - das verbilligt das
+  Endspiel, was diese Entscheidung ausdruecklich nicht soll.
+- aus der GANZEN Flotte: die Reserve kostet echte Kampfkraft. Entwickelte Konten bleiben bei
+  15.9-18.7 % (Kriterium erfuellt), aber schwache Konten gewinnen fast keine Welle mehr
+  (11.0 -> 0.6 bzw. 1.2 von 12) und verlieren die Anlagen vollstaendig.
+
+OFFEN: welche der beiden Kehrseiten akzeptabel ist. Das ist eine Design-Entscheidung, keine
+Messfrage - beide Varianten halten den Boden zuverlaessig ein.

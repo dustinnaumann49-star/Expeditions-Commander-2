@@ -106,7 +106,7 @@ for (const [name, spec] of Object.entries(AUFSTELLUNGEN)) {
       playerClass: st.playerClass,
       kampfBoostActive: true,
       shipModules: st.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     const surv = {};
     Object.keys(fleet).forEach((id) => (surv[id] = r.survivorsA[id] || 0));

@@ -92,7 +92,7 @@ async function duell(a, b, budget) {
   let verlustA = 0, vernichtetB = 0, siege = 0;
   for (let i = 0; i < RUNS; i++) {
     const r = await runner.runCombatInWorker({
-      sideAShips: fa, sideBShips: fb, research: {}, shipModules: {}, allowRetreat: false,
+      sideAShips: fa, sideBShips: fb, research: {}, shipModules: {}, retreatMode: 'none',
     });
     verlustA += wa - fleetValue({ [a]: r.survivorsA[a] || 0 });
     vernichtetB += wb - fleetValue({ [b]: r.survivorsB[b] || 0 });
@@ -150,7 +150,7 @@ if (MODUS === 'sektor') {
       };
       const r = await runner.runCombatInWorker({
         sideAShips: fleet, sideBShips: enemy, research: st.research, playerClass: st.playerClass,
-        kampfBoostActive: true, shipModules: st.shipModules, allowRetreat: true,
+        kampfBoostActive: true, shipModules: st.shipModules, retreatMode: 'all',
       });
       lost += startWert - fleetValue({ [id]: r.survivorsA[id] || 0 });
       rounds += r.roundsFought;
