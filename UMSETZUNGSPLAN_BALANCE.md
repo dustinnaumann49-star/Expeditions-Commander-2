@@ -1502,6 +1502,82 @@ Erholung ergeben 5,9-6,4 Mrd/Tag, also rund 8 % der Baseline (76,85 Mrd) - zwisc
 
 ### Entscheidung 6 - Schiffs-Tiers: WERT JE MACHTPUNKT ANGLEICHEN
 
+> **UMGESETZT UND GEGENGEMESSEN am 18.08.2026 (Block C, Schritt 8).** Geaendert wurde
+> ausschliesslich `data/ships.ts`, fuenf Kostenzeilen, keine Mechanik. Messdatei
+> `balance/session2-simulation/ship_tiers.txt`, neues Skript `run_ship_tiers.mjs`.
+>
+> **Zielwert 1,15 statt 1,20**, weil die drei bereits konformen Schiffe bei 1,10 / 1,11 / 1,18
+> liegen - ein Ziel am oberen Rand haette den hohen Tiers eine systematische Restbelastung
+> gelassen. **Fuenf statt vier Schiffen:** der Kreuzer lag mit 1,33 ebenfalls ausserhalb des
+> Korridors; der Plantext nannte ihn nicht.
+>
+> | Schiff | Kosten neu (M/K/D) | Wert | Wert/Power | Aenderung |
+> |---|---|---|---|---|
+> | Kreuzer | 311.000 / 109.000 / 31.000 | 567.500 | 1,15 (war 1,33) | -14 % |
+> | Bomber | 398.000 / 199.000 / 120.000 | 1.056.500 | 1,15 (war 1,73) | -34 % |
+> | Schlachtkreuzer | 183.000 / 244.000 / 92.000 | 825.000 | 1,15 (war 1,89) | -39 % |
+> | Zerstoerer | 345.000 / 288.000 / 86.000 | 1.035.000 | 1,15 (war 1,60) | -28 % |
+> | Reaper | 370.000 / 239.000 / 87.000 | 989.500 | 1,15 (war 1,59) | -28 % |
+>
+> Das Mischungsverhaeltnis der drei Ressourcen bleibt je Schiff erhalten - eine Verschiebung waere
+> ein verdeckter Eingriff in die Deuterium-Nachfrage gewesen.
+>
+> **Alle Messungen neu erhoben.** `ships.txt` und `ship_value.txt` stammen von VOR R14/R14b und
+> sind fuer diesen Zweck unbrauchbar; beide haben jetzt eine Trennmarke. `run_ship_value.mjs` misst
+> zudem das Falsche (Stueckzahl-Quote aus `simulator.ts`, auf ganze Prozent gerundet, im Skript mit
+> dem Flottenwert multipliziert - Messregel 4 verlangt die Wert-Bilanz).
+>
+> **Abnahme:**
+> 1. **Korridor erfuellt.** Alle acht Standard-Kampfschiffe liegen jetzt zwischen 1,10 und 1,18.
+> 2. **Duell-Matrix erfuellt** (Kriterium war mindestens 30 % Schrumpfung): mittlere Netto-Bilanz
+>    je Typ bei 600 Mio Einsatz, Spannweite **774 -> 412 Mio, also -47 %**.
+>    Vorher: schwer +400, leicht +312, kreuzer +115, schlachtschiff +81, reaper -21, zerstoerer
+>    -159, schlachtkreuzer -237, bomber -374.
+>    Nachher: schwer +206, leicht +128, reaper +87, kreuzer +19, zerstoerer -24, schlachtkreuzer
+>    -30, schlachtschiff -83, bomber -206.
+> 3. **Machtskalierter Sektor nur teilweise, und zwar gegenlaeufig - das ist der wichtigste Befund.**
+>    Bei realistischer Feindstaerke (0,85x) steigen die Verlustquoten der verbilligten Schiffe leicht
+>    (Reaper 0,0 -> 0,6 %, Schlachtkreuzer 1,3 -> 2,8 %, Bomber 0,0 -> 1,5 %). In der umkaempften
+>    Zelle (2,0x) verliert der Reaper seine Sonderstellung vollstaendig: **50 % Siegquote und 39,0 %
+>    Verlust vorher, 0 % und 47,1 % nachher.** Ursache: dieselbe Kaufsumme ergibt jetzt 606 statt 439
+>    Reaper, und die Gegnerstaerke skaliert mit der MACHT, nicht mit dem ausgegebenen Wert - wer
+>    billiger einkauft, kauft sich einen staerkeren Gegner. Genau der gegenlaeufige Effekt, vor dem
+>    die Entscheidung warnt. Der wirtschaftliche Gewinn bleibt trotzdem bestehen (mehr vernichtete
+>    Feindmacht und damit mehr Beute je eingesetzter Ressource, siehe Entscheidung 2), er zeigt sich
+>    nur nicht in der Verlustquote.
+> 4. **Nicht erreicht, wie vorhergesagt:** Jaeger bleiben in der Duell-Matrix vorn (+128 / +206).
+>    Ursache ist nicht der Preis, sondern `SIZE_MISMATCH_EVASION_BONUS` (+45 Prozentpunkte
+>    Ausweichchance gegen grosse Schiffe) - das liegt in Entscheidung 16 und wurde hier bewusst
+>    nicht nachgebessert.
+> 5. **Bomber bleibt Schlusslicht** (-206 Mio). Sein RapidFire wirkt ausschliesslich gegen
+>    Verteidigungsanlagen, im Schiffsduell hat er nichts. Struktureller Rollen-Befund, kein
+>    Kostenproblem - eine weitere Verbilligung wuerde ihn zum billigsten Machtpunkt im Spiel machen,
+>    ohne das Duell zu aendern.
+>
+> **Salvenschiffe und Imperator: gemessen, bewusst NICHT geaendert.**
+> Salvenjaeger 54,26 / Salvenkreuzer 44,84 / Salvendreadnought 58,46 Wert je Machtpunkt - mit der
+> Korrektur `MULTI_TARGET_POWER_CORRECTION = 8`, an der die Gegnerstaerke tatsaechlich haengt, sind
+> es 6,78 / 5,61 / 7,31. Beides um ein Vielfaches ausserhalb des Korridors; sie hineinzuziehen
+> hiesse rund 80 % Kostensenkung und wuerde die auf `maxCount` kalibrierte Salven-Mechanik
+> aushebeln. **Der Befund aus `ship_value.txt` (Salvenkreuzer 14 % Siegquote, 93,8 % Verlust) ist
+> nach R14 bestaetigt und verschaerft** - als reine Einzeltyp-Flotte jetzt 0 % Sieg und 100 %
+> Verlust. Er ist ein Messartefakt der Zelle, nicht ein Kostenbefund: 47 Salvenkreuzer treten mit
+> 11,8 Mio echter Panzerung gegen einen auf 106,5 Mio Macht skalierten Gegner an, weil die
+> Achtfach-Korrektur ihre eigene Flottenmacht aufblaeht. Ihre Rolle ist die Beimischung.
+> Der Imperator liegt bei 250 Wert je Machtpunkt (Teile-Gegenwert 325.000 je Teil aus
+> `TEILE_CONVERT_RESOURCES`). Auch nach der in Abschnitt 8, Punkt 3 beschlossenen Halbierung der
+> Teile-Kosten waeren es 125 - der Korridor ist fuer ihn strukturell unerreichbar. Das gehoert als
+> Randbefund zu Punkt 3, nicht hierher.
+>
+> **Messregel 8 erfuellt:** im Client nach hartkodierten Schiffskosten gegreppt, keine gefunden -
+> Werft und Schrotthaendler beziehen die Kosten ueber `/game/data` vom Server.
+>
+> **Nebenwirkung, dokumentiert:** das Kostenband je Waffenpunkt verschiebt sich von 68-133 auf
+> 59-90. Die Verteidigungsanlagen sind laut README an genau diese Kosteneffizienz gekoppelt
+> (Zielwert rund 65) und werden dadurch relativ etwas staerker. README-Zahlenbasis nachgezogen.
+> Ausserdem sinkt der Punktwert der verbilligten Schiffe (`getUnitPointValue()` rechnet mit der
+> rohen Kostensumme), Abschuesse der hohen Tiers geben also weniger Punkte.
+
 **Bezug:** Session 4, Befund 7 / Session 3, Befund 3. **Dateien:** `data/ships.ts`.
 
 **Ziel:** Zielkorridor **1,1-1,3 Wert je Machtpunkt ueber alle Tiers**. Reine Kostenaenderung an
@@ -3649,7 +3725,8 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                        -> OFFEN GEBLIEBEN: die Beute-Kurve aus Entscheidung 2 ist damit erstmals
                           im Spielcode, aber NUR fuer die Piratenbasen. Schritt 2 (missions.ts,
                           groupOps.ts) ist weiterhin nicht gebaut, siehe dort.
-  8. Entscheidung 6   Schiffs-Tiers
+  8. Entscheidung 6   Schiffs-Tiers   [ERLEDIGT 18.08.2026 - umgesetzt und gegengemessen,
+                        fuenf Kostenzeilen in ships.ts, Zielwert 1,15, Messkasten dort]
   9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
                        vorgezogen erledigt, siehe Abschnitt 2a)
  10. Entscheidung 10  Heimatverteidigung
@@ -4293,6 +4370,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 18.08.2026 | **Block C, Schritt 8 erledigt: Entscheidung 6 umgesetzt und gegengemessen (Schiffs-Tiers).** Geaendert wurde ausschliesslich `data/ships.ts`, fuenf Kostenzeilen, keine Mechanik. **Zielwert 1,15 statt 1,20**, weil die drei bereits konformen Schiffe bei 1,10/1,11/1,18 liegen. **Fuenf statt der im Plantext genannten vier Schiffe** - der Kreuzer lag mit 1,33 ebenfalls ausserhalb. Neue Kosten: Kreuzer 311/109/31 Tsd (-14 %), Bomber 398/199/120 (-34 %), Schlachtkreuzer 183/244/92 (-39 %), Zerstoerer 345/288/86 (-28 %), Reaper 370/239/87 (-28 %); Mischungsverhaeltnis je Schiff erhalten. **Alle Messungen neu erhoben** (neues Skript `run_ship_tiers.mjs`, Datei `ship_tiers.txt`), weil `ships.txt`/`ship_value.txt` von vor R14/R14b stammen - beide haben jetzt eine Trennmarke. Zusaetzlich misst `run_ship_value.mjs` das Falsche: es nimmt `avgLossPercent` aus `simulator.ts`, eine auf ganze Prozent gerundete STUECKZAHL-Quote, und multipliziert sie mit dem Flottenwert (Messregel 4 verlangt die Wert-Bilanz). **Abnahme: Korridor erfuellt** (alle acht Standardschiffe 1,10-1,18). **Duell-Matrix erfuellt**, Spannweite der mittleren Netto-Bilanz **774 -> 412 Mio (-47 %)**, Kriterium war -30 %; der Reaper steigt von -21 auf +87 Mio und ist jetzt drittbester statt drittschlechtester. **Sektor-Zelle gegenlaeufig - wichtigster Befund:** in der umkaempften Zelle (2,0x) verliert der Reaper seine Sonderstellung komplett (50 % Sieg / 39,0 % Verlust vorher, 0 % / 47,1 % nachher), weil dieselbe Kaufsumme jetzt 606 statt 439 Schiffe ergibt und die Gegnerstaerke an der MACHT haengt, nicht am ausgegebenen Wert - wer billiger einkauft, kauft sich einen staerkeren Gegner. Der wirtschaftliche Gewinn bleibt (mehr vernichtete Feindmacht je Ressource), er zeigt sich nur nicht in der Verlustquote. **Wie vorhergesagt nicht erreicht:** Jaeger bleiben in den Duellen vorn (+128/+206) - Ursache ist `SIZE_MISMATCH_EVASION_BONUS`, gehoert zu Entscheidung 16, bewusst nicht nachgebessert. **Bomber bleibt Schlusslicht** (-206 Mio), weil sein RapidFire nur gegen Verteidigungsanlagen wirkt; Rollen-Befund, kein Kostenproblem. **Salvenschiffe und Imperator gemessen, nicht geaendert** - 54,26/44,84/58,46 bzw. 6,78/5,61/7,31 mit der Achtfach-Korrektur, Imperator 250; der `ship_value.txt`-Befund zum Salvenkreuzer ist nach R14 bestaetigt und verschaerft (0 % Sieg, 100 % Verlust als reine Einzeltyp-Flotte) und bleibt ein Artefakt der Einzeltyp-Zelle. **Messregel 8 erfuellt** (keine hartkodierten Schiffskosten im Client). **Nebenwirkungen dokumentiert:** Kostenband je Waffenpunkt 68-133 -> 59-90, Verteidigungsanlagen (rund 65) dadurch relativ etwas staerker; Punktwert der verbilligten Schiffe sinkt (`getUnitPointValue()` rechnet mit der rohen Kostensumme). README-Zahlenbasis nachgezogen, dabei eine falsche Aussage dort korrigiert: Verteidigungsanlagen zaehlen sehr wohl in die Raid-Feindstaerke ein, mit Gewicht 0,3. |
 | 18.08.2026 | **RapidFire nach Klassen vollstaendig gemessen und als Entscheidung 16 eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund beim Spielen ("die RF kommt mir falsch vor, Kaempfe kommen linear vor") - ausdruecklich NICHT dieselbe Meldung wie bei R14, RapidFire wirkt seit dem 17.08.2026 wieder. **Code-Ursache des Befunds gefunden und sie liegt nicht in der RF-Tabelle:** alle drei Wellenprofile benutzen denselben vollstaendigen Pool (`weightsForProfile()`), `kampfgruppe` sogar gleichverteilt - jede Welle enthaelt jeden Typ, damit ist in jedem Kampf jeder Konter bedient und alles mittelt sich weg. Zusaetzlich ist die heutige Tabelle eine Leiter, kein Ring (`leicht: {}` kontert nichts, Bomber und Reaper werden von keinem Standardschiff gekontert), obwohl der Code-Kommentar sie "Stein-Schere-Papier-Kette" nennt. **Gemessen wurden vier Varianten** (Nutzeridee A = Klassen-RF mit einem Ziel; B = geschaerfte Wellenprofile; C = eigene Klasse plus die darunter; E = abgesenkter Groessen-Ausweichbonus), je 40 Laeufe, gleiche Flotten-MACHT statt gleichem Wert, damit die RF-Frage nicht mit Entscheidung 6 vermischt wird. **Erste Messrunde war unbrauchbar und das ist die Lehre daraus:** bei realistischer Feindstaerke (0,85x) gewinnt jede Aufstellung zu 100 % bei 1-7 % Verlust - die Frage "zaehlt die Zusammensetzung" ist dort gar nicht messbar. Erst bei 2,0x wird sie es. **Ergebnisse:** im Ist-Zustand gewinnen Jaeger jede Zelle jeder Welle, und das Wellenprofil aendert am Ergebnis der Elite-Flotte NICHTS (47,4 / 47,5 / 47,6 % Verlust bei 0 % Sieg) - die Wahl der Flotte ist heute keine Wahl. A holt Kreuzer- und Elite-Klasse zurueck (0 % -> 75-100 % Sieg) und macht das Wellenprofil erstmals relevant. C ist schlechter als A (verschiebt das Problem auf die Kreuzer-Klasse). B liefert allein nichts und schadet der gemischten Flotte, **Nutzerentscheidung: B bleibt draussen.** Erst A+E kippt die Jaeger-Dominanz - gegen eine Elite-Welle ist die Elite-Flotte dort zum ersten Mal in der gesamten Messreihe die beste Wahl (15,8 gegen 22,0 %). **Der teuerste Befund kam aus der Gegenmessung:** im Raid faellt der Verteidigungsverlust unter A von 27,3 auf **0,0 %**, und drei Regler dagegen sind wirkungslos (Reparaturquote 0,70 -> 0,40, Verteidigungs-Gewicht 0,3 -> 0,6, eigene Belagerungs-RF gegen Anlagen, auch kombiniert, auch mit RF-Wert 3). Es ist kein eigener Defekt, sondern ein Symptom: **Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung zwischen den Klassen.** Damit braucht der Umbau zwingend einen Ausgleich ueber die Gegnerstaerke - und genau der ist gesperrt: `PIRATEN_MULTIPLIER_ROLL` beruehrt die geschlossene Einnahmen-Baseline, `RAID_WAVE_ROLL` darf nach Abschnitt 8 Punkt 7 erst nach Entscheidung 10 angefasst werden, und die Reparaturquote steht nach Abschnitt 4a bewusst unangetastet (das Bollwerk gewinnt heute NUR ueber den Verteidigungsanlagen-Verlust). **Entscheidung 6 sagt woertlich "RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance aus Session 2 mitverschieben"; genau das ist gemessen eingetreten.** Kandidat bleibt A+E, terminiert nach Entscheidung 10 und Block A. Nebenbefund: das Verteidigungs-Gewicht ist ueberhaupt kein Hebel (0,3 -> 0,6 bewegt den Raid um einen Prozentpunkt), weil die Anlagen gegenueber der Flotte zu wenig Macht stellen. Zweiter Nebenbefund: der Groessenklassen-Ausweichbonus wird im Client nirgends angezeigt - die Info-Karte meldet 12 % Ausweichchance, im Kampf gegen grosse Schiffe gelten bis zu 75 %. |
 | 18.08.2026 | **Stack-Aggregation auf Nutzerfrage erneut geprueft und erneut bestaetigt - diesmal mit Zahlen.** Der Nutzer hat die Grundsatzfrage selbst wieder aufgemacht ("lieber Schiffe begrenzen und jedes einzeln simulieren, aber nicht ueber 1 Sekunde Latenz"). Gemessen mit dem vorhandenen Messbuild aus R14 (`stackAggregateThresholdFor` = 1e9, also Aggregation komplett aus), gemischte Flotte, Gegner jeweils aehnlich gross: **1.260 Schiffe 136 ms, 6.300 Schiffe 702 ms, 12.600 Schiffe 1.668 ms, 25.200 Schiffe 5.524 ms** - die Ein-Sekunden-Grenze liegt damit bei rund **8.000 eigenen Schiffen**. Mit Aggregation dagegen 29-77 ms bei denselben Flotten, und die Rechenzeit haengt weiterhin an der Typenzahl statt an der Stueckzahl (Bestaetigung des R14-Skalierungstests mit 207.000 Schiffen). **Nutzerentscheidung: Aggregation bleibt.** Begruendung diesmal nicht nur Spielgefuehl, sondern eine konkrete Zelle: am Raid-Tag treffen eigene Flotte, Verteidigungsanlagen und fremde Verstaerkung in EINEM Kampf zusammen - die 8.000 waeren dort die Obergrenze fuer die Summe aller Beteiligten, nicht fuer eine Flotte. **Nicht umgesetzt, aber als Option festgehalten:** heute ist Aggregation alles-oder-nichts pro Typ (ueber der Schwelle wird der GANZE Typ ein einziger Stapel). Eine gedeckelte Stapelgroesse - 50.000 Jaeger als 100 Stapel zu 500 statt als einer - waere der Mittelweg zwischen Genauigkeit (R15) und Rechenzeit und ist mit demselben Messbuild-Verfahren messbar. |
 | 18.08.2026 | **Block B ist entschieden, aber NIRGENDS gebaut** (gefunden beim Code-Abgleich fuer Entscheidung 16, gleiche Fehlerform wie bei Block A Schritt 2). Im Code steht weder `ADMIRAL_DEFEAT_LOSS_SHARE` (4.1), noch wird `contributedPower` je Check frisch berechnet (4.2 - `groupOps.ts` setzt es einmal beim Flottenstart), noch der Faktor 1,6x samt Boss-Forschungsskalierung (4.3 - `ADMIRAL_MULTIPLIER_ROLL` steht unveraendert auf 1,10/1,30/1,50), noch die Umstellung des Boss-RapidFire auf die sechs Standardtypen (4.4 - die Zeile lautet weiterhin `piratenadmiral: { leicht: 10, schwer: 8 }`). **Wichtig fuer Entscheidung 16:** 4.4 ist selbst eine RF-Aenderung - wer die RF-Tabelle umbaut, ohne sie mitzunehmen, baut sie zweimal. |

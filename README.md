@@ -289,8 +289,16 @@ per Stichwort-Suche in dieser Datei trotzdem auffindbar.
   umgekehrt) - gibt kleinen Schiffen eine Tank-/Ausweich-Rolle statt reiner Bedeutungslosigkeit.
 - Durchschlag (Overkill) auf 50% Maximalwert gedeckelt (`effectPerLevel` in `research.ts`), sonst
   könnte ein Treffer bis zu 5 Schiffe desselben Typs auf einmal vernichten (`MAX_CASCADE = 5`).
-- Verteidigungsanlagen-Waffenwerte an Schiffs-Kosteneffizienz gekoppelt, zählen NICHT in die
-  Raid-Feindstärke ein (sonst würde zähere Verteidigung stärkere Angreifer heraufbeschwören).
+- Verteidigungsanlagen-Waffenwerte an Schiffs-Kosteneffizienz gekoppelt. Sie zählen zu 30 % in die
+  Raid-Feindstärke ein (`RAID_DEFENSE_POWER_WEIGHT = 0.3` in `raids.ts`), kämpfen aber zu 100 % mit
+  - zähere Verteidigung beschwört also nur anteilig stärkere Angreifer herauf. **Korrigiert
+    18.08.2026:** hier stand vorher "zählen NICHT ein", das war falsch. Gemessen bindet dieses
+  Gewicht ohnehin kaum (0,3 auf 0,6 bewegt den Raid um einen Prozentpunkt), weil die Anlagen
+  gegenüber der Flotte zu wenig Macht stellen.
+- **Kostenband der Schiffe (Stand 18.08.2026, nach Entscheidung 6):** 59 bis 90 Wert-Einheiten je
+  Waffenpunkt, vorher 68 bis 133. Die Verteidigungsanlagen liegen bei rund 65 und sind damit
+  relativ etwas stärker geworden. Bei künftigen Balance-Änderungen an einzelnen
+  Verteidigungswerten diese Relation im Auge behalten, statt Werte isoliert zu ändern.
 - Schildkuppeln bilden einen gemeinsamen Pool (`computeDomeSharedPool()`) statt Pro-Einheit-
   Verteilung - fängt Schaden für die GESAMTE Verteidigungsseite ab, bevor eine Anlage getroffen
   wird. Wendet Forschung, Klassen-Bonus, Kampf-Booster UND Schild-Module an wie jede andere Anlage.

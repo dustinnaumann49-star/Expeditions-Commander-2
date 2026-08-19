@@ -22,6 +22,12 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
+- **NEU 18.08.2026 (Abend): Block C, Schritt 8 ist erledigt** - Entscheidung 6 (Schiffs-Tiers) ist
+  umgesetzt und gegengemessen. Fuenf Kostenzeilen in `data/ships.ts`, Zielwert 1,15, keine
+  Mechanik. Korridor und Duell-Kriterium erfuellt (Spannweite -47 %), die Sektor-Zelle laeuft
+  gegenlaeufig: wer billiger einkauft, kauft sich einen staerkeren Gegner, weil die Gegnerstaerke
+  an der MACHT haengt und nicht am ausgegebenen Wert. Messkasten am Kopf von Entscheidung 6,
+  Messdatei `ship_tiers.txt`.
 - **NEU 18.08.2026 (Abend): RapidFire nach Klassen ist vollstaendig gemessen und als
   Entscheidung 16 im Plan eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund
   ("die RF kommt mir falsch vor, Kaempfe kommen linear vor"), NICHT dieselbe Meldung wie bei R14.
@@ -325,9 +331,9 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block C weiterfuehren.** Schritt 6 (13.3) und Schritt 7 (Entscheidung 5) sind erledigt. Als
-naechstes steht Schritt 8 an (Entscheidung 6, Schiffs-Tiers); die Schritte 8 bis 12 sind voneinander
-unabhaengig und koennen in beliebiger Reihenfolge laufen.
+**Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5) und Schritt 8
+(Entscheidung 6) sind erledigt. Als naechstes stehen die Schritte 9 bis 12 an; sie sind
+voneinander unabhaengig und koennen in beliebiger Reihenfolge laufen.
 
 **Neu am 18.08.2026 (Abend), fuer die Reihenfolge wichtig:** Entscheidung 16 (RapidFire nach
 Klassen) ist gemessen und haengt an Entscheidung 10 - wer den RF-Umbau will, zieht Schritt 10 vor,
