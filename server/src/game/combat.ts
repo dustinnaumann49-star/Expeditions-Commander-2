@@ -62,6 +62,33 @@ export function findDefense(id: string) {
   return DEFENSES.find((d) => d.id === id);
 }
 
+/**
+ * Rueckzugs-Modus fuer Seite A (Entscheidung 10, 19.08.2026).
+ * - 'all'       Standard: jede Einheit der Seite A kann sich absetzen (Missionen, Events,
+ *               Gruppen-Operationen, Piratenbasen).
+ * - 'none'      niemand zieht sich zurueck.
+ * - 'fleetOnly' NUR Schiffe setzen sich ab, Verteidigungsanlagen kaempfen weiter. Das ist der
+ *               Modus der Heimatverteidigung: aus der Verteidigung der eigenen Basis kann man
+ *               nicht "fliehen", aber die FLOTTE kann abdrehen. Vorher stand dort 'none', was
+ *               bei schwachem Ausbau zu gemessenen 92 % Flottenverlust fuehrte - nach dem Reset
+ *               waere das der Regelfall gewesen.
+ */
+export type RetreatMode = 'all' | 'none' | 'fleetOnly';
+
+// Eine Einheit gilt als stationaer, wenn ihre Id in DEFENSES steht. Bewusst ueber die Datentabelle
+// und nicht ueber eine zweite Liste - sonst muesste jede neue Verteidigungsanlage an zwei Stellen
+// gepflegt werden, und die vergessene Stelle faellt nur im Kampf auf.
+function isStationary(typeId: string): boolean {
+  return DEFENSES.some((d) => d.id === typeId);
+}
+
+// Darf diese Einheit sich im gegebenen Modus zurueckziehen?
+function mayRetreat(typeId: string, mode: RetreatMode): boolean {
+  if (mode === 'none') return false;
+  if (mode === 'fleetOnly') return !isStationary(typeId);
+  return true;
+}
+
 export function findNpcSpecial(id: string) {
   return NPC_SPECIALS.find((n) => n.id === id);
 }
@@ -1637,7 +1664,7 @@ function runRounds(
   research: Record<string, number>,
   pirateResearch: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true,
+  retreatMode: RetreatMode = 'all',
   battleModifier: BattleModifierType | null = null,
   aggregatesAIn: AggregateStack[] = [],
   aggregatesBIn: AggregateStack[] = []
@@ -1663,9 +1690,9 @@ function runRounds(
   // Jetzt entscheidet JEDES Schiff EINZELN anhand seines eigenen verbleibenden HP-Anteils: sobald
   // ein Schiff auf UNIT_RETREAT_THRESHOLD seiner Panzerung gesunken ist, zieht es sich zurueck
   // (ueberlebt, kaempft aber nicht weiter mit) - staerker beschaedigte Schiffe fliehen so frueher als
-  // kaum angeschlagene. Gilt nur fuer Seite A (Spieler-Flotte auf Offensiv-Missionen) und nur wenn
-  // allowRetreat=true (Heimatverteidigung bei Raids setzt das bewusst auf false, da Verteidigung
-  // inkl. Anlagen nicht "fliehen" kann, siehe raids.ts). Zurueckgezogene Schiffe sammeln sich in
+  // kaum angeschlagene. Gilt nur fuer Seite A. Der Modus steuert, WER sich absetzen darf
+  // (siehe RetreatMode oben): die Heimatverteidigung laeuft auf 'fleetOnly' - die Flotte dreht ab,
+  // die Verteidigungsanlagen kaempfen weiter. Zurueckgezogene Schiffe sammeln sich in
   // retreatedUnitsA und werden am Ende wieder zu unitsA hinzugefuegt, damit sie als Ueberlebende
   // zaehlen - fuer die Runden-Visualisierung gelten sie ab ihrer Rueckzugs-Runde als nicht mehr
   // anwesend (korrekt, sie kaempfen ja nicht mehr mit). Aggregate ziehen sich als GANZES zurueck
@@ -1760,10 +1787,10 @@ function runRounds(
     // Rueckzug nur, wenn ueberhaupt noch Feinde uebrig sind: Ist der letzte Gegner in derselben
     // Runde gefallen, ist der Kampf GEWONNEN - dann waere ein "Rueckzug" sowohl unlogisch als auch
     // im Bericht irrefuehrend ("Rueckzug" trotz Sieg).
-    if (allowRetreat && sideHasLife(unitsB, aggregatesB) && sideHasLife(unitsA, aggregatesA)) {
+    if (retreatMode !== 'none' && sideHasLife(unitsB, aggregatesB) && sideHasLife(unitsA, aggregatesA)) {
       const stillFighting: CombatUnit[] = [];
       unitsA.forEach((u) => {
-        if (u.hpCur / u.hpMax <= UNIT_RETREAT_THRESHOLD) {
+        if (mayRetreat(u.typeId, retreatMode) && u.hpCur / u.hpMax <= UNIT_RETREAT_THRESHOLD) {
           retreated = true;
           retreatedUnitsA.push(u);
         } else {
@@ -1783,6 +1810,7 @@ function runRounds(
       // zurueckgezogen sein statt weiterzukaempfen und zu sterben.
       aggregatesA.forEach((a) => {
         if (a.hpPoolCur <= 0) return;
+        if (!mayRetreat(a.typeId, retreatMode)) return;
         const deadHpPool = Math.max(0, a.initialHpPool - a.hpPoolCur - a.retreatedHpPool);
         const deadFraction = deadHpPool / a.initialHpPool;
         const rampStart = (1 - UNIT_RETREAT_THRESHOLD) * 0.3;
@@ -1872,13 +1900,13 @@ export function resolveCombat(
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true,
+  retreatMode: RetreatMode = 'all',
   battleModifier: BattleModifierType | null = null
 ): CombatResult {
   const { units: unitsA0, aggregates: aggregatesA0 } = buildUnits(sideAShips, statsFnA);
   const { units: unitsB0, aggregates: aggregatesB0 } = buildUnits(sideBShips, statsFnB);
   const pirateResearch = computePirateResearch(research);
-  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier, aggregatesA0, aggregatesB0);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, retreatMode, battleModifier, aggregatesA0, aggregatesB0);
 
   const survivorsA: Record<string, number> = {};
   r.unitsA.forEach((u) => (survivorsA[u.typeId] = (survivorsA[u.typeId] || 0) + 1));
@@ -1930,14 +1958,14 @@ export function resolveCombatMultiOwner(
   statsFnB: (id: string) => CombatStats,
   research: Record<string, number>,
   sharedShieldPoolA = 0,
-  allowRetreat = true,
+  retreatMode: RetreatMode = 'all',
   battleModifier: BattleModifierType | null = null,
   homeDefense = false
 ): MultiOwnerCombatResult {
   const { units: unitsA0, aggregates: aggregatesA0 } = buildUnitsMultiOwner(contributions, statsFnA, homeDefense);
   const { units: unitsB0, aggregates: aggregatesB0 } = buildUnits(sideBShips, statsFnB);
   const pirateResearch = computePirateResearch(research, contributions);
-  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, allowRetreat, battleModifier, aggregatesA0, aggregatesB0);
+  const r = runRounds(unitsA0, unitsB0, research, pirateResearch, sharedShieldPoolA, retreatMode, battleModifier, aggregatesA0, aggregatesB0);
 
   const survivorsA: Record<string, number> = {};
   const survivorsByOwner: Record<string, Record<string, number>> = {};

@@ -2,7 +2,7 @@ import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { CombatResult, MultiOwnerCombatResult, OwnedFleetContribution } from './combat.js';
+import type { CombatResult, MultiOwnerCombatResult, OwnedFleetContribution, RetreatMode } from './combat.js';
 import type { BattleModifierType } from './data/combatConstants.js';
 import type { CombatStats, PlayerClass } from './types.js';
 
@@ -33,16 +33,18 @@ export interface CombatWorkerRequest {
   // zu playerClass gilt bei Mehrspieler-Kaempfen stattdessen shipModules PRO Contribution.
   shipModules?: Record<string, number>;
   sharedShieldPoolA?: number; // gemeinsamer Kuppel-Schild-Pool fuer Seite A (Heimatverteidigung)
-  // Ob Seite A sich bei 50% Verlusten zurueckziehen kann (Standard: ja). Bei der Heimatverteidigung
-  // (Raids) MUSS das auf false stehen - man kann sich nicht aus der Verteidigung der eigenen Basis
-  // "zurueckziehen", und da Verteidigungsanlagen oft viel schneller sterben als eine grosse Flotte,
-  // wuerde ein Rueckzug sonst die ganze Streitmacht zu frueh abziehen, obwohl die Flotte selbst noch
-  // laengst kampffaehig waere.
-  allowRetreat?: boolean;
+  // Wer auf Seite A sich absetzen darf (Standard 'all', siehe RetreatMode in combat.ts). Die
+  // Heimatverteidigung (Raids) setzt 'fleetOnly': aus der Verteidigung der eigenen Basis kann man
+  // nicht "fliehen", und da Verteidigungsanlagen viel schneller sterben als eine grosse Flotte,
+  // wuerde ein Rueckzug aller Einheiten die ganze Streitmacht zu frueh abziehen - die FLOTTE darf
+  // aber abdrehen, sonst endet ein Raid bei schwachem Ausbau im Totalverlust (Entscheidung 10).
+  // Das Feld hiess bis zum 19.08.2026 `allowRetreat: boolean`; die Umbenennung ist Absicht, damit
+  // ein alter Aufruf mit `allowRetreat: false` nicht STILL auf den Standard zurueckfaellt.
+  retreatMode?: RetreatMode;
   // Verteidigung der EIGENEN Basis (Raid). Wird nur aus raids.ts gesetzt und aktiviert den
   // Bollwerk-Aufschlag (CLASS_BOLLWERK_DEFENSE_BONUS) - bei Mehrspieler-Verteidigung fuer jeden
   // Beitragenden einzeln, je nach dessen eigener playerClass. Bewusst ein EIGENES Feld und nicht
-  // an `allowRetreat: false` gekoppelt: die beiden bedeuten Unterschiedliches, und eine spaetere
+  // an den Rueckzugs-Modus gekoppelt: die beiden bedeuten Unterschiedliches, und eine spaetere
   // Aenderung an der Rueckzugs-Logik wuerde sonst still den Klassenbonus mitverschieben.
   homeDefense?: boolean;
   // Seltener Kampf-Modifikator fuer diesen einen Kampf (Nebel/Ionensturm/etc., siehe

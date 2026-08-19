@@ -2,6 +2,7 @@ import { DEFENSES } from './data/defenses.js';
 import {
   RAID_SPAWN_CHANCE,
   RAID_LOOT_PERCENT,
+  NEWCOMER_GRACE_MS,
   COMBAT_SHIP_IDS,
   rollWeeklyCheckpoints,
   RAID_SCHEDULE_BY_USERNAME,
@@ -46,6 +47,18 @@ import { pushMessage, recordSkirmish } from './messages.js';
 import { recordEnemyKills, contributionShares, scaleKills } from './stats.js';
 import { addContainers } from './inventory.js';
 import { isBoosterActive } from './boosterUtil.js';
+
+/**
+ * Steht dieses Konto noch unter Neulingsschutz? (siehe NEWCOMER_GRACE_MS in economy.ts)
+ * Bewusst ueber `created_at` aus der users-Tabelle und nicht ueber die Flottenmacht: eine
+ * Kopplung an die Staerke waere sauberer, laedt aber dazu ein, sich absichtlich schwach zu
+ * halten. Bots sind ausgenommen - sie brauchen keinen Schutz und wuerden ihn nur verrechnen.
+ */
+function isNewcomerProtected(state: PlayerState): boolean {
+  const user = getUserById(state.userId);
+  if (!user || user.is_bot) return false;
+  return Date.now() - user.created_at < NEWCOMER_GRACE_MS;
+}
 import { loadPlayerState, savePlayerState } from './state.js';
 import { getHoldingDeploymentsTargeting, persistHeldDeployment, galaxyDistance, galaxyDurationMs } from './galaxy.js';
 import { getUserById, listAllUsers } from '../db.js';
@@ -390,14 +403,14 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   ];
   const hasSupport = reinforcerStates.length > 0 || heldStates.length > 0;
   const result = hasSupport
-    ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, allowRetreat: false, homeDefense: true, battleModifier })
+    ? await runMultiOwnerCombatInWorker({ contributions, sideBShips: npcShips, research: state.research, defenseCounts: state.defense, sharedShieldPoolA: domePoolReal, retreatMode: 'fleetOnly', homeDefense: true, battleModifier })
     : await runCombatInWorker({
         sideAShips: defenderShips,
         sideBShips: npcShips,
         research: state.research,
         defenseCounts: state.defense,
         sharedShieldPoolA: domePoolReal,
-        allowRetreat: false,
+        retreatMode: 'fleetOnly',
         homeDefense: true,
         battleModifier,
         playerClass: state.playerClass,
@@ -410,10 +423,16 @@ async function resolveOneWave(state: PlayerState, raid: RaidState, currentUserId
   const losses: Record<string, number> = {};
   const playerResults: CombatUnitResult[] = [];
 
+  // Neulingsschutz: die Flotte wird zurueckgeschlagen, nicht vernichtet. Gemessen verliert ein
+  // schwaches Konto sonst 92 % seiner Flotte je Raid (bis zu 100 %), was der Vorgabe "spuerbar,
+  // aber nie Totalverlust" widerspricht. Wirtschaftlich ist das ein kleiner Posten (0,29 Mrd je
+  // Raid gegen 20,23 Mrd Ertrag) - es geht um den Totalverlust, nicht um die Bilanz.
+  const neulingsschutz = isNewcomerProtected(state);
   homeShipIds.forEach((id) => {
     const eff = getEffectiveStats(id, state.research, {}, isBoosterActive(state, 'kampf'), state.playerClass, state.shipModules, true);
     const sent = state.fleet[id] || 0;
-    const survived = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
+    const survivedRaw = survivorsByOwner ? survivorsByOwner['owner']?.[id] || 0 : result.survivorsA[id] || 0;
+    const survived = neulingsschutz ? sent : survivedRaw;
     const lost = sent - survived;
     losses[id] = lost;
     state.fleet[id] = survived;
@@ -597,7 +616,7 @@ function finalizeRaidWaves(state: PlayerState, currentUserId?: number, currentUs
   // Ressourcen-Diebstahl: genau EINMAL fuer den gesamten Raid, nicht pro verlorener Welle - sofern
   // nicht ALLE Wellen abgewehrt wurden. Basis sind die Ressourcen zum Abschluss-Zeitpunkt.
   let stolen: { metall: number; kristall: number; deuterium: number } | null = null;
-  if (!perfectDefense) {
+  if (!perfectDefense && !isNewcomerProtected(state)) {
     stolen = {
       metall: Math.round(state.resources.metall * RAID_LOOT_PERCENT),
       kristall: Math.round(state.resources.kristall * RAID_LOOT_PERCENT),

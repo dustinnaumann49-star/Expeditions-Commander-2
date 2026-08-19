@@ -39,7 +39,7 @@ parentPort?.on('message', (request: CombatWorkerRequest) => {
         statsFnB,
         request.research,
         request.sharedShieldPoolA || 0,
-        request.allowRetreat !== false,
+        request.retreatMode || 'all',
         request.battleModifier || null,
         !!request.homeDefense
       )
@@ -50,7 +50,7 @@ parentPort?.on('message', (request: CombatWorkerRequest) => {
         statsFnB,
         request.research,
         request.sharedShieldPoolA || 0,
-        request.allowRetreat !== false,
+        request.retreatMode || 'all',
         request.battleModifier || null
       );
   parentPort?.postMessage(result);

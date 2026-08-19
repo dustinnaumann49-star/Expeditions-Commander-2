@@ -479,7 +479,7 @@ async function runAdminCheck(
     sideBShips: encounter.npcShips,
     sideBStatsOverride: encounter.statsOverride,
     research,
-    allowRetreat: true,
+    retreatMode: 'all',
   });
 
   // Kampfbericht aufbauen (Nutzer-Feedback: vorher gab es beim Piratenadmiral GAR KEINEN
