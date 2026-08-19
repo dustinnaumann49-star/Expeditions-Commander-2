@@ -53,7 +53,7 @@ async function duel(idA, idB) {
       kampfBoostActive: false,
       playerClass: null,
       shipModules: {},
-      allowRetreat: false,
+      retreatMode: 'none',
     });
     const sa = (r.survivorsA[idA] || 0) * shipValue(idA);
     const sb = (r.survivorsB[idB] || 0) * shipValue(idB);

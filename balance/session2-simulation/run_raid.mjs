@@ -40,6 +40,7 @@ async function runRaid(profile, fleet, defense) {
   const WITHDRAW_SHARE = process.env.WITHDRAW !== undefined ? Number(process.env.WITHDRAW) : 0;
   const CAP_SHARE = process.env.CAP !== undefined ? Number(process.env.CAP) : 0;
   const RESERVE_SHARE = process.env.RESERVE !== undefined ? Number(process.env.RESERVE) : 0;
+  const GRACE = process.env.GRACE === '1';
   const startFleetPower = L.combat.combatFleetPowerBase(fleet);
   let fleetWithdrawn = false;
   for (let w = 0; w < RAID_WAVE_COUNT; w++) {
@@ -99,7 +100,12 @@ async function runRaid(profile, fleet, defense) {
       shipModules: st.shipModules,
     });
 
-    shipIds.forEach((id) => { st.fleet[id] = (st.fleet[id] - inWelle[id]) + (result.survivorsA[id] || 0); });
+    // Neulingsschutz (Entscheidung 10, umgesetzt am 19.08.2026 in raids.ts): die Flotte wird
+    // zurueckgeschlagen statt vernichtet. GRACE=1 misst diesen Zustand nach.
+    shipIds.forEach((id) => {
+      const ueberlebt = GRACE ? inWelle[id] : (result.survivorsA[id] || 0);
+      st.fleet[id] = (st.fleet[id] - inWelle[id]) + ueberlebt;
+    });
     // Entscheidung 10, Variante 3 (19.08.2026): harte VERLUSTOBERGRENZE ueber den ganzen Raid.
     // Sobald der kumulierte Flottenverlust CAP_SHARE der Ausgangsflotte erreicht, wird der
     // ueberschiessende Teil wiederhergestellt ("die Flotte bricht den Kontakt ab") und nimmt an den

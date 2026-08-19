@@ -91,7 +91,7 @@ async function runSeries(profileName, baseFleet, factor) {
       playerClass: state.playerClass,
       kampfBoostActive: state.kampfBoost,
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     fights++; sumRounds += r.roundsFought; maxRounds = Math.max(maxRounds, r.roundsFought);
     if (r.roundsFought >= cc.MAX_ROUNDS) capped++;

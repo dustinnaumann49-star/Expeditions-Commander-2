@@ -18,7 +18,7 @@
 // --------
 // - Repliziert resolveOneWave() ueber alle RAID_WAVE_COUNT Wellen: Feindstaerke wird PRO WELLE
 //   aus der bereits dezimierten Flotte neu gerechnet, Verteidigungsanlagen werden nach jeder
-//   Welle zu DEFENSE_REPAIR_PERCENT wiederhergestellt, allowRetreat = false (Punkt 27:
+//   Welle zu DEFENSE_REPAIR_PERCENT wiederhergestellt, retreatMode 'fleetOnly' (Punkt 27:
 //   aus der Heimatverteidigung gibt es keinen Rueckzug), homeDefense = true.
 // - Verstaerker-/Halte-Flotten werden zwischen den Wellen NICHT reparariert - sie tragen ihre
 //   Verluste weiter, genau wie im echten Ablauf.
@@ -120,7 +120,7 @@ async function runRaid({ defProfile, allies, allyWeight, defFleet = L.FLEET_LARG
 
     const result = await L.runner.runMultiOwnerCombatInWorker({
       contributions, sideBShips: npcShips, research: st.research, defenseCounts: st.defense,
-      sharedShieldPoolA: domePool, allowRetreat: false, homeDefense: true,
+      sharedShieldPoolA: domePool, retreatMode: 'none', homeDefense: true,
       battleModifier: L.combat.rollBattleModifier('raid'),
     });
 

@@ -88,7 +88,7 @@ async function runSeries(profileName, baseFleet, factor, mode) {
       playerClass: state.playerClass,
       kampfBoostActive: profileName !== 'voll_noboost',
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     if (r.roundsFought >= cc.MAX_ROUNDS) capped++;
 

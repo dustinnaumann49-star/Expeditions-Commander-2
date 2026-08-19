@@ -87,7 +87,7 @@ for (const n of LADDER) {
       playerClass: state.playerClass,
       kampfBoostActive: true,
       shipModules: state.shipModules,
-      allowRetreat: false,
+      retreatMode: 'none',
     });
     const surv = {};
     Object.keys(fleet).forEach((id) => (surv[id] = r.survivorsA[id] || 0));

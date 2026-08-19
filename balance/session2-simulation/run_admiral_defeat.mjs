@@ -70,7 +70,7 @@ async function runSeries(profileName, baseFleet, mode) {
       playerClass: state.playerClass,
       kampfBoostActive: profileName !== 'voll_noboost',
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
 
     // vernichtete Feindmacht dieses Checks (Basiswerte, konsistent zu combatFleetPowerBase)
@@ -284,7 +284,7 @@ for (const [profile, fleetName] of [['voll', 'real'], ['mittel', 'real'], ['voll
         playerClass: state.playerClass,
         kampfBoostActive: profile !== 'voll_noboost',
         shipModules: state.shipModules,
-        allowRetreat: true,
+        retreatMode: 'all',
       });
       if ((r.survivorsB[cc.ADMIRAL_BOSS_ID] || 0) > 0) survived++;
       const rest = {};

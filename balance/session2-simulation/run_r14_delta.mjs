@@ -56,7 +56,7 @@ for (const sektorId of SEKTOREN) {
       playerClass: st.playerClass,
       kampfBoostActive: true,
       shipModules: st.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     const surv = {};
     Object.keys(FLEET).forEach((id) => (surv[id] = r.survivorsA[id] || 0));

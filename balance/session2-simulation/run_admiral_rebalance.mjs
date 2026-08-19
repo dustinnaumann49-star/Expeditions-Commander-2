@@ -75,7 +75,7 @@ async function runSeries(profileName, baseFleet, statShare, defeatShare) {
       playerClass: state.playerClass,
       kampfBoostActive: profileName !== 'voll_noboost',
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     checks = c + 1;
 

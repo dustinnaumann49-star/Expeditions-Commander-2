@@ -75,7 +75,7 @@ async function runSeries(profileName, baseFleet, defeatLossThreshold) {
       playerClass: state.playerClass,
       kampfBoostActive: true,
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     checks = c + 1;
     const next = {};

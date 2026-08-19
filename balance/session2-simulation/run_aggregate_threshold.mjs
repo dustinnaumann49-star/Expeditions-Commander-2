@@ -27,7 +27,7 @@ for (const n of [90, 99, 101, 150, 400]) {
       kampfBoostActive: false,
       playerClass: null,
       shipModules: {},
-      allowRetreat: false,
+      retreatMode: 'none',
     });
     lost += n - (r.survivorsA.kreuzer || 0);
     rounds += r.roundsFought;

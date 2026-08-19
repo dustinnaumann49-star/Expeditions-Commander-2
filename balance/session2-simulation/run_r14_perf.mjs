@@ -49,7 +49,7 @@ for (const sektorId of ['piraten_mittel', 'piraten_elite']) {
       playerClass: st.playerClass,
       kampfBoostActive: true,
       shipModules: st.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
     ms += performance.now() - t0;
     rounds += r.roundsFought;

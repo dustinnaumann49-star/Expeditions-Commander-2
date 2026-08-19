@@ -22,7 +22,7 @@ const r = await runner.runCombatInWorker({
   playerClass: st.playerClass,
   kampfBoostActive: true,
   shipModules: st.shipModules,
-  allowRetreat: false,
+  retreatMode: 'none',
 });
 
 const key = Object.keys(r.shotsB.shotsFired).find((k) => k.includes(cc.ADMIRAL_BOSS_ID));

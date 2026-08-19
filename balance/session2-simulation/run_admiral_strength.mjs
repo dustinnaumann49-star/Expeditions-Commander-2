@@ -72,7 +72,7 @@ async function runSeries(profileName, baseFleet, factor) {
       playerClass: state.playerClass,
       kampfBoostActive: profileName !== 'voll_noboost',
       shipModules: state.shipModules,
-      allowRetreat: true,
+      retreatMode: 'all',
     });
 
     Object.entries(enc.npcShips).forEach(([id, sent]) => {

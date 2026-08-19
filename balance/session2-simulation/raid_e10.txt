@@ -43,3 +43,44 @@ mehr nach oben). Sie hat aber eine Kehrseite, je nachdem, woraus die Wellenstaer
 
 OFFEN: welche der beiden Kehrseiten akzeptabel ist. Das ist eine Design-Entscheidung, keine
 Messfrage - beide Varianten halten den Boden zuverlaessig ein.
+
+--- Entscheidung 10, Variante 5: Neulings-Schonfrist | Rechenmodell ueber 14 Tage ---
+Annahmen (GESETZT, nicht gemessen): 0.80 Mrd/Tag ausserhalb des Raids,
+Raid-Ertrag 20.23 Mrd (gemessen, 11,0 von 12 Wellen), Pluenderung in 93 % der Raids,
+RAID_LOOT_PERCENT 0.25 aus dem Code, Raid alle 3.5 Tage (Mi + So).
+
+Fall                                            Raids   Bestand Tag 14   gepluendert   Flottenverlust
+Ist-Zustand (kein Schutz)                          4         62.9 Mrd      29.3 Mrd         1.18 Mrd
+Variante 5a: Schonfrist auf die Pluenderung, 14 Tage     4         92.1 Mrd       0.0 Mrd         0.00 Mrd
+Variante 5b: gar kein Raid, 14 Tage                0         11.2 Mrd       0.0 Mrd         0.00 Mrd
+
+Gleichgewichtsbestand bei Dauerbetrieb: 89 Mrd, Abschoepfung je Raid 23 Mrd.
+Die Pluenderung deckelt also den BESTAND, sie verhindert nicht den Aufbau - wer vor dem Raid
+ausgibt, verliert nichts. Fuer einen Neuling, der die Regel noch nicht kennt, ist sie trotzdem
+die spuerbarste Strafe; der Flottenverlust ist daneben wirtschaftlich fast belanglos.
+
+=== Variante 5 (Nutzeridee 19.08.2026) und Umsetzung ===
+Nutzervorschlag war: Neulinge bekommen zwei Wochen lang GAR KEINEN Raid.
+Gegengerechnet (run_e10_schonfrist.mjs, 14 Tage):
+  Ist-Zustand                              Bestand Tag 14  62.9 Mrd, gepluendert 29.3 Mrd, Flotte -1.18 Mrd
+  Schonfrist nur auf die Pluenderung       Bestand Tag 14  92.1 Mrd
+  gar kein Raid (urspruenglicher Vorschlag) Bestand Tag 14 11.2 Mrd
+-> Der Raid ist die groesste Einnahmequelle der Startphase: ein schwaches Konto gewinnt 11,0 von
+   12 Wellen und kassiert 20,23 Mrd je Raid, waehrend es eine Flotte im Wert von 0,32 Mrd
+   verliert. "Kein Raid fuer Neulinge" haette sie also auf ein Sechstel gebremst.
+
+UMGESETZT (raids.ts, economy.ts): Neulingsschutz ueber NEWCOMER_GRACE_MS (14 Tage ab
+Registrierung, nach einem Reset also fuer alle gleichzeitig). Der Raid laeuft normal ab
+inklusive Belohnung, aber der Ressourcen-Diebstahl entfaellt und die FLOTTE wird
+zurueckgeschlagen statt vernichtet. Verteidigungsanlagen bewusst NICHT geschuetzt.
+
+Gegenmessung (GRACE=1, 30 Raids je Fall):
+  Fall                                  Wellen  Flottenverlust  Verteidigung
+  voll / grosse Flotte + volle Vert.      12.0      0.0 %          21.6 %
+  mittel / grosse Flotte                  12.0      0.0 %          18.3 %
+  schwach / kleine Flotte                  9.2      0.0 %          96.4 %
+
+Der Preis ist sichtbar und gewollt: weil die Flotte nicht mehr schrumpft, bleibt jede der zwoelf
+Wellen auf voller Staerke skaliert - ein schwaches Konto gewinnt 9,2 statt 11,0 Wellen (rund
+3 Mrd weniger Belohnung) und verliert fast alle Anlagen. Gegenrechnung: 29,3 Mrd nicht
+gepluenderte Ressourcen ueber 14 Tage. Netto klar positiv.

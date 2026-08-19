@@ -40,7 +40,7 @@ async function runRaid(profile, fleet, defense) {
     if (npcIds.length === 0) { wavesWon++; continue; }
     const result = await L.runner.runCombatInWorker({
       sideAShips: defenderShips, sideBShips: npcShips, research: st.research,
-      defenseCounts: st.defense, sharedShieldPoolA: domePool, allowRetreat: false,
+      defenseCounts: st.defense, sharedShieldPoolA: domePool, retreatMode: 'none',
       battleModifier: L.combat.rollBattleModifier('raid'), playerClass: st.playerClass,
       kampfBoostActive: !!st.activeBoosters.kampf, shipModules: st.shipModules,
     });

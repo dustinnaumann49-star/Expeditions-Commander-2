@@ -1,7 +1,7 @@
 // Klassen-Vergleich: Kanonier / Bollwerk / Kommandant gegen "keine Klasse".
 // Misst BEIDE Seiten getrennt, weil die Klassen dort unterschiedlich wirken:
 //   1. OFFENSIV - Sektor-Missionen und Expeditionen (Rueckzug aktiv, siehe RETREAT_THRESHOLD)
-//   2. DEFENSIV - Raid auf die Heimatbasis (Rueckzug ABGESCHALTET, siehe raids.ts allowRetreat:false,
+//   2. DEFENSIV - Raid auf die Heimatbasis (Rueckzug ABGESCHALTET, siehe raids.ts retreatMode 'fleetOnly',
 //      plus Bollwerk-Sonderregel CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT 0.9 statt 0.7)
 // Ein Vergleich, der nur die offensive Seite misst, benachteiligt das Bollwerk systematisch.
 // Aufruf: node run_classes.mjs [wiederholungen]
@@ -57,7 +57,7 @@ async function defensive(cls, fleet, defense) {
     if (Object.keys(npc).filter((i) => npc[i] > 0).length === 0) continue;
     const r = await L.runner.runCombatInWorker({
       sideAShips: defenders, sideBShips: npc, research: st.research, defenseCounts: st.defense,
-      sharedShieldPoolA: pool, allowRetreat: false, homeDefense: true,
+      sharedShieldPoolA: pool, retreatMode: 'none', homeDefense: true,
       battleModifier: L.combat.rollBattleModifier('raid'),
       playerClass: cls, kampfBoostActive: true, shipModules: st.shipModules,
     });

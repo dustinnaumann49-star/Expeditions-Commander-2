@@ -17,7 +17,7 @@ async function oneCheck(profile, fleet) {
     sideBShips: encounter.npcShips,
     sideBStatsOverride: encounter.statsOverride,
     research: st.research,
-    allowRetreat: true,
+    retreatMode: 'all',
   });
   const sent = Object.values(fleet).reduce((a, b) => a + b, 0);
   const surv = Object.keys(fleet).reduce((a, id) => a + (result.survivorsByOwner['1']?.[id] || 0), 0);

@@ -35,7 +35,7 @@ async function measure(label, n) {
       playerClass: st.playerClass,
       kampfBoostActive: true,
       shipModules: st.shipModules,
-      allowRetreat: false,
+      retreatMode: 'none',
     });
     Object.keys(fleet).forEach((id) => {
       const key = Object.keys(r.shotsA.shotsFired).find((k) => k === id || k.endsWith(`:${id}`));
