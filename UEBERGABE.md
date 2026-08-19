@@ -1,4 +1,4 @@
-# Uebergabe - Stand 18.08.2026
+# Uebergabe - Stand 19.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -22,6 +22,34 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
+- **NEU 19.08.2026 (Abend): BLOCK A IST VOLLSTAENDIG - Schritt 2 ist gebaut und gegengemessen.**
+  Beute-Kurve global (neues Modul `game/loot.ts`, benutzt von `missions.ts`, `groupOps.ts` UND
+  `pirateBaseCombat.ts` - es gibt jetzt genau EINE Kurve im Code), Wrack-Bergung 30 %,
+  `fleetSizeRewardMultiplier()` entfernt. Messkasten am Kopf von Entscheidung 2, Protokoll
+  `loot_curve.txt`.
+- **Die offene Koop-Frage ist entschieden: V2 plus 15 % je Mitflieger, gedeckelt bei 3.**
+  Gemessen x1,146 (mittel) und x1,155 (spaet) Netto je Teilnehmer. **V1 ist verworfen aus einem
+  Grund, den die Messung in `elite_coop.txt` nicht zeigen konnte: Bots nehmen Elite-Einladungen
+  automatisch an** (`bot.ts`, 30 % ihrer Flotte). Unter V1 waeren zwei eingeladene Bots ein
+  Ein-Klick-Einkommensmultiplikator gewesen. **Lehre fuer kuenftige Koop-Regeln: bei jeder Regel,
+  die mit der Teilnehmerzahl skaliert, zuerst pruefen, ob Bots teilnehmen koennen.**
+- **NEUE BASELINE: 0,98 / 19,57 / 61,11 Mrd** (vorher 0,80 / 19,82 / 76,85). Jede Zelle im Plan,
+  die gegen die alte Zahl gerechnet ist, ist damit veraltet. **ACHTUNG beim Vergleich: darin
+  stecken ZWEI Aenderungen** - auch der Flottenwert ist durch Entscheidung 6 von
+  0,37/6,18/34,99 auf 0,32/5,52/29,27 Mrd gefallen. Wer 61,11 gegen 76,85 haelt, vergleicht
+  beides auf einmal.
+- **Nutzerentscheidung 19.08.2026: Container sind ein Extra, nicht die Hauptquelle.** Vorher
+  stellten sie 94 % des Solo-Belohnungswerts. Jetzt faellt der Container-Fund einmal je MISSION
+  statt je gewonnenem Check, und `winResources` traegt den Rest (x13,8 angehoben). **Bewusst NICHT
+  ueber die Container-INHALTE geloest** - `CONTAINER_TYPES` haengt an Raids und Elite-Bollwerk, und
+  Entscheidung 3 ist gegen genau diese Inhalte geschlossen; eine Kuerzung dort haette sie wieder
+  aufgerissen.
+- **Nutzerentscheidung 19.08.2026: der Imperator bekommt KEINE Wrack-Bergung.** Prestige-Schiff,
+  kaputt ist kaputt, keine Teile-Rueckgabe. Umgesetzt ueber `COST_BY_ID` in `loot.ts`: Einheiten
+  ohne Ressourcen-Kosten sind ausgenommen.
+- **`PIRATEN_MULTIPLIER_ROLL` und `RAID_WAVE_ROLL` sind freigegeben.** Beide Sperren fuer
+  Entscheidung 16 sind gefallen (Entscheidung 10 gebaut, Block A vollstaendig, Baseline steht).
+  Offen und ungemessen bleiben dort der RF-Wert und die Hoehe des Ausweichbonus.
 - **NEU 19.08.2026: Block C, Schritt 10 ist erledigt - und Entscheidung 16 ist damit
   entsperrt.** Entscheidung 10 wurde umgesetzt, aber mit einem ANDEREN Mechanismus als im Plan
   vorgeschlagen: der dort genannte Flotten-Rueckzug wurde gebaut, gemessen und als wirkungslos
@@ -221,6 +249,32 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Eine Belohnung ist erst dann skalierbar, wenn der groesste Posten skaliert.** Entscheidung 2 war
+als Ressourcen-Kurve gedacht. Bei den Solo-Sektoren steckten aber 94 % des Belohnungswerts in
+CONTAINERN (1x Elite ~238 Mio Wert gegen ein Ressourcen-Paket von 14 Mio je Sieg) - eine Kurve auf
+die restlichen 6 % haette gar nichts bewirkt. **Vor jeder Belohnungsaenderung erst die
+Zusammensetzung des Ertrags nachrechnen, nicht die Zahl im Config-Feld ansehen.** Dieselbe Falle
+andersherum beim Elite-Bollwerk: dort sind Container nur 20 %, deshalb war dort nichts zu aendern.
+
+**Bei jeder Regel, die mit der Teilnehmerzahl skaliert, zuerst pruefen, ob BOTS teilnehmen
+koennen.** Die Koop-Varianten V1/V2/V3 waren sauber gegeneinander gemessen (`elite_coop.txt`), und
+V1 sah mit x1,82 je Teilnehmer nach dem gewollten Anreiz aus. Nicht in der Messung sichtbar:
+`bot.ts` nimmt Elite-Einladungen automatisch an und schickt 30 % seiner Flotte. Unter V1 waeren
+zwei eingeladene Bots ein Ein-Klick-Einkommensmultiplikator gewesen. Die Messung war richtig, die
+Frage war unvollstaendig gestellt.
+
+**Ein stufenloser Faktor auf eine ganzzahlige Belohnung ergibt beim kleinsten Ausbaustand NULL.**
+Der erste Entwurf skalierte die Container-Menge mit dem Kurvenfaktor. Beim fruehesten Ausbaustand
+liegt der bei rund 0,13 - "1x Elite-Container mal 0,13" ist abgerundet nichts. Aufgefallen ist es
+erst beim Nachrechnen der Startphase, nicht beim Bauen. **Bei jeder multiplikativen Aenderung an
+einer Stueck-Belohnung den kleinsten Fall durchrechnen.**
+
+**Eine Erstattung auf Verluste ist eine Punkte-Quelle.** Die Wrack-Bergung gibt 30 % zurueck -
+denselben Satz wie der Schrotthaendler. Ohne Gegenmassnahme waere "Schiffe im Kampf verheizen" ein
+besserer Punkte-Farm als das Verschrotten derselben Schiffe geworden, weil beim Verschrotten die
+kumulierten Ausgaben korrigiert werden (R6) und bei einem Kampfverlust bisher nicht. Behoben durch
+denselben Abzug. **Jede neue Rueckerstattung gegen die Punkte-Buchhaltung in `stats.ts` pruefen.**
+
 **Eine Verlustzahl ohne ihren Gegenposten ist keine Aussage.** Entscheidung 10 stand ueber Wochen
 auf "100 % Flottenverlust bei schwachem Ausbau ist inakzeptabel". Gerechnet: die Flotte ist
 0,32 Mrd wert, derselbe Raid zahlt 20,23 Mrd. Vier gemessene Reparatur-Varianten waren deshalb von
@@ -353,13 +407,28 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
+**Entscheidung 16 (Schritt 10a) ist jetzt vollstaendig frei.** Beide Sperren sind gefallen:
+Entscheidung 10 ist gebaut, Block A ist vollstaendig, und die Baseline steht neu
+(0,98 / 19,57 / 61,11 Mrd). **`RAID_WAVE_ROLL` UND `PIRATEN_MULTIPLIER_ROLL` duerfen angefasst
+werden.** Die Messungen liegen fertig vor (`rf_depth.txt`, Messbuilds ueber
+`make_messbuild_rf.mjs`), sind nach Entscheidung 10 und Block A aber teilweise neu zu erheben.
+Offen und ungemessen sind der RF-Wert und die Hoehe des Ausweichbonus.
+
+**Sonst Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
 (Entscheidung 6) und Schritt 10 (Entscheidung 10) sind erledigt. Offen sind Schritt 9
-(Allianz-Station), Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1 braucht Block A).
-**Neu moeglich: Schritt 10a (Entscheidung 16, RapidFire nach Klassen)** - die Sperre ist mit
-Entscheidung 10 gefallen. Die Messungen dazu liegen fertig vor (`rf_depth.txt`), der noetige
-Ausgleich ueber `RAID_WAVE_ROLL` ist jetzt erlaubt; `PIRATEN_MULTIPLIER_ROLL` bleibt wegen der
-Einnahmen-Baseline weiterhin gesperrt.
+(Allianz-Station), Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1 - **die Sperre ist weg,
+Block A steht jetzt**).
+
+**Was Block A Schritt 2 bewusst offen gelassen hat, in der Reihenfolge der Dringlichkeit:**
+1. **Piratenadmiral P10 hat weder Kurve noch Bergung.** Seine Belohnungsmechanik ist Block B
+   (4.6/4.7 entschieden, nicht gebaut) - jetzt kalibrieren hiesse zweimal kalibrieren. Wer Block B
+   baut, zieht beides dort mit ein.
+2. **Raids haben keine Bergung.** Entscheidung 3 ist gegen den heutigen Raid-Ertrag geschlossen;
+   eine 30-%-Rueckerstattung auf Verteidigungsverluste wuerde sie wieder aufmachen.
+3. **Die drei Solo-Stufen sind beim fruehesten Ausbaustand ununterscheidbar** (netto 0,25 / 0,25 /
+   0,27 Mrd, gefordert waeren +30 % je Stufe). Gehoert zu Entscheidung 12.
+4. **Elite-Container sind beim fruehen Ausbaustand 84 % von 5,92 Mrd je Serie** - das Sechsfache
+   der Tageseinnahmen. Keine Folge dieses Schritts, aber jetzt sichtbar.
 
 **Neu am 18.08.2026 (Abend), fuer die Reihenfolge wichtig:** Entscheidung 16 (RapidFire nach
 Klassen) ist gemessen und haengt an Entscheidung 10 - wer den RF-Umbau will, zieht Schritt 10 vor,
@@ -367,9 +436,10 @@ nicht Schritt 8. Vorbereitende Messungen liegen fertig vor (`rf_depth.txt`, Mess
 `make_messbuild_rf.mjs`), sie sind nach Entscheidung 10 und Block A allerdings teilweise neu zu
 erheben.
 
-**Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.** Block A Schritt 2
-und der gesamte Block B sind entschieden, aber nicht gebaut. "Geschlossen" heisst in diesem Plan
-ENTSCHIEDEN.
+**Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.** Der gesamte
+Block B (4.1 bis 4.8) ist entschieden, aber nicht gebaut. "Geschlossen" heisst in diesem Plan
+ENTSCHIEDEN. (Block A Schritt 2 stand hier bis zum 19.08.2026 als zweites Beispiel - der ist jetzt
+gebaut.)
 
 **Zwei Dinge, die aufgeschoben, aber nicht vergessen sind:**
 
