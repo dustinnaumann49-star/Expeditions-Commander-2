@@ -1,3 +1,9 @@
+// !!! LAEUFT NICHT GEGEN DEN REPO-STAND !!!
+// Dieses Skript importiert game/loot.js. Das Modul ist Teil von Block A, Schritt 2 und ist
+// bewusst NICHT gebaut (Nutzerentscheidung 19.08.2026: Aenderungen erst, wenn der ganze Plan
+// steht). Die Messwerte in loot_curve.txt stammen aus einem lokalen Messbuild. Wer sie
+// nachrechnen will, baut zuerst die Bauanleitung im Messkasten am Kopf von Entscheidung 2 ein.
+//
 // Block A, Schritt 2: Beute-Kurve global + Wrack-Bergung 30 % + Container-Umbau.
 //
 // Misst den GEBAUTEN Zustand, nicht ein Modell daneben: Kurvenfaktor, Sektor-Betraege und

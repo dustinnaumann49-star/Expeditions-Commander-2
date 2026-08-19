@@ -1,10 +1,20 @@
 === BLOCK A, SCHRITT 2: BEUTE-KURVE GLOBAL + WRACK-BERGUNG 30 % + CONTAINER-UMBAU ===
-Gemessen am 19.08.2026 gegen den GEBAUTEN Zustand (server/dist), nicht gegen ein Modell daneben.
+
+!!! ACHTUNG: DIESE AENDERUNGEN SIND NICHT IM REPO. !!!
+Gemessen am 19.08.2026 gegen einen LOKALEN MESSBUILD, in dem sie enthalten waren - dasselbe
+Verfahren wie bei make_messbuild_rf.mjs, nur ohne eigenes Skript, weil hier ganze Funktionen und
+nicht nur kompilierte Konstanten betroffen waren. Nutzerentscheidung 19.08.2026: Aenderungen erst,
+wenn der ganze Plan steht, vorher nur auf ausdrueckliche Nachfrage.
+
+FOLGE FUER DIE NACHPRUEFUNG: run_loot_curve.mjs und run_income_baseline_v2.mjs laufen gegen den
+heutigen Repo-Stand NICHT - sie importieren game/loot.js, das es dort nicht gibt. Wer die Zahlen
+nachrechnen will, baut zuerst die Bauanleitung im Messkasten am Kopf von Entscheidung 2 ein.
+
 Skript: run_loot_curve.mjs <solo|elite|coop> [N], Baseline: run_income_baseline_v2.mjs.
 40 Durchlaeufe je Zelle, scheibenweise. Profile: frueh = FLEET_SMALL/schwach,
 mittel = FLEET_LARGE/mittel (= Anker-Ausbaustand), spaet = reale Nutzerflotte/voll.
 
-Was gebaut wurde und hier geprueft wird:
+Was im Messbuild stand und hier geprueft wurde:
   - Solo: Container EINMAL je Mission (flach, kleines Extra), Ressourcen je gewonnenem Check
     mal Beute-Faktor (winResources in sectors.ts x13,8 angehoben)
   - Elite: Container je Check (flach, unveraendert), lootBase x Eskalation x Faktor,
@@ -105,7 +115,8 @@ frueh         26 %      0 %      0 %     74 %      0 %
 mittel         4 %     54 %     32 %     10 %      0 %
 spaet          3 %     71 %     13 %      5 %      6 %
 
-BEFUND 10 - NEUE BASELINE: 0,98 / 19,57 / 61,11 Mrd (vorher 0,80 / 19,82 / 76,85).
+BEFUND 10 - BASELINE NACH DEM EINBAU: 0,98 / 19,57 / 61,11 Mrd (heute 0,80 / 19,82 / 76,85).
+VORHERSAGE, kein Ist-Stand - bis zum Einbau gilt die alte Zahl weiter.
 Der mittlere Stand bleibt praktisch unveraendert (-1,3 %, das war die Kalibriervorgabe), frueh
 steigt um 23 %, spaet faellt um 20 %.
 
@@ -125,7 +136,7 @@ BEFUND 13 - Die Tagesrendite auf den Flottenwert liegt jetzt bei 301 / 355 / 209
 Groessenordnung des Zwei- bis Dreifachen des Flottenwerts pro Tag - bleibt unveraendert gueltig.
 
 --- NICHT GEMESSEN, BEWUSST OFFEN ---
-- Piratenadmiral (P10): Kurve und Bergung dort NICHT eingebaut. Seine Belohnungsmechanik ist
+- Piratenadmiral (P10): Kurve und Bergung gehoeren dort auch beim spaeteren Einbau NICHT hinein. Seine Belohnungsmechanik ist
   Block B (4.6/4.7 entschieden, nicht gebaut) - eine Kalibrierung jetzt waere doppelte Arbeit.
 - Raids: Bergung dort NICHT eingebaut. Entscheidung 3 ist gegen den heutigen Raid-Ertrag
   geschlossen; eine 30-%-Rueckerstattung auf Verteidigungsverluste wuerde sie wieder aufmachen.
