@@ -1968,6 +1968,59 @@ Zeitfaktor 0,5" beschreibt danach nichts mehr.
 
 ### Entscheidung 10 - Rueckzug bei der Heimatverteidigung (BLOCKIEREND wegen Reset)
 
+> **UMGESETZT am 19.08.2026 - aber mit einem ANDEREN Mechanismus als hier vorgeschlagen.**
+> Messdatei `balance/session2-simulation/raid_e10.txt`, Rechenmodell `run_e10_schonfrist.mjs`,
+> `run_raid.mjs` um alle gemessenen Varianten erweitert (30 Raids je Fall, min-max-Spalte).
+>
+> **Der hier vorgeschlagene Mechanismus funktioniert nicht.** "Die Flotte darf sich absetzen, die
+> Anlagen kaempfen weiter" wurde gebaut (`retreatMode: 'fleetOnly'`) und gemessen: der
+> Flottenverlust eines schwachen Kontos geht von 92,2 % auf **95,5 %**, also nirgendwohin, und die
+> Anlagen sterben MEHR (69,2 -> 82,8 %). Ursache: der Rueckzug loest aus, wenn eine Einheit auf
+> 30 % IHRER Panzerung faellt - bei schwachem Ausbau werden kleine Schiffe in EINER Welle
+> vernichtet und durchlaufen dieses Fenster nie. Zusaetzlich kaempfen zurueckgezogene Schiffe in
+> der naechsten der zwoelf Wellen wieder mit.
+> Zwei weitere Varianten ebenfalls gemessen und verworfen: Rueckzug aus dem GANZEN Raid (82,1 %)
+> und eine nachtraegliche Verlustobergrenze (73,6 %, haelt den Boden nicht, weil ausgeloeschte
+> Schiffstypen sich nur durch Wiederbeleben "zurueckhalten" liessen - erste Fassung produzierte
+> Verlustquoten von -28 %). Eine Reserve haelt den Boden exakt, kostet aber entweder Kampfkraft
+> oder verbilligt das Endspiel (13,5 -> 4,9 % Verlust bei entwickelten Konten).
+>
+> **Der eigentliche Fehler lag in der Praemisse.** Gegengerechnet: ein Neuling verliert eine Flotte
+> im Wert von **0,32 Mrd** und kassiert im selben Raid **20,23 Mrd** Belohnung (er gewinnt gemessen
+> 11,0 von 12 Wellen). Der 92-%-Flottenverlust ist ein Gefuehlsproblem, kein wirtschaftliches -
+> deshalb hat keine der vier Kampf-Varianten ueberzeugt, sie reparieren alle eine Zahl, die den
+> Spieler kaum etwas kostet. Was Neulinge tatsaechlich trifft, ist `RAID_LOOT_PERCENT = 0,25`:
+> 25 % des gesamten Ressourcenbestands, und ein schwaches Konto zahlt das in 93 % der Raids.
+>
+> **Nutzerentscheidung 19.08.2026: Neulingsschutz statt Rueckzugsregel.** Der urspruengliche
+> Nutzervorschlag "Neulinge bekommen zwei Wochen gar keinen Raid" wurde gegengerechnet und
+> verworfen: ohne Raid stuende ein neues Konto nach 14 Tagen bei **11,2 Mrd statt 62,9 Mrd** - der
+> Raid ist die groesste Einnahmequelle der Startphase. Umgesetzt wurde deshalb die Umkehrung:
+> **die Strafen entfallen, die Belohnung bleibt.**
+> - `NEWCOMER_GRACE_DAYS = 14` in `economy.ts` (ab Registrierung; nach einem Reset also fuer alle
+>   gleichzeitig, Bots ausgenommen)
+> - kein Ressourcen-Diebstahl waehrend der Schonfrist
+> - die verteidigende FLOTTE wird zurueckgeschlagen statt vernichtet
+> - Verteidigungsanlagen bewusst NICHT geschuetzt, sonst stuende gar nichts mehr auf dem Spiel
+>
+> **Gegenmessung (30 Raids je Fall):** Flottenverlust 0,0 % in allen Faellen. Der Preis ist
+> sichtbar und gewollt: weil die Flotte nicht mehr schrumpft, bleibt jede Welle auf volle Staerke
+> skaliert - ein schwaches Konto gewinnt 9,2 statt 11,0 Wellen (rund 3 Mrd weniger Belohnung) und
+> verliert fast alle Anlagen (96,4 %). Dagegen stehen 29,3 Mrd nicht gepluenderte Ressourcen ueber
+> 14 Tage. Netto klar positiv.
+>
+> **Was offen bleibt:** die Schonfrist haengt am Kalender, nicht an der Staerke. Wer nach 14 Tagen
+> noch schwach ist - oder spaeter durch eine verlorene Expedition wieder schwach wird - steht
+> wieder ungeschuetzt da. Eine Kopplung an die Flottenmacht waere sauberer, laedt aber dazu ein,
+> sich absichtlich schwach zu halten. Bewusst so entschieden. Ob 14 Tage reichen, kann erst die
+> 30-Tage-Simulation aus Schritt 13 beantworten.
+>
+> **Damit ist die Sperre fuer Entscheidung 16 (RapidFire) aufgehoben** - `RAID_WAVE_ROLL` darf
+> nach Abschnitt 8, Punkt 7 jetzt angefasst werden, weil die Verlustobergrenze fuer die Startphase
+> steht. `retreatMode: 'fleetOnly'` bleibt im Code: wirkungslos fuer schwache Konten, aber die
+> saubere Modellierung (eine Flotte KANN den Kontakt abbrechen, eine Bunkerstellung nicht) und die
+> Grundlage, falls spaeter doch eine Reserve-Variante gebaut wird.
+
 **Bezug:** README Punkt 27, Session 2 Befund 4. **Datei:** `game/raids.ts`.
 
 **Sachlage:** Der Rueckzugs-Mechanismus ist bei Raids bewusst abgeschaltet (`allowRetreat = false`),
@@ -3729,8 +3782,10 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                         fuenf Kostenzeilen in ships.ts, Zielwert 1,15, Messkasten dort]
   9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
                        vorgezogen erledigt, siehe Abschnitt 2a)
- 10. Entscheidung 10  Heimatverteidigung
-                       -> SPERRT Entscheidung 16 (RapidFire nach Klassen). Solange sie nicht
+ 10. Entscheidung 10  Heimatverteidigung   [ERLEDIGT 19.08.2026 - Neulingsschutz statt
+                        Rueckzugsregel, Messkasten dort. Die Sperre fuer Entscheidung 16 ist
+                        damit AUFGEHOBEN.]
+                       -> sperrte bis dahin Entscheidung 16 (RapidFire nach Klassen). Solange sie nicht
                           gebaut ist, darf RAID_WAVE_ROLL nicht angefasst werden (Abschnitt 8,
                           Punkt 7), und ohne diesen Ausgleich ist der RF-Umbau ein globaler
                           Spieler-Buff - gemessen am 18.08.2026, siehe Entscheidung 16.
@@ -4370,6 +4425,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 19.08.2026 | **Block C, Schritt 10 erledigt: Entscheidung 10 umgesetzt - aber mit einem anderen Mechanismus als geplant.** Der im Plan vorgeschlagene Weg ("die Flotte darf sich absetzen, die Anlagen kaempfen weiter") wurde gebaut und gemessen: **er wirkt nicht.** Flottenverlust eines schwachen Kontos 92,2 -> 95,5 %, Anlagenverlust 69,2 -> 82,8 %. Ursache: der Rueckzug loest bei 30 % der EIGENEN Panzerung einer Einheit aus - bei schwachem Ausbau werden kleine Schiffe in EINER Welle vernichtet und durchlaufen dieses Fenster nie; ausserdem kaempfen zurueckgezogene Schiffe in der naechsten der zwoelf Wellen wieder mit. Zwei weitere Varianten gemessen und verworfen (Rueckzug aus dem ganzen Raid 82,1 %; nachtraegliche Verlustobergrenze 73,6 %, haelt den Boden nicht - die erste Fassung belebte tote Schiffe wieder und produzierte Verlustquoten von **-28 %**). Eine Reserve haelt den Boden exakt, kostet aber entweder Kampfkraft oder verbilligt das Endspiel (13,5 -> 4,9 %). **Der Fehler lag in der Praemisse:** ein Neuling verliert eine Flotte im Wert von 0,32 Mrd und kassiert im selben Raid 20,23 Mrd Belohnung - der Totalverlust ist ein Gefuehls-, kein Wirtschaftsproblem. Was Neulinge wirklich trifft, ist `RAID_LOOT_PERCENT = 0,25` (25 % des gesamten Bestands, faellig in 93 % der Raids, weil ein schwaches Konto 11,0 von 12 Wellen gewinnt). **Nutzeridee 19.08.2026: "Neulinge bekommen zwei Wochen gar keinen Raid" - gegengerechnet und verworfen**, das Konto stuende nach 14 Tagen bei 11,2 statt 62,9 Mrd (`run_e10_schonfrist.mjs`). **Umgesetzt wurde die Umkehrung: Strafen weg, Belohnung bleibt.** `NEWCOMER_GRACE_DAYS = 14` in `economy.ts`, kein Ressourcen-Diebstahl waehrend der Schonfrist, die verteidigende Flotte wird zurueckgeschlagen statt vernichtet, Verteidigungsanlagen bewusst ungeschuetzt. Gegenmessung: Flottenverlust 0,0 % in allen Faellen; Preis ist, dass ein schwaches Konto 9,2 statt 11,0 Wellen gewinnt (die Wellen skalieren weiter mit der vollen Flotte) und fast alle Anlagen verliert - dagegen stehen 29,3 Mrd nicht gepluenderte Ressourcen in 14 Tagen. Technisch ausserdem: `allowRetreat: boolean` ist zu `retreatMode: 'all' | 'none' | 'fleetOnly'` geworden (combat.ts, combatRunner.ts, combat.worker.ts, raids.ts, groupOps.ts) - die Umbenennung ist Absicht, damit ein alter Aufruf mit `allowRetreat: false` nicht still auf den Standard zurueckfaellt; alle Messskripte mitgezogen. **Die Sperre fuer Entscheidung 16 (RapidFire) ist damit aufgehoben.** |
 | 18.08.2026 | **Block C, Schritt 8 erledigt: Entscheidung 6 umgesetzt und gegengemessen (Schiffs-Tiers).** Geaendert wurde ausschliesslich `data/ships.ts`, fuenf Kostenzeilen, keine Mechanik. **Zielwert 1,15 statt 1,20**, weil die drei bereits konformen Schiffe bei 1,10/1,11/1,18 liegen. **Fuenf statt der im Plantext genannten vier Schiffe** - der Kreuzer lag mit 1,33 ebenfalls ausserhalb. Neue Kosten: Kreuzer 311/109/31 Tsd (-14 %), Bomber 398/199/120 (-34 %), Schlachtkreuzer 183/244/92 (-39 %), Zerstoerer 345/288/86 (-28 %), Reaper 370/239/87 (-28 %); Mischungsverhaeltnis je Schiff erhalten. **Alle Messungen neu erhoben** (neues Skript `run_ship_tiers.mjs`, Datei `ship_tiers.txt`), weil `ships.txt`/`ship_value.txt` von vor R14/R14b stammen - beide haben jetzt eine Trennmarke. Zusaetzlich misst `run_ship_value.mjs` das Falsche: es nimmt `avgLossPercent` aus `simulator.ts`, eine auf ganze Prozent gerundete STUECKZAHL-Quote, und multipliziert sie mit dem Flottenwert (Messregel 4 verlangt die Wert-Bilanz). **Abnahme: Korridor erfuellt** (alle acht Standardschiffe 1,10-1,18). **Duell-Matrix erfuellt**, Spannweite der mittleren Netto-Bilanz **774 -> 412 Mio (-47 %)**, Kriterium war -30 %; der Reaper steigt von -21 auf +87 Mio und ist jetzt drittbester statt drittschlechtester. **Sektor-Zelle gegenlaeufig - wichtigster Befund:** in der umkaempften Zelle (2,0x) verliert der Reaper seine Sonderstellung komplett (50 % Sieg / 39,0 % Verlust vorher, 0 % / 47,1 % nachher), weil dieselbe Kaufsumme jetzt 606 statt 439 Schiffe ergibt und die Gegnerstaerke an der MACHT haengt, nicht am ausgegebenen Wert - wer billiger einkauft, kauft sich einen staerkeren Gegner. Der wirtschaftliche Gewinn bleibt (mehr vernichtete Feindmacht je Ressource), er zeigt sich nur nicht in der Verlustquote. **Wie vorhergesagt nicht erreicht:** Jaeger bleiben in den Duellen vorn (+128/+206) - Ursache ist `SIZE_MISMATCH_EVASION_BONUS`, gehoert zu Entscheidung 16, bewusst nicht nachgebessert. **Bomber bleibt Schlusslicht** (-206 Mio), weil sein RapidFire nur gegen Verteidigungsanlagen wirkt; Rollen-Befund, kein Kostenproblem. **Salvenschiffe und Imperator gemessen, nicht geaendert** - 54,26/44,84/58,46 bzw. 6,78/5,61/7,31 mit der Achtfach-Korrektur, Imperator 250; der `ship_value.txt`-Befund zum Salvenkreuzer ist nach R14 bestaetigt und verschaerft (0 % Sieg, 100 % Verlust als reine Einzeltyp-Flotte) und bleibt ein Artefakt der Einzeltyp-Zelle. **Messregel 8 erfuellt** (keine hartkodierten Schiffskosten im Client). **Nebenwirkungen dokumentiert:** Kostenband je Waffenpunkt 68-133 -> 59-90, Verteidigungsanlagen (rund 65) dadurch relativ etwas staerker; Punktwert der verbilligten Schiffe sinkt (`getUnitPointValue()` rechnet mit der rohen Kostensumme). README-Zahlenbasis nachgezogen, dabei eine falsche Aussage dort korrigiert: Verteidigungsanlagen zaehlen sehr wohl in die Raid-Feindstaerke ein, mit Gewicht 0,3. |
 | 18.08.2026 | **RapidFire nach Klassen vollstaendig gemessen und als Entscheidung 16 eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund beim Spielen ("die RF kommt mir falsch vor, Kaempfe kommen linear vor") - ausdruecklich NICHT dieselbe Meldung wie bei R14, RapidFire wirkt seit dem 17.08.2026 wieder. **Code-Ursache des Befunds gefunden und sie liegt nicht in der RF-Tabelle:** alle drei Wellenprofile benutzen denselben vollstaendigen Pool (`weightsForProfile()`), `kampfgruppe` sogar gleichverteilt - jede Welle enthaelt jeden Typ, damit ist in jedem Kampf jeder Konter bedient und alles mittelt sich weg. Zusaetzlich ist die heutige Tabelle eine Leiter, kein Ring (`leicht: {}` kontert nichts, Bomber und Reaper werden von keinem Standardschiff gekontert), obwohl der Code-Kommentar sie "Stein-Schere-Papier-Kette" nennt. **Gemessen wurden vier Varianten** (Nutzeridee A = Klassen-RF mit einem Ziel; B = geschaerfte Wellenprofile; C = eigene Klasse plus die darunter; E = abgesenkter Groessen-Ausweichbonus), je 40 Laeufe, gleiche Flotten-MACHT statt gleichem Wert, damit die RF-Frage nicht mit Entscheidung 6 vermischt wird. **Erste Messrunde war unbrauchbar und das ist die Lehre daraus:** bei realistischer Feindstaerke (0,85x) gewinnt jede Aufstellung zu 100 % bei 1-7 % Verlust - die Frage "zaehlt die Zusammensetzung" ist dort gar nicht messbar. Erst bei 2,0x wird sie es. **Ergebnisse:** im Ist-Zustand gewinnen Jaeger jede Zelle jeder Welle, und das Wellenprofil aendert am Ergebnis der Elite-Flotte NICHTS (47,4 / 47,5 / 47,6 % Verlust bei 0 % Sieg) - die Wahl der Flotte ist heute keine Wahl. A holt Kreuzer- und Elite-Klasse zurueck (0 % -> 75-100 % Sieg) und macht das Wellenprofil erstmals relevant. C ist schlechter als A (verschiebt das Problem auf die Kreuzer-Klasse). B liefert allein nichts und schadet der gemischten Flotte, **Nutzerentscheidung: B bleibt draussen.** Erst A+E kippt die Jaeger-Dominanz - gegen eine Elite-Welle ist die Elite-Flotte dort zum ersten Mal in der gesamten Messreihe die beste Wahl (15,8 gegen 22,0 %). **Der teuerste Befund kam aus der Gegenmessung:** im Raid faellt der Verteidigungsverlust unter A von 27,3 auf **0,0 %**, und drei Regler dagegen sind wirkungslos (Reparaturquote 0,70 -> 0,40, Verteidigungs-Gewicht 0,3 -> 0,6, eigene Belagerungs-RF gegen Anlagen, auch kombiniert, auch mit RF-Wert 3). Es ist kein eigener Defekt, sondern ein Symptom: **Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung zwischen den Klassen.** Damit braucht der Umbau zwingend einen Ausgleich ueber die Gegnerstaerke - und genau der ist gesperrt: `PIRATEN_MULTIPLIER_ROLL` beruehrt die geschlossene Einnahmen-Baseline, `RAID_WAVE_ROLL` darf nach Abschnitt 8 Punkt 7 erst nach Entscheidung 10 angefasst werden, und die Reparaturquote steht nach Abschnitt 4a bewusst unangetastet (das Bollwerk gewinnt heute NUR ueber den Verteidigungsanlagen-Verlust). **Entscheidung 6 sagt woertlich "RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance aus Session 2 mitverschieben"; genau das ist gemessen eingetreten.** Kandidat bleibt A+E, terminiert nach Entscheidung 10 und Block A. Nebenbefund: das Verteidigungs-Gewicht ist ueberhaupt kein Hebel (0,3 -> 0,6 bewegt den Raid um einen Prozentpunkt), weil die Anlagen gegenueber der Flotte zu wenig Macht stellen. Zweiter Nebenbefund: der Groessenklassen-Ausweichbonus wird im Client nirgends angezeigt - die Info-Karte meldet 12 % Ausweichchance, im Kampf gegen grosse Schiffe gelten bis zu 75 %. |
 | 18.08.2026 | **Stack-Aggregation auf Nutzerfrage erneut geprueft und erneut bestaetigt - diesmal mit Zahlen.** Der Nutzer hat die Grundsatzfrage selbst wieder aufgemacht ("lieber Schiffe begrenzen und jedes einzeln simulieren, aber nicht ueber 1 Sekunde Latenz"). Gemessen mit dem vorhandenen Messbuild aus R14 (`stackAggregateThresholdFor` = 1e9, also Aggregation komplett aus), gemischte Flotte, Gegner jeweils aehnlich gross: **1.260 Schiffe 136 ms, 6.300 Schiffe 702 ms, 12.600 Schiffe 1.668 ms, 25.200 Schiffe 5.524 ms** - die Ein-Sekunden-Grenze liegt damit bei rund **8.000 eigenen Schiffen**. Mit Aggregation dagegen 29-77 ms bei denselben Flotten, und die Rechenzeit haengt weiterhin an der Typenzahl statt an der Stueckzahl (Bestaetigung des R14-Skalierungstests mit 207.000 Schiffen). **Nutzerentscheidung: Aggregation bleibt.** Begruendung diesmal nicht nur Spielgefuehl, sondern eine konkrete Zelle: am Raid-Tag treffen eigene Flotte, Verteidigungsanlagen und fremde Verstaerkung in EINEM Kampf zusammen - die 8.000 waeren dort die Obergrenze fuer die Summe aller Beteiligten, nicht fuer eine Flotte. **Nicht umgesetzt, aber als Option festgehalten:** heute ist Aggregation alles-oder-nichts pro Typ (ueber der Schwelle wird der GANZE Typ ein einziger Stapel). Eine gedeckelte Stapelgroesse - 50.000 Jaeger als 100 Stapel zu 500 statt als einer - waere der Mittelweg zwischen Genauigkeit (R15) und Rechenzeit und ist mit demselben Messbuild-Verfahren messbar. |

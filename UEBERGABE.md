@@ -22,6 +22,17 @@ das passt nicht gleichzeitig in eine Session.
 
 ## Stand
 
+- **NEU 19.08.2026: Block C, Schritt 10 ist erledigt - und Entscheidung 16 ist damit
+  entsperrt.** Entscheidung 10 wurde umgesetzt, aber mit einem ANDEREN Mechanismus als im Plan
+  vorgeschlagen: der dort genannte Flotten-Rueckzug wurde gebaut, gemessen und als wirkungslos
+  belegt (92,2 -> 95,5 % Flottenverlust). Stattdessen ein **Neulingsschutz**
+  (`NEWCOMER_GRACE_DAYS = 14`): waehrend der Schonfrist entfaellt der Ressourcen-Diebstahl und die
+  verteidigende Flotte wird zurueckgeschlagen statt vernichtet, die Belohnung bleibt. Messkasten am
+  Kopf von Entscheidung 10, Protokoll `raid_e10.txt`.
+- **Wichtigste Einsicht daraus, gilt ueber Entscheidung 10 hinaus:** ein Neuling verliert je Raid
+  eine Flotte im Wert von 0,32 Mrd und kassiert 20,23 Mrd Belohnung. Der viel zitierte
+  "100 % Flottenverlust" ist ein Gefuehls-, kein Wirtschaftsproblem. Vor der naechsten
+  Verlust-Diskussion zuerst den Gegenposten rechnen.
 - **NEU 18.08.2026 (Abend): Block C, Schritt 8 ist erledigt** - Entscheidung 6 (Schiffs-Tiers) ist
   umgesetzt und gegengemessen. Fuenf Kostenzeilen in `data/ships.ts`, Zielwert 1,15, keine
   Mechanik. Korridor und Duell-Kriterium erfuellt (Spannweite -47 %), die Sektor-Zelle laeuft
@@ -210,6 +221,17 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Eine Verlustzahl ohne ihren Gegenposten ist keine Aussage.** Entscheidung 10 stand ueber Wochen
+auf "100 % Flottenverlust bei schwachem Ausbau ist inakzeptabel". Gerechnet: die Flotte ist
+0,32 Mrd wert, derselbe Raid zahlt 20,23 Mrd. Vier gemessene Reparatur-Varianten waren deshalb von
+vornherein Arbeit an der falschen Zahl. **Vor jeder Verlust-Diskussion den Gegenposten rechnen.**
+
+**Ein Mechanismus kann exakt das Richtige tun und trotzdem nichts bewirken.** Der Flotten-Rueckzug
+loest aus, wenn eine Einheit auf 30 % IHRER Panzerung faellt. Bei schwachem Ausbau werden kleine
+Schiffe in EINER Welle vernichtet - sie durchlaufen dieses Fenster nie. **Bei jeder
+Schwellenmechanik pruefen, ob die geschuetzten Einheiten den Schwellenbereich ueberhaupt
+durchlaufen.**
+
 **Ein Vorschlag kann gegen die eigene Sperrliste laufen, ohne dass es auffaellt.** Am 18.08.2026
 stand am Ende der RF-Messung der Vorschlag, die Gegnerstaerke nachzuziehen
 (`PIRATEN_MULTIPLIER_ROLL`, `RAID_WAVE_ROLL`) und die Reparaturquote zu senken. **Alle drei waren
@@ -331,9 +353,13 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5) und Schritt 8
-(Entscheidung 6) sind erledigt. Als naechstes stehen die Schritte 9 bis 12 an; sie sind
-voneinander unabhaengig und koennen in beliebiger Reihenfolge laufen.
+**Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
+(Entscheidung 6) und Schritt 10 (Entscheidung 10) sind erledigt. Offen sind Schritt 9
+(Allianz-Station), Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1 braucht Block A).
+**Neu moeglich: Schritt 10a (Entscheidung 16, RapidFire nach Klassen)** - die Sperre ist mit
+Entscheidung 10 gefallen. Die Messungen dazu liegen fertig vor (`rf_depth.txt`), der noetige
+Ausgleich ueber `RAID_WAVE_ROLL` ist jetzt erlaubt; `PIRATEN_MULTIPLIER_ROLL` bleibt wegen der
+Einnahmen-Baseline weiterhin gesperrt.
 
 **Neu am 18.08.2026 (Abend), fuer die Reihenfolge wichtig:** Entscheidung 16 (RapidFire nach
 Klassen) ist gemessen und haengt an Entscheidung 10 - wer den RF-Umbau will, zieht Schritt 10 vor,
