@@ -1,0 +1,132 @@
+=== BLOCK A, SCHRITT 2: BEUTE-KURVE GLOBAL + WRACK-BERGUNG 30 % + CONTAINER-UMBAU ===
+Gemessen am 19.08.2026 gegen den GEBAUTEN Zustand (server/dist), nicht gegen ein Modell daneben.
+Skript: run_loot_curve.mjs <solo|elite|coop> [N], Baseline: run_income_baseline_v2.mjs.
+40 Durchlaeufe je Zelle, scheibenweise. Profile: frueh = FLEET_SMALL/schwach,
+mittel = FLEET_LARGE/mittel (= Anker-Ausbaustand), spaet = reale Nutzerflotte/voll.
+
+Was gebaut wurde und hier geprueft wird:
+  - Solo: Container EINMAL je Mission (flach, kleines Extra), Ressourcen je gewonnenem Check
+    mal Beute-Faktor (winResources in sectors.ts x13,8 angehoben)
+  - Elite: Container je Check (flach, unveraendert), lootBase x Eskalation x Faktor,
+    winResources x Faktor, Grossflotten-Bonus entfallen
+  - Koop-Bezugsgroesse V2 (eigener Beitragsanteil) + 15 % je Mitflieger, gedeckelt bei 3
+  - Wrack-Bergung 30 % der Baukosten eigener Verluste, nur bei zurueckkehrender Flotte,
+    Imperator ausgenommen (Nutzerentscheidung: Prestige-Schiff, keine Rueckgabe)
+
+--- SCHEIBE 1: Solo-Piraten-Sektoren, 24h-Mission (40 Durchlaeufe je Zelle) ---
+Zelle                              Siege   Feindmacht   Belohnung  davon Cont.    Verlust   Bergung      Netto
+frueh / niedrig                      3.4      0.5 Mrd    0.25 Mrd         97 %   0.00 Mrd  0.00 Mrd   0.25 Mrd
+frueh / mittel                       3.8      0.8 Mrd    0.29 Mrd         88 %   0.05 Mrd  0.02 Mrd   0.25 Mrd
+frueh / hoch                         4.5      1.0 Mrd    0.34 Mrd         69 %   0.10 Mrd  0.03 Mrd   0.27 Mrd
+mittel / niedrig                     3.0      4.2 Mrd    0.29 Mrd         82 %   0.03 Mrd  0.01 Mrd   0.27 Mrd
+mittel / mittel                      3.8      7.9 Mrd    0.49 Mrd         52 %   0.16 Mrd  0.05 Mrd   0.38 Mrd
+mittel / hoch                        4.3     11.1 Mrd    1.05 Mrd         23 %   0.43 Mrd  0.13 Mrd   0.75 Mrd
+spaet / niedrig                      3.2     30.7 Mrd    0.52 Mrd         45 %   0.17 Mrd  0.05 Mrd   0.40 Mrd
+spaet / mittel                       4.2     60.8 Mrd    1.62 Mrd         15 %   1.21 Mrd  0.36 Mrd   0.77 Mrd
+spaet / hoch                         4.7     79.3 Mrd    4.61 Mrd          5 %   3.13 Mrd  0.94 Mrd   2.42 Mrd
+
+BEFUND 1 - Anker getroffen. mittel/hoch liefert 1,05 Mrd bei 11,1 Mrd vernichteter Feindmacht,
+gegen Anker 1,05 Mrd bei 11,18 Mrd aus loot_exponent.txt. Der mittlere Ausbaustand behaelt sein
+Belohnungsniveau exakt - das war die Kalibriervorgabe.
+
+BEFUND 2 - Container sind nicht mehr die Hauptquelle. Ihr Anteil faellt von 94 % auf 23 %
+(mittel/hoch) bzw. 5 % (spaet/hoch). Beim fruehen Ausbaustand bleiben sie mit 69-97 % dominant,
+wirken dort aber als UNTERGRENZE, nicht als Hauptquelle: der eine Container-Fund je Mission ist
+das, was einen frischen Account vor 0,00 Mrd bewahrt.
+
+BEFUND 3 - Solo lohnt sich im spaeten Ausbaustand wieder. Netto Solo Hoch mit der realen Flotte:
++2,42 Mrd gegen -2,32 Mrd vorher (real_fleet.txt). Das war der Zweck von Entscheidung 2. Die
+Bergung traegt davon 0,94 Mrd, die Kurve 3,60 Mrd.
+
+BEFUND 4 - Die Sektor-Stufen trennen sich jetzt, aber nicht ueberall. spaet: 0,40 -> 0,77 -> 2,42
+(+93 %, +214 %), mittel: 0,27 -> 0,38 -> 0,75 (+41 %, +97 %) - beide erfuellen Abschnitt 8 Punkt 5
+(jede hoehere Stufe mindestens +30 %). frueh dagegen: 0,25 -> 0,25 -> 0,27 (0 %, +8 %) - die Stufen
+sind dort ununterscheidbar, weil der flache Container-Fund die Belohnung dominiert und die drei
+Sektoren aehnlich viel Container-Wert ausschuetten (4x Silber 240 Mio, 2x Gold 254 Mio,
+1x Elite 238 Mio). OFFEN, gehoert zu Entscheidung 12 / Neulingsschutz, hier NICHT nachgezogen.
+
+--- SCHEIBE 2: Elite-Bollwerk, Serie ueber 6 Checks, allein (40 Durchlaeufe je Zelle) ---
+Erster Lauf, LOOT_CURVE_ELITE_CHECK_POWER = 2,66 Mrd:
+frueh / elite allein                 4.3      0.6 Mrd    5.49 Mrd         86 %   0.30 Mrd  0.09 Mrd   5.28 Mrd
+mittel / elite allein                6.0     18.5 Mrd   29.45 Mrd         22 %   1.10 Mrd  0.29 Mrd  28.64 Mrd
+spaet / elite allein                 6.0    123.6 Mrd  121.48 Mrd          5 %   7.55 Mrd  2.01 Mrd 115.94 Mrd
+
+mittel lag mit 29,45 Mrd um 9,7 % unter dem Anker 32,60 Mrd. Ursache: mit dem
+Grossflotten-Bonus ist ein Multiplikator x1,50 auf die Beute weggefallen. Anker nachgezogen auf
+2,29 Mrd (nur der Ressourcenteil reagiert, der Container-Teil ist flach - deshalb 2,29 statt der
+naiv gerechneten 2,36).
+
+Zweiter Lauf, LOOT_CURVE_ELITE_CHECK_POWER = 2,29 Mrd (GEBAUTER STAND):
+frueh / elite allein                 4.5      0.6 Mrd    5.92 Mrd         84 %   0.30 Mrd  0.09 Mrd   5.71 Mrd
+mittel / elite allein                6.0     18.6 Mrd   32.71 Mrd         20 %   1.24 Mrd  0.31 Mrd  31.78 Mrd
+spaet / elite allein                 6.0    125.1 Mrd  138.40 Mrd          5 %   7.25 Mrd  2.00 Mrd 133.14 Mrd
+
+BEFUND 5 - Elite-Anker getroffen. 32,71 gegen 32,60 Mrd Soll, Abweichung 0,3 %.
+
+BEFUND 6 - Elite-Container waren schon vorher ein Extra (20 %) und blieben deshalb unveraendert.
+ACHTUNG als offener Punkt: beim fruehen Ausbaustand stellen sie 84 % von 5,92 Mrd. Ein frischer
+Account, der irgendwie an einer Elite-Expedition teilnimmt, zieht daraus das Sechsfache seiner
+Tageseinnahmen. Das ist KEINE Folge dieses Schritts (die garantierten Container waren immer flach
+je Check), wird durch die Kurve aber sichtbar, weil daneben jetzt alles andere skaliert.
+
+--- SCHEIBE 3: Koop, allein gegen zu zweit, je Teilnehmer (40 Durchlaeufe je Zelle) ---
+frueh / 1 Teilnehmer                 4.6      0.6 Mrd    5.85 Mrd         86 %   0.30 Mrd  0.09 Mrd   5.64 Mrd
+frueh / 2 Teilnehmer                 4.7      0.4 Mrd    5.73 Mrd         90 %   0.32 Mrd  0.10 Mrd   5.51 Mrd
+mittel / 1 Teilnehmer                6.0     18.3 Mrd   32.17 Mrd         20 %   1.21 Mrd  0.31 Mrd  31.27 Mrd
+mittel / 2 Teilnehmer                6.0     18.5 Mrd   36.51 Mrd         18 %   0.95 Mrd  0.28 Mrd  35.84 Mrd
+spaet / 1 Teilnehmer                 6.0    125.8 Mrd  138.61 Mrd          5 %   7.92 Mrd  2.08 Mrd 132.78 Mrd
+spaet / 2 Teilnehmer                 6.0    125.6 Mrd  157.93 Mrd          4 %   6.44 Mrd  1.89 Mrd 153.38 Mrd
+
+BEFUND 7 - V2 plus 15 % je Mitflieger liefert genau das Gewollte: x1,146 (mittel) und x1,155
+(spaet) Netto je Teilnehmer gegenueber dem Alleinflug. Die "vernicht. Feindmacht"-Spalte weist je
+Teilnehmer aus und bleibt erwartungsgemaess konstant (18,3 -> 18,5 bzw. 125,8 -> 125,6): die
+Feindstaerke verdoppelt sich mit dem zweiten Teilnehmer, der Anteil daran halbiert sich - genau
+die Neutralitaet, auf der V2 aufbaut.
+
+BEFUND 8 - Zu zweit sinken die Verluste je Teilnehmer zusaetzlich (1,21 -> 0,95 bei mittel,
+7,92 -> 6,44 bei spaet), weil die groessere gemeinsame Flotte den Kampf effizienter fuehrt. Der
+Koop-Anreiz ist damit in Summe etwas groesser als die reinen 15 % - aber gedeckelt und
+nachvollziehbar, nicht wie unter V1 (dort waere es x1,82 je Teilnehmer allein aus der
+Bezugsgroesse gewesen, mit Bots als Ein-Klick-Multiplikator).
+
+BEFUND 9 - Beim fruehen Ausbaustand wirkt der Koop-Bonus praktisch nicht (x0,98). Er greift nur
+auf dem Ressourcenteil, und der ist dort 10-16 % der Belohnung. Kein Handlungsbedarf, aber
+festhalten: der Anreiz zum gemeinsamen Fliegen entsteht erst mit dem Ausbaustand.
+
+--- SCHEIBE 4: Verschobene Einnahmen-Baseline (run_income_baseline_v2.mjs, 40 Durchlaeufe) ---
+Stand      Flottenwert       Solo   Elite/Tag       Raid     passiv    Station    NETTO/Tag
+frueh         0.32 Mrd   0.26 Mrd    0.00 Mrd   0.00 Mrd   0.72 Mrd   0.00 Mrd     0.98 Mrd
+mittel        5.52 Mrd   0.78 Mrd   10.62 Mrd   6.31 Mrd   1.87 Mrd   0.00 Mrd    19.57 Mrd
+spaet        29.27 Mrd   1.96 Mrd   43.67 Mrd   8.25 Mrd   3.28 Mrd   3.95 Mrd    61.11 Mrd
+
+Anteil der Quellen:
+Stand         Solo    Elite     Raid   passiv  Station
+frueh         26 %      0 %      0 %     74 %      0 %
+mittel         4 %     54 %     32 %     10 %      0 %
+spaet          3 %     71 %     13 %      5 %      6 %
+
+BEFUND 10 - NEUE BASELINE: 0,98 / 19,57 / 61,11 Mrd (vorher 0,80 / 19,82 / 76,85).
+Der mittlere Stand bleibt praktisch unveraendert (-1,3 %, das war die Kalibriervorgabe), frueh
+steigt um 23 %, spaet faellt um 20 %.
+
+BEFUND 11 - ZWEI URSACHEN, NICHT EINE. Der Rueckgang bei spaet kommt NICHT allein aus diesem
+Schritt: die alte Baseline war gegen Flottenwerte von 0,37 / 6,18 / 34,99 Mrd gerechnet, jetzt
+sind es 0,32 / 5,52 / 29,27 Mrd - das ist Entscheidung 6 (fuenf Kostenzeilen in ships.ts,
+18.08.2026), die nach der Baseline-Messung gebaut wurde und den Flottenwert um rund 16 % gesenkt
+hat. Wer die 61,11 gegen die 76,85 haelt, vergleicht zwei Aenderungen auf einmal.
+
+BEFUND 12 - Das Elite-Bollwerk bleibt mit 71 % die dominante Quelle im spaeten Ausbaustand
+(vorher 74 %). Abnahmekriterium 5 (keine Quelle ueber 50 %) ist damit weiterhin verletzt - durch
+diesen Schritt weder behoben noch verschlimmert.
+
+BEFUND 13 - Die Tagesrendite auf den Flottenwert liegt jetzt bei 301 / 355 / 209 Prozent (vorher
+216 / 321 / 220). Der Anstieg bei frueh und mittel ist ueberwiegend der gesunkene NENNER
+(Entscheidung 6), nicht ein Anstieg der Einnahmen. Die Aussage von Abschnitt 7 - Einnahmen in der
+Groessenordnung des Zwei- bis Dreifachen des Flottenwerts pro Tag - bleibt unveraendert gueltig.
+
+--- NICHT GEMESSEN, BEWUSST OFFEN ---
+- Piratenadmiral (P10): Kurve und Bergung dort NICHT eingebaut. Seine Belohnungsmechanik ist
+  Block B (4.6/4.7 entschieden, nicht gebaut) - eine Kalibrierung jetzt waere doppelte Arbeit.
+- Raids: Bergung dort NICHT eingebaut. Entscheidung 3 ist gegen den heutigen Raid-Ertrag
+  geschlossen; eine 30-%-Rueckerstattung auf Verteidigungsverluste wuerde sie wieder aufmachen.
+- Der frueheste Ausbaustand mit 3 ununterscheidbaren Solo-Stufen (Befund 4).

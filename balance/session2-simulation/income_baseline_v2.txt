@@ -1,0 +1,21 @@
+=== Einnahmen-BASELINE nach Block A Schritt 2 - 40 Durchlaeufe je Kampfzelle ===
+Exponent 0.85, Raid nach Variante 6, Wrack-Bergung 30 %, Zielband 3-10 Tage.
+Schritt = +10 % Flottenwert. Bau-Lanes laut Code: 3 (MAX_BUILD_SLOTS).
+
+=== 1. Einnahmen und Flottenwert je Ausbaustand ===
+Stand      Flottenwert       Solo   Elite/Tag       Raid     passiv    Station    NETTO/Tag
+frueh         0.32 Mrd   0.26 Mrd    0.00 Mrd   0.00 Mrd   0.72 Mrd   0.00 Mrd     0.98 Mrd
+mittel        5.52 Mrd   0.78 Mrd   10.62 Mrd   6.31 Mrd   1.87 Mrd   0.00 Mrd    19.57 Mrd
+spaet        29.27 Mrd   1.96 Mrd   43.67 Mrd   8.25 Mrd   3.28 Mrd   3.95 Mrd    61.11 Mrd
+
+Tagesrendite auf den Flottenwert (Netto/Tag geteilt durch Flottenwert):
+  frueh     301 %
+  mittel    355 %
+  spaet     209 %
+
+Anteil der Quellen an den Einnahmen (Abnahmekriterium 5: keine Quelle ueber 50 % in Woche 1):
+Stand         Solo    Elite     Raid   passiv  Station
+frueh         26 %      0 %      0 %     74 %      0 %
+mittel         4 %     54 %     32 %     10 %      0 %
+spaet          3 %     71 %     13 %      5 %      6 %
+
