@@ -377,6 +377,25 @@ export const WEEKLY_BAUZEIT_EVENT_FACTOR = 0.75;
 export const RAID_SPAWN_CHANCE = 0.7; // 70% Chance beim woechentlichen Fallback-Checkpoint
 export const RAID_LOOT_PERCENT = 0.25;
 
+/**
+ * Neulingsschutz (Entscheidung 10, Nutzerentscheidung 19.08.2026).
+ *
+ * In den ersten NEWCOMER_GRACE_DAYS Tagen nach der Registrierung (nach einem Server-Reset also
+ * fuer alle gleichzeitig) laeuft der Raid ganz normal ab - Wellen, Kampf, Belohnung -, aber:
+ *   - der Ressourcen-Diebstahl (RAID_LOOT_PERCENT) entfaellt
+ *   - die verteidigende FLOTTE wird nicht vernichtet, sondern nur zurueckgeschlagen
+ * Die Verteidigungsanlagen sind bewusst NICHT geschuetzt, sonst stuende in der Startphase gar
+ * nichts mehr auf dem Spiel (sie werden ohnehin zu DEFENSE_REPAIR_PERCENT wiederhergestellt).
+ *
+ * Warum so und nicht "gar kein Raid fuer Neulinge" (urspruenglicher Vorschlag): gerechnet ueber
+ * 14 Tage (run_e10_schonfrist.mjs) stuende ein neues Konto ohne Raid bei 11,2 Mrd statt bei
+ * 62,9 Mrd - der Raid ist die mit Abstand groesste Einnahmequelle der Startphase, ein schwaches
+ * Konto gewinnt gemessen 11,0 von 12 Wellen. Der Schutz nimmt also die Strafen weg, nicht die
+ * Belohnung.
+ */
+export const NEWCOMER_GRACE_DAYS = 14;
+export const NEWCOMER_GRACE_MS = NEWCOMER_GRACE_DAYS * 24 * 60 * 60 * 1000;
+
 export const ASTEROID_ESCORT_POWER_MIN = 0.08;
 export const ASTEROID_ESCORT_POWER_MAX = 0.16;
 export const ASTEROID_ESCORT_KILL_REWARD = { metall: 900000, kristall: 720000, deuterium: 600000 };
