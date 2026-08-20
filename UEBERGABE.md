@@ -65,6 +65,28 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 20.08.2026, NUTZERFUND - R16: eine Flotte laesst sich in beliebig viele GLEICHZEITIGE
+  Gruppen-Operationen aufteilen.** Nutzermeldung: "Elite Bollwerk kann man unendlich mal starten
+  gleichzeitig." Im Code bestaetigt: `createGroupOperation()` prueft nur Sektor, Schiffstypen und
+  Bestand, `respondToGroupOperation()` erlaubt beliebig viele gleichzeitig angenommene
+  Einladungen. Die Sperre, die es bei Solo-Missionen seit dem 29.07.2026 gibt ("immer nur eine
+  Piraten-Sektor-Stufe gleichzeitig", `missions.ts` Zeile 97), wurde bei den Gruppen-Operationen
+  nie nachgezogen. **Das ist ein Defekt, keine Balance-Frage** - Reparatur R16 in Abschnitt 3,
+  Befundkasten unter der Tabelle.
+  - **Warum es teuer ist:** die Belohnung je gewonnenem Check ist flach und PRO TEILNEHMER -
+    930 Mio Wert `winResources` plus 1.097 Mio Wert garantierte Container, dazu `lootBase` mal
+    2^Siegserie. Ueber 6 Checks rund **17 Mrd Wert je Expedition und Teilnehmer, voellig
+    unabhaengig von der eingesetzten Flotte**, waehrend die Gegnerstaerke proportional
+    mitskaliert. Aufteilen multipliziert die Einnahme mit der Zahl der Operationen; der
+    `npcFloor` von 3 Mio Macht setzt nur eine Untergrenze von rund 3,4 Mio Flottenwert je
+    Teilflotte.
+  - **Nutzerentscheidungen:** (1) Reparatur ist **eine aktive Operation je Spieler**, geprueft an
+    beiden Eintrittspunkten, keine neue Balance-Zahl. (2) **Der Solo-Start bleibt erlaubt** -
+    beide Multiplayer-Sektoren sollen allein beflogen werden koennen, das wird NICHT
+    mitrepariert. (3) **Einbau erst zum Server-Neustart**, nicht vorher; bis dahin darf der alte
+    Stand ausgespielt werden.
+  - **Was im Plan schon stand:** Entscheidung 4.8 (Cooldown) betrifft nur P10 und nur das
+    *wiederholte* Starten hintereinander. Der gleichzeitige Fall stand nirgends.
 - **NEU 20.08.2026 (Nutzerentscheidung): ABNAHMEKRITERIUM 5 IST UMGESTELLT.** Die Schwelle von
   50 % bleibt woertlich stehen, geaendert hat sich nur, WORAUF sie zeigt: von Entscheidung 12
   auf **Entscheidung 3 (Raid-Ertrag) und die Solo-Einnahme der Startphase**. Grund ist die
@@ -231,7 +253,7 @@ anders wirken kann als in der Simulation.
 - **4.6 UND 4.7 SIND GESCHLOSSEN** (18.08.2026, ohne Messung bestaetigt): Sieg-Bonus **2,0x**,
   Niederlage-Auszahlung 50 % **auf die bis zum letzten ueberstandenen Check gesicherte Beute**. Von
   Block B ist damit nur noch 4.8 (Cooldown) offen.
-- **15 Entscheidungen, 13 Reparaturen.** Fuer jeden offenen Punkt steht entweder die Zahl oder die
+- **15 Entscheidungen, 15 Reparaturen (R16 neu am 20.08.2026).** Fuer jeden offenen Punkt steht entweder die Zahl oder die
   Regel, nach der sie bestimmt wird. Eine Umsetzungs-Session braucht keine Entscheidungsrunde mehr.
 - **BLOCK A IST VOLLSTAENDIG** (seit 15.08.2026). Geschlossen sind Schritt 1 (Messreihen nach dem
   Overkill-Deckel), Abschnitt 8 Punkt 3 (Imperator-Einstufung), Abschnitt 8 Punkt 1
@@ -401,6 +423,23 @@ Plan als offener Punkt geführt (Abschnitt 7, Niveau-Punkt). Der beschlossene Se
 ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
+
+**Wo eine FLACHE Belohnung auf einen PROPORTIONAL mitskalierenden Gegner trifft, ist Aufteilen
+immer besser als Zusammenhalten - und wenn die Zahl gleichzeitiger Teilnahmen nicht begrenzt ist,
+ist es beliebig oft besser.** Zweimal am 20.08.2026 aufgetaucht, an zwei voellig verschiedenen
+Stellen: in der Startphase als NACHTEIL fuer grosse Flotten (Solo netto 0,24 Mrd bei 50 Mio
+Flottenwert, negativ ab 400 Mio - der Container-Fund ist flach, der Gegner waechst mit) und beim
+Elite-Bollwerk als MULTIPLIKATOR fuer den, der aufteilt (R16: 17 Mrd je Expedition, flottengroessen-
+unabhaengig, beliebig viele Expeditionen gleichzeitig). **Bei jedem Inhalt mit flacher Belohnung
+zwei Dinge pruefen: waechst die Gegnerseite proportional mit, und ist die Zahl gleichzeitiger
+Teilnahmen begrenzt?** Ist die erste Antwort ja und die zweite nein, ist der Inhalt offen.
+
+**Eine Sperre, die an einer Stelle eingebaut wurde, ist an der anderen nicht automatisch da.**
+Solo-Missionen haben seit dem 29.07.2026 die Regel "immer nur eine Piraten-Sektor-Stufe
+gleichzeitig" (`missions.ts` Zeile 97). Die Gruppen-Operationen bekamen sie nie - dieselbe
+Spielsituation, anderer Codepfad, keine Sperre. **Bei jeder Regel, die eine Gleichzeitigkeit
+begrenzt, alle Eintrittspunkte suchen** - bei R16 sind es zwei (`createGroupOperation` und
+`respondToGroupOperation`), und eine Sperre nur im ersten waere wirkungslos gewesen.
 
 **Ein Abnahmekriterium kann auf die falsche Quelle zeigen - und man merkt es erst, wenn man alle
 Quellen NEBENEINANDER hinschreibt.** Abnahmekriterium 5 ("keine Einzelquelle ueber 50 % der
