@@ -65,6 +65,27 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 20.08.2026 (Nutzerentscheidung): ABNAHMEKRITERIUM 5 IST UMGESTELLT.** Die Schwelle von
+  50 % bleibt woertlich stehen, geaendert hat sich nur, WORAUF sie zeigt: von Entscheidung 12
+  auf **Entscheidung 3 (Raid-Ertrag) und die Solo-Einnahme der Startphase**. Grund ist die
+  Messung: der Raid stellt 58 % der Woche-1-Einnahmen (26,5 von 46,0 Mrd), die Asteroiden 39 %,
+  Solo 3 %. **Jede Kuerzung des Frischling-Bonus HEBT den Raid-Anteil** (auf 78 % bei
+  abgeschaltetem Bonus) - das Kriterium haette in der alten Fassung einen moeglichst GROSSEN
+  Bonus verlangt. Rechnet man den Raid heraus, liegen die Asteroiden bei 93 % und selbst ohne
+  jeden Bonus noch bei 81 %; Ursache ist nicht die Hoehe des Minings, sondern dass daneben
+  nichts steht. **Bewusst NICHT gemacht:** das Kriterium in zwei Schwellen aufteilen - beide
+  Zahlen waeren gesetzt statt gemessen. **Folge: Entscheidung 12 kann Kriterium 5 weder
+  erfuellen noch verletzen**, und der Grund, aus dem sie am 09.08.2026 aus Block F vorgezogen
+  wurde, ist entfallen. Kriterium 5 bleibt Reset-Bedingung, haengt aber jetzt an Entscheidung 3
+  und an Abschnitt 8 Punkt 5.
+- **NEU 20.08.2026 (Nutzerentscheidung): das Frischling-Fenster wird auf 14 Tage gezogen und an
+  `NEWCOMER_GRACE_MS` gekoppelt.** Damit gibt es fuer "Frischling" nur noch EINE Zahl statt
+  bisher 14 Tage Raid-Schonfrist gegen 7 Tage Mining-Bonus. Gemessen ist die Laenge eine
+  Begriffs-, keine Balancefrage. Kosten gemessen und angenommen: **+4,60 Mrd in Woche 2, also
+  12 % des Wocheneinkommens.** Technische Falle beim Bau: `NOVICE_BONUS_WINDOW_MS` steht in
+  `economy.ts` auf Zeile 30, `NEWCOMER_GRACE_MS` auf Zeile 397 - bei einer Kopplung muss die
+  Deklarationsreihenfolge mitgezogen werden, sonst ist der Wert an der Verwendungsstelle
+  `undefined`.
 - **NEU 20.08.2026: ENTSCHEIDUNG 12 IST KALIBRIERT, NICHT GEBAUT. Der Wert steht:
   `NOVICE_BONUS_ADD = 2,0`** - Mining-Multiplikator = Produkt der uebrigen Quellen PLUS 2,0
   statt MAL 3. Woertliche additive Lesart der heutigen 3, keine neu erfundene Zahl. Gemessen:
@@ -81,31 +102,17 @@ anders wirken kann als in der Simulation.
   Grund: das Mining sitzt in beiden Bau-Welten am ersten Tag am Cap (700 Schiffe, 14,3 Mio Wert
   gegen 117,5 Mio Startressourcen, Bauzeit selbst im langsamen Fall 3,9 h), und die
   Kampf-Einnahmen der Startphase sind nicht bau-, sondern gegnerskalierungsbegrenzt.
-- **DER WICHTIGSTE BEFUND BETRIFFT NICHT ENTSCHEIDUNG 12: Abnahmekriterium 5 aus Abschnitt 1b
-  zeigt auf die falsche Quelle.** Groesste Einzelquelle der ersten Woche ist der **RAID mit
-  58-64 %**, das Asteroiden-Mining liegt mit 33-39 % darunter. Der Raid zahlt 1,84 Mrd Wert je
-  gewonnener Welle (10x Silber + 6x Gold + 2x Elite), bei 12/12 Wellen 22,07 Mrd - **flach,
-  unabhaengig von der eigenen Staerke**, zweimal woechentlich. Folgen:
-  - **Jede Kuerzung des Frischling-Bonus macht Kriterium 5 SCHLECHTER** (Raid-Anteil steigt auf
-    78 %). Das Kriterium verlangt in seiner heutigen Fassung einen moeglichst GROSSEN Bonus.
-  - **Ohne den Raid gerechnet ist es mit keinem Bonuswert erfuellbar:** Mining 93 % im
-    Ist-Zustand, 81 % bei KOMPLETT abgeschaltetem Bonus. Nicht der Bonus ist die Ursache,
-    sondern dass daneben nichts steht - Solo liefert in der Startphase 1,23 Mrd/Woche gegen
-    6,03 Mrd Mining ohne jeden Bonus.
-  - **Kriterium 5 ist damit bis zu seiner Umstellung kein Reset-Blocker.** Vorschlag im Plan
-    (nicht entschieden): auf "keine Einzelquelle ueber 50 % OHNE den Raid" umstellen und den
-    Raid ueber ein eigenes Deckelkriterium fuehren.
+- **Der Befund, der zu dieser Umstellung gefuehrt hat, im Kurzen:** groesste Einzelquelle der
+  ersten Woche ist der **RAID mit 58-64 %**. Er zahlt 1,84 Mrd Wert je gewonnener Welle (10x
+  Silber + 6x Gold + 2x Elite), bei 12/12 Wellen 22,07 Mrd - **flach, unabhaengig von der
+  eigenen Staerke**, zweimal woechentlich. Das Asteroiden-Mining liegt mit 33-39 % darunter.
+  Solo liefert in der Startphase nur 1,23 Mrd/Woche.
 - **VIERTES UNGEBAUTES PAKET GEFUNDEN: Entscheidung 3 (Raid-Ertrag, Variante 6) steht nicht im
   Code.** Kein `RAID_ALLY_POWER_WEIGHT`, keine Saettigung, `RAID_WAVE_WIN_*` unveraendert
   10/6/2 je Welle. Diese Datei fuehrte bis heute nur drei Pakete (Block A Schritt 2, Block B,
-  Entscheidung 16). **Es sind vier**, und sie gehen alle gleichzeitig live.
-- **Die beiden Frischling-Fenster (7 gegen 14 Tage) sind gemessen eine Begriffsfrage, keine
-  Balancefrage.** Die vorab vorgeschlagene Entscheidungsregel ("auf 14 ziehen, wenn der
-  Mining-Anteil an Tag 8-14 unter 50 % bleibt") trifft in JEDER Variante zu und trennt nichts.
-  Gemessene Kosten einer Verlaengerung: +4,60 Mrd in Woche 2, also 12 % des Wocheneinkommens.
-  Empfehlung: `NOVICE_BONUS_WINDOW_MS` an `NEWCOMER_GRACE_MS` koppeln (eine Zahl fuer einen
-  Begriff). Wer bei 7 bleibt, muss die Anzeige beide Fenster getrennt erklaeren lassen, sonst
-  wirkt es wie ein Fehler.
+  Entscheidung 16). **Es sind vier**, und sie gehen alle gleichzeitig live. **Entscheidung 3
+  traegt seit dem 20.08.2026 zusaetzlich Abnahmekriterium 5** - sie ist damit nicht mehr nur
+  ein offener Einbau, sondern eine Reset-Bedingung.
 - **Drei Zahlen des Plantextes waren falsch und sind korrigiert** (Messregel 16): der
   Mining-Stapel ist **x36,72**, nicht x24,5 (die 24,5 sind derselbe Stapel ohne
   `mining_schiffe`); daraus folgt **12,70 statt 8,5 Mrd/Tag**; und beide Zahlen setzen
@@ -314,6 +321,25 @@ Raid-Bericht sind erledigt.
 **R13 wartet auf nichts mehr.** Der frueher hier vermerkte Bedarf nach einer Zahl vom Nutzer ist
 entfallen - die Korrektur ist mit einer Ratschen-Obergrenze abgesichert, die niemanden rueckwirkend
 aussperrt.
+
+## Gesetzt und NICHT neu aufzurollen: Frischling-Bonus und Abnahmekriterium 5
+
+Festgehalten am 20.08.2026, beides Nutzerentscheidungen nach der Messung in `novice_bonus.txt`.
+
+**`NOVICE_BONUS_ADD = 2,0`, Fenster 14 Tage.** Der Wert ist die woertliche additive Lesart der
+alten 3 und bewusst KEINE neu erfundene Zahl - es gibt derzeit kein Kriterium, das eine andere
+tragen wuerde. Wer ihn spaeter bewegen will, braucht zuerst ein Mass, gegen das er bewegt wird.
+Die Fensterlaenge ist nach dem Begriff entschieden, nicht nach der Balance: fuer "Frischling"
+gibt es nur noch eine Zahl. Der Vorschlag "7 Tage lassen und die Anzeige beide Fenster erklaeren
+lassen" wurde geprueft und verworfen.
+
+**Abnahmekriterium 5 zeigt auf Entscheidung 3 und die Solo-Startphase, nicht auf den
+Frischling-Bonus.** Die 50 % stehen woertlich unveraendert. Diese Umstellung entsteht bei
+Kaltstarts leicht wieder rueckwaerts, weil im Plantext an vielen Stellen "Kriterium 5 misst
+Entscheidung 12" mitschwingt - **das ist gemessen widerlegt**: jede Kuerzung des Bonus HEBT den
+Anteil der groessten Quelle (des Raids), und ohne den Raid gerechnet ist das Kriterium mit
+keinem Bonuswert erfuellbar. Ebenfalls geprueft und verworfen: das Kriterium in zwei Schwellen
+aufteilen (eine fuer den Raid, eine fuer den Rest) - beide Zahlen waeren gesetzt statt gemessen.
 
 ## Gesetzt und NICHT neu aufzurollen: Stack-Aggregation statt Einzelberechnung
 
@@ -608,11 +634,11 @@ gebaut, 12 ist kalibriert. Alles Weitere ist im Nachhinein korrigierbar.
 Danach kommt Schritt 13, die 30-Tage-Fortschrittssimulation.
 
 **Wer die Simulation baut, liest ZUERST den Messkasten bei Entscheidung 12 und Kriterium 5 in
-Abschnitt 1b.** Zwei Dinge sind dort gemessen worden, die den Bau betreffen:
-1. **Abnahmekriterium 5 ist in seiner heutigen Fassung nicht bewertbar** (es zeigt auf das
-   Mining, gemessen ist der Raid mit 58-64 % die groesste Quelle, und ohne den Raid ist das
-   Kriterium mit keinem Bonuswert erfuellbar). Es muss vor dem ersten Lauf umgestellt werden,
-   sonst scheitert der Lauf an einem Kriterium statt an der Balance.
+Abschnitt 1b.** Zwei Dinge sind dort geregelt, die den Bau betreffen:
+1. **Abnahmekriterium 5 ist seit dem 20.08.2026 umgestellt** - die 50 % gelten unveraendert
+   weiter, sie zeigen jetzt aber auf Entscheidung 3 (Raid-Ertrag) und die Solo-Startphase, nicht
+   mehr auf den Frischling-Bonus. Wer den ersten Simulationslauf gegen die alte Zuordnung
+   fuehrt, sucht den Fehler an der falschen Stelle.
 2. **Vorbedingung V2 ist in der Praxis geloest, nur nicht im Plantext.** `run_income_level.mjs`,
    `run_income_baseline_v2.mjs` und jetzt `run_novice_bonus.mjs` kopieren `dist` in ein
    Temp-Verzeichnis und verlinken `node_modules` - die Wegwerf-Datenbank landet dort. Der

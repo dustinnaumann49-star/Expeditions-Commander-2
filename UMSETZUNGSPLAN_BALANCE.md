@@ -282,20 +282,37 @@ die daran kalibriert wird.
    `FIXED_CHECK_HOURS_UTC`". Diese Konstante existiert nicht mehr - der Wert stammte aus einer
    veralteten README-Fassung. Siehe Messregel 16.
 5. **Keine Einzelquelle liefert in Woche 1 mehr als 50 % der Wochen-Einnahmen.**
-   -> Entscheidung 12 (heute waeren es die Asteroiden mit dem 24,5-fach gestapelten Bonus).
-   > **GEMESSEN AM 20.08.2026 - DIESES KRITERIUM ZEIGT AUF DIE FALSCHE QUELLE**
-   > (`run_novice_bonus.mjs` / `novice_bonus.txt`, Befunde 5, 7, 8). Groesste Einzelquelle der
-   > Woche 1 ist der **Raid mit 58-64 %**, das Asteroiden-Mining liegt mit 33-39 % darunter.
-   > Der Raid zahlt 1,84 Mrd Wert je gewonnener Welle, flach und unabhaengig von der eigenen
-   > Staerke, zweimal woechentlich. **Jede Kuerzung des Frischling-Bonus verschlechtert dieses
-   > Kriterium** (Raid-Anteil steigt auf 78 %), und ohne den Raid gerechnet liegt das Mining
-   > selbst bei komplett abgeschaltetem Bonus noch bei 81 %. Das Kriterium ist damit in beiden
-   > Lesarten kein Massstab fuer Entscheidung 12 und **kein Reset-Blocker**, solange es nicht
-   > umgestellt ist. Vorschlag, nicht entschieden: auf "keine Einzelquelle ueber 50 % OHNE den
-   > Raid" umstellen und den Raid ueber ein eigenes Deckelkriterium fuehren - er ist nach
-   > Kriterium 4 ohnehin ausdruecklich kein Inhalt, sondern ein Ereignis. Voraussetzung dafuer
-   > ist der Bau von Entscheidung 3 (Raid-Ertrag Variante 6), die entschieden, aber nicht
-   > gebaut ist.
+   -> **Entscheidung 3 (Raid-Ertrag) und die Solo-Einnahme der Startphase.**
+   > **UMGESTELLT AM 20.08.2026 (Nutzerentscheidung), nachdem die Messung ergab, dass dieses
+   > Kriterium auf die falsche Quelle zeigte** (`run_novice_bonus.mjs` / `novice_bonus.txt`,
+   > Befunde 5, 7, 8). Hier stand bisher "-> Entscheidung 12 (heute waeren es die Asteroiden mit
+   > dem 24,5-fach gestapelten Bonus)".
+   >
+   > **Die Schwelle von 50 % bleibt unveraendert. Geaendert hat sich nur, WORAUF das Kriterium
+   > zeigt.** Gemessene Zusammensetzung der Woche 1 (46,0 Mrd gesamt): Raid 26,5 Mrd (58 %),
+   > Asteroiden 18,1 Mrd (39 %), Solo 1,2 Mrd (3 %), Heimatbasis 0,2 Mrd. Der Raid zahlt
+   > 1,84 Mrd Wert je gewonnener Welle, flach und unabhaengig von der eigenen Staerke, zweimal
+   > woechentlich - bei 12/12 Wellen 22,07 Mrd.
+   >
+   > **Warum die alte Zuordnung nicht nur ungenau, sondern gegenlaeufig war:** jede Kuerzung des
+   > Frischling-Bonus HEBT den Raid-Anteil (auf 78 % bei abgeschaltetem Bonus). Das Kriterium
+   > haette in seiner alten Fassung einen moeglichst GROSSEN Frischling-Bonus verlangt - genau das
+   > Gegenteil dessen, wofuer es gedacht war.
+   >
+   > **Wer das Kriterium jetzt erfuellt, sind zwei andere Punkte:**
+   > - **Entscheidung 3 (Raid-Ertrag, Variante 6)** - entschieden, aber NICHT gebaut. Solange der
+   >   heutige flache Container-Topf steht, ist der Raid die groesste Einzelquelle der Startphase.
+   > - **Die Solo-Einnahme der Startphase**, gemessen 1,23 Mrd/Woche und mit wachsender Flotte
+   >   FALLEND (ab 400 Mio Flottenwert netto negativ, siehe Befund 1 in `novice_bonus.txt`).
+   >   Rechnet man den Raid heraus, liegen die Asteroiden bei 93 % - und selbst bei komplett
+   >   abgeschaltetem Frischling-Bonus noch bei 81 %. Ursache ist nicht die Hoehe des Minings,
+   >   sondern dass daneben nichts steht.
+   >
+   > **Was das fuer den Reset heisst:** Kriterium 5 bleibt eine Bedingung vor dem Reset, aber
+   > **Entscheidung 12 kann es nicht mehr erfuellen oder verletzen** - es haengt jetzt an
+   > Entscheidung 3 und an der Solo-Differenzierung (Abschnitt 8 Punkt 5). Bewusst NICHT gemacht:
+   > das Kriterium in zwei Schwellen aufteilen (eine fuer den Raid, eine fuer den Rest). Beide
+   > Zahlen waeren gesetzt statt gemessen, und der Plan vermeidet Zahlen ohne Massstab.
 6. **Die Einnahmenkurve hat kein Plateau ueber 5 Tage.** Ein laengeres Plateau heisst, dass der
    naechste Ausbauschritt unerreichbar weit weg ist. -> Entscheidungen 7 und 9.4.
 
@@ -304,7 +321,10 @@ die daran kalibriert wird.
 - `T_MAX_BASE` und die sieben Reduktionsgewichte aus Entscheidung 9.1b.
 - Die Slot-Zahlen aus 9.2 - und zwar gegen Kriterium 2 UND 3 gleichzeitig, weil beide
   gegenlaeufig sind.
-- Die additive Form des Frischling-Bonus aus Entscheidung 12.
+- ~~Die additive Form des Frischling-Bonus aus Entscheidung 12.~~ **Entfaellt seit dem
+  20.08.2026:** Entscheidung 12 ist ohne die Simulation kalibriert (zwei einklammernde
+  Bau-Szenarien statt eines Verlaufs, Unterschied unter einem Prozentpunkt - Messkasten dort).
+  Stattdessen haengt an Kriterium 5 jetzt **Entscheidung 3 (Raid-Ertrag)**.
 - Der `SEED_FLEET`-Boden der Piratenbasen aus Entscheidung 5a.
 - Die Bot-Wachstumskurve aus Entscheidung 13.1, gegen Kriterium 4.
 
@@ -2215,15 +2235,17 @@ sein.**
 >   Einnahmen OHNE den Raid" umstellen und zusaetzlich ein eigenes Deckelkriterium fuer den Raid
 >   aufnehmen. Solange das nicht entschieden ist, ist Kriterium 5 **kein Reset-Blocker**.
 >
-> **DAS FENSTER (7 gegen 14 Tage) IST EINE BEGRIFFSFRAGE, KEINE BALANCEFRAGE.** Die vorab
-> vorgeschlagene Entscheidungsregel ("auf 14 ziehen, wenn der Mining-Anteil an Tag 8-14 unter
-> 50 % bleibt") trifft in JEDER Variante zu und trennt damit nichts. Gemessene Kosten einer
-> Verlaengerung auf 14 Tage bei `NOVICE_BONUS_ADD = 2,0`: **+4,60 Mrd in Woche 2, also 12 % des
-> Wocheneinkommens.** Empfehlung: `NOVICE_BONUS_WINDOW_MS` an `NEWCOMER_GRACE_MS` koppeln, damit
-> es fuer "Frischling" nur EINE Zahl gibt (14 Tage). Nachteil, ausdruecklich: das verdoppelt die
-> Laufzeit des Bonus genau in der Phase, in der der Plan Wachstum aus eigener Leistung will.
-> Wer das nicht will, laesst 7 stehen - dann muss aber die Anzeige beide Fenster getrennt
-> erklaeren, sonst wirkt es wie ein Fehler ("der Raid schont noch, der Bonus ist schon weg").
+> **DAS FENSTER: 14 TAGE, GEKOPPELT AN `NEWCOMER_GRACE_MS` (Nutzerentscheidung 20.08.2026).**
+> Gemessen ist die Fensterlaenge eine Begriffs-, keine Balancefrage: die vorab vorgeschlagene
+> Entscheidungsregel ("auf 14 ziehen, wenn der Mining-Anteil an Tag 8-14 unter 50 % bleibt")
+> trifft in JEDER Variante zu und trennt damit nichts - sie sah nach einer Messung aus und war
+> keine. Entschieden wurde deshalb nach dem Begriff: **fuer "Frischling" gibt es ab jetzt nur
+> EINE Zahl.** Bisher schuetzte der Raid bis Tag 14, waehrend der Mining-Bonus schon an Tag 8
+> auslief - im Spiel haette das wie ein Fehler ausgesehen.
+> **Gemessene Kosten, ausdruecklich:** bei `NOVICE_BONUS_ADD = 2,0` traegt der Bonus in Woche 2
+> zusaetzlich **4,60 Mrd**, das sind 12 % des Wocheneinkommens dieser Woche. Der Nachteil ist
+> benannt und angenommen: das verdoppelt die Laufzeit des Bonus genau in der Phase, in der der
+> Plan Wachstum aus eigener Leistung will.
 >
 > **BAUANLEITUNG (mechanisch, nichts mehr offen):**
 > 1. `data/economy.ts`: `NOVICE_BONUS_MULTIPLIER = 3` ersetzen durch `NOVICE_BONUS_ADD = 2`.
@@ -2244,8 +2266,12 @@ sein.**
 >      des Stapels ab. Text auf den tatsaechlich wirksamen Faktor umstellen (aus
 >      `getMiningMultiplier()` mit und ohne Bonus rechnen) oder auf "+2 auf den Mining-Faktor".
 >    - `client/src/types/game.ts`: Feld `noviceBonusMultiplier` umbenennen.
-> 5. Falls das Fenster mitgezogen wird: `NOVICE_BONUS_WINDOW_MS = NEWCOMER_GRACE_MS` in
->    `data/economy.ts`, sonst nichts.
+> 5. `data/economy.ts`: `NOVICE_BONUS_WINDOW_MS = NEWCOMER_GRACE_MS` (Nutzerentscheidung
+>    20.08.2026, nicht optional). Die Konstante `NEWCOMER_GRACE_MS` steht in derselben Datei
+>    weiter unten - beim Umbau auf die Reihenfolge der Deklarationen achten, sonst ist sie an
+>    der Verwendungsstelle noch `undefined`. Danach im Client pruefen, ob irgendwo "7 Tage" als
+>    Text steht (gegreppt am 20.08.2026: nur die Restzeit-Anzeige in `Sektor.tsx`, die rechnet
+>    dynamisch aus `noviceBonusWindowMs` und braucht keine Aenderung).
 
 **Bezug:** Session 1, Befund 7. **Dateien:** `game/missions.ts` (`miningMultiplier()`),
 `data/economy.ts` (`NOVICE_BONUS_MULTIPLIER`, `ABBAU_BOOST_MULTIPLIER`).
@@ -4140,21 +4166,20 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
  11. Entscheidung 12  Frischling-Bonus additiv
                        KALIBRIERT am 20.08.2026, NICHT GEBAUT. Wert steht:
                        NOVICE_BONUS_ADD = 2,0 (Multiplikator = Produkt der uebrigen
-                       Mining-Quellen PLUS 2,0). Bauanleitung im Messkasten am Kopf von
-                       Entscheidung 12, Protokoll novice_bonus.txt.
+                       Mining-Quellen PLUS 2,0), Fenster 14 Tage, gekoppelt an
+                       NEWCOMER_GRACE_MS (Nutzerentscheidung 20.08.2026).
+                       Bauanleitung im Messkasten am Kopf von Entscheidung 12,
+                       Protokoll novice_bonus.txt.
                        -> Die gemeinsame Kalibrierung mit Entscheidung 9 ist NICHT noetig:
                           gegen zwei einklammernde Bau-Szenarien gemessen (3 Lanes heute
                           gegen 1 Lane + doppelte Basiszeiten), Unterschied unter einem
                           Prozentpunkt. Die 30-Tage-Simulation musste dafuer nicht
                           vorgezogen werden.
-                       -> VORGEZOGEN aus Block F (09.08.2026): Abnahmekriterium 5 der Simulation
-                          misst genau diesen Bonus. Stuende 12 dahinter, wuerde der erste
-                          Simulationslauf zwangslaeufig an einem Fehler scheitern, der noch
-                          gar nicht behoben sein soll.
-                       -> UEBERHOLT durch die Messung: Abnahmekriterium 5 misst diesen Bonus
-                          gerade NICHT. Groesste Einzelquelle der Woche 1 ist der Raid mit
-                          58-64 %; jede Kuerzung des Bonus verschlechtert das Kriterium.
-                          Siehe Abschnitt 1b, Kriterium 5, und Entscheidung 3 (nicht gebaut).
+                       -> Der Grund fuer das Vorziehen aus Block F ist ENTFALLEN: Kriterium 5
+                          misst diesen Bonus nicht. Es ist am 20.08.2026 auf Entscheidung 3
+                          (Raid-Ertrag) und die Solo-Startphase umgestellt worden, siehe
+                          Abschnitt 1b. Entscheidung 12 kann es weder erfuellen noch
+                          verletzen.
  12. Entscheidung 13.1 + 13.2  Bot-Ertrag aus eigener Flottenmacht, Bot-Profile
                        -> 13.1 braucht die Koeffizienten aus Entscheidung 2, also nach Block A
 
@@ -4789,6 +4814,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 20.08.2026 (Nutzerentscheidung) | **Zwei Punkte aus der Messung entschieden.** (1) **Das Frischling-Fenster wird auf 14 Tage gezogen und an `NEWCOMER_GRACE_MS` gekoppelt.** Gemessen ist die Laenge eine Begriffs-, keine Balancefrage - die vorab aufgestellte Entscheidungsregel trifft in jeder Variante zu und trennt nichts. Entschieden wurde deshalb nach dem Begriff: fuer "Frischling" gibt es nur noch EINE Zahl, statt bisher 14 Tage Raid-Schonfrist gegen 7 Tage Mining-Bonus. Kosten gemessen und angenommen: +4,60 Mrd in Woche 2, 12 % des Wocheneinkommens. Technischer Hinweis in der Bauanleitung ergaenzt: `NOVICE_BONUS_WINDOW_MS` steht in `economy.ts` auf Zeile 30, `NEWCOMER_GRACE_MS` auf Zeile 397 - bei einer Kopplung muss die Reihenfolge der Deklarationen mitgezogen werden, sonst ist der Wert an der Verwendungsstelle `undefined`. (2) **Abnahmekriterium 5 wird umgestellt - Variante "nur die Zuordnung aendern".** Die Schwelle von 50 % bleibt woertlich stehen; geaendert hat sich, WORAUF das Kriterium zeigt: von Entscheidung 12 auf **Entscheidung 3 (Raid-Ertrag) und die Solo-Einnahme der Startphase**. Grund ist die Messung vom selben Tag: der Raid stellt 58 % der Woche-1-Einnahmen, die Asteroiden 39 %, und jede Kuerzung des Frischling-Bonus HEBT den Raid-Anteil auf bis zu 78 % - das Kriterium haette in der alten Fassung einen moeglichst GROSSEN Bonus verlangt. Rechnet man den Raid heraus, liegen die Asteroiden bei 93 % und selbst ohne jeden Bonus noch bei 81 %; Ursache ist nicht die Hoehe des Minings, sondern dass daneben nichts steht (Solo 1,23 Mrd/Woche, mit wachsender Flotte fallend). **Bewusst NICHT gemacht:** das Kriterium in zwei Schwellen aufteilen (eine fuer den Raid, eine fuer den Rest). Beide Zahlen waeren gesetzt statt gemessen. **Folge:** Entscheidung 12 kann Kriterium 5 weder erfuellen noch verletzen; der Grund, aus dem sie am 09.08.2026 aus Block F vorgezogen wurde, ist damit entfallen. Kriterium 5 bleibt eine Reset-Bedingung, haengt aber jetzt an Entscheidung 3 (entschieden, nicht gebaut) und an Abschnitt 8 Punkt 5 (Solo-Differenzierung). |
 | 20.08.2026 | **Block C, Schritt 11: Entscheidung 12 KALIBRIERT - NICHT GEBAUT.** Der Wert steht: **`NOVICE_BONUS_ADD = 2,0`**, Mining-Multiplikator = Produkt der uebrigen Quellen PLUS 2,0 statt MAL 3. Das ist die woertliche additive Lesart der heutigen 3 und braucht keine neu erfundene Zahl - gemessen +98 % Mining in Woche 1 statt +200 %, beim spaeten Vollstapel +16 % statt +200 %. Bauanleitung im Messkasten am Kopf von Entscheidung 12 (zwei Client-Spiegel, nicht einer: `lib/multipliers.ts` UND das Badge in `pages/Sektor.tsx`, dessen Text unter der additiven Regel sachlich falsch wird). Skript `run_novice_bonus.mjs`, Protokoll `novice_bonus.txt`, kumulativer Messbuild (Block A Schritt 2 + Entscheidung 16), Ankerzelle aus `loot_curve.txt` auf -1,7 % reproduziert (normiert auf die vernichtete Feindmacht). **Die im Plantext geforderte gemeinsame Kalibrierung mit Entscheidung 9 ist NICHT noetig - und das ist gemessen, nicht unterstellt.** Statt die 30-Tage-Simulation (Schritt 13) vorzuziehen, wurde die Woche-1-Zusammensetzung gegen zwei einklammernde Bau-Szenarien gerechnet (K1: 3 Lanes, heutige Basiszeiten; K2: 1 Lane, Basiszeiten x2). **Keine Zelle unterscheidet sich um mehr als einen Prozentpunkt.** Grund: das Mining sitzt in beiden Bau-Welten am ERSTEN Tag am Cap - 700 Schiffe kosten 14,3 Mio Wert gegen 117,5 Mio Startressourcen und brauchen selbst mit einer Lane und doppelten Basiszeiten 3,9 Stunden -, und die Kampf-Einnahmen der Startphase sind nicht bau-, sondern gegnerskalierungsbegrenzt. **Der wichtigste Befund betrifft aber nicht diese Entscheidung, sondern Abschnitt 1b: Abnahmekriterium 5 zeigt auf die falsche Quelle.** Groesste Einzelquelle der Woche 1 ist der **RAID mit 58-64 %** (10x Silber + 6x Gold + 2x Elite je gewonnener Welle = 1,84 Mrd Wert, bei 12/12 Wellen 22,07 Mrd - flach, unabhaengig von der eigenen Staerke, zweimal woechentlich), das Asteroiden-Mining liegt mit 33-39 % darunter. **Jede Kuerzung des Frischling-Bonus macht das Kriterium schlechter** (Raid-Anteil steigt auf 78 %), und ohne den Raid gerechnet steht das Mining selbst bei KOMPLETT abgeschaltetem Bonus noch bei 81 % - schlicht weil daneben nichts steht (Solo-Einnahme der Startphase 1,23 Mrd/Woche gegen 6,03 Mrd Mining ohne jeden Bonus). Kriterium 5 ist damit in beiden Lesarten kein Massstab fuer Entscheidung 12 und bis zu seiner Umstellung **kein Reset-Blocker**. **Vierter ungebauter Posten gefunden:** Entscheidung 3 (Raid-Ertrag Variante 6) steht ebenfalls nicht im Code - kein `RAID_ALLY_POWER_WEIGHT`, keine Saettigung, `RAID_WAVE_WIN_*` unveraendert 10/6/2. Die Uebergabe fuehrte bis dahin nur drei Pakete. **Drei Zahlen des Plantextes gegen den Code korrigiert (Messregel 16):** der Mining-Stapel ist x36,72, nicht x24,5 (die 24,5 sind derselbe Stapel ohne `mining_schiffe`); daraus folgt 12,70 statt 8,5 Mrd/Tag; und beide Zahlen setzen Mining-Forschung Stufe 10 voraus, die ein 7 Tage altes Konto nicht haben kann - real erreichbar sind x6,12 bzw. x12,24 an Di/Do. **Die Fensterfrage (7 gegen 14 Tage) ist gemessen eine Begriffs-, keine Balancefrage:** die vorab vorgeschlagene Entscheidungsregel trifft in jeder Variante zu und trennt nichts; die Verlaengerung auf 14 Tage kostet 4,60 Mrd in Woche 2, also 12 % des Wocheneinkommens. Empfehlung: `NOVICE_BONUS_WINDOW_MS` an `NEWCOMER_GRACE_MS` koppeln, damit es fuer "Frischling" nur eine Zahl gibt. **Vier Nebenbefunde, alle NICHT hier nachgezogen:** (1) die Solo-Einnahme der Startphase ist eine flache Zahl um 0,24 Mrd/Tag und FAELLT mit wachsender Flotte - ab 400 Mio Flottenwert wird das Netto negativ, weil der flache Container-Fund konstant bleibt und die Gegnerstaerke mitwaechst; (2) damit hat Abschnitt 8 Punkt 5 in der Startphase nicht nur zu wenig Abstand, sondern das falsche Vorzeichen (hoch liefert weniger als niedrig); (3) auch die Raid-Einnahme faellt mit wachsender Flotte, und der Einbruch bei F0 zwischen 800 und 1600 Mio kommt vom RUECKZUG, nicht von der Feindstaerke - `retreatMode: 'fleetOnly'` laesst die Flotte abdrehen, die Welle behaelt Reste, und gewonnen ist eine Welle nur bei vollstaendiger Vernichtung; die alte Beschreibung "Rueckzug gilt nicht fuer die Heimatverteidigung" ist damit ueberholt; (4) die Woche 1 liefert 6,57-7,85 Mrd/Tag und damit das 6,7- bis 8,0-fache des "fruehen" Ausbaustandes (0,98 Mrd/Tag) - die Sorge von Entscheidung 12 ist bestaetigt, aber der Traeger ist der Raid mit 3,8 Mrd/Tag, nicht der Bonus mit 1,7 Mrd/Tag; selbst bei komplett abgeschaltetem Bonus bleibt die Startwoche beim Fuenffachen. |
 | 19.08.2026 (Abend) | **Entscheidung 16 vollstaendig KALIBRIERT - NICHT GEBAUT.** Die beiden offenen Zahlen stehen: **RF-Wert 4** und **`SIZE_MISMATCH_EVASION_BONUS` klein/gross 0,20, mittel/gross 0,08**. Dazu zwingend `ZIELERFASSUNG_BASE['leicht'] = 0,25` (ohne den Eintrag ist die neue RF des Leichten Jaegers toter Code - die Falle aus 4.4) und der Client-Spiegel fuer den Ausweichbonus. Bauanleitung im Messkasten bei Entscheidung 16, Protokoll `rf_depth.txt`, Abschnitt "ZWEITE MESSRUNDE". **Gemessen gegen einen KUMULATIVEN Messbuild inkl. Block A Schritt 2** (`make_messbuild_kum.mjs`), weil beide zum Server-Neustart gemeinsam wirksam werden - gegen den heutigen Repo-Stand haette man gegen eine Baseline gemessen, die es dann nicht mehr gibt. Der Build wurde vor Gebrauch gegen zwei bekannte Anker aus `loot_curve.txt` geprueft und reproduziert sie (Kurve auf 0,1 % genau, Elite-Anker -1,7 %). **`lib.mjs`, `lib3.mjs` und `run_income_baseline_v2.mjs` loesen jetzt `MESSBUILD` auf** - vorher liefen sie fest gegen `server/dist` und konnten gegen einen Messbuild gar nicht messen. **Die zentrale Korrektur: die Begruendung der ersten Messrunde war falsch.** Dort galt Klassen-RF als "globaler Spieler-Buff", weil der Verteidigungsverlust im Raid auf 0,0 % faellt - eine Prozentzahl ohne ihren Gegenposten. Nachgerechnet mit 40 statt 10 Raids: der Flottenverlust steigt gleichzeitig von 13,6 auf 19,6 %, und weil die Referenz-Verteidigung 0,43 Mrd wert ist und die Flotte 5,52 Mrd, **wird der Raid in Wert-Einheiten 29 % TEURER** (0,84 -> 1,08 Mrd). Kipppunkt: erst ab Verteidigungsanlagen im Wert von rund 29 % des Flottenwerts waere die Verschiebung ein Vorteil. Ebenso die Einnahmen-Seite: die Baseline bewegt sich um maximal 2 % (0,98 / 19,50 / 60,45 gegen 0,98 / 19,36 / 61,69), weil die Beute an der vernichteten Feindmacht haengt und die von der Sektorstaerke gesetzt wird, nicht vom Kampfverlauf. **Folge: KEIN Ausgleich ueber die Gegnerstaerke noetig** - `PIRATEN_MULTIPLIER_ROLL` bleibt unberuehrt und seine Sperre muss gar nicht fallen, `RAID_WAVE_ROLL` ist freigegeben, bleibt aber ungenutzt (eine Anhebung wuerde die ohnehin eintretende Verschaerfung verdoppeln, und der Regler hat nach Abschnitt 8 Punkt 7 keinen sanften Bereich). **Wie die Zahlen bestimmt wurden.** Ausweichbonus zuerst, weil die erste Runde ihn als den eigentlichen Hebel ausgewiesen hatte: vier Stufen (0,45/0,18, 0,30/0,12, 0,20/0,08, 0,10/0,04) bei festem RF 4. Bei 0,45 und 0,30 bleibt mindestens eine reine Aufstellung bei 0 % Siegquote und die Jaeger-Aufstellung bleibt die beste Wahl; bei 0,10/0,04 kippt es ins Gegenteil und die realistische gemischte Flotte faellt auf 10 % Siegquote. **Nur 0,20 / 0,08 erfuellt beide Kriterien.** Danach der RF-Wert (2/3/4/5) beim gewaehlten Bonus: bei REALER Sektorstaerke ist er ueberhaupt kein Hebel (4,97 / 5,14 / 5,17 % fuer 3/4/5, im Rauschen), entschieden wird er allein daran, ob die realistische gemischte Flotte gegen die Elitekader-Welle ueber der Kippkante bleibt - RF2 0 %, RF3 25 %, RF4 65-77,5 %, RF5 85 %. **RF4 ist der niedrigste Wert, der das schafft**, und RF5 dreht die Elite/Jaeger-Ordnung wieder um. **Streuung bestimmt, bevor die Tabellen zu fein gelesen werden:** dreimal dieselbe Zelle ergab beim Wertverlust 1,2 Punkte Spanne, bei der Siegquote nahe der Kippkante 12,5 Punkte - Unterschiede unter 2 bzw. 15 Punkten sind kein Befund. **Drittes Ergebnis, unabhaengig von der Zahl: das Wellenprofil ist im Client nirgends sichtbar** (`pickWaveProfile()` wuerfelt pro Check, `piraten_hoch` 10/45/45). Der Spieler kann seine Aufstellung also gar nicht gegen ein bekanntes Profil waehlen - massgeblich ist der profilgewichtete Schnitt, die Einzelprofil-Tabellen der ersten Runde sind Diagnose, nicht Abnahme. **Zwei Nachteile, ausdruecklich:** eine gleichmaessig ueber alle Klassen gestreute Flotte wird die schlechteste Wahl gegen eine scharfe Welle (100 % Siegquote heute, 0-10 % danach) - Spezialisierung wird belohnt, Streuung bestraft, das gehoert in den Patchtext. Und die Verteidigungsanlagen nehmen im Raid gar keinen Schaden mehr; wirtschaftlich unkritisch, inhaltlich eine Entwertung - offener Punkt, gehoert zu Entscheidung 3, nicht hierher. |
 | 19.08.2026 | **Block A, Schritt 2 vollstaendig KALIBRIERT - aber auf Nutzerwunsch NICHT GEBAUT.** Ab jetzt gilt: Aenderungen erst, wenn der ganze Plan steht, vorher nur auf ausdrueckliche Nachfrage. Die Messung lief gegen einen lokalen Messbuild mit den unten beschriebenen Aenderungen (Verfahren wie `make_messbuild_rf.mjs`); im Repo steht davon keine Zeile, und `run_loot_curve.mjs`/`run_income_baseline_v2.mjs` laufen gegen den heutigen Stand nicht, weil `game/loot.js` fehlt. **Bauanleitung und alle Konstanten im Messkasten am Kopf von Entscheidung 2.** Gebaut werden muesste: neues Modul `game/loot.ts` (Kurve, Koop-Aufschlag, Bergung), verdrahtet in `missions.ts`, `groupOps.ts` und `pirateBaseCombat.ts`; `fleetSizeRewardMultiplier()` an beiden Einsatzstellen entfernt; zwei neue Anker `LOOT_CURVE_SOLO_CHECK_POWER` (2,662 Mrd) und `LOOT_CURVE_ELITE_CHECK_POWER` (2,29 Mrd); `winResources` der drei Solo-Sektoren x13,8. Gemessen mit `run_loot_curve.mjs` (solo/elite/coop) und `run_income_baseline_v2.mjs`, 40 Durchlaeufe je Zelle, scheibenweise, Protokoll `loot_curve.txt`. Vollstaendig im Messkasten am Kopf von Entscheidung 2. **Koop entschieden: V2 (Kurve auf den eigenen Beitragsanteil) plus 15 % je Mitflieger, gedeckelt bei 3 - gemessen x1,146/x1,155 Netto je Teilnehmer.** Diese Entscheidung gilt unabhaengig vom Einbauzeitpunkt. V1 verworfen aus einem Grund, den `elite_coop.txt` nicht zeigen konnte: **Bots nehmen Elite-Einladungen automatisch an** (`bot.ts`, 30 % ihrer Flotte), unter V1 waeren zwei eingeladene Bots ein Ein-Klick-Einkommensmultiplikator gewesen. V2 ist zusaetzlich von sich aus alibi-sicher, die geforderte Mindestmengen-Pruefung entfaellt damit ersatzlos. **Fuenf Befunde.** (1) **Eine Ressourcen-Kurve allein waere bei Solo wirkungslos geblieben:** dort steckten 94 % des Belohnungswerts in Containern (1x Elite ~238 Mio gegen ein Ressourcen-Paket von 14 Mio je Sieg). Nach Nutzerentscheidung faellt der Container-Fund jetzt einmal je MISSION statt je Check, und `winResources` traegt den Rest - Container-Anteil danach 23 % (mittel) und 5 % (spaet). Bewusst NICHT ueber die Container-INHALTE geloest: `CONTAINER_TYPES` haengt an Raids und Elite-Bollwerk, und Entscheidung 3 ist gegen genau diese Inhalte geschlossen. (2) **Beide Anker getroffen:** Solo mittel/hoch 1,05 Mrd bei 11,1 Mrd vernichteter Feindmacht (Soll 1,05 / 11,18), Elite mittel 32,71 Mrd (Soll 32,60). Der Elite-Anker musste von 2,66 auf 2,29 Mrd nachgezogen werden, weil mit dem Grossflotten-Bonus ein Multiplikator x1,50 wegfiel - der erste Lauf lag 9,7 % zu niedrig. (3) **Der Zweck ist erreicht:** Solo Hoch mit der realen Flotte netto **+2,42 Mrd statt -2,32 Mrd**, davon 3,60 Mrd aus der Kurve und 0,94 Mrd aus der Bergung. (4) **BASELINE NACH DEM EINBAU 0,98 / 19,57 / 61,11 Mrd** (heute 0,80 / 19,82 / 76,85), mittel bewusst unveraendert (-1,3 %). **Vorhersage, kein Ist-Stand** - bis zum Einbau gilt die alte Zahl weiter. **Darin stecken ZWEI Aenderungen:** auch der Flottenwert ist durch Entscheidung 6 von 0,37/6,18/34,99 auf 0,32/5,52/29,27 Mrd gefallen - wer 61,11 gegen 76,85 haelt, vergleicht beides auf einmal. (5) **Die drei Solo-Stufen bleiben beim fruehesten Ausbaustand ununterscheidbar** (0,25 / 0,25 / 0,27 Mrd netto, also 0 % und +8 % statt der in Abschnitt 8 Punkt 5 geforderten +30 %), weil der flache Container-Fund dort dominiert und alle drei Stufen aehnlich viel Container-Wert ausschuetten. Ab dem mittleren Stand trennen sie sich sauber. Offen, gehoert zu Entscheidung 12. **Zwei Nebenentscheidungen, bewusst getroffen:** die Bergung entfaellt bei vollstaendig vernichteter Flotte (der Totalverlust muss spuerbar bleiben), und der erstattete Betrag wird von `stats.resourcesSpentShipsDefense` abgezogen - ohne das waere "Schiffe im Kampf verheizen" ein besserer Punkte-Farm als das Verschrotten derselben Schiffe, exakt die Fehlerform aus R6. **Der Imperator ist von der Bergung ausgenommen** (Nutzerentscheidung: Prestige-Schiff, keine Teile-Rueckgabe). **Ausdruecklich NICHT eingebaut:** Piratenadmiral P10 (Belohnungsmechanik ist Block B, jetzt kalibrieren hiesse zweimal kalibrieren) und Raids (Entscheidung 3 ist gegen den heutigen Ertrag geschlossen). **Messregel 8 vorab geprueft:** im Client gegreppt, drei Spiegel gefunden, die beim Einbau mitzuziehen sind - `types/game.ts` (FarmDetail/GameData), `pages/Nachrichten.tsx` (Bergung getrennt ausweisen), `pages/Sektor.tsx` (die Sektor-Karte zeigt feste Belohnungen, die es nach dem Umbau so nicht mehr gibt). Die Konstanten gehoeren ueber `/game/data` an den Client, nicht als zweite hartkodierte Zahl. **`PIRATEN_MULTIPLIER_ROLL` bleibt gesperrt, bis der Schritt gebaut ist.** |
