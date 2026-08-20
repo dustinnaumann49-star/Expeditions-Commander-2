@@ -1,4 +1,4 @@
-# Uebergabe - Stand 19.08.2026
+# Uebergabe - Stand 20.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -65,18 +65,53 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
-- **NEU 19.08.2026 (spaeter Abend), beim Code-Abgleich gefunden: es gibt jetzt ZWEI verschiedene
-  Definitionen von "Frischling" nebeneinander.** Entscheidung 10 hat `NEWCOMER_GRACE_DAYS = 14`
-  gebaut (Raid-Schonfrist), `NOVICE_BONUS_WINDOW_MS` steht seit dem 04.08.2026 unveraendert auf
-  **7 Tage** (Mining-Bonus, `NOVICE_BONUS_MULTIPLIER = 3`). Keine der beiden Entscheidungen hat
-  das so festgelegt - die Fenster sind nebeneinander entstanden. **Wer Entscheidung 12 anfasst,
-  entscheidet das mit**, sonst faellt es nach dem Reset im Spiel auf (der Raid schont noch,
-  der Mining-Bonus ist schon weg). Kein Defekt, aber eine offene Setzung.
-- **Entscheidung 12 ist damit das letzte reset-blockierende Stueck.** Abschnitt 5 nennt 10 und 12
-  als die beiden Punkte, die sich nicht nachtraeglich korrigieren lassen; 10 ist gebaut, 12 steht
-  nicht im Code (`NOVICE_BONUS_MULTIPLIER = 3` wirkt unveraendert multiplikativ in
-  `miningMultiplier()`, `missions.ts`). Client-Spiegel ist vorhanden und wird korrekt bedient
-  (`noviceBonusMultiplier` ueber `/game/data`, `routes.ts`) - beim Umbau mitziehen.
+- **NEU 20.08.2026: ENTSCHEIDUNG 12 IST KALIBRIERT, NICHT GEBAUT. Der Wert steht:
+  `NOVICE_BONUS_ADD = 2,0`** - Mining-Multiplikator = Produkt der uebrigen Quellen PLUS 2,0
+  statt MAL 3. Woertliche additive Lesart der heutigen 3, keine neu erfundene Zahl. Gemessen:
+  +98 % Mining in Woche 1 statt +200 %, beim spaeten Vollstapel +16 % statt +200 %. Bauanleitung
+  im Messkasten bei Entscheidung 12, Protokoll `novice_bonus.txt`. **Zwei Client-Spiegel, nicht
+  einer:** `lib/multipliers.ts` (Formel) UND das Frischling-Badge in `pages/Sektor.tsx`, dessen
+  Text ("{noviceBonusMultiplier}x Ertrag") unter der additiven Regel sachlich falsch wird.
+  **Damit steht kein reset-blockierender Punkt mehr offen** - alles Weitere ist im Nachhinein
+  korrigierbar.
+- **Die geforderte gemeinsame Kalibrierung mit Entscheidung 9 war nicht noetig, und das ist
+  gemessen statt unterstellt.** Die 30-Tage-Simulation musste dafuer NICHT vorgezogen werden:
+  gerechnet wurde gegen zwei einklammernde Bau-Szenarien (3 Lanes heute gegen 1 Lane plus
+  doppelte Basiszeiten), **keine Zelle unterscheidet sich um mehr als einen Prozentpunkt.**
+  Grund: das Mining sitzt in beiden Bau-Welten am ersten Tag am Cap (700 Schiffe, 14,3 Mio Wert
+  gegen 117,5 Mio Startressourcen, Bauzeit selbst im langsamen Fall 3,9 h), und die
+  Kampf-Einnahmen der Startphase sind nicht bau-, sondern gegnerskalierungsbegrenzt.
+- **DER WICHTIGSTE BEFUND BETRIFFT NICHT ENTSCHEIDUNG 12: Abnahmekriterium 5 aus Abschnitt 1b
+  zeigt auf die falsche Quelle.** Groesste Einzelquelle der ersten Woche ist der **RAID mit
+  58-64 %**, das Asteroiden-Mining liegt mit 33-39 % darunter. Der Raid zahlt 1,84 Mrd Wert je
+  gewonnener Welle (10x Silber + 6x Gold + 2x Elite), bei 12/12 Wellen 22,07 Mrd - **flach,
+  unabhaengig von der eigenen Staerke**, zweimal woechentlich. Folgen:
+  - **Jede Kuerzung des Frischling-Bonus macht Kriterium 5 SCHLECHTER** (Raid-Anteil steigt auf
+    78 %). Das Kriterium verlangt in seiner heutigen Fassung einen moeglichst GROSSEN Bonus.
+  - **Ohne den Raid gerechnet ist es mit keinem Bonuswert erfuellbar:** Mining 93 % im
+    Ist-Zustand, 81 % bei KOMPLETT abgeschaltetem Bonus. Nicht der Bonus ist die Ursache,
+    sondern dass daneben nichts steht - Solo liefert in der Startphase 1,23 Mrd/Woche gegen
+    6,03 Mrd Mining ohne jeden Bonus.
+  - **Kriterium 5 ist damit bis zu seiner Umstellung kein Reset-Blocker.** Vorschlag im Plan
+    (nicht entschieden): auf "keine Einzelquelle ueber 50 % OHNE den Raid" umstellen und den
+    Raid ueber ein eigenes Deckelkriterium fuehren.
+- **VIERTES UNGEBAUTES PAKET GEFUNDEN: Entscheidung 3 (Raid-Ertrag, Variante 6) steht nicht im
+  Code.** Kein `RAID_ALLY_POWER_WEIGHT`, keine Saettigung, `RAID_WAVE_WIN_*` unveraendert
+  10/6/2 je Welle. Diese Datei fuehrte bis heute nur drei Pakete (Block A Schritt 2, Block B,
+  Entscheidung 16). **Es sind vier**, und sie gehen alle gleichzeitig live.
+- **Die beiden Frischling-Fenster (7 gegen 14 Tage) sind gemessen eine Begriffsfrage, keine
+  Balancefrage.** Die vorab vorgeschlagene Entscheidungsregel ("auf 14 ziehen, wenn der
+  Mining-Anteil an Tag 8-14 unter 50 % bleibt") trifft in JEDER Variante zu und trennt nichts.
+  Gemessene Kosten einer Verlaengerung: +4,60 Mrd in Woche 2, also 12 % des Wocheneinkommens.
+  Empfehlung: `NOVICE_BONUS_WINDOW_MS` an `NEWCOMER_GRACE_MS` koppeln (eine Zahl fuer einen
+  Begriff). Wer bei 7 bleibt, muss die Anzeige beide Fenster getrennt erklaeren lassen, sonst
+  wirkt es wie ein Fehler.
+- **Drei Zahlen des Plantextes waren falsch und sind korrigiert** (Messregel 16): der
+  Mining-Stapel ist **x36,72**, nicht x24,5 (die 24,5 sind derselbe Stapel ohne
+  `mining_schiffe`); daraus folgt **12,70 statt 8,5 Mrd/Tag**; und beide Zahlen setzen
+  Mining-Forschung Stufe 10 voraus, **die ein 7 Tage altes Konto nicht haben kann** - real
+  erreichbar sind x6,12 bzw. x12,24 an Di/Do. Die Entscheidung faellt dadurch nicht, nur ihre
+  Zahlenbasis ist ersetzt.
 - **NEU 19.08.2026 (spaeter Abend): ENTSCHEIDUNG 16 IST VOLLSTAENDIG KALIBRIERT, aber NICHT
   GEBAUT.** Beide offenen Zahlen stehen: **RF-Wert 4**, **Ausweichbonus klein/gross 0,20 und
   mittel/gross 0,08**. Dazu zwingend `ZIELERFASSUNG_BASE['leicht'] = 0,25` und der Client-Spiegel
@@ -341,6 +376,47 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein Abnahmekriterium kann auf die falsche Quelle zeigen - und man merkt es erst, wenn man alle
+Quellen NEBENEINANDER hinschreibt.** Abnahmekriterium 5 ("keine Einzelquelle ueber 50 % der
+Woche-1-Einnahmen") ist ausdruecklich Entscheidung 12 zugeordnet und nennt die Asteroiden als
+Verletzer. Gemessen am 20.08.2026: groesste Quelle ist der RAID mit 58-64 %, das Mining liegt bei
+33-39 %, und **jede Kuerzung des Frischling-Bonus macht das Kriterium schlechter**, weil der
+Raid-Anteil dadurch steigt. Das Kriterium haette also das Gegenteil dessen verlangt, wofuer es
+gedacht war. **Vor jeder Kalibrierung gegen ein Anteils-Kriterium zuerst ALLE Quellen messen, auch
+die, um die es scheinbar nicht geht** - sonst kalibriert man gegen einen Nenner, den man nicht
+kennt.
+
+**Eine flache Belohnung neben einer mitskalierenden Gegnerstaerke laesst die Einnahme mit der
+Flottengroesse FALLEN.** Gemessen in der Startphase: Solo netto 0,24 Mrd bei 50 Mio Flottenwert,
+negativ ab 400 Mio; die Raid-Einnahme faellt ebenso. Wer mehr baut, verdient weniger. Beide
+Belohnungen sind flach (ein Container-Fund je Mission, feste Container je gewonnener Welle), beide
+Gegner haengen an der eigenen Macht. **Bei jedem Inhalt pruefen, ob BEIDE Seiten mitwachsen** -
+das ist Messregel 12, hier zum ersten Mal mit umgekehrtem Vorzeichen aufgetreten.
+
+**Eine Umbenennung schuetzt nur den, der sie kennt.** `allowRetreat: boolean` heisst seit dem
+19.08.2026 `retreatMode: 'all' | 'none' | 'fleetOnly'`. Ein Messskript, das noch
+`allowRetreat: false` uebergibt, wird STILL ignoriert und misst den Standardfall - genau dafuer
+wurde umbenannt, und genau das ist am 20.08.2026 im ersten Entwurf von `run_novice_bonus.mjs`
+passiert. Aufgefallen ist es nur, weil ein Diagnoselauf `retreated: true` meldete, obwohl der
+Rueckzug abgeschaltet sein sollte. **Vor jeder Messung EINEN Diagnoselauf mit ausgeschriebenem
+Ergebnis ansehen, nicht nur die Aggregatzahl.** Nebenbei damit widerlegt: die Beschreibung
+"Rueckzug gilt NICHT fuer die Heimatverteidigung" ist ueberholt - der Raid laeuft auf
+`fleetOnly`, die FLOTTE dreht sehr wohl ab.
+
+**Eine Entscheidungsregel kann so gebaut sein, dass sie nie trennt.** Fuer die Fensterfrage
+(7 gegen 14 Tage Frischling-Bonus) war vorab die Regel aufgestellt worden: "auf 14 ziehen, wenn
+der Mining-Anteil an Tag 8-14 unter 50 % bleibt". Gemessen trifft sie in JEDER Variante zu, auch
+bei komplett abgeschaltetem Bonus. Die Regel sah nach einer Messung aus und war keine.
+**Vor dem Messen pruefen, ob die Regel bei den Extremwerten unterschiedliche Antworten gibt** -
+wenn nicht, ist es eine Setzung und gehoert als solche benannt.
+
+**Eine Begruendung kann einen Zustand beschreiben, den die betroffene Gruppe nie erreicht.**
+Entscheidung 12 stuetzte sich auf einen Mining-Stapel von 24,5x und 8,5 Mrd/Tag. Der Stapel ist
+in Wahrheit 36,72x - aber beide Zahlen setzen Mining-Forschung Stufe 10 voraus, die ein 7 Tage
+altes Konto gar nicht haben kann. Real erreichbar sind x6,12 bzw. x12,24. Die Entscheidung war
+trotzdem richtig, ihre Zahlen waren es nicht. **Bei jeder Zahl, die an einem Ausbaustand haengt,
+pruefen, ob der Ausbaustand zur betroffenen Gruppe passt.**
+
 **Eine Belohnung ist erst dann skalierbar, wenn der groesste Posten skaliert.** Entscheidung 2 war
 als Ressourcen-Kurve gedacht. Bei den Solo-Sektoren steckten aber 94 % des Belohnungswerts in
 CONTAINERN (1x Elite ~238 Mio Wert gegen ein Ressourcen-Paket von 14 Mio je Sieg) - eine Kurve auf
@@ -519,34 +595,37 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Entscheidung 16 (Schritt 10a) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
-gegengemessen - und wie alles andere nicht gebaut.** RF-Wert 4, Ausweichbonus 0,20 / 0,08, kein
-Ausgleich ueber die Gegnerstaerke. Nichts daran ist mehr offen; wer sie anfasst, baut sie nur noch
-ein (Bauanleitung im Messkasten bei Entscheidung 16).
+**Entscheidung 12 (Schritt 11) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
+gegengemessen - und wie alles andere nicht gebaut.** `NOVICE_BONUS_ADD = 2,0`, Fenster-Empfehlung
+14 Tage (an `NEWCOMER_GRACE_MS` koppeln). Nichts daran ist mehr offen; wer sie anfasst, baut sie
+nur noch ein (Bauanleitung im Messkasten bei Entscheidung 12, Protokoll `novice_bonus.txt`).
 
-**Damit ist Block C bis auf drei Schritte durch. Offen sind Schritt 9 (Allianz-Station),
-Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1) - Schritt 12 braucht die Koeffizienten aus
-Entscheidung 2 und ist damit frei, weil Block A steht.**
+**Damit ist KEIN reset-blockierender Punkt mehr offen.** Abschnitt 5 nannte 10 und 12; 10 ist
+gebaut, 12 ist kalibriert. Alles Weitere ist im Nachhinein korrigierbar.
 
-**Der naechste Schritt ist 11 (Entscheidung 12, Frischling-Bonus), und zwar aus einem Grund, der
-nichts mit der Reihenfolge zu tun hat: es ist das letzte reset-blockierende Stueck.** Abschnitt 5
-nennt 10 und 12 als die beiden Punkte, die sich nicht ohne einen zweiten Reset korrigieren
-lassen. 10 ist gebaut, 12 nicht.
+**Offen in Block C sind nur noch Schritt 9 (Allianz-Station, 7.2/7.3/7.4) und Schritt 12
+(Entscheidung 13.1 + 13.2) - beide unabhaengig voneinander und beide frei, weil Block A steht.**
+Danach kommt Schritt 13, die 30-Tage-Fortschrittssimulation.
 
-**Zwei Dinge, die diese Session anders machen als alle bisherigen - vorher lesen, nicht erst beim
-Messen entdecken:**
-1. **Entscheidung 12 laesst sich nach Plantext NICHT allein kalibrieren.** Sie muss gemeinsam mit
-   Entscheidung 9 (Zeit als Engpass) gegen die 30-Tage-Fortschrittssimulation aus Abschnitt 1b
-   gemessen werden - beide wirken in dieselbe Richtung. **Die Simulation ist Schritt 13 und
-   existiert nicht.** Die erste Aufgabe der Session ist deshalb nicht das Messen, sondern die
-   Entscheidung, ob die Simulation vorgezogen wird oder ob es ein tragfaehiges Ersatzmass gibt.
-   Wer das ueberspringt und den Bonus einzeln kalibriert, kalibriert ihn zweimal.
-2. **Die beiden Frischling-Fenster (7 gegen 14 Tage) gehoeren mit auf den Tisch** - siehe oben im
-   Stand.
+**Wer die Simulation baut, liest ZUERST den Messkasten bei Entscheidung 12 und Kriterium 5 in
+Abschnitt 1b.** Zwei Dinge sind dort gemessen worden, die den Bau betreffen:
+1. **Abnahmekriterium 5 ist in seiner heutigen Fassung nicht bewertbar** (es zeigt auf das
+   Mining, gemessen ist der Raid mit 58-64 % die groesste Quelle, und ohne den Raid ist das
+   Kriterium mit keinem Bonuswert erfuellbar). Es muss vor dem ersten Lauf umgestellt werden,
+   sonst scheitert der Lauf an einem Kriterium statt an der Balance.
+2. **Vorbedingung V2 ist in der Praxis geloest, nur nicht im Plantext.** `run_income_level.mjs`,
+   `run_income_baseline_v2.mjs` und jetzt `run_novice_bonus.mjs` kopieren `dist` in ein
+   Temp-Verzeichnis und verlinken `node_modules` - die Wegwerf-Datenbank landet dort. Der
+   Eingriff in `db.ts` (Env-Override) wird dafuer nicht gebraucht. V1 (Zeitquelle) bleibt offen;
+   fuer eine EINZELNE Funktion laesst sich `Date.now` punktuell umbiegen (in
+   `run_novice_bonus.mjs` gemacht, um Wochentage gezielt zu rechnen), fuer 720 Schritte ueber
+   den ganzen Zustandsapparat ist das nicht dasselbe.
 
 **Was beim naechsten Mal ZUERST zu pruefen ist:** wie viel im Plan inzwischen den Zustand
-"entschieden und kalibriert, aber nicht gebaut" hat. Das sind mittlerweile Block A Schritt 2,
-der gesamte Block B und Entscheidung 16 - drei Pakete, die alle gleichzeitig live gehen.
+"entschieden und kalibriert, aber nicht gebaut" hat. Das sind mittlerweile **VIER Pakete**:
+Block A Schritt 2, der gesamte Block B, Entscheidung 16 und - seit dem 20.08.2026 als solches
+erkannt - **Entscheidung 3 (Raid-Ertrag)**. Dazu kommt Entscheidung 12, die seit dem 20.08.2026
+kalibriert ist. Sie gehen alle gleichzeitig live.
 Die Empfehlung aus der Arbeitsregel oben (Gesamtpaket ein paar Tage VOR dem Wipe auf den alten
 Staenden laufen lassen) wird damit wichtiger, nicht unwichtiger.
 
