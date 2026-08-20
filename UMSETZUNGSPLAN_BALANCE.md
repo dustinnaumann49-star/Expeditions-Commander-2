@@ -2176,6 +2176,26 @@ Aenderungen wirken in dieselbe Richtung und muessen **gemeinsam** gegen die
 Simulationslauf - stuende sie danach, wuerde Abnahmekriterium 5 (keine Einzelquelle ueber 50 % der
 Wochen-Einnahmen) beim ersten Lauf zwangslaeufig scheitern, weil es genau diesen Bonus misst.
 
+> **STAND 19.08.2026 (spaeter Abend): NICHT GEBAUT, und ab jetzt das LETZTE reset-blockierende
+> Stueck.** Abschnitt 5 nennt Entscheidung 10 und 12 als die beiden Punkte, die sich nicht ohne
+> einen zweiten Reset korrigieren lassen; 10 ist seit dem 19.08.2026 gebaut. Im Code steht
+> `NOVICE_BONUS_MULTIPLIER = 3` unveraendert multiplikativ in `miningMultiplier()`
+> (`missions.ts` Zeile 71).
+>
+> **MIT ZU ENTSCHEIDEN, neu aufgefallen beim Code-Abgleich: es gibt jetzt ZWEI verschiedene
+> Frischling-Fenster.** `NEWCOMER_GRACE_DAYS = 14` (Raid-Schonfrist, aus Entscheidung 10) gegen
+> `NOVICE_BONUS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000` (Mining-Bonus, seit 04.08.2026). Keine der
+> beiden Entscheidungen hat diese Differenz festgelegt - sie ist nebeneinander entstanden. Fuer
+> den Spieler heisst das nach dem Reset: ab Tag 8 ist der Mining-Bonus weg, der Raid schont aber
+> noch bis Tag 14. Das ist kein Defekt, aber eine offene Setzung, und sie gehoert hierher, weil
+> Entscheidung 12 ohnehin an diesem Fenster arbeitet. **Vorschlag, nicht entschieden:** ein
+> gemeinsames Fenster, weil zwei Zahlen fuer denselben Begriff sich beim Erklaeren raechen -
+> die Hoehe ist dann die eigentliche Frage, nicht die Anzahl der Fenster.
+>
+> **Messregel 8, vorab geprueft:** der Client-Spiegel existiert und wird korrekt bedient -
+> `noviceBonusMultiplier` geht ueber `/game/data` an den Client (`routes.ts`). Beim Umbau von
+> multiplikativ auf additiv muss die Anzeige mitgezogen werden, sonst zeigt sie weiter "x3".
+
 ---
 
 ### Entscheidung 11 - Aussenposten-Reste entfernen

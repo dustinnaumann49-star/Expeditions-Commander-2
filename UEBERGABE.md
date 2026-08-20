@@ -65,6 +65,18 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 19.08.2026 (spaeter Abend), beim Code-Abgleich gefunden: es gibt jetzt ZWEI verschiedene
+  Definitionen von "Frischling" nebeneinander.** Entscheidung 10 hat `NEWCOMER_GRACE_DAYS = 14`
+  gebaut (Raid-Schonfrist), `NOVICE_BONUS_WINDOW_MS` steht seit dem 04.08.2026 unveraendert auf
+  **7 Tage** (Mining-Bonus, `NOVICE_BONUS_MULTIPLIER = 3`). Keine der beiden Entscheidungen hat
+  das so festgelegt - die Fenster sind nebeneinander entstanden. **Wer Entscheidung 12 anfasst,
+  entscheidet das mit**, sonst faellt es nach dem Reset im Spiel auf (der Raid schont noch,
+  der Mining-Bonus ist schon weg). Kein Defekt, aber eine offene Setzung.
+- **Entscheidung 12 ist damit das letzte reset-blockierende Stueck.** Abschnitt 5 nennt 10 und 12
+  als die beiden Punkte, die sich nicht nachtraeglich korrigieren lassen; 10 ist gebaut, 12 steht
+  nicht im Code (`NOVICE_BONUS_MULTIPLIER = 3` wirkt unveraendert multiplikativ in
+  `miningMultiplier()`, `missions.ts`). Client-Spiegel ist vorhanden und wird korrekt bedient
+  (`noviceBonusMultiplier` ueber `/game/data`, `routes.ts`) - beim Umbau mitziehen.
 - **NEU 19.08.2026 (spaeter Abend): ENTSCHEIDUNG 16 IST VOLLSTAENDIG KALIBRIERT, aber NICHT
   GEBAUT.** Beide offenen Zahlen stehen: **RF-Wert 4**, **Ausweichbonus klein/gross 0,20 und
   mittel/gross 0,08**. Dazu zwingend `ZIELERFASSUNG_BASE['leicht'] = 0,25` und der Client-Spiegel
@@ -514,14 +526,36 @@ ein (Bauanleitung im Messkasten bei Entscheidung 16).
 
 **Damit ist Block C bis auf drei Schritte durch. Offen sind Schritt 9 (Allianz-Station),
 Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1) - Schritt 12 braucht die Koeffizienten aus
-Entscheidung 2 und ist damit frei, weil Block A steht.** Danach ist die Reihenfolge Block B
-(Schritt 5, Piratenadmiral 4.3-4.8) und die 30-Tage-Simulation.
+Entscheidung 2 und ist damit frei, weil Block A steht.**
+
+**Der naechste Schritt ist 11 (Entscheidung 12, Frischling-Bonus), und zwar aus einem Grund, der
+nichts mit der Reihenfolge zu tun hat: es ist das letzte reset-blockierende Stueck.** Abschnitt 5
+nennt 10 und 12 als die beiden Punkte, die sich nicht ohne einen zweiten Reset korrigieren
+lassen. 10 ist gebaut, 12 nicht.
+
+**Zwei Dinge, die diese Session anders machen als alle bisherigen - vorher lesen, nicht erst beim
+Messen entdecken:**
+1. **Entscheidung 12 laesst sich nach Plantext NICHT allein kalibrieren.** Sie muss gemeinsam mit
+   Entscheidung 9 (Zeit als Engpass) gegen die 30-Tage-Fortschrittssimulation aus Abschnitt 1b
+   gemessen werden - beide wirken in dieselbe Richtung. **Die Simulation ist Schritt 13 und
+   existiert nicht.** Die erste Aufgabe der Session ist deshalb nicht das Messen, sondern die
+   Entscheidung, ob die Simulation vorgezogen wird oder ob es ein tragfaehiges Ersatzmass gibt.
+   Wer das ueberspringt und den Bonus einzeln kalibriert, kalibriert ihn zweimal.
+2. **Die beiden Frischling-Fenster (7 gegen 14 Tage) gehoeren mit auf den Tisch** - siehe oben im
+   Stand.
 
 **Was beim naechsten Mal ZUERST zu pruefen ist:** wie viel im Plan inzwischen den Zustand
 "entschieden und kalibriert, aber nicht gebaut" hat. Das sind mittlerweile Block A Schritt 2,
 der gesamte Block B und Entscheidung 16 - drei Pakete, die alle gleichzeitig live gehen.
 Die Empfehlung aus der Arbeitsregel oben (Gesamtpaket ein paar Tage VOR dem Wipe auf den alten
 Staenden laufen lassen) wird damit wichtiger, nicht unwichtiger.
+
+**Der kumulative Messbuild ist ab jetzt der Normalfall, nicht die Ausnahme.** Weil drei Pakete
+ungebaut auf den Neustart warten, misst jede Session, die gegen `server/dist` misst, gegen einen
+Zustand, den es dann nicht mehr gibt. `make_messbuild_kum.mjs` erzeugt den Vergleichsstand:
+ohne Argumente Block A Schritt 2 allein, mit `--rf=4 --evk=0.20 --evm=0.08` zusaetzlich
+Entscheidung 16. Gueltige Einnahmen-Baseline ist damit **0,98 / 19,57 / 61,11 Mrd**, nicht die
+alte 0,80 / 19,82 / 76,85.
 
 **Sonst Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
 (Entscheidung 6) und Schritt 10 (Entscheidung 10) sind erledigt. Offen sind Schritt 9
