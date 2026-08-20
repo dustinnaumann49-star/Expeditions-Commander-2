@@ -1,0 +1,61 @@
+=== TAGESLAUF (Messbuild, Gitter F0, 40 Durchlaeufe je Gitterzelle) ===
+Optimale Kampfflotte laut Gitter: 50.0 Mio Wert.
+
+--- A. WOCHE 1, IST-ZUSTAND (Frischling x3 multiplikativ), Klammer K1 ---
+Start       Mining    Heimat      Solo       Raid      SUMME  Mining%   Raid%
+So       18.09 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %
+Mo       18.09 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %
+Di       18.04 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  45.95 Mrd     39 %    58 %
+Mi       18.09 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %
+Do       18.04 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  45.95 Mrd     39 %    58 %
+Fr       18.09 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %
+Sa       18.11 Mrd 201.0 Mio  1.23 Mrd  26.49 Mrd  46.02 Mrd     39 %    58 %
+Spannweite ueber alle sieben Startwochentage: Mining 39-39 %, Raid 58-58 %
+
+--- B. VARIANTEN (Woche 1, Startwochentag Montag, beide Bau-Klammern) ---
+Klammer K1 - heute (3 Lanes, Basiszeit x1)
+Variante    Faktor Mo     Mining      Solo       Raid      SUMME  Mining%   Raid% Mining% o.Raid
+ist             x6.12  18.09 Mrd  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %           93 %
+add:2.0         x4.04  10.63 Mrd  1.23 Mrd  26.49 Mrd  38.54 Mrd     28 %    69 %           88 %
+add:1.5         x3.54   9.48 Mrd  1.23 Mrd  26.49 Mrd  37.39 Mrd     25 %    71 %           87 %
+add:1.0         x3.04   8.33 Mrd  1.23 Mrd  26.49 Mrd  36.24 Mrd     23 %    73 %           85 %
+aus             x2.04   6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %           81 %
+  "Mining% o.Raid" = Anteil am Wocheneinkommen OHNE den Raid. Der Raid ist nach Abschnitt 1b,
+  Kriterium 4 ausdruecklich KEIN freischaltbarer Inhalt, sondern ein Ereignis - und sein
+  Ertrag steht unter Entscheidung 3, die entschieden, aber NICHT gebaut ist.
+
+Klammer K2 - nach Entscheidung 9 (1 Lane, Basiszeit x2)
+Variante    Faktor Mo     Mining      Solo       Raid      SUMME  Mining%   Raid% Mining% o.Raid
+ist             x6.12  17.82 Mrd  1.23 Mrd  26.49 Mrd  45.74 Mrd     39 %    58 %           93 %
+add:2.0         x4.04  10.45 Mrd  1.23 Mrd  26.49 Mrd  38.36 Mrd     27 %    69 %           88 %
+add:1.5         x3.54   9.32 Mrd  1.23 Mrd  26.49 Mrd  37.24 Mrd     25 %    71 %           87 %
+add:1.0         x3.04   8.19 Mrd  1.23 Mrd  26.49 Mrd  36.11 Mrd     23 %    73 %           85 %
+aus             x2.04   5.94 Mrd  1.23 Mrd  26.49 Mrd  33.86 Mrd     18 %    78 %           81 %
+  "Mining% o.Raid" = Anteil am Wocheneinkommen OHNE den Raid. Der Raid ist nach Abschnitt 1b,
+  Kriterium 4 ausdruecklich KEIN freischaltbarer Inhalt, sondern ein Ereignis - und sein
+  Ertrag steht unter Entscheidung 3, die entschieden, aber NICHT gebaut ist.
+
+--- C. EMPFINDLICHKEIT (Woche 1, Ist-Zustand, Klammer K1, Startwochentag Montag) ---
+Fall                                SUMME  Mining%   Raid%     Flotte
+Grundfall                       46.01 Mrd     39 %    58 %   50.0 Mio
+Raid-Fallback-Chance 0,7        38.06 Mrd     48 %    49 %   50.0 Mio
+Mo/Fr-Event auf Solo (x2)       46.50 Mrd     39 %    57 %   50.0 Mio
+Heimatbasis Stufe 0             45.81 Mrd     39 %    58 %   50.0 Mio
+Spielweise "alles verbaut"      17.50 Mrd    103 %     0 % 3200.0 Mio
+Raid gar nicht verteidigt       19.52 Mrd     93 %     0 %   50.0 Mio
+
+--- D. WOCHE 2 (Tag 8-14): Fensterfrage 7 gegen 14 Tage ---
+Fenster   Variante       Mining      Solo       Raid      SUMME  Mining%   Raid%
+7 Tage    ist          6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %
+7 Tage    add:2.0      6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %
+7 Tage    add:1.5      6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %
+7 Tage    aus          6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %
+14 Tage   ist         18.09 Mrd  1.23 Mrd  26.49 Mrd  46.01 Mrd     39 %    58 %
+14 Tage   add:2.0     10.63 Mrd  1.23 Mrd  26.49 Mrd  38.54 Mrd     28 %    69 %
+14 Tage   add:1.5      9.48 Mrd  1.23 Mrd  26.49 Mrd  37.39 Mrd     25 %    71 %
+14 Tage   aus          6.03 Mrd  1.23 Mrd  26.49 Mrd  33.95 Mrd     18 %    78 %
+
+--- E. NIVEAU-VERGLEICH ---
+Woche 1 im Ist-Zustand: 6.57 Mrd/Tag.
+Baseline nach Block A Schritt 2 (Vorhersage, run_income_baseline_v2.mjs): 0,98 / 19,57 / 61,11 Mrd/Tag.
+Verhaeltnis Woche 1 zum fruehen Ausbaustand: x6.7

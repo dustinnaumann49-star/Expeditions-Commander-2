@@ -1,0 +1,38 @@
+=== MESSGITTER (Messbuild, 40 Durchlaeufe je Zelle, Kampfprofil F3B) ===
+Flotte im FLEET_SMALL-Verhaeltnis, Forschung 3, kein Modul, Kampf-Booster aktiv.
+
+SOLO-MISSIONEN (24 h, 6 Checks, Messbuild-Beuteregeln)
+Flottenwert  Sektor      Siege   Belohnung    Verlust   Bergung      Netto  StdAbw Netto
+50.0 Mio     niedrig       3.4    0.24 Mrd   0.00 Mrd  0.00 Mrd   0.24 Mrd0.000 (+-0.000)
+50.0 Mio     mittel        3.7    0.26 Mrd   0.00 Mrd  0.00 Mrd   0.26 Mrd0.003 (+-0.000)
+50.0 Mio     hoch          4.4    0.26 Mrd   0.02 Mrd  0.00 Mrd   0.25 Mrd0.010 (+-0.002)
+100.0 Mio    niedrig       3.5    0.24 Mrd   0.00 Mrd  0.00 Mrd   0.24 Mrd0.001 (+-0.000)
+100.0 Mio    mittel        4.0    0.27 Mrd   0.01 Mrd  0.00 Mrd   0.26 Mrd0.006 (+-0.001)
+100.0 Mio    hoch          4.6    0.28 Mrd   0.04 Mrd  0.01 Mrd   0.25 Mrd0.012 (+-0.002)
+200.0 Mio    niedrig       3.0    0.25 Mrd   0.00 Mrd  0.00 Mrd   0.25 Mrd0.002 (+-0.000)
+200.0 Mio    mittel        3.5    0.28 Mrd   0.02 Mrd  0.01 Mrd   0.26 Mrd0.013 (+-0.002)
+200.0 Mio    hoch          4.3    0.30 Mrd   0.08 Mrd  0.02 Mrd   0.25 Mrd0.038 (+-0.006)
+400.0 Mio    niedrig       3.5    0.25 Mrd   0.01 Mrd  0.00 Mrd   0.24 Mrd0.002 (+-0.000)
+400.0 Mio    mittel        3.8    0.30 Mrd   0.06 Mrd  0.02 Mrd   0.25 Mrd0.028 (+-0.004)
+400.0 Mio    hoch          4.8    0.35 Mrd   0.21 Mrd  0.06 Mrd   0.20 Mrd0.089 (+-0.014)
+800.0 Mio    niedrig       3.2    0.26 Mrd   0.10 Mrd  0.03 Mrd   0.19 Mrd0.025 (+-0.004)
+800.0 Mio    mittel        3.9    0.32 Mrd   0.31 Mrd  0.09 Mrd   0.10 Mrd0.066 (+-0.010)
+800.0 Mio    hoch          4.4    0.39 Mrd   0.57 Mrd  0.17 Mrd  -0.01 Mrd0.074 (+-0.012)
+1600.0 Mio   niedrig       3.3    0.27 Mrd   0.19 Mrd  0.06 Mrd   0.14 Mrd0.051 (+-0.008)
+1600.0 Mio   mittel        3.8    0.37 Mrd   0.74 Mrd  0.22 Mrd  -0.15 Mrd0.136 (+-0.021)
+1600.0 Mio   hoch          4.3    0.48 Mrd   1.22 Mrd  0.37 Mrd  -0.37 Mrd0.143 (+-0.023)
+3200.0 Mio   niedrig       3.2    0.29 Mrd   0.39 Mrd  0.12 Mrd   0.01 Mrd0.099 (+-0.016)
+3200.0 Mio   mittel        3.8    0.46 Mrd   1.50 Mrd  0.45 Mrd  -0.59 Mrd0.274 (+-0.043)
+3200.0 Mio   hoch          4.4    0.65 Mrd   2.58 Mrd  0.77 Mrd  -1.15 Mrd0.242 (+-0.038)
+
+RAID-WELLEN (eine Welle je Ziehung, Neulingsschutz aktiv -> kein Flottenverlust)
+Flottenwert    Siegquote  Wellen 12x  Ertrag/Raid  Verlust ohne Schutz
+50.0 Mio            75 %         9.0    16.55 Mrd             0.17 Mrd
+100.0 Mio           78 %         9.3    17.11 Mrd             0.31 Mrd
+200.0 Mio           75 %         9.0    16.55 Mrd             0.67 Mrd
+400.0 Mio           70 %         8.4    15.45 Mrd             1.53 Mrd
+800.0 Mio           60 %         7.2    13.24 Mrd             2.80 Mrd
+1600.0 Mio          50 %         6.0    11.04 Mrd             5.59 Mrd
+3200.0 Mio          45 %         5.4     9.93 Mrd            11.76 Mrd
+
+Gitter gespeichert: novice_gitter_f3b.json

@@ -1,0 +1,16 @@
+=== BUILD-PRUEFUNG gegen loot_curve.txt (Messbuild) ===
+Soll (loot_curve.txt, Scheibe 1): mittel/hoch = 1,05 Mrd Belohnung bei 11,1 Mrd Feindmacht
+                                  -> 0,0946 Wert-Einheiten je Punkt vernichteter Feindmacht
+Ist  (40 Durchlaeufe)         : 1.10 Mrd Belohnung bei 11.79 Mrd Feindmacht, 4.6 Siege
+                                  -> 0.0930 Wert-Einheiten je Punkt
+Abweichung normiert             : -1.7 %
+
+=== ZAHLENPRUEFUNG (Messregel 16) ===
+Vollstapel Mining laut Code (Di/Do, Forschung 10, Prospektor, Booster, Frischling): x36.72  (Plantext nennt 24,5)
+Woche-1-Stapel real (Forschung 0, Prospektor, Booster, Di/Do-Event, Frischling)   : x12.24 (Eventtag) / x6.12 (Normaltag)
+Asteroiden-Rohertrag bei vollen Caps, Multiplikator 1: 346.0 Mio Wert/Tag
+Vollstapel-Tagesertrag: 12.70 Mrd (Plantext nennt 8,5 Mrd)
+Raid-Belohnung je gewonnener Welle (flach): 1.84 Mrd, bei 12/12 Wellen 22.07 Mrd
+Heimatbasis Stufe 0/6/12/18 je Tag: 0.0 Mio / 8.1 Mio / 28.7 Mio / 76.3 Mio
+700 Mining-Schiffe kosten 14.3 Mio Wert, Startressourcen 117.5 Mio Wert
+Mining-Betriebszeit (24 h Mission, 0,6 h Anflug je Richtung): 95 %
