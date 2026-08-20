@@ -259,15 +259,26 @@ WAS MODELL IST UND NICHT MESSUNG
   Entscheidung 16.
 
 ---------------------------------------------------------------------------------------------
-ERGEBNIS
+ERGEBNIS (Stand nach den Nutzerentscheidungen vom 20.08.2026)
 ---------------------------------------------------------------------------------------------
-1. Die Form steht: additiv, Multiplikator = Produkt der uebrigen Quellen + NOVICE_BONUS_ADD.
-   Empfohlener Wert 2,0 - das ist die woertliche additive Lesart der heutigen 3 (3 = 1 + 2) und
-   braucht keine neue Zahl, die ohnehin kein Kriterium tragen wuerde. Wirkung: in Woche 1
+1. ENTSCHIEDEN - die Form: additiv, Multiplikator = Produkt der uebrigen Quellen +
+   NOVICE_BONUS_ADD, Wert 2,0. Das ist die woertliche additive Lesart der heutigen 3 (3 = 1 + 2)
+   und braucht keine neue Zahl, die ohnehin kein Kriterium tragen wuerde. Wirkung: in Woche 1
    +98 % Mining statt +200 %, beim spaeten Vollstapel +16 % statt +200 %. Genau das war die
    Absicht - der Bonus hoert auf, mit dem Rest zu multiplizieren.
-2. Die Kalibrierung gegen Abnahmekriterium 5 ist NICHT moeglich (Befunde 7 und 8) und die
-   gemeinsame Kalibrierung mit Entscheidung 9 ist NICHT noetig (Befund 6).
-3. Das Fenster ist eine Begriffs-, keine Balancefrage (Befund 11).
-4. Offen und NICHT Sache dieser Entscheidung: der Raid als groesste Einzelquelle der Startphase
-   (Befund 5, 9, 10) und die Umkehrung der Solo-Stufen (Befund 2).
+2. ENTSCHIEDEN - das Fenster: 14 Tage, gekoppelt an NEWCOMER_GRACE_MS. Nach dieser Messung eine
+   Begriffs-, keine Balancefrage (Befund 11); entschieden wurde nach dem Begriff, damit es fuer
+   "Frischling" nur EINE Zahl gibt. Kosten gemessen und angenommen: +4,60 Mrd in Woche 2, also
+   12 % des Wocheneinkommens.
+3. ENTSCHIEDEN - Abnahmekriterium 5 wird umgestellt, Variante "nur die Zuordnung aendern": die
+   50 % bleiben woertlich stehen, das Kriterium zeigt ab jetzt auf Entscheidung 3 (Raid-Ertrag)
+   und die Solo-Einnahme der Startphase statt auf Entscheidung 12. Grundlage sind Befund 5, 7
+   und 8. Bewusst NICHT gemacht: eine Aufteilung in zwei Schwellen - beide Zahlen waeren gesetzt
+   statt gemessen. Folge: Entscheidung 12 kann Kriterium 5 weder erfuellen noch verletzen, und
+   der Grund fuer ihr Vorziehen aus Block F (09.08.2026) ist entfallen.
+4. Die Kalibrierung gegen Abnahmekriterium 5 war nicht moeglich (Befunde 7 und 8) und die
+   gemeinsame Kalibrierung mit Entscheidung 9 war nicht noetig (Befund 6). Der Wert steht ohne
+   die 30-Tage-Simulation.
+5. OFFEN und NICHT Sache dieser Entscheidung, jetzt aber an Kriterium 5 haengend: der Raid als
+   groesste Einzelquelle der Startphase (Befunde 5, 9, 10 - Entscheidung 3, entschieden und
+   nicht gebaut) und die Umkehrung der Solo-Stufen (Befund 2 - Abschnitt 8 Punkt 5).
