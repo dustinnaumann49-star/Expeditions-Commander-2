@@ -2449,14 +2449,89 @@ Monate entfernt. **Nicht blockierend fuer den Reset.**
 
 ---
 
-### Entscheidung 16 - RapidFire nach Klassen statt Konter-Leiter: GEMESSEN, NICHT GEBAUT (NEU 18.08.2026)
+### Entscheidung 16 - RapidFire nach Klassen statt Konter-Leiter: KALIBRIERT, NICHT GEBAUT
 
-> **Stand: vollstaendig gemessen, bewusst NICHT umgesetzt.** Der Umbau ist gesperrt, bis
-> Entscheidung 10 steht (siehe "Sperren" unten). Messdatei: `balance/session2-simulation/rf_depth.txt`.
-> Neue Skripte: `make_messbuild_rf.mjs` (Varianten A / A+B / C / C+B / A+E / A+E+D, RF-Wert als
-> Argument), `run_rf_depth.mjs`. `run_raid.mjs` und `run_elite.mjs` laufen jetzt ueber `lib4.mjs`
-> und sind damit gegen einen Messbuild messbar; `run_raid.mjs` nimmt Reparaturquote und
-> Verteidigungs-Gewicht als Umgebungsvariablen entgegen.
+> **STAND 19.08.2026 (Abend): VOLLSTAENDIG KALIBRIERT UND GEGENGEMESSEN - ABER NICHT GEBAUT.**
+> Die beiden offenen Zahlen stehen fest, alle vier Abnahmekriterien sind erfuellt, der Einbau ist
+> mechanisch. **Im Repo steht davon keine Zeile** (`RAPIDFIRE` ist unveraendert die Leiter,
+> `SIZE_MISMATCH_EVASION_BONUS` steht auf 0,45 / 0,18, `ZIELERFASSUNG_BASE` hat keinen Eintrag
+> fuer `leicht`).
+>
+> **ENTSCHIEDEN: Variante A (Klassen-RapidFire, EIN Ziel) mit RF-Wert 4, plus
+> `SIZE_MISMATCH_EVASION_BONUS` klein/gross 0,45 -> 0,20 und mittel/gross 0,18 -> 0,08.**
+> B bleibt draussen, C ist verworfen.
+>
+> **KEIN AUSGLEICH UEBER DIE GEGNERSTAERKE NOETIG.** Weder `PIRATEN_MULTIPLIER_ROLL` (bleibt
+> gesperrt und wird nicht gebraucht) noch `RAID_WAVE_ROLL` (freigegeben, bleibt trotzdem
+> ungenutzt). Das ist die zentrale Korrektur gegenueber der ersten Messrunde - Einzelheiten unter
+> "Was die zweite Messrunde korrigiert hat".
+>
+> **ACHTUNG bei der Nachvollziehbarkeit:** die zweite Messrunde lief gegen einen KUMULATIVEN
+> lokalen Messbuild, der zusaetzlich **Block A Schritt 2 enthaelt** (Entscheidung 2, ebenfalls
+> nicht gebaut). Grund: beide werden zum Server-Neustart gemeinsam wirksam; wer gegen den
+> heutigen Repo-Stand misst, misst gegen eine Baseline (0,80 / 19,82 / 76,85 Mrd), die es dann
+> nicht mehr gibt. Gueltige Vergleichsbasis ist 0,98 / 19,57 / 61,11 Mrd.
+> Messdatei: `balance/session2-simulation/rf_depth.txt`, Abschnitt "ZWEITE MESSRUNDE".
+> Skripte: `make_messbuild_rf.mjs` (erste Runde), `make_messbuild_kum.mjs` (zweite Runde,
+> kumulativ, RF-Wert / Ausweichbonus / `RAID_WAVE_ROLL` als Argumente), `run_rf_depth.mjs`.
+> `lib.mjs`, `lib3.mjs` und `run_income_baseline_v2.mjs` loesen jetzt ebenfalls `MESSBUILD` auf -
+> vorher liefen sie fest gegen `server/dist` und konnten gar nicht gegen einen Messbuild messen.
+>
+> **Bauanleitung - was einzubauen ist (vollstaendig, Reihenfolge egal)**
+> - **`data/combatConstants.ts`, `RAPIDFIRE`:** jedes Standard-Kampfschiff kontert die komplette
+>   eigene UI-Klasse (`SHIP_GROUPS`: Jaeger = leicht/schwer, Kreuzer = kreuzer/schlachtschiff/
+>   bomber, Elite = schlachtkreuzer/zerstoerer/reaper), einheitlich mit **RF 4**, waehlt aber
+>   weiterhin genau EIN Ziel. Verteidigungsanlagen analog nach Geschuetzgroesse
+>   (raketenwerfer/leichteslaser -> Jaeger, schwereslaser/gausskanone -> Kreuzer,
+>   ionengeschuetz/plasmawerfer -> Elite). **Unveraendert bleiben:** die Bunkerbrecher-Rolle des
+>   Bombers gegen die drei leichten Anlagen, das Plasmawerfer-RF gegen den Imperator, die
+>   Salven-Tabellen, `piratenadmiral`, und `sandronator` bleibt ohne militaerisches RF.
+> - **`data/combatConstants.ts`, `ZIELERFASSUNG_BASE`: Eintrag `leicht: 0.25` ERGAENZEN.** Ohne
+>   ihn liefert `getZielerfassungAccuracy()` 0 und die gesamte neue RF des Leichten Jaegers ist
+>   toter Code - **genau die Falle aus Entscheidung 4.4.** Der Eintrag fehlt heute nur deshalb,
+>   weil `leicht` bisher ueberhaupt kein RF-Ziel hatte. Das ist eine tragende Setzung, kein
+>   Aufraeumen.
+> - **`data/combatConstants.ts`, `SIZE_MISMATCH_EVASION_BONUS`:** `klein.gross` 0,45 -> **0,20**,
+>   `mittel.gross` 0,18 -> **0,08**. `EVASION_MAX_SIZE_MISMATCH` bleibt bei 0,75 (der Deckel
+>   greift bei den neuen Werten ohnehin nicht mehr).
+> - **CLIENT-SPIEGEL, Messregel 8 - vorab gegreppt, drei Fundstellen:**
+>   1. `rapidfire` und `zielerfassungBase` gehen bereits ueber `/game/data` an den Client
+>      (`routes.ts` Zeilen 81/82). Beide propagieren automatisch, **hier ist nichts zu tun** -
+>      aber `lib/combatInfo.ts` `getRapidFireDisplay()` listet dann je Schiff drei Ziele statt
+>      einem, und `isTargetedByRapidFire()` wird fuer fast jedes Schiff wahr. Die Info-Karte
+>      bleibt korrekt, verliert aber ihren Informationswert ("wird gekontert von" trifft auf alle
+>      zu). Text dort anpassen: statt der Ziel-Aufzaehlung die KLASSE nennen.
+>   2. `components/ShipBuildCard.tsx` Zeile 195 und `components/DefenseBuildCard.tsx` Zeile 168
+>      leiten `volleyTargetTypes` aus `gameData.rapidfire[id]` ab. In `ShipBuildCard` ist die
+>      Anzeige durch `isVolleyShip` abgesichert, in `DefenseBuildCard` **beim Einbau pruefen** -
+>      sonst behauptet jede Verteidigungsanlage eine Mehrfachziel-Salve, die sie nicht hat.
+>   3. **`SIZE_MISMATCH_EVASION_BONUS` steht NICHT in `gameData`** - die Absenkung waere fuer den
+>      Spieler unsichtbar. Das ist die unten beschriebene Anzeige-Luecke; sie gehoert in
+>      DIESELBE Auslieferung, sonst aendert man den Hebel, den niemand sieht. Konkret:
+>      `sizeMismatchEvasionBonus`, `evasionMaxSizeMismatch` und `shipSizeClass` in `routes.ts`
+>      ergaenzen, `types/game.ts` nachziehen und `getEvasionChance()` in `lib/combatInfo.ts` um
+>      den Fehlpaarungs-Fall erweitern.
+> - **KEINE Aenderung an `PIRATEN_MULTIPLIER_ROLL`, `RAID_WAVE_ROLL`, `DEFENSE_REPAIR_PERCENT`
+>   oder den Wellenprofilen.** Alle vier wurden geprueft und sind nicht noetig.
+>
+> **Abnahme (vollstaendig in `rf_depth.txt`, 40 Laeufe je Zelle, scheibenweise)**
+> 1. *Die Wahl der Flotte zaehlt:* profilgewichteter Wertverlust in der umkaempften Zelle
+>    18,0-35,3 % statt 16,0-47,5 %, und die Elite-Aufstellung ist erstmals nicht die schlechteste.
+> 2. *Keine tote Aufstellung:* niedrigste Siegquote einer reinen Aufstellung 77,5 % statt 0 %.
+> 3. *Kein globaler Buff:* der Raid wird in Wert-Einheiten sogar **29 % teurer** (0,84 -> 1,08 Mrd).
+> 4. *Einnahmen-Baseline:* 0,98 / 19,50 / 60,45 gegen 0,98 / 19,36 / 61,69 im kumulativen IST -
+>    Abweichung maximal 2 %, also im Rauschen.
+>
+> **Streuung, bevor jemand die Tabellen zu fein liest:** dreimal dieselbe Zelle ergab beim
+> Wertverlust 41,7 / 40,5 / 41,4 % (Spanne 1,2 Punkte), bei der Siegquote nahe der Kippkante
+> 65,0 / 77,5 / 67,5 % (Spanne 12,5 Punkte). **Unterschiede unter 2 Punkten im Wertverlust und
+> unter 15 Punkten in der Siegquote sind kein Befund.**
+>
+> *Nachteil, ausdruecklich:* eine Flotte, die ihre Macht gleichmaessig ueber alle Klassen
+> verteilt, ist unter Klassen-RF die schlechteste Wahl gegen eine scharfe Welle (Siegquote 100 %
+> heute, 0-10 % danach). Eine reine Aufstellung wird von EINER Gegnerklasse gekontert, eine
+> gleichmaessig gemischte von allen dreien. Das ist die gewollte Entscheidung, muss aber im
+> Patchtext stehen - sonst wirkt es wie ein Defekt.
 
 **Bezug:** Nutzerbefund 18.08.2026 ("die RF kommt mir falsch vor, Kaempfe kommen linear vor statt
 mit Tiefe und Spannung" - ausdruecklich NICHT "RF funktioniert nicht", das war R14).
@@ -2525,31 +2600,67 @@ Schaden bis zu den Anlagen durchkommt. Dieselbe Richtung zeigen die Sektor-Zelle
 praktisch nicht (14,2 -> 13,2 % Flottenverlust), weil die Anlagen gegenueber der Flotte zu wenig
 Macht stellen. Die Gegnerstaerke im Raid haengt faktisch allein an der Flotte.
 
-**Sperren - warum das NICHT jetzt gebaut wird:**
-- **Entscheidung 6 sagt woertlich "RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance
-  aus Session 2 mitverschieben."** Genau das ist gemessen eingetreten.
-- Der Ausgleich muesste ueber die Gegnerstaerke laufen. `PIRATEN_MULTIPLIER_ROLL` bestimmt aber die
-  Einnahmen, und Baseline (0,80 / 19,82 / 76,85 Mrd), Beute-Anker und Exponent 0,85 sind
-  geschlossen. `RAID_WAVE_ROLL` ist nach Abschnitt 8 Punkt 7 ausdruecklich erst NACH Entscheidung 10
-  anzufassen ("keine sanfte Zone").
-- Die Reparaturquote ist nach Abschnitt 4a bewusst nicht angefasst; das Bollwerk gewinnt heute
-  **nur** ueber den Verteidigungsanlagen-Verlust, eine Senkung nimmt ihm seinen einzigen Vorteil.
-- Nach dem Massstab aus Abschnitt 8 ist der Umbau **kein stiller Defekt**, sondern eine
-  Design-Aenderung - also nicht vorziehbar.
+**Was die zweite Messrunde korrigiert hat (19.08.2026, Abend)**
 
-**Entscheidung: A plus abgesenkter Ausweichbonus ist der Kandidat, terminiert NACH Entscheidung 10
-und nach Block A.** B bleibt draussen, C ist verworfen. *Nachteil, ausdruecklich:* der Nutzerbefund
-bleibt bis dahin bestehen, und ein Teil dieser Messwerte ist nach Entscheidung 10 und Block A ein
-zweites Mal zu erheben - dasselbe Muster wie bei R14.
+Der Satz oben - "Klassen-RF ist ein globaler Spieler-Buff, wer ihn einbaut, muss die Gegnerstaerke
+nachziehen" - **ist falsch.** Er stuetzte sich auf die 0,0 % Verteidigungsverlust im Raid, also auf
+eine Prozentzahl ohne ihren Gegenposten. Nachgerechnet, 40 statt 10 Raids je Fall:
 
-**Offen und ungemessen:** der RF-Wert (gemessen wurde 4, gegengeprueft 3), die Hoehe des
-abgesenkten Ausweichbonus (0,20 / 0,08 ist gesetzt), und eine milde Fassung von B.
+| Zustand | Flottenverlust | Verteidigungsverlust | in Wert-Einheiten |
+|---|---|---|---|
+| IST | 13,6 % | 20,6 % | 0,75 + 0,09 = **0,84 Mrd** |
+| RF4 + 0,20 / 0,08 | 19,6 % | 0,0 % | 1,08 + 0,00 = **1,08 Mrd** |
 
-**Anzeige-Luecke, unabhaengig davon:** der Groessenklassen-Ausweichbonus wird im Client NIRGENDS
-angezeigt. `combatInfo.ts` zeigt nur `evasionBase` plus Forschung - die Info-Karte meldet also
-z.B. 12 % Ausweichchance, waehrend im Kampf gegen grosse Schiffe bis zu 75 % gelten. Das ist ein
-eigener Grund dafuer, dass sich das Kampfsystem "unbegreiflich" anfuehlt, und unabhaengig von
-Entscheidung 16 nachziehbar (Konstante ueber `/game/data`, wie bei `rapidfire`/`zielerfassungBase`).
+Die Referenz-Verteidigung ist 0,43 Mrd wert, die Referenz-Flotte 5,52 Mrd - die Anlagen sind 7 %
+des verteidigten Werts. Schaden, der von den Anlagen auf die Flotte wandert, trifft also das
+13-fach wertvollere Ziel. **Der Raid wird um 29 % teurer, nicht billiger.** Der Kipppunkt liegt
+exakt dort, wo die Verteidigungsanlagen mehr als rund 29 % des Flottenwerts ausmachen; darunter
+verliert der Verteidiger durch die Verschiebung.
+
+Ebenso die Einnahmen-Seite: die Baseline bewegt sich nicht (0,98 / 19,50 / 60,45 gegen
+0,98 / 19,36 / 61,69, beides gegen den kumulativen Messbuild). Strukturell einleuchtend - die Beute
+haengt an der VERNICHTETEN FEINDMACHT, und die setzt die Sektorstaerke, nicht der Kampfverlauf; der
+Gegner wird ohnehin zu 100 % vernichtet. Klassen-RF senkt nur die eigenen Verluste, und die sind
+bei realer Sektorstaerke klein (6,4 -> 5,1 %).
+
+**Damit entfaellt der gesamte Sperr-Grund.** `PIRATEN_MULTIPLIER_ROLL` wird nicht gebraucht - die
+Sperre muss also gar nicht fallen. `RAID_WAVE_ROLL` ist freigegeben, bleibt aber ungenutzt: eine
+Anhebung wuerde die ohnehin eintretende Verschaerfung verdoppeln, und nach Abschnitt 8 Punkt 7 hat
+dieser Regler keinen sanften Bereich. Die Reparaturquote bleibt nach Abschnitt 4a unberuehrt.
+
+**Der Einwand aus Entscheidung 6 ("RapidFire NICHT anheben - das wuerde die gesamte Sektor-Balance
+mitverschieben") bleibt sachlich richtig, trifft aber nur die umkaempfte Zelle bei 2,0x.** Bei
+realer Sektorstaerke (0,85x, der Erwartungswert von `PIRATEN_MULTIPLIER_ROLL.piraten_hoch`) ist der
+Effekt 6,4 -> 5,1 % Wertverlust und die Belohnung unveraendert. Die Sektor-Balance aus Session 2
+verschiebt sich messbar NICHT.
+
+**Warum trotzdem nicht gebaut:** nach dem Massstab aus Abschnitt 8 ist der Umbau kein stiller
+Defekt, sondern eine Design-Aenderung - er wird gesammelt und geht mit dem Server-Neustart live.
+
+**Offen und ungemessen: nichts mehr.** Der RF-Wert ist 4 (Befund C in `rf_depth.txt`), der
+Ausweichbonus 0,20 / 0,08 (Befund B). Eine milde Fassung von B bleibt ungemessen, ist aber nicht
+Teil dieser Entscheidung - B ist auf Nutzerentscheidung vom 18.08.2026 draussen und wurde in der
+zweiten Runde nicht wieder aufgemacht.
+
+**Anzeige-Luecke - ab 19.08.2026 NICHT mehr unabhaengig, sondern Teil der Auslieferung:** der
+Groessenklassen-Ausweichbonus wird im Client NIRGENDS angezeigt. `combatInfo.ts` zeigt nur
+`evasionBase` plus Forschung - die Info-Karte meldet also z.B. 12 % Ausweichchance, waehrend im
+Kampf gegen grosse Schiffe bis zu 75 % gelten. Das ist ein eigener Grund dafuer, dass sich das
+Kampfsystem "unbegreiflich" anfuehlt. **Weil Entscheidung 16 genau diesen Wert absenkt, waere die
+Aenderung ohne die Anzeige fuer den Spieler unsichtbar** - beide gehoeren in dieselbe
+Auslieferung (Konstante ueber `/game/data`, wie bei `rapidfire`/`zielerfassungBase`; Einzelheiten
+in der Bauanleitung oben, Punkt 3 des Client-Spiegels).
+
+**Ein zweiter Anzeige-Punkt, gefunden am 19.08.2026 und fuer die Lesart der Messung entscheidend:**
+das WELLENPROFIL wird pro Check gewuerfelt (`pickWaveProfile()`, `WAVE_PROFILE_WEIGHTS`) und ist im
+Client ebenfalls nirgends sichtbar - `piraten_hoch` steht auf 10 % schwarm / 45 % kampfgruppe /
+45 % elitekader. Der Spieler kann seine Aufstellung also nicht gegen ein bekanntes Profil waehlen;
+massgeblich ist der profilgewichtete Schnitt, und die Einzelprofil-Tabellen oben sind Diagnose,
+nicht Abnahme. **Wer das Wellenprofil spaeter sichtbar macht** (etwa ueber die Spionagesonde),
+**kehrt das um** - die Einzelzellen werden dann zur Entscheidungsgroesse, und diese Auswertung ist
+neu zu LESEN, nicht neu zu messen. Das waere zugleich der billigste Weg, dem Nutzerbefund
+"Kaempfe kommen linear vor" ein zweites Mal zu begegnen: eine Wahl, die man nicht sehen kann, ist
+keine.
 
 ---
 
@@ -3897,12 +4008,21 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                           Punkt 7), und ohne diesen Ausgleich ist der RF-Umbau ein globaler
                           Spieler-Buff - gemessen am 18.08.2026, siehe Entscheidung 16.
  10a. Entscheidung 16  RapidFire nach Klassen + abgesenkter Groessen-Ausweichbonus
-                       -> vollstaendig gemessen (rf_depth.txt), NICHT gebaut. EINE der beiden
-                          Sperren ist gefallen: Entscheidung 10 ist gebaut, RAID_WAVE_ROLL darf
-                          angefasst werden. PIRATEN_MULTIPLIER_ROLL bleibt gesperrt, weil Block A
-                          Schritt 2 zwar kalibriert, aber nicht gebaut ist - die Baseline hat sich
-                          real noch nicht verschoben. Offen und ungemessen bleiben dort der
-                          RF-Wert und die Hoehe des Ausweichbonus.
+                       KALIBRIERT am 19.08.2026 (Abend), NICHT GEBAUT. Beide offenen Zahlen
+                       stehen: RF-Wert 4, SIZE_MISMATCH_EVASION_BONUS 0,20 / 0,08. Dazu
+                       zwingend der Eintrag ZIELERFASSUNG_BASE['leicht'] = 0,25 und der
+                       Client-Spiegel fuer den Ausweichbonus. Alle vier Abnahmekriterien
+                       erfuellt. Bauanleitung im Messkasten bei Entscheidung 16, Protokoll
+                       rf_depth.txt (Abschnitt "ZWEITE MESSRUNDE").
+                       -> KEIN AUSGLEICH UEBER DIE GEGNERSTAERKE NOETIG. Die Begruendung der
+                          ersten Runde ("globaler Spieler-Buff") war eine Prozentzahl ohne
+                          Gegenposten: der Raid wird in Wert-Einheiten 29 % TEURER, die
+                          Einnahmen-Baseline bewegt sich um maximal 2 %.
+                       -> PIRATEN_MULTIPLIER_ROLL bleibt unberuehrt - die Sperre muss gar nicht
+                          fallen. RAID_WAVE_ROLL ist freigegeben, bleibt aber ungenutzt: eine
+                          Anhebung wuerde die ohnehin eintretende Verschaerfung verdoppeln.
+                       -> Gemessen gegen einen KUMULATIVEN Messbuild inkl. Block A Schritt 2,
+                          weil beide zum Neustart gemeinsam wirksam werden.
  11. Entscheidung 12  Frischling-Bonus additiv
                        -> VORGEZOGEN aus Block F (09.08.2026): Abnahmekriterium 5 der Simulation
                           misst genau diesen Bonus. Stuende 12 dahinter, wuerde der erste
@@ -4535,6 +4655,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 19.08.2026 (Abend) | **Entscheidung 16 vollstaendig KALIBRIERT - NICHT GEBAUT.** Die beiden offenen Zahlen stehen: **RF-Wert 4** und **`SIZE_MISMATCH_EVASION_BONUS` klein/gross 0,20, mittel/gross 0,08**. Dazu zwingend `ZIELERFASSUNG_BASE['leicht'] = 0,25` (ohne den Eintrag ist die neue RF des Leichten Jaegers toter Code - die Falle aus 4.4) und der Client-Spiegel fuer den Ausweichbonus. Bauanleitung im Messkasten bei Entscheidung 16, Protokoll `rf_depth.txt`, Abschnitt "ZWEITE MESSRUNDE". **Gemessen gegen einen KUMULATIVEN Messbuild inkl. Block A Schritt 2** (`make_messbuild_kum.mjs`), weil beide zum Server-Neustart gemeinsam wirksam werden - gegen den heutigen Repo-Stand haette man gegen eine Baseline gemessen, die es dann nicht mehr gibt. Der Build wurde vor Gebrauch gegen zwei bekannte Anker aus `loot_curve.txt` geprueft und reproduziert sie (Kurve auf 0,1 % genau, Elite-Anker -1,7 %). **`lib.mjs`, `lib3.mjs` und `run_income_baseline_v2.mjs` loesen jetzt `MESSBUILD` auf** - vorher liefen sie fest gegen `server/dist` und konnten gegen einen Messbuild gar nicht messen. **Die zentrale Korrektur: die Begruendung der ersten Messrunde war falsch.** Dort galt Klassen-RF als "globaler Spieler-Buff", weil der Verteidigungsverlust im Raid auf 0,0 % faellt - eine Prozentzahl ohne ihren Gegenposten. Nachgerechnet mit 40 statt 10 Raids: der Flottenverlust steigt gleichzeitig von 13,6 auf 19,6 %, und weil die Referenz-Verteidigung 0,43 Mrd wert ist und die Flotte 5,52 Mrd, **wird der Raid in Wert-Einheiten 29 % TEURER** (0,84 -> 1,08 Mrd). Kipppunkt: erst ab Verteidigungsanlagen im Wert von rund 29 % des Flottenwerts waere die Verschiebung ein Vorteil. Ebenso die Einnahmen-Seite: die Baseline bewegt sich um maximal 2 % (0,98 / 19,50 / 60,45 gegen 0,98 / 19,36 / 61,69), weil die Beute an der vernichteten Feindmacht haengt und die von der Sektorstaerke gesetzt wird, nicht vom Kampfverlauf. **Folge: KEIN Ausgleich ueber die Gegnerstaerke noetig** - `PIRATEN_MULTIPLIER_ROLL` bleibt unberuehrt und seine Sperre muss gar nicht fallen, `RAID_WAVE_ROLL` ist freigegeben, bleibt aber ungenutzt (eine Anhebung wuerde die ohnehin eintretende Verschaerfung verdoppeln, und der Regler hat nach Abschnitt 8 Punkt 7 keinen sanften Bereich). **Wie die Zahlen bestimmt wurden.** Ausweichbonus zuerst, weil die erste Runde ihn als den eigentlichen Hebel ausgewiesen hatte: vier Stufen (0,45/0,18, 0,30/0,12, 0,20/0,08, 0,10/0,04) bei festem RF 4. Bei 0,45 und 0,30 bleibt mindestens eine reine Aufstellung bei 0 % Siegquote und die Jaeger-Aufstellung bleibt die beste Wahl; bei 0,10/0,04 kippt es ins Gegenteil und die realistische gemischte Flotte faellt auf 10 % Siegquote. **Nur 0,20 / 0,08 erfuellt beide Kriterien.** Danach der RF-Wert (2/3/4/5) beim gewaehlten Bonus: bei REALER Sektorstaerke ist er ueberhaupt kein Hebel (4,97 / 5,14 / 5,17 % fuer 3/4/5, im Rauschen), entschieden wird er allein daran, ob die realistische gemischte Flotte gegen die Elitekader-Welle ueber der Kippkante bleibt - RF2 0 %, RF3 25 %, RF4 65-77,5 %, RF5 85 %. **RF4 ist der niedrigste Wert, der das schafft**, und RF5 dreht die Elite/Jaeger-Ordnung wieder um. **Streuung bestimmt, bevor die Tabellen zu fein gelesen werden:** dreimal dieselbe Zelle ergab beim Wertverlust 1,2 Punkte Spanne, bei der Siegquote nahe der Kippkante 12,5 Punkte - Unterschiede unter 2 bzw. 15 Punkten sind kein Befund. **Drittes Ergebnis, unabhaengig von der Zahl: das Wellenprofil ist im Client nirgends sichtbar** (`pickWaveProfile()` wuerfelt pro Check, `piraten_hoch` 10/45/45). Der Spieler kann seine Aufstellung also gar nicht gegen ein bekanntes Profil waehlen - massgeblich ist der profilgewichtete Schnitt, die Einzelprofil-Tabellen der ersten Runde sind Diagnose, nicht Abnahme. **Zwei Nachteile, ausdruecklich:** eine gleichmaessig ueber alle Klassen gestreute Flotte wird die schlechteste Wahl gegen eine scharfe Welle (100 % Siegquote heute, 0-10 % danach) - Spezialisierung wird belohnt, Streuung bestraft, das gehoert in den Patchtext. Und die Verteidigungsanlagen nehmen im Raid gar keinen Schaden mehr; wirtschaftlich unkritisch, inhaltlich eine Entwertung - offener Punkt, gehoert zu Entscheidung 3, nicht hierher. |
 | 19.08.2026 | **Block A, Schritt 2 vollstaendig KALIBRIERT - aber auf Nutzerwunsch NICHT GEBAUT.** Ab jetzt gilt: Aenderungen erst, wenn der ganze Plan steht, vorher nur auf ausdrueckliche Nachfrage. Die Messung lief gegen einen lokalen Messbuild mit den unten beschriebenen Aenderungen (Verfahren wie `make_messbuild_rf.mjs`); im Repo steht davon keine Zeile, und `run_loot_curve.mjs`/`run_income_baseline_v2.mjs` laufen gegen den heutigen Stand nicht, weil `game/loot.js` fehlt. **Bauanleitung und alle Konstanten im Messkasten am Kopf von Entscheidung 2.** Gebaut werden muesste: neues Modul `game/loot.ts` (Kurve, Koop-Aufschlag, Bergung), verdrahtet in `missions.ts`, `groupOps.ts` und `pirateBaseCombat.ts`; `fleetSizeRewardMultiplier()` an beiden Einsatzstellen entfernt; zwei neue Anker `LOOT_CURVE_SOLO_CHECK_POWER` (2,662 Mrd) und `LOOT_CURVE_ELITE_CHECK_POWER` (2,29 Mrd); `winResources` der drei Solo-Sektoren x13,8. Gemessen mit `run_loot_curve.mjs` (solo/elite/coop) und `run_income_baseline_v2.mjs`, 40 Durchlaeufe je Zelle, scheibenweise, Protokoll `loot_curve.txt`. Vollstaendig im Messkasten am Kopf von Entscheidung 2. **Koop entschieden: V2 (Kurve auf den eigenen Beitragsanteil) plus 15 % je Mitflieger, gedeckelt bei 3 - gemessen x1,146/x1,155 Netto je Teilnehmer.** Diese Entscheidung gilt unabhaengig vom Einbauzeitpunkt. V1 verworfen aus einem Grund, den `elite_coop.txt` nicht zeigen konnte: **Bots nehmen Elite-Einladungen automatisch an** (`bot.ts`, 30 % ihrer Flotte), unter V1 waeren zwei eingeladene Bots ein Ein-Klick-Einkommensmultiplikator gewesen. V2 ist zusaetzlich von sich aus alibi-sicher, die geforderte Mindestmengen-Pruefung entfaellt damit ersatzlos. **Fuenf Befunde.** (1) **Eine Ressourcen-Kurve allein waere bei Solo wirkungslos geblieben:** dort steckten 94 % des Belohnungswerts in Containern (1x Elite ~238 Mio gegen ein Ressourcen-Paket von 14 Mio je Sieg). Nach Nutzerentscheidung faellt der Container-Fund jetzt einmal je MISSION statt je Check, und `winResources` traegt den Rest - Container-Anteil danach 23 % (mittel) und 5 % (spaet). Bewusst NICHT ueber die Container-INHALTE geloest: `CONTAINER_TYPES` haengt an Raids und Elite-Bollwerk, und Entscheidung 3 ist gegen genau diese Inhalte geschlossen. (2) **Beide Anker getroffen:** Solo mittel/hoch 1,05 Mrd bei 11,1 Mrd vernichteter Feindmacht (Soll 1,05 / 11,18), Elite mittel 32,71 Mrd (Soll 32,60). Der Elite-Anker musste von 2,66 auf 2,29 Mrd nachgezogen werden, weil mit dem Grossflotten-Bonus ein Multiplikator x1,50 wegfiel - der erste Lauf lag 9,7 % zu niedrig. (3) **Der Zweck ist erreicht:** Solo Hoch mit der realen Flotte netto **+2,42 Mrd statt -2,32 Mrd**, davon 3,60 Mrd aus der Kurve und 0,94 Mrd aus der Bergung. (4) **BASELINE NACH DEM EINBAU 0,98 / 19,57 / 61,11 Mrd** (heute 0,80 / 19,82 / 76,85), mittel bewusst unveraendert (-1,3 %). **Vorhersage, kein Ist-Stand** - bis zum Einbau gilt die alte Zahl weiter. **Darin stecken ZWEI Aenderungen:** auch der Flottenwert ist durch Entscheidung 6 von 0,37/6,18/34,99 auf 0,32/5,52/29,27 Mrd gefallen - wer 61,11 gegen 76,85 haelt, vergleicht beides auf einmal. (5) **Die drei Solo-Stufen bleiben beim fruehesten Ausbaustand ununterscheidbar** (0,25 / 0,25 / 0,27 Mrd netto, also 0 % und +8 % statt der in Abschnitt 8 Punkt 5 geforderten +30 %), weil der flache Container-Fund dort dominiert und alle drei Stufen aehnlich viel Container-Wert ausschuetten. Ab dem mittleren Stand trennen sie sich sauber. Offen, gehoert zu Entscheidung 12. **Zwei Nebenentscheidungen, bewusst getroffen:** die Bergung entfaellt bei vollstaendig vernichteter Flotte (der Totalverlust muss spuerbar bleiben), und der erstattete Betrag wird von `stats.resourcesSpentShipsDefense` abgezogen - ohne das waere "Schiffe im Kampf verheizen" ein besserer Punkte-Farm als das Verschrotten derselben Schiffe, exakt die Fehlerform aus R6. **Der Imperator ist von der Bergung ausgenommen** (Nutzerentscheidung: Prestige-Schiff, keine Teile-Rueckgabe). **Ausdruecklich NICHT eingebaut:** Piratenadmiral P10 (Belohnungsmechanik ist Block B, jetzt kalibrieren hiesse zweimal kalibrieren) und Raids (Entscheidung 3 ist gegen den heutigen Ertrag geschlossen). **Messregel 8 vorab geprueft:** im Client gegreppt, drei Spiegel gefunden, die beim Einbau mitzuziehen sind - `types/game.ts` (FarmDetail/GameData), `pages/Nachrichten.tsx` (Bergung getrennt ausweisen), `pages/Sektor.tsx` (die Sektor-Karte zeigt feste Belohnungen, die es nach dem Umbau so nicht mehr gibt). Die Konstanten gehoeren ueber `/game/data` an den Client, nicht als zweite hartkodierte Zahl. **`PIRATEN_MULTIPLIER_ROLL` bleibt gesperrt, bis der Schritt gebaut ist.** |
 | 19.08.2026 | **Block C, Schritt 10 erledigt: Entscheidung 10 umgesetzt - aber mit einem anderen Mechanismus als geplant.** Der im Plan vorgeschlagene Weg ("die Flotte darf sich absetzen, die Anlagen kaempfen weiter") wurde gebaut und gemessen: **er wirkt nicht.** Flottenverlust eines schwachen Kontos 92,2 -> 95,5 %, Anlagenverlust 69,2 -> 82,8 %. Ursache: der Rueckzug loest bei 30 % der EIGENEN Panzerung einer Einheit aus - bei schwachem Ausbau werden kleine Schiffe in EINER Welle vernichtet und durchlaufen dieses Fenster nie; ausserdem kaempfen zurueckgezogene Schiffe in der naechsten der zwoelf Wellen wieder mit. Zwei weitere Varianten gemessen und verworfen (Rueckzug aus dem ganzen Raid 82,1 %; nachtraegliche Verlustobergrenze 73,6 %, haelt den Boden nicht - die erste Fassung belebte tote Schiffe wieder und produzierte Verlustquoten von **-28 %**). Eine Reserve haelt den Boden exakt, kostet aber entweder Kampfkraft oder verbilligt das Endspiel (13,5 -> 4,9 %). **Der Fehler lag in der Praemisse:** ein Neuling verliert eine Flotte im Wert von 0,32 Mrd und kassiert im selben Raid 20,23 Mrd Belohnung - der Totalverlust ist ein Gefuehls-, kein Wirtschaftsproblem. Was Neulinge wirklich trifft, ist `RAID_LOOT_PERCENT = 0,25` (25 % des gesamten Bestands, faellig in 93 % der Raids, weil ein schwaches Konto 11,0 von 12 Wellen gewinnt). **Nutzeridee 19.08.2026: "Neulinge bekommen zwei Wochen gar keinen Raid" - gegengerechnet und verworfen**, das Konto stuende nach 14 Tagen bei 11,2 statt 62,9 Mrd (`run_e10_schonfrist.mjs`). **Umgesetzt wurde die Umkehrung: Strafen weg, Belohnung bleibt.** `NEWCOMER_GRACE_DAYS = 14` in `economy.ts`, kein Ressourcen-Diebstahl waehrend der Schonfrist, die verteidigende Flotte wird zurueckgeschlagen statt vernichtet, Verteidigungsanlagen bewusst ungeschuetzt. Gegenmessung: Flottenverlust 0,0 % in allen Faellen; Preis ist, dass ein schwaches Konto 9,2 statt 11,0 Wellen gewinnt (die Wellen skalieren weiter mit der vollen Flotte) und fast alle Anlagen verliert - dagegen stehen 29,3 Mrd nicht gepluenderte Ressourcen in 14 Tagen. Technisch ausserdem: `allowRetreat: boolean` ist zu `retreatMode: 'all' | 'none' | 'fleetOnly'` geworden (combat.ts, combatRunner.ts, combat.worker.ts, raids.ts, groupOps.ts) - die Umbenennung ist Absicht, damit ein alter Aufruf mit `allowRetreat: false` nicht still auf den Standard zurueckfaellt; alle Messskripte mitgezogen. **Die Sperre fuer Entscheidung 16 (RapidFire) ist damit aufgehoben.** |
 | 18.08.2026 | **Block C, Schritt 8 erledigt: Entscheidung 6 umgesetzt und gegengemessen (Schiffs-Tiers).** Geaendert wurde ausschliesslich `data/ships.ts`, fuenf Kostenzeilen, keine Mechanik. **Zielwert 1,15 statt 1,20**, weil die drei bereits konformen Schiffe bei 1,10/1,11/1,18 liegen. **Fuenf statt der im Plantext genannten vier Schiffe** - der Kreuzer lag mit 1,33 ebenfalls ausserhalb. Neue Kosten: Kreuzer 311/109/31 Tsd (-14 %), Bomber 398/199/120 (-34 %), Schlachtkreuzer 183/244/92 (-39 %), Zerstoerer 345/288/86 (-28 %), Reaper 370/239/87 (-28 %); Mischungsverhaeltnis je Schiff erhalten. **Alle Messungen neu erhoben** (neues Skript `run_ship_tiers.mjs`, Datei `ship_tiers.txt`), weil `ships.txt`/`ship_value.txt` von vor R14/R14b stammen - beide haben jetzt eine Trennmarke. Zusaetzlich misst `run_ship_value.mjs` das Falsche: es nimmt `avgLossPercent` aus `simulator.ts`, eine auf ganze Prozent gerundete STUECKZAHL-Quote, und multipliziert sie mit dem Flottenwert (Messregel 4 verlangt die Wert-Bilanz). **Abnahme: Korridor erfuellt** (alle acht Standardschiffe 1,10-1,18). **Duell-Matrix erfuellt**, Spannweite der mittleren Netto-Bilanz **774 -> 412 Mio (-47 %)**, Kriterium war -30 %; der Reaper steigt von -21 auf +87 Mio und ist jetzt drittbester statt drittschlechtester. **Sektor-Zelle gegenlaeufig - wichtigster Befund:** in der umkaempften Zelle (2,0x) verliert der Reaper seine Sonderstellung komplett (50 % Sieg / 39,0 % Verlust vorher, 0 % / 47,1 % nachher), weil dieselbe Kaufsumme jetzt 606 statt 439 Schiffe ergibt und die Gegnerstaerke an der MACHT haengt, nicht am ausgegebenen Wert - wer billiger einkauft, kauft sich einen staerkeren Gegner. Der wirtschaftliche Gewinn bleibt (mehr vernichtete Feindmacht je Ressource), er zeigt sich nur nicht in der Verlustquote. **Wie vorhergesagt nicht erreicht:** Jaeger bleiben in den Duellen vorn (+128/+206) - Ursache ist `SIZE_MISMATCH_EVASION_BONUS`, gehoert zu Entscheidung 16, bewusst nicht nachgebessert. **Bomber bleibt Schlusslicht** (-206 Mio), weil sein RapidFire nur gegen Verteidigungsanlagen wirkt; Rollen-Befund, kein Kostenproblem. **Salvenschiffe und Imperator gemessen, nicht geaendert** - 54,26/44,84/58,46 bzw. 6,78/5,61/7,31 mit der Achtfach-Korrektur, Imperator 250; der `ship_value.txt`-Befund zum Salvenkreuzer ist nach R14 bestaetigt und verschaerft (0 % Sieg, 100 % Verlust als reine Einzeltyp-Flotte) und bleibt ein Artefakt der Einzeltyp-Zelle. **Messregel 8 erfuellt** (keine hartkodierten Schiffskosten im Client). **Nebenwirkungen dokumentiert:** Kostenband je Waffenpunkt 68-133 -> 59-90, Verteidigungsanlagen (rund 65) dadurch relativ etwas staerker; Punktwert der verbilligten Schiffe sinkt (`getUnitPointValue()` rechnet mit der rohen Kostensumme). README-Zahlenbasis nachgezogen, dabei eine falsche Aussage dort korrigiert: Verteidigungsanlagen zaehlen sehr wohl in die Raid-Feindstaerke ein, mit Gewicht 0,3. |

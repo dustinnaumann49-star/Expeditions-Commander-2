@@ -65,6 +65,26 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 19.08.2026 (spaeter Abend): ENTSCHEIDUNG 16 IST VOLLSTAENDIG KALIBRIERT, aber NICHT
+  GEBAUT.** Beide offenen Zahlen stehen: **RF-Wert 4**, **Ausweichbonus klein/gross 0,20 und
+  mittel/gross 0,08**. Dazu zwingend `ZIELERFASSUNG_BASE['leicht'] = 0,25` und der Client-Spiegel
+  fuer den Ausweichbonus (sonst aendert man den Hebel, den niemand sieht). Alle vier
+  Abnahmekriterien erfuellt. Bauanleitung im Messkasten bei Entscheidung 16, Protokoll
+  `rf_depth.txt`, Abschnitt "ZWEITE MESSRUNDE". **Im Repo steht davon keine Zeile.**
+- **DIE WICHTIGSTE KORREKTUR: es wird KEIN Ausgleich ueber die Gegnerstaerke gebraucht.** Die
+  Aussage der ersten Messrunde ("Klassen-RF ist ein globaler Spieler-Buff") stuetzte sich auf die
+  0,0 % Verteidigungsverlust im Raid - eine Prozentzahl ohne Gegenposten. Nachgerechnet mit 40
+  statt 10 Raids: der Flottenverlust steigt gleichzeitig von 13,6 auf 19,6 %, und die
+  Verteidigung ist nur 0,43 Mrd wert gegen 5,52 Mrd Flotte. **Der Raid wird in Wert-Einheiten
+  29 % teurer, nicht billiger.** Die Einnahmen-Baseline bewegt sich um maximal 2 %.
+  **`PIRATEN_MULTIPLIER_ROLL` bleibt unberuehrt - seine Sperre muss gar nicht fallen.
+  `RAID_WAVE_ROLL` ist freigegeben, bleibt aber ungenutzt**, eine Anhebung wuerde die ohnehin
+  eintretende Verschaerfung verdoppeln.
+- **Die Messungen liefen gegen einen KUMULATIVEN Messbuild inkl. Block A Schritt 2**
+  (`make_messbuild_kum.mjs`), weil beide zum Server-Neustart gemeinsam wirksam werden. Der Build
+  wurde vor Gebrauch gegen zwei bekannte Anker aus `loot_curve.txt` geprueft und reproduziert sie.
+  **`lib.mjs`, `lib3.mjs` und `run_income_baseline_v2.mjs` loesen jetzt `MESSBUILD` auf** - vorher
+  liefen sie fest gegen `server/dist`.
 - **NEU 19.08.2026 (Abend): Block A Schritt 2 ist VOLLSTAENDIG KALIBRIERT, aber NICHT GEBAUT.**
   Alle Konstanten stehen fest, der Einbau ist mechanisch. **Im Repo steht davon keine Zeile:** kein
   `game/loot.ts`, kein `LOOT_CURVE_SOLO_CHECK_POWER`, `fleetSizeRewardMultiplier()` laeuft in
@@ -101,7 +121,10 @@ anders wirken kann als in der Simulation.
 - **`RAID_WAVE_ROLL` ist freigegeben, `PIRATEN_MULTIPLIER_ROLL` NICHT.** Entscheidung 10 ist
   gebaut, damit faellt die erste Sperre. Die zweite haengt an der Einnahmen-Baseline, und die hat
   sich real noch nicht verschoben - Block A Schritt 2 ist nur kalibriert. **Die Sperre faellt mit
-  dem Einbau, nicht mit der Messung.**
+  dem Einbau, nicht mit der Messung.** *Ergaenzt am 19.08.2026 (spaeter Abend):* der einzige
+  Grund, aus dem beide Regler ueberhaupt gebraucht worden waeren - der Ausgleich fuer
+  Entscheidung 16 -, ist weggefallen. Beide bleiben unangetastet; die Frage stellt sich erst
+  wieder, wenn ein anderer Inhalt sie braucht.
 - **NEU 19.08.2026: Block C, Schritt 10 ist erledigt - und Entscheidung 16 ist damit
   entsperrt.** Entscheidung 10 wurde umgesetzt, aber mit einem ANDEREN Mechanismus als im Plan
   vorgeschlagen: der dort genannte Flotten-Rueckzug wurde gebaut, gemessen und als wirkungslos
@@ -123,8 +146,10 @@ anders wirken kann als in der Simulation.
   Entscheidung 16 im Plan eingetragen - bewusst NICHT gebaut.** Ausloeser war ein Nutzerbefund
   ("die RF kommt mir falsch vor, Kaempfe kommen linear vor"), NICHT dieselbe Meldung wie bei R14.
   Kandidat ist Variante A (jedes Schiff kontert die eigene Klasse, waehlt aber EIN Ziel) plus
-  abgesenktem Groessen-Ausweichbonus. **Gesperrt bis Entscheidung 10 steht**, Einzelheiten unten
-  und im Messkasten bei Entscheidung 16. Messdatei `rf_depth.txt`.
+  abgesenktem Groessen-Ausweichbonus. ~~Gesperrt bis Entscheidung 10 steht~~ - **UEBERHOLT durch
+  die zweite Messrunde am 19.08.2026: die Sperre wird gar nicht gebraucht, der dort geforderte
+  Ausgleich ueber die Gegnerstaerke beruhte auf einer falsch gelesenen Prozentzahl.** Siehe den
+  Stand-Eintrag ganz oben. Messdatei `rf_depth.txt`.
 - **NEU 18.08.2026 (Abend): Block B ist entschieden, aber nirgends gebaut.** 4.1 bis 4.4 stehen
   nicht im Code (kein `ADMIRAL_DEFEAT_LOSS_SHARE`, `contributedPower` nur beim Flottenstart,
   `ADMIRAL_MULTIPLIER_ROLL` unveraendert 1,10/1,30/1,50, Boss-RapidFire unveraendert). Gleiche
@@ -358,6 +383,26 @@ Klassen aus (Kreuzer/Elite von 0 auf 100 % Siegquote). Die Raid-Gegenmessung zei
 starke Seite gewinnt: der Verteidigungsverlust faellt auf 0,0 %, weil die Wellen fallen, bevor
 Schaden bis zu den Anlagen durchkommt. **Bei jeder Aenderung an einer Kampfregel mindestens eine
 Zelle messen, in der der Spieler NICHT der Angreifer ist.**
+*Nachtrag 19.08.2026: die Regel bleibt richtig, die daraus gezogene Folgerung war falsch.* Die
+0,0 % waren kein Buff, sondern eine Verschiebung von den 0,43 Mrd teuren Anlagen auf die 5,52 Mrd
+teure Flotte - in Wert-Einheiten 29 % MEHR Verlust. **Dieselbe Falle wie bei Entscheidung 10, zum
+zweiten Mal: eine Verlustzahl ohne ihren Gegenposten ist keine Aussage** (Messregel 4). Sie ist
+diesmal nicht am rohen Prozentwert gescheitert, sondern daran, dass zwei Prozentwerte mit
+VERSCHIEDENEN Bezugsgroessen nebeneinanderstanden. **Wenn zwei Quoten sich gegenlaeufig bewegen,
+zuerst beide Nenner hinschreiben, dann erst deuten.**
+
+**Ein Messbuild ist erst Beweismittel, wenn er einen bekannten Zustand reproduziert - und der
+Vergleich muss normiert sein.** Der kumulative Build vom 19.08.2026 lag in der rohen Solo-Zelle
+5,7 % ueber der Referenz und waere danach verworfen worden. Auf die vernichtete Feindmacht
+normiert liefert er 0,0733 statt 0,0732 Wert-Einheiten je Punkt - 0,1 % Abweichung, der Rest war
+Kampf-Streuung (gewonnene Checks 4,3 gegen 4,7). **Belohnungszellen vor jedem Vergleich auf die
+vernichtete Feindmacht normieren.**
+
+**Eine Wahl, die der Spieler nicht sehen kann, ist keine Wahl.** Die gesamte erste RF-Messrunde ist
+nach Wellenprofilen aufgeschluesselt - und das Wellenprofil wird pro Check gewuerfelt und ist im
+Client nirgends sichtbar (gegreppt, kein Treffer). Die Einzelprofil-Zellen sind damit Diagnose,
+nicht Abnahme; massgeblich ist der profilgewichtete Schnitt. **Vor jeder Auswertung nach Fall X
+pruefen, ob der Spieler ueberhaupt weiss, in welchem Fall er steckt.**
 
 **Ein Symptom kann drei Regler ueberleben.** Bevor die 0,0 % als "globaler Buff" erkannt waren,
 sind drei naheliegende Ursachen geprueft und alle widerlegt worden: Reparaturquote, Verteidigungs-
@@ -462,12 +507,21 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**Entscheidung 16 (Schritt 10a) ist halb frei.** `RAID_WAVE_ROLL` darf angefasst werden
-(Entscheidung 10 ist gebaut), `PIRATEN_MULTIPLIER_ROLL` nicht - dessen Sperre haengt an der
-Einnahmen-Baseline, und Block A Schritt 2 ist nur kalibriert, nicht gebaut. Die Messungen liegen
-fertig vor (`rf_depth.txt`, Messbuilds ueber `make_messbuild_rf.mjs`), sind nach Entscheidung 10
-aber teilweise neu zu erheben. Offen und ungemessen sind der RF-Wert und die Hoehe des
-Ausweichbonus.
+**Entscheidung 16 (Schritt 10a) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
+gegengemessen - und wie alles andere nicht gebaut.** RF-Wert 4, Ausweichbonus 0,20 / 0,08, kein
+Ausgleich ueber die Gegnerstaerke. Nichts daran ist mehr offen; wer sie anfasst, baut sie nur noch
+ein (Bauanleitung im Messkasten bei Entscheidung 16).
+
+**Damit ist Block C bis auf drei Schritte durch. Offen sind Schritt 9 (Allianz-Station),
+Schritt 11 (Frischling-Bonus) und Schritt 12 (13.1) - Schritt 12 braucht die Koeffizienten aus
+Entscheidung 2 und ist damit frei, weil Block A steht.** Danach ist die Reihenfolge Block B
+(Schritt 5, Piratenadmiral 4.3-4.8) und die 30-Tage-Simulation.
+
+**Was beim naechsten Mal ZUERST zu pruefen ist:** wie viel im Plan inzwischen den Zustand
+"entschieden und kalibriert, aber nicht gebaut" hat. Das sind mittlerweile Block A Schritt 2,
+der gesamte Block B und Entscheidung 16 - drei Pakete, die alle gleichzeitig live gehen.
+Die Empfehlung aus der Arbeitsregel oben (Gesamtpaket ein paar Tage VOR dem Wipe auf den alten
+Staenden laufen lassen) wird damit wichtiger, nicht unwichtiger.
 
 **Sonst Block C weiterfuehren.** Schritt 6 (13.3), Schritt 7 (Entscheidung 5), Schritt 8
 (Entscheidung 6) und Schritt 10 (Entscheidung 10) sind erledigt. Offen sind Schritt 9
@@ -485,11 +539,12 @@ Block A steht jetzt**).
 4. **Elite-Container sind beim fruehen Ausbaustand 84 % von 5,92 Mrd je Serie** - das Sechsfache
    der Tageseinnahmen. Keine Folge dieses Schritts, aber jetzt sichtbar.
 
-**Neu am 18.08.2026 (Abend), fuer die Reihenfolge wichtig:** Entscheidung 16 (RapidFire nach
-Klassen) ist gemessen und haengt an Entscheidung 10 - wer den RF-Umbau will, zieht Schritt 10 vor,
-nicht Schritt 8. Vorbereitende Messungen liegen fertig vor (`rf_depth.txt`, Messbuilds ueber
-`make_messbuild_rf.mjs`), sie sind nach Entscheidung 10 und Block A allerdings teilweise neu zu
-erheben.
+**Erledigt am 19.08.2026 (spaeter Abend):** Entscheidung 16 haengt an nichts mehr. Die
+Neuerhebung nach Entscheidung 10 und Block A ist gelaufen (kumulativer Messbuild), die IST-Zeile
+hat sich dabei bestaetigt - Entscheidung 6 hat zwar den Flottenwert und damit den Nenner des
+Wertverlusts verschoben (Kreuzer 2,08 -> 1,70 Mrd), die Verlustquoten in der umkaempften Zelle
+sind aber praktisch unveraendert (17,3 / 47,6 / 47,4 gegen 17,3 / 47,5 / 47,4). Die
+Neuerhebung war trotzdem noetig - dass sie nichts findet, weiss man erst danach.
 
 **Vor jeder Umsetzungs-Session zuerst pruefen, was tatsaechlich im Code steht.** Der gesamte
 Block B (4.1 bis 4.8) ist entschieden, aber nicht gebaut. "Geschlossen" heisst in diesem Plan
