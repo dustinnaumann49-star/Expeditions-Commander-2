@@ -1,0 +1,273 @@
+=== ENTSCHEIDUNG 12: FRISCHLING-BONUS ADDITIV STATT MULTIPLIKATIV (BLOCK C, SCHRITT 11) ===
+Gemessen am 20.08.2026.
+
+!!! ACHTUNG: ALLE ZAHLEN AUS EINEM LOKALEN MESSBUILD, NICHT AUS DEM REPO-STAND. !!!
+Build erzeugt mit:
+  node make_messbuild_kum.mjs <ordner ausserhalb des repos> --rf=4 --evk=0.20 --evm=0.08
+Er enthaelt Block A Schritt 2 (Beute-Kurve, Wrack-Bergung, Container-Umbau, Koop V2 + 15 %) UND
+Entscheidung 16 (Klassen-RapidFire RF 4, Ausweichbonus 0,20 / 0,08). Beide stehen NICHT im Repo,
+werden aber zum Server-Neustart gemeinsam wirksam. Gueltige Einnahmen-Baseline ist deshalb
+0,98 / 19,57 / 61,11 Mrd/Tag, nicht die alte 0,80 / 19,82 / 76,85.
+
+Skript: run_novice_bonus.mjs <anker|gitter|raid|tageslauf> [N] [f0|f3b]
+Serien: Solo-Gitter 40 je Zelle, Raid-Zelle 200 je Zelle, Tageslauf rein arithmetisch auf dem
+gemessenen Gitter.
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 0 - BUILD-PRUEFUNG UND ZAHLENPRUEFUNG
+---------------------------------------------------------------------------------------------
+
+Ankerzelle mittel/hoch aus loot_curve.txt, NORMIERT auf die vernichtete Feindmacht:
+  Soll: 1,05 Mrd Belohnung bei 11,1 Mrd Feindmacht -> 0,0946 Wert-Einheiten je Punkt
+  Ist : 1,10 Mrd Belohnung bei 11,79 Mrd Feindmacht -> 0,0930 Wert-Einheiten je Punkt
+  Abweichung normiert: -1,7 %. Der Build reproduziert den bekannten Zustand.
+
+DREI ZAHLEN DES PLANTEXTES SIND FALSCH (Messregel 16):
+
+1. "Mining-Multiplikatoren stapeln bis 24,5x" -> tatsaechlich x36,72.
+   2,0 (mining 10) x 1,5 (mining_schiffe 10) x 1,2 (Prospektor) x 1,7 (Abbau-Booster)
+   x 2,0 (Di/Do-Event) x 3,0 (Frischling). Die 24,5 lassen sich exakt rekonstruieren, wenn man
+   mining_schiffe (x1,5) weglaesst - 36,72 / 1,5 = 24,48.
+
+2. "Ein 7 Tage alter Account kommt auf rund 8,5 Mrd/Tag allein aus Asteroiden" -> die 8,5 sind
+   der Rohertrag (346,0 Mio Wert/Tag bei vollen Caps) mal 24,5. Mit dem echten Vollstapel waeren
+   es 12,70 Mrd/Tag.
+
+3. Beide Zahlen setzen Mining-Forschung Stufe 10 voraus. Die kann ein 7 Tage altes Konto nicht
+   haben. Der real erreichbare Woche-1-Stapel ist:
+     Normaltag : x6,12  (Prospektor 1,2 x Booster 1,7 x Frischling 3)
+     Di/Do     : x12,24 (zusaetzlich Event x2)
+     ohne Frischling entsprechend x2,04 / x4,08.
+   Die BEGRUENDUNG von Entscheidung 12 beschreibt damit einen Stapel, den die betroffene Gruppe
+   nicht erreicht. Der Bonus bleibt trotzdem der groesste Einzelfaktor der ersten Woche - die
+   Entscheidung faellt nicht, ihre Zahlenbasis ist zu ersetzen.
+
+Weitere gepruefte Groessen:
+  Asteroiden-Rohertrag bei vollen Caps (300+220+180 Schiffe): 346,0 Mio Wert/Tag
+  700 Mining-Schiffe kosten 14,3 Mio Wert - Startressourcen sind 117,5 Mio Wert
+  Mining-Betriebszeit: 24 h Missionsdauer, 0,52-0,63 h Anflug je Richtung -> 95 %
+  Heimatbasis je Tag bei Stufe 0 / 6 / 12 / 18: 0 / 8,1 / 28,7 / 76,3 Mio Wert
+  Raid-Belohnung: 10x Silber + 6x Gold + 2x Elite je GEWONNENER WELLE = 1,84 Mrd Wert,
+    bei 12/12 Wellen 22,07 Mrd - FLACH, unabhaengig von der eigenen Staerke
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 1 - MESSGITTER SOLO (40 Durchlaeufe je Zelle)
+---------------------------------------------------------------------------------------------
+Flotte im FLEET_SMALL-Verhaeltnis auf den jeweiligen Wert skaliert. Netto = Belohnung - Verlust
++ Bergung, je 24-h-Mission.
+
+Kampfprofil F0 (Forschung 0, keine Module, keine Klasse, kein Booster - Tag 1):
+Flottenwert   niedrig    mittel      hoch
+  50 Mio     0,24 Mrd  0,25 Mrd  0,20 Mrd
+ 100 Mio     0,24 Mrd  0,21 Mrd  0,17 Mrd
+ 200 Mio     0,24 Mrd  0,18 Mrd  0,10 Mrd
+ 400 Mio     0,22 Mrd  0,08 Mrd -0,09 Mrd
+ 800 Mio     0,14 Mrd -0,18 Mrd -0,34 Mrd
+1600 Mio    -0,06 Mrd -0,56 Mrd -0,86 Mrd
+3200 Mio    -0,33 Mrd -1,32 Mrd -1,72 Mrd
+
+Kampfprofil F3B (Forschung 3, Kampf-Booster - Ende Woche 1/2, entspricht dem Profil "schwach"):
+Flottenwert   niedrig    mittel      hoch
+  50 Mio     0,24 Mrd  0,26 Mrd  0,25 Mrd
+ 100 Mio     0,24 Mrd  0,26 Mrd  0,25 Mrd
+ 200 Mio     0,25 Mrd  0,26 Mrd  0,25 Mrd
+ 400 Mio     0,24 Mrd  0,25 Mrd  0,20 Mrd
+ 800 Mio     0,19 Mrd  0,10 Mrd -0,01 Mrd
+1600 Mio     0,14 Mrd -0,15 Mrd -0,37 Mrd
+3200 Mio     0,01 Mrd -0,59 Mrd -1,15 Mrd
+
+Streuung der Netto-Zellen: Standardabweichung 0,001-0,33 Mrd, Standardfehler bei 40 Laeufen
+0,000-0,052 Mrd. Die Unterschiede zwischen den Flottengroessen liegen weit ausserhalb davon.
+
+BEFUND 1 - Die Solo-Einnahme der Startphase ist eine flache Zahl um 0,24 Mrd/Tag und FAELLT mit
+wachsender Flotte. Ursache: die Belohnung besteht in dieser Phase fast vollstaendig aus dem
+einen flachen Container-Fund je Mission (Block A Schritt 2), waehrend die Gegnerstaerke mit der
+eingesetzten Flotte mitwaechst. Wer mehr baut, kauft sich einen staerkeren Gegner bei gleicher
+Belohnung. Das ist dieselbe Gegenlaeufigkeit, die schon bei Entscheidung 6 aufgefallen ist -
+hier aber so stark, dass das Netto ab 400 Mio Flottenwert negativ wird.
+
+BEFUND 2 - Abschnitt 8 Punkt 5 (jede hoehere Solo-Stufe mindestens +30 % Netto) ist in der
+Startphase nicht nur verfehlt, sondern hat das falsche Vorzeichen: hoch liefert durchgaengig
+WENIGER als niedrig. Der in loot_curve.txt als offen vermerkte Punkt ("frueh: 0,25 / 0,25 /
+0,27, gehoert zu Entscheidung 12") ist damit praezisiert - es ist keine Ununterscheidbarkeit,
+sondern eine Umkehrung. NICHT hier nachgezogen, gehoert zur Sektor-Differenzierung.
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 2 - MESSGITTER RAID (200 Ziehungen je Zelle)
+---------------------------------------------------------------------------------------------
+Gemessen wird EINE Welle je Ziehung. Zulaessig, weil raids.ts unter Neulingsschutz
+(NEWCOMER_GRACE_DAYS = 14) survived = sent setzt: die Flotte steht vor jeder der 12 Wellen
+wieder vollstaendig da, und ein Woche-1-Konto hat keine Verteidigungsanlagen, die Schaden
+mitnehmen koennten. Die 12 Wellen sind damit 12 unabhaengige Ziehungen derselben Chance.
+Kampfaufruf wie in raids.ts: retreatMode 'fleetOnly', homeDefense true.
+
+              F0 (Forschung 0)            F3B (Forschung 3 + Booster)
+Flottenwert   Siegquote  Ertrag/Raid      Siegquote  Ertrag/Raid
+  50 Mio      60,0 +-3,5   13,24 Mrd      77,0 +-3,0   17,00 Mrd
+ 100 Mio      58,5 +-3,5   12,91 Mrd      80,0 +-2,8   17,66 Mrd
+ 200 Mio      58,5 +-3,5   12,91 Mrd      75,5 +-3,0   16,66 Mrd
+ 400 Mio      48,0 +-3,5   10,59 Mrd      76,5 +-3,0   16,89 Mrd
+ 800 Mio      46,0 +-3,5   10,15 Mrd      63,0 +-3,4   13,91 Mrd
+1600 Mio       0,0 +-0,0    0,00 Mrd      49,0 +-3,5   10,82 Mrd
+3200 Mio       0,0 +-0,0    0,00 Mrd      45,5 +-3,5   10,04 Mrd
+
+BEFUND 3 - Auch die Raid-Einnahme faellt mit wachsender Flotte, aus demselben Grund: die
+Wellenstaerke haengt an der eigenen Macht (RAID_FLEET_POWER_WEIGHT 0,7), die Belohnung ist
+flach. Bei F0 bricht sie zwischen 800 und 1600 Mio komplett ein.
+
+BEFUND 4 - Ursache des Einbruchs ist der RUECKZUG, nicht die Feindstaerke. Diagnoselauf bei
+1600 Mio: die eigene Flotte zieht sich mit rund 1.100 von 1.972 leichten Jaegern zurueck, die
+NPC-Welle behaelt Reste - eine Welle gilt aber nur als gewonnen, wenn ALLE Angreifer vernichtet
+sind (`npcIds.every(...)` in raids.ts). Der Rueckzug greift, weil raids.ts retreatMode
+'fleetOnly' setzt: die FLOTTE darf abdrehen, nur die Anlagen nicht.
+  ACHTUNG, ueberholte Beschreibung: der Plan und die alte README fuehren das als "Rueckzug gilt
+  NICHT fuer die Heimatverteidigung (allowRetreat = false)". Das Feld heisst seit dem 19.08.2026
+  retreatMode, und der Raid laeuft auf 'fleetOnly', nicht auf 'none'. Ein Messskript, das noch
+  allowRetreat uebergibt, wird STILL ignoriert - genau dafuer wurde umbenannt.
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 3 - TAGESLAUF WOCHE 1, IST-ZUSTAND
+---------------------------------------------------------------------------------------------
+Arithmetik auf dem gemessenen Gitter. Mining und Heimatbasis aus den ECHTEN Funktionen
+(missions.miningMultiplier, actions.mineOutputPerHour), Wochentage echt (WEEKLY_EVENTS),
+Raid an den echten Checkpoints (Mittwoch und Sonntag, Chance 1,0 fuer die beiden namentlich in
+RAID_SCHEDULE_BY_USERNAME hinterlegten Konten).
+
+Gitter F0, Klammer K1 (heute), Ist-Zustand (Frischling x3 multiplikativ):
+  Mining 18,09 Mrd | Heimat 0,20 Mrd | Solo 1,23 Mrd | Raid 26,49 Mrd | SUMME 46,01 Mrd
+  Anteile: Mining 39 %, Raid 58 %
+Gitter F3B: Mining 33 %, Raid 64 %, SUMME 54,93 Mrd.
+Ueber alle sieben moeglichen Start-Wochentage schwanken die Anteile um weniger als 1 Punkt.
+
+BEFUND 5 - ABNAHMEKRITERIUM 5 IST VERLETZT, ABER NICHT VOM MINING. Die groesste Einzelquelle
+der ersten Woche ist der RAID mit 58-64 %. Das Asteroiden-Mining liegt mit 33-39 % darunter -
+also unter der 50-%-Schwelle, gegen die Entscheidung 12 kalibriert werden sollte.
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 4 - VARIANTEN
+---------------------------------------------------------------------------------------------
+'ist'     = heutiger Code (Produkt der uebrigen Quellen x 3)
+'add:X'   = additiv: Bonus tritt NEBEN das Produkt -> Multiplikator = Produkt + X
+'aus'     = kein Bonus
+
+Gitter F0, Klammer K1 (heute: 3 Lanes, Basiszeiten x1):
+Variante  Faktor Mo   Mining      Solo      Raid      SUMME    Mining%  Raid%  Mining% ohne Raid
+ist          x6,12  18,09 Mrd  1,23 Mrd  26,49 Mrd  46,01 Mrd   39 %    58 %        93 %
+add:2.0      x4,04  10,63 Mrd  1,23 Mrd  26,49 Mrd  38,54 Mrd   28 %    69 %        88 %
+add:1.5      x3,54   9,48 Mrd  1,23 Mrd  26,49 Mrd  37,39 Mrd   25 %    71 %        87 %
+add:1.0      x3,04   8,33 Mrd  1,23 Mrd  26,49 Mrd  36,24 Mrd   23 %    73 %        85 %
+aus          x2,04   6,03 Mrd  1,23 Mrd  26,49 Mrd  33,95 Mrd   18 %    78 %        81 %
+
+Gitter F0, Klammer K2 (nach Entscheidung 9: 1 Lane, Basiszeiten x2):
+ist          x6,12  17,82 Mrd  1,23 Mrd  26,49 Mrd  45,74 Mrd   39 %    58 %        93 %
+add:2.0      x4,04  10,45 Mrd  1,23 Mrd  26,49 Mrd  38,36 Mrd   27 %    69 %        88 %
+add:1.5      x3,54   9,32 Mrd  1,23 Mrd  26,49 Mrd  37,24 Mrd   25 %    71 %        87 %
+add:1.0      x3,04   8,19 Mrd  1,23 Mrd  26,49 Mrd  36,11 Mrd   23 %    73 %        85 %
+aus          x2,04   5,94 Mrd  1,23 Mrd  26,49 Mrd  33,86 Mrd   18 %    78 %        81 %
+
+Gitter F3B, Klammer K1: ist 33 % / add:2.0 22 % / add:1.5 20 % / aus 14 % Mining-Anteil,
+Mining ohne Raid 92 / 87 / 86 / 80 %.
+
+BEFUND 6 - DIE KLAMMERN K1 UND K2 SIND NICHT UNTERSCHEIDBAR (Abweichung unter 1 Prozentpunkt in
+jeder Zelle). Grund, wie vorab gerechnet: das Mining sitzt in beiden Bau-Welten am ersten Tag am
+Cap (700 Schiffe, 14,3 Mio Wert gegen 117,5 Mio Startressourcen; Bauzeit 700 x 10 s, mit
+1 Lane und doppelten Basiszeiten rund 3,9 h), und die Kampf-Einnahmen sind in der Startphase
+nicht bau-, sondern gegnerskalierungsbegrenzt. DAMIT IST DIE FORDERUNG DES PLANTEXTES, 12
+GEMEINSAM MIT 9 ZU KALIBRIEREN, GEMESSEN ERLEDIGT - nicht durch Annahme, sondern durch die
+Klammer. Entscheidung 9 kann diesen Wert nicht verschieben.
+
+BEFUND 7 - JEDE KUERZUNG DES BONUS VERSCHLECHTERT ABNAHMEKRITERIUM 5. Weil der Raid flach ist
+und das Mining die einzige Quelle, die der Bonus bewegt, steigt der Raid-Anteil von 58 % auf
+78 %, je kleiner der Bonus wird. Kriterium 5 in der heutigen Fassung wuerde also einen MOEGLICHST
+GROSSEN Frischling-Bonus verlangen - das Gegenteil der Absicht von Entscheidung 12.
+
+BEFUND 8 - OHNE DEN RAID IST KRITERIUM 5 MIT KEINEM BONUSWERT ERREICHBAR. Rechnet man den Raid
+heraus (er ist nach Abschnitt 1b, Kriterium 4 ausdruecklich kein freischaltbarer Inhalt, sondern
+ein Ereignis), liegt das Mining bei 93 % im Ist-Zustand und bei 81 % mit KOMPLETT
+ABGESCHALTETEM Bonus. Ursache ist nicht der Bonus, sondern dass daneben nichts steht: die
+Solo-Einnahme der Startphase ist 1,23 Mrd/Woche gegen 6,03 Mrd Mining ohne jeden Bonus.
+KRITERIUM 5 IST DAMIT KEIN TAUGLICHES KALIBRIERMASS FUER ENTSCHEIDUNG 12 - weder mit Raid
+(dann ist der Raid der Verletzer) noch ohne (dann ist es unerfuellbar).
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 5 - EMPFINDLICHKEIT (Woche 1, Ist-Zustand, Gitter F0, Klammer K1)
+---------------------------------------------------------------------------------------------
+Fall                              SUMME    Mining%  Raid%   Flotte
+Grundfall                       46,01 Mrd    39 %    58 %    50 Mio
+Raid-Fallback-Chance 0,7        38,06 Mrd    48 %    49 %    50 Mio
+Mo/Fr-Event auf Solo (x2)       46,50 Mrd    39 %    57 %    50 Mio
+Heimatbasis Stufe 0             45,81 Mrd    39 %    58 %    50 Mio
+Spielweise "alles verbaut"      17,50 Mrd   103 %     0 %  3200 Mio
+Raid gar nicht verteidigt       19,52 Mrd    93 %     0 %    50 Mio
+
+BEFUND 9 - Die Zeile "Raid gar nicht verteidigt" ist der eigentliche Spielraum: dort steht das
+Mining bei 93 %. Ob Kriterium 5 verletzt ist und von wem, entscheidet also nicht die Hoehe des
+Frischling-Bonus, sondern ob der Spieler an den beiden Checkpoints ueberhaupt eine Flotte
+zuhause hat. Der Wert schwankt zwischen 33 % und 93 %, ohne dass eine einzige Balance-Konstante
+angefasst wird.
+  Die Zeile "alles verbaut" (Mining-Anteil ueber 100 %) bedeutet: die Kampf-Einnahmen sind in
+  Summe NEGATIV. Der Spieler, der seinen gesamten Ueberschuss in Flotte steckt, verdient in der
+  Startphase weniger als einer, der aufhoert zu bauen. Die Flotte ist dabei am oberen Rand des
+  gemessenen Gitters gedeckelt; ohne Deckel waere sie in Klammer K1 bei 15,6 Mrd Wert gelandet.
+
+---------------------------------------------------------------------------------------------
+SCHEIBE 6 - NIVEAU UND FENSTERFRAGE
+---------------------------------------------------------------------------------------------
+Woche 1 im Ist-Zustand: 6,57 Mrd/Tag (F0) bzw. 7,85 Mrd/Tag (F3B).
+Baseline nach Block A Schritt 2 (Vorhersage): 0,98 / 19,57 / 61,11 Mrd/Tag.
+-> Die erste Woche liefert das 6,7- bis 8,0-fache des "fruehen" Ausbaustandes, der selbst
+   bereits mehrere Wochen Spielzeit ist.
+
+BEFUND 10 - Die Sorge von Entscheidung 12 ("die Startphase ist die ertragreichste Phase des
+Spiels relativ zum Aufwand") ist damit BESTAETIGT - aber der Traeger ist der Raid mit
+3,8 Mrd/Tag, nicht der Frischling-Bonus mit 1,7 Mrd/Tag. Schaltet man den Bonus vollstaendig ab,
+faellt die Woche 1 nur von 6,57 auf 4,85 Mrd/Tag und liegt damit immer noch beim Fuenffachen des
+fruehen Ausbaustandes. Entscheidung 12 kann dieses Problem nicht loesen.
+
+Fensterfrage (Tage 8-14, Gitter F0):
+Fenster    Variante   Mining      SUMME     Mining%  Raid%
+ 7 Tage    alle        6,03 Mrd  33,95 Mrd   18 %    78 %
+14 Tage    ist        18,09 Mrd  46,01 Mrd   39 %    58 %
+14 Tage    add:2.0    10,63 Mrd  38,54 Mrd   28 %    69 %
+14 Tage    add:1.5     9,48 Mrd  37,39 Mrd   25 %    71 %
+
+BEFUND 11 - Die vorab vorgeschlagene Entscheidungsregel ("Fenster auf 14 ziehen, wenn der
+Mining-Anteil an Tag 8-14 unter 50 % bleibt") trifft in JEDER Variante zu und trennt damit
+nichts. Sie ist als Regel unbrauchbar, aus demselben Grund wie Kriterium 5 (Befund 8). Die
+Fensterlaenge ist nach dieser Messung keine Balance-, sondern eine Begriffsfrage.
+Kosten der Verlaengerung, gemessen: mit add:2.0 traegt der Bonus in Woche 2 zusaetzlich
+4,60 Mrd (10,63 gegen 6,03), das sind 12 % des Wocheneinkommens.
+
+---------------------------------------------------------------------------------------------
+WAS MODELL IST UND NICHT MESSUNG
+---------------------------------------------------------------------------------------------
+- Bau-Reihenfolge (erst 700 Mining-Schiffe, dann Kampfschiffe im FLEET_SMALL-Verhaeltnis).
+- Spielweise "optimal": der Spieler baut die Flotte, die seine Kampf-Einnahmen maximiert. Das
+  ist die OBERE SCHRANKE fuer die Kampf-Einnahmen und damit der fuer Kriterium 5 unguenstigste
+  Fall - wer den Mining-Anteil trotzdem darunter findet, findet ihn robust. Gegenprobe in
+  Scheibe 5.
+- Durchgehendes Mining mit 95 % Betriebszeit (Anflug gerechnet, Wiederentsenden nicht). Ein
+  weniger aktiver Spieler liegt darunter, was den Mining-Anteil SENKT.
+- Kein Begleitschutz im Asteroiden-Feld: runAsteroidEscortCheck() kehrt bei 0 Begleitschiffen
+  sofort zurueck, Mining ist dann risikofrei.
+- Solo-Belohnung ohne den Mo/Fr-Event, uebernommen aus run_loot_curve.mjs. Empfindlichkeitszeile
+  in Scheibe 5 zeigt: 0,5 Prozentpunkte.
+- Der Raid-Ertrag ist der HEUTIGE (flache Container je gewonnener Welle). Entscheidung 3
+  (Variante 6, fester Topf plus Saettigung) ist entschieden, steht aber NICHT im Code -
+  gegreppt am 20.08.2026: kein RAID_ALLY_POWER_WEIGHT, keine Saettigung, RAID_WAVE_WIN_*
+  unveraendert. Sie ist damit das VIERTE ungebaute Paket neben Block A Schritt 2, Block B und
+  Entscheidung 16.
+
+---------------------------------------------------------------------------------------------
+ERGEBNIS
+---------------------------------------------------------------------------------------------
+1. Die Form steht: additiv, Multiplikator = Produkt der uebrigen Quellen + NOVICE_BONUS_ADD.
+   Empfohlener Wert 2,0 - das ist die woertliche additive Lesart der heutigen 3 (3 = 1 + 2) und
+   braucht keine neue Zahl, die ohnehin kein Kriterium tragen wuerde. Wirkung: in Woche 1
+   +98 % Mining statt +200 %, beim spaeten Vollstapel +16 % statt +200 %. Genau das war die
+   Absicht - der Bonus hoert auf, mit dem Rest zu multiplizieren.
+2. Die Kalibrierung gegen Abnahmekriterium 5 ist NICHT moeglich (Befunde 7 und 8) und die
+   gemeinsame Kalibrierung mit Entscheidung 9 ist NICHT noetig (Befund 6).
+3. Das Fenster ist eine Begriffs-, keine Balancefrage (Befund 11).
+4. Offen und NICHT Sache dieser Entscheidung: der Raid als groesste Einzelquelle der Startphase
+   (Befund 5, 9, 10) und die Umkehrung der Solo-Stufen (Befund 2).
