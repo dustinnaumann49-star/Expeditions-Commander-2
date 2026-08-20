@@ -228,3 +228,533 @@ Dieselbe Richtung zeigen die Sektor-Zellen (Kreuzer/Elite 0 % -> 100 % Siegquote
 -> Klassen-RF ist ein globaler Spieler-Buff, keine Umverteilung zwischen Klassen. Wer ihn
    einbaut, muss die Gegnerstaerke nachziehen (PIRATEN_MULTIPLIER_ROLL / RAID_WAVE_ROLL).
 
+
+================================================================================
+=== ZWEITE MESSRUNDE 19.08.2026 (Abend) - ENTSCHEIDUNG 16 ZU ENDE BRINGEN ===
+================================================================================
+
+!!! ALLE ZAHLEN AB HIER STAMMEN AUS EINEM KUMULATIVEN LOKALEN MESSBUILD. !!!
+Er enthaelt BLOCK A SCHRITT 2 (Entscheidung 2: Beute-Kurve global, Wrack-Bergung 30 %,
+Container-Umbau, Koop V2 + 15 %) - im Repo steht davon keine Zeile. Grund: Entscheidung 16
+wird zum Server-Neustart zusammen mit Schritt 2 wirksam. Wer gegen den heutigen Repo-Stand
+misst, misst gegen eine Baseline (0,80 / 19,82 / 76,85 Mrd), die es dann nicht mehr gibt;
+gueltige Vergleichsbasis ist 0,98 / 19,57 / 61,11 Mrd.
+
+Erzeugt mit make_messbuild_kum.mjs (Verfahren wie make_messbuild_rf.mjs: Quellcode unberuehrt,
+veraendert wird nur eine Kopie von server/dist). Der Messbuild enthaelt die MESSFLAECHE von
+Schritt 2 - game/loot.js, fuenf Konstanten in economy.js, winResources der drei Solo-Sektoren
+x13,8 - nicht die Verdrahtung in missions.ts/groupOps.ts: run_loot_curve.mjs und
+run_income_baseline_v2.mjs bauen die Missionsschleife selbst nach.
+lib.mjs und lib3.mjs loesen jetzt MESSBUILD auf (eine Zeile, identisch zu lib4.mjs) - vorher
+liefen beide fest gegen server/dist und konnten gar nicht gegen einen Messbuild messen.
+
+--- ANKER-GATE: reproduziert der kumulative Build den bekannten Stand? (40 Laeufe je Zelle) ---
+Ein selbstgebauter Messbuild ist erst dann Beweismittel, wenn er einen bekannten Zustand
+reproduziert (Fallen-Liste). Geprueft gegen loot_curve.txt vom 19.08.2026:
+
+Zelle                        Referenz              dieser Build          Abweichung
+Solo mittel/hoch             1,05 Mrd @ 11,1 Mrd   1,11 Mrd @ 11,9 Mrd   +5,7 % roh
+  je Mrd vernicht. Feindmacht (Ressourcenteil)  0,0732 -> 0,0733           +0,1 %  <- die Kurve
+Elite mittel allein          32,71 Mrd             32,17 Mrd              -1,7 %
+Elite spaet allein          138,40 Mrd            135,86 Mrd              -1,8 %
+Elite frueh allein            5,92 Mrd              5,54 Mrd              -6,4 %
+
+BEFUND A - Gate bestanden. Die rohe Solo-Zelle liegt 5,7 % hoch, aber das ist Kampf-Streuung,
+nicht die Kurve: gewonnene Checks 4,3 -> 4,7, vernichtete Feindmacht 11,1 -> 11,9 Mrd. Auf die
+vernichtete Feindmacht normiert liefert die Kurve 0,0733 statt 0,0732 Wert-Einheiten je Punkt -
+0,1 % Abweichung. Der frueh/Elite-Ausreisser (-6,4 %) ist containerdominiert (84 % der Belohnung)
+und haengt allein an 4,5 gegen 4,3 gewonnenen Checks.
+LEHRE, gilt ueber diesen Gate hinaus: eine Belohnungszelle IMMER auf die vernichtete Feindmacht
+normieren, bevor man sie mit einer aelteren Messung vergleicht. Roh verglichen haette dieser
+Build als "5,7 % daneben" gegolten und waere verworfen worden.
+
+--- KUM-IST (Messbuild Block A S2, heutige RF-Leiter), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           17.3%              0.30     61.5
+nur Kreuzer         2141       1.70    0.0%           47.6%              0.81     39.6
+nur Elite           1835       1.73    0.0%           47.4%              0.82     69.0
+gemischt gleich     3797       1.71  100.0%           26.7%              0.46     50.6
+gemischt real       3604       1.71   97.5%           33.6%              0.58     65.4
+Spannweite Wertverlust: 17.3% (nur Jaeger) bis 47.6% (nur Kreuzer) = Faktor 2.75
+
+--- KUM-IST (Messbuild Block A S2, heutige RF-Leiter), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           18.4%              0.32     55.4
+nur Kreuzer         2141       1.70    0.0%           47.3%              0.81     50.0
+nur Elite           1835       1.73    0.0%           47.2%              0.82     53.5
+gemischt gleich     3797       1.71  100.0%           21.4%              0.37     49.5
+gemischt real       3604       1.71  100.0%           18.9%              0.32     42.0
+Spannweite Wertverlust: 18.4% (nur Jaeger) bis 47.3% (nur Kreuzer) = Faktor 2.57
+
+--- KUM-IST (Messbuild Block A S2, heutige RF-Leiter), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           14.2%              0.24     59.5
+nur Kreuzer         2141       1.70    0.0%           47.4%              0.81     37.8
+nur Elite           1835       1.73    0.0%           47.6%              0.82     54.6
+gemischt gleich     3797       1.71  100.0%           30.9%              0.53     63.1
+gemischt real       3604       1.71   52.5%           40.3%              0.69     91.5
+Spannweite Wertverlust: 14.2% (nur Jaeger) bis 47.6% (nur Elite) = Faktor 3.36
+
+--- RF4 + Ausweich 0,45 / 0,18 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            8.4%              0.14     38.4
+nur Kreuzer         2141       1.70    0.0%           46.1%              0.78     93.2
+nur Elite           1835       1.73    0.0%           47.2%              0.81     63.6
+gemischt gleich     3797       1.71   95.0%           28.8%              0.49     80.9
+gemischt real       3604       1.71   97.5%           28.3%              0.48     76.0
+Spannweite Wertverlust: 8.4% (nur Jaeger) bis 47.2% (nur Elite) = Faktor 5.62
+
+--- RF4 + Ausweich 0,45 / 0,18 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            9.5%              0.16     50.3
+nur Kreuzer         2141       1.70   92.5%           30.9%              0.53     80.9
+nur Elite           1835       1.73  100.0%           23.6%              0.41     68.5
+gemischt gleich     3797       1.71  100.0%           27.2%              0.47     24.0
+gemischt real       3604       1.71  100.0%           28.4%              0.49     40.9
+Spannweite Wertverlust: 9.5% (nur Jaeger) bis 30.9% (nur Kreuzer) = Faktor 3.25
+
+--- RF4 + Ausweich 0,45 / 0,18 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           10.8%              0.19     54.8
+nur Kreuzer         2141       1.70   90.0%           32.3%              0.55     75.3
+nur Elite           1835       1.73  100.0%           16.6%              0.29     36.6
+gemischt gleich     3797       1.71   82.5%           34.9%              0.60     76.3
+gemischt real       3604       1.71  100.0%           30.7%              0.53     61.3
+Spannweite Wertverlust: 10.8% (nur Jaeger) bis 34.9% (gemischt gleich) = Faktor 3.23
+
+--- RF4 + Ausweich 0,30 / 0,12 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           10.2%              0.17     38.8
+nur Kreuzer         2141       1.70   17.5%           38.1%              0.65     98.8
+nur Elite           1835       1.73    0.0%           46.7%              0.81     84.2
+gemischt gleich     3797       1.71  100.0%           24.2%              0.41     54.6
+gemischt real       3604       1.71  100.0%           24.1%              0.41     54.8
+Spannweite Wertverlust: 10.2% (nur Jaeger) bis 46.7% (nur Elite) = Faktor 4.60
+
+--- RF4 + Ausweich 0,30 / 0,12 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           13.7%              0.23     52.1
+nur Kreuzer         2141       1.70   97.5%           28.2%              0.48     68.7
+nur Elite           1835       1.73  100.0%           18.5%              0.32     50.9
+gemischt gleich     3797       1.71  100.0%           27.2%              0.47     23.5
+gemischt real       3604       1.71  100.0%           29.3%              0.50     40.7
+Spannweite Wertverlust: 13.7% (nur Jaeger) bis 29.3% (gemischt real) = Faktor 2.14
+
+--- RF4 + Ausweich 0,30 / 0,12 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           17.1%              0.29     57.7
+nur Kreuzer         2141       1.70   87.5%           32.7%              0.56     76.0
+nur Elite           1835       1.73  100.0%           16.2%              0.28     31.6
+gemischt gleich     3797       1.71   55.0%           40.8%              0.70     90.4
+gemischt real       3604       1.71   92.5%           35.9%              0.62     71.6
+Spannweite Wertverlust: 16.2% (nur Elite) bis 40.8% (gemischt gleich) = Faktor 2.53
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           11.4%              0.20     39.2
+nur Kreuzer         2141       1.70   85.0%           31.3%              0.53     85.5
+nur Elite           1835       1.73   77.5%           33.4%              0.58     83.5
+gemischt gleich     3797       1.71  100.0%           22.0%              0.38     45.1
+gemischt real       3604       1.71  100.0%           22.4%              0.38     47.2
+Spannweite Wertverlust: 11.4% (nur Jaeger) bis 33.4% (nur Elite) = Faktor 2.93
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           16.6%              0.29     53.9
+nur Kreuzer         2141       1.70  100.0%           25.7%              0.44     60.4
+nur Elite           1835       1.73  100.0%           16.7%              0.29     45.3
+gemischt gleich     3797       1.71  100.0%           27.4%              0.47     23.6
+gemischt real       3604       1.71  100.0%           29.9%              0.51     41.1
+Spannweite Wertverlust: 16.6% (nur Jaeger) bis 29.9% (gemischt real) = Faktor 1.80
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           22.1%              0.38     62.4
+nur Kreuzer         2141       1.70   95.0%           30.5%              0.52     68.0
+nur Elite           1835       1.73  100.0%           15.8%              0.27     29.3
+gemischt gleich     3797       1.71   10.0%           46.2%              0.79     81.5
+gemischt real       3604       1.71   65.0%           41.7%              0.71     84.8
+Spannweite Wertverlust: 15.8% (nur Elite) bis 46.2% (gemischt gleich) = Faktor 2.92
+
+--- RF4 + Ausweich 0,10 / 0,04 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           12.6%              0.22     39.6
+nur Kreuzer         2141       1.70  100.0%           26.7%              0.46     70.1
+nur Elite           1835       1.73  100.0%           25.9%              0.45     62.8
+gemischt gleich     3797       1.71  100.0%           21.5%              0.37     39.6
+gemischt real       3604       1.71  100.0%           21.4%              0.37     42.1
+Spannweite Wertverlust: 12.6% (nur Jaeger) bis 26.7% (nur Kreuzer) = Faktor 2.13
+
+--- RF4 + Ausweich 0,10 / 0,04 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           19.9%              0.34     56.2
+nur Kreuzer         2141       1.70  100.0%           24.7%              0.42     56.3
+nur Elite           1835       1.73  100.0%           15.5%              0.27     41.4
+gemischt gleich     3797       1.71  100.0%           27.4%              0.47     23.3
+gemischt real       3604       1.71  100.0%           30.7%              0.53     42.3
+Spannweite Wertverlust: 15.5% (nur Elite) bis 30.7% (gemischt real) = Faktor 1.99
+
+--- RF4 + Ausweich 0,10 / 0,04 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           27.8%              0.48     69.0
+nur Kreuzer         2141       1.70   87.5%           32.0%              0.54     69.9
+nur Elite           1835       1.73  100.0%           15.6%              0.27     28.1
+gemischt gleich     3797       1.71    0.0%           47.2%              0.81     61.0
+gemischt real       3604       1.71   10.0%           47.5%              0.81     88.0
+Spannweite Wertverlust: 15.6% (nur Elite) bis 47.5% (gemischt real) = Faktor 3.04
+
+--- RF2 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           17.7%              0.30     51.4
+nur Kreuzer         2141       1.70   32.5%           35.8%              0.61     98.2
+nur Elite           1835       1.73  100.0%           30.3%              0.52     81.2
+gemischt gleich     3797       1.71  100.0%           26.8%              0.46     70.2
+gemischt real       3604       1.71  100.0%           26.9%              0.46     69.2
+Spannweite Wertverlust: 17.7% (nur Jaeger) bis 35.8% (nur Kreuzer) = Faktor 2.02
+
+--- RF2 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           20.4%              0.35     61.2
+nur Kreuzer         2141       1.70   92.5%           31.7%              0.54     78.8
+nur Elite           1835       1.73  100.0%           18.3%              0.32     49.8
+gemischt gleich     3797       1.71  100.0%           29.5%              0.51     41.8
+gemischt real       3604       1.71  100.0%           35.2%              0.60     70.6
+Spannweite Wertverlust: 18.3% (nur Elite) bis 35.2% (gemischt real) = Faktor 1.92
+
+--- RF2 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           24.2%              0.42     66.8
+nur Kreuzer         2141       1.70   40.0%           40.3%              0.69     93.5
+nur Elite           1835       1.73  100.0%           17.8%              0.31     36.6
+gemischt gleich     3797       1.71    0.0%           47.6%              0.82     68.6
+gemischt real       3604       1.71    0.0%           47.5%              0.81     82.6
+Spannweite Wertverlust: 17.8% (nur Elite) bis 47.6% (gemischt gleich) = Faktor 2.68
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           13.5%              0.23     43.1
+nur Kreuzer         2141       1.70   92.5%           31.0%              0.53     85.6
+nur Elite           1835       1.73   97.5%           30.8%              0.53     81.1
+gemischt gleich     3797       1.71  100.0%           24.3%              0.42     56.2
+gemischt real       3604       1.71  100.0%           24.7%              0.42     57.0
+Spannweite Wertverlust: 13.5% (nur Jaeger) bis 31.0% (nur Kreuzer) = Faktor 2.29
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           17.7%              0.30     55.8
+nur Kreuzer         2141       1.70  100.0%           27.5%              0.47     65.0
+nur Elite           1835       1.73  100.0%           17.4%              0.30     47.0
+gemischt gleich     3797       1.71  100.0%           28.2%              0.48     29.3
+gemischt real       3604       1.71  100.0%           31.6%              0.54     49.5
+Spannweite Wertverlust: 17.4% (nur Elite) bis 31.6% (gemischt real) = Faktor 1.82
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           22.9%              0.39     63.9
+nur Kreuzer         2141       1.70   90.0%           33.2%              0.56     75.4
+nur Elite           1835       1.73  100.0%           16.5%              0.28     31.8
+gemischt gleich     3797       1.71    0.0%           47.9%              0.82     77.6
+gemischt real       3604       1.71   25.0%           45.0%              0.77     90.3
+Spannweite Wertverlust: 16.5% (nur Elite) bis 47.9% (gemischt gleich) = Faktor 2.90
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           10.1%              0.17     37.1
+nur Kreuzer         2141       1.70   87.5%           30.7%              0.52     81.9
+nur Elite           1835       1.73   57.5%           37.8%              0.65     86.8
+gemischt gleich     3797       1.71  100.0%           20.1%              0.34     32.6
+gemischt real       3604       1.71  100.0%           21.3%              0.36     38.6
+Spannweite Wertverlust: 10.1% (nur Jaeger) bis 37.8% (nur Elite) = Faktor 3.75
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           15.8%              0.27     52.0
+nur Kreuzer         2141       1.70  100.0%           25.8%              0.44     59.5
+nur Elite           1835       1.73  100.0%           16.5%              0.29     44.4
+gemischt gleich     3797       1.71  100.0%           26.3%              0.45     19.4
+gemischt real       3604       1.71  100.0%           29.5%              0.50     37.5
+Spannweite Wertverlust: 15.8% (nur Jaeger) bis 29.5% (gemischt real) = Faktor 1.86
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           21.6%              0.37     61.6
+nur Kreuzer         2141       1.70   95.0%           29.7%              0.51     65.2
+nur Elite           1835       1.73  100.0%           15.2%              0.26     28.0
+gemischt gleich     3797       1.71   17.5%           45.6%              0.78     82.7
+gemischt real       3604       1.71   85.0%           39.1%              0.67     81.2
+Spannweite Wertverlust: 15.2% (nur Elite) bis 45.6% (gemischt gleich) = Faktor 3.01
+
+--- KUM-IST (Messbuild kumulativ), REAL 0.85x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.8%              0.05     23.0
+nur Kreuzer         2141       1.70  100.0%            8.3%              0.14     30.0
+nur Elite           1835       1.73  100.0%            6.0%              0.10     40.6
+gemischt gleich     3797       1.71  100.0%            3.7%              0.06     16.7
+gemischt real       3604       1.71  100.0%            3.5%              0.06     15.6
+Spannweite Wertverlust: 2.8% (nur Jaeger) bis 8.3% (nur Kreuzer) = Faktor 3.00
+
+--- KUM-IST (Messbuild kumulativ), REAL 0.85x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.6%              0.04     25.3
+nur Kreuzer         2141       1.70  100.0%            8.8%              0.15     24.7
+nur Elite           1835       1.73  100.0%            6.2%              0.11     26.2
+gemischt gleich     3797       1.71  100.0%            4.9%              0.08     12.6
+gemischt real       3604       1.71  100.0%            5.3%              0.09     12.3
+Spannweite Wertverlust: 2.6% (nur Jaeger) bis 8.8% (nur Kreuzer) = Faktor 3.43
+
+--- KUM-IST (Messbuild kumulativ), REAL 0.85x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            1.8%              0.03     23.4
+nur Kreuzer         2141       1.70  100.0%            7.2%              0.12     23.4
+nur Elite           1835       1.73  100.0%           10.8%              0.19     19.7
+gemischt gleich     3797       1.71  100.0%            7.7%              0.13     14.1
+gemischt real       3604       1.71  100.0%            8.1%              0.14     15.2
+Spannweite Wertverlust: 1.8% (nur Jaeger) bis 10.8% (nur Elite) = Faktor 6.12
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.0%              0.03     18.9
+nur Kreuzer         2141       1.70  100.0%            3.1%              0.05     25.8
+nur Elite           1835       1.73  100.0%            2.3%              0.04     25.9
+gemischt gleich     3797       1.71  100.0%            2.9%              0.05     14.0
+gemischt real       3604       1.71  100.0%            2.9%              0.05     14.3
+Spannweite Wertverlust: 2.0% (nur Jaeger) bis 3.1% (nur Kreuzer) = Faktor 1.53
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.6%              0.04     22.8
+nur Kreuzer         2141       1.70  100.0%            2.9%              0.05     21.2
+nur Elite           1835       1.73  100.0%            1.2%              0.02     19.3
+gemischt gleich     3797       1.71  100.0%            3.4%              0.06     10.2
+gemischt real       3604       1.71  100.0%            3.8%              0.07     10.1
+Spannweite Wertverlust: 1.2% (nur Elite) bis 3.8% (gemischt real) = Faktor 3.05
+
+--- RF3 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            3.0%              0.05     22.0
+nur Kreuzer         2141       1.70  100.0%            3.0%              0.05     20.5
+nur Elite           1835       1.73  100.0%            1.3%              0.02     13.2
+gemischt gleich     3797       1.71  100.0%            5.2%              0.09      9.4
+gemischt real       3604       1.71  100.0%            6.6%              0.11     11.0
+Spannweite Wertverlust: 1.3% (nur Elite) bis 6.6% (gemischt real) = Faktor 5.10
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            1.6%              0.03     17.4
+nur Kreuzer         2141       1.70  100.0%            3.3%              0.06     25.6
+nur Elite           1835       1.73  100.0%            2.7%              0.05     26.1
+gemischt gleich     3797       1.71  100.0%            2.7%              0.05     11.8
+gemischt real       3604       1.71  100.0%            2.8%              0.05     12.0
+Spannweite Wertverlust: 1.6% (nur Jaeger) bis 3.3% (nur Kreuzer) = Faktor 2.02
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.4%              0.04     22.2
+nur Kreuzer         2141       1.70  100.0%            2.9%              0.05     20.7
+nur Elite           1835       1.73  100.0%            1.4%              0.02     19.0
+gemischt gleich     3797       1.71  100.0%            3.3%              0.06      8.2
+gemischt real       3604       1.71  100.0%            3.8%              0.07      8.4
+Spannweite Wertverlust: 1.4% (nur Elite) bis 3.8% (gemischt real) = Faktor 2.75
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.8%              0.05     21.4
+nur Kreuzer         2141       1.70  100.0%            3.1%              0.05     20.2
+nur Elite           1835       1.73  100.0%            1.2%              0.02     12.3
+gemischt gleich     3797       1.71  100.0%            5.3%              0.09      7.8
+gemischt real       3604       1.71  100.0%            7.0%              0.12      9.3
+Spannweite Wertverlust: 1.2% (nur Elite) bis 7.0% (gemischt real) = Faktor 5.66
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil schwarm | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            1.4%              0.02     16.7
+nur Kreuzer         2141       1.70  100.0%            3.4%              0.06     25.2
+nur Elite           1835       1.73  100.0%            2.9%              0.05     25.7
+gemischt gleich     3797       1.71  100.0%            2.6%              0.04     10.2
+gemischt real       3604       1.71  100.0%            2.6%              0.04     10.4
+Spannweite Wertverlust: 1.4% (nur Jaeger) bis 3.4% (nur Kreuzer) = Faktor 2.42
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil kampfgruppe | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            2.3%              0.04     21.9
+nur Kreuzer         2141       1.70  100.0%            3.0%              0.05     20.3
+nur Elite           1835       1.73  100.0%            1.5%              0.03     18.8
+gemischt gleich     3797       1.71  100.0%            3.3%              0.06      7.3
+gemischt real       3604       1.71  100.0%            3.7%              0.06      7.2
+Spannweite Wertverlust: 1.5% (nur Elite) bis 3.7% (gemischt real) = Faktor 2.46
+
+--- RF5 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), REAL 0.85x | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 0.85, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%            3.0%              0.05     23.0
+nur Kreuzer         2141       1.70  100.0%            3.1%              0.05     19.8
+nur Elite           1835       1.73  100.0%            1.1%              0.02     12.0
+gemischt gleich     3797       1.71  100.0%            5.3%              0.09      6.8
+gemischt real       3604       1.71  100.0%            7.2%              0.12      8.4
+Spannweite Wertverlust: 1.1% (nur Elite) bis 7.2% (gemischt real) = Faktor 6.51
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x - WIEDERHOLUNG 1 (Streuungsmessung) | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           22.1%              0.38     62.1
+nur Kreuzer         2141       1.70   90.0%           32.5%              0.55     72.4
+nur Elite           1835       1.73  100.0%           16.0%              0.28     29.4
+gemischt gleich     3797       1.71    2.5%           46.6%              0.80     82.1
+gemischt real       3604       1.71   77.5%           40.5%              0.69     83.1
+Spannweite Wertverlust: 16.0% (nur Elite) bis 46.6% (gemischt gleich) = Faktor 2.92
+
+--- RF4 + Ausweich 0,20 / 0,08 (Messbuild kumulativ), umkaempft 2.0x - WIEDERHOLUNG 2 (Streuungsmessung) | Profil elitekader | 40 Laeufe je Zelle | Sektor piraten_hoch, Multiplikator fest 2, gleiche Flotten-Macht 1.50 Mrd ---
+Aufstellung        Stk   Wert Mrd   Sieg%   Wertverlust %   Wertverlust Mrd   Runden
+nur Jaeger          9229       1.72  100.0%           22.0%              0.38     62.0
+nur Kreuzer         2141       1.70   87.5%           32.5%              0.55     71.8
+nur Elite           1835       1.73  100.0%           15.8%              0.27     29.4
+gemischt gleich     3797       1.71    0.0%           46.7%              0.80     79.6
+gemischt real       3604       1.71   67.5%           41.4%              0.71     86.5
+Spannweite Wertverlust: 15.8% (nur Elite) bis 46.7% (gemischt gleich) = Faktor 2.96
+
+
+================================================================================
+=== AUSWERTUNG DER ZWEITEN MESSRUNDE ===
+================================================================================
+
+VORBEMERKUNG ZUR LESART - warum die Einzelprofil-Zellen nicht die Entscheidungsgroesse sind:
+Das Wellenprofil wird PRO CHECK gewuerfelt (pickWaveProfile(), WAVE_PROFILE_WEIGHTS in
+combatConstants.ts) und ist im Client NIRGENDS sichtbar - gegreppt ueber client/src, kein
+Treffer auf 'schwarm'/'kampfgruppe'/'elitekader'/'waveProfile'. Fuer piraten_hoch gilt
+10 % schwarm / 45 % kampfgruppe / 45 % elitekader. Eine 24h-Mission hat rund sechs Checks und
+enthaelt damit IMMER eine Mischung. Der Spieler kann seine Aufstellung also NICHT gegen ein
+bekanntes Profil waehlen. Massgeblich ist der PROFILGEWICHTETE Schnitt; die Einzelprofil-Zeilen
+oben sind Diagnose, nicht Abnahme.
+(Falls das Wellenprofil spaeter im Client angezeigt wird - z.B. ueber die Spionagesonde -,
+kehrt sich das um und die Einzelzellen werden zur Entscheidungsgroesse. Dann ist diese
+Auswertung neu zu lesen, nicht neu zu messen.)
+
+--- TABELLE 1: profilgewichteter Wertverlust, umkaempfte Zelle 2,0x (10/45/45) ---
+Zustand                    nur Jaeger  nur Kreuzer  nur Elite  gem. gleich  gem. real
+KUM-IST (heutige Leiter)        16,0 %       47,5 %     47,5 %       28,1 %     35,2 %
+RF4 + Ausweich 0,45 / 0,18      10,0 %       33,1 %     22,8 %       30,8 %     29,4 %
+RF4 + Ausweich 0,30 / 0,12      14,9 %       31,2 %     20,3 %       33,0 %     31,8 %
+RF4 + Ausweich 0,20 / 0,08      18,6 %       28,4 %     18,0 %       35,3 %     34,5 %
+RF4 + Ausweich 0,10 / 0,04      22,7 %       28,2 %     16,6 %       35,7 %     37,3 %
+RF2 + Ausweich 0,20 / 0,08      21,8 %       36,0 %     19,3 %       37,4 %     39,9 %
+RF3 + Ausweich 0,20 / 0,08      19,6 %       30,4 %     18,3 %       36,7 %     36,9 %
+RF5 + Ausweich 0,20 / 0,08      17,8 %       28,1 %     18,1 %       34,4 %     33,0 %
+
+--- TABELLE 2: niedrigste Siegquote einer Aufstellung ueber alle drei Profile ---
+Zustand                    reine Aufstellungen        gemischt real   gemischt gleich
+KUM-IST                    0 % (Kreuzer UND Elite)          52,5 %            100 %
+RF4 + 0,45 / 0,18          0 % (Kreuzer UND Elite)          97,5 %           82,5 %
+RF4 + 0,30 / 0,12          0 % (Elite, Schwarm-Welle)       92,5 %             55 %
+RF4 + 0,20 / 0,08                          77,5 %             65 %             10 %
+RF4 + 0,10 / 0,04                          87,5 %             10 %              0 %
+RF2 + 0,20 / 0,08                          32,5 %              0 %              0 %
+RF3 + 0,20 / 0,08                          90,0 %             25 %              0 %
+RF5 + 0,20 / 0,08                          57,5 %             85 %           17,5 %
+
+--- TABELLE 3: reale Sektorstaerke 0,85x, profilgewichtet, 'gemischt real' ---
+KUM-IST 6,38 %   |   RF3 4,97 %   |   RF4 5,14 %   |   RF5 5,17 %
+
+--- STREUUNG der tragenden Zelle (RF4, elitekader, dreimal 40 Laeufe) ---
+gemischt real Siegquote 65,0 / 77,5 / 67,5 %  -> Mittel 70 %, Spanne 12,5 Punkte
+gemischt real Wertverlust 41,7 / 40,5 / 41,4 % -> Spanne 1,2 Punkte
+LEHRE: der Wertverlust ist auf rund 1 Punkt belastbar, die Siegquote nahe der Kippkante nur auf
+rund 12 Punkte. Unterschiede unter 2 Punkten im Wertverlust und unter 15 Punkten in der
+Siegquote sind KEIN Befund. Damit sind die Abstaende zwischen RF4 und RF5 in Tabelle 1
+(0,1 bis 1,5 Punkte) ausdruecklich Rauschen - der RF-Wert ist dort NICHT entscheidbar.
+
+BEFUND B - Der Ausweichbonus ist der Hebel, und 0,20 / 0,08 ist der einzige Kandidat, der beide
+Abnahmekriterien erfuellt. Bei 0,45 und 0,30 bleibt mindestens eine reine Aufstellung bei 0 %
+Siegquote (Kriterium 2 verletzt) und die Jaeger-Aufstellung bleibt gewichtet die beste Wahl
+(Kriterium 1 verletzt: 10,0 bzw. 14,9 % gegen 22,8 bzw. 20,3 % der Elite-Aufstellung). Bei
+0,10 / 0,04 kippt es ins Gegenteil: die realistische gemischte Flotte faellt auf 10 % Siegquote
+gegen die Elitekader-Welle. Nur bei 0,20 / 0,08 liegt keine reine Aufstellung unter 77,5 % und
+die Elite-Aufstellung ist gewichtet erstmals vor den Jaegern (18,0 gegen 18,6 %). Der Kandidat
+aus der Vorrunde bestaetigt sich damit - aber jetzt gegen seine Nachbarwerte abgegrenzt und
+nicht mehr gesetzt.
+
+BEFUND C - Der RF-Wert ist bei REALER Sektorstaerke ueberhaupt kein Hebel (Tabelle 3: 4,97 /
+5,14 / 5,17 % fuer RF3/4/5, Unterschiede im Rauschen). Entschieden wird er allein in der
+umkaempften Zelle, und dort an genau einer Groesse: ob die realistische gemischte Flotte gegen
+die Elitekader-Welle ueber der Kippkante bleibt. RF2 0 %, RF3 25 %, RF4 65-77,5 %, RF5 85 %.
+RF4 ist der NIEDRIGSTE Wert, der das schafft - und die Regel "bei Uneindeutigkeit den
+niedrigeren Wert" gibt zusaetzlich den Ausschlag, weil RF5 die Elite/Jaeger-Ordnung wieder
+umdreht (17,8 gegen 18,1 %) und damit genau das zuruecknimmt, wofuer die Entscheidung gemacht
+wird. ENTSCHIEDEN: RF-Wert 4.
+
+BEFUND D - DER WICHTIGSTE BEFUND: das "0,0 % Verteidigungsverlust" der Vorrunde ist KEIN
+globaler Spieler-Buff. Es ist eine Verschiebung, und in Wert-Einheiten eine VERSCHLECHTERUNG.
+Raid, 40 komplette Raids je Fall (die Vorrunde hatte 10), Fall 'voll / grosse Flotte':
+
+Zustand                Flottenverlust   Verteidigungsverlust   in Wert-Einheiten
+KUM-IST                     13,6 %              20,6 %          0,75 + 0,09 = 0,84 Mrd
+RF4 + 0,20 / 0,08           19,6 %               0,0 %          1,08 + 0,00 = 1,08 Mrd
+RF5 + 0,20 / 0,08           17,9 %               0,0 %          0,99 + 0,00 = 0,99 Mrd
+
+Der Grund ist eine Groessenordnung, die in der Prozentzahl nicht steht: die Referenz-Verteidigung
+ist 0,43 Mrd wert, die Referenz-Flotte 5,52 Mrd - die Anlagen sind 7 % des verteidigten Werts.
+Schaden, der von den Anlagen auf die Flotte wandert, trifft damit das 13-fach wertvollere Ziel.
+Der Raid wird unter Klassen-RF um 29 % TEURER, nicht billiger.
+Kipppunkt exakt: die Verschiebung ist erst dann ein Vorteil fuer den Verteidiger, wenn seine
+Verteidigungsanlagen mehr als rund 1,60 Mrd wert sind, also mehr als 29 % seines Flottenwerts.
+Unterhalb davon verliert er.
+DAS IST DIE FALLE AUS DER UEBERGABE, ZUM ZWEITEN MAL: "Eine Verlustzahl ohne ihren Gegenposten
+ist keine Aussage" - und Messregel 4, "immer die Wert-Bilanz rechnen, nicht die Verlustquote".
+Die Vorrunde hat aus den 0,0 % auf einen globalen Buff geschlossen und daraus die Forderung
+abgeleitet, die Gegnerstaerke nachzuziehen. Die Forderung war falsch begruendet.
+
+BEFUND E - Die Einnahmen-Baseline bewegt sich nicht. run_income_baseline_v2.mjs, 40 Durchlaeufe,
+beide Male gegen den kumulativen Messbuild:
+  kumulativ IST                 0,98 / 19,36 / 61,69 Mrd/Tag
+  RF4 + Ausweich 0,20 / 0,08    0,98 / 19,50 / 60,45 Mrd/Tag   (+0 % / +0,7 % / -2,0 %)
+  Vorhersage aus loot_curve.txt 0,98 / 19,57 / 61,11 Mrd/Tag
+Beide Laeufe liegen innerhalb von 2 % um die Vorhersage, also im Rauschen. Der Grund ist
+strukturell: die Beute haengt an der VERNICHTETEN FEINDMACHT, und die wird von der
+Sektorstaerke gesetzt, nicht vom Kampfverlauf - der Gegner wird ohnehin zu 100 % vernichtet.
+Klassen-RF senkt nur die eigenen Verluste, und die sind bei realer Sektorstaerke klein
+(6,4 -> 5,1 % auf die Testflotte).
+
+BEFUND F - Ergebnis der beiden Ausgleichs-Fragen, ausdruecklich:
+  PIRATEN_MULTIPLIER_ROLL: NICHT noetig (Befund E). Bleibt unberuehrt, die Sperre ist damit
+    auch nicht anzutasten - der Ausgleich, fuer den sie haette fallen muessen, existiert nicht.
+  RAID_WAVE_ROLL: NICHT noetig, und eine Anhebung waere schaedlich (Befund D). Der Raid wird
+    durch Entscheidung 16 ohnehin um 29 % teurer; eine hoehere Wellenstaerke wuerde die
+    Verschaerfung verdoppeln, und nach Abschnitt 8 Punkt 7 hat dieser Regler keinen sanften
+    Bereich. Der freigegebene Regler bleibt ungenutzt.
+
+BEFUND G - Elite-Bollwerk unkritisch, Kontrollzelle bestanden (run_elite.mjs, 40 Laeufe):
+  2x voll        IST 3,5 / 3,5 %  ->  RF4 3,7 / 3,7 %   Siegquote unveraendert 100 %
+  voll + mittel  IST 1,2 / 1,9 %  ->  RF4 1,5 / 2,3 %
+  voll + schwach IST 0,8 / 2,1 %  ->  RF4 0,6 / 1,7 %
+
+BEFUND H - NACHTEIL, ausdruecklich, und er ist neu: unter Klassen-RF ist eine Flotte, die ihre
+Macht GLEICHMAESSIG ueber alle Klassen verteilt, die schlechteste Wahl gegen eine scharfe Welle
+(gemischt gleich gegen Elitekader: 100 % Siegquote im IST, 0-10 % unter RF4). Die realistische
+Flotte (jaegerlastige FLEET_LARGE-Relationen) gewinnt dagegen (52,5 -> 70 %). Der Grund liegt auf
+der Hand: eine reine Aufstellung wird von genau EINER Gegnerklasse gekontert, eine gleichmaessig
+gemischte von allen dreien. Spezialisierung wird belohnt, Streuung bestraft. Das ist eine echte
+Entscheidung und damit gewollt - aber es heisst auch, dass ein Spieler mit vollstaendigem
+Bestand nicht mehr einfach "alles mitnehmen" sollte. Das gehoert in den Patchtext, sonst wirkt
+es wie ein Defekt.
+
+BEFUND I - OFFENER PUNKT, nicht Teil dieser Entscheidung: die Verteidigungsanlagen nehmen im
+Raid gar keinen Schaden mehr (0,0 % in drei von fuenf Faellen). Wirtschaftlich unkritisch
+(Befund D), inhaltlich aber eine Entwertung - man merkt beim Spielen nicht mehr, ob man sie
+gebaut hat. Die Vorrunde hat dagegen drei Regler geprueft (Reparaturquote, Verteidigungs-Gewicht,
+Belagerungs-RF), alle wirkungslos. Vorschlag fuer spaeter, NICHT hier entschieden: nicht an der
+Verteidigung drehen, sondern die Anlagen ueberhaupt erst lohnend machen - beim heutigen
+Wertverhaeltnis 0,43 zu 5,52 Mrd sind sie ohnehin Beiwerk. Gehoert zu Entscheidung 3 / dem
+Raid-Paket, nicht zu Entscheidung 16.
+
+--- ABNAHME ---
+Kriterium 1 (die Wahl der Flotte zaehlt)          ERFUELLT (Tabelle 1: Spannweite 18,0-35,3 %
+                                                   gegen 16,0-47,5 % im IST, und die Elite-
+                                                   Aufstellung ist erstmals nicht die schlechteste)
+Kriterium 2 (keine tote Aufstellung)              ERFUELLT (niedrigste reine Siegquote 77,5 %
+                                                   statt 0 %)
+Kriterium 3 (kein globaler Buff, Verteidigerzelle) ERFUELLT - der Raid wird sogar teurer (Befund D)
+Kriterium 4 (Einnahmen-Baseline +/- 5 %)          ERFUELLT (-2,0 % im schlechtesten Stand, Befund E)
+Kriterium 5 (bei Uneindeutigkeit der niedrigere Wert) ANGEWENDET auf den RF-Wert (4 statt 5)
+
+ERGEBNIS: Variante A (Klassen-RapidFire, EIN Ziel) mit RF-Wert 4 und
+SIZE_MISMATCH_EVASION_BONUS klein/gross 0,20, mittel/gross 0,08.
+Kein Ausgleich ueber die Gegnerstaerke noetig - weder PIRATEN_MULTIPLIER_ROLL noch RAID_WAVE_ROLL.
+NICHT GEBAUT. Bauanleitung im Messkasten bei Entscheidung 16.
+
