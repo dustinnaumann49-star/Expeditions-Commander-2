@@ -1,4 +1,7 @@
-const D = '../../server/dist/game';
+// Standard ist der normale Build aus server/dist. Ist MESSBUILD gesetzt (absoluter Pfad auf eine
+// dist-KOPIE), laden alle Spielmodule stattdessen von dort - Quellcode bleibt unberuehrt.
+// Ergaenzt 19.08.2026, identisch zu lib4.mjs: ohne die Variable verhaelt sich die Datei wie zuvor.
+const D = process.env.MESSBUILD ? `${process.env.MESSBUILD}/game` : '../../server/dist/game';
 export const combat = await import(`${D}/combat.js`);
 export const simulator = await import(`${D}/simulator.js`);
 export const runner = await import(`${D}/combatRunner.js`);

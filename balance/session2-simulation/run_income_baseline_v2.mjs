@@ -50,12 +50,21 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as L from './lib.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DIST = path.resolve(HERE, '../../server/dist');
+// MESSBUILD (absoluter Pfad auf eine dist-Kopie) hat Vorrang - sonst laedt dieses Skript
+// actions.js/loot.js aus server/dist, waehrend lib.mjs bereits gegen den Messbuild laeuft.
+// Ohne die Variable unveraendertes Verhalten.
+const DIST = process.env.MESSBUILD ? path.resolve(process.env.MESSBUILD) : path.resolve(HERE, '../../server/dist');
 const TMP = path.join(os.tmpdir(), 'ec-dist-isolated');
 fs.rmSync(TMP, { recursive: true, force: true });
 fs.cpSync(DIST, TMP, { recursive: true });
 // Abhaengigkeiten (better-sqlite3 usw.) per Verweis, nicht per Kopie.
-try { fs.symlinkSync(path.resolve(DIST, '../node_modules'), path.join(TMP, 'node_modules'), 'junction'); } catch { /* existiert bereits */ }
+// node_modules IMMER aus dem Serverordner verlinken, nicht relativ zu DIST: bei gesetztem
+// MESSBUILD liegt der Build ausserhalb des Repos, und '<messbuild>/../node_modules' existiert dort
+// in aller Regel nicht. Der Lauf scheitert dann an better-sqlite3, und der Fehlschlag sieht aus
+// wie ein Defekt statt wie ein fehlender Verweis (Messregel 15, stille Ausweichwerte).
+const NODE_MODULES = path.resolve(HERE, '../../server/node_modules');
+if (!fs.existsSync(NODE_MODULES)) throw new Error(`node_modules fehlt: ${NODE_MODULES} - erst npm install im Serverordner`);
+try { fs.symlinkSync(NODE_MODULES, path.join(TMP, 'node_modules'), 'junction'); } catch { /* existiert bereits */ }
 const actions = await import(pathToFileURL(path.join(TMP, 'game/actions.js')).href);
 const { BUILDINGS } = await import(pathToFileURL(path.join(TMP, 'game/data/buildings.js')).href);
 const { RESEARCH } = await import(pathToFileURL(path.join(TMP, 'game/data/research.js')).href);
