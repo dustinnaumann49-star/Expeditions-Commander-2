@@ -65,11 +65,44 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 21.08.2026, NUTZERENTSCHEIDUNG: ENTSCHEIDUNG 17 IST VERWORFEN. Die Offensive der
+  Piratenbasen wird ABGESCHALTET, Basen und KI-Mitspieler BLEIBEN, die Bedrohung wandert
+  vollstaendig auf den RAID (neue Entscheidung 18).** Nichts davon ist gebaut.
+  - **Warum:** Variante A (Basis greift mit echtem Bestand an) braeuchte rund das Zehn- bis
+    Fuenfzehnfache der Spielerflotte - permanent uneinholbar statt "manchmal eine Bedrohung".
+    Variante B liefert keinen echten Gegner, sondern eine gestellte Begegnung - **und damit exakt
+    das, was der Raid ohnehin tut**: `processRaidWave()` erzeugt die Angreifer ueber
+    `generateFallbackFleet()` aus dem Nichts, skaliert auf die kombinierte Macht des Spielers,
+    zwoelfmal. Zwei Systeme fuer dieselbe Abstraktion, wovon nur eines schon richtig funktioniert.
+  - **Ebenfalls erwogen und verworfen:** Basen und Bots ganz entfernen. Die Basen sind gemessen
+    8-10 % der Tageseinnahmen und ueber Entscheidung 5 kalibriert und gebaut; "nutzlos" trifft nur
+    auf die Bots zu.
+  - **Abzuschalten ist `runPirateBaseOffensiveTurn()` samt der 1,15-Marge.** Der Zweig loest
+    faktisch nie aus, kostet also nichts. Beim Abschalten den Ruecklauf noch fliegender
+    `PirateBaseOffensiveDeployment`-Eintraege bedenken (nach dem Reset gibt es keine).
+  - **NEUE FOLGE FUER DIE NOCH OFFENE ZAHL f AUS 13.1:** mit abgeschalteter Offensive hat der
+    Flottenbestand einer Basis nur noch EINE Wirkung, weil `garrisonReadiness()` bei 1,0 gedeckelt
+    ist - Wachstum zaehlt allein fuer die ERHOLUNG nach dem Leerfarmen, alles darueber ist totes
+    Gewicht. **Mehr NPC-Einkommen beschleunigt bei den Basen nur die Farm-Erholung.** f entscheidet
+    damit im Wesentlichen ueber die KI-MITSPIELER, deren Flotten im Elite-Bollwerk und in der
+    Raid-Verstaerkung tatsaechlich auftauchen. Bei der Kalibrierung am Vormittag war das noch nicht
+    so - **wer f setzt, liest das hier zuerst.**
+- **NEU 21.08.2026: ENTSCHEIDUNG 18 - DER RAID WIRD DER TRAEGER DER HERAUSFORDERUNG. OFFEN,
+  Messplan steht, nicht begonnen.** Loest Abschnitt 8 Punkt 7 ("Raid verlierbar machen", bisher nur
+  auf Design-Grundlage entschieden) mit Zahlen ein.
+  - **Ist-Zustand aus `raid.txt`, 40 Raids je Fall: an JEDEM entwickelten Stand 12/12 Wellen und
+    100 % perfekte Abwehr.** Nur "schwach" verliert - und dann gleich mit 94,4 % Flottenverlust.
+    Zwischen 23,8 % und 94,4 % liegt nichts. **Dasselbe Kliff wie bei Entscheidung 17.**
+  - **Die Frage lautet deshalb nicht "wie viel haerter", sondern an welchem Regler die Haerte
+    GRADUELL reagiert statt zu kippen.**
+  - **`RAID_WAVE_ROLL` bleibt gesperrt**, solange der Nutzer nichts anderes sagt - es ist der
+    direkteste Regler und steht auf der Nicht-anfassen-Liste. **Das ist die offene Gate-Frage.**
+  - Erster Kandidat ist `DEFENSE_REPAIR_PERCENT` (0,70), weil die Abnutzung ueber zwoelf Wellen
+    kumuliert; `CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT` (0,9) bekaeme dadurch endlich Gewicht.
 - **NEU 21.08.2026: ENTSCHEIDUNG 17 - PIRATENBASEN ALS BEDROHUNG. Schritt 0 und 1 gemessen,
-  NICHTS GEBAUT.** Neuer Punkt auf Nutzerwunsch, ausserhalb der Blockreihenfolge. Messkasten im
-  Plan direkt vor Abschnitt 2a, Protokoll `pirate_threat_17.txt`, Werkzeug
-  `run_pirate_threat_17.mjs` (neu). **Gewaehlt ist Weg B mit Staerkefaktor** (Angriffswelle
-  skaliert am ZIEL, Bereitschaftsfaktor nicht bei 1,0 gedeckelt).
+  NICHTS GEBAUT.** Messkasten im Plan direkt vor Abschnitt 2a, Protokoll `pirate_threat_17.txt`,
+  Werkzeug `run_pirate_threat_17.mjs` (neu). **Die Messung bleibt gueltig und traegt Entscheidung
+  18 mit, auch wenn 17 selbst verworfen ist:**
   - **Die Engine ist NICHT seitensymmetrisch, und der Spieler steht beim Basis-Angriff auf der
     falschen Seite.** `sharedShieldPoolA`, `retreatMode` und `homeDefense` wirken nur auf Seite A,
     und `applyPlayerResearch` ist fuer A true, fuer B false - **der Verteidiger verliert dadurch
@@ -88,10 +121,9 @@ anders wirken kann als in der Simulation.
     dreimal zu machen.
   - **Die Forschung der Basis ist rund Faktor 2 auf der Multiplikator-Achse wert** und war nie
     betrachtet. Der gewuenschte Staerkefaktor existiert damit bereits in natuerlicher Form.
-  - **Offen:** Verteidigungsfassung und Skalierungsgrundlage entscheiden (17.1), dann Multiplikator
-    und Staerkefaktor (17.2), Haeufigkeit je Spieler (17.3 - das Limit gehoert auf den SPIELER,
-    nicht auf die Basis), Neulingsschutz (17.4 - `isNewcomerProtected()` steht ausschliesslich in
-    `raids.ts`, der Basis-Angriff umgeht Entscheidung 10 vollstaendig), Beute (17.5).
+  - **Alle Teilpunkte 17.1 bis 17.5 sind mit dem Ausgang hinfaellig.** Was ueberlebt, steht in
+    Entscheidung 18. Der Befund, dass `isNewcomerProtected()` AUSSERHALB von `raids.ts` nirgends
+    greift, bleibt als Falle vermerkt - im Raid selbst ist der Schutz vorhanden.
 - **NEU 21.08.2026: BLOCK C IST VOLLSTAENDIG. Schritt 12 (Entscheidung 13.1 + 13.2) ist erledigt -
   13.1 KALIBRIERT bis auf EINE Nutzerzahl, 13.2 ENTSCHIEDEN OHNE MESSUNG, beides NICHT GEBAUT.**
   Messkasten am Kopf von Entscheidung 13, Protokoll `bot_yield_131.txt`, Werkzeug
@@ -852,18 +884,31 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**BLOCK C IST SEIT DEM 21.08.2026 VOLLSTAENDIG.** Schritt 12 (Entscheidung 13.1 + 13.2) ist
+**ZWEI DINGE SIND VOM NUTZER ZU ENTSCHEIDEN, BEVOR IRGENDETWAS GEMESSEN WIRD:**
+1. **Die Zahl f aus Entscheidung 13.1** (`BOT_VIRTUAL_ACTIVITY`, Vorschlag 12 oder 8). Neu seit
+   dem Ausgang von Entscheidung 17: f entscheidet im Wesentlichen ueber die KI-MITSPIELER, nicht
+   mehr ueber die Piratenbasen - siehe den Stand-Eintrag oben.
+2. **Bleibt `RAID_WAVE_ROLL` gesperrt?** Das ist die Gate-Frage fuer Entscheidung 18. Ohne Antwort
+   wird der Regler nicht angefasst, und die Messung laeuft ueber Reparaturquote und Wellenzahl.
+
+**Danach: Entscheidung 18, Messschritt 1 (Trennschaerfe).** Sweep ueber
+`DEFENSE_REPAIR_PERCENT` (0,70 bis 0,30) und `RAID_WAVE_COUNT` (12 bis 20) gegen alle fuenf Faelle
+aus `raid.txt`. Die Frage an den Extremwerten lautet: gibt es ueberhaupt eine Einstellung, bei der
+ein entwickelter Spieler MANCHMAL eine Welle verliert, statt entweder nie oder fast alles? Faellt
+die Antwort nein aus, traegt der ganze Ansatz nicht und es braucht eine Verlustobergrenze wie bei
+Entscheidung 10.
+
+**Block C ist seit dem 21.08.2026 vollstaendig.** Schritt 12 (Entscheidung 13.1 + 13.2) ist
 erledigt: 13.1 kalibriert bis auf die Zahl f, 13.2 ohne Messung entschieden, beides nicht gebaut.
-**Naechster Schritt ist 13: die 30-Tage-Fortschrittssimulation** (Abschnitt 1b). Wer sie baut,
-liest zuerst den Messkasten bei Entscheidung 12 UND den bei Entscheidung 13 - dort steht, dass
-das Bot-Verhalten ueber 30 Tage der einzige noch offene Nachweis fuer 13.1 ist ("begleitet der
-Bot tatsaechlich, statt zu ueberholen?") und dass 13.4 dabei mitgeprueft werden muss.
-**Vor der Simulation faellig, weil es sonst zweimal gerechnet wird:** die Zahl f
-(`BOT_VIRTUAL_ACTIVITY`, Vorschlag 12 oder 8) ist eine Nutzerentscheidung und steht noch aus.
+**Danach folgt Schritt 13: die 30-Tage-Fortschrittssimulation** (Abschnitt 1b). Wer sie baut, liest
+zuerst den Messkasten bei Entscheidung 12 UND den bei Entscheidung 13 - dort steht, dass das
+Bot-Verhalten ueber 30 Tage der einzige noch offene Nachweis fuer 13.1 ist und dass 13.4 dabei
+mitgeprueft werden muss.
 
 **Die Sammelliste fuer den Einbau umfasst jetzt SIEBEN Pakete, nicht sechs** - neu dazu
-13.1/13.2. Wer sie zusammenstellt, faengt bei den Messkaesten am Kopf von Entscheidung 2, 3, 4, 7,
-12, 13 und 16 an, dazu R16.
+13.1/13.2. Dazu kommen zwei Abschaltungen bzw. Aenderungen aus Entscheidung 17/18, sobald sie
+entschieden sind. Wer die Liste zusammenstellt, faengt bei den Messkaesten am Kopf von
+Entscheidung 2, 3, 4, 7, 12, 13, 16, 17 und 18 an, dazu R16.
 
 **Entscheidung 12 (Schritt 11) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
 gegengemessen - und wie alles andere nicht gebaut.** `NOVICE_BONUS_ADD = 2,0`, Fenster-Empfehlung
