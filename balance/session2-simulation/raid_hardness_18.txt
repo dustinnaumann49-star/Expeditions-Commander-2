@@ -1,0 +1,145 @@
+=== ENTSCHEIDUNG 18 - DER RAID ALS TRAEGER DER HERAUSFORDERUNG ===
+Messschritt 1 (Trennschaerfe). Gemessen am 21.08.2026.
+
+!!! MESSBUILD-WERTE, NICHT REPO-STAND !!!
+  node make_messbuild_kum.mjs <ordner ausserhalb des repos> --rf=4 --evk=0.20 --evm=0.08
+Werkzeug: run_raid.mjs (bestehend, um WAVES/ONLY/FIXPOWER erweitert - ohne diese Variablen
+verhaelt es sich exakt wie zuvor). NICHTS IST GEBAUT.
+
+`RAID_WAVE_ROLL` wurde NICHT angefasst. Der Regler steht auf der Nicht-anfassen-Liste; die
+Messung unten zeigt, dass er inzwischen die Gate-Frage ist - entschieden hat das niemand.
+
+
+================================================================================
+1. NEUE BASELINE - raid.txt IST FUER DIE KALIBRIERUNG NICHT MEHR GUELTIG
+================================================================================
+raid.txt stammt aus der Zeit VOR Entscheidung 16. Unter dem kumulativen Messbuild (40 komplette
+Raids je Fall, 12 Wellen, Reparatur 0,70):
+
+  Fall                              Wellen  perfekt  Flottenverl.  min-max      Verteidigungsverl.
+  voll / grosse Flotte + volle Vt.    12,0     100 %      20,0 %   7,1-35,3            0,0 %
+  voll ohne Kampf-Boost               12,0     100 %      36,4 %  19,2-61,5            0,0 %
+  mittel / grosse Flotte              12,0     100 %      28,7 %  15,0-39,4            0,0 %
+  voll / kleine Flotte + kleine Vt.   11,5      57 %      23,7 %   2,5-92,3           26,9 %
+  schwach / kleine Flotte             11,0       3 %      94,0 %  30,4-100,0          60,4 %
+
+Zum Vergleich raid.txt (Repo-Stand, ebenfalls 40 Raids):
+  voll/grosse 12,0 / 100 % / 12,7 % / 20,8 %   |  voll ohne Boost 12,0 / 100 % / 26,8 % / 44,8 %
+  mittel      12,0 / 100 % / 23,8 % / 13,8 %   |  voll/kleine     12,0 / 100 % / 13,2 % / 91,9 %
+  schwach     10,9 /   0 % / 94,4 % / 69,5 %
+
+
+================================================================================
+2. BEFUND A - ENTSCHEIDUNG 16 MACHT VERTEIDIGUNGSANLAGEN IM RAID PRAKTISCH UNZERSTOERBAR
+================================================================================
+Direkte Gegenprobe, identische Faelle und Einstellungen, 10 Raids je Zelle:
+
+  Fall                         Repo-Stand              kumulativer Messbuild
+  mittel / grosse Flotte       Verteidigungsverlust     Verteidigungsverlust
+                                     21,6 %                    0,0 %
+                               Flottenverlust 24,1 %    Flottenverlust 24,7 %
+  voll / kleine Flotte         Verteidigungsverlust     Verteidigungsverlust
+                                     92,0 %                   35,4 %
+                               Flottenverlust 14,5 %    Flottenverlust 39,0 %
+
+Die Messbuild-Seite ist mit 40 Serien bestaetigt (0,0 % in allen drei grossen Faellen), die
+Repo-Seite mit 10 Serien und zusaetzlich durch raid.txt (13,8 % bzw. 91,9 % bei 40 Serien).
+
+DEUTUNG: unter Klassen-RapidFire haben die generierten NPC-Wellen (`generateFallbackFleet()`,
+reine Schiffsflotten) offenbar keine RapidFire-Beziehung mehr zu den Verteidigungsklassen,
+waehrend die alte Konter-Leiter eine hatte. **Die Verteidigung wird dadurch im Raid faktisch
+kostenlos: einmal gebaut, nie wieder verloren.** Bei "voll / kleine Flotte" verschiebt sich die
+Last vollstaendig: die Verteidigung haelt (92 % -> 35 % Verlust), die Flotte zahlt (14,5 % ->
+39,0 % Verlust).
+
+DAS IST EINE NEBENWIRKUNG VON ENTSCHEIDUNG 16, NICHT VON ENTSCHEIDUNG 18. Entscheidung 16 ist
+kalibriert und ungebaut; die Nebenwirkung war nirgends vermerkt. Sie beruehrt ausserdem Punkt 17
+der alten README (Verteidigungswerte an die Kosteneffizienz der Schiffe gekoppelt) - wenn
+Verteidigung nichts mehr kostet, stimmt diese Relation nicht mehr.
+**Gehoert vor dem Einbau von Entscheidung 16 entschieden. Hier NICHT weiter verfolgt.**
+
+
+================================================================================
+3. BEFUND B - DIE REPARATURQUOTE IST ALS REGLER TOT
+================================================================================
+Stand mittel, 10 Raids je Zelle:
+  Reparatur 0,70 -> Flottenverlust 24,3 %
+  Reparatur 0,30 -> Flottenverlust 26,2 %
+  Reparatur 0,00 -> Flottenverlust 28,4 %
+In allen drei Zellen 12/12 Wellen und 100 % perfekte Abwehr.
+
+Grund ist Befund A: es gibt nichts zu reparieren, weil die Verteidigung ohnehin nicht stirbt.
+**Der Regler, den ich vor der Messung als ersten Kandidaten vorgeschlagen hatte, ist damit
+widerlegt.** Ausdruecklich protokolliert, weil er vorher wie der beste aussah - dieselbe Form wie
+bei 13.1, wo sich die vorgeschlagene "Tagesrendite" als schlechteres Mass erwies.
+
+
+================================================================================
+4. BEFUND C - WELLENZAHL UND GEWICHTE SIND GRADUELLE KOSTENREGLER, OHNE KLIFF
+================================================================================
+Wellenzahl, 40 Raids je Zelle:
+  Wellen   voll / grosse Flotte      mittel / grosse Flotte    schwach / kleine Flotte
+    12          20,0 %                     28,7 %                    94,0 %  (3 % perfekt)
+    18          26,3 %                     37,7 %                    96,4 %  (3 % perfekt)
+    24          35,8 %                     45,8 %                    97,9 %  (3 % perfekt)
+
+Verteidigungs-Gewicht (Stand mittel, 10 Raids je Zelle):
+  0,3 -> 32,8 %   1,0 -> 33,1 %   2,0 -> 42,9 %   4,0 -> 59,8 %
+
+Beide Regler bewegen den Flottenverlust glatt und ohne Sprung. **Die KOSTEN eines Raids sind frei
+einstellbar - das Kliff aus Entscheidung 17 tritt hier nicht auf.** Bemerkenswert: die
+schwach-Zelle steigt kaum mit (94,0 -> 97,9 %), der Regler trifft also vor allem die
+entwickelten Konten. Genau die richtige Richtung.
+
+
+================================================================================
+5. BEFUND D - DIE VERLIERBARKEIT IST MIT DEN OFFENEN REGLERN STRUKTURELL NICHT ERREICHBAR
+================================================================================
+In JEDER gemessenen Zelle gewinnen die entwickelten Staende 100 % der Raids perfekt - bei 12, 18,
+24 und (Sondierung) 36 Wellen, bei Reparatur 0,00 und bei Verteidigungs-Gewicht 4,0.
+
+URSACHE, im Code nachgelesen: `processRaidWave()` berechnet `combinedPower` fuer JEDE Welle neu aus
+der AKTUELLEN, bereits dezimierten Flotte und Verteidigung. Schrumpft die Flotte, schrumpft der
+Gegner mit. Das ist eine negative Rueckkopplung, und sie schliesst ein Zurueckfallen aus:
+**man kann den Raid teurer machen, aber nicht verlierbar.**
+
+GEGENPROBE - reicht es, die Bemessungsgrundlage einzufrieren? `raids.ts` legt den Schnappschuss
+ohnehin schon an (`raid.initialCombinedPower`, bisher nur fuer den Belohnungsbonus). FIXPOWER=1
+benutzt ihn ab der zweiten Welle, 10 Raids je Zelle:
+
+  Fall                        Ist-Zustand              eingefroren
+  voll / grosse Flotte        12,0 / 100 % / 19,7 %    12,0 / 100 % / 21,5 %
+  mittel / grosse Flotte      12,0 / 100 % / 33,4 %    12,0 / 100 % / 38,4 %
+  schwach / kleine Flotte     10,9 /   0 % / 97,5 %     3,5 /   0 % / 100,0 %
+
+**Nein.** Das Einfrieren trifft ausschliesslich die Schwachen (10,9 -> 3,5 gewonnene Wellen,
+Totalverlust) und laesst die entwickelten Staende unveraendert bei 100 % perfekt. Es macht
+Entscheidung 10 noetiger, ohne das Ziel zu erreichen.
+
+SCHLUSSFOLGERUNG: ueber Sieg oder Niederlage entscheidet allein die Staerke EINER Welle relativ
+zum Verteidiger. Das ist `RAID_WAVE_ROLL` (heute [1,20 | 1,70 | 2,30-2,50]), und der Regler ist
+gesperrt. **Mit den offenen Reglern ist "Raid haerter" erreichbar, "Raid verlierbar" nicht.**
+Das ist ein Messergebnis, kein Scheitern: die Zelle kann die Frage nicht entscheiden, und das war
+vor der Messung nicht bekannt.
+
+
+================================================================================
+6. EMPFEHLUNG
+================================================================================
+**Fuer die Haerte: RAID_WAVE_COUNT von 12 auf 18.**
+  voll 20,0 -> 26,3 %   |   mittel 28,7 -> 37,7 %   |   schwach 94,0 -> 96,4 % (unveraendert 3 %)
+Begruendung: einziger Regler ohne neue Konstante, glatt, kein Kliff, trifft die entwickelten
+Konten und die schwachen praktisch nicht. 24 Wellen waeren auch tragbar (35,8 / 45,8 %), gehen
+aber bei den Vollausbau-Konten schon in Richtung "jeder zweite Raid halbiert die Flotte".
+NICHT GEBAUT. Beruehrt Entscheidung 3 (Raid-Ertrag) - mehr Wellen heisst auch mehr Container,
+das Verhaeltnis von Ertrag zu Risiko ist danach gegenzupruefen.
+
+**Fuer die Verlierbarkeit: Nutzerentscheidung noetig.** Entweder `RAID_WAVE_ROLL` wird geoeffnet,
+oder Abschnitt 8 Punkt 7 ("Raid verlierbar machen") wird als nicht erreichbar geschlossen. Ich
+habe den Regler nicht angefasst.
+
+**Nicht empfohlen:** die Reparaturquote (Befund B, wirkungslos) und das Einfrieren der
+Bemessungsgrundlage (Befund D, trifft nur die Schwachen).
+
+OFFEN: die Nebenwirkung aus Befund A gehoert zu Entscheidung 16 und ist dort zu entscheiden,
+bevor sie gebaut wird.
