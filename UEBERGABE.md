@@ -65,6 +65,15 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 21.08.2026, NUTZERBEOBACHTUNG AUS DEM ECHTBETRIEB: die CPU-Frage beim Schiffslimit ist
+  beantwortet.** Bei rund 1 Mio. Schiffen samt gleichzeitiger Koop-Expedition ins Elite-Bollwerk
+  langweilen sich beide CPUs (eine Worker, eine Hauptthread). Die 26-ms-Messung ist damit nicht
+  mehr nur simuliert. **`MAX_PLAYER_SHIPS = 1.000.000` bleibt trotzdem stehen** - der verbliebene
+  Grund ist nicht Performance, sondern dass das Limit bis zum Einbau von Entscheidung 2 als
+  Ersatz-Bremsklotz gegen Weglauf-Wachstum wirkt. Reihenfolge fuer das spaetere Entfernen
+  (ausdruecklich NICHT beim Reset selbst) und der ungemessene Restpunkt - ob Entscheidung 2 allein
+  ein konvergierendes Wachstum erzeugt, sie hebt naemlich auch das Niveau - stehen als Messpunkt
+  in Abschnitt 7 des Plans. `POOL_SIZE` steht weiter auf 1; Hinweise fuer eine Erhoehung ebenda.
 - **NEU 20.08.2026: BLOCK C, SCHRITT 9 IST ERLEDIGT - Entscheidung 7.2 und 7.3 sind KALIBRIERT,
   NICHT GEBAUT.** 7.2 = Variante A (`baseCost` der Stations-Minen x3,92 / x1,02 / x0,57,
   `costGrowth` unveraendert, **nur `stationBuildings.ts`**), 7.3 = Foerdereffizienz-Module x16,5
