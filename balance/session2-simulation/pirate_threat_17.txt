@@ -216,3 +216,31 @@ OFFEN UND NICHT GEMESSEN:
   - Haeufigkeit je Spieler und Woche (Schritt 3), Neulingsschutz und Beute (Schritt 4).
   - Ob eine Basis den fuer den Staerkefaktor noetigen Bestand ueberhaupt erreicht - haengt am
     Armuts-Fallback fuer Roboterfabrik/Nanitenfabrik aus bot_yield_131.txt.
+
+================================================================================
+6. NACHTRAG 21.08.2026 - AUSGANG: ENTSCHEIDUNG 17 IST VERWORFEN
+================================================================================
+Nutzerentscheidung nach Vorlage der Messung: **die Offensive der Piratenbasen wird ABGESCHALTET.
+Basen und KI-Mitspieler BLEIBEN. Die Bedrohung wandert vollstaendig auf den RAID (Entscheidung 18).**
+
+Begruendung: Variante A braeuchte rund das Zehn- bis Fuenfzehnfache der Spielerflotte, dauerhaft.
+Variante B liefert keinen echten Gegner, sondern eine gestellte Begegnung - und damit exakt das,
+was processRaidWave() ohnehin tut (generateFallbackFleet() erzeugt die Angreifer aus dem Nichts,
+skaliert auf die kombinierte Macht des Spielers, zwoelfmal). Zwei Systeme fuer dieselbe
+Abstraktion, wovon nur eines bereits richtig funktioniert.
+
+Ebenfalls erwogen und verworfen: Basen und Bots ganz entfernen. Die Basen sind gemessen 8-10 % der
+Tageseinnahmen und ueber Entscheidung 5 kalibriert und gebaut.
+
+DIESES PROTOKOLL BLEIBT GUELTIG. Vier Befunde tragen Entscheidung 18 mit:
+  - Der Spieler steht im Raid bereits auf Seite A. Der Seitentausch-Befund ist damit ERLEDIGT
+    statt verloren - im Raid wirken Forschung, Kuppel-Pool, homeDefense und Rueckzug korrekt.
+  - Das Kliff gilt auch fuer den Raid (raid.txt: 12/12 Wellen und 100 % perfekte Abwehr an jedem
+    entwickelten Stand, im Fall "schwach" 10,9 Wellen und 94,4 % Flottenverlust).
+  - Der Rueckzug rettet Schiffe und opfert Anlagen. Im Raid steht er auf 'fleetOnly'.
+  - homeDefense ist kein Verteidiger-Vorteil, sondern der Klassen-Schalter.
+
+NEUE FOLGE FUER DIE OFFENE ZAHL f AUS 13.1: mit abgeschalteter Offensive hat der Flottenbestand
+einer Basis nur noch EINE Wirkung, weil garrisonReadiness() bei 1,0 gedeckelt ist - Wachstum zaehlt
+allein fuer die ERHOLUNG nach dem Leerfarmen. Mehr NPC-Einkommen beschleunigt bei den Basen also
+nur die Farm-Erholung. f entscheidet damit im Wesentlichen ueber die KI-MITSPIELER.
