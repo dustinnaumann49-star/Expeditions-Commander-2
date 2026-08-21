@@ -1,0 +1,218 @@
+=== ENTSCHEIDUNG 17 - PIRATENBASEN ALS BEDROHUNG (Weg B mit Staerkefaktor) ===
+Schritt 0 und Schritt 1. Gemessen am 21.08.2026.
+
+!!! ALLE MESSWERTE STAMMEN AUS EINEM KUMULATIVEN MESSBUILD, NICHT AUS DEM REPO-STAND. !!!
+  node make_messbuild_kum.mjs <ordner ausserhalb des repos> --rf=4 --evk=0.20 --evm=0.08
+Enthaelt Block A Schritt 2 (Entscheidung 2) UND Entscheidung 16.
+Skript: run_pirate_threat_17.mjs <asym|kliff> [N] [stand] [mult(s)], Piratenforschung ueber PRES=.
+NICHTS AUS DIESER SESSION IST GEBAUT. Es wurde keine Zeile Spielcode geaendert.
+
+Nutzerentscheidung vom 21.08.2026: Weg B (Angriffswelle skaliert am Ziel) MIT Staerkefaktor,
+also mit einem eigenen, hoeher gedeckelten Bereitschaftsfaktor auf der Offensivseite.
+
+
+================================================================================
+0. AUFBAU UND SETZUNGEN
+================================================================================
+Nachgebaut ist resolvePirateBaseOffensiveAttack() aus pirateBaseState.ts. Der Spieler wird mit
+Flotte UND Verteidigung angegriffen, die Angriffswelle wird ueber generatePiratenFleet() auf
+(Heimatmacht x Multiplikator) hochgerechnet. Gemessen wird der WERTVERLUST des Spielers
+(Flotte + Verteidigung zusammen) und getrennt der reine Flottenverlust in Stueck.
+
+Der gemessene Multiplikator ist das PRODUKT aus Tabelle und Staerkefaktor. Gemessen wird die
+WIRKUNG, nicht die Aufteilung auf die beiden Regler - die Aufteilung ist eine Setzung und kommt
+erst in Schritt 2.
+
+SETZUNGEN, ausdruecklich:
+  - Verteidigungs-Sets DEFENSE_SMALL/DEFENSE_LARGE aus run_raid.mjs uebernommen, damit die Zahlen
+    mit den Raid-Messungen vergleichbar bleiben.
+  - Piratenforschung standardmaessig Stufe 0. Das ist die HARTE Richtung fuer die Basis. Ein
+    eigener Durchgang mit Stufe 6 steht in Abschnitt 4 - die Groesse ist erheblich.
+  - Angriff bei voller Flotte daheim. Der Fall "Flotte unterwegs" ist NICHT gemessen und
+    verschiebt alles nach unten.
+
+
+================================================================================
+1. WARUM DER SEITENTAUSCH KEIN KOSMETISCHER UNTERSCHIED IST
+================================================================================
+Die Kampf-Engine ist NICHT seitensymmetrisch. runRounds() behandelt Seite A durchgaengig als die
+Spielerseite:
+  - sharedShieldPoolA, retreatMode und homeDefense wirken AUSSCHLIESSLICH auf Seite A.
+  - `applyPlayerResearch` ist fuer Seite A true und fuer Seite B false. Das heisst: steht der
+    Spieler auf Seite B, werden seine PRAEZISION, ZIELERFASSUNG, DURCHSCHLAG, KRITISCHEN TREFFER
+    und AUSWEICHEN NICHT angewandt. sideBStatsOverride korrigiert nur Waffen/Schild/Panzerung.
+Genau das sind die vier "ungeskalierten" Kampf-Forschungen, die anderswo als der wichtigste Hebel
+des Spiels gefuehrt werden. Beim Basis-Angriff fallen sie fuer den Verteidiger ersatzlos weg.
+
+GEGENGEPRUEFT, damit der Seitentausch sauber isoliert: ein Schuetze feuert auch dann noch, wenn er
+in derselben Runde bereits gefallen ist - die Filterung auf hpCur > 0 passiert erst NACH beiden
+fireShots()-Aufrufen, und die Schuetzen-Schleife prueft hpCur nicht. Es gibt deshalb KEINEN
+Erstschlag-Vorteil fuer Seite A. Der Seitentausch misst wirklich nur die drei Zusatzfunktionen und
+die Forschungs-Inversion, nichts sonst.
+
+Nebenbefund: der Standardwert retreatMode = 'all' gilt heute Seite A - also den ANGREIFENDEN
+PIRATEN. Beim Basis-Angriff zieht sich derzeit die Piratenwelle zurueck, der verteidigende Spieler
+nicht.
+
+
+================================================================================
+2. SCHRITT 0 - WAS KOSTEN DIE ASYMMETRIEN? (Stand mittel, Multiplikator 6, 40 Laeufe)
+================================================================================
+Heimatmacht 3,05 Mrd, Heimatwert 4,00 Mrd (Flotte + Verteidigung).
+Multiplikator 6 gewaehlt, weil dort der Kampf umkaempft ist. Bei Multiplikator 1 liegt der Verlust
+in ALLEN Fassungen unter 1 % - dort misst man nichts (erster Durchgang verworfen, hier vermerkt).
+
+  Fassung                          Wertverlust   Flottenverlust   Totalverlust   Streuung
+  heute (Spieler = Seite B)             63,8 %           72,5 %           13 %     26,4 %
+  nur Seitentausch                      36,2 %           46,0 %            0 %     33,2 %
+  + Kuppel-Pool                         28,5 %           40,2 %            0 %     11,2 %
+  + homeDefense                         35,8 %           47,1 %            0 %     13,8 %
+  + Rueckzug = Raid-Fassung             40,6 %           44,1 %            0 %     22,5 %
+
+BEFUND 2a - DER SEITENTAUSCH IST MIT ABSTAND DER GROESSTE POSTEN: -27,6 Punkte Wertverlust.
+Das ist die Forschungs-Inversion aus Abschnitt 1. Sie allein macht aus 63,8 % ein 36,2 %.
+
+BEFUND 2b - DER KUPPEL-POOL BRINGT -7,7 PUNKTE und senkt zugleich die Streuung von 33,2 % auf
+11,2 %. Er macht den Ausgang also nicht nur besser, sondern auch berechenbarer.
+
+BEFUND 2c - `homeDefense` IST FUER DIESEN SPIELER EIN NACHTEIL: +7,3 Punkte. Kein Fehler, sondern
+die Klassenlogik. classCombatMultipliers() nimmt einem KANONIER bei homeDefense den
+Offensivbonus (`homeDefense ? 1 : CLASS_KANONIER_OFFENSE_BONUS`); ein BOLLWERK wuerde umgekehrt
+gewinnen. **`homeDefense` ist kein Verteidiger-Vorteil, sondern der Schalter, der die Klassen
+tun laesst, was sie sollen.** Der Messwert gilt nur fuer den Kanonier des mittel-Profils; fuer
+Bollwerk ist er NICHT gemessen.
+
+BEFUND 2d - DER RUECKZUG RETTET SCHIFFE UND OPFERT ANLAGEN. Flottenverlust 47,1 % -> 44,1 %,
+Wertverlust aber 35,8 % -> 40,6 %. Ursache: 'fleetOnly' laesst nur Schiffe abziehen, die
+Verteidigungsanlagen bleiben allein gegen die volle Welle stehen. Das ist die gespiegelte Form der
+Ueberlegung, aus der Raids den Rueckzug ganz abgeschaltet haben. **Wer den Rueckzug einbaut,
+entscheidet damit, dass Anlagen billiger sind als Schiffe** - das ist eine Design-Aussage, keine
+Nebenwirkung.
+
+BEFUND 2e - DAS TOTALVERLUST-RISIKO VERSCHWINDET VOLLSTAENDIG. 13 % in der heutigen Fassung,
+0 von 40 in jeder anderen.
+
+
+================================================================================
+3. SCHRITT 1 - DIE KLIFF-PRUEFUNG. DAS IST DAS ERGEBNIS DIESER SESSION.
+================================================================================
+40 Laeufe je Zelle, scheibenweise. Vorher an den Extremwerten sondiert (10 Laeufe, 1 bis 32),
+damit der umkaempfte Bereich ueberhaupt gefunden wurde.
+
+STAND MITTEL (Heimatmacht 3,05 Mrd):
+  Mult   heute: Verlust   total   Streu.  |  Raid-Fassung   total   Streu.
+   3              9,4 %     0 %     25 %  |         8,1 %     0 %     21 %
+   4             19,3 %     0 %     28 %  |        13,2 %     0 %     10 %
+   5             37,2 %     0 %     35 %  |        22,5 %     0 %     16 %
+   6             60,4 %    10 %     28 %  |        39,0 %     0 %     20 %
+   7             92,8 %    60 %     10 %  |        60,7 %     0 %      0 %
+   8            100,0 %   100 %      0 %  |        61,8 %     0 %      1 %
+  10            100,0 %   100 %      0 %  |        61,7 %     0 %      0 %
+  (Sondierung, 10 Laeufe: bei 16 und 32 unveraendert 100 % bzw. 64,6 % und 70,8 %.)
+
+STAND FRUEH (Heimatmacht klein, Forschung 3):
+  Mult   heute: Verlust   total          |  Raid-Fassung   total
+  0,5             0,2 %     0 %          |         0,2 %     0 %
+  0,75            0,8 %     0 %          |         0,6 %     0 %
+  1               2,0 %     0 %          |         3,7 %     0 %
+  1,25            5,6 %     0 %          |        11,3 %     0 %
+  1,5            21,0 %     0 %          |        28,9 %     0 %
+  2              92,5 %    53 %          |        87,8 %     0 %
+  4             100,0 %   100 %          |        89,4 %     0 %
+  8             100,0 %   100 %          |        90,7 %     0 %
+  12            100,0 %   100 %          |        91,1 %     0 %
+
+STAND SPAET (Forschung 10, Module 10):
+  Mult   heute: Verlust   total          |  Raid-Fassung   total
+   4             17,3 %     0 %          |        12,9 %     0 %
+   6             52,6 %     0 %          |        34,1 %     0 %
+   8            100,0 %   100 %          |        56,0 %     0 %
+
+BEFUND 3a - DIE HEUTIGE FASSUNG IST EIN KLIFF UND DAMIT UNBRAUCHBAR. Am Stand mittel liegen
+zwischen "hart, aber ueberlebbar" (Mult 6, 60,4 %) und "restlos vernichtet" (Mult 8, 100 % in
+40 von 40 Laeufen) genau Faktor 1,33 im Multiplikator. Am Stand frueh liegt das Kliff zwischen
+1,5 und 2, am Stand spaet zwischen 6 und 8. **Eine einstellbare Groesse "manchmal die halbe
+Flotte" gibt es in dieser Fassung nicht** - das bestaetigt die Attritions-Eigenschaft aus
+raid.txt an einem zweiten, unabhaengigen Ort.
+
+BEFUND 3b - DIE RAID-FASSUNG HAT KEIN KLIFF, SONDERN EIN PLATEAU. Der Rueckzug deckelt den
+Wertverlust: mittel bei rund 62 %, spaet bei rund 56-60 %, frueh bei rund 90 %. Ueber den
+Multiplikator hinaus passiert nichts mehr - zwischen 8 und 32 bewegt sich der Wert am Stand
+mittel um weniger als drei Punkte. **Totalverluste: 0 von 40 in JEDER einzelnen Zelle, bis
+Multiplikator 32.** Damit ist die Fassung nach oben hin sicher: eine falsch gesetzte Zahl kann
+niemanden ausloeschen, sie kostet hoechstens das Plateau.
+
+BEFUND 3c - DAMIT IST DIE DESIGN-FRAGE BEANTWORTET. "Halbe bis ganze Flotte" ist in der
+Raid-Fassung als "halbe Flotte" erreichbar (Mult 6-7 am Stand mittel: 39 bis 61 %), als "ganze
+Flotte" strukturell NICHT - das Plateau laesst es nicht zu. Wer den Totalverlust will, muss die
+heutige Fassung behalten und bekommt dann das Kliff dazu. **Beides zusammen ist nicht zu haben.**
+
+BEFUND 3d - EIN FESTER MULTIPLIKATOR KANN NICHT FUNKTIONIEREN. Raid-Fassung bei Multiplikator 6:
+  frueh 89,8 %   mittel 39,0 %   spaet 34,1 %
+Bei Multiplikator 1,5: frueh 28,9 %, mittel und spaet praktisch null. Das Band verschiebt sich
+zwischen frueh und mittel um etwa Faktor 4, zwischen mittel und spaet kaum noch. Dieselbe Form wie
+bei Entscheidung 5 ("der Ausbaustand schlaegt staerker durch als jede Tabelle") und bei
+Entscheidung 13.1 (eine Konstante kann eine nicht-monotone Bezugskurve nicht treffen).
+
+BEFUND 3e - DIE URSACHE VON 3d IST BENENNBAR UND BEHEBBAR: die Welle wird auf die ROHMACHT
+skaliert. combatFleetPowerBase() summiert Waffen/Schild/Panzerung aus der Tabelle und ignoriert
+Forschung, Module, Klasse und Kampf-Booster. Der Spieler hat all das, die Basis (bei Forschung 0)
+nicht. Der Multiplikator misst deshalb an jedem Ausbaustand etwas anderes.
+Zwei Auswege, beide NICHT gebaut und NICHT vorentschieden:
+  (i)  Die Welle auf die EFFEKTIVE Heimatmacht skalieren (getEffectiveStats je Einheit statt
+       combatFleetPowerBase). Dann bedeutet ein Multiplikator an jedem Stand dasselbe, und es
+       reicht EINE Zahl. Neuer Helfer noetig, kein Client-Spiegel (combatFleetPowerBase hat null
+       Treffer in client/src).
+  (ii) Die Tabelle ausbaustandsabhaengig machen. Loest dasselbe Problem mit mehr Zahlen und
+       muesste bei jeder Forschungsaenderung nachgezogen werden.
+
+
+================================================================================
+4. DIE PIRATENFORSCHUNG IST DER ZWEITE GROSSE HEBEL - UND SIE WAR NIE BETRACHTET
+================================================================================
+Alle Zahlen oben stehen bei Piratenforschung 0. Eine gewachsene Basis forscht aber sehr wohl:
+maybeStartResearch() laeuft auch fuer Piratenbasen, in der Array-Reihenfolge von RESEARCH.
+Gegenprobe mit Piratenforschung Stufe 6 (also demselben Stand wie der mittel-Spieler):
+
+  Stand mittel, 40 Laeufe je Zelle
+  Mult   heute: Verlust   total  |  Raid-Fassung   total   (Vergleich: Forschung 0)
+   2              9,0 %     0 %  |         9,2 %     0 %   (war  1-3 %)
+   3             20,4 %     0 %  |        19,3 %     0 %   (war  8,1 %)
+   4             42,1 %     0 %  |        56,5 %     0 %   (war 13,2 %)
+   6            100,0 %   100 %  |        61,2 %     0 %   (war 39,0 %)
+
+BEFUND 4 - DIE FORSCHUNG DER BASIS IST AUF DER MULTIPLIKATOR-ACHSE RUND FAKTOR 2 WERT. Was bei
+Forschung 0 einen Multiplikator von 7 braucht, erreicht eine Basis mit Forschung 6 schon bei 4.
+**Damit existiert der vom Nutzer gewuenschte Staerkefaktor bereits in natuerlicher Form** - eine
+Basis, die laenger gewachsen ist, hat mehr geforscht und trifft dadurch haerter, ohne dass dafuer
+eine neue Konstante noetig waere. Faktor 2 allein reicht nicht ueber die volle Spanne, aber als
+zweiter Traeger neben dem bestandsbasierten Staerkefaktor ist es der billigste Regler im Spiel:
+er kostet keine Zahl.
+Bemerkenswert ausserdem: bei Forschung 6 verschwindet der Unterschied zwischen der heutigen
+Fassung und der Raid-Fassung im unteren Band fast (9,0 gegen 9,2 bei Mult 2) und dreht sich bei
+Mult 4 sogar um. Die Forschungs-Inversion aus Abschnitt 1 wirkt eben in BEIDE Richtungen: steht
+der Spieler auf Seite B, verliert er seine Kampf-Forschung - der Pirat auf Seite A behaelt seine.
+
+
+================================================================================
+5. WAS DARAUS FOLGT - VORSCHLAEGE, NICHTS DAVON ENTSCHIEDEN
+================================================================================
+1. **Die Verteidigungsseite auf die Raid-Fassung bringen, und zwar ueber den SEITENTAUSCH**, nicht
+   ueber vier Einzelkorrekturen. Der Spieler gehoert auf Seite A, so wie in jedem anderen
+   Heimatverteidigungs-Kampf. Damit fallen Forschungs-Inversion, Kuppel-Pool und homeDefense in
+   einem Zug weg. Groesster Einzelposten, und ohne ihn ist jede Kalibrierung wertlos.
+2. **Der Rueckzug ist eine eigene Entscheidung**, nicht Teil von Punkt 1. Er verwandelt das Kliff
+   in ein Plateau (der eigentliche Gewinn), kostet aber die Verteidigungsanlagen. Ohne ihn bleibt
+   das Kliff bestehen, auch nach dem Seitentausch.
+3. **Vor Schritt 2 die Skalierungsgrundlage klaeren** (Befund 3e). Ohne effektive Macht braucht es
+   eine ausbaustandsabhaengige Tabelle, und die Kalibrierung in Schritt 2 waere dreimal zu machen.
+4. **Der Staerkefaktor sollte die Forschung der Basis mittragen** (Befund 4), nicht nur ihren
+   Flottenbestand.
+
+OFFEN UND NICHT GEMESSEN:
+  - Der Fall "Flotte unterwegs". Verschiebt alles nach unten und ist genau der Fall, um den es dem
+    Nutzer geht ("vorsichtig spielen").
+  - homeDefense fuer ein BOLLWERK statt fuer einen Kanonier.
+  - Haeufigkeit je Spieler und Woche (Schritt 3), Neulingsschutz und Beute (Schritt 4).
+  - Ob eine Basis den fuer den Staerkefaktor noetigen Bestand ueberhaupt erreicht - haengt am
+    Armuts-Fallback fuer Roboterfabrik/Nanitenfabrik aus bot_yield_131.txt.
