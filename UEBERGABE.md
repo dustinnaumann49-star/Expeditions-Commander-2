@@ -65,6 +65,33 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 21.08.2026: ENTSCHEIDUNG 17 - PIRATENBASEN ALS BEDROHUNG. Schritt 0 und 1 gemessen,
+  NICHTS GEBAUT.** Neuer Punkt auf Nutzerwunsch, ausserhalb der Blockreihenfolge. Messkasten im
+  Plan direkt vor Abschnitt 2a, Protokoll `pirate_threat_17.txt`, Werkzeug
+  `run_pirate_threat_17.mjs` (neu). **Gewaehlt ist Weg B mit Staerkefaktor** (Angriffswelle
+  skaliert am ZIEL, Bereitschaftsfaktor nicht bei 1,0 gedeckelt).
+  - **Die Engine ist NICHT seitensymmetrisch, und der Spieler steht beim Basis-Angriff auf der
+    falschen Seite.** `sharedShieldPoolA`, `retreatMode` und `homeDefense` wirken nur auf Seite A,
+    und `applyPlayerResearch` ist fuer A true, fuer B false - **der Verteidiger verliert dadurch
+    Praezision, Zielerfassung, Durchschlag, Kritische Treffer und Ausweichen.** Das ist der
+    groesste Einzelposten: der reine Seitentausch ist -27,6 Punkte Wertverlust wert.
+  - **DIE HEUTIGE FASSUNG IST EIN KLIFF.** Stand mittel: Multiplikator 6 -> 60,4 % Verlust,
+    Multiplikator 8 -> 100 % in 40 von 40 Laeufen. Faktor 1,33 dazwischen. Unbrauchbar als
+    einstellbare Groesse.
+  - **DIE RAID-FASSUNG HAT EIN PLATEAU STATT EINES KLIFFS** (mittel rund 62 %, spaet 56-60 %,
+    frueh 90 %) und **0 Totalverluste in JEDER Zelle bis Multiplikator 32.** Damit ist die
+    Design-Frage beantwortet: **"halbe Flotte" ist erreichbar, "ganze Flotte" strukturell nicht -
+    beides zusammen ist nicht zu haben.**
+  - **Ein fester Multiplikator kann nicht funktionieren:** bei Mult 6 frueh 89,8 / mittel 39,0 /
+    spaet 34,1 %. Ursache: die Welle skaliert auf die ROHMACHT, `combatFleetPowerBase()` ignoriert
+    Forschung, Module, Klasse und Booster. Vor Schritt 2 zu klaeren, sonst ist die Kalibrierung
+    dreimal zu machen.
+  - **Die Forschung der Basis ist rund Faktor 2 auf der Multiplikator-Achse wert** und war nie
+    betrachtet. Der gewuenschte Staerkefaktor existiert damit bereits in natuerlicher Form.
+  - **Offen:** Verteidigungsfassung und Skalierungsgrundlage entscheiden (17.1), dann Multiplikator
+    und Staerkefaktor (17.2), Haeufigkeit je Spieler (17.3 - das Limit gehoert auf den SPIELER,
+    nicht auf die Basis), Neulingsschutz (17.4 - `isNewcomerProtected()` steht ausschliesslich in
+    `raids.ts`, der Basis-Angriff umgeht Entscheidung 10 vollstaendig), Beute (17.5).
 - **NEU 21.08.2026: BLOCK C IST VOLLSTAENDIG. Schritt 12 (Entscheidung 13.1 + 13.2) ist erledigt -
   13.1 KALIBRIERT bis auf EINE Nutzerzahl, 13.2 ENTSCHIEDEN OHNE MESSUNG, beides NICHT GEBAUT.**
   Messkasten am Kopf von Entscheidung 13, Protokoll `bot_yield_131.txt`, Werkzeug

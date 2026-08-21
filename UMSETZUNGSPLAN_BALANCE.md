@@ -3087,6 +3087,149 @@ keine.
 
 ---
 
+### Entscheidung 17 - Piratenbasen als Bedrohung: SCHRITT 0 UND 1 GEMESSEN, NICHT GEBAUT
+
+**Bezug:** Nutzerentscheidung 21.08.2026. Das Spiel ist reines PvE; die Herausforderung soll von
+den Piratenbasen kommen, nicht von Mitspielern. Sektoren erfordert man freiwillig - der
+Nervenkitzel, vorsichtig sein zu muessen, kann deshalb nur von einem Gegner kommen, der von sich
+aus angreift. Ressourcenklau ist ausdruecklich KEIN Ziel.
+
+**Gewaehlter Weg (Nutzerentscheidung, aus drei Varianten):** **B mit Staerkefaktor.** Die
+Angriffswelle wird auf die Macht des ZIELS hochgerechnet - so wie die Garnison seit Entscheidung 5
+auf die Macht des ANGREIFERS hochgerechnet wird -, multipliziert mit einem Bereitschaftsfaktor,
+der anders als `garrisonReadiness()` NICHT bei 1,0 gedeckelt ist. Verworfen wurden: Variante A
+(fester Anteil des tatsaechlichen Bestands - die Basis braeuchte rund das 3,3-fache der
+Heimatmacht des Spielers, gemessen ist sie nach 14 Tagen zwei Groessenordnungen davon entfernt)
+und reines B mit Deckel 1,0 (dann waere Wachstum fuer die Bedrohung bedeutungslos).
+
+> **MESSKASTEN 21.08.2026 - SCHRITT 0 UND SCHRITT 1. NICHTS GEBAUT.** Protokoll
+> `balance/session2-simulation/pirate_threat_17.txt`, Werkzeug `run_pirate_threat_17.mjs` (neu).
+> **Alle Werte aus dem kumulativen Messbuild** (`--rf=4 --evk=0.20 --evm=0.08`). 40 Laeufe je
+> Zelle, scheibenweise, vorher an den Extremwerten sondiert.
+>
+> **DIE ENGINE IST NICHT SEITENSYMMETRISCH, UND DER SPIELER STEHT HEUTE AUF DER FALSCHEN SEITE.**
+> `runRounds()` behandelt Seite A durchgaengig als Spielerseite: `sharedShieldPoolA`,
+> `retreatMode` und `homeDefense` wirken ausschliesslich auf A, und `applyPlayerResearch` ist fuer
+> A true, fuer B false. Beim Basis-Angriff steht der Spieler auf Seite B - **seine Praezision,
+> Zielerfassung, Durchschlag, Kritischen Treffer und Ausweichen werden nicht angewandt.**
+> `sideBStatsOverride` korrigiert nur Waffen/Schild/Panzerung. Dazu: kein Kuppel-Pool, kein
+> `homeDefense`, kein Rueckzug, keine Anlagen-Reparatur, kein Neulingsschutz. Der Standardwert
+> `retreatMode = 'all'` gilt Seite A, also den ANGREIFENDEN PIRATEN - heute zieht sich die
+> Piratenwelle zurueck, der Verteidiger nicht.
+> *Gegengeprueft, damit der Seitentausch sauber isoliert:* ein Schuetze feuert auch dann noch,
+> wenn er in derselben Runde gefallen ist (Filterung auf `hpCur > 0` erst NACH beiden
+> `fireShots()`-Aufrufen). **Es gibt keinen Erstschlag-Vorteil fuer Seite A.**
+>
+> **SCHRITT 0 - was die Asymmetrien kosten** (Stand mittel, Multiplikator 6, 40 Laeufe;
+> bei Multiplikator 1 liegt der Verlust in allen Fassungen unter 1 % - dort misst man nichts,
+> erster Durchgang verworfen):
+>
+> | Fassung | Wertverlust | Flottenverlust | Totalverlust | Streuung |
+> |---|---|---|---|---|
+> | heute (Spieler = Seite B) | 63,8 % | 72,5 % | **13 %** | 26,4 % |
+> | nur Seitentausch | 36,2 % | 46,0 % | 0 % | 33,2 % |
+> | + Kuppel-Pool | 28,5 % | 40,2 % | 0 % | 11,2 % |
+> | + homeDefense | 35,8 % | 47,1 % | 0 % | 13,8 % |
+> | + Rueckzug = Raid-Fassung | 40,6 % | 44,1 % | 0 % | 22,5 % |
+>
+> - **Der Seitentausch ist mit -27,6 Punkten der groesste Einzelposten** - das ist die
+>   Forschungs-Inversion.
+> - Der **Kuppel-Pool** bringt -7,7 Punkte und senkt die Streuung von 33,2 auf 11,2 % - der
+>   Ausgang wird nicht nur besser, sondern berechenbarer.
+> - **`homeDefense` ist fuer diesen Spieler ein NACHTEIL (+7,3 Punkte)** und kein Fehler:
+>   `classCombatMultipliers()` nimmt einem KANONIER bei `homeDefense` den Offensivbonus, ein
+>   BOLLWERK gewaenne umgekehrt. Der Schalter ist kein Verteidiger-Vorteil, sondern der, der die
+>   Klassen tun laesst, was sie sollen. Fuer Bollwerk NICHT gemessen.
+> - **Der Rueckzug rettet Schiffe und opfert Anlagen** (Flotte 47,1 -> 44,1 %, Wert 35,8 ->
+>   40,6 %), weil `'fleetOnly'` die Verteidigung allein stehen laesst. Wer ihn einbaut,
+>   entscheidet damit, dass Anlagen billiger sind als Schiffe.
+> - **Das Totalverlust-Risiko verschwindet vollstaendig:** 13 % heute, 0 von 40 in jeder anderen
+>   Fassung.
+>
+> **SCHRITT 1 - DIE KLIFF-PRUEFUNG. Das ist das Ergebnis.**
+>
+> | Mult | mittel heute | total | mittel Raid-Fassung | total |
+> |---|---|---|---|---|
+> | 3 | 9,4 % | 0 % | 8,1 % | 0 % |
+> | 4 | 19,3 % | 0 % | 13,2 % | 0 % |
+> | 5 | 37,2 % | 0 % | 22,5 % | 0 % |
+> | 6 | 60,4 % | 10 % | 39,0 % | 0 % |
+> | 7 | 92,8 % | 60 % | 60,7 % | 0 % |
+> | 8 | **100,0 %** | **100 %** | 61,8 % | 0 % |
+> | 10 | 100,0 % | 100 % | 61,7 % | 0 % |
+>
+> - **Die heutige Fassung ist ein Kliff und damit unbrauchbar.** Zwischen "hart, aber ueberlebbar"
+>   (Mult 6) und "restlos vernichtet in 40 von 40 Laeufen" (Mult 8) liegt Faktor 1,33. Bestaetigt
+>   die Attritions-Eigenschaft aus `raid.txt` an einem zweiten, unabhaengigen Ort.
+> - **Die Raid-Fassung hat kein Kliff, sondern ein PLATEAU.** Der Rueckzug deckelt den Verlust bei
+>   rund 62 % (mittel), 56-60 % (spaet), 90 % (frueh). Zwischen Multiplikator 8 und 32 bewegt sich
+>   nichts mehr. **Totalverluste: 0 von 40 in JEDER Zelle, bis Multiplikator 32.** Eine falsch
+>   gesetzte Zahl kann damit niemanden ausloeschen.
+> - **Damit ist die Design-Frage beantwortet:** "halbe Flotte" ist erreichbar (Mult 6-7 am Stand
+>   mittel), "ganze Flotte" strukturell nicht. Wer den Totalverlust will, behaelt das Kliff.
+>   **Beides zusammen ist nicht zu haben.**
+>
+> **EIN FESTER MULTIPLIKATOR KANN NICHT FUNKTIONIEREN.** Raid-Fassung bei Multiplikator 6:
+> **frueh 89,8 % / mittel 39,0 % / spaet 34,1 %**. Bei 1,5: frueh 28,9 %, mittel und spaet
+> praktisch null. Das Band verschiebt sich zwischen frueh und mittel um Faktor 4.
+> **Ursache benennbar und behebbar:** die Welle wird auf die ROHMACHT skaliert -
+> `combatFleetPowerBase()` ignoriert Forschung, Module, Klasse und Kampf-Booster, die der Spieler
+> hat und die Basis nicht. Zwei Auswege, keiner vorentschieden: **(i)** auf die EFFEKTIVE
+> Heimatmacht skalieren (`getEffectiveStats` je Einheit) - dann reicht EINE Zahl fuer alle
+> Staende, neuer Helfer noetig, **kein Client-Spiegel** (`combatFleetPowerBase` hat null Treffer in
+> `client/src`); **(ii)** eine ausbaustandsabhaengige Tabelle - mehr Zahlen, muss bei jeder
+> Forschungsaenderung nachgezogen werden.
+>
+> **DIE FORSCHUNG DER BASIS IST DER ZWEITE GROSSE HEBEL UND WAR NIE BETRACHTET.** Alle Zahlen oben
+> stehen bei Piratenforschung 0. `maybeStartResearch()` laeuft aber auch fuer Piratenbasen.
+> Gegenprobe mit Stufe 6 (Stand mittel, Raid-Fassung): Mult 3 -> 19,3 % (war 8,1), Mult 4 ->
+> 56,5 % (war 13,2), Mult 6 -> 61,2 % (war 39,0). **Auf der Multiplikator-Achse rund Faktor 2.**
+> Damit existiert der gewuenschte Staerkefaktor bereits in natuerlicher Form: eine laenger
+> gewachsene Basis hat mehr geforscht und trifft haerter - **der billigste Regler im Spiel, er
+> kostet keine Zahl.**
+>
+> **VORSCHLAEGE, NICHTS DAVON ENTSCHIEDEN:** (1) Die Verteidigungsseite ueber den SEITENTAUSCH auf
+> die Raid-Fassung bringen, nicht ueber vier Einzelkorrekturen. (2) Der Rueckzug ist eine EIGENE
+> Entscheidung - er macht aus dem Kliff das Plateau, kostet aber die Anlagen. (3) Vor Schritt 2 die
+> Skalierungsgrundlage klaeren, sonst ist die Kalibrierung dreimal zu machen. (4) Den
+> Staerkefaktor die Forschung der Basis mittragen lassen.
+>
+> **OFFEN, NICHT GEMESSEN:** der Fall "Flotte unterwegs" (genau der Fall, um den es geht);
+> `homeDefense` fuer ein Bollwerk; Haeufigkeit je Spieler und Woche (Schritt 3); Neulingsschutz und
+> Beute (Schritt 4); ob eine Basis den noetigen Bestand ueberhaupt erreicht - das haengt am
+> Armuts-Fallback fuer Roboterfabrik/Nanitenfabrik aus `bot_yield_131.txt`.
+
+**Warum die Basen heute keine Bedrohung sind (Code-Befund, 21.08.2026):**
+`runPirateBaseOffensiveTurn()` startet einen Angriff nur, wenn 35 % des Basisbestands mindestens
+das 1,15-fache von (Spielerflotte + Verteidigung daheim) erreichen. Gegen ein entwickeltes Konto
+ist das nie erfuellt - die Basis waegt ab, kommt jedes Mal zu "lohnt nicht" und waechst weiter.
+**Dieselbe Fehlerform wie bei `ATTACK_POWER_SAFETY_MARGIN`**, nur noch nicht behoben.
+Die Abwaegung liest `targetState.fleet`, also die Flotte DAHEIM - Missionen und Expeditionen
+ziehen die Schiffe vorher ab. **Der Mechanismus "wer seine Flotte wegschickt, wird zum Ziel" ist
+bereits gebaut**, er loest nur nie aus.
+
+**Was Wachstum bewirkt und was nicht:** `buildGarrison()` skaliert die Abwehrwelle auf
+`sentPower * multiplier * readiness`, `readiness` ist bei 1,0 gedeckelt. Eine gewachsene Basis ist
+also NICHT schwerer zu knacken. **Wachstum wirkt ausschliesslich auf die Offensive** - Entscheidung
+17 laesst Entscheidung 5 damit unberuehrt, und die Farm-Seite bleibt geschlossen.
+
+**Was die Zahl der Basen ist:** zuerst ein EINNAHMEN-Regler, erst danach ein Schwierigkeits-Regler.
+Gemessen 1,60 Mrd netto je Angriff, 20 h Erholung, 4 Basen -> 5,9-6,4 Mrd/Tag, rund 8-10 % der
+Tageseinnahmen. Bei 12 Basen (die Positionen liegen alle in `galaxyConstants.ts`, aktiv sind die
+ersten vier) rechnerisch 18-19 Mrd/Tag - ein Viertel bis ein Drittel der Baseline. **Beruehrt
+Abnahmekriterium 5 und gehoert nicht mit der Bedrohungsfrage zusammen entschieden.**
+
+**Offene Teilpunkte:** 17.1 Angriffsausloesung und Verteidigungsfassung (Schritt 0/1 gemessen,
+Entscheidung offen), 17.2 Multiplikator und Staerkefaktor (Schritt 2), 17.3 Haeufigkeit je Spieler
+und Woche - **das Limit gehoert auf den SPIELER, nicht auf die Basis**, sonst skaliert es mit der
+Zahl der Basen mit (dieselbe Falle wie bei R16, wo die Sperre nur an einem von zwei
+Eintrittspunkten sass), 17.4 Neulingsschutz (`isNewcomerProtected()` steht ausschliesslich in
+`raids.ts` - der Basis-Angriff umgeht Entscheidung 10 vollstaendig, und nach dem Reset ist jeder
+14 Tage lang Neuling), 17.5 Beute (`PIRATE_BASE_OFFENSIVE_LOOT_PERCENT` = 0,2; der Nutzer hat
+Ressourcenklau ausdruecklich als nicht notwendig bezeichnet).
+
+---
+
 ## 2a. Vorgezogene Umsetzung am 10.08.2026 (ausserhalb der Blockreihenfolge)
 
 **Nutzerentscheidung.** Ausloeser waren zwei eigene Beobachtungen beim Spielen: die Heimatbasis hat
@@ -5258,6 +5401,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 21.08.2026 (Entscheidung 17, neu) | **Piratenbasen als Bedrohung - Schritt 0 und 1 gemessen, NICHTS GEBAUT.** Neuer Punkt auf Nutzerwunsch: das Spiel ist reines PvE, die Herausforderung soll von den Basen kommen, Ressourcenklau ausdruecklich nicht. Werkzeug `run_pirate_threat_17.mjs` (neu), Protokoll `pirate_threat_17.txt`, kumulativer Messbuild, 40 Laeufe je Zelle. **Nutzerentscheidung aus drei Varianten: Weg B mit Staerkefaktor** (Welle skaliert am ZIEL, Bereitschaftsfaktor NICHT bei 1,0 gedeckelt). Verworfen: Variante A (fester Anteil des Bestands - die Basis braeuchte das 3,3-fache der Heimatmacht und ist nach 14 Tagen zwei Groessenordnungen davon entfernt) und reines B (Wachstum waere fuer die Bedrohung bedeutungslos). **Zentraler Code-Befund: die Engine ist nicht seitensymmetrisch, und der Spieler steht beim Basis-Angriff auf der falschen Seite.** `sharedShieldPoolA`, `retreatMode` und `homeDefense` wirken nur auf Seite A, und `applyPlayerResearch` ist fuer A true, fuer B false - der Verteidiger verliert dadurch Praezision, Zielerfassung, Durchschlag, Kritische Treffer und Ausweichen; `sideBStatsOverride` korrigiert nur Waffen/Schild/Panzerung. Dazu fehlen Kuppel-Pool, Anlagen-Reparatur und Neulingsschutz, und der Standard `retreatMode = 'all'` gilt den ANGREIFENDEN Piraten. Gegengeprueft: ein gefallener Schuetze feuert in derselben Runde noch, es gibt also **keinen** Erstschlag-Vorteil fuer Seite A - der Seitentausch isoliert sauber. **Schritt 0 (Stand mittel, Mult 6):** heute 63,8 % Wertverlust und 13 % Totalverluste; nur Seitentausch 36,2 % (**-27,6 Punkte, groesster Einzelposten**); + Kuppel-Pool 28,5 % (und Streuung von 33,2 auf 11,2 % gesenkt); + `homeDefense` 35,8 % - **ein NACHTEIL fuer den Kanonier**, weil `classCombatMultipliers()` ihm daheim den Offensivbonus nimmt (Bollwerk nicht gemessen); + Rueckzug 40,6 % Wert, aber nur 44,1 % Flottenverlust - **er rettet Schiffe und opfert Anlagen**, weil `'fleetOnly'` die Verteidigung allein stehen laesst. Totalverlust-Risiko in allen Fassungen ausser der heutigen: 0 von 40. Der erste Durchgang bei Multiplikator 1 wurde verworfen, weil dort alle Fassungen unter 1 % liegen und nichts messen. **Schritt 1 - die Kliff-Pruefung ist das Ergebnis:** die heutige Fassung ist ein **Kliff** (Stand mittel: Mult 6 -> 60,4 %, Mult 8 -> 100 % in 40 von 40; Faktor 1,33 dazwischen) und damit unbrauchbar - bestaetigt die Attritions-Eigenschaft aus `raid.txt` an einem zweiten Ort. Die Raid-Fassung hat **kein Kliff, sondern ein Plateau** (mittel rund 62 %, spaet 56-60 %, frueh 90 %; zwischen Mult 8 und 32 bewegt sich nichts; **0 Totalverluste in jeder Zelle bis Mult 32**). **Damit ist die Design-Frage beantwortet: "halbe Flotte" ist erreichbar, "ganze Flotte" strukturell nicht - beides zusammen ist nicht zu haben.** **Ein fester Multiplikator kann nicht funktionieren:** bei Mult 6 frueh 89,8 / mittel 39,0 / spaet 34,1 %, das Band verschiebt sich zwischen frueh und mittel um Faktor 4. Ursache benannt: die Welle wird auf die ROHMACHT skaliert, `combatFleetPowerBase()` ignoriert Forschung, Module, Klasse und Booster. Auswege (i) auf die EFFEKTIVE Heimatmacht skalieren - dann reicht eine Zahl, kein Client-Spiegel noetig - oder (ii) ausbaustandsabhaengige Tabelle. **Zweiter grosser Hebel, nie betrachtet: die Forschung der Basis.** Mit Stufe 6 statt 0 verschiebt sich das Band um rund **Faktor 2** (Mult 4: 56,5 statt 13,2 %). Damit existiert der gewuenschte Staerkefaktor bereits in natuerlicher Form und kostet keine neue Zahl. **Weitere Code-Befunde:** die 1,15-Marge in `runPirateBaseOffensiveTurn()` ist der Grund, warum Basen faktisch nie angreifen (dieselbe Fehlerform wie `ATTACK_POWER_SAFETY_MARGIN`); die Abwaegung liest die Flotte DAHEIM, der Mechanismus "wer seine Flotte wegschickt, wird zum Ziel" ist also bereits gebaut; `garrisonReadiness()` ist bei 1,0 gedeckelt, **Wachstum wirkt ausschliesslich auf die Offensive** - Entscheidung 5 bleibt unberuehrt; `isNewcomerProtected()` steht ausschliesslich in `raids.ts`, der Basis-Angriff umgeht Entscheidung 10 vollstaendig, und nach dem Reset ist jeder 14 Tage lang Neuling. Die Zahl der Basen ist zuerst ein EINNAHMEN-Regler (4 Basen = 5,9-6,4 Mrd/Tag = 8-10 % der Einnahmen; 12 Basen rechnerisch 18-19 Mrd/Tag) und gehoert nicht mit der Bedrohungsfrage zusammen entschieden. |
 | 21.08.2026 (Block C, Schritt 12) | **Entscheidung 13.1 KALIBRIERT bis auf eine Nutzerzahl, 13.2 ENTSCHIEDEN OHNE MESSUNG - NICHTS GEBAUT.** Werkzeug `run_bot_yield_131.mjs` (neu), Protokoll `bot_yield_131.txt`, kumulativer Messbuild (`--rf=4 --evk=0.20 --evm=0.08`), Anker aus `loot_curve.txt` normiert auf die vernichtete Feindmacht reproduziert (-2,3 % bzw. -1,1 %). **Vier Dinge wurden VOR der ersten Messung geklaert, wie gefordert.** (1) **Der Bezugswert: keine Spalte.** Ein Bot hat keinen Ausbaustand im Sinne der Tabelle - ihm fehlen Abbau-Booster, Prospektor, Asteroiden-Mining und Allianz-Station, waehrend Flotte, Forschung, Gebaeude und Module dieselben Groessen sind. Verglichen wird deshalb mit einem Spieler DERSELBEN Flottenmacht, die drei Spalten sind Stuetzstellen statt Auswahl. Dass die Spaltenwahl sonst entschieden haette, ist gemessen: der heutige Bot liegt bei 18 / 6 / 11 % des Spielers, der \"Faktor fuer 100 %\" bei 33,1 / 96,9 / 55,1 - die alten \"15 %\" und \"39\" liegen dazwischen und waren eine unbenannte Spaltenwahl gegen die aufgegebene 21,69-Baseline. Der Anteil ist ausserdem NICHT monoton (der mittlere Stand ist der schlechteste, weil dort das Elite-Bollwerk aufgeht). (2) **Das Zielbild.** Der Plan-Korridor \"60-100 % des Spielers\" ist mit einem einzigen Koeffizienten **gemessen nicht erreichbar**: der Abstand zwischen guenstigster und unguenstigster Stuetzstelle betraegt bei jedem f den Faktor 3,4, weil die Bezugskurve nicht monoton ist (Spieler-Ertrag je Punkt eigener Flottenmacht 3,5 / 7,2 / 3,3). Ersetzt durch das Kriterienpaar **13.1-A** (Decke: max ueber die drei Stuetzstellen < 1,0; trennt nachweislich - 0,12 bei f=1 gegen 1,38 bei f=20; kippt bei f=13,5) und **13.1-B** (Boden: nicht unter dem heutigen Stand 0,18/0,06/0,11; erfuellt ab f=4). **Das vor der Messung vorgeschlagene spaltenfreie Mass \"Tagesrendite im Spielerband 209-355 %\" ist geprueft und verworfen** - es verlangt f = 73/25/18 (Spannweite 4,1), weil die frueh-Zelle unter Weg (b) ein Netto nahe null hat und ein Nenner nahe null als Kalibriergroesse untauglich ist. (3) **13.3 muss nicht vorgezogen werden - es ist gebaut**, allerdings nur fuer die Piratenbasen (`nextEconomyTurn`). Die KI-Mitspieler haben kein Raster: `runBotTurn()` laeuft einmal je Heartbeat, gedeckelt nur durch `HEARTBEAT_MIN_INTERVAL_MS = 60 s` gegen `HEARTBEAT_INTERVAL_MS = 2 min`, also 30-60 Zuege je Stunde je nach externem Taktgeber. Fuer die Messung folgenlos (virtuelle Uhr), fuer den Einbau eine **Vorgabe statt einer Vorziehung**: der virtuelle Ertrag wird ZEITBASIERT ueber `deltaSec` verbucht (wie `accrueBuildingProduction()`), nicht je Bot-Zug - sonst kehrt die Aufruf-Abhaengigkeit eine Ebene hoeher auf dem Einkommen zurueck. (4) **13.2 braucht keine Messung** - bestaetigt, und die wirtschaftliche Begruendung im Plan ist zusaetzlich ueberholt (siehe unten). **Zwei Praemissen von 13.1 sind gegen den Code widerlegt (Messregel 16).** (a) \"Bots haben ausschliesslich Minen-Einkommen\" stimmt nicht: `maybeAttackPirateBase()` liefert Beute ueber `pirateBaseLoot()` und damit bereits ueber `LOOT_CURVE_ANCHOR_*`, und Bots bekommen im Elite-Bollwerk `winResources` voll gutgeschrieben (0,93 Mrd Wert je Check). Richtig ist der engere Satz: **Bots haben keinen Zugang zum CONTAINER-Wert** - `openContainer()` ist nur ueber `routes.ts` erreichbar, ein Bot stellt nie einen Request. Ein Bot gewinnt einen Raid ueber 12 Wellen (22,07 Mrd Containerwert) und bekommt dafuer exakt null. Folge: der virtuelle Ertrag tritt NEBEN diese Posten; die Kalibrierung laesst sie weg und ist damit die riskante Richtung. (b) Die Zahlen \"2,5 % aus Minen\" und \"muesste bei 39 liegen\" sind gegen 21,69 Mrd/Tag gerechnet und ersetzt. **Engpass vorab geprueft, weil 13.3 festhaelt, dass bei reichen NPCs die Bau-Slots binden:** 14 simulierte Tage, 2-Minuten-Takt, `runEconomyTick()` + `runEconomyBotTurn()`, deterministisch (einzige Zufallsquelle `maybeChooseClass()` vorab fixiert, keine Serien vorgetaeuscht). Der Flottenwert steigt bis zum 9-fachen Zusatzertrag praktisch proportional (0,17 -> 0,60 -> 2,14 -> 9,86 Mrd) - **der Ertrag ist also der richtige Regler**, was vorher nicht gemessen war. **Ab dem 27-fachen kehrt es sich um, und der Grund ist ein Armuts-Fallback:** `maybeBuildBuilding()` erreicht Roboterfabrik und Nanitenfabrik erst, wenn ALLE DREI Minenausbauten fehlschlagen - was nur aus Geldmangel geschieht. Ein reicher Bot baut die beiden bauzeitverkuerzenden Fabriken deshalb nie (Robo 0 / Nanite 0 gegen Robo 5 / Nanite 14), belegt den einen Gebaeude-Slot zu 44 % mit Solarkraftwerken und bleibt bei Minenstufe 13 stehen. Dieselbe Fehlerform wie bei `ATTACK_POWER_SAFETY_MARGIN`. **Gehoert zu 13.4/Block D, hier nicht angefasst**; die kalibrierten Werte liegen mit x1,4 bis x4,0 klar darunter. **Die beiden Koeffizienten von Weg (b) sind GEMESSEN** (40 Laeufe je Zelle, 24h-Solo-Mission gegen `piraten_hoch`, scheibenweise): **k = 4,0** (gemessen 3,204/4,275/3,996 ueber zwei Groessenordnungen Flottenmacht - nahezu konstant, weil die Gegnerstaerke ohnehin an der eigenen Macht haengt; Einzellauf-Streuung 25 %, Standardfehler ueber 40 Laeufe 4,0 %, der Abstand frueh/mittel von 33 % also echt) und **Verlust 0,036 Wert-Einheiten je Punkt vernichteter Feindmacht** (0,0375 mittel gegen 0,0355 spaet, Uebereinstimmung auf 5 %), abzueglich Bergung 30 %. Damit haengen Ertrag UND Verlust an derselben Groesse, wie 13.1 es fordert. *Nachteil ausdruecklich:* frueh liegt beim Verlust mit 0,173 um das 4,7-fache hoeher (Forschung 3, keine Module) - ein junger Bot verliert real mehr, als eine einzige Konstante abbildet. **OFFEN, NUTZERENTSCHEIDUNG: der Wert von f** (`BOT_VIRTUAL_ACTIVITY`). Vorschlag f = 12 (0,92/0,27/0,34, nutzt die Decke bis auf 8 %) oder f = 8 (0,67/0,19/0,26). **13.2:** deterministisch gerechnet betraegt der Unterschied in Macht je Wert-Einheit zwischen Gleichverteilung (0,8751) und den vorgeschlagenen Profilen (0,8771 / 0,8765) **0,2 %** - die Begruendung \"wertmaessig schief, nach Entscheidung 6 die schlechteste Verwendung\" ist damit **von Entscheidung 6 selbst entwertet** worden, die den Wert je Machtpunkt auf 1,15 angeglichen hat (gebaut 18.08.2026). 13.2 ist eine reine Identitaets-Entscheidung; der einzige ungemessene Rest ist das Kampfverhalten unter Entscheidung 16 und gehoert dorthin. **Messregel 8:** neun Namen im Client gegreppt, null Treffer; **ein Spiegel, derselbe wie bei 13.3** - `DebugBotState` in `types/game.ts` + `pages/Debug.tsx` + Route `/game/debug/npcs`. Fuer 13.2 kein Spiegel. **Nebenbefund:** `BASE_INCOME` in `run_income_baseline_v2.mjs` (55/300/554 Mio/Tag) ist eine Setzung, die der Code nicht hergibt - gerechnet 29,6/343,2/2262,1 Mio (Mining-Forschung, Abbau-Booster, Prospektor fehlen). **Die Baseline bleibt gueltig**, das NETTO bewegt sich nur um -2,6 / +0,2 / +2,8 %; beim naechsten Anfassen aus dem Code ziehen. |
 | 21.08.2026 (Nutzerbeobachtung) | **Die CPU-Begruendung des Schiffslimits ist im Echtbetrieb ueberholt.** Bei rund 1 Mio. Schiffen samt gleichzeitiger Koop-Expedition ins Elite-Bollwerk sind beide CPUs im Leerlauf (eine Worker, eine Hauptthread) - die 26-ms-Messung aus Abschnitt 2a Punkt 8 ist damit nicht mehr nur simuliert, sondern bestaetigt. Von den beiden urspruenglichen Gruenden fuer `MAX_PLAYER_SHIPS = 1.000.000` bleibt damit nur noch einer: das Limit ersetzt bis zum Einbau von Entscheidung 2 die Bremse gegen Weglauf-Wachstum. **Der Messpunkt in Abschnitt 7 ist entsprechend geschaerft** - um die Beobachtung, um eine ausdrueckliche Reihenfolge fuer das spaetere Entfernen (Reset MIT Limit, dann Entscheidung 2 im echten Spiel beobachten, dann Konvergenz messen, erst dann entfernen und dabei R13 als toten Code aufraeumen) und um den bisher unbenannten Restpunkt: Entscheidung 2 senkt zwar die Steigung der Beutekurve, hebt aber das Niveau (Solo Hoch von -2,32 auf +2,42 Mrd netto fuer die reale Flotte). Heute bremst sich grosses Wachstum teilweise selbst, weil sich Fluege ab einer gewissen Groesse nicht lohnen - genau das faellt weg. Ob der Exponent allein konvergiert, ist ungemessen. Zusaetzlich vermerkt: `POOL_SIZE` bleibt auf 1, koennte aber auf 2 - bei zwei Kernen konkurrieren dann zwei Worker plus Hauptthread um zwei CPUs, und Entscheidung 13.1 hat den Bot-Ertragsweg (b) unter anderem mit `POOL_SIZE = 1` begruendet. |
 | 20.08.2026 (Block C, Schritt 9) | **Entscheidung 7.2 und 7.3 KALIBRIERT - NICHT GEBAUT. 7.4 herausgeloest. `STATION_MINING_COMPENSATION` bleibt 3, der offene Kalibrierpunkt aus Abschnitt 2a ist geschlossen.** Werkzeug `run_station_v2.mjs` (neu), Protokoll `station_v2.txt`. **Vier Vorentscheidungen, bewusst VOR der Messung getroffen, damit nicht zweimal kalibriert wird:** (1) Amortisation = Kosten/Eigenertrag (Lesart A wie bei den Modulen in Abschnitt 4); die Alternative "Kosten/Gesamteinnahmen" ergibt 9,1 bzw. 28,5 Tage und liegt in keiner Spalte im Band. (2) Anteilskriterium gegen die Spalte **mittel**. (3) Pro-Kopf-Teiler bleibt, wird aber als ANNAHME gefuehrt - `withdrawFromStation()` hat weiterhin keine Quote, es gibt keine Mitglieder-Obergrenze, und `bot.ts` kennt keinen Allianz-Pfad (nach der Bot-Lehre aus Entscheidung 2 gegengeprueft). (4) 7.4 nach Block D, Schritt 14. **Die Spaltenwahl war keine Formalie: fuenf der sechs moeglichen Bezugszellen trennen gar nicht.** Grenze fuer COMP, ab der 20 % ueberschritten werden - pro Kopf: frueh 0,19 / mittel **3,69** / spaet 10,85; ganze Station: 0,09 / 1,86 / 5,43. Bei erlaubtem Korridor COMP >= 2,0 liefert nur pro Kopf/mittel eine Grenze darin; bei `spaet` waere das Kriterium folgenlos, bei ganze Station/mittel unerfuellbar. **Nenner gemessen, nicht gesetzt:** kumulativer Messbuild (`--rf=4 --evk=0.20 --evm=0.08`), Anker aus `loot_curve.txt` roh +4,8 % (haette den Build verworfen), normiert -1,5 %; acht Serien a 40 ergeben mittel 19,42 Mrd/Tag bei SD 0,074 (0,38 %) und spaet 60,74 bei SD 0,276 - ein SD verschiebt die COMP-Grenze um 0,014, also nicht entscheidungsrelevant. **7.2 - "angleichen" legt nur das VERHAELTNIS fest, das Niveau ist frei und entscheidet ueber beide Kriterien.** Vier Varianten gerechnet: **A Summe konstant** (Faktoren 3,92/1,02/0,57, 558,20 Mrd, 70,6 Tage, COMP-Korridor 2,00-3,53) - **gewaehlt**; B auf Metall herunter (283,57 Mrd, 35,9 Tage, im ganzen Korridor nicht heilbar, selbst bei COMP 2,0 noch 53,8 Tage, dazu Senke halbiert); C auf Deuterium herauf (840,91 Mrd, 106,4 Tage, haelt das Band, verteuert die Station aber um 51 %); D gestaffelte Caps 30/27/25 nach dem Vorbild der Heimatbasis (137,55 statt 558,20 Mrd - drei Viertel der Ressourcen-Senke weg, wegen der die Station laut dieser Entscheidung existiert). **A ist die einzige Variante, die die Relation herstellt, ohne eine einzige bereits kalibrierte Aggregatgroesse zu bewegen.** **Der Heimatbasis-Teil von 7.2 ist GESTRICHEN.** Session-1-Befund 2 (Faktor 2,8/5,0 zugunsten von "Metallmine ausbauen und tauschen") vergleicht die Minen auf DERSELBEN Stufe (25 bzw. 30). Die Heimatbasis erzwingt gleiche Stufen nirgends - `HOME_TIER_UNLOCK_LEVELS` steht auf 36/32/30, ist also bereits gestaffelt, und dort liegen die Grenzkosten je Mehrertrag bei 710/848/771 Tagen (Spannweite 19 %, kein Faktor 5). Mit `TRADE_FEE = 0,2` gewinnt der direkte Ausbau dort schon heute (0,87). Variante A wuerde ihn auf 0,13 ueberdrehen und die Metallmine Stufe 45 von 1.137 auf 4.460 Mrd heben - also genau die Gebaeude-Leiter zerstoeren, die Entscheidung 9 Punkt (4) als zweite Ressourcen-Senke braucht. `costGrowth` bleibt in jedem Fall unangetastet (1,6 -> 1,55 verbilligt an der uncapped Heimatbasis die Stufe 30 um Faktor 2,5, die Stufe 45 um 4,0, danach unbegrenzt weiter). **Preis der Korrektur, ausdruecklich:** die Station-V1-Basiswerte sind danach nicht mehr identisch mit den Heimatbasis-Pendants - eine bewusste Design-Entscheidung, die hier mit Begruendung aufgegeben wird (an der Station zwingt `checkTierUnlock()` alle drei Minen auf denselben Cap, an der Heimatbasis nicht). **7.3 - die Zahlen des Plantextes waren ueberholt:** die genannten 17,9 Tage Modul-Amortisation sind gegen den Ertrag VOR 7.1 und Kompensation gerechnet (1,88 Mrd/Tag). Real kosten die 9 Foerdereffizienz-Module 16,87 Mrd, bringen +50 % = 3,95 Mrd/Tag und amortisieren in **4,3 Tagen** gegen 70,6 fuer die Gebaeude. **Kostenfaktor 16,5x** (`MODULE_COST_MULTIPLIER` 500 -> 8.270) - zugleich Gleichstand mit dem Gebaeudeweg und innerhalb des Bands (60 Tage = 14,0x, 120 Tage = 28,1x); COMP-unabhaengig, weil Modulkosten und Mehrertrag beide linear am Ertrag haengen. **Nur fuer `moduleKind: 'output'`**, weil derselbe Multiplikator heute auch "Verstaerkte Automatisierung" und "Wartungsfreiheit" traegt und die Hebel von 7.4 sind. `requiredBuildingLevel` 20 -> 10 bleibt, wirkt nach der Kostenanhebung aber nur noch auf die Sichtbarkeit (bei Stufe 10 liegt der Minenertrag bei 5 % des Cap-Werts). **COMP bleibt 3:** Korridor 2,00-3,53, der Wert ist hergeleitet (Mining-Forschung 2,0 x Mining-Boost 1,5) und nicht aus dem Korridor gegriffen - die Regel "bei Uneindeutigkeit den niedrigeren Wert" wurde geprueft und bewusst nicht angewandt. **Messregel 8: kein Client-Spiegel noetig**, `pages/Allianz.tsx` liest `baseCost`/`costGrowth`/`maxLevel`/`requiredBuildingLevel` ueber `/game/data`. Das aendert sich mit 7.4 - `stationBauzeitFactorForTier()` steht dort als vollstaendige Kopie. **Doku-Defekt nebenbei gefunden:** der Kommentarkopf von `stationBuildings.ts` nennt weiterhin "1.5x bzw. 2.5x Ertrag", die Werte stehen seit 7.1 auf 2x/4x. |
