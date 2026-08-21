@@ -1769,7 +1769,141 @@ Einheiten - **das steht nirgends im Spiel.** Ins Info-Popup aufnehmen.
 > **7.1 ERLEDIGT am 10.08.2026** (V2 = 2x Ertrag, V3 = 4x Ertrag). Zusaetzlich ist ein im Plan
 > nicht enthaltener Befund behoben worden - der fehlende Ausgleich fuer die bewusst entkoppelte
 > Mining-Forschung. Beides samt Messwerten und offenem Kalibrierpunkt in **Abschnitt 2a**.
-> **7.2, 7.3 und 7.4 stehen unveraendert aus.**
+>
+> **7.2 und 7.3 sind am 20.08.2026 KALIBRIERT, NICHT GEBAUT** - Messkasten direkt unter diesem
+> Absatz, Protokoll `station_v2.txt`, Werkzeug `run_station_v2.mjs`.
+> **7.4 ist am 20.08.2026 aus dieser Entscheidung HERAUSGELOEST** und nach Block D, Schritt 14
+> (Entscheidung 9.1 + R1) verschoben. Begruendung im Messkasten.
+> **`STATION_MINING_COMPENSATION` bleibt bei 3** - der offene Kalibrierpunkt aus Abschnitt 2a ist
+> damit geschlossen.
+
+> **MESSKASTEN 7.2 / 7.3 - 20.08.2026. Protokoll `station_v2.txt`, Werkzeug `run_station_v2.mjs`.**
+>
+> **Vorentscheidungen dieser Session (Nutzer, 20.08.2026), damit nicht zweimal kalibriert wird:**
+> 1. **Amortisation = Kosten / Eigenertrag** (Lesart A, dieselbe wie bei den Modulen in
+>    Abschnitt 4). Die verworfene Lesart B (Kosten / Gesamteinnahmen) ergibt 9,1 Tage im spaeten
+>    und 28,5 im mittleren Stand - sie liegt in **keiner** Spalte im Band und misst
+>    Bezahlbarkeit statt Rueckfluss.
+> 2. **Das Anteilskriterium wird gegen die Spalte `mittel` gerechnet**, pro Kopf bei zwei
+>    Mitgliedern. Grund ist die Trennschaerfe-Vorpruefung, siehe naechster Absatz.
+> 3. **Der Pro-Kopf-Teiler bleibt, wird aber als ANNAHME gefuehrt** - `withdrawFromStation()`
+>    hat weiterhin keine Quote (im Code nachgesehen, 20.08.2026), und es gibt auch keine
+>    Obergrenze fuer die Mitgliederzahl. Gegengeprueft nach der Bot-Lehre aus Entscheidung 2:
+>    `bot.ts` kennt keinen Allianz-Pfad, Bots koennen den Teiler nicht verwaessern.
+>
+> **Trennschaerfe zuerst, wie in Abschnitt 1b gefordert: fuenf der sechs moeglichen Zellen
+> trennen gar nicht.** Grenze fuer `STATION_MINING_COMPENSATION`, ab der 20 % ueberschritten
+> werden:
+>
+> | Bezug | frueh | mittel | spaet |
+> |---|---|---|---|
+> | pro Kopf (2 Mitglieder) | 0,19 | **3,69** | 10,85 |
+> | ganze Station | 0,09 | 1,86 | 5,43 |
+>
+> Der erlaubte Korridor ist COMP >= 2,0. Nur **pro Kopf / mittel** liefert eine Grenze darin -
+> bei `spaet` waere jeder Wert bis 10,85 zulaessig (das Kriterium waere folgenlos), bei
+> `ganze Station / mittel` schon die Untergrenze 2,0 verletzt (es waere unerfuellbar). Die
+> Wahl der Spalte ist damit keine Formalie, sondern entscheidet, ob ueberhaupt gemessen wird.
+>
+> **Der Nenner ist gemessen, nicht gesetzt.** Kumulativer Messbuild
+> (`make_messbuild_kum.mjs --rf=4 --evk=0.20 --evm=0.08`), vor Gebrauch gegen den Anker aus
+> `loot_curve.txt` geprueft: roh +4,8 % (haette den Build verworfen), auf die vernichtete
+> Feindmacht normiert -1,5 %. Streuung ueber **acht Serien a 40**: mittel 19,42 Mrd/Tag bei
+> SD 0,074 (0,38 %), spaet 60,74 bei SD 0,276 (0,45 %). Ein SD verschiebt die COMP-Grenze um
+> 0,014 - gegenueber der Kalibrierbreite bedeutungslos.
+>
+> **7.2 - vier Niveau-Varianten, gerechnet.** "An den Wert-Ertrag angleichen" legt nur das
+> VERHAELTNIS fest; das Niveau ist frei und entscheidet ueber beide Kriterien:
+>
+> | Variante | Faktor M/K/D | Stationskosten | Amortisation bei COMP 3 | zulaessiger COMP |
+> |---|---|---|---|---|
+> | **A Summe konstant** | 3,92 / 1,02 / 0,57 | **558,20 Mrd** | **70,6 Tage** | **2,00-3,53** |
+> | B auf Metall herunter | 1,00 / 0,26 / 0,14 | 283,57 Mrd | 35,9 Tage | leer |
+> | C auf Deuterium herauf | 6,93 / 1,81 / 1,00 | 840,91 Mrd | 106,4 Tage | 2,66-3,69 |
+> | D gestaffelte Caps 30/27/25 | keine Kostenaenderung | 137,55 Mrd | 23,8 Tage | leer |
+>
+> **ENTSCHIEDEN: Variante A, angewandt NUR auf `stationBuildings.ts`.** Sie ist die einzige, die
+> die Relation herstellt, ohne eine einzige bereits kalibrierte Aggregatgroesse zu bewegen -
+> Kosten, Ertrag, Amortisation und Anteil bleiben exakt, wo sie sind. **B faellt aus dem Band
+> und ist im ganzen COMP-Korridor nicht zu heilen** (bei der Untergrenze 2,0 immer noch
+> 53,8 Tage), dazu halbiert sie die Senke. **D faellt aus demselben Grund aus**, nur staerker:
+> 137,55 statt 558,20 Mrd - drei Viertel der Ressourcen-Senke, wegen der die Station laut dieser
+> Entscheidung ueberhaupt existiert, waeren weg.
+>
+> **7.2 an der HEIMATBASIS: NICHT anwenden.** Das ist eine Korrektur am Plantext, kein
+> Messergebnis im engeren Sinn. Session-1-Befund 2 (Faktor 2,8 / 5,0 zugunsten von "Metallmine
+> ausbauen und tauschen") vergleicht die drei Minen auf DERSELBEN Stufe - 25 bzw. 30. Die
+> Heimatbasis erzwingt gleiche Stufen aber nirgends: `HOME_TIER_UNLOCK_LEVELS` steht auf
+> **36/32/30**, ist also bereits gestaffelt. An diesen Stufen gemessen liegen die Grenzkosten je
+> Mehrertrag bei **710 / 848 / 771 Tagen** - eine Spannweite von 19 %, kein Faktor 5. Mit
+> `TRADE_FEE = 0,2` gewinnt der direkte Ausbau dort schon heute (0,87 gegen 1,00). Variante A
+> wuerde ihn auf 0,13 ueberdrehen und die Metallmine Stufe 45 von 1.137 auf 4.460 Mrd heben -
+> also genau die Gebaeude-Leiter zerstoeren, die Entscheidung 9 Punkt (4) als zweite
+> Ressourcen-Senke braucht. **Der Preis dieser Korrektur:** die Station-V1-Basiswerte sind dann
+> nicht mehr identisch mit den Heimatbasis-Pendants. Das war eine bewusste Design-Entscheidung
+> (Kommentar in `stationBuildings.ts`) und wird hier bewusst aufgegeben, mit Begruendung im
+> Code: an der Station zwingt `checkTierUnlock()` alle drei Minen auf denselben Cap, an der
+> Heimatbasis nicht.
+>
+> **7.3 - Modulkosten.** Die im Plantext genannten 17,9 Tage sind gegen den Ertrag VOR 7.1 und
+> Kompensation gerechnet (1,88 Mrd/Tag) und damit ueberholt. Real: 9x Foerdereffizienz auf
+> Stufe 10 kosten 16,87 Mrd und bringen +50 % = **3,95 Mrd/Tag**, also **4,3 Tage
+> Amortisation** - der Modulweg ist heute **16,5-mal guenstiger** als der Gebaeudeweg, nicht
+> 17-mal, sondern in die andere Richtung gerechnet dasselbe Bild in schaerfer.
+> -> **Kostenfaktor 16,5x** (`MODULE_COST_MULTIPLIER` 500 -> 8.270). Das ist zugleich der
+> Gleichstand mit dem Gebaeudeweg (70,6 Tage) und liegt im Band (60 Tage = 14,0x, 120 Tage =
+> 28,1x). Der Faktor ist COMP-unabhaengig: Modulkosten und Mehrertrag haengen beide linear am
+> Ertrag.
+> -> **NUR fuer `moduleKind: 'output'` an den Minen.** `MODULE_COST_MULTIPLIER` ist heute global
+> und traegt auch "Verstaerkte Automatisierung" und "Wartungsfreiheit" - beides Hebel von 7.4.
+> Ein pauschaler Faktor wuerde 7.4 vorkalibrieren, bevor 9.1 ueberhaupt entschieden ist.
+> -> `requiredBuildingLevel` 20 -> 10 bleibt richtig, wirkt nach der Kostenanhebung aber nur noch
+> auf die **Sichtbarkeit**: bei Stufe 10 liegt der Ertrag der Mine bei 5 % des Cap-Werts, der
+> Modulausbau lohnt sich dort ohnehin nicht. Die beiden Haelften von 7.3 heben sich wirtschaftlich
+> teilweise auf - das ist gewollt, der Zweck ist Planbarkeit, nicht ein zweiter frueher Weg.
+>
+> **7.4 - herausgeloest, nach Block D Schritt 14.** Der Anwendungsbereich von 9.1 nennt sie
+> namentlich ("Gebaeude ... Betrifft auch die Allianz-Station (Entscheidung 7.4)"). 7.4 ist
+> mechanisch derselbe multiplikative Stapel, den 9.1b auf additiv umstellt
+> (`Math.pow(0.75, roboter) * Math.pow(0.5, nanit)` mal zwei Modul-Faktoren). Wer heute den
+> Effekt pro Stufe senkt, kalibriert eine Formel, die 9.1 ersetzt.
+> *Der Weg ueber zwei einklammernde Szenarien - wie bei Entscheidung 12 - traegt hier NICHT:*
+> der Bauzeit-Faktor geht in keine der beiden Zielgroessen von 7.2/7.3 ein. Die Unabhaengigkeit
+> ist strukturell, nicht gemessen; sie als Messung auszuweisen waere genau die Setzung, vor der
+> die Fenster-Regel bei Entscheidung 12 warnt.
+> *Nachteile, ausdruecklich:* die Station bleibt bis Block D ein Bauzeit-Schalter (Blocker oder
+> bedeutungslos), die fehlende Voraussetzungspruefung der Nanitenfabrik bleibt offen, und
+> Abnahmekriterium 6 (kein Plateau ueber 5 Tage) zeigt auf Entscheidung 7 UND 9.4 - diese
+> Session bedient es nur zur Haelfte.
+>
+> **COMP: bleibt 3.** Korridor unter Variante A ist 2,00 bis 3,53 (Untergrenze aus Abschnitt 2a,
+> Obergrenze aus dem Amortisationsband; das Anteilskriterium bindet erst bei 3,69). Der Wert ist
+> **kein frei gewaehlter Punkt im Korridor, sondern hergeleitet** - Mining-Forschung 2,0 mal
+> Mining-Boost 1,5. Die Messung hatte ihn zu pruefen, nicht zu ersetzen, und er besteht sie mit
+> 15 % Luft nach oben. Die Regel "bei Uneindeutigkeit den niedrigeren Wert" aus Abschnitt 2a
+> wird **nicht** angewandt: sie greift, wenn ein Wert aus einem Korridor gegriffen werden muss,
+> nicht wenn ein hergeleiteter Wert bestaetigt wird. Wer maximal vorsichtig sein will, nimmt
+> 2,0 - dann liegt die Amortisation bei 106 Tagen und der Anteil bei 11,9 %.
+>
+> **Messregel 8 erledigt, Ergebnis: kein Client-Spiegel noetig.** `pages/Allianz.tsx` baut zwar
+> die komplette Stations-Wirtschaft nach, liest `baseCost`, `costGrowth`, `maxLevel` und
+> `requiredBuildingLevel` aber ueber `gameData.stationBuildings` /
+> `gameData.stationBuildingModules` aus `/game/data` (`routes.ts`). 7.2 und 7.3 sind reine
+> Datenaenderungen und propagieren automatisch. **Das gilt NICHT mehr, sobald 7.4 gebaut wird:**
+> `stationBauzeitFactorForTier()` steht in `Allianz.tsx` Zeile 94-104 als vollstaendige Kopie und
+> ist dann der Spiegel.
+>
+> **BAUANLEITUNG (nicht gebaut, gehoert in den Sammel-Einbau zum Server-Neustart):**
+> 1. `data/stationBuildings.ts`: `baseCost` aller neun Minen mit 3,92 (Metall) / 1,02 (Kristall) /
+>    0,57 (Deuterium) skalieren, tierweise, `costGrowth` unveraendert lassen. Kommentarkopf
+>    ergaenzen: V1 ist ab jetzt bewusst NICHT mehr identisch mit `buildings.ts`, samt Grund.
+> 2. `data/stationBuildingModules.ts`: `MODULE_COST_MULTIPLIER` nach `moduleKind` aufteilen -
+>    `output` an Minen auf 8.270, alles uebrige unveraendert bei 500. Zusaetzlich
+>    `requiredBuildingLevel` fuer Minen und Solarkraftwerk von 20 auf 10.
+> 3. `data/buildings.ts`: **nicht anfassen.**
+> 4. Kommentarkopf in `stationBuildings.ts` korrigieren - er nennt weiterhin "1.5x bzw. 2.5x
+>    Ertrag", die Werte stehen seit 7.1 auf 2x/4x. Doku-Defekt, kein Balance-Fehler.
+> 5. Client: keine Aenderung noetig (siehe Messregel-8-Absatz oben).
 
 **Bezug:** Session 4, Befund 1 + 2 + 3 / Session 1, Befund 2 / Session 3, Befund 9. **Dateien:**
 `data/stationBuildings.ts`, `game/stations.ts` (`checkTierUnlock()`,
@@ -1785,22 +1919,41 @@ ab, an der Station mit Cap 30 fehlt dieser Vergleichspunkt.
 drei Minen auf dem Cap. Alle drei liefern bei Level 30 exakt denselben Wert-Ertrag (5,2 Mio/h),
 kosten aber das **1-, 3,8- und 6,9-fache**. Der Zwang schickt den Spieler gezielt in die beiden
 teuersten.
--> `costGrowth` (1.6 gegen 1.55) und `baseCost` von Kristallmine und Deuterium-Synthetisierer an den
-Wert-Ertrag angleichen. **Das behebt denselben Fehler an der Heimatbasis mit** (Session-1-Befund 2:
-"Metallmine ausbauen und tauschen" ist um Faktor 2,8 bzw. 5,0 effizienter als der direkte Ausbau -
-damit der Deuterium-Ausbau gleichwertig waere, muesste die Handelsgebuehr bei 84 % liegen).
--> `TRADE_FEE` NICHT anheben. Ursache reparieren, nicht Symptom.
+-> **KALIBRIERT 20.08.2026:** `baseCost` der drei Minen mit 3,92 / 1,02 / 0,57 skalieren
+(Variante A, Summe konstant), **`costGrowth` unveraendert**, **nur in `stationBuildings.ts`**.
+Einzelheiten und die drei verworfenen Varianten im Messkasten oben.
+-> ~~**Das behebt denselben Fehler an der Heimatbasis mit**~~ **GESTRICHEN 20.08.2026.**
+Session-1-Befund 2 ("Metallmine ausbauen und tauschen" um Faktor 2,8 bzw. 5,0 effizienter)
+vergleicht die Minen auf DERSELBEN Stufe. Die Heimatbasis erzwingt das nirgends - sie staffelt
+ueber `HOME_TIER_UNLOCK_LEVELS` (36/32/30), und dort liegen die Grenzkosten je Mehrertrag bei
+710/848/771 Tagen. Der direkte Ausbau gewinnt dort mit `TRADE_FEE = 0,2` bereits. `buildings.ts`
+wird nicht angefasst.
+-> `TRADE_FEE` NICHT anheben. Ursache reparieren, nicht Symptom. (Gilt unveraendert - nach der
+Messung ist an der Heimatbasis aber auch keine Ursache mehr zu reparieren.)
 
 **7.3 Stations-Module:** `requiredBuildingLevel` von 20 auf **10** senken (Cap-Verhaeltnis 30 statt
-100 bei der Heimatbasis), Modulkosten gegen die Gebaeudekosten anheben. Heute amortisieren die
-Module in **17,9 Tagen** gegen 297 Tage fuer die Gebaeude selbst - Faktor 17 zwischen zwei Wegen
-desselben Gebaeudes, und der bessere Weg wird erst nach zwei Dritteln der Strecke sichtbar.
+100 bei der Heimatbasis), Modulkosten gegen die Gebaeudekosten anheben. ~~Heute amortisieren die
+Module in **17,9 Tagen** gegen 297 Tage fuer die Gebaeude selbst - Faktor 17~~ **ZAHLEN ERSETZT
+20.08.2026:** die 17,9 und die 297 Tage sind gegen den Ertrag VOR 7.1 und Kompensation gerechnet.
+Real sind es **4,3 gegen 70,6 Tage**, also Faktor 16,5 - dieselbe Groessenordnung, aber gegen eine
+andere Basis. **KALIBRIERT: Kostenfaktor 16,5x, nur auf `moduleKind: 'output'` an den Minen**
+(`MODULE_COST_MULTIPLIER` 500 -> 8.270). Messkasten oben.
 
 **7.4 Stations-Fabriken:** Roboter 15 + Nanit 10 kosten zusammen rund 1 Mrd und druecken den
 Bauzeit-Faktor auf 1,3e-5. Es gibt keine Voraussetzungspruefung fuer die Nanitenfabrik. Bauzeit ist
 an der Station damit entweder absoluter Blocker (vorher) oder bedeutungslos (danach).
 -> Fabrik-Stufen an eine Voraussetzung binden (analog `PARENT_UNLOCK_LEVEL`) oder Effekt pro Stufe
-deutlich senken. **Gehoert zu Entscheidung 9, gemeinsam kalibrieren.**
+deutlich senken. ~~**Gehoert zu Entscheidung 9, gemeinsam kalibrieren.**~~
+-> **HERAUSGELOEST AM 20.08.2026 (Nutzerentscheidung): 7.4 wandert nach Block D, Schritt 14
+(Entscheidung 9.1 + R1) und wird DORT kalibriert, nicht bei Entscheidung 9 insgesamt.** Der
+Anwendungsbereich von 9.1 nennt sie namentlich; 7.4 ist mechanisch derselbe multiplikative Stapel,
+den 9.1b auf additiv umstellt. Begruendung, Nachteile und der geprueft nicht tragende Weg ueber
+zwei einklammernde Szenarien stehen im Messkasten am Kopf dieser Entscheidung.
+-> **Achtung beim Bau von 7.3:** `MODULE_COST_MULTIPLIER` ist heute global und traegt auch die
+Fabrik-Module. 7.3 darf ihn deshalb nur fuer `moduleKind: 'output'` anheben, sonst ist 7.4
+vorkalibriert, bevor 9.1 entschieden ist.
+-> **Achtung beim Bau von 7.4:** ab dann ist `stationBauzeitFactorForTier()` in
+`client/src/pages/Allianz.tsx` (Zeile 94-104) ein vollstaendiger Client-Spiegel und muss mit.
 
 **7.5 ENTFAELLT HIER - verschoben nach Entscheidung 14.** Der Punkt stand faelschlich unter der
 Allianz-Station. Code-Pruefung 09.08.2026: **Die Allianz-Station ist NICHT betroffen** -
@@ -3369,12 +3522,34 @@ angewandt in `stationMineOutputPerHour()`. Ausgeglichen wird bewusst nur der dau
 unter mehreren, der Abbau-Booster ist zeitlich begrenzt und kostet DM. Beides gehoert dem einzelnen
 Spieler, nicht dem Gebaeude.
 
+> **GESCHLOSSEN AM 20.08.2026: `STATION_MINING_COMPENSATION` bleibt bei 3.** Der zulaessige
+> Korridor ist gemessen 2,00 bis 3,53; der Wert liegt darin mit 15 % Luft nach oben. Alle
+> Prozentwerte in der Tabelle unten sind gegen die alte Baseline von 21,69 Mrd/Tag gerechnet und
+> damit **ueberholt** - die neuen stehen in der zweiten Tabelle. Vollstaendig im Messkasten am
+> Kopf von Entscheidung 7, Protokoll `station_v2.txt`.
+
 **Gemessen** (alle drei Stufen auf Level 30, ohne Module, gegen die alte Baseline):
 
 | Stand | Ertrag der Station | Anteil an 21,69 Mrd/Tag, ganze Station | dito, pro Kopf bei 2 Mitgliedern |
 |---|---|---|---|
 | vorher | 78,4 Mio Wert/h = **1,88 Mrd/Tag** | 8,7 % | 4,3 % |
 | nachher (7.1 + Kompensation, Faktor 4,20) | 329,2 Mio Wert/h = **7,90 Mrd/Tag** | 36,4 % | **18,2 %** |
+
+**Dieselben 7,90 Mrd/Tag gegen die NEUE Baseline** (0,98 / 19,57 / 61,11 Mrd, kumulativer
+Messbuild; Nenner jeweils stationsinklusiv, der Stations-Term ist vorher herausgerechnet worden,
+damit die kalibrierte Groesse nicht in ihrem eigenen Nenner haengt):
+
+| Spalte | ganze Station | pro Kopf bei 2 Mitgliedern |
+|---|---|---|
+| frueh | 89,0 % | 80,1 % |
+| **mittel (massgeblich)** | 28,7 % | **16,9 %** |
+| spaet | 12,1 % | 6,5 % |
+
+Die **frueh**-Zeile ist rechnerisch, nicht real: bei 0,98 Mrd/Tag ist ein Vollausbau von 558 Mrd
+nicht finanzierbar. Massgeblich ist **mittel** - der frueheste Stand, an dem der Vollausbau
+ueberhaupt in Reichweite kommt, und die einzige Spalte, in der das 20-%-Kriterium innerhalb des
+erlaubten COMP-Korridors ueberhaupt trennt (Trennschaerfe-Tabelle im Messkasten bei
+Entscheidung 7).
 
 **Die Pro-Kopf-Spalte ist die massgebliche** (praezisiert 10.08.2026 nach Nutzerhinweis): Die
 Baseline von 21,69 Mrd/Tag ist ein Wert fuer EINEN Spieler. Die Station ist ein gemeinsamer Topf,
@@ -3407,7 +3582,8 @@ Gegenargumente, die zusaetzlich fuer den Wert sprechen: der Vollausbau kostet 55
 ausdruecklich als **Ressourcen-Senke** gedacht - eine Senke, die nichts zurueckgibt, wird nicht
 gebaut.
 
-**Entscheidungsregel fuer die Umsetzungs-Session (nach Block A anzuwenden):**
+**Entscheidungsregel fuer die Umsetzungs-Session (nach Block A anzuwenden)** - *angewandt am
+20.08.2026, Ergebnis unter der Liste:*
 - *Gemessen wird:* der **Pro-Kopf-Anteil** der Station an den Gesamteinnahmen bei vollem Ausbau -
   also Stationsertrag geteilt durch die Mitgliederzahl, gegen die NEUE Baseline - sowie die
   Amortisationszeit der 558 Mrd.
@@ -3424,6 +3600,18 @@ gebaut.
   zu wenig laesst sich nachbessern, zu viel nur durch eine Wegnahme).
 - *Untergrenze:* nicht unter **2,0**. Darunter liegt die Station wieder unter dem, was dieselben
   Gebaeude an der Heimatbasis leisten, und der urspruengliche Befund waere nur halb behoben.
+
+**ERGEBNIS DER ANWENDUNG, 20.08.2026:** Anteil pro Kopf **16,9 %** (unter 20 %, erfuellt),
+Amortisation **70,6 Tage** (im Band 60-120, erfuellt). Beide Kriterien halten bei COMP 3, eine
+Senkung ist nicht ausgeloest. **Die Regel "bei Uneindeutigkeit den niedrigeren Wert" wurde
+geprueft und NICHT angewandt:** sie greift, wenn ein Wert aus einem Korridor gegriffen werden
+muss. Hier ist der Wert hergeleitet (Mining-Forschung 2,0 x Mining-Boost 1,5), und die Messung
+hatte ihn zu pruefen, nicht zu ersetzen. Wer maximal vorsichtig sein will, nimmt 2,0 - dann
+Amortisation 106 Tage, Anteil 11,9 %.
+**Die offene Design-Frage "pro Kopf oder insgesamt konstant" ist damit NICHT beantwortet**, nur
+umgangen: bei zwei Mitgliedern ist sie folgenlos. Sie wird scharf, sobald ein drittes Mitglied
+dazukommt - dann faellt der Pro-Kopf-Anteil auf rund 11 %, ohne dass sich am Spiel etwas
+geaendert haette.
 
 **Bewusst NICHT geaendert:** die Kopplung an Forschung (siehe oben) und der **Level-Cap 30**.
 Letzterer ist der eigentliche Grund, warum die Station langfristig bedeutungslos wird - die
@@ -4193,8 +4381,22 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                           kalibriert, aber nicht gebaut - siehe dort.
   8. Entscheidung 6   Schiffs-Tiers   [ERLEDIGT 18.08.2026 - umgesetzt und gegengemessen,
                         fuenf Kostenzeilen in ships.ts, Zielwert 1,15, Messkasten dort]
-  9. Entscheidung 7   Allianz-Station (nur noch 7.2/7.3/7.4 - 7.1 ist am 10.08.2026
-                       vorgezogen erledigt, siehe Abschnitt 2a)
+  9. Entscheidung 7   Allianz-Station
+                       KALIBRIERT am 20.08.2026, NICHT GEBAUT. 7.2 = Variante A (baseCost
+                       x3,92 / x1,02 / x0,57, costGrowth unveraendert, NUR
+                       stationBuildings.ts), 7.3 = Foerdereffizienz-Module x16,5
+                       (MODULE_COST_MULTIPLIER 500 -> 8.270, nur moduleKind 'output') plus
+                       requiredBuildingLevel 20 -> 10.
+                       STATION_MINING_COMPENSATION bleibt 3 - der offene Kalibrierpunkt aus
+                       Abschnitt 2a ist geschlossen (Korridor gemessen 2,00-3,53).
+                       Bauanleitung im Messkasten bei Entscheidung 7, Protokoll station_v2.txt,
+                       Werkzeug run_station_v2.mjs.
+                       -> data/buildings.ts wird NICHT angefasst: der Heimatbasis-Teil von 7.2
+                          ist gestrichen, er beruhte auf einem Stufen-gleichen Vergleich, den
+                          die Heimatbasis wegen HOME_TIER_UNLOCK_LEVELS (36/32/30) nie erzwingt.
+                       -> 7.4 ist herausgeloest und steht jetzt bei Schritt 14.
+                       -> KEIN Client-Spiegel noetig (Daten laufen ueber /game/data). Das
+                          aendert sich mit 7.4.
  10. Entscheidung 10  Heimatverteidigung   [ERLEDIGT 19.08.2026 - Neulingsschutz statt
                         Rueckzugsregel, Messkasten dort. Die Sperre fuer Entscheidung 16 ist
                         damit AUFGEHOBEN.]
@@ -4247,10 +4449,15 @@ SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
         10.08.2026 im Plan stillschweigend als geloest vorausgesetzt.
 
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
- 14. Entscheidung 9.1 + R1  Saettigungskurve, additive Reduktionen UND der Client-Spiegel
+ 14. Entscheidung 9.1 + R1 + 7.4  Saettigungskurve, additive Reduktionen UND der Client-Spiegel
                        -> R1 ist bewusst hier und NICHT in Block E: eine spaeter terminierte
                           Spiegelung ist der Weg, auf dem multipliers.ts schon einmal
                           auseinandergelaufen ist
+                       -> 7.4 (Stations-Fabriken) ist am 20.08.2026 aus Entscheidung 7 hierher
+                          verschoben worden: der Anwendungsbereich von 9.1 nennt sie namentlich,
+                          und 7.4 ist derselbe multiplikative Stapel, den 9.1b auf additiv
+                          umstellt. Zwei Spiegel beachten: multipliers.ts (Heimatbasis) UND
+                          stationBauzeitFactorForTier() in pages/Allianz.tsx (Station).
                        -> messen
  15. Entscheidung 14   ERLEDIGT am 10.08.2026 (Abschnitt 2a) - hier nur noch KALIBRIEREN
                        -> der Faktor 4 auf die V2/V3-Bauzeit ist bereits eingetreten und
@@ -4869,6 +5076,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 20.08.2026 (Block C, Schritt 9) | **Entscheidung 7.2 und 7.3 KALIBRIERT - NICHT GEBAUT. 7.4 herausgeloest. `STATION_MINING_COMPENSATION` bleibt 3, der offene Kalibrierpunkt aus Abschnitt 2a ist geschlossen.** Werkzeug `run_station_v2.mjs` (neu), Protokoll `station_v2.txt`. **Vier Vorentscheidungen, bewusst VOR der Messung getroffen, damit nicht zweimal kalibriert wird:** (1) Amortisation = Kosten/Eigenertrag (Lesart A wie bei den Modulen in Abschnitt 4); die Alternative "Kosten/Gesamteinnahmen" ergibt 9,1 bzw. 28,5 Tage und liegt in keiner Spalte im Band. (2) Anteilskriterium gegen die Spalte **mittel**. (3) Pro-Kopf-Teiler bleibt, wird aber als ANNAHME gefuehrt - `withdrawFromStation()` hat weiterhin keine Quote, es gibt keine Mitglieder-Obergrenze, und `bot.ts` kennt keinen Allianz-Pfad (nach der Bot-Lehre aus Entscheidung 2 gegengeprueft). (4) 7.4 nach Block D, Schritt 14. **Die Spaltenwahl war keine Formalie: fuenf der sechs moeglichen Bezugszellen trennen gar nicht.** Grenze fuer COMP, ab der 20 % ueberschritten werden - pro Kopf: frueh 0,19 / mittel **3,69** / spaet 10,85; ganze Station: 0,09 / 1,86 / 5,43. Bei erlaubtem Korridor COMP >= 2,0 liefert nur pro Kopf/mittel eine Grenze darin; bei `spaet` waere das Kriterium folgenlos, bei ganze Station/mittel unerfuellbar. **Nenner gemessen, nicht gesetzt:** kumulativer Messbuild (`--rf=4 --evk=0.20 --evm=0.08`), Anker aus `loot_curve.txt` roh +4,8 % (haette den Build verworfen), normiert -1,5 %; acht Serien a 40 ergeben mittel 19,42 Mrd/Tag bei SD 0,074 (0,38 %) und spaet 60,74 bei SD 0,276 - ein SD verschiebt die COMP-Grenze um 0,014, also nicht entscheidungsrelevant. **7.2 - "angleichen" legt nur das VERHAELTNIS fest, das Niveau ist frei und entscheidet ueber beide Kriterien.** Vier Varianten gerechnet: **A Summe konstant** (Faktoren 3,92/1,02/0,57, 558,20 Mrd, 70,6 Tage, COMP-Korridor 2,00-3,53) - **gewaehlt**; B auf Metall herunter (283,57 Mrd, 35,9 Tage, im ganzen Korridor nicht heilbar, selbst bei COMP 2,0 noch 53,8 Tage, dazu Senke halbiert); C auf Deuterium herauf (840,91 Mrd, 106,4 Tage, haelt das Band, verteuert die Station aber um 51 %); D gestaffelte Caps 30/27/25 nach dem Vorbild der Heimatbasis (137,55 statt 558,20 Mrd - drei Viertel der Ressourcen-Senke weg, wegen der die Station laut dieser Entscheidung existiert). **A ist die einzige Variante, die die Relation herstellt, ohne eine einzige bereits kalibrierte Aggregatgroesse zu bewegen.** **Der Heimatbasis-Teil von 7.2 ist GESTRICHEN.** Session-1-Befund 2 (Faktor 2,8/5,0 zugunsten von "Metallmine ausbauen und tauschen") vergleicht die Minen auf DERSELBEN Stufe (25 bzw. 30). Die Heimatbasis erzwingt gleiche Stufen nirgends - `HOME_TIER_UNLOCK_LEVELS` steht auf 36/32/30, ist also bereits gestaffelt, und dort liegen die Grenzkosten je Mehrertrag bei 710/848/771 Tagen (Spannweite 19 %, kein Faktor 5). Mit `TRADE_FEE = 0,2` gewinnt der direkte Ausbau dort schon heute (0,87). Variante A wuerde ihn auf 0,13 ueberdrehen und die Metallmine Stufe 45 von 1.137 auf 4.460 Mrd heben - also genau die Gebaeude-Leiter zerstoeren, die Entscheidung 9 Punkt (4) als zweite Ressourcen-Senke braucht. `costGrowth` bleibt in jedem Fall unangetastet (1,6 -> 1,55 verbilligt an der uncapped Heimatbasis die Stufe 30 um Faktor 2,5, die Stufe 45 um 4,0, danach unbegrenzt weiter). **Preis der Korrektur, ausdruecklich:** die Station-V1-Basiswerte sind danach nicht mehr identisch mit den Heimatbasis-Pendants - eine bewusste Design-Entscheidung, die hier mit Begruendung aufgegeben wird (an der Station zwingt `checkTierUnlock()` alle drei Minen auf denselben Cap, an der Heimatbasis nicht). **7.3 - die Zahlen des Plantextes waren ueberholt:** die genannten 17,9 Tage Modul-Amortisation sind gegen den Ertrag VOR 7.1 und Kompensation gerechnet (1,88 Mrd/Tag). Real kosten die 9 Foerdereffizienz-Module 16,87 Mrd, bringen +50 % = 3,95 Mrd/Tag und amortisieren in **4,3 Tagen** gegen 70,6 fuer die Gebaeude. **Kostenfaktor 16,5x** (`MODULE_COST_MULTIPLIER` 500 -> 8.270) - zugleich Gleichstand mit dem Gebaeudeweg und innerhalb des Bands (60 Tage = 14,0x, 120 Tage = 28,1x); COMP-unabhaengig, weil Modulkosten und Mehrertrag beide linear am Ertrag haengen. **Nur fuer `moduleKind: 'output'`**, weil derselbe Multiplikator heute auch "Verstaerkte Automatisierung" und "Wartungsfreiheit" traegt und die Hebel von 7.4 sind. `requiredBuildingLevel` 20 -> 10 bleibt, wirkt nach der Kostenanhebung aber nur noch auf die Sichtbarkeit (bei Stufe 10 liegt der Minenertrag bei 5 % des Cap-Werts). **COMP bleibt 3:** Korridor 2,00-3,53, der Wert ist hergeleitet (Mining-Forschung 2,0 x Mining-Boost 1,5) und nicht aus dem Korridor gegriffen - die Regel "bei Uneindeutigkeit den niedrigeren Wert" wurde geprueft und bewusst nicht angewandt. **Messregel 8: kein Client-Spiegel noetig**, `pages/Allianz.tsx` liest `baseCost`/`costGrowth`/`maxLevel`/`requiredBuildingLevel` ueber `/game/data`. Das aendert sich mit 7.4 - `stationBauzeitFactorForTier()` steht dort als vollstaendige Kopie. **Doku-Defekt nebenbei gefunden:** der Kommentarkopf von `stationBuildings.ts` nennt weiterhin "1.5x bzw. 2.5x Ertrag", die Werte stehen seit 7.1 auf 2x/4x. |
 | 20.08.2026 (Nutzerfund) | **R16 aufgenommen: eine Flotte laesst sich in beliebig viele GLEICHZEITIGE Gruppen-Operationen aufteilen.** Nutzermeldung beim Spielen, im Code bestaetigt - `createGroupOperation()` prueft nur Sektor, Schiffstypen und Bestand, `respondToGroupOperation()` erlaubt beliebig viele gleichzeitig angenommene Einladungen. Die Sperre, die Solo-Missionen seit dem 29.07.2026 haben (`missions.ts` Zeile 97), wurde bei den Gruppen-Operationen nie nachgezogen. Defekt, keine Balance-Frage. **Wirkung:** die Belohnung je gewonnenem Check ist flach und pro Teilnehmer (930 Mio Wert `winResources` + 1.097 Mio Wert garantierte Container, dazu `lootBase` mal 2^Siegserie) - rund 17 Mrd Wert je Expedition und Teilnehmer, unabhaengig von der eingesetzten Flotte, waehrend die Gegnerstaerke proportional mitskaliert. Aufteilen multipliziert die Einnahme mit der Zahl der Operationen; der `npcFloor` von 3 Mio Macht begrenzt die Teilflotten nur auf rund 3,4 Mio Wert. Mechanisch derselbe Effekt wie Befund 1 in `novice_bonus.txt`, dort als Nachteil fuer grosse Flotten, hier als Multiplikator. **Nutzerentscheidungen:** (1) Reparatur ist eine aktive Operation je Spieler, geprueft an beiden Eintrittspunkten, keine neue Balance-Zahl; (2) der Solo-Start beider Multiplayer-Sektoren bleibt ausdruecklich erlaubt und wird nicht mitrepariert; (3) Einbau erst zum Server-Neustart, bis dahin darf der alte Stand ausgespielt werden. **Nicht Teil der Reparatur:** die Hoehe der flachen Belohnungen selbst und die Kadenz aus Entscheidung 4.8 (die nur P10 und nur das wiederholte Starten hintereinander betrifft - der gleichzeitige Fall stand bisher nirgends). |
 | 20.08.2026 (Nutzerentscheidung) | **Zwei Punkte aus der Messung entschieden.** (1) **Das Frischling-Fenster wird auf 14 Tage gezogen und an `NEWCOMER_GRACE_MS` gekoppelt.** Gemessen ist die Laenge eine Begriffs-, keine Balancefrage - die vorab aufgestellte Entscheidungsregel trifft in jeder Variante zu und trennt nichts. Entschieden wurde deshalb nach dem Begriff: fuer "Frischling" gibt es nur noch EINE Zahl, statt bisher 14 Tage Raid-Schonfrist gegen 7 Tage Mining-Bonus. Kosten gemessen und angenommen: +4,60 Mrd in Woche 2, 12 % des Wocheneinkommens. Technischer Hinweis in der Bauanleitung ergaenzt: `NOVICE_BONUS_WINDOW_MS` steht in `economy.ts` auf Zeile 30, `NEWCOMER_GRACE_MS` auf Zeile 397 - bei einer Kopplung muss die Reihenfolge der Deklarationen mitgezogen werden, sonst ist der Wert an der Verwendungsstelle `undefined`. (2) **Abnahmekriterium 5 wird umgestellt - Variante "nur die Zuordnung aendern".** Die Schwelle von 50 % bleibt woertlich stehen; geaendert hat sich, WORAUF das Kriterium zeigt: von Entscheidung 12 auf **Entscheidung 3 (Raid-Ertrag) und die Solo-Einnahme der Startphase**. Grund ist die Messung vom selben Tag: der Raid stellt 58 % der Woche-1-Einnahmen, die Asteroiden 39 %, und jede Kuerzung des Frischling-Bonus HEBT den Raid-Anteil auf bis zu 78 % - das Kriterium haette in der alten Fassung einen moeglichst GROSSEN Bonus verlangt. Rechnet man den Raid heraus, liegen die Asteroiden bei 93 % und selbst ohne jeden Bonus noch bei 81 %; Ursache ist nicht die Hoehe des Minings, sondern dass daneben nichts steht (Solo 1,23 Mrd/Woche, mit wachsender Flotte fallend). **Bewusst NICHT gemacht:** das Kriterium in zwei Schwellen aufteilen (eine fuer den Raid, eine fuer den Rest). Beide Zahlen waeren gesetzt statt gemessen. **Folge:** Entscheidung 12 kann Kriterium 5 weder erfuellen noch verletzen; der Grund, aus dem sie am 09.08.2026 aus Block F vorgezogen wurde, ist damit entfallen. Kriterium 5 bleibt eine Reset-Bedingung, haengt aber jetzt an Entscheidung 3 (entschieden, nicht gebaut) und an Abschnitt 8 Punkt 5 (Solo-Differenzierung). |
 | 20.08.2026 | **Block C, Schritt 11: Entscheidung 12 KALIBRIERT - NICHT GEBAUT.** Der Wert steht: **`NOVICE_BONUS_ADD = 2,0`**, Mining-Multiplikator = Produkt der uebrigen Quellen PLUS 2,0 statt MAL 3. Das ist die woertliche additive Lesart der heutigen 3 und braucht keine neu erfundene Zahl - gemessen +98 % Mining in Woche 1 statt +200 %, beim spaeten Vollstapel +16 % statt +200 %. Bauanleitung im Messkasten am Kopf von Entscheidung 12 (zwei Client-Spiegel, nicht einer: `lib/multipliers.ts` UND das Badge in `pages/Sektor.tsx`, dessen Text unter der additiven Regel sachlich falsch wird). Skript `run_novice_bonus.mjs`, Protokoll `novice_bonus.txt`, kumulativer Messbuild (Block A Schritt 2 + Entscheidung 16), Ankerzelle aus `loot_curve.txt` auf -1,7 % reproduziert (normiert auf die vernichtete Feindmacht). **Die im Plantext geforderte gemeinsame Kalibrierung mit Entscheidung 9 ist NICHT noetig - und das ist gemessen, nicht unterstellt.** Statt die 30-Tage-Simulation (Schritt 13) vorzuziehen, wurde die Woche-1-Zusammensetzung gegen zwei einklammernde Bau-Szenarien gerechnet (K1: 3 Lanes, heutige Basiszeiten; K2: 1 Lane, Basiszeiten x2). **Keine Zelle unterscheidet sich um mehr als einen Prozentpunkt.** Grund: das Mining sitzt in beiden Bau-Welten am ERSTEN Tag am Cap - 700 Schiffe kosten 14,3 Mio Wert gegen 117,5 Mio Startressourcen und brauchen selbst mit einer Lane und doppelten Basiszeiten 3,9 Stunden -, und die Kampf-Einnahmen der Startphase sind nicht bau-, sondern gegnerskalierungsbegrenzt. **Der wichtigste Befund betrifft aber nicht diese Entscheidung, sondern Abschnitt 1b: Abnahmekriterium 5 zeigt auf die falsche Quelle.** Groesste Einzelquelle der Woche 1 ist der **RAID mit 58-64 %** (10x Silber + 6x Gold + 2x Elite je gewonnener Welle = 1,84 Mrd Wert, bei 12/12 Wellen 22,07 Mrd - flach, unabhaengig von der eigenen Staerke, zweimal woechentlich), das Asteroiden-Mining liegt mit 33-39 % darunter. **Jede Kuerzung des Frischling-Bonus macht das Kriterium schlechter** (Raid-Anteil steigt auf 78 %), und ohne den Raid gerechnet steht das Mining selbst bei KOMPLETT abgeschaltetem Bonus noch bei 81 % - schlicht weil daneben nichts steht (Solo-Einnahme der Startphase 1,23 Mrd/Woche gegen 6,03 Mrd Mining ohne jeden Bonus). Kriterium 5 ist damit in beiden Lesarten kein Massstab fuer Entscheidung 12 und bis zu seiner Umstellung **kein Reset-Blocker**. **Vierter ungebauter Posten gefunden:** Entscheidung 3 (Raid-Ertrag Variante 6) steht ebenfalls nicht im Code - kein `RAID_ALLY_POWER_WEIGHT`, keine Saettigung, `RAID_WAVE_WIN_*` unveraendert 10/6/2. Die Uebergabe fuehrte bis dahin nur drei Pakete. **Drei Zahlen des Plantextes gegen den Code korrigiert (Messregel 16):** der Mining-Stapel ist x36,72, nicht x24,5 (die 24,5 sind derselbe Stapel ohne `mining_schiffe`); daraus folgt 12,70 statt 8,5 Mrd/Tag; und beide Zahlen setzen Mining-Forschung Stufe 10 voraus, die ein 7 Tage altes Konto nicht haben kann - real erreichbar sind x6,12 bzw. x12,24 an Di/Do. **Die Fensterfrage (7 gegen 14 Tage) ist gemessen eine Begriffs-, keine Balancefrage:** die vorab vorgeschlagene Entscheidungsregel trifft in jeder Variante zu und trennt nichts; die Verlaengerung auf 14 Tage kostet 4,60 Mrd in Woche 2, also 12 % des Wocheneinkommens. Empfehlung: `NOVICE_BONUS_WINDOW_MS` an `NEWCOMER_GRACE_MS` koppeln, damit es fuer "Frischling" nur eine Zahl gibt. **Vier Nebenbefunde, alle NICHT hier nachgezogen:** (1) die Solo-Einnahme der Startphase ist eine flache Zahl um 0,24 Mrd/Tag und FAELLT mit wachsender Flotte - ab 400 Mio Flottenwert wird das Netto negativ, weil der flache Container-Fund konstant bleibt und die Gegnerstaerke mitwaechst; (2) damit hat Abschnitt 8 Punkt 5 in der Startphase nicht nur zu wenig Abstand, sondern das falsche Vorzeichen (hoch liefert weniger als niedrig); (3) auch die Raid-Einnahme faellt mit wachsender Flotte, und der Einbruch bei F0 zwischen 800 und 1600 Mio kommt vom RUECKZUG, nicht von der Feindstaerke - `retreatMode: 'fleetOnly'` laesst die Flotte abdrehen, die Welle behaelt Reste, und gewonnen ist eine Welle nur bei vollstaendiger Vernichtung; die alte Beschreibung "Rueckzug gilt nicht fuer die Heimatverteidigung" ist damit ueberholt; (4) die Woche 1 liefert 6,57-7,85 Mrd/Tag und damit das 6,7- bis 8,0-fache des "fruehen" Ausbaustandes (0,98 Mrd/Tag) - die Sorge von Entscheidung 12 ist bestaetigt, aber der Traeger ist der Raid mit 3,8 Mrd/Tag, nicht der Bonus mit 1,7 Mrd/Tag; selbst bei komplett abgeschaltetem Bonus bleibt die Startwoche beim Fuenffachen. |

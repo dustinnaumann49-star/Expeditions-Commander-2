@@ -65,6 +65,42 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 20.08.2026: BLOCK C, SCHRITT 9 IST ERLEDIGT - Entscheidung 7.2 und 7.3 sind KALIBRIERT,
+  NICHT GEBAUT.** 7.2 = Variante A (`baseCost` der Stations-Minen x3,92 / x1,02 / x0,57,
+  `costGrowth` unveraendert, **nur `stationBuildings.ts`**), 7.3 = Foerdereffizienz-Module x16,5
+  (`MODULE_COST_MULTIPLIER` 500 -> 8.270, **nur `moduleKind: 'output'`**) plus
+  `requiredBuildingLevel` 20 -> 10. Bauanleitung im Messkasten bei Entscheidung 7, Protokoll
+  `station_v2.txt`, Werkzeug `run_station_v2.mjs` (neu).
+  - **`STATION_MINING_COMPENSATION` bleibt 3.** Der offene Kalibrierpunkt aus Abschnitt 2a ist
+    damit geschlossen. Korridor gemessen 2,00-3,53; der Wert ist hergeleitet (Mining-Forschung
+    2,0 x Mining-Boost 1,5) und nicht aus dem Korridor gegriffen.
+  - **7.4 ist HERAUSGELOEST** und steht jetzt in Block D, Schritt 14 (bei Entscheidung 9.1 + R1).
+    Der Anwendungsbereich von 9.1 nennt sie namentlich, und 7.4 ist derselbe multiplikative
+    Stapel, den 9.1b auf additiv umstellt. **Der Weg ueber zwei einklammernde Szenarien - wie bei
+    Entscheidung 12 - traegt hier NICHT:** der Bauzeit-Faktor geht in keine der beiden
+    Zielgroessen von 7.2/7.3 ein, die Unabhaengigkeit ist strukturell und keine Messung.
+  - **Der Heimatbasis-Teil von 7.2 ist gestrichen** - siehe eigener Punkt unten, das ist der
+    wichtigste Befund dieser Session.
+  - **Ergebnis in Zahlen:** Vollausbau 558,20 Mrd, Ertrag 7,90 Mrd/Tag, Amortisation 70,6 Tage
+    (Band 60-120), Anteil pro Kopf 16,9 % gegen die mittel-Spalte (Grenze 20 %). Variante A
+    bewegt keine dieser vier Zahlen - sie stellt nur die Relation zwischen den drei Minen her.
+- **NEU 20.08.2026, WICHTIGSTER BEFUND: 7.2 haette an der Heimatbasis ein funktionierendes
+  Gleichgewicht zerstoert.** Der zugrunde liegende Session-1-Befund 2 ("Metallmine ausbauen und
+  tauschen" ist um Faktor 2,8 bzw. 5,0 effizienter) vergleicht die drei Minen auf **derselben
+  Stufe** (25 bzw. 30). Die Heimatbasis erzwingt gleiche Stufen aber nirgends:
+  `HOME_TIER_UNLOCK_LEVELS` steht auf **36/32/30**, ist also bereits gestaffelt - und an diesen
+  Stufen liegen die Grenzkosten je Mehrertrag bei **710 / 848 / 771 Tagen**, einer Spannweite von
+  19 % statt eines Faktors 5. Mit `TRADE_FEE = 0,2` gewinnt der direkte Ausbau dort schon heute
+  (0,87 gegen 1,00). Die Kostenangleichung haette ihn auf 0,13 ueberdreht und die Metallmine
+  Stufe 45 von 1.137 auf 4.460 Mrd gehoben - also genau die Gebaeude-Leiter zerstoert, die
+  Entscheidung 9 Punkt (4) als zweite Ressourcen-Senke braucht. **`data/buildings.ts` wird nicht
+  angefasst.** Preis: die Station-V1-Werte sind danach nicht mehr identisch mit den
+  Heimatbasis-Pendants, was bisher bewusste Design-Entscheidung war.
+- **NEU 20.08.2026: die Modul-Zahlen der Station im Plantext waren ueberholt.** Die genannten
+  17,9 Tage Amortisation sind gegen den Ertrag VOR 7.1 und Kompensation gerechnet
+  (1,88 Mrd/Tag). Real: **4,3 Tage** gegen 70,6 fuer die Gebaeude. Dieselbe Fehlerform wie bei
+  Entscheidung 12 (x24,5 statt x36,72) - **jede Zahl aus der Zeit vor dem 10.08.2026, die an
+  einem Stations- oder Mining-Ertrag haengt, ist zu misstrauen.**
 - **NEU 20.08.2026, NUTZERFUND - R16: eine Flotte laesst sich in beliebig viele GLEICHZEITIGE
   Gruppen-Operationen aufteilen.** Nutzermeldung: "Elite Bollwerk kann man unendlich mal starten
   gleichzeitig." Im Code bestaetigt: `createGroupOperation()` prueft nur Sektor, Schiffstypen und
@@ -424,6 +460,42 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**`run_income_baseline_v2.mjs` UEBERSCHREIBT `income_baseline_v2.txt` bei jedem Lauf - auch bei
+einem Testlauf mit N=2.** Am 20.08.2026 ist beim Streuungs-Lauf genau das passiert, und die
+Sicherungskopie war bereits die Testlauf-Fassung, weil sie erst danach gezogen wurde.
+Wiederhergestellt aus git. **Vor jedem Lauf, der ein Protokoll ueberschreibt, zuerst
+`git status` sauber haben - dann ist `git checkout --` die Sicherung.**
+
+**Ein Befund kann bei einem Vergleich entstehen, den das Spiel nie erzwingt.** Session-1-Befund 2
+stellt die drei Minen auf DERSELBEN Stufe gegenueber (25 bzw. 30) und findet dort Faktor 2,8/5,0
+zugunsten von "Metall ausbauen und tauschen". Die Heimatbasis erzwingt gleiche Stufen aber
+nirgends - `HOME_TIER_UNLOCK_LEVELS` staffelt 36/32/30, und an DIESEN Stufen liegt die Spannweite
+bei 19 %. Der Befund war rechnerisch richtig und als Handlungsgrundlage trotzdem falsch; die
+darauf gebaute Aenderung haette das Verhaeltnis um Faktor 6 in die Gegenrichtung gedreht. **Vor
+jeder Angleichung pruefen, an welchem Punkt der Spieler die beiden Optionen tatsaechlich
+gegeneinander haelt** - und ob eine Staffelung dieselbe Aufgabe schon erledigt.
+
+**"Angleichen" legt ein Verhaeltnis fest, kein Niveau - und das Niveau entscheidet.** Bei 7.2
+lieferten drei Wege zum selben Verhaeltnis Stationskosten von 283, 558 und 841 Mrd; nur der
+mittlere haelt das Amortisationsband, und nur er laesst die Ressourcen-Senke unveraendert, wegen
+der die Station ueberhaupt existiert. **Bei jeder Relations-Korrektur zuerst festlegen, welche
+Aggregatgroesse dabei konstant bleiben soll** - sonst kalibriert man zwei Dinge gleichzeitig und
+merkt es erst hinterher.
+
+**Ein Anteilskriterium hat einen Nenner mit mehreren Spalten - und die Spalte entscheidet, ob es
+ueberhaupt misst.** Bei der Allianz-Station trennen fuenf der sechs moeglichen Bezugszellen gar
+nicht: gegen `spaet` waere jeder Kompensationswert bis 10,85 zulaessig, gegen die ganze Station
+bei `mittel` schon die Untergrenze 2,0 verletzt. **Vor jeder Kalibrierung gegen ein
+Schwellenkriterium die Grenze fuer BEIDE Extremwerte ausrechnen und die Spalte vorab festlegen** -
+das ist dieselbe Regel wie bei der Fensterfrage von Entscheidung 12, hier zum zweiten Mal
+angewandt und diesmal vor der Messung statt danach.
+
+**Ein globaler Multiplikator koppelt Entscheidungen, die getrennt kalibriert werden sollen.**
+`MODULE_COST_MULTIPLIER` traegt an der Station sowohl die Foerdereffizienz-Module (7.3) als auch
+"Verstaerkte Automatisierung"/"Wartungsfreiheit" (Hebel von 7.4). Eine pauschale Anhebung in 7.3
+haette 7.4 vorkalibriert, bevor 9.1 ueberhaupt entschieden ist. **Vor jeder Aenderung an einer
+gemeinsam genutzten Konstante auflisten, welche Entscheidungen sonst noch an ihr haengen.**
+
 **Wo eine FLACHE Belohnung auf einen PROPORTIONAL mitskalierenden Gegner trifft, ist Aufteilen
 immer besser als Zusammenhalten - und wenn die Zahl gleichzeitiger Teilnahmen nicht begrenzt ist,
 ist es beliebig oft besser.** Zweimal am 20.08.2026 aufgetaucht, an zwei voellig verschiedenen
@@ -668,8 +740,10 @@ nur noch ein (Bauanleitung im Messkasten bei Entscheidung 12, Protokoll `novice_
 **Damit ist KEIN reset-blockierender Punkt mehr offen.** Abschnitt 5 nannte 10 und 12; 10 ist
 gebaut, 12 ist kalibriert. Alles Weitere ist im Nachhinein korrigierbar.
 
-**Offen in Block C sind nur noch Schritt 9 (Allianz-Station, 7.2/7.3/7.4) und Schritt 12
-(Entscheidung 13.1 + 13.2) - beide unabhaengig voneinander und beide frei, weil Block A steht.**
+**Offen in Block C ist nur noch Schritt 12 (Entscheidung 13.1 + 13.2).** Schritt 9
+(Allianz-Station) ist am 20.08.2026 erledigt: 7.2 und 7.3 kalibriert, 7.4 nach Block D Schritt 14
+herausgeloest, `STATION_MINING_COMPENSATION` bei 3 bestaetigt. 13.1 braucht die Koeffizienten aus
+Entscheidung 2 - die stehen, Block A ist kalibriert.
 Danach kommt Schritt 13, die 30-Tage-Fortschrittssimulation.
 
 **Wer die Simulation baut, liest ZUERST den Messkasten bei Entscheidung 12 und Kriterium 5 in
@@ -689,8 +763,10 @@ Abschnitt 1b.** Zwei Dinge sind dort geregelt, die den Bau betreffen:
 **Was beim naechsten Mal ZUERST zu pruefen ist:** wie viel im Plan inzwischen den Zustand
 "entschieden und kalibriert, aber nicht gebaut" hat. Das sind mittlerweile **VIER Pakete**:
 Block A Schritt 2, der gesamte Block B, Entscheidung 16 und - seit dem 20.08.2026 als solches
-erkannt - **Entscheidung 3 (Raid-Ertrag)**. Dazu kommt Entscheidung 12, die seit dem 20.08.2026
-kalibriert ist. Sie gehen alle gleichzeitig live.
+erkannt - **Entscheidung 3 (Raid-Ertrag)**. Dazu kommen **Entscheidung 12** und seit dem
+20.08.2026 **Entscheidung 7.2/7.3**, beide kalibriert und ungebaut. Sie gehen alle gleichzeitig
+live. **Die Sammelliste fuer den Einbau umfasst damit sechs Posten, nicht vier** - wer sie
+zusammenstellt, faengt bei den Messkaesten am Kopf von Entscheidung 2, 3, 4, 7, 12 und 16 an.
 Die Empfehlung aus der Arbeitsregel oben (Gesamtpaket ein paar Tage VOR dem Wipe auf den alten
 Staenden laufen lassen) wird damit wichtiger, nicht unwichtiger.
 
@@ -748,6 +824,12 @@ entschieden UND vollstaendig kalibriert, trotzdem nicht gebaut.
 
 **R15 bleibt bewusst liegen** (siehe unten) - dokumentiert, nicht dringend, und ausdruecklich kein
 Anlass, die Aggregations-Grundsatzfrage neu zu stellen.
+
+**`run_station.mjs` ist veraltet und wird nicht mehr fortgeschrieben.** Es kennt
+`STATION_MINING_COMPENSATION` nicht (rechnet 1,88 statt 7,90 Mrd/Tag), nutzt die alte
+1,5x/2,5x-Ertragsrelation aus der Zeit vor 7.1 und vergleicht gegen die aufgegebene Baseline von
+21,69 Mrd/Tag. Wer Stations-Zahlen braucht, nimmt **`run_station_v2.mjs`**; die alte Datei bleibt
+nur als historisches Protokoll liegen. Dasselbe gilt fuer `station.txt` gegen `station_v2.txt`.
 
 ## Was Entscheidung 5 am 18.08.2026 ergeben hat
 
