@@ -1,0 +1,148 @@
+=== ENTSCHEIDUNG 7.2 / 7.3 - ALLIANZ-STATION, MESSPROTOKOLL 20.08.2026 ===
+
+Kompensationsfaktor im Code: STATION_MINING_COMPENSATION = 3
+Zielband Amortisation 60-120 Tage (Lesart A: Kosten / Eigenertrag).
+Anteilskriterium: unter 20 %, pro Kopf bei 2 Mitgliedern, Spalte "mittel".
+
+--- 0. Der NENNER: Messbuild-Pruefung und Streuung (uebernommen, nicht hier gerechnet) ---
+
+Build: make_messbuild_kum.mjs --rf=4 --evk=0.20 --evm=0.08 (Block A Schritt 2 + Entscheidung 16).
+!!! Alle Nenner unten sind MESSBUILD-WERTE. Im Repo steht keine der beiden Aenderungen. !!!
+
+Ankerpruefung vor Gebrauch (run_loot_curve.mjs solo 40, Zelle mittel/hoch):
+  roh          : 1,10 Mrd Belohnung gegen 1,05 Mrd Referenz  = +4,8 %  (sieht falsch aus)
+  normiert     : 1,10/11,8 = 0,0932 gegen 1,05/11,1 = 0,0946 = -1,5 %  (Kampf-Streuung)
+  -> Build reproduziert den Anker. Der rohe Vergleich haette ihn verworfen.
+
+Streuung des Nenners (run_income_baseline_v2.mjs 40, ACHT Serien, scheibenweise):
+  mittel: 19,45 19,31 19,52 19,33 19,41 19,50 19,43 19,44 -> Mittel 19,42 | SD 0,074 (0,38 %)
+  spaet : 60,90 60,91 60,27 60,47 61,03 60,54 60,88 60,94 -> Mittel 60,74 | SD 0,276 (0,45 %)
+  Die mittel-Zeile ist die tragende Zelle. Ihre Streuung ist gegenueber der Kalibrierbreite
+  bedeutungslos (siehe Abschnitt 3) - Unterschiede duerfen also gedeutet werden.
+
+--- 1. Ist-Stand des Vollausbaus (alle Minen Cap 30, Solar bedarfsdeckend, ohne Module) ---
+
+Mine                       Kosten alle 3 Stufen   Wert-Ertrag/h (roh)   Kosten je Wert-Ertrag
+mine_metall                 31.33 Mrd        36.64 Mio       1.00x
+mine_kristall              120.18 Mrd        36.83 Mio       3.82x
+mine_deuterium             217.11 Mrd        36.28 Mio       7.00x
+Solarkraftwerke (3 Stufen) 189.59 Mrd            -       -
+
+Gesamtkosten Vollausbau : 558.20 Mrd   (davon Solar 34 %)
+Ertrag mit COMP=3          : 329.24 Mio Wert/h = 7.90 Mrd/Tag
+Amortisation            : 70.6 Tage  -> IM BAND
+Anteil pro Kopf (mittel) : 3.95 Mrd/Tag von 23.37 Mrd = 16.9 %  -> ERFUELLT
+
+--- 2. Entscheidung 7.2: Kostenkurve an den Wert-Ertrag angleichen ---
+
+Alle drei Minen liefern bei Level 30 denselben Wert-Ertrag, kosten aber das 1-/3,8-/6,9-fache.
+"Angleichen" legt nur das VERHAELTNIS fest, nicht das Niveau. Drei Niveau-Varianten:
+
+Variante                  Faktor je Mine (M/K/D)        Minen-Kosten   Gesamtkosten   Amort. bei COMP=3
+A Summe konstant          3.92x / 1.02x / 0.57x        368.62 Mrd   558.20 Mrd   70.6 Tage
+B auf Metall herunter     1.00x / 0.26x / 0.14x         93.98 Mrd   283.57 Mrd   35.9 Tage
+C auf Deuterium herauf    6.93x / 1.81x / 1.00x        651.32 Mrd   840.91 Mrd   106.4 Tage
+
+Variante D - dasselbe Ziel ohne Kostenaenderung: die CAPS staffeln statt die Kosten angleichen.
+Die Heimatbasis macht genau das bereits (HOME_TIER_UNLOCK_LEVELS 36/32/30). Gesucht ist je Mine
+der Cap, bei dem die LETZTE Stufe dasselbe kostet wie die letzte Metallmine-Stufe auf 30.
+
+Ergebnis: Metall 30 / Kristall 27 / Deuterium 25
+  Gesamtkosten 137.55 Mrd (statt 558.20 Mrd), Ertrag 5.78 Mrd/Tag (statt 7.90 Mrd)
+  Amortisation bei COMP=3: 23.8 Tage
+  Anteil pro Kopf (mittel): 13.0 %
+  COMP-Korridor: Band 0.59-1.19, Anteil <= 5.04, Untergrenze 2.0
+  Beruehrt buildings.ts NICHT - nur maxLevel in stationBuildings.ts. Der Freischalt-Zwang aus
+  checkTierUnlock() liest maxLevel je Mine und funktioniert mit gestaffelten Caps unveraendert.
+
+Amortisation der drei Varianten ueber den erlaubten COMP-Korridor:
+Variante                  COMP 2.0    COMP 2.5    COMP 3.0    COMP 3.5    COMP 4.0
+A Summe konstant           106 d      85 d      71 d      61 d      53 d*
+B auf Metall herunter       54 d*     43 d*     36 d*     31 d*     27 d*
+C auf Deuterium herauf     160 d*    128 d*    106 d      91 d      80 d 
+(* ausserhalb des Bands 60-120 Tage)
+
+--- 3. Zulaessiger COMP-Korridor aus beiden Kriterien ---
+
+Anteilskriterium (mittel, pro Kopf, unter 20 %): COMP <= 3.69
+  Nenner-Streuung 1 SD (0.07 Mrd) verschiebt diese Grenze um +-0.014 COMP-Einheiten -> nicht entscheidungsrelevant.
+Amortisationsband, A Summe konstant      : COMP 1.77 bis 3.53
+Amortisationsband, B auf Metall herunter : COMP 0.90 bis 1.79
+Amortisationsband, C auf Deuterium herauf: COMP 2.66 bis 5.32
+Untergrenze laut Plan: COMP >= 2.0
+
+--- 4. Entscheidung 7.3: Stations-Module ---
+
+9x Foerdereffizienz auf Stufe 10 (+5 %/Stufe = +50 % Ertrag):
+  Kosten heute      : 16.87 Mrd
+  Mehrertrag        : 3.95 Mrd/Tag
+  Amortisation heute: 4.3 Tage
+  ACHTUNG: die im Plan genannten 17,9 Tage sind gegen den Ertrag VOR 7.1 und Kompensation
+  gerechnet (1,88 Mrd/Tag). Real ist der Modulweg heute 16.5x guenstiger als der Gebaeudeweg.
+
+Noetiger Kostenfaktor auf die Foerdereffizienz-Module:
+  fuer 60 Tage : 14.0x  (MODULE_COST_MULTIPLIER 500 -> 7024)
+  fuer 120 Tage: 28.1x  (-> 14049)
+  fuer Gleichstand mit dem Gebaeudeweg (70.6 Tage): 16.5x  (-> 8270)
+
+Der Faktor ist COMP-unabhaengig: Modulkosten und Mehrertrag haengen beide linear am Ertrag.
+
+--- 5. Wirkung von 7.2 auf die Heimatbasis (dieselben V1-Basiswerte, KEIN Level-Cap) ---
+
+WICHTIG: Session-1-Befund 2 (Faktor 2,8 / 5,0 zugunsten von "Metall ausbauen und tauschen")
+vergleicht die drei Minen auf DERSELBEN Stufe (25 bzw. 30). Die Heimatbasis erzwingt gleiche
+Stufen aber nirgends - HOME_TIER_UNLOCK_LEVELS steht auf 36/32/30, also bereits GESTAFFELT.
+An diesen Stufen gemessen sieht die Lage anders aus als im Befund:
+
+Grenzkosten je Mehrertrag - die Groesse, an der der Spieler "ausbauen oder tauschen" entscheidet:
+Gebaeude                Stufe   Grenzkosten heute   je Mehrertrag   nach Variante A   je Mehrertrag
+Metallmine                 36    22.02 Mrd          710 d    86.37 Mrd         2784 d
+Kristallmine               32    16.48 Mrd          848 d    16.85 Mrd          867 d
+Deuterium-Synthetisierer   30    11.63 Mrd          771 d     6.58 Mrd          437 d
+
+"Metall ausbauen und tauschen" gegen "Deuterium direkt ausbauen":
+  heute          : Faktor 1.09 zugunsten des Umwegs (Handelsgebuehr 20 % beruecksichtigt: 0.87)
+  nach Variante A: Faktor 0.16 (mit Gebuehr 0.13) -> der direkte Ausbau gewinnt, TRADE_FEE unangetastet
+
+Startphase - was Variante A die ersten zehn Metallminen-Stufen kostet:
+  Metallmine 1-10       : 0.7 Mio -> 2.7 Mio  (3.92x)
+  Kristallmine 1-10     : 1.4 Mio -> 1.4 Mio  (1.02x)
+  Deuterium 1-10        : 2.5 Mio -> 1.4 Mio  (0.57x)
+  alle drei zusammen    : 4.6 Mio -> 5.6 Mio  (1.20x)
+  gemessen an der frueh-Einnahme 0.98 Mrd/Tag: 0.1 h -> 0.1 h
+
+Hohe Stufen (Entscheidung 9 Punkt 4: die Gebaeude-Leiter ist die zweite Ressourcen-Senke):
+Gebaeude                Stufe   Kosten heute   nach Variante A
+Metallmine                 40   127.11 Mrd     498.55 Mrd
+Metallmine                 45   1137.20 Mrd     4460.32 Mrd
+Deuterium-Synthetisierer   35   121.96 Mrd      69.02 Mrd
+Deuterium-Synthetisierer   40   1278.81 Mrd     723.75 Mrd
+
+costGrowth bleibt in allen Varianten unangetastet (Nutzerentscheidung 20.08.2026): nur baseCost
+wird bewegt. Grund: 1,6 -> 1,55 verbilligt an der uncapped Heimatbasis die Stufe 30 um Faktor 2,5,
+die Stufe 45 um 4,0 und danach unbegrenzt weiter - genau die Senke, die Entscheidung 9 braucht.
+
+=== ERGEBNIS ===============================================================================
+
+7.2 -> Variante A (Summe konstant), angewandt NUR auf stationBuildings.ts.
+  Sie stellt die Relation her, ohne eine einzige kalibrierte Aggregatgroesse zu bewegen:
+  Gesamtkosten 558.20 Mrd unveraendert, Ertrag 7.90 Mrd/Tag unveraendert,
+  Amortisation 70.6 Tage unveraendert, Anteil 16.9 % unveraendert.
+  B faellt aus dem Band (36 Tage, im ganzen COMP-Korridor nicht heilbar) und halbiert die Senke.
+  C haelt das Band, verteuert die Station aber um 51 % auf 841 Mrd.
+  D (gestaffelte Caps) faellt aus: 137,55 statt 558,20 Mrd - die Senke, wegen der die Station
+  laut Entscheidung 7 ueberhaupt existiert, waere zu drei Vierteln weg.
+
+7.2 an der HEIMATBASIS -> nicht anwenden. Der zugrunde liegende Befund vergleicht gleiche
+  Stufen; die Heimatbasis staffelt bereits (36/32/30) und liegt dort bei 710/848/771 Tagen.
+  Mit TRADE_FEE 20 % gewinnt der direkte Ausbau schon heute (0,87). Variante A wuerde ihn auf
+  0,13 ueberdrehen und Metallmine 45 von 1.137 auf 4.460 Mrd heben.
+
+7.3 -> Foerdereffizienz-Module x16.5 (MODULE_COST_MULTIPLIER 500 -> 8270), NUR fuer
+  moduleKind "output" an den Minen. Nicht global: derselbe Multiplikator traegt auch die
+  Fabrik-Module (Verstaerkte Automatisierung/Wartungsfreiheit), und die sind ein Hebel von 7.4.
+  requiredBuildingLevel 20 -> 10 bleibt richtig, wirkt aber nur noch auf die Sichtbarkeit.
+
+COMP -> bleibt 3. Zulaessiger Korridor unter Variante A: 2.00 bis 3.53.
+  Der Wert ist kein frei gewaehlter Punkt im Korridor, sondern hergeleitet (Mining-Forschung 2,0
+  x Mining-Boost 1,5). Die Messung hatte ihn zu pruefen, nicht zu ersetzen - und er besteht sie.
