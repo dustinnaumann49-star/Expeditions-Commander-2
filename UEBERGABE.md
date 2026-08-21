@@ -87,8 +87,34 @@ anders wirken kann als in der Simulation.
     damit im Wesentlichen ueber die KI-MITSPIELER, deren Flotten im Elite-Bollwerk und in der
     Raid-Verstaerkung tatsaechlich auftauchen. Bei der Kalibrierung am Vormittag war das noch nicht
     so - **wer f setzt, liest das hier zuerst.**
-- **NEU 21.08.2026: ENTSCHEIDUNG 18 - DER RAID WIRD DER TRAEGER DER HERAUSFORDERUNG. OFFEN,
-  Messplan steht, nicht begonnen.** Loest Abschnitt 8 Punkt 7 ("Raid verlierbar machen", bisher nur
+- **NEU 21.08.2026: ENTSCHEIDUNG 18 - DER RAID WIRD DER TRAEGER DER HERAUSFORDERUNG.
+  MESSSCHRITT 1 ERLEDIGT, nichts gebaut.** Protokoll `raid_hardness_18.txt`.
+  - **`raid.txt` IST FUER DIE KALIBRIERUNG NICHT MEHR GUELTIG** - es stammt aus der Zeit vor
+    Entscheidung 16. Neue Baseline mit 40 Raids je Fall steht im Messkasten bei Entscheidung 18.
+  - **DER WICHTIGSTE BEFUND GEHOERT NICHT ZU 18, SONDERN ZU ENTSCHEIDUNG 16: Klassen-RapidFire
+    macht Verteidigungsanlagen im Raid praktisch unzerstoerbar.** Gegenprobe Repo-Stand gegen
+    Messbuild: Stand mittel **21,6 % -> 0,0 %** Verteidigungsverlust, Stand "voll / kleine Flotte"
+    **92,0 % -> 35,4 %**, waehrend dort der Flottenverlust von 14,5 auf 39,0 % steigt.
+    **Verteidigung wird dadurch im Raid faktisch kostenlos.** Entscheidung 16 ist kalibriert und
+    UNGEBAUT - das gehoert vor dem Einbau entschieden.
+  - **DIE VERLIERBARKEIT IST MIT DEN OFFENEN REGLERN STRUKTURELL NICHT ERREICHBAR.** In JEDER
+    Zelle gewinnen die entwickelten Staende 100 % der Raids perfekt - bei 12, 18, 24 und 36
+    Wellen, bei Reparatur 0,00 und bei Verteidigungs-Gewicht 4,0. Ursache: `processRaidWave()`
+    bemisst jede Welle an der AKTUELLEN, bereits dezimierten Flotte - schrumpft die Flotte,
+    schrumpft der Gegner mit. Auch das Einfrieren der Bemessungsgrundlage reicht nicht, es trifft
+    nur die Schwachen. **"Raid haerter" ist erreichbar, "Raid verlierbar" nicht.**
+  - **Die Reparaturquote ist als Regler tot** (Folge des Befunds oben) - der vor der Messung
+    vorgeschlagene erste Kandidat ist widerlegt.
+  - **Empfehlung, nicht gebaut: `RAID_WAVE_COUNT` von 12 auf 18** (voll 20,0 -> 26,3 %,
+    mittel 28,7 -> 37,7 %, schwach praktisch unveraendert). Beruehrt Entscheidung 3.
+  - **OFFENE GATE-FRAGE: wird `RAID_WAVE_ROLL` geoeffnet, oder wird Abschnitt 8 Punkt 7 ("Raid
+    verlierbar machen") als nicht erreichbar geschlossen?** Der Regler wurde NICHT angefasst.
+- **NEU 21.08.2026: f = 12 EINGETRAGEN** (Entscheidung 13.1, `BOT_VIRTUAL_ACTIVITY`), auf
+  Delegation des Nutzers, **als Empfehlung und jederzeit umkehrbar - nicht gebaut.** Begruendung:
+  13.1-A kippt bei f = 13,5, f = 12 nutzt die Decke mit 8 % Abstand aus; und seit dem Ausgang von
+  Entscheidung 17 entscheidet f im Wesentlichen ueber die KI-MITSPIELER, deren Flotten anders als
+  der Bestand der Piratenbasen tatsaechlich sichtbar werden.
+- **ALTER EINTRAG (ueberholt durch den obigen): Entscheidung 18 war offen mit Messplan.** Loest Abschnitt 8 Punkt 7 ("Raid verlierbar machen", bisher nur
   auf Design-Grundlage entschieden) mit Zahlen ein.
   - **Ist-Zustand aus `raid.txt`, 40 Raids je Fall: an JEDEM entwickelten Stand 12/12 Wellen und
     100 % perfekte Abwehr.** Nur "schwach" verliert - und dann gleich mit 94,4 % Flottenverlust.
@@ -884,19 +910,24 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**ZWEI DINGE SIND VOM NUTZER ZU ENTSCHEIDEN, BEVOR IRGENDETWAS GEMESSEN WIRD:**
-1. **Die Zahl f aus Entscheidung 13.1** (`BOT_VIRTUAL_ACTIVITY`, Vorschlag 12 oder 8). Neu seit
-   dem Ausgang von Entscheidung 17: f entscheidet im Wesentlichen ueber die KI-MITSPIELER, nicht
-   mehr ueber die Piratenbasen - siehe den Stand-Eintrag oben.
-2. **Bleibt `RAID_WAVE_ROLL` gesperrt?** Das ist die Gate-Frage fuer Entscheidung 18. Ohne Antwort
-   wird der Regler nicht angefasst, und die Messung laeuft ueber Reparaturquote und Wellenzahl.
+**EINE EINZIGE FRAGE STEHT NOCH BEIM NUTZER: wird `RAID_WAVE_ROLL` geoeffnet?**
+Messschritt 1 von Entscheidung 18 hat gezeigt, dass ueber Sieg oder Niederlage allein die Staerke
+EINER Welle entscheidet - alle anderen Regler bewegen nur die KOSTEN. Solange der Regler gesperrt
+bleibt, ist Abschnitt 8 Punkt 7 ("Raid verlierbar machen") **nicht erreichbar** und sollte
+entweder geoeffnet oder als nicht erreichbar geschlossen werden. Der Regler wurde nicht angefasst.
+Die Zahl f aus 13.1 ist auf Delegation mit 12 eingetragen und umkehrbar - keine offene Frage mehr,
+aber eine, die der Nutzer jederzeit anders entscheiden kann.
 
-**Danach: Entscheidung 18, Messschritt 1 (Trennschaerfe).** Sweep ueber
-`DEFENSE_REPAIR_PERCENT` (0,70 bis 0,30) und `RAID_WAVE_COUNT` (12 bis 20) gegen alle fuenf Faelle
-aus `raid.txt`. Die Frage an den Extremwerten lautet: gibt es ueberhaupt eine Einstellung, bei der
-ein entwickelter Spieler MANCHMAL eine Welle verliert, statt entweder nie oder fast alles? Faellt
-die Antwort nein aus, traegt der ganze Ansatz nicht und es braucht eine Verlustobergrenze wie bei
-Entscheidung 10.
+**VOR DEM EINBAU VON ENTSCHEIDUNG 16 ZU KLAEREN, NEU AM 21.08.2026:** Klassen-RapidFire macht
+Verteidigungsanlagen im Raid praktisch unzerstoerbar (Stand mittel 21,6 % -> 0,0 %
+Verteidigungsverlust). Verteidigung wird damit faktisch kostenlos, und die Kopplung der
+Verteidigungswerte an die Kosteneffizienz der Schiffe stimmt nicht mehr. Entscheidung 16 ist
+kalibriert und ungebaut - der beste Zeitpunkt ist jetzt.
+
+**Naechster Messschritt, wenn die Gate-Frage beantwortet ist:** Entscheidung 18, Schritt 2
+(Kriterium festlegen) und Schritt 3 (kalibrieren gegen alle fuenf Faelle). Faellt die Antwort
+"bleibt gesperrt", entfaellt Schritt 2 und es bleibt bei der Haerte-Empfehlung
+`RAID_WAVE_COUNT` = 18, die dann nur noch gegen Entscheidung 3 gegenzupruefen ist.
 
 **Block C ist seit dem 21.08.2026 vollstaendig.** Schritt 12 (Entscheidung 13.1 + 13.2) ist
 erledigt: 13.1 kalibriert bis auf die Zahl f, 13.2 ohne Messung entschieden, beides nicht gebaut.
