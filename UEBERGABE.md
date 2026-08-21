@@ -65,6 +65,60 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 21.08.2026: BLOCK C IST VOLLSTAENDIG. Schritt 12 (Entscheidung 13.1 + 13.2) ist erledigt -
+  13.1 KALIBRIERT bis auf EINE Nutzerzahl, 13.2 ENTSCHIEDEN OHNE MESSUNG, beides NICHT GEBAUT.**
+  Messkasten am Kopf von Entscheidung 13, Protokoll `bot_yield_131.txt`, Werkzeug
+  `run_bot_yield_131.mjs` (neu). Naechster Schritt ist 13, die 30-Tage-Fortschrittssimulation.
+  - **Weg (b) steht, und beide Koeffizienten sind GEMESSEN statt gesetzt:**
+    `Feindmacht/Tag = 4,0 * combatFleetPowerBase(Bot-Flotte) * f`, darauf die Kurve aus
+    Entscheidung 2 (Anker und Exponent unveraendert) als Ertrag und `0,036 * Feindmacht * 0,7`
+    als Verlust. **k = 4,0** ist ueber zwei Groessenordnungen Flottenmacht nahezu konstant
+    (3,204 / 4,275 / 3,996), **0,036** stimmt zwischen mittel und spaet auf 5 % ueberein.
+    Ertrag und Verlust haengen damit an derselben Groesse - genau die Forderung aus 13.1.
+  - **OFFEN und ausdruecklich eine Nutzerentscheidung: der Wert von f** (`BOT_VIRTUAL_ACTIVITY`).
+    **f = 12** ergibt 0,92 / 0,27 / 0,34 gegen den Spieler, **f = 8** ergibt 0,67 / 0,19 / 0,26.
+    Alles andere an 13.1 ist entschieden.
+  - **Der Bezugswert ist KEINE Spalte, sondern die eigene Flottenmacht.** Ein Bot hat keinen
+    Ausbaustand im Sinne der Tabelle. Dass die Spaltenwahl sonst entschieden haette, ist
+    gemessen: heutiger Bot 18 / 6 / 11 % des Spielers, "Faktor fuer 100 %" 33,1 / 96,9 / 55,1.
+    Die alten "15 %" und "39" liegen dazwischen - eine unbenannte Spaltenwahl gegen die
+    aufgegebene 21,69-Baseline.
+  - **Das Messkriterium "Zielkorridor 60-100 %" ist gemessen NICHT erreichbar** und durch das
+    Kriterienpaar 13.1-A (Decke unter 1,0) / 13.1-B (nicht unter heute) ersetzt. Grund liegt
+    nicht beim Bot: die Bezugskurve ist nicht monoton (Spieler-Ertrag je Punkt eigener
+    Flottenmacht 3,5 / 7,2 / 3,3), und eine einzelne Konstante kann das nicht treffen.
+  - **13.3 musste NICHT vorgezogen werden - es ist gebaut**, allerdings nur fuer die
+    Piratenbasen. Die KI-Mitspieler haben kein Raster (30-60 Zuege je Stunde je nach externem
+    Taktgeber). Statt einer Vorziehung eine **Bau-Vorgabe: der virtuelle Ertrag wird
+    ZEITBASIERT ueber `deltaSec` verbucht, nicht je Bot-Zug** - sonst kehrt die
+    Aufruf-Abhaengigkeit auf dem Einkommen zurueck.
+  - **Die Sammelliste fuer den Einbau umfasst damit SIEBEN Pakete** (Block A Schritt 2, Block B,
+    Entscheidung 3, 16, 12, 7.2/7.3 und jetzt 13.1/13.2), dazu R16.
+- **NEU 21.08.2026, ZWEI PRAEMISSEN VON 13.1 SIND GEGEN DEN CODE WIDERLEGT.** "Bots haben
+  ausschliesslich Minen-Einkommen" stimmt nicht: `maybeAttackPirateBase()` liefert Beute ueber
+  `pirateBaseLoot()` und damit bereits ueber `LOOT_CURVE_ANCHOR_*`, und Bots bekommen im
+  Elite-Bollwerk `winResources` voll gutgeschrieben. **Richtig ist der engere Satz: Bots haben
+  keinen Zugang zum CONTAINER-Wert** - `openContainer()` ist nur ueber `routes.ts` erreichbar, ein
+  Bot stellt nie einen Request. **Ein Bot gewinnt einen Raid ueber 12 Wellen (22,07 Mrd
+  Containerwert) und bekommt dafuer exakt null.** Folge: der virtuelle Ertrag tritt NEBEN die
+  Piratenbasis-Beute und den Elite-Anteil, er ersetzt sie nicht - wer gegen "Bot hat nur Minen"
+  kalibriert, zaehlt beide doppelt.
+- **NEU 21.08.2026, NEUER BEFUND FUER 13.4/BLOCK D: Roboterfabrik und Nanitenfabrik sind fuer den
+  Bot ein ARMUTS-FALLBACK.** `maybeBuildBuilding()` erreicht sie erst, wenn ALLE DREI
+  Minenausbauten fehlschlagen - was nur aus Geldmangel geschieht. Ein reicher Bot baut die beiden
+  bauzeitverkuerzenden Fabriken deshalb NIE, belegt den einen Gebaeude-Slot zu 44 % mit
+  Solarkraftwerken und bleibt bei Minenstufe 13 stehen (gemessen: Robo 0 / Nanite 0 beim
+  27-fachen Zusatzertrag gegen Robo 5 / Nanite 14 beim 9-fachen). **Je reicher der Bot, desto
+  langsamer baut er aus.** Dieselbe Fehlerform wie bei `ATTACK_POWER_SAFETY_MARGIN`: eine
+  Bedingung hoert auf zu wirken, ohne dass etwas bricht. **Nicht behoben, nicht vorgeschlagen** -
+  gehoert zu 13.4 und ist dort mit `MAX_BUILD_SLOTS = 1` aus Entscheidung 9.2 zusammen zu
+  betrachten, weil die Verschaerfung dieselbe Richtung hat.
+- **NEU 21.08.2026: `BASE_INCOME` in `run_income_baseline_v2.mjs` ist eine Setzung, die der Code
+  nicht hergibt** (55 / 300 / 554 Mio/Tag gegen gerechnete 29,6 / 343,2 / 2262,1 Mio - in der
+  Setzung fehlen Mining-Forschung, Abbau-Booster und Prospektor). **Die Baseline 0,98 / 19,57 /
+  61,11 bleibt gueltig:** die Minen sind an allen drei Staenden ein kleiner Posten, das NETTO
+  bewegt sich nur um -2,6 % / +0,2 % / +2,8 %. Kein Anlass zur Neuerhebung, wohl aber einer, den
+  Wert beim naechsten Anfassen des Skripts aus dem Code zu ziehen.
 - **NEU 21.08.2026, NUTZERBEOBACHTUNG AUS DEM ECHTBETRIEB: die CPU-Frage beim Schiffslimit ist
   beantwortet.** Bei rund 1 Mio. Schiffen samt gleichzeitiger Koop-Expedition ins Elite-Bollwerk
   langweilen sich beide CPUs (eine Worker, eine Hauptthread). Die 26-ms-Messung ist damit nicht
@@ -469,6 +523,36 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein Kriterium kann bei den Extremwerten trennen und trotzdem mit EINER Zahl unerfuellbar sein -
+wenn die BEZUGSKURVE nicht monoton ist.** Der Zielkorridor "60-100 % des Spielers" aus
+Entscheidung 13 trennt sauber (bei f=1 liegt der Bot bei 0,04-0,12, bei f=20 bei 0,39-1,38) und
+ist trotzdem mit keinem einzigen Koeffizienten erreichbar: der Abstand zwischen der guenstigsten
+und der unguenstigsten Stuetzstelle betraegt IMMER Faktor 3,4. Ursache liegt nicht beim
+kalibrierten Mechanismus, sondern beim Nenner - der Spieler verdient je Punkt eigener
+Flottenmacht 3,5 / 7,2 / 3,3, der mittlere Stand ist ein Gipfel, weil dort das Elite-Bollwerk
+aufgeht. **Die Trennschaerfe-Pruefung reicht also nicht: zusaetzlich pruefen, ob EIN Wert des
+Reglers alle Stuetzstellen gleichzeitig treffen KANN.** Sonst hat man ein Kriterium, das misst,
+aber nie erfuellt wird.
+
+**Ein Fallback-Zweig kann seine Bedingung verlieren, wenn eine andere Aenderung die Voraussetzung
+wegnimmt - und dann greift er nie wieder.** `maybeBuildBuilding()` erreicht Roboterfabrik und
+Nanitenfabrik erst, wenn alle drei Minenausbauten fehlschlagen, was nur aus Geldmangel geschieht.
+Solange Bots arm sind, funktioniert das. Sobald 13.1 sie reich macht, bauen sie die beiden
+bauzeitverkuerzenden Fabriken NIE mehr und wachsen dadurch LANGSAMER, je mehr sie einnehmen
+(gemessen: Robo 0 / Nanite 0 beim 27-fachen Zusatzertrag gegen Robo 5 / Nanite 14 beim
+9-fachen). Dritter Fundort derselben Fehlerform nach `ATTACK_POWER_SAFETY_MARGIN` und
+`ADMIRAL_ESCORT_BASE`. **Vor jeder Aenderung, die eine Ressourcenlage verschiebt, nach Zweigen
+suchen, deren Bedingung "wenn nichts anderes bezahlbar ist" lautet.**
+
+**Eine Begruendung kann von einer SPAETEREN eigenen Entscheidung entwertet werden.** 13.2
+begruendete die festen Bot-Profile unter anderem damit, die Gleichverteilung sei "wertmaessig
+schief" und "nach Entscheidung 6 genau die schlechteste Verwendung". Gemessen betraegt der
+Unterschied in Macht je Wert-Einheit **0,2 %** - weil genau diese Entscheidung 6 den Wert je
+Machtpunkt ueber alle Schiffstypen auf 1,15 angeglichen hat. Die Entscheidung selbst bleibt
+richtig, ihre wirtschaftliche Begruendung ist tot. **Bei jeder aelteren Begruendung pruefen, ob
+eine seitdem getroffene Entscheidung ihr die Grundlage entzogen hat** - das ist dieselbe Form wie
+"die README-Punkte zeigen ins Leere", nur innerhalb des Plans.
+
 **`run_income_baseline_v2.mjs` UEBERSCHREIBT `income_baseline_v2.txt` bei jedem Lauf - auch bei
 einem Testlauf mit N=2.** Am 20.08.2026 ist beim Streuungs-Lauf genau das passiert, und die
 Sicherungskopie war bereits die Testlauf-Fassung, weil sie erst danach gezogen wurde.
@@ -740,6 +824,19 @@ diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen
 Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
+
+**BLOCK C IST SEIT DEM 21.08.2026 VOLLSTAENDIG.** Schritt 12 (Entscheidung 13.1 + 13.2) ist
+erledigt: 13.1 kalibriert bis auf die Zahl f, 13.2 ohne Messung entschieden, beides nicht gebaut.
+**Naechster Schritt ist 13: die 30-Tage-Fortschrittssimulation** (Abschnitt 1b). Wer sie baut,
+liest zuerst den Messkasten bei Entscheidung 12 UND den bei Entscheidung 13 - dort steht, dass
+das Bot-Verhalten ueber 30 Tage der einzige noch offene Nachweis fuer 13.1 ist ("begleitet der
+Bot tatsaechlich, statt zu ueberholen?") und dass 13.4 dabei mitgeprueft werden muss.
+**Vor der Simulation faellig, weil es sonst zweimal gerechnet wird:** die Zahl f
+(`BOT_VIRTUAL_ACTIVITY`, Vorschlag 12 oder 8) ist eine Nutzerentscheidung und steht noch aus.
+
+**Die Sammelliste fuer den Einbau umfasst jetzt SIEBEN Pakete, nicht sechs** - neu dazu
+13.1/13.2. Wer sie zusammenstellt, faengt bei den Messkaesten am Kopf von Entscheidung 2, 3, 4, 7,
+12, 13 und 16 an, dazu R16.
 
 **Entscheidung 12 (Schritt 11) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
 gegengemessen - und wie alles andere nicht gebaut.** `NOVICE_BONUS_ADD = 2,0`, Fenster-Empfehlung

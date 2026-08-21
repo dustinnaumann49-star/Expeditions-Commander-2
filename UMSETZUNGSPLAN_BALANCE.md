@@ -2489,6 +2489,132 @@ kalibriert, den Entscheidung 5 braucht.
 
 ### Entscheidung 13 - KI-Mitspieler und Piratenbasen: ERTRAG AN DIE EIGENE FLOTTENMACHT KOPPELN
 
+> **STATUS 21.08.2026 (Block C, Schritt 12): 13.1 KALIBRIERT BIS AUF EINE NUTZERZAHL, 13.2
+> ENTSCHIEDEN OHNE MESSUNG. NICHTS DAVON IST GEBAUT** - es wurde in dieser Session keine Zeile
+> Spielcode geaendert. Protokoll: `balance/session2-simulation/bot_yield_131.txt`, Werkzeug
+> `run_bot_yield_131.mjs` (neu). **Alle Messwerte stammen aus dem kumulativen Messbuild**
+> (`make_messbuild_kum.mjs --rf=4 --evk=0.20 --evm=0.08`, Block A Schritt 2 + Entscheidung 16),
+> vor Gebrauch gegen `loot_curve.txt` geprueft und auf die vernichtete Feindmacht normiert
+> (-2,3 % bzw. -1,1 %, innerhalb der Anker-Streuung von rund 2 %).
+>
+> **DIE ZAHLEN IN 13.1 UNTEN SIND UEBERHOLT.** "2,5 % aus Minen", "15 % eines Spielers" und
+> "muesste bei 39 liegen" sind gegen die aufgegebene Baseline von 21,69 Mrd/Tag gerechnet.
+> Gueltig ist 0,98 / 19,57 / 61,11 Mrd/Tag.
+>
+> **DER BEZUGSWERT: KEINE SPALTE - DIE EIGENE FLOTTENMACHT.** Ein Bot hat keinen Ausbaustand im
+> Sinne der Tabelle (kein Abbau-Booster, kein Prospektor, kein Asteroiden-Mining, keine
+> Allianz-Station), waehrend Flotte, Forschung, Gebaeude und Module dieselben Groessen sind.
+> Verglichen wird deshalb mit einem Spieler DERSELBEN Flottenmacht; die drei Spalten sind drei
+> Stuetzstellen, keine Auswahl. Dass die Spaltenwahl sonst entscheidet, ist gemessen: der heutige
+> Bot liegt bei **18 % (frueh) / 6 % (mittel) / 11 % (spaet)** des Spielers, der "Faktor fuer
+> 100 %" waere **33,1 / 96,9 / 55,1**. Der Anteil ist zudem NICHT monoton - der mittlere Stand ist
+> der schlechteste, weil dort das Elite-Bollwerk aufgeht.
+>
+> **DIE PRAEMISSE VON 13.1 IST IM CODE NICHT HALTBAR.** "Bots haben ausschliesslich
+> Minen-Einkommen" stimmt nicht: `maybeAttackPirateBase()` liefert Beute ueber `pirateBaseLoot()`
+> und damit bereits ueber `LOOT_CURVE_ANCHOR_*`, und Bots bekommen im Elite-Bollwerk
+> `winResources` voll gutgeschrieben. Richtig ist der ENGERE Satz: **Bots haben keinen Zugang zum
+> CONTAINER-Wert** - `openContainer()` ist nur ueber `routes.ts` erreichbar, ein Bot stellt nie
+> einen Request. Ein Bot gewinnt einen Raid ueber 12 Wellen (22,07 Mrd Containerwert) und bekommt
+> dafuer exakt null. **Folge fuer den Einbau: der virtuelle Ertrag tritt NEBEN diese beiden
+> Posten, er ersetzt sie nicht.**
+>
+> **ENGPASS VORAB GEPRUEFT (Befund aus 13.3: bei reichen NPCs binden die Bau-Slots).** 14
+> simulierte Tage, 2-Minuten-Takt, `runEconomyTick()` + `runEconomyBotTurn()`, deterministisch:
+> der Flottenwert steigt bis zum **9-fachen** Zusatzertrag praktisch proportional mit
+> (0,17 -> 0,60 -> 2,14 -> 9,86 Mrd). **Der Ertrag ist also der richtige Regler.**
+> **Ab dem 27-fachen kehrt es sich um, und der Grund ist ein Armuts-Fallback:**
+> `maybeBuildBuilding()` erreicht Roboterfabrik und Nanitenfabrik erst, wenn ALLE DREI
+> Minenausbauten fehlschlagen - was nur aus Geldmangel passiert. Ein reicher Bot baut die beiden
+> bauzeitverkuerzenden Fabriken deshalb NIE (gemessen: Robo 0 / Nanite 0 gegen Robo 5 / Nanite 14),
+> belegt den einen Gebaeude-Slot zu 44 % mit Solarkraftwerken und bleibt bei Minenstufe 13 stehen.
+> Dieselbe Fehlerform wie bei `ATTACK_POWER_SAFETY_MARGIN`. **Gehoert zu 13.4/Block D, hier NICHT
+> angefasst.** Die kalibrierten Werte liegen mit x1,4 bis x4,0 klar unterhalb dieser Grenze.
+>
+> **DIE BEIDEN KOEFFIZIENTEN VON WEG (b) SIND GEMESSEN, NICHT GESETZT** (40 Durchlaeufe je Zelle,
+> 24h-Solo-Mission gegen `piraten_hoch`, scheibenweise):
+> - **k = vernichtete Feindmacht je Tag / eigene Flottenmacht = 4,0.** Gemessen 3,204 / 4,275 /
+>   3,996 ueber zwei Groessenordnungen Flottenmacht - nahezu konstant, weil die Gegnerstaerke
+>   ohnehin an der eigenen Macht haengt. Einzellauf-Streuung 25 %, Standardfehler ueber 40 Laeufe
+>   4,0 %; der Abstand frueh/mittel von 33 % ist damit echt.
+> - **Verlustwert je Punkt vernichteter Feindmacht = 0,036**, abzueglich Wrack-Bergung 30 %.
+>   Gemessen 0,0375 (mittel) und 0,0355 (spaet), Uebereinstimmung auf 5 %. *Nachteil ausdruecklich:*
+>   frueh liegt mit 0,173 um das 4,7-fache hoeher (Forschung 3, keine Module) - ein junger Bot
+>   verliert real mehr, als eine einzige Konstante abbildet.
+>
+> Damit haengen **Ertrag UND Verlust an derselben Groesse**, wie 13.1 es fordert. Der Beute-Anker
+> liegt bei 0,094-0,096 je Punkt, der Verlust also bei rund 38 % des Bruttoertrags - linear gegen
+> eine mit 0,85 wachsende Beute, das ist die Selbstbegrenzung.
+>
+> **Formel:** `Feindmacht/Tag = 4,0 * combatFleetPowerBase(Bot-Flotte) * f`, darauf
+> `LOOT_CURVE_ANCHOR_VALUE * (Feindmacht / LOOT_CURVE_ANCHOR_POWER)^0,85` als Ertrag und
+> `0,036 * Feindmacht * 0,7` als Verlust. **f ist der einzige freie Parameter** (Arbeitsname
+> `BOT_VIRTUAL_ACTIVITY`).
+>
+> **DAS MESSKRITERIUM "ZIELKORRIDOR 60-100 %" WEITER UNTEN IST NICHT ERREICHBAR - GEMESSEN.**
+> Der Abstand zwischen guenstigster und unguenstigster Stuetzstelle betraegt bei JEDEM f den
+> Faktor 3,4. Fuer 0,60 im mittleren Stand braeuchte es f > 50, und dort stuende frueh bei ueber
+> 4,0. **Die Ursache liegt nicht beim Bot:** die Bezugskurve ist nicht monoton (der Spieler
+> verdient je Punkt eigener Flottenmacht 3,5 / 7,2 / 3,3), und eine einzelne Konstante kann eine
+> nicht-monotone Kurve nicht treffen. Das gilt fuer jeden Ein-Regler-Mechanismus, auch fuer den
+> heutigen Minen-Bonus (18 / 6 / 11 %).
+>
+> | f | frueh | mittel | spaet | max | min |
+> |---|---|---|---|---|---|
+> | 4 | 0,38 | 0,11 | 0,16 | 0,38 | 0,11 |
+> | 8 | 0,67 | 0,19 | 0,26 | 0,67 | 0,19 |
+> | **12** | **0,92** | **0,27** | **0,34** | **0,92** | **0,27** |
+> | 15 | 1,10 | 0,31 | 0,40 | 1,10 | 0,31 |
+> | 20 | 1,38 | 0,39 | 0,48 | 1,38 | 0,39 |
+>
+> **Ersetzendes Kriterienpaar, bei den Extremwerten ausdruecklich auf Trennschaerfe geprueft:**
+> - **13.1-A (Decke, hart):** das Maximum ueber die drei Stuetzstellen bleibt unter 1,0. Bei f = 1
+>   ist es 0,12, bei f = 20 ist es 1,38 - die Regel trennt. Sie bindet an der frueh-Stuetzstelle
+>   und kippt bei f = 13,5.
+> - **13.1-B (Boden, weich):** der Bot liegt an keiner Stuetzstelle unter dem, was er heute schon
+>   hat (0,18 / 0,06 / 0,11). Erfuellt ab f = 4.
+>
+> **OFFEN, NUTZERENTSCHEIDUNG: der Wert von f.** Vorschlag **f = 12** (ausgereizt, nutzt die Decke
+> bis auf 8 %) wenn "begleiten" und die Startphase (13.5) den Ausschlag geben; **f = 8**
+> (konservativ, 0,67 / 0,19 / 0,26) wenn "nicht ueberholen" schwerer wiegt.
+> **Verworfen, weil vor der Messung besser aussehend:** "Tagesrendite auf den eigenen Flottenwert
+> im Spielerband 209-355 %". Sie verlangt f = 73 / 25 / 18, Spannweite Faktor 4,1 - die
+> frueh-Zelle hat unter Weg (b) ein Netto nahe null, und ein Quotient mit einem Nenner nahe null
+> taugt nicht als Kalibriergroesse.
+>
+> **13.2 BRAUCHT KEINE MESSUNG - UND SEINE WIRTSCHAFTLICHE BEGRUENDUNG UNTEN IST UEBERHOLT.**
+> Deterministisch gerechnet (keine Serien): Macht je Wert-Einheit liegt bei Gleichverteilung bei
+> 0,8751, bei den vorgeschlagenen Profilen bei 0,8771 bzw. 0,8765 - **ein Unterschied von 0,2 %**.
+> Ursache ist Entscheidung 6 selbst, die den Wert je Machtpunkt ueber alle Schiffstypen auf 1,15
+> angeglichen hat (gebaut 18.08.2026). Seitdem ist die Zusammensetzung fuer die Flottenmacht je
+> ausgegebenem Wert gleichgueltig; der Wert-Anteil bleibt schief (leicht 2,3 %, bomber 18,1 %),
+> kostet aber nichts. **13.2 ist damit eine reine Identitaets-Entscheidung.** Was sie wirklich
+> aendert, ist die Wiedererkennbarkeit und - ungemessen - das Kampfverhalten unter Entscheidung 16;
+> letzteres gehoert dorthin, nicht hierher.
+>
+> **13.3 MUSS NICHT VORGEZOGEN WERDEN - ES IST GEBAUT** (17.08.2026), allerdings ueber
+> `nextEconomyTurn` auf `PirateBaseState`, also fuer die PIRATENBASEN. Die KI-MITSPIELER haben
+> kein Raster: `runBotTurn()` laeuft einmal je Heartbeat, gedeckelt nur durch
+> `HEARTBEAT_MIN_INTERVAL_MS = 60 s` gegen `HEARTBEAT_INTERVAL_MS = 2 min`, also 30 bis 60 Zuege
+> je Stunde je nach externem Taktgeber. Fuer die Messung folgenlos (virtuelle Uhr).
+> **Fuer den Einbau eine Vorgabe statt einer Vorziehung: der virtuelle Ertrag MUSS zeitbasiert
+> ueber `deltaSec` verbucht werden (wie `accrueBuildingProduction()`), NICHT je Bot-Zug.** Sonst
+> fuehrt 13.1 genau die Aufruf-Abhaengigkeit wieder ein, die 13.3 beseitigt hat - diesmal direkt
+> auf dem Einkommen.
+>
+> **Messregel 8 (Client-Spiegel):** neun Namen gegreppt
+> (`NPC_PRODUCTION_BONUS_MULTIPLIER`, `accrueBuildingProduction`, `runEconomyBotTurn`,
+> `combatFleetPowerBase`, `mineOutputPerHour`, `lootCurve`, `LOOT_CURVE`, `isNpcState`,
+> `maybeChooseClass`) - null Treffer. **EIN Spiegel, derselbe wie bei 13.3:** `DebugBotState` in
+> `client/src/types/game.ts` plus `pages/Debug.tsx` und die Route `/game/debug/npcs`. Bekommt der
+> Bot-Zustand ein neues Feld, gehoert es dort ergaenzt. Fuer 13.2 gibt es keinen Spiegel.
+>
+> **Nebenbefund, Messregel 16:** `BASE_INCOME` in `run_income_baseline_v2.mjs` (55 / 300 /
+> 554 Mio/Tag) ist eine Setzung, die der Code nicht hergibt - gerechnet sind es 29,6 / 343,2 /
+> 2262,1 Mio (Mining-Forschung, Abbau-Booster und Prospektor fehlen in der Setzung).
+> **Die Baseline bleibt gueltig:** das NETTO bewegt sich dadurch nur um -2,6 % / +0,2 % / +2,8 %.
+> Beim naechsten Anfassen des Skripts aus dem Code ziehen statt setzen.
+
 **Bezug:** Nutzerbeobachtung 09.08.2026 ("Vega und Nyx sollen Spieler imitieren, tun das nach
 vielen Fixes immer noch nicht"), belegt durch Code-Pruefung in derselben Sitzung. **In keiner der
 vier Sessions enthalten - komplett neuer Punkt.** **Dateien:** `game/economyBotTurn.ts`,
@@ -2623,8 +2749,12 @@ Bots starten wie alle anderen bei null. **Bot-Staerke ist damit keine Nebensache
 Vorbedingung fuer den wichtigsten Inhalt.**
 
 **Messkriterien:**
-- Bot-Flottenwert und Bot-Einnahmen gegen einen menschlichen Spieler ueber 30 simulierte Tage.
-  **Zielkorridor: 60-100 % des Spielers**, nicht 15 %.
+- ~~Bot-Flottenwert und Bot-Einnahmen gegen einen menschlichen Spieler ueber 30 simulierte Tage.
+  **Zielkorridor: 60-100 % des Spielers**, nicht 15 %.~~ **AM 21.08.2026 GEMESSEN ALS NICHT
+  ERREICHBAR und durch das Kriterienpaar 13.1-A/13.1-B im Messkasten oben ersetzt.** Mit einem
+  einzigen Koeffizienten betraegt der Abstand zwischen guenstigster und unguenstigster
+  Stuetzstelle bei jedem f den Faktor 3,4, weil die Bezugskurve nicht monoton ist. Die 30-Tage-
+  Betrachtung selbst bleibt sinnvoll und liegt bei Schritt 13.
 - Elite-Bollwerk mit 2 Bots + 1 Mensch in Woche 1, Woche 2 und Woche 4 der 30-Tage-Simulation:
   ab wann ist die Expedition ueberhaupt gewinnbar?
 - Nach 13.3: Basiswachstum zweimal mit unterschiedlich vielen Galaxie-Aufrufen messen - die
@@ -4438,6 +4568,27 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                           Abschnitt 1b. Entscheidung 12 kann es weder erfuellen noch
                           verletzen.
  12. Entscheidung 13.1 + 13.2  Bot-Ertrag aus eigener Flottenmacht, Bot-Profile
+                       KALIBRIERT am 21.08.2026, NICHT GEBAUT - bis auf EINE offene Nutzerzahl.
+                       Formel: Feindmacht/Tag = 4,0 * combatFleetPowerBase(Bot-Flotte) * f,
+                       darauf die Kurve aus Entscheidung 2 (Anker/Exponent unveraendert) als
+                       Ertrag und 0,036 Wert-Einheiten je Punkt mal 0,7 (Bergung) als Verlust.
+                       k = 4,0 und 0,036 sind GEMESSEN (40 Laeufe je Zelle, bot_yield_131.txt).
+                       -> OFFEN: der Wert von f (BOT_VIRTUAL_ACTIVITY). Vorschlag 12
+                          (0,92/0,27/0,34 gegen den Spieler) oder 8 (0,67/0,19/0,26).
+                       -> Der Zielkorridor 60-100 % ist gemessen NICHT erreichbar und durch das
+                          Kriterienpaar 13.1-A (Decke < 1,0) / 13.1-B (nicht unter heute)
+                          ersetzt. Messkasten bei Entscheidung 13.
+                       -> BAU-VORGABE: der virtuelle Ertrag wird ZEITBASIERT ueber deltaSec
+                          verbucht (wie accrueBuildingProduction), NICHT je Bot-Zug - sonst
+                          kehrt die Aufruf-Abhaengigkeit aus 13.3 auf dem Einkommen zurueck.
+                       -> Ein Client-Spiegel: DebugBotState in types/game.ts + pages/Debug.tsx
+                          + Route /game/debug/npcs (derselbe wie bei 13.3).
+                       -> 13.2 ist ENTSCHIEDEN OHNE MESSUNG: reine Identitaets-Frage. Die
+                          wirtschaftliche Begruendung im Plan ist ueberholt, Entscheidung 6 hat
+                          den Unterschied auf 0,2 % gedrueckt.
+                       -> Neu aufgetaucht und NICHT hier behoben: Roboterfabrik/Nanitenfabrik
+                          sind fuer den Bot ein Armuts-Fallback und werden von einem reichen Bot
+                          nie gebaut. Gehoert zu 13.4 in Schritt 16.
                        -> 13.1 braucht die Koeffizienten aus Entscheidung 2, also nach Block A
 
 SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
@@ -5076,6 +5227,16 @@ Es bleibt eine Messaufgabe, keine Entscheidung.
     Worker. Genau die Last, die nach dem CPU-Vorfall gedrosselt wurde.
     Nachteil von (b) ausdruecklich akzeptiert: Bots haben eine unnatuerlich glatte Wachstumskurve
     ohne Zufallsausreisser.
+    *Ergaenzt am 21.08.2026, nach der Kalibrierung:* Weg (b) ist bestaetigt und die beiden
+    Koeffizienten sind gemessen (k = 4,0; Verlust 0,036 Wert-Einheiten je Punkt vernichteter
+    Feindmacht). **Zwei Annahmen dieser Entscheidung haben sich als unzutreffend erwiesen:**
+    (a) Bots haben sehr wohl Kampf-Einnahmen (Piratenbasis-Beute laeuft bereits ueber dieselbe
+    Kurve, Elite-`winResources` wird voll gutgeschrieben) - was ihnen fehlt, ist der
+    CONTAINER-Wert, weil `openContainer()` nur ueber `routes.ts` erreichbar ist. Der virtuelle
+    Ertrag tritt deshalb NEBEN diese Posten, er ersetzt sie nicht.
+    (b) Der Zielkorridor 60-100 % ist mit einem einzigen Koeffizienten nicht erreichbar - die
+    Bezugskurve ist nicht monoton. Ersetzt durch das Kriterienpaar 13.1-A/13.1-B.
+    Einzelheiten im Messkasten bei Entscheidung 13, Protokoll `bot_yield_131.txt`.
 12. ~~Entscheidung 3, "Bekannter Nachteil"~~ **ENTSCHIEDEN am 09.08.2026: gestrichen, mit
     Praezisierung.** Was durch den Reset entfaellt, ist das GEFUEHL der Wegnahme - niemand hat je
     10/6/2 gehabt. Der rechnerische Effekt bleibt bestehen: der Raid liefert nach der Halbierung
@@ -5097,6 +5258,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 21.08.2026 (Block C, Schritt 12) | **Entscheidung 13.1 KALIBRIERT bis auf eine Nutzerzahl, 13.2 ENTSCHIEDEN OHNE MESSUNG - NICHTS GEBAUT.** Werkzeug `run_bot_yield_131.mjs` (neu), Protokoll `bot_yield_131.txt`, kumulativer Messbuild (`--rf=4 --evk=0.20 --evm=0.08`), Anker aus `loot_curve.txt` normiert auf die vernichtete Feindmacht reproduziert (-2,3 % bzw. -1,1 %). **Vier Dinge wurden VOR der ersten Messung geklaert, wie gefordert.** (1) **Der Bezugswert: keine Spalte.** Ein Bot hat keinen Ausbaustand im Sinne der Tabelle - ihm fehlen Abbau-Booster, Prospektor, Asteroiden-Mining und Allianz-Station, waehrend Flotte, Forschung, Gebaeude und Module dieselben Groessen sind. Verglichen wird deshalb mit einem Spieler DERSELBEN Flottenmacht, die drei Spalten sind Stuetzstellen statt Auswahl. Dass die Spaltenwahl sonst entschieden haette, ist gemessen: der heutige Bot liegt bei 18 / 6 / 11 % des Spielers, der \"Faktor fuer 100 %\" bei 33,1 / 96,9 / 55,1 - die alten \"15 %\" und \"39\" liegen dazwischen und waren eine unbenannte Spaltenwahl gegen die aufgegebene 21,69-Baseline. Der Anteil ist ausserdem NICHT monoton (der mittlere Stand ist der schlechteste, weil dort das Elite-Bollwerk aufgeht). (2) **Das Zielbild.** Der Plan-Korridor \"60-100 % des Spielers\" ist mit einem einzigen Koeffizienten **gemessen nicht erreichbar**: der Abstand zwischen guenstigster und unguenstigster Stuetzstelle betraegt bei jedem f den Faktor 3,4, weil die Bezugskurve nicht monoton ist (Spieler-Ertrag je Punkt eigener Flottenmacht 3,5 / 7,2 / 3,3). Ersetzt durch das Kriterienpaar **13.1-A** (Decke: max ueber die drei Stuetzstellen < 1,0; trennt nachweislich - 0,12 bei f=1 gegen 1,38 bei f=20; kippt bei f=13,5) und **13.1-B** (Boden: nicht unter dem heutigen Stand 0,18/0,06/0,11; erfuellt ab f=4). **Das vor der Messung vorgeschlagene spaltenfreie Mass \"Tagesrendite im Spielerband 209-355 %\" ist geprueft und verworfen** - es verlangt f = 73/25/18 (Spannweite 4,1), weil die frueh-Zelle unter Weg (b) ein Netto nahe null hat und ein Nenner nahe null als Kalibriergroesse untauglich ist. (3) **13.3 muss nicht vorgezogen werden - es ist gebaut**, allerdings nur fuer die Piratenbasen (`nextEconomyTurn`). Die KI-Mitspieler haben kein Raster: `runBotTurn()` laeuft einmal je Heartbeat, gedeckelt nur durch `HEARTBEAT_MIN_INTERVAL_MS = 60 s` gegen `HEARTBEAT_INTERVAL_MS = 2 min`, also 30-60 Zuege je Stunde je nach externem Taktgeber. Fuer die Messung folgenlos (virtuelle Uhr), fuer den Einbau eine **Vorgabe statt einer Vorziehung**: der virtuelle Ertrag wird ZEITBASIERT ueber `deltaSec` verbucht (wie `accrueBuildingProduction()`), nicht je Bot-Zug - sonst kehrt die Aufruf-Abhaengigkeit eine Ebene hoeher auf dem Einkommen zurueck. (4) **13.2 braucht keine Messung** - bestaetigt, und die wirtschaftliche Begruendung im Plan ist zusaetzlich ueberholt (siehe unten). **Zwei Praemissen von 13.1 sind gegen den Code widerlegt (Messregel 16).** (a) \"Bots haben ausschliesslich Minen-Einkommen\" stimmt nicht: `maybeAttackPirateBase()` liefert Beute ueber `pirateBaseLoot()` und damit bereits ueber `LOOT_CURVE_ANCHOR_*`, und Bots bekommen im Elite-Bollwerk `winResources` voll gutgeschrieben (0,93 Mrd Wert je Check). Richtig ist der engere Satz: **Bots haben keinen Zugang zum CONTAINER-Wert** - `openContainer()` ist nur ueber `routes.ts` erreichbar, ein Bot stellt nie einen Request. Ein Bot gewinnt einen Raid ueber 12 Wellen (22,07 Mrd Containerwert) und bekommt dafuer exakt null. Folge: der virtuelle Ertrag tritt NEBEN diese Posten; die Kalibrierung laesst sie weg und ist damit die riskante Richtung. (b) Die Zahlen \"2,5 % aus Minen\" und \"muesste bei 39 liegen\" sind gegen 21,69 Mrd/Tag gerechnet und ersetzt. **Engpass vorab geprueft, weil 13.3 festhaelt, dass bei reichen NPCs die Bau-Slots binden:** 14 simulierte Tage, 2-Minuten-Takt, `runEconomyTick()` + `runEconomyBotTurn()`, deterministisch (einzige Zufallsquelle `maybeChooseClass()` vorab fixiert, keine Serien vorgetaeuscht). Der Flottenwert steigt bis zum 9-fachen Zusatzertrag praktisch proportional (0,17 -> 0,60 -> 2,14 -> 9,86 Mrd) - **der Ertrag ist also der richtige Regler**, was vorher nicht gemessen war. **Ab dem 27-fachen kehrt es sich um, und der Grund ist ein Armuts-Fallback:** `maybeBuildBuilding()` erreicht Roboterfabrik und Nanitenfabrik erst, wenn ALLE DREI Minenausbauten fehlschlagen - was nur aus Geldmangel geschieht. Ein reicher Bot baut die beiden bauzeitverkuerzenden Fabriken deshalb nie (Robo 0 / Nanite 0 gegen Robo 5 / Nanite 14), belegt den einen Gebaeude-Slot zu 44 % mit Solarkraftwerken und bleibt bei Minenstufe 13 stehen. Dieselbe Fehlerform wie bei `ATTACK_POWER_SAFETY_MARGIN`. **Gehoert zu 13.4/Block D, hier nicht angefasst**; die kalibrierten Werte liegen mit x1,4 bis x4,0 klar darunter. **Die beiden Koeffizienten von Weg (b) sind GEMESSEN** (40 Laeufe je Zelle, 24h-Solo-Mission gegen `piraten_hoch`, scheibenweise): **k = 4,0** (gemessen 3,204/4,275/3,996 ueber zwei Groessenordnungen Flottenmacht - nahezu konstant, weil die Gegnerstaerke ohnehin an der eigenen Macht haengt; Einzellauf-Streuung 25 %, Standardfehler ueber 40 Laeufe 4,0 %, der Abstand frueh/mittel von 33 % also echt) und **Verlust 0,036 Wert-Einheiten je Punkt vernichteter Feindmacht** (0,0375 mittel gegen 0,0355 spaet, Uebereinstimmung auf 5 %), abzueglich Bergung 30 %. Damit haengen Ertrag UND Verlust an derselben Groesse, wie 13.1 es fordert. *Nachteil ausdruecklich:* frueh liegt beim Verlust mit 0,173 um das 4,7-fache hoeher (Forschung 3, keine Module) - ein junger Bot verliert real mehr, als eine einzige Konstante abbildet. **OFFEN, NUTZERENTSCHEIDUNG: der Wert von f** (`BOT_VIRTUAL_ACTIVITY`). Vorschlag f = 12 (0,92/0,27/0,34, nutzt die Decke bis auf 8 %) oder f = 8 (0,67/0,19/0,26). **13.2:** deterministisch gerechnet betraegt der Unterschied in Macht je Wert-Einheit zwischen Gleichverteilung (0,8751) und den vorgeschlagenen Profilen (0,8771 / 0,8765) **0,2 %** - die Begruendung \"wertmaessig schief, nach Entscheidung 6 die schlechteste Verwendung\" ist damit **von Entscheidung 6 selbst entwertet** worden, die den Wert je Machtpunkt auf 1,15 angeglichen hat (gebaut 18.08.2026). 13.2 ist eine reine Identitaets-Entscheidung; der einzige ungemessene Rest ist das Kampfverhalten unter Entscheidung 16 und gehoert dorthin. **Messregel 8:** neun Namen im Client gegreppt, null Treffer; **ein Spiegel, derselbe wie bei 13.3** - `DebugBotState` in `types/game.ts` + `pages/Debug.tsx` + Route `/game/debug/npcs`. Fuer 13.2 kein Spiegel. **Nebenbefund:** `BASE_INCOME` in `run_income_baseline_v2.mjs` (55/300/554 Mio/Tag) ist eine Setzung, die der Code nicht hergibt - gerechnet 29,6/343,2/2262,1 Mio (Mining-Forschung, Abbau-Booster, Prospektor fehlen). **Die Baseline bleibt gueltig**, das NETTO bewegt sich nur um -2,6 / +0,2 / +2,8 %; beim naechsten Anfassen aus dem Code ziehen. |
 | 21.08.2026 (Nutzerbeobachtung) | **Die CPU-Begruendung des Schiffslimits ist im Echtbetrieb ueberholt.** Bei rund 1 Mio. Schiffen samt gleichzeitiger Koop-Expedition ins Elite-Bollwerk sind beide CPUs im Leerlauf (eine Worker, eine Hauptthread) - die 26-ms-Messung aus Abschnitt 2a Punkt 8 ist damit nicht mehr nur simuliert, sondern bestaetigt. Von den beiden urspruenglichen Gruenden fuer `MAX_PLAYER_SHIPS = 1.000.000` bleibt damit nur noch einer: das Limit ersetzt bis zum Einbau von Entscheidung 2 die Bremse gegen Weglauf-Wachstum. **Der Messpunkt in Abschnitt 7 ist entsprechend geschaerft** - um die Beobachtung, um eine ausdrueckliche Reihenfolge fuer das spaetere Entfernen (Reset MIT Limit, dann Entscheidung 2 im echten Spiel beobachten, dann Konvergenz messen, erst dann entfernen und dabei R13 als toten Code aufraeumen) und um den bisher unbenannten Restpunkt: Entscheidung 2 senkt zwar die Steigung der Beutekurve, hebt aber das Niveau (Solo Hoch von -2,32 auf +2,42 Mrd netto fuer die reale Flotte). Heute bremst sich grosses Wachstum teilweise selbst, weil sich Fluege ab einer gewissen Groesse nicht lohnen - genau das faellt weg. Ob der Exponent allein konvergiert, ist ungemessen. Zusaetzlich vermerkt: `POOL_SIZE` bleibt auf 1, koennte aber auf 2 - bei zwei Kernen konkurrieren dann zwei Worker plus Hauptthread um zwei CPUs, und Entscheidung 13.1 hat den Bot-Ertragsweg (b) unter anderem mit `POOL_SIZE = 1` begruendet. |
 | 20.08.2026 (Block C, Schritt 9) | **Entscheidung 7.2 und 7.3 KALIBRIERT - NICHT GEBAUT. 7.4 herausgeloest. `STATION_MINING_COMPENSATION` bleibt 3, der offene Kalibrierpunkt aus Abschnitt 2a ist geschlossen.** Werkzeug `run_station_v2.mjs` (neu), Protokoll `station_v2.txt`. **Vier Vorentscheidungen, bewusst VOR der Messung getroffen, damit nicht zweimal kalibriert wird:** (1) Amortisation = Kosten/Eigenertrag (Lesart A wie bei den Modulen in Abschnitt 4); die Alternative "Kosten/Gesamteinnahmen" ergibt 9,1 bzw. 28,5 Tage und liegt in keiner Spalte im Band. (2) Anteilskriterium gegen die Spalte **mittel**. (3) Pro-Kopf-Teiler bleibt, wird aber als ANNAHME gefuehrt - `withdrawFromStation()` hat weiterhin keine Quote, es gibt keine Mitglieder-Obergrenze, und `bot.ts` kennt keinen Allianz-Pfad (nach der Bot-Lehre aus Entscheidung 2 gegengeprueft). (4) 7.4 nach Block D, Schritt 14. **Die Spaltenwahl war keine Formalie: fuenf der sechs moeglichen Bezugszellen trennen gar nicht.** Grenze fuer COMP, ab der 20 % ueberschritten werden - pro Kopf: frueh 0,19 / mittel **3,69** / spaet 10,85; ganze Station: 0,09 / 1,86 / 5,43. Bei erlaubtem Korridor COMP >= 2,0 liefert nur pro Kopf/mittel eine Grenze darin; bei `spaet` waere das Kriterium folgenlos, bei ganze Station/mittel unerfuellbar. **Nenner gemessen, nicht gesetzt:** kumulativer Messbuild (`--rf=4 --evk=0.20 --evm=0.08`), Anker aus `loot_curve.txt` roh +4,8 % (haette den Build verworfen), normiert -1,5 %; acht Serien a 40 ergeben mittel 19,42 Mrd/Tag bei SD 0,074 (0,38 %) und spaet 60,74 bei SD 0,276 - ein SD verschiebt die COMP-Grenze um 0,014, also nicht entscheidungsrelevant. **7.2 - "angleichen" legt nur das VERHAELTNIS fest, das Niveau ist frei und entscheidet ueber beide Kriterien.** Vier Varianten gerechnet: **A Summe konstant** (Faktoren 3,92/1,02/0,57, 558,20 Mrd, 70,6 Tage, COMP-Korridor 2,00-3,53) - **gewaehlt**; B auf Metall herunter (283,57 Mrd, 35,9 Tage, im ganzen Korridor nicht heilbar, selbst bei COMP 2,0 noch 53,8 Tage, dazu Senke halbiert); C auf Deuterium herauf (840,91 Mrd, 106,4 Tage, haelt das Band, verteuert die Station aber um 51 %); D gestaffelte Caps 30/27/25 nach dem Vorbild der Heimatbasis (137,55 statt 558,20 Mrd - drei Viertel der Ressourcen-Senke weg, wegen der die Station laut dieser Entscheidung existiert). **A ist die einzige Variante, die die Relation herstellt, ohne eine einzige bereits kalibrierte Aggregatgroesse zu bewegen.** **Der Heimatbasis-Teil von 7.2 ist GESTRICHEN.** Session-1-Befund 2 (Faktor 2,8/5,0 zugunsten von "Metallmine ausbauen und tauschen") vergleicht die Minen auf DERSELBEN Stufe (25 bzw. 30). Die Heimatbasis erzwingt gleiche Stufen nirgends - `HOME_TIER_UNLOCK_LEVELS` steht auf 36/32/30, ist also bereits gestaffelt, und dort liegen die Grenzkosten je Mehrertrag bei 710/848/771 Tagen (Spannweite 19 %, kein Faktor 5). Mit `TRADE_FEE = 0,2` gewinnt der direkte Ausbau dort schon heute (0,87). Variante A wuerde ihn auf 0,13 ueberdrehen und die Metallmine Stufe 45 von 1.137 auf 4.460 Mrd heben - also genau die Gebaeude-Leiter zerstoeren, die Entscheidung 9 Punkt (4) als zweite Ressourcen-Senke braucht. `costGrowth` bleibt in jedem Fall unangetastet (1,6 -> 1,55 verbilligt an der uncapped Heimatbasis die Stufe 30 um Faktor 2,5, die Stufe 45 um 4,0, danach unbegrenzt weiter). **Preis der Korrektur, ausdruecklich:** die Station-V1-Basiswerte sind danach nicht mehr identisch mit den Heimatbasis-Pendants - eine bewusste Design-Entscheidung, die hier mit Begruendung aufgegeben wird (an der Station zwingt `checkTierUnlock()` alle drei Minen auf denselben Cap, an der Heimatbasis nicht). **7.3 - die Zahlen des Plantextes waren ueberholt:** die genannten 17,9 Tage Modul-Amortisation sind gegen den Ertrag VOR 7.1 und Kompensation gerechnet (1,88 Mrd/Tag). Real kosten die 9 Foerdereffizienz-Module 16,87 Mrd, bringen +50 % = 3,95 Mrd/Tag und amortisieren in **4,3 Tagen** gegen 70,6 fuer die Gebaeude. **Kostenfaktor 16,5x** (`MODULE_COST_MULTIPLIER` 500 -> 8.270) - zugleich Gleichstand mit dem Gebaeudeweg und innerhalb des Bands (60 Tage = 14,0x, 120 Tage = 28,1x); COMP-unabhaengig, weil Modulkosten und Mehrertrag beide linear am Ertrag haengen. **Nur fuer `moduleKind: 'output'`**, weil derselbe Multiplikator heute auch "Verstaerkte Automatisierung" und "Wartungsfreiheit" traegt und die Hebel von 7.4 sind. `requiredBuildingLevel` 20 -> 10 bleibt, wirkt nach der Kostenanhebung aber nur noch auf die Sichtbarkeit (bei Stufe 10 liegt der Minenertrag bei 5 % des Cap-Werts). **COMP bleibt 3:** Korridor 2,00-3,53, der Wert ist hergeleitet (Mining-Forschung 2,0 x Mining-Boost 1,5) und nicht aus dem Korridor gegriffen - die Regel "bei Uneindeutigkeit den niedrigeren Wert" wurde geprueft und bewusst nicht angewandt. **Messregel 8: kein Client-Spiegel noetig**, `pages/Allianz.tsx` liest `baseCost`/`costGrowth`/`maxLevel`/`requiredBuildingLevel` ueber `/game/data`. Das aendert sich mit 7.4 - `stationBauzeitFactorForTier()` steht dort als vollstaendige Kopie. **Doku-Defekt nebenbei gefunden:** der Kommentarkopf von `stationBuildings.ts` nennt weiterhin "1.5x bzw. 2.5x Ertrag", die Werte stehen seit 7.1 auf 2x/4x. |
 | 20.08.2026 (Nutzerfund) | **R16 aufgenommen: eine Flotte laesst sich in beliebig viele GLEICHZEITIGE Gruppen-Operationen aufteilen.** Nutzermeldung beim Spielen, im Code bestaetigt - `createGroupOperation()` prueft nur Sektor, Schiffstypen und Bestand, `respondToGroupOperation()` erlaubt beliebig viele gleichzeitig angenommene Einladungen. Die Sperre, die Solo-Missionen seit dem 29.07.2026 haben (`missions.ts` Zeile 97), wurde bei den Gruppen-Operationen nie nachgezogen. Defekt, keine Balance-Frage. **Wirkung:** die Belohnung je gewonnenem Check ist flach und pro Teilnehmer (930 Mio Wert `winResources` + 1.097 Mio Wert garantierte Container, dazu `lootBase` mal 2^Siegserie) - rund 17 Mrd Wert je Expedition und Teilnehmer, unabhaengig von der eingesetzten Flotte, waehrend die Gegnerstaerke proportional mitskaliert. Aufteilen multipliziert die Einnahme mit der Zahl der Operationen; der `npcFloor` von 3 Mio Macht begrenzt die Teilflotten nur auf rund 3,4 Mio Wert. Mechanisch derselbe Effekt wie Befund 1 in `novice_bonus.txt`, dort als Nachteil fuer grosse Flotten, hier als Multiplikator. **Nutzerentscheidungen:** (1) Reparatur ist eine aktive Operation je Spieler, geprueft an beiden Eintrittspunkten, keine neue Balance-Zahl; (2) der Solo-Start beider Multiplayer-Sektoren bleibt ausdruecklich erlaubt und wird nicht mitrepariert; (3) Einbau erst zum Server-Neustart, bis dahin darf der alte Stand ausgespielt werden. **Nicht Teil der Reparatur:** die Hoehe der flachen Belohnungen selbst und die Kadenz aus Entscheidung 4.8 (die nur P10 und nur das wiederholte Starten hintereinander betrifft - der gleichzeitige Fall stand bisher nirgends). |
