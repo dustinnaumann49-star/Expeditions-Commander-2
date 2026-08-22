@@ -343,3 +343,25 @@ EMPFEHLUNG: RAID_WAVE_COUNT bleibt bei 12.
 3. Entscheidung 3 gegenpruefen: der Ertrag bleibt unveraendert (12 Wellen), das RISIKO steigt -
    das Verhaeltnis von Ertrag zu Risiko verschiebt sich also auch ohne mehr Wellen.
 4. Keine Endgame-Zelle im Messgitter (siehe volley_scale_19.txt).
+
+
+--- NACHTRAG: MESSREGEL 8 (CLIENT-SPIEGEL) UND EINE FOLGE DARAUS ---
+Gegreppt in client/src: RAID_WAVE_COUNT, RAID_WAVE_ROLL, pickWaveProfile, waveProfile, die drei
+Profilnamen schwarm/kampfgruppe/elitekader, DEFENSE_REPAIR_PERCENT - NULL TREFFER.
+pages/Galaxie.tsx liest die Wellenzahl dynamisch aus state.raid.waveTimes.length, eine Aenderung
+an RAID_WAVE_COUNT fliesst also von selbst durch. **KEIN CLIENT-SPIEGEL NOETIG** - nach
+Entscheidung 7 der zweite Punkt ohne Spiegel. Ausdruecklich protokolliert, weil "kein Spiegel" ein
+Messergebnis ist und keine ausgelassene Pruefung.
+
+FOLGE, VOR DEM EINBAU ZU ENTSCHEIDEN: DIE ESKALATION IST FUER DEN SPIELER UNSICHTBAR.
+Weder Phase noch Wellenprofil noch Bomberanteil erscheinen irgendwo im Client. Der Spieler sieht
+"Welle 9/12" und dass die spaeten Wellen ploetzlich wehtun. Wer seine Flotte bisher gefahrlos
+daheim liess, verliert nach dem Einbau in der letzten Phase rund ein Drittel davon, ohne dass ihm
+irgendetwas gesagt haette, warum. Dieselbe Form wie die Falle "eine Wahl, die der Spieler nicht
+sehen kann, ist keine Wahl", nur mit umgekehrtem Vorzeichen: keine unsichtbare Wahl, sondern eine
+unangekuendigte Schwierigkeitssteigerung.
+VORSCHLAG, NICHT ENTSCHIEDEN: die Phase im Raid-Zaehler in Galaxie.tsx mitanzeigen (etwa
+"Welle 9/12 - schwere Phase") und den Bunkerbrecher im Kampfbericht kenntlich machen. Das ist eine
+UI-Aenderung und keine Balance-Zahl, faellt also NICHT unter die Sammel-Regel - sie koennte einzeln
+ausgeliefert werden, aber NICHT vor der Eskalation selbst, sonst kuendigt die Anzeige etwas an, das
+es noch nicht gibt.
