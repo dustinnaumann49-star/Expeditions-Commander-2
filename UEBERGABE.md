@@ -107,8 +107,31 @@ anders wirken kann als in der Simulation.
     vorgeschlagene erste Kandidat ist widerlegt.
   - **Empfehlung, nicht gebaut: `RAID_WAVE_COUNT` von 12 auf 18** (voll 20,0 -> 26,3 %,
     mittel 28,7 -> 37,7 %, schwach praktisch unveraendert). Beruehrt Entscheidung 3.
-  - **OFFENE GATE-FRAGE: wird `RAID_WAVE_ROLL` geoeffnet, oder wird Abschnitt 8 Punkt 7 ("Raid
-    verlierbar machen") als nicht erreichbar geschlossen?** Der Regler wurde NICHT angefasst.
+  - **NACHTRAG, NUTZERVORSCHLAG: ESKALIERENDE WELLEN LOESEN DIE WAND AUF - OHNE `RAID_WAVE_ROLL`.**
+    Wellen phasenweise staffeln (erste vier mittel, naechste vier schwer, letzte vier extrem) plus
+    viele Bomber in den spaeten Wellen. Das ist eine NEUE Groesse, der Wuerfel bleibt unangetastet.
+    **Inhaltlich tut die Eskalation aber dasselbe** - deshalb als Nutzerentscheidung gefuehrt, nicht
+    als Ausweg um die Sperre herum.
+    - **Die Eskalation ist der einzige Regler, der den AUSGANG bewegt statt nur die Kosten.** Und
+      weil die negative Rueckkopplung als Daempfer bestehen bleibt, entsteht **kein Kliff**.
+    - **Die Bunkerbrecher-Welle ist die direkte Gegenmassnahme zum Verteidigungs-Befund oben:**
+      Verteidigungsverlust 0,2 % -> 41,2 % (voll) bei fast gleichem Flottenverlust. Die Bomber
+      VERLAGERN den Schaden. Fuer den Einbau waere ein viertes Wellenprofil `bunkerbrecher` noetig -
+      die drei vorhandenen gewichten den Schiffspool nur nach POSITION im `SHIPS`-Array.
+    - **Drei Kandidaten, 40 Raids je Fall** (perfekte Abwehr / Flottenverlust): Ist voll 100 %/20,0,
+      mittel 100 %/28,7. **A (1/1,20/1,50)** voll 100 %/34,3, mittel 100 %/43,4.
+      **C (1/1,35/2,20)** voll 100 %/56,1, mittel 80 %/69,2. **B (1/1,50/2,50)** voll 93 %/65,2,
+      mittel 65 %/74,1.
+    - **BEFUND G: der Kampf-Booster wird zum ausschlaggebenden Faktor.** "voll ohne Kampf-Boost"
+      kippt in allen drei Kandidaten zuerst (100/48/38 % perfekt gegen 100/100/93 % mit Booster).
+      **Der Raid wuerde zum staerksten Kaufargument fuer den Kampf-Booster im Spiel.**
+    - **BEFUND H: die Eskalation trifft die Schwachen am haertesten, also in die falsche Richtung.**
+      "schwach" geht bei JEDER Eskalation auf 100 % Totalverlust; Entscheidung 10 hilft nicht, weil
+      ihr Schutz ZEITBASIERT ist. **Es braucht eine ausbaustandsabhaengige Untergrenze.**
+    - **Empfehlung: Kandidat A als erster Schritt.** Verlierbar wird der Raid damit bewusst noch
+      nicht - G und H sind vorher zu klaeren.
+  - **`RAID_WAVE_ROLL` wurde NICHT angefasst und wird durch die Eskalation auch nicht mehr
+    gebraucht.** Die alte Gate-Frage ist damit gegenstandslos.
 - **NEU 21.08.2026: f = 12 EINGETRAGEN** (Entscheidung 13.1, `BOT_VIRTUAL_ACTIVITY`), auf
   Delegation des Nutzers, **als Empfehlung und jederzeit umkehrbar - nicht gebaut.** Begruendung:
   13.1-A kippt bei f = 13,5, f = 12 nutzt die Decke mit 8 % Abstand aus; und seit dem Ausgang von
@@ -910,11 +933,17 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**EINE EINZIGE FRAGE STEHT NOCH BEIM NUTZER: wird `RAID_WAVE_ROLL` geoeffnet?**
-Messschritt 1 von Entscheidung 18 hat gezeigt, dass ueber Sieg oder Niederlage allein die Staerke
-EINER Welle entscheidet - alle anderen Regler bewegen nur die KOSTEN. Solange der Regler gesperrt
-bleibt, ist Abschnitt 8 Punkt 7 ("Raid verlierbar machen") **nicht erreichbar** und sollte
-entweder geoeffnet oder als nicht erreichbar geschlossen werden. Der Regler wurde nicht angefasst.
+**VIER FRAGEN STEHEN BEIM NUTZER, ALLE ZU ENTSCHEIDUNG 18:**
+1. **Welcher Eskalations-Kandidat** - A (haerter, nicht verlierbar), C (Mittelweg) oder B
+   (deutlich verlierbar)? Empfehlung: A als erster Schritt.
+2. **Befund G:** soll der Kampf-Booster ueber Sieg und Niederlage entscheiden duerfen? In allen
+   drei Kandidaten kippt "voll ohne Kampf-Boost" als erster entwickelter Stand.
+3. **Befund H:** welche ausbaustandsabhaengige Untergrenze schuetzt schwach ausgebaute Konten? Der
+   Neulingsschutz aus Entscheidung 10 ist zeitbasiert und greift dafuer nicht.
+4. **`RAID_WAVE_COUNT` 12 -> 18 zusaetzlich**, oder reicht die Eskalation?
+
+`RAID_WAVE_ROLL` bleibt unangetastet und wird durch die Eskalation nicht mehr gebraucht - die alte
+Gate-Frage ist gegenstandslos.
 Die Zahl f aus 13.1 ist auf Delegation mit 12 eingetragen und umkehrbar - keine offene Frage mehr,
 aber eine, die der Nutzer jederzeit anders entscheiden kann.
 
