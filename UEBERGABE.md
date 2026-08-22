@@ -65,6 +65,32 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 21.08.2026: ENTSCHEIDUNG 19 - SALVENSCHIFFE IM ENDGAME. Gemessen, NICHT GEBAUT.**
+  Protokoll `salven_19.txt`, Werkzeuge `run_salven_19.mjs` und `make_messbuild_salve.mjs` (neu).
+  Anlass war ein echter Kampfbericht des Nutzers mit 993.604 Schiffen.
+  - **Die Beobachtung stimmt, die Ursache ist eine andere: die Salvenschiffe sind nicht schwach,
+    es sind zu wenige.** 270 von 993.604 Schiffen (0,027 %) liefern 1,11 % des Schadens bei 0,06 %
+    Machtanteil - das 18-fache ihres Anteils. Pro Stueck ist ein Salvenkreuzer 86-mal so stark wie
+    ein normaler Kreuzer.
+  - **KERNBEFUND: die Mehrfachziel-Salve ist mechanisch schwaecher als RapidFire.** Der Imperator
+    macht **313 Mio Schaden je Stueck, der Salvendreadnought nur 195 Mio** - bei fast gleichen
+    Waffenwerten. Die Salve gibt EINEN Treffer je praesentem Typ (hoechstens drei, unabhaengig von
+    der Feindmenge), RapidFire gibt wiederholte verkettete Schuesse.
+  - **`MULTI_TARGET_POWER_CORRECTION = 8` wirkt falsch herum:** er treibt ueber die Flottenmacht
+    die Gegnerstaerke und bremst die Schiffe im Frueh-/Mittelstand, wo sie stark sind, waehrend er
+    im Endgame folgenlos ist.
+  - **Nutzerentscheidung: Weg 2 (Salve an die Stapelgroesse koppeln) kombiniert mit Weg 1
+    (maxCount).** Gemessen und empfohlen: **JE = 20.000, DECKEL = 8** - hebt das Endgame von
+    2,80 auf 9,22 % und laesst alles darunter unveraendert. Mit `maxCount` x2 (300/180/60)
+    zusaetzlich rund 15 %.
+  - **WICHTIGE EINSCHRAENKUNG: Weg 1 wirkt UEBERALL, Weg 2 nur spaet.** Eine flache Verdopplung von
+    `maxCount` verdoppelt auch den Frueh-/Mittelstand-Anteil, und dort liegen die Schiffe bereits
+    bei 43-73 %. **Weg 1 nur mit Kopplung an den Ausbaustand** (Forschung, Gebaeudestufe oder
+    Teile-Aufwand wie beim Imperator).
+  - **Offen:** die Wechselwirkung mit Entscheidung 6 (Wert je Machtpunkt) und ob
+    `MULTI_TARGET_POWER_CORRECTION` unter Weg 2 ueberhaupt noch stimmen kann - der Wert der
+    Schiffe ist dann groessenabhaengig, ein fester Faktor kann an beiden Enden nicht passen.
+
 - **NEU 21.08.2026, NUTZERENTSCHEIDUNG: ENTSCHEIDUNG 17 IST VERWORFEN. Die Offensive der
   Piratenbasen wird ABGESCHALTET, Basen und KI-Mitspieler BLEIBEN, die Bedrohung wandert
   vollstaendig auf den RAID (neue Entscheidung 18).** Nichts davon ist gebaut.

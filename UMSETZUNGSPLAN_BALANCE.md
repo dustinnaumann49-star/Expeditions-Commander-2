@@ -3462,6 +3462,82 @@ Reihenfolge deshalb: erst die Haerte, dann Entscheidung 3 gegenpruefen.
 
 ---
 
+### Entscheidung 19 - Salvenschiffe im Endgame: GEMESSEN, NICHT GEBAUT
+
+**Bezug:** Nutzerbeobachtung 21.08.2026 mit echtem Kampfbericht (Endgame-Flotte, 993.604 Schiffe).
+"Im spaeten Spielstand sind Salvenschiffe nutzlos - sie machen so wenig Schaden im Gegensatz zu
+normalen Schiffen, die es in Massen gibt."
+
+> **MESSKASTEN 21.08.2026.** Protokoll `balance/session2-simulation/salven_19.txt`, Werkzeuge
+> `run_salven_19.mjs` und `make_messbuild_salve.mjs` (beide neu). Alle Werte aus dem kumulativen
+> Messbuild, also **mit Entscheidung 16** - sie gelten fuer die Welt nach dem Neustart.
+>
+> **BEFUND 1 - DIE SALVENSCHIFFE SIND NICHT SCHWACH, ES SIND ZU WENIGE.** 270 von 993.604 Schiffen
+> (0,027 %) liefern 1,11 % des Schadens bei 0,06 % Machtanteil - **das 18-fache ihres Anteils.**
+> Pro Stueck: Salvenkreuzer 130,8 Mio gegen Kreuzer 1,5 Mio (86x), Salvendreadnought 195,1 Mio
+> gegen Reaper 3,2 Mio (61x). Kein anderes Schiff kommt in die Naehe.
+>
+> **BEFUND 2 - DIE SALVE IST MECHANISCH SCHWAECHER ALS RAPIDFIRE, UND DAS IST DIE URSACHE.** Der
+> Imperator macht **313 Mio je Stueck, der Salvendreadnought nur 195 Mio** - bei fast gleichen
+> Waffenwerten (50.400 gegen 52.000). Grund in `fireShots()`: die Salve gibt EINEN Treffer je
+> PRAESENTEM TYP, also hoechstens drei, unabhaengig von der Feindmenge; RapidFire gibt WIEDERHOLTE,
+> verkettete Schuesse (Imperator RF 5-7 gegen praktisch alles). **Der Sondermechanismus ist
+> schwaecher als der gewoehnliche.**
+>
+> **BEFUND 3 - `MULTI_TARGET_POWER_CORRECTION = 8` WIRKT FALSCH HERUM.** Der Faktor treibt ueber die
+> Flottenmacht die Gegnerstaerke. Bei 270 Stueck folgenlos, im Frueh-/Mittelstand - wo die Schiffe
+> ohnehin stark sind - wirkt die Strafe voll. Er bremst sie, wo sie stark sind, und hilft nicht, wo
+> sie untergehen.
+>
+> **BEFUND 4 - DIE KURVE: DAS PROBLEM IST EINE REINE MENGENFRAGE, KEINE STAERKEFRAGE.**
+>
+> | Schiffe | Salven-Anteil | Schadensanteil | je Salvenkreuzer | Faktor gegen Reaper |
+> |---|---|---|---|---|
+> | 5.235 | 5,158 % | 73,26 % | 23,2 Mio | 41x |
+> | 20.135 | 1,341 % | 45,86 % | 68,5 Mio | 57x |
+> | 99.603 | 0,271 % | 19,32 % | 182,0 Mio | 120x |
+> | 347.933 | 0,078 % | 6,72 % | 240,3 Mio | 144x |
+> | 993.597 | 0,027 % | **2,80 %** | 301,1 Mio | 189x |
+>
+> **Der Schaden JE STUECK STEIGT** (23,2 -> 301,1 Mio), der Abstand zum Reaper waechst von 41x auf
+> 189x. Die Schiffe werden staerker, nicht schwaecher - sie vervielfachen sich nur nicht.
+>
+> **NUTZERENTSCHEIDUNG 21.08.2026: Weg 2 (Salve an die Stapelgroesse koppeln) in Kombination mit
+> Weg 1 (maxCount).**
+>
+> **WEG 2, GEMESSEN.** Regel: `treffer_je_typ = min(DECKEL, ceil(einheiten_dieses_typs / JE))`.
+> Einzelziele UND Aggregat-Stapel - ein Patch nur auf Einzelziele haette im Endgame nichts getan,
+> weil grosse Mengen ab `STACK_AGGREGATE_THRESHOLD_BY_TYPE` als Stapel vorliegen.
+> - *Erster Versuch verworfen:* JE = 500, DECKEL = 12 -> mittlerer Stand springt von 45,9 auf
+>   76,4 %, Endgame auf 25,5 %. Viel zu stark, und an der falschen Stelle.
+> - **Gewaehlt: JE = 20.000, DECKEL = 8.** Greift erst, wenn ein Gegnertyp die 20.000er-Marke
+>   ueberschreitet - darunter aendert sich nichts.
+>
+> | Zelle | Ist | Weg 2 |
+> |---|---|---|
+> | 99.603 Schiffe | 19,32 % | 20,83 % (im Rauschen) |
+> | 993.597 Schiffe | 2,80 % | **9,22 %** |
+>
+> **WEG 1 OBENDRAUF** (Endgame, Weg 2 aktiv): x1 -> 8,83 % (1,82 Mrd Ressourcen),
+> **x2 -> 15,11 %** (3,65 Mrd), x3 -> 22,94 % (5,47 Mrd).
+>
+> **BEFUND 5 - WEG 1 WIRKT UEBERALL, WEG 2 NUR SPAET.** Eine pauschale Verdopplung von `maxCount`
+> verdoppelt auch den Frueh-/Mittelstand-Anteil, und dort liegen die Schiffe bereits bei 43-73 %.
+> **Weg 1 deshalb NUR mit Kopplung an den Ausbaustand** (Forschung, Gebaeudestufe oder Teile-Aufwand
+> wie beim Imperator), nicht flach - sonst behebt er das Endgame-Problem und schafft ein
+> Startphasen-Problem.
+>
+> **EMPFEHLUNG:** (1) Weg 2 mit JE = 20.000 und DECKEL = 8 als Kern. (2) `maxCount` x2
+> (300/180/60) nur gekoppelt. (3) `MULTI_TARGET_POWER_CORRECTION` mitentscheiden - unter Weg 2 ist
+> der Wert der Schiffe groessenabhaengig, ein fester Faktor 8 kann an beiden Enden nicht stimmen.
+>
+> **OFFEN, NICHT GEMESSEN:** Wechselwirkung mit Entscheidung 6 (Wert je Machtpunkt, Zielwert 1,15);
+> Rueckwirkung auf den Kampfsimulator (nutzt dieselbe Engine, bildet die neue Salve automatisch mit
+> ab - gewollt, aber nicht gegengeprueft); Verteidigungsanlagen bleiben unberuehrt, weil die
+> Salvenschiffe keine RapidFire-Beziehung zu ihnen haben.
+
+---
+
 ## 2a. Vorgezogene Umsetzung am 10.08.2026 (ausserhalb der Blockreihenfolge)
 
 **Nutzerentscheidung.** Ausloeser waren zwei eigene Beobachtungen beim Spielen: die Heimatbasis hat
@@ -5633,6 +5709,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 21.08.2026 (Entscheidung 19, neu) | **Salvenschiffe im Endgame - gemessen, NICHT GEBAUT.** Anlass: Nutzer-Kampfbericht mit 993.604 Schiffen. Werkzeuge `run_salven_19.mjs` und `make_messbuild_salve.mjs` (neu), Protokoll `salven_19.txt`, kumulativer Messbuild (also mit Entscheidung 16). **Die Beobachtung stimmt, die Ursache ist eine andere als vermutet: die Salvenschiffe sind nicht schwach, es sind zu wenige.** 270 von 993.604 Schiffen (0,027 %) liefern 1,11 % des Schadens bei 0,06 % Machtanteil - das 18-fache ihres Anteils; pro Stueck ist ein Salvenkreuzer 86-mal so stark wie ein normaler Kreuzer. **Kernbefund: die Mehrfachziel-Salve ist mechanisch schwaecher als RapidFire.** Der Imperator macht 313 Mio Schaden je Stueck, der Salvendreadnought nur 195 Mio - bei fast gleichen Waffenwerten (50.400 gegen 52.000). Die Salve gibt EINEN Treffer je praesentem Typ (hoechstens drei, unabhaengig von der Feindmenge), RapidFire gibt wiederholte verkettete Schuesse. Der Sondermechanismus ist also schwaecher als der gewoehnliche. **`MULTI_TARGET_POWER_CORRECTION = 8` wirkt zusaetzlich falsch herum** - er treibt ueber die Flottenmacht die Gegnerstaerke und bremst die Schiffe damit genau im Frueh-/Mittelstand, wo sie stark sind, waehrend er im Endgame folgenlos ist. **Die Kurve zeigt eine reine Mengenfrage:** Schadensanteil 73,26 / 45,86 / 19,32 / 6,72 / 2,80 % bei 5.235 / 20.135 / 99.603 / 347.933 / 993.597 Schiffen, waehrend der Schaden JE STUECK von 23,2 auf 301,1 Mio STEIGT und der Abstand zum Reaper von 41x auf 189x waechst. **Nutzerentscheidung: Weg 2 (Salve an die Stapelgroesse koppeln) kombiniert mit Weg 1 (maxCount).** Weg 2 gemessen als `treffer_je_typ = min(DECKEL, ceil(einheiten / JE))`, Einzelziele UND Aggregat-Stapel. Erster Versuch JE = 500 / DECKEL = 12 verworfen (mittlerer Stand springt von 45,9 auf 76,4 %, Endgame auf 25,5 % - zu stark und an der falschen Stelle). **Gewaehlt JE = 20.000, DECKEL = 8:** Endgame 2,80 -> 9,22 %, mittlerer Stand 19,32 -> 20,83 % (im Rauschen). Weg 1 obendrauf: x1 8,83 %, x2 15,11 %, x3 22,94 % (Kosten 1,82 / 3,65 / 5,47 Mrd Rohressourcen). **Wichtige Einschraenkung: Weg 1 wirkt UEBERALL, Weg 2 nur spaet** - eine flache Verdopplung von `maxCount` verdoppelt auch den Frueh-/Mittelstand-Anteil, wo die Schiffe bereits bei 43-73 % liegen. Weg 1 deshalb nur mit Kopplung an den Ausbaustand empfohlen. Offen: Wechselwirkung mit Entscheidung 6 und die Frage, ob `MULTI_TARGET_POWER_CORRECTION` unter Weg 2 noch stimmen kann. |
 | 21.08.2026 (Entscheidung 18, Nachtrag) | **Eskalierende Wellen und Bunkerbrecher - Nutzervorschlag, gemessen, NICHT GEBAUT.** Die Wand aus Befund D ist damit aufgeloest, **ohne `RAID_WAVE_ROLL` anzufassen**: die Eskalation ist eine NEUE Groesse, der Wuerfel bleibt unangetastet und wirkt obendrauf. Inhaltlich tut sie dasselbe wie eine Erhoehung des Wuerfels - deshalb ausdruecklich als Nutzerentscheidung gefuehrt und nicht als eigenmaechtiger Ausweg um die Sperre herum. **BEFUND E: die Eskalation ist der einzige gefundene Regler, der nicht nur die Kosten, sondern den AUSGANG bewegt** - sie hebt das Verhaeltnis EINER Welle zum Verteidiger, und genau daran haengt Sieg oder Niederlage. Die negative Rueckkopplung bleibt als Daempfer bestehen, es entsteht deshalb **kein Kliff wie bei Entscheidung 17**, sondern ein kontinuierlicher Uebergang. **BEFUND F: die Bunkerbrecher-Welle holt die Verteidigung zurueck ins Spiel und ist die direkte Gegenmassnahme zu Befund A** - Verteidigungsverlust 0,2 % -> 41,2 % (voll) und 3,8 % -> 38,8 % (mittel) bei fast gleichem Flottenverlust (44,0 -> 43,0 %); die Bomber VERLAGERN den Schaden, statt zusaetzlichen anzurichten. Hintergrund: der Bomber ist der einzige Bunkerbrecher (RapidFire 20/20/10 gegen Raketenwerfer/Leichtes Laser/Schweres Laser), aber die Wellenprofile gewichten den Schiffspool nur nach POSITION im `SHIPS`-Array und kennen keine Rolle - fuer den Einbau waere ein viertes Profil `bunkerbrecher` die naheliegende Form. **Drei Kandidaten mit je 40 Raids** (perfekte Abwehr / Flottenverlust, jeweils 50 % Bomber in der letzten Phase): Ist-Zustand voll 100 %/20,0 %, mittel 100 %/28,7 %; **A (1/1,20/1,50)** voll 100 %/34,3 %, mittel 100 %/43,4 %, schwach 0 %/99,6 %; **C (1/1,35/2,20)** voll 100 %/56,1 %, mittel 80 %/69,2 %; **B (1/1,50/2,50)** voll 93 %/65,2 %, mittel 65 %/74,1 %. **BEFUND G: der Kampf-Booster wird zum ausschlaggebenden Faktor** - "voll ohne Kampf-Boost" kippt in allen drei Kandidaten als erster entwickelter Stand (100/48/38 % perfekt gegen 100/100/93 % mit Booster). Bei Kandidat C entscheidet der Booster ueber knapp die Haelfte aller Raids; **der Raid wuerde zum staerksten Kaufargument fuer den Kampf-Booster im ganzen Spiel.** Vor der Wahl eines Kandidaten zu entscheiden. **BEFUND H: die Eskalation trifft die Schwachen am haertesten, also in die falsche Richtung** - "schwach / kleine Flotte" geht bei JEDER Eskalation auf 100 % Totalverlust, und Entscheidung 10 hilft nicht, weil ihr Neulingsschutz ZEITBASIERT ist (14 Tage). **Wer eskalierende Wellen einbaut, braucht eine ausbaustandsabhaengige Untergrenze.** Empfehlung: **Kandidat A als erster Schritt** (verdoppelt den Flottenverlust an den entwickelten Staenden, holt die Verteidigung mit rund einem Drittel Verlust zurueck, laesst "schwach" praktisch unveraendert); verlierbar wird der Raid damit bewusst noch nicht, weil G und H vorher zu klaeren sind. Werkzeug: `run_raid.mjs` um `ESC` und `BUNKER` erweitert, ohne die Variablen unveraendert. |
 | 21.08.2026 (Entscheidung 18, Messschritt 1) | **Trennschaerfe gemessen, nichts gebaut. `RAID_WAVE_ROLL` nicht angefasst.** Protokoll `raid_hardness_18.txt`, Werkzeug `run_raid.mjs` um `WAVES`/`ONLY`/`FIXPOWER` erweitert (ohne diese Variablen unveraendert). **`raid.txt` ist fuer die Kalibrierung nicht mehr gueltig** - es stammt aus der Zeit vor Entscheidung 16; neue Baseline mit 40 Raids je Fall im Messkasten. **BEFUND A, und er gehoert nicht hierher, sondern zu Entscheidung 16: Klassen-RapidFire macht Verteidigungsanlagen im Raid praktisch unzerstoerbar.** Direkte Gegenprobe Repo-Stand gegen Messbuild: Stand mittel 21,6 % -> 0,0 % Verteidigungsverlust, Stand "voll / kleine Flotte" 92,0 % -> 35,4 %, waehrend dort der Flottenverlust von 14,5 auf 39,0 % steigt. Deutung: die generierten NPC-Wellen (`generateFallbackFleet()`, reine Schiffsflotten) haben unter Klassen-RapidFire keine RF-Beziehung mehr zu den Verteidigungsklassen, die alte Konter-Leiter hatte eine. **Verteidigung wird dadurch im Raid faktisch kostenlos**, was auch die Kopplung der Verteidigungswerte an die Kosteneffizienz der Schiffe aushebelt. Vor dem Einbau von Entscheidung 16 zu entscheiden. **BEFUND B: die Reparaturquote ist als Regler tot** (0,70/0,30/0,00 -> 24,3/26,2/28,4 % Flottenverlust, ueberall 100 % perfekt), weil es nach Befund A nichts zu reparieren gibt - der vor der Messung als erster Kandidat vorgeschlagene Regler ist damit widerlegt. **BEFUND C: Wellenzahl und Verteidigungs-Gewicht sind graduelle Kostenregler ohne Kliff** (Wellen 12/18/24 -> voll 20,0/26,3/35,8 %, mittel 28,7/37,7/45,8 %, schwach 94,0/96,4/97,9 %; DEF_WEIGHT 0,3 bis 4,0 -> 32,8 bis 59,8 %). Der Regler trifft die entwickelten Konten, die schwachen kaum. **BEFUND D, der entscheidende: die Verlierbarkeit ist mit den offenen Reglern strukturell nicht erreichbar.** In JEDER Zelle gewinnen die entwickelten Staende 100 % der Raids perfekt - bei 12, 18, 24 und 36 Wellen, bei Reparatur 0,00 und bei Verteidigungs-Gewicht 4,0. Ursache: `processRaidWave()` bemisst jede Welle an der AKTUELLEN, bereits dezimierten Flotte - schrumpft die Flotte, schrumpft der Gegner mit. Gegengeprueft, ob das Einfrieren der Bemessungsgrundlage reicht (`raid.initialCombinedPower` liegt bereits vor, bisher nur fuer den Belohnungsbonus): **nein** - es trifft ausschliesslich die Schwachen (10,9 -> 3,5 gewonnene Wellen) und laesst voll und mittel bei 100 % perfekt. **Ueber Sieg oder Niederlage entscheidet allein die Staerke EINER Welle, also `RAID_WAVE_ROLL`.** Mit den offenen Reglern ist "Raid haerter" erreichbar, "Raid verlierbar" nicht - ein Messergebnis, kein Scheitern. **Empfehlung: `RAID_WAVE_COUNT` von 12 auf 18**, einziger Regler ohne neue Konstante; beruehrt Entscheidung 3, weil mehr Wellen auch mehr Container heisst. **Offen: wird `RAID_WAVE_ROLL` geoeffnet, oder wird Abschnitt 8 Punkt 7 als nicht erreichbar geschlossen?** Ausserdem eingetragen: **f = 12** aus Entscheidung 13.1, auf Delegation des Nutzers, als Empfehlung und umkehrbar - begruendet damit, dass f seit dem Ausgang von Entscheidung 17 im Wesentlichen ueber die KI-Mitspieler entscheidet, deren Flotten anders als der Bestand der Piratenbasen tatsaechlich sichtbar werden. |
 | 21.08.2026 (Entscheidung 17 VERWORFEN, Entscheidung 18 neu) | **Nutzerentscheidung nach der Messung: die Offensive der Piratenbasen wird ABGESCHALTET, Basen und KI-Mitspieler BLEIBEN, die Bedrohung wandert vollstaendig auf den RAID.** Begruendung: Variante A (echter Bestand) braeuchte rund das Zehn- bis Fuenfzehnfache der Spielerflotte - permanent uneinholbar statt "manchmal eine Bedrohung", also das Gegenteil des Ziels aus 13.1. Variante B liefert dagegen keinen echten Gegner, sondern eine gestellte Begegnung - **und damit exakt das, was der Raid ohnehin tut** (`processRaidWave()` erzeugt die Angreifer ueber `generateFallbackFleet()` aus dem Nichts, skaliert auf die kombinierte Macht des Spielers, zwoelfmal). Zwei Systeme fuer dieselbe Abstraktion, wovon nur eines bereits richtig funktioniert. Zwischenzeitlich erwogen und ebenfalls verworfen: Basen und Bots ganz entfernen - die Basen sind gemessen 8-10 % der Tageseinnahmen (1,60 Mrd netto je Angriff, vier Basen, 20 h Erholung), Entscheidung 5 ist fuer sie kalibriert und gebaut, und "nutzlos" trifft nur auf die Bots zu. **Abgeschaltet wird `runPirateBaseOffensiveTurn()` samt der 1,15-Marge** - der Zweig loest faktisch nie aus, kostet also nichts; beim Abschalten ist der Ruecklauf noch fliegender `PirateBaseOffensiveDeployment`-Eintraege zu bedenken. **Neue Folge fuer die offene Zahl f aus 13.1:** mit abgeschalteter Offensive hat der Flottenbestand einer Basis nur noch EINE Wirkung, weil `garrisonReadiness()` bei 1,0 gedeckelt ist - Wachstum zaehlt allein fuer die ERHOLUNG nach dem Leerfarmen, alles darueber ist totes Gewicht. **Mehr NPC-Einkommen beschleunigt bei den Basen also nur die Farm-Erholung.** f entscheidet damit im Wesentlichen ueber die KI-MITSPIELER, deren Flotten im Elite-Bollwerk und in der Raid-Verstaerkung tatsaechlich auftauchen; bei der Kalibrierung am Vormittag war das noch nicht so. **Aus Entscheidung 17 in den Raid uebertragen:** der Spieler steht im Raid bereits auf Seite A, der Seitentausch-Befund ist damit erledigt statt verloren; das Kliff gilt aber auch dort (`raid.txt`: 12/12 Wellen und 100 % perfekte Abwehr an jedem entwickelten Stand, im Fall "schwach" 10,9 Wellen und 94,4 % Flottenverlust - dazwischen nichts); der Rueckzug rettet Schiffe und opfert Anlagen; `homeDefense` ist kein Verteidiger-Vorteil, sondern der Klassen-Schalter (fuer Kanonier +7,3 Punkte Verlust, fuer Bollwerk umgekehrt, dort nicht gemessen). **Entscheidung 18 neu angelegt** ("Der Raid wird der Traeger der Herausforderung"), loest Abschnitt 8 Punkt 7 mit Zahlen ein. Die eigentliche Frage ist nicht "wie viel haerter", sondern **an welchem Regler die Haerte graduell reagiert statt zu kippen**. `RAID_WAVE_ROLL` bleibt gesperrt, solange der Nutzer nichts anderes sagt; erster Kandidat ist `DEFENSE_REPAIR_PERCENT` (0,70), weil die Abnutzung ueber zwoelf Wellen kumuliert und der Klassen-Gegenspieler `CLASS_BOLLWERK_DEFENSE_REPAIR_PERCENT` dadurch Gewicht bekaeme. Messplan steht, nicht begonnen. |
