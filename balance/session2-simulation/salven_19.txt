@@ -1,0 +1,143 @@
+=== ENTSCHEIDUNG 19 - SALVENSCHIFFE IM ENDGAME ===
+Gemessen am 21.08.2026. NICHTS IST GEBAUT.
+
+!!! MESSBUILD-WERTE, NICHT REPO-STAND !!!
+  node make_messbuild_kum.mjs   /tmp/mb_kum   --rf=4 --evk=0.20 --evm=0.08
+  node make_messbuild_salve.mjs /tmp/mb_kum   /tmp/mb_salve --je=20000 --deckel=8
+Werkzeuge: run_salven_19.mjs (neu), make_messbuild_salve.mjs (neu).
+Der Messbuild enthaelt Entscheidung 16 - die Zahlen gelten fuer die Welt NACH dem Neustart, nicht
+fuer das laufende Spiel.
+
+
+================================================================================
+1. ANLASS - DIE ZAHLEN AUS DEM ECHTEN KAMPFBERICHT
+================================================================================
+Nutzer-Screenshot vom 21.08.2026, Endgame-Flotte mit 993.604 Schiffen (MAX_PLAYER_SHIPS = 1 Mio):
+
+  Typ                 Stueck   Schaden je Stueck   Schadensanteil   Machtanteil
+  leicht             104.823           0,2 Mio           1,08 %        1,90 %
+  schwer             110.898           0,7 Mio           4,14 %        4,02 %
+  kreuzer             53.467           1,5 Mio           4,40 %        3,92 %
+  schlachtschiff      53.872           2,3 Mio           6,76 %        6,86 %
+  bomber              75.647           2,7 Mio          11,17 %       10,32 %
+  schlachtkreuzer    200.011           1,9 Mio          20,86 %       21,28 %
+  zerstoerer         200.007           1,5 Mio          16,30 %       26,74 %
+  reaper             194.602           3,2 Mio          34,08 %       24,89 %
+  salvenjaeger           150          18,2 Mio           0,15 %        0,01 %
+  salvenkreuzer           90         130,8 Mio           0,64 %        0,03 %
+  salvendreadnought       30         195,1 Mio           0,32 %        0,02 %
+  imperator                6         313,0 Mio           0,10 %        0,00 %
+
+BEFUND 1 - DIE SALVENSCHIFFE SIND NICHT SCHWACH, ES SIND ZU WENIGE. 270 von 993.604 Schiffen
+(0,027 %) liefern 1,11 % des Schadens - das 18-fache ihres Machtanteils von 0,06 %. Pro Stueck ist
+ein Salvenkreuzer 86-mal so stark wie ein normaler Kreuzer, ein Salvendreadnought 61-mal so stark
+wie ein Reaper. Kein anderes Schiff kommt in die Naehe.
+
+BEFUND 2 - DIE SALVE IST MECHANISCH SCHWAECHER ALS RAPIDFIRE, UND DAS IST DIE URSACHE.
+Der Imperator macht 313 Mio Schaden je Stueck, der Salvendreadnought nur 195 Mio - bei fast
+gleichen Waffenwerten (50.400 gegen 52.000). Im Code (fireShots()):
+  - Mehrfachziel-Salve: EIN Treffer je PRAESENTEM TYP. Der Salvendreadnought deckt
+    schlachtkreuzer/zerstoerer/reaper ab, also hoechstens DREI Treffer - unabhaengig davon, ob die
+    Feindflotte 300 oder 300.000 Schiffe hat.
+  - RapidFire: WIEDERHOLTE SCHUESSE, verkettet. Der Imperator hat RF 5-7 gegen praktisch alles.
+Die Salve ist durch die Zahl der Schiffstypen gedeckelt (real 2-3), RapidFire nicht.
+Der Sondermechanismus, der die Schiffe besonders machen sollte, ist schwaecher als der
+gewoehnliche.
+
+BEFUND 3 - MULTI_TARGET_POWER_CORRECTION = 8 WIRKT GENAU FALSCH HERUM. Der Faktor rechnet die
+Flottenmacht der Salvenschiffe achtfach und treibt damit die Gegnerstaerke. Bei 270 Stueck ist das
+folgenlos (0,06 statt 0,01 % Machtanteil), im Frueh- und Mittelstand dagegen - wo die Schiffe
+ohnehin stark sind - wirkt die Strafe voll. Er bremst sie dort, wo sie stark sind, und hilft nicht,
+wo sie untergehen.
+
+
+================================================================================
+2. DIE KURVE - SETZT DAS PROBLEM ERST SPAET EIN?
+================================================================================
+Aufbau: EINE Zusammensetzung (die reale Endgame-Flotte oben), ueber die Groesse skaliert, damit der
+Effekt nicht von einer veraenderten Aufstellung kommt. Die Salvenschiffe bleiben bei maxCount
+150/90/30 und wachsen NICHT mit - genau das ist der Punkt. Gegner jeweils auf dieselbe Rohmacht.
+3 Kaempfe je Zelle (Sondierung), die beiden tragenden Zellen mit 12.
+
+  Schiffe   Salven-Anteil   Schadensanteil   je Salvenkreuzer   je Reaper   Faktor
+    5.235        5,158 %          73,26 %          23,2 Mio      0,57 Mio      41x
+   20.135        1,341 %          45,86 %          68,5 Mio      1,20 Mio      57x
+   99.603        0,271 %          19,32 %         182,0 Mio      1,52 Mio     120x
+  347.933        0,078 %           6,72 %         240,3 Mio      1,67 Mio     144x
+  993.597        0,027 %           2,80 %         301,1 Mio      1,59 Mio     189x
+
+BEFUND 4 - DAS PROBLEM IST NICHT "SPAET EINSETZEND", ES IST EINE REINE MENGENFRAGE.
+Der Schaden JE STUECK STEIGT mit der Flottengroesse (23,2 -> 301,1 Mio je Salvenkreuzer), und der
+Abstand zum Reaper waechst von 41x auf 189x. Die Schiffe werden also nicht schwaecher - sie werden
+sogar staerker. Nur vervielfachen sie sich nicht: 270 bleiben 270, waehrend alles andere von 5.000
+auf 993.000 waechst. Der Anteil faellt deshalb rein rechnerisch von 73 auf 2,8 %.
+Die gemessenen 2,80 % liegen ueber den 1,11 % aus dem echten Bericht - erwartbar, weil hier ein
+NPC-Gegner gleicher Rohmacht ohne Rueckzug antritt statt der realen Gegnerzusammensetzung. Die
+Groessenordnung stimmt, die Aussage haengt nicht an der zweiten Stelle.
+
+
+================================================================================
+3. WEG 2 - DIE SALVE AN DIE STAPELGROESSE KOPPELN
+================================================================================
+Aenderung (nur im Messbuild, Quellcode unberuehrt):
+    treffer_je_typ = min(DECKEL, ceil(einheiten_dieses_typs / JE))
+statt heute fest 1. Einzelziele UND Aggregat-Stapel, weil grosse Gegnermengen ab
+STACK_AGGREGATE_THRESHOLD_BY_TYPE als Stapel vorliegen - ein Patch nur auf Einzelziele haette im
+Endgame nichts getan.
+
+ERSTER VERSUCH, VERWORFEN: JE = 500, DECKEL = 12.
+  5.235 -> 79,2 % | 20.135 -> 76,4 % | 99.603 -> 67,3 % | 347.933 -> 35,7 % | 993.597 -> 25,5 %
+Viel zu stark, und vor allem an der falschen Stelle: der mittlere Stand springt von 45,9 auf
+76,4 %. 270 Schiffe wuerden ein Viertel des Endgame-Schadens stellen. Ausdruecklich protokolliert,
+weil der Regler intuitiv klein aussieht.
+
+GEWAEHLT: JE = 20.000, DECKEL = 8. Damit greift die Regel erst, wenn ein Gegnertyp die
+20.000er-Marke ueberschreitet - unterhalb davon aendert sich NICHTS.
+  Zelle          Ist-Zustand   Weg 2      Aenderung
+  99.603 Schiffe    19,32 %    20,83 %    +1,5 Punkte (im Rauschen)
+  993.597 Schiffe    2,80 %     9,22 %    Faktor 3,3
+(12 Kaempfe je Zelle. Sondierung mit 3 Kaempfen ueber die volle Kurve: 69,0 / 43,2 / 22,9 / 13,7 /
+10,2 % - Frueh- und Mittelstand praktisch unveraendert.)
+
+BEFUND 5 - WEG 2 TRIFFT GENAU DIE RICHTIGE PHASE. Der Regler laesst Frueh- und Mittelstand in Ruhe
+(dort funktionieren die Schiffe laut Nutzer bereits) und hebt allein das Endgame. Das ist die
+Eigenschaft, die maxCount NICHT hat.
+
+
+================================================================================
+4. WEG 1 - MAXCOUNT OBENDRAUF
+================================================================================
+Endgame-Flotte, Weg 2 aktiv, nur der Salven-Bestand vervielfacht (6 Kaempfe je Zelle):
+
+  Faktor   Salvenschiffe   Schadensanteil   Kosten (Rohressourcen)
+    x1              270          8,83 %          1,82 Mrd
+    x2              540         15,11 %          3,65 Mrd
+    x3              810         22,94 %          5,47 Mrd
+
+BEFUND 6 - WEG 1 WIRKT UEBERALL, WEG 2 NUR SPAET. Das ist der entscheidende Unterschied und der
+Grund fuer eine Einschraenkung: eine pauschale Verdopplung von maxCount verdoppelt auch den
+Frueh- und Mittelstand-Anteil, und dort liegen die Schiffe bereits bei 43-73 %. 540 Salvenschiffe
+im mittleren Stand wuerden die Flotte dominieren.
+Weg 1 sollte deshalb NUR mit einer Kopplung an den Ausbaustand kommen (Forschung, Gebaeudestufe
+oder ein Teile-Aufwand wie beim Imperator), nicht als flache Erhoehung. Sonst behebt er das
+Endgame-Problem und schafft ein Startphasen-Problem.
+
+
+================================================================================
+5. EMPFEHLUNG - NICHTS DAVON IST GEBAUT
+================================================================================
+1. Weg 2 als Kern: JE = 20.000, DECKEL = 8. Hebt das Endgame von 2,8 auf 9,2 % und laesst alles
+   darunter unveraendert. Zwei neue Konstanten, keine Aenderung an den Schiffswerten.
+2. Weg 1 NUR gekoppelt. maxCount x2 (300/180/60) bringt das Endgame auf rund 15 %, aber nur
+   sinnvoll, wenn das zusaetzliche Limit an einen Ausbaustand gebunden wird. Flach nicht empfohlen.
+3. MULTI_TARGET_POWER_CORRECTION (Befund 3) gehoert mitentschieden. Unter Weg 2 ist der
+   tatsaechliche Wert der Schiffe groessenabhaengig - ein fester Faktor 8 kann an beiden Enden
+   nicht gleichzeitig stimmen. Nicht gemessen, hier nur benannt.
+
+OFFEN UND NICHT GEMESSEN:
+  - Die Wechselwirkung mit Entscheidung 6 (Wert je Machtpunkt, Zielwert 1,15): unter Weg 2
+    verschiebt sich das Verhaeltnis der Salvenschiffe deutlich.
+  - Der Kampfsimulator nutzt dieselbe Engine und bildet die neue Salve automatisch mit ab - das ist
+    gewollt, aber nicht gegengeprueft.
+  - Verteidigungsanlagen: die Salvenschiffe haben keine RapidFire-Beziehung zu ihnen, Weg 2
+    aendert daran nichts.
