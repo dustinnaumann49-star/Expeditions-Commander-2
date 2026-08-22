@@ -229,3 +229,117 @@ Er verdoppelt den Flottenverlust an den entwickelten Staenden (20,0 -> 34,3 % bz
 das ist bewusst, weil Befund G und Befund H vorher zu klaeren sind. Kandidat C ist der naechste
 Schritt, sobald beide entschieden sind.
 NICHTS DAVON IST GEBAUT.
+
+
+================================================================================
+8. NACHTRAG 22.08.2026 - MESSSCHRITT 2 UND 3 (KRITERIUM UND KALIBRIERUNG)
+================================================================================
+!!! MESSBUILD-WERTE, NICHT REPO-STAND. NICHTS IST GEBAUT. !!!
+  node make_messbuild_kum.mjs /tmp/mb_kum --rf=4 --evk=0.20 --evm=0.08
+Werkzeug: run_raid.mjs (unveraendert, ESC/BUNKER/WAVES/ONLY wie am 21.08.2026 ergaenzt).
+RAID_WAVE_ROLL wurde NICHT angefasst.
+
+NUTZERENTSCHEIDUNG ZU BEFUND G, AUF DELEGATION EINGETRAGEN (umkehrbar, wie f = 12 bei 13.1):
+**NEIN - der Kampf-Booster darf NICHT ueber Sieg und Niederlage entscheiden.** Kalibriert wird
+gegen den belegbaren Zustand "Kampf-Boost ist bei aktiven Konten faktisch immer an".
+Begruendung in zwei Teilen, der zweite traegt:
+  (a) Preisrechnung: Kampf-Boost 55 DM/24 h, 1.100 DM/30 Tage (economy.ts) = 36,7 DM/Tag gegen
+      2.020 DM/Tag Einnahmen (Abschnitt 1) - rund 2 %. Ein einziger gewonnener Raid (2.080 DM)
+      finanziert ihn fuer knapp zwei Monate. DM ist reine Spielwaehrung, kein Echtgeld-Pfad.
+      *EINSCHRAENKUNG, vom Nutzer eingebracht:* diese Zahlen sind planmaessig veraenderlich -
+      Entscheidung 3 nimmt rund die Haelfte der DM-Einnahmen, und die Booster-Preise sind ein
+      offener Punkt ("danach neu messen, bevor an BOOSTER_DURATION_OPTIONS gedreht wird").
+      Selbst bei halbierten Einnahmen liegt der Boost bei 3,6-5,5 %. **KIPPPUNKT ALS PRUEFPUNKT:
+      erst wenn er ueber rund 20-25 % des DM-Einkommens steigt (Faktor 10-13), wird er zur echten
+      Wahl - dann ist Befund G neu zu stellen.**
+  (b) Strukturell und preisunabhaengig: `combinedPower` sitzt auf der ROHMACHT (`baseStats`),
+      `combatFleetPowerBase()` ignoriert Booster (Befund 3e aus Entscheidung 17). Der Boost gibt
+      +35 % auf Waffen/Schild/Panzerung, OHNE die Welle mitzuziehen - er ist im Raid ein reiner
+      Nettovorteil aus einer Konstruktionsluecke. C oder B zu waehlen hiesse, diese Luecke zum
+      tragenden Element zu machen.
+  (c) Zusatzbefund: der Raid laeuft Mi/So 0:00 UTC, der Booster auf einem 24h-Timer. Aktive Konten
+      haben ihn immer an, pausierende nie - ein Zwischenzustand existiert kaum. **Die Zelle "voll
+      ohne Kampf-Boost" misst damit ABWESENHEIT, nicht Kaufverhalten, und ist inhaltlich dieselbe
+      Frage wie Befund H an einem anderen Ausbaustand.**
+
+--- SCHRITT 2: DAS KRITERIUM ---
+18-A (bindend, aus Befund G): die Zelle "voll ohne Kampf-Boost" bleibt bei perfekter Abwehr.
+18-B (Haerte): der Flottenverlust an den entwickelten Staenden steigt deutlich ueber den
+      Ist-Zustand (20,0 / 28,7 %).
+Trennschaerfe vorab an den Extremwerten des ISOLIERTEN Reglers geprueft (Phase 2 fest auf 1,20,
+nur Phase 3 variiert, 10 Raids): 1,50 -> 100 % perfekt, 2,50 -> 40 %. Das Kriterium trennt.
+
+--- METHODISCHER BEFUND, DER WICHTIGSTE DIESES SCHRITTS ---
+**EIN KRITERIUM AN DER 100-%-KANTE HAT BEI 40 SERIEN EINE AUFLOESUNG VON 1/40 - UND GENAU DAS IST
+DIE STREUUNG.** Zwei unabhaengige 40er-Laeufe DERSELBEN Zelle bei ESC 1/1,20/1,60:
+  Lauf 1: 100 % perfekt, Flottenverlust 55,9 %   |   Lauf 2: 98 % perfekt, 59,3 %
+Der Unterschied ist EIN Raid. Bei 1,70 meldeten zwei 40er-Laeufe je 98 %, ein 80er-Lauf dagegen
+94 %. **Mit 40 Serien haette 1,70 als "haelt das Kriterium" gegolten; es haelt es nicht.**
+Konsequenz, ab jetzt verbindlich fuer dieses Kriterium: **die bindende Zelle mit 80 Serien messen,
+nicht mit 40.** Die uebrigen Zellen bleiben bei 40 - dort ist die Kennzahl nicht die 100-%-Kante.
+(Verwandt mit der Fallen-Liste: "eine Kennzahl in einer Zelle, die ohnehin jeder gewinnt, misst
+nichts" - hier misst sie etwas, aber unterhalb ihrer eigenen Aufloesung.)
+
+--- SCHRITT 3: SWEEP DER LETZTEN PHASE (ESC = 1 / 1,20 / X, BUNKER = 0,5) ---
+Bindende Zelle "voll ohne Kampf-Boost":
+  X      Serien   perfekt   Flottenverlust
+  1,50     80      100 %       55,9 %
+  1,60     80      100 %       59,1 %      (40er-Laeufe: 100 % und 98 %)
+  1,70     80       94 %       64,4 %      (40er-Laeufe: 98 % und 98 %)
+  1,80     40       90 %       67,3 %
+  1,90     40       68 %       70,5 %
+  2,10     40       65 %       77,4 %
+Der Uebergang ist GRADUELL (100 -> 94 -> 90 -> 68), kein Kliff - Befund E bestaetigt sich am
+isolierten Regler.
+
+BINDENDE ZELLE GEGENGEPRUEFT: "mittel / grosse Flotte" haelt bei X = 1,60 UND 1,70 je 100 %
+(40 Raids, Flottenverlust 46,1 bzw. 49,0 %). **"voll ohne Kampf-Boost" ist die bindende Zelle,
+nicht der mittlere Ausbaustand.**
+
+**KALIBRIERT: ESC = 1 / 1,20 / 1,60 mit BUNKER = 0,5.** Das ist das Maximum unter 18-A; 1,70
+reisst das Kriterium. Der Gewinn gegenueber Kandidat A (1,50) ist klein, aber bei gleichem N real:
++3,2 Punkte Flottenverlust in der bindenden Zelle. **Damit ist Kandidat A unter Befund G = Nein
+nicht nur die Empfehlung, sondern praktisch die Obergrenze** - die Kandidaten C und B sind mit
+diesem Kriterium unerreichbar, und zwar nicht knapp.
+BUNKER = 0,5 ist aus dem Nutzervorschlag vom 21.08.2026 UEBERNOMMEN, nicht kalibriert.
+
+--- VOLLE TABELLE, ESC = 1/1,20/1,60, BUNKER = 0,5, 40 Raids je Fall ---
+  Fall                              Wellen  perfekt  Flottenverl.  min-max      Verteidigungsverl.
+  voll / grosse Flotte                12,0    100 %      34,7 %    16,7-48,7          35,5 %
+  voll ohne Kampf-Boost               12,0    100 %      60,9 %    41,0-83,1          42,0 %
+  mittel / grosse Flotte              12,0    100 %      46,3 %    29,4-59,6          33,6 %
+  voll / kleine Flotte                10,9     15 %      63,9 %    15,4-97,1          74,8 %
+  schwach / kleine Flotte             10,4      0 %      98,6 %    61,5-100,0         78,2 %
+Ist-Zustand zum Vergleich: 100/20,0/0,0 - 100/36,4/0,0 - 100/28,7/0,0 - 57/23,7/26,9 - 3/94,0/60,4
+
+18-B erfuellt: Flottenverlust voll 20,0 -> 34,7 %, mittel 28,7 -> 46,3 %.
+Befund F bestaetigt: Verteidigungsverlust 0,0 -> 33,6-35,5 % an den grossen Staenden.
+**BEFUND H IST UNVERAENDERT OFFEN:** schwach 0 % perfekt / 98,6 % Flottenverlust (Ist 3 % / 94,0),
+"voll / kleine Flotte" faellt von 57 auf 15 % perfekt. Die ausbaustandsabhaengige Untergrenze
+fehlt weiterhin und ist die einzige verbliebene Nutzerentscheidung dieses Punktes.
+
+--- OFFENE FRAGE 4 BEANTWORTET: RAID_WAVE_COUNT 12 -> 18 ZUSAETZLICH? NEIN. ---
+Gemessen bei identischem Eskalationsstand, 40 Raids:
+  Fall                        12 Wellen          18 Wellen
+  voll / grosse Flotte        100 % / 34,7 %     100 % / 47,7 %
+  voll ohne Kampf-Boost       100 % / 60,9 %     100 % / 71,5 %
+  mittel / grosse Flotte      100 % / 46,3 %     100 % / 60,3 %
+Das Kriterium 18-A bleibt erfuellt, die Wellenzahl ist also technisch moeglich. Drei Gruende
+dagegen:
+1. Die Eskalation liefert die Haerte bereits (20,0 -> 34,7 % bei voll). 18 Wellen setzen ein
+   zweites Mal dieselbe Schraube an.
+2. Der Flottenverlust der Booster-losen Zelle steigt auf 71,5 % im MITTEL. **Abnahmekriterium 1
+   der 30-Tage-Simulation liegt bei 70 % je Ereignis** - mit 18 Wellen wird es im Mittelwert
+   gerissen, mit 12 nur in Einzelraids (min-max 41,0-83,1).
+3. **Beruehrt Entscheidung 3 direkt:** der Container-Topf ist flach je gewonnener Welle, 18 statt
+   12 Wellen heben den Raid-Ertrag um 50 % (22,07 -> rund 33 Mrd je Raid). Der Raid stellt schon
+   heute 58 % der Woche-1-Einnahmen, und Abnahmekriterium 5 haengt genau daran.
+EMPFEHLUNG: RAID_WAVE_COUNT bleibt bei 12.
+
+--- WAS DAMIT OFFEN BLEIBT ---
+1. Befund H - die ausbaustandsabhaengige Untergrenze. FORM gehoert hierher, WERT nach Schritt 13
+   (die 30-Tage-Simulation liefert die Entwicklungskurve, gegen die kalibriert wird).
+2. BUNKER = 0,5 ist uebernommen, nicht kalibriert.
+3. Entscheidung 3 gegenpruefen: der Ertrag bleibt unveraendert (12 Wellen), das RISIKO steigt -
+   das Verhaeltnis von Ertrag zu Risiko verschiebt sich also auch ohne mehr Wellen.
+4. Keine Endgame-Zelle im Messgitter (siehe volley_scale_19.txt).
