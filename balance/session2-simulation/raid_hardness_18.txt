@@ -143,3 +143,89 @@ Bemessungsgrundlage (Befund D, trifft nur die Schwachen).
 
 OFFEN: die Nebenwirkung aus Befund A gehoert zu Entscheidung 16 und ist dort zu entscheiden,
 bevor sie gebaut wird.
+
+
+================================================================================
+7. NACHTRAG 21.08.2026 - ESKALIERENDE WELLEN UND BUNKERBRECHER (NUTZERVORSCHLAG)
+================================================================================
+Nutzervorschlag: die Wellen phasenweise haerter staffeln (erste vier mittel, naechste vier schwer,
+letzte vier extrem) und in den spaeten Wellen viele Bomber einsetzen, damit auch die
+Verteidigungsanlagen Schaden nehmen.
+
+ZUR ABGRENZUNG GEGEN DIE SPERRE: das ist eine NEUE Groesse und keine Aenderung an
+RAID_WAVE_ROLL. Der Wuerfel bleibt unangetastet und wirkt weiterhin obendrauf. Inhaltlich tut die
+Eskalation allerdings dasselbe wie eine Erhoehung des Wuerfels - sie ist deshalb ausdruecklich als
+Nutzerentscheidung gefuehrt und nicht als eigenmaechtiger Ausweg um die Sperre herum.
+Umgesetzt in run_raid.mjs als ESC="a,b,c" (drei gleich grosse Phasen) und BUNKER=<anteil>
+(Anteil der Wellenmacht in der LETZTEN Phase, der durch Bomber ersetzt wird). Ohne beide
+Variablen verhaelt sich das Skript wie zuvor.
+
+BEFUND E - DIE ESKALATION LOEST DIE WAND AUS BEFUND D AUF.
+Sie ist der einzige gefundene Regler, der nicht nur die Kosten, sondern den AUSGANG bewegt.
+Grund: sie hebt das Verhaeltnis EINER Welle zum Verteidiger, und genau daran haengt Sieg oder
+Niederlage. Die negative Rueckkopplung (Welle schrumpft mit der Flotte) bleibt bestehen und wirkt
+weiterhin als Daempfer - deshalb entsteht kein Kliff wie bei Entscheidung 17, sondern ein
+kontinuierlicher Uebergang.
+
+BEFUND F - DIE BUNKERBRECHER-WELLE HOLT DIE VERTEIDIGUNG ZURUECK INS SPIEL.
+Bei identischer Eskalation (1 / 1,35 / 1,9), 10 Raids je Zelle:
+  ohne Bomber:  voll Verteidigungsverlust  0,2 %   |  mittel  3,8 %
+  mit BUNKER=0,5: voll                    41,2 %   |  mittel 38,8 %
+Der Flottenverlust bleibt dabei fast gleich (voll 44,0 -> 43,0 %). Die Bomber verlagern den
+Schaden also auf die Anlagen, statt zusaetzlichen anzurichten. **Das ist die direkte Gegenmassnahme
+zu Befund A** - die Verteidigung ist nicht mehr kostenlos.
+Technischer Hintergrund: der Bomber ist im Messbuild der einzige Bunkerbrecher (RapidFire 20/20/10
+gegen Raketenwerfer/Leichtes Laser/Schweres Laser, bewusst NICHT gegen die schweren Geschuetze).
+Die Wellenprofile (schwarm/kampfgruppe/elitekader) gewichten den Schiffspool aber nur nach POSITION
+im SHIPS-Array und kennen keine Rolle - es gibt heute kein Profil, das Bomber bevorzugt. Fuer den
+Einbau waere ein viertes Profil "bunkerbrecher" die naheliegende Form.
+
+DREI KANDIDATEN, 40 komplette Raids je Fall, jeweils mit BUNKER = 0,5:
+
+  A) ESC = 1 / 1,20 / 1,50   "haerter, nicht verlierbar"
+  Fall                              Wellen  perfekt  Flottenverl.  Verteidigungsverl.
+  voll / grosse Flotte                12,0    100 %       34,3 %          33,0 %
+  voll ohne Kampf-Boost               12,0    100 %       57,2 %          41,1 %
+  mittel / grosse Flotte              12,0    100 %       43,4 %          31,0 %
+  voll / kleine Flotte                11,1     33 %       50,1 %          73,1 %
+  schwach / kleine Flotte             10,4      0 %       99,6 %          77,6 %
+
+  C) ESC = 1 / 1,35 / 2,20   "verlierbar, Mittelweg"
+  voll / grosse Flotte                12,0    100 %       56,1 %          45,6 %
+  voll ohne Kampf-Boost               11,3     48 %       82,7 %          54,8 %
+  mittel / grosse Flotte              11,8     80 %       69,2 %          45,7 %
+  voll / kleine Flotte                10,6      3 %       88,0 %          77,3 %
+  schwach / kleine Flotte             10,1      0 %      100,0 %          83,5 %
+
+  B) ESC = 1 / 1,50 / 2,50   "deutlich verlierbar"
+  voll / grosse Flotte                11,9     93 %       65,2 %          48,5 %
+  voll ohne Kampf-Boost               11,0     38 %       87,4 %          57,0 %
+  mittel / grosse Flotte              11,6     65 %       74,1 %          49,3 %
+  voll / kleine Flotte                10,3      0 %       94,8 %          79,7 %
+  schwach / kleine Flotte              9,9      0 %      100,0 %          87,1 %
+
+Zum Vergleich der Ist-Zustand: 12,0 Wellen und 100 % perfekt in den drei grossen Faellen,
+Flottenverlust 20,0 / 36,4 / 28,7 %, Verteidigungsverlust ueberall 0,0 %.
+
+BEFUND G - DER KAMPF-BOOSTER WIRD ZUM AUSSCHLAGGEBENDEN FAKTOR. In allen drei Kandidaten ist
+"voll ohne Kampf-Boost" der erste entwickelte Stand, der kippt (100 / 48 / 38 % perfekt gegen
+100 / 100 / 93 % mit Booster). Bei Kandidat C entscheidet der Booster ueber knapp die Haelfte
+aller Raids. Das ist eine Design-Aussage und keine Nebenwirkung: der Raid wuerde damit zum
+staerksten Kaufargument fuer den Kampf-Booster im ganzen Spiel. **Gehoert vor der Wahl eines
+Kandidaten entschieden.**
+
+BEFUND H - DIE ESKALATION TRIFFT DIE SCHWACHEN AM HAERTESTEN, ALSO IN DIE FALSCHE RICHTUNG.
+"schwach / kleine Flotte" geht bei JEDER Eskalation auf 100 % Totalverlust (Ist-Zustand: 94,0 %).
+Entscheidung 10 hilft dagegen nicht, weil ihr Neulingsschutz ZEITBASIERT ist (14 Tage) und ein
+schwach ausgebautes Konto danach ungeschuetzt dasteht. **Wer eskalierende Wellen einbaut, braucht
+dazu eine ausbaustandsabhaengige Untergrenze** - sonst ist der Raid fuer jeden, der laenger
+pausiert hat, ein garantierter Totalverlust. Nicht gemessen, nicht vorgeschlagen, aber zwingend
+mitzuentscheiden.
+
+EMPFEHLUNG: **Kandidat A (1 / 1,20 / 1,50 mit BUNKER = 0,5)** als erster Schritt.
+Er verdoppelt den Flottenverlust an den entwickelten Staenden (20,0 -> 34,3 % bzw. 28,7 ->
+43,4 %), holt die Verteidigung mit rund einem Drittel Verlust zurueck ins Spiel und laesst
+"schwach" praktisch unveraendert (99,6 gegen 94,0 %). Verlierbar wird der Raid damit noch nicht -
+das ist bewusst, weil Befund G und Befund H vorher zu klaeren sind. Kandidat C ist der naechste
+Schritt, sobald beide entschieden sind.
+NICHTS DAVON IST GEBAUT.
