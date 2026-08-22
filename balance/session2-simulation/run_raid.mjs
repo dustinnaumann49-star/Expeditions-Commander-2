@@ -15,6 +15,21 @@ const { DEFENSE_REPAIR_PERCENT } = L.cc;
 const REPAIR = process.env.REPAIR !== undefined ? Number(process.env.REPAIR) : DEFENSE_REPAIR_PERCENT;
 const REPAIR_BOLLWERK = process.env.REPAIR_BOLLWERK !== undefined ? Number(process.env.REPAIR_BOLLWERK) : 0.9;
 const DEF_WEIGHT = process.env.DEF_WEIGHT !== undefined ? Number(process.env.DEF_WEIGHT) : 0.3;
+// 21.08.2026 (Entscheidung 18): Wellenzahl und Fall-Auswahl ueberschreibbar. Ohne WAVES/ONLY
+// verhaelt sich das Skript exakt wie zuvor (RAID_WAVE_COUNT = 12, alle fuenf Faelle).
+const WAVES = process.env.WAVES !== undefined ? Number(process.env.WAVES) : RAID_WAVE_COUNT;
+const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
+const FIXPOWER = process.env.FIXPOWER === '1';
+// 21.08.2026 (Entscheidung 18, Nutzervorschlag): ESKALATION UND BUNKERBRECHER-WELLEN.
+// ESC="1,1.5,2.5" teilt die Wellen in drei gleich grosse Phasen und multipliziert die
+// Bemessungsgrundlage je Phase mit dem jeweiligen Faktor. Das ist eine NEUE Groesse und keine
+// Aenderung an RAID_WAVE_ROLL - der Wuerfel bleibt unangetastet und wirkt weiterhin obendrauf.
+// BUNKER=0.5 ersetzt in der LETZTEN Phase den angegebenen Anteil der Wellenmacht durch Bomber.
+// Grund: der Bomber ist im Messbuild der einzige Bunkerbrecher (RapidFire 20/20/10 gegen
+// Raketenwerfer/Leichtes Laser/Schweres Laser), und die Wellenprofile gewichten den Schiffspool
+// nur nach Position im SHIPS-Array, kennen also keine Rolle. Ohne beides: Ist-Zustand.
+const ESC = process.env.ESC ? process.env.ESC.split(',').map(Number) : null;
+const BUNKER = process.env.BUNKER !== undefined ? Number(process.env.BUNKER) : 0;
 
 // Container-Erwartungswerte in Wert-Einheiten, aus Session 1 uebernommen
 const CONTAINER_EV = { silber: 60.1e6, gold: 127.2e6, elite: 237.6e6 };
@@ -43,7 +58,8 @@ async function runRaid(profile, fleet, defense) {
   const GRACE = process.env.GRACE === '1';
   const startFleetPower = L.combat.combatFleetPowerBase(fleet);
   let fleetWithdrawn = false;
-  for (let w = 0; w < RAID_WAVE_COUNT; w++) {
+  let initialCombinedPower = 0;
+  for (let w = 0; w < WAVES; w++) {
     if (WITHDRAW_SHARE > 0 && !fleetWithdrawn
         && L.combat.combatFleetPowerBase(st.fleet) < startFleetPower * WITHDRAW_SHARE) {
       fleetWithdrawn = true;
@@ -72,15 +88,30 @@ async function runRaid(profile, fleet, defense) {
     // sank der Flottenverlust bei entwickelten Konten sonst von 13,5 auf 4,9 %, was dem Ziel der
     // Entscheidung (Startphase absichern, Endspiel nicht verbilligen) zuwiderlaeuft.
     Object.keys(st.fleet).forEach((id) => { const b = L.combat.baseStats(id); fleetPower += st.fleet[id] * (b.waffen + b.schild + b.panzerung); });
-    const combinedPower = fleetPower * 0.7 + defensePower * DEF_WEIGHT;
+    let combinedPower = fleetPower * 0.7 + defensePower * DEF_WEIGHT;
+    // 21.08.2026 (Entscheidung 18): FIXPOWER=1 friert die Bemessungsgrundlage auf den Zustand VOR
+    // der ersten Welle ein, statt sie je Welle aus der bereits dezimierten Flotte neu zu berechnen.
+    // raids.ts legt diesen Schnappschuss ohnehin schon an (raid.initialCombinedPower, dort bisher
+    // nur fuer den Belohnungsbonus). FIXPOWER=0 ist der Ist-Zustand.
+    if (w === 0) initialCombinedPower = combinedPower;
+    if (FIXPOWER && w > 0) combinedPower = initialCombinedPower;
 
     const domePool = L.combat.computeDomeSharedPool(st.defense, st.research, !!st.activeBoosters.kampf, st.playerClass, st.shipModules);
     const waveFactor = L.combat.pick503020(RAID_WAVE_ROLL);
     waveFactors.push(waveFactor);
-    const waveTargetPower = Math.max(combinedPower, RAID_MIN_TARGET_POWER) * waveFactor;
+    const phase = ESC ? Math.min(ESC.length - 1, Math.floor((w / WAVES) * ESC.length)) : 0;
+    const escFactor = ESC ? ESC[phase] : 1;
+    const waveTargetPower = Math.max(combinedPower, RAID_MIN_TARGET_POWER) * waveFactor * escFactor;
     const profileW = L.combat.pickWaveProfile('raid');
     const battleModifier = L.combat.rollBattleModifier('raid');
-    const npcShips = L.combat.generateFallbackFleet(waveTargetPower, profileW);
+    const letztePhase = ESC ? phase === ESC.length - 1 : false;
+    const bunkerAnteil = BUNKER > 0 && letztePhase ? BUNKER : 0;
+    const npcShips = L.combat.generateFallbackFleet(waveTargetPower * (1 - bunkerAnteil), profileW);
+    if (bunkerAnteil > 0) {
+      const bb = L.combat.baseStats('bomber');
+      const proStueck = bb.waffen + bb.schild + bb.panzerung;
+      npcShips.bomber = (npcShips.bomber || 0) + Math.round((waveTargetPower * bunkerAnteil) / proStueck);
+    }
     const npcIds = Object.keys(npcShips).filter((id) => npcShips[id] > 0);
     if (npcIds.length === 0) { wavesWon++; continue; }
 
@@ -172,18 +203,18 @@ const CASES = [
 ];
 
 const N = Number(process.argv[2] || 8);
-console.log(`=== Raid: ${RAID_WAVE_COUNT} Wellen, ${N} komplette Raids je Fall ===`);
+console.log(`=== Raid: ${WAVES} Wellen, ${N} komplette Raids je Fall, Reparatur ${REPAIR} ===`);
 // min-max-Spalte fuer den Flottenverlust ist Pflicht: die Spannweite eines einzelnen Raids ist
 // groesser als die meisten gemessenen Effekte (teuer gelernt am 11.08.2026 bei der Klassen-Messung).
 console.log('Fall | oWellen gewonnen | perfekt (12/12)% | oFlottenverlust% | Flottenverlust min-max | oVerteidigungsverlust% | oBergungs-DM');
 const results = {};
-for (const [profile, fleet, defense, label] of CASES) {
+for (const [profile, fleet, defense, label] of CASES.filter((c) => !ONLY || ONLY.some((o) => c[3].includes(o)))) {
   let wonSum = 0, perfect = 0, fl = 0, dl = 0, dm = 0;
   let flMin = Infinity, flMax = -Infinity;
   for (let i = 0; i < N; i++) {
     const r = await runRaid(profile, fleet, defense);
     wonSum += r.wavesWon;
-    if (r.wavesWon >= RAID_WAVE_COUNT) perfect++;
+    if (r.wavesWon >= WAVES) perfect++;
     fl += r.fleetLoss; dl += r.defLoss; dm += r.salvageDm;
     flMin = Math.min(flMin, r.fleetLoss); flMax = Math.max(flMax, r.fleetLoss);
   }
