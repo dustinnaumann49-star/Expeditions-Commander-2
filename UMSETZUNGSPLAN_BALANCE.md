@@ -3280,7 +3280,85 @@ verfolgt. Was von ihnen ueberlebt, wandert nach Entscheidung 18:
 
 ---
 
-### Entscheidung 18 - Der Raid wird der Traeger der Herausforderung: MESSSCHRITT 1 ERLEDIGT
+### Entscheidung 18 - Der Raid wird der Traeger der Herausforderung: KALIBRIERT, NICHT GEBAUT
+
+> **MESSKASTEN 22.08.2026 - SCHRITT 2 UND 3 ERLEDIGT. KALIBRIERT: `ESC = 1 / 1,20 / 1,60` mit
+> Bomberanteil 0,5 in der letzten Phase, `RAID_WAVE_COUNT` BLEIBT 12. NICHTS GEBAUT.** Protokoll
+> `raid_hardness_18.txt`, Abschnitt 8. Werkzeug `run_raid.mjs` unveraendert. Alle Werte aus dem
+> kumulativen Messbuild. **`RAID_WAVE_ROLL` wurde NICHT angefasst.**
+>
+> **BEFUND G ENTSCHIEDEN (Nutzerdelegation 22.08.2026, umkehrbar wie f = 12): NEIN.** Der
+> Kampf-Booster darf nicht ueber Sieg und Niederlage entscheiden; kalibriert wird gegen den
+> Zustand "Boost ist bei aktiven Konten faktisch immer an". Tragend ist nicht die Preisrechnung
+> (36,7 DM/Tag gegen 2.020 DM/Tag - planmaessig veraenderlich, siehe Kipppunkt unten), sondern:
+> **`combinedPower` sitzt auf der ROHMACHT, `combatFleetPowerBase()` ignoriert Booster.** Der
+> Boost gibt +35 % ohne die Welle mitzuziehen - er ist im Raid ein reiner Nettovorteil aus einer
+> Konstruktionsluecke. C oder B zu waehlen hiesse, diese Luecke zum tragenden Element zu machen.
+> **PRUEFPUNKT an die Booster-Preis-Entscheidung:** steigt der Kampf-Boost ueber rund 20-25 % des
+> DM-Einkommens (Faktor 10-13 vom heutigen Stand, Entscheidung 3 allein leistet das nicht), wird
+> er zur echten Wahl und Befund G ist neu zu stellen.
+> *Zusatz:* der Raid laeuft Mi/So 0:00 UTC, der Booster auf einem 24h-Timer - aktive Konten haben
+> ihn immer an, pausierende nie. **Die Zelle misst ABWESENHEIT, nicht Kaufverhalten, und ist damit
+> dieselbe Frage wie Befund H an einem anderen Ausbaustand.**
+>
+> **KRITERIUM (Schritt 2), vorab an den Extremwerten auf Trennschaerfe geprueft** (isolierter
+> Regler: Phase 2 fest auf 1,20, nur Phase 3 variiert; 1,50 -> 100 % perfekt, 2,50 -> 40 %):
+> **18-A (bindend):** "voll ohne Kampf-Boost" bleibt bei perfekter Abwehr.
+> **18-B (Haerte):** der Flottenverlust an den entwickelten Staenden steigt deutlich ueber 20,0 /
+> 28,7 %.
+>
+> **METHODISCHER BEFUND, GILT UEBER DIESEN PUNKT HINAUS: EIN KRITERIUM AN DER 100-%-KANTE HAT BEI
+> 40 SERIEN EINE AUFLOESUNG VON 1/40 - UND GENAU DAS IST DIE STREUUNG.** Zwei unabhaengige
+> 40er-Laeufe derselben Zelle lieferten 100 % und 98 %, Unterschied ein einziger Raid. Bei 1,70
+> meldeten zwei 40er-Laeufe je 98 %, ein 80er-Lauf dagegen 94 % - **mit 40 Serien haette 1,70 als
+> "haelt das Kriterium" gegolten, es haelt es nicht.** Die bindende Zelle wird deshalb mit
+> **80 Serien** gemessen, die uebrigen bleiben bei 40.
+>
+> **SWEEP DER LETZTEN PHASE** (`ESC = 1 / 1,20 / X`, Bomberanteil 0,5), bindende Zelle:
+>
+> | X | Serien | perfekt | Flottenverlust |
+> |---|---|---|---|
+> | 1,50 | 80 | 100 % | 55,9 % |
+> | **1,60** | 80 | **100 %** | **59,1 %** |
+> | 1,70 | 80 | 94 % | 64,4 % |
+> | 1,80 | 40 | 90 % | 67,3 % |
+> | 1,90 | 40 | 68 % | 70,5 % |
+> | 2,10 | 40 | 65 % | 77,4 % |
+>
+> Der Uebergang ist graduell (100 -> 94 -> 90 -> 68), kein Kliff - Befund E bestaetigt sich am
+> isolierten Regler. Gegengeprueft, welche Zelle bindet: "mittel / grosse Flotte" haelt bei 1,60
+> UND 1,70 je 100 % - **"voll ohne Kampf-Boost" ist die bindende Zelle**, nicht der mittlere Stand.
+>
+> **ERGEBNIS: `ESC = 1 / 1,20 / 1,60` ist das Maximum unter 18-A.** Der Gewinn gegenueber Kandidat
+> A (1,50) ist klein, bei gleichem N aber real (+3,2 Punkte). **Kandidat A ist unter Befund G =
+> Nein damit praktisch die Obergrenze; C und B sind mit diesem Kriterium unerreichbar, und zwar
+> nicht knapp.** Der Bomberanteil 0,5 ist aus dem Nutzervorschlag UEBERNOMMEN, nicht kalibriert.
+>
+> | Fall | Ist | kalibriert (1/1,20/1,60) |
+> |---|---|---|
+> | voll / grosse Flotte | 100 % / 20,0 % / 0,0 % | 100 % / **34,7 %** / 35,5 % |
+> | voll ohne Kampf-Boost | 100 % / 36,4 % / 0,0 % | 100 % / 60,9 % / 42,0 % |
+> | mittel / grosse Flotte | 100 % / 28,7 % / 0,0 % | 100 % / **46,3 %** / 33,6 % |
+> | voll / kleine Flotte | 57 % / 23,7 % / 26,9 % | 15 % / 63,9 % / 74,8 % |
+> | schwach / kleine Flotte | 3 % / 94,0 % / 60,4 % | 0 % / 98,6 % / 78,2 % |
+>
+> (perfekte Abwehr / Flottenverlust / Verteidigungsverlust, 40 Raids je Fall.)
+> 18-B erfuellt, Befund F bestaetigt (Verteidigungsverlust 0,0 -> rund 34 %).
+>
+> **FRAGE 4 BEANTWORTET: `RAID_WAVE_COUNT` BLEIBT BEI 12.** Mit 18 Wellen bei identischer
+> Eskalation: voll 47,7 %, voll ohne Boost 71,5 %, mittel 60,3 % Flottenverlust, alle weiterhin
+> 100 % perfekt. Technisch moeglich, drei Gruende dagegen: (1) die Eskalation liefert die Haerte
+> bereits; (2) **71,5 % im MITTEL reisst Abnahmekriterium 1 der 30-Tage-Simulation (70 % je
+> Ereignis)** - mit 12 Wellen wird es nur in Einzelraids gerissen; (3) der Container-Topf ist flach
+> je gewonnener Welle, 18 Wellen heben den Raid-Ertrag um 50 % (22,07 -> rund 33 Mrd) und
+> verschlechtern damit Abnahmekriterium 5, an dem Entscheidung 3 haengt.
+>
+> **EINZIGE VERBLIEBENE NUTZERENTSCHEIDUNG: BEFUND H.** "schwach" faellt auf 0 % perfekt bei
+> 98,6 % Flottenverlust, "voll / kleine Flotte" von 57 auf 15 % perfekt. Die
+> ausbaustandsabhaengige Untergrenze fehlt weiterhin. **FORM gehoert hierher, WERT nach Schritt 13**
+> - die 30-Tage-Simulation liefert die Entwicklungskurve, gegen die kalibriert wird.
+> Ebenfalls offen: der Bomberanteil ist uebernommen statt kalibriert, und Entscheidung 3 ist
+> gegenzupruefen (der Ertrag bleibt gleich, das RISIKO steigt).
 
 > **MESSKASTEN 21.08.2026 - SCHRITT 1 (TRENNSCHAERFE) GEMESSEN. NICHTS GEBAUT.** Protokoll
 > `balance/session2-simulation/raid_hardness_18.txt`, Werkzeug `run_raid.mjs` (bestehend, um
@@ -5102,6 +5180,27 @@ BLOCK C (unabhaengig voneinander, AUSSER 13.3 vor 5)
                           sind fuer den Bot ein Armuts-Fallback und werden von einem reichen Bot
                           nie gebaut. Gehoert zu 13.4 in Schritt 16.
                        -> 13.1 braucht die Koeffizienten aus Entscheidung 2, also nach Block A
+
+AUSSERHALB DER BLOCKREIHENFOLGE (21./22.08.2026, Reihenfolge 18 -> 19 -> 13 entschieden)
+ 12a. Entscheidung 17  VERWORFEN 21.08.2026. Die Offensive der Piratenbasen wird abgeschaltet
+                       (runPirateBaseOffensiveTurn samt 1,15-Marge), Basen und KI-Mitspieler
+                       bleiben. Die Bedrohung wandert auf den Raid.
+ 12b. Entscheidung 18  KALIBRIERT am 22.08.2026, NICHT GEBAUT. Eskalierende Wellen
+                       ESC = 1 / 1,20 / 1,60 mit Bomberanteil 0,5 in der letzten Phase,
+                       RAID_WAVE_COUNT BLEIBT 12, RAID_WAVE_ROLL unangetastet.
+                       Befund G auf Delegation entschieden (Nein, umkehrbar).
+                       -> Fuer den Einbau ist ein VIERTES Wellenprofil "bunkerbrecher" noetig -
+                          die drei vorhandenen gewichten den Schiffspool nur nach POSITION im
+                          SHIPS-Array und kennen keine Rolle.
+                       -> OFFEN: Befund H (ausbaustandsabhaengige Untergrenze). FORM gehoert
+                          hierher, WERT nach Schritt 13.
+                       -> Entscheidung 3 danach gegenpruefen: der Ertrag bleibt gleich, das
+                          RISIKO steigt.
+ 12c. Entscheidung 19  Weg 2 (JE = 20.000, DECKEL = 8) plus Weg 1 nur gekoppelt.
+                       GEMESSEN 21.08.2026, NICHT GEBAUT. Offen: maxCount x2 ja/nein und woran
+                       gekoppelt, sowie MULTI_TARGET_POWER_CORRECTION.
+                       -> Weg 2 trifft AUCH sentinelkanone/ultimatekanone (Nachtrag 22.08.2026).
+                          In den Kalibrierzellen von 18 wirkungslos, am Endgame-Konto Faktor 5-8.
 
 SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
  13. 30-Tage-Fortschrittssimulation nach Abschnitt 1b bauen und erstmals ausfuehren

@@ -65,6 +65,44 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 22.08.2026: ENTSCHEIDUNG 18 IST KALIBRIERT, NICHT GEBAUT.** Eskalierende Wellen
+  **`ESC = 1 / 1,20 / 1,60`** mit **Bomberanteil 0,5** in der letzten Phase, **`RAID_WAVE_COUNT`
+  bleibt 12**, `RAID_WAVE_ROLL` unangetastet. Protokoll `raid_hardness_18.txt` Abschnitt 8,
+  Werkzeug `run_raid.mjs` unveraendert. **Damit ist die Sammelliste bei ACHT Paketen.**
+  - **BEFUND G AUF DELEGATION ENTSCHIEDEN: NEIN** (umkehrbar, wie f = 12 bei 13.1). Der
+    Kampf-Booster darf nicht ueber Sieg und Niederlage entscheiden.
+    **Tragend ist NICHT die Preisrechnung** (36,7 DM/Tag gegen 2.020 DM/Tag - der Nutzer hat zu
+    Recht darauf hingewiesen, dass DM-Ertraege und -Preise planmaessig veraenderlich sind, siehe
+    Abschnitt 4 "Booster-Preise"), **sondern die Bemessungsgrundlage:** `combinedPower` sitzt auf
+    der ROHMACHT, `combatFleetPowerBase()` ignoriert Booster. Der Boost gibt +35 %, ohne die Welle
+    mitzuziehen - ein reiner Nettovorteil aus einer Konstruktionsluecke. **PRUEFPUNKT an die
+    Booster-Preis-Entscheidung:** ueber rund 20-25 % des DM-Einkommens (Faktor 10-13, Entscheidung
+    3 allein leistet das nicht) wird der Boost zur echten Wahl, dann ist G neu zu stellen.
+  - **Die Zelle "voll ohne Kampf-Boost" misst ABWESENHEIT, nicht Kaufverhalten** - Raid Mi/So
+    0:00 UTC gegen 24h-Booster-Timer. Sie ist damit dieselbe Frage wie Befund H an einem anderen
+    Ausbaustand.
+  - **METHODISCHER BEFUND, gilt ueber diesen Punkt hinaus: ein Kriterium an der 100-%-Kante hat
+    bei 40 Serien eine Aufloesung von 1/40 - und genau das ist die Streuung.** Zwei unabhaengige
+    40er-Laeufe derselben Zelle: 100 % und 98 %. Bei 1,70 meldeten zwei 40er-Laeufe je 98 %, ein
+    80er-Lauf dagegen 94 % - **mit 40 Serien haette 1,70 das Kriterium scheinbar gehalten.** Die
+    bindende Zelle wird deshalb mit 80 Serien gemessen.
+  - **KANDIDAT A IST UNTER G = NEIN PRAKTISCH DIE OBERGRENZE**, nicht nur die Empfehlung. 1,60
+    haelt das Kriterium, 1,70 reisst es; C (2,20) und B (2,50) sind unerreichbar, und zwar nicht
+    knapp. Der Gewinn 1,50 -> 1,60 ist klein, bei gleichem N aber real (+3,2 Punkte).
+  - **Ergebnis:** voll 20,0 -> **34,7 %** Flottenverlust, mittel 28,7 -> **46,3 %**,
+    Verteidigungsverlust 0,0 -> rund 34 % (Befund F bestaetigt). Alle drei entwickelten Staende
+    bleiben bei 100 % perfekter Abwehr.
+  - **FRAGE 4 BEANTWORTET: `RAID_WAVE_COUNT` bleibt 12.** Mit 18 Wellen steigt der Flottenverlust
+    der Booster-losen Zelle auf **71,5 % im Mittel** und reisst damit Abnahmekriterium 1 der
+    30-Tage-Simulation (70 % je Ereignis); ausserdem heben 18 Wellen den flachen Container-Topf um
+    50 % (22,07 -> rund 33 Mrd je Raid) und verschlechtern Abnahmekriterium 5.
+  - **EINZIGE VERBLIEBENE NUTZERENTSCHEIDUNG ZU 18: BEFUND H.** "schwach" 0 % perfekt bei 98,6 %
+    Flottenverlust, "voll / kleine Flotte" von 57 auf 15 % perfekt. **FORM gehoert zu 18, WERT
+    nach Schritt 13** - die Simulation liefert die Entwicklungskurve, gegen die kalibriert wird.
+  - **Fuer den Einbau:** ein VIERTES Wellenprofil `bunkerbrecher` ist noetig, die drei vorhandenen
+    gewichten den Schiffspool nur nach POSITION im `SHIPS`-Array und kennen keine Rolle. Der
+    Bomberanteil 0,5 ist uebernommen, nicht kalibriert.
+
 - **NEU 22.08.2026: REIHENFOLGE FUER 13/18/19 ENTSCHIEDEN - 18 ZUERST, DANN 19, DANN 13.**
   Nutzerentscheidung, mit einer vorgeschalteten Messung begruendet statt mit einer Vermutung.
   Protokoll `volley_scale_19.txt`, Werkzeug `probe_volley_scale_19.mjs` (neu). **Nichts gebaut.**
@@ -690,6 +728,16 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein Kriterium an der 100-%-Kante kann eine Aufloesung haben, die kleiner ist als die eigene
+Streuung.** Bei 40 Serien ist der Unterschied zwischen "100 % perfekt" und "98 % perfekt" EIN
+Ereignis - und genau um dieses eine Ereignis unterscheiden sich zwei unabhaengige Laeufe derselben
+Zelle (gemessen am 22.08.2026 bei Entscheidung 18: 100 % und 98 % bei identischer Einstellung).
+Der Eskalationswert 1,70 meldete in zwei 40er-Laeufen je 98 % und in einem 80er-Lauf 94 % -
+**mit 40 Serien haette er das Kriterium scheinbar gehalten.** Messregel 2 fordert 40 Serien als
+Untergrenze; **bei einem Kriterium, das an einer Kante von 0 % oder 100 % liegt, reicht das
+nicht.** Vor der Kalibrierung ausrechnen, wie viele Serien noetig sind, damit der geforderte
+Abstand ueberhaupt darstellbar ist - und die bindende Zelle feiner messen als die uebrigen.
+
 **Der NAME einer Konstantenmenge kann ihren Inhalt falsch beschreiben - und dann liest man sie nie
 nach.** `MULTI_TARGET_VOLLEY_SHIPS` galt drei Sessions lang als "die drei Salvenschiffe" und hat
 fuenf Eintraege: `sentinelkanone` und `ultimatekanone` sind VERTEIDIGUNGSANLAGEN. Der Messkasten
@@ -1004,11 +1052,24 @@ Antwort war eine voellig andere als die Vermutung.
 ## Erster Schritt beim naechsten Mal
 
 **REIHENFOLGE STEHT SEIT DEM 22.08.2026: 18 -> 19 -> 13.** Begruendung und die Messung, die sie
-traegt, im Stand-Eintrag ganz oben und in `volley_scale_19.txt`. Der naechste Messschritt ist
-**Entscheidung 18, Schritt 2 (Kriterium festlegen)** - und der braucht zuerst Befund G, weil das
-Kriterienband ueber die Zelle "voll ohne Kampf-Boost" hinweg definiert werden muss.
+traegt, im Stand-Eintrag oben und in `volley_scale_19.txt`.
 
-**VIER FRAGEN STEHEN BEIM NUTZER, ALLE ZU ENTSCHEIDUNG 18:**
+**ENTSCHEIDUNG 18 IST SEIT DEM 22.08.2026 KALIBRIERT** (`ESC = 1 / 1,20 / 1,60`, Bomberanteil 0,5,
+`RAID_WAVE_COUNT` bleibt 12). Von den vier Fragen sind drei beantwortet: Kandidat (A, praeziser
+1,60 statt 1,50), Befund G (Nein, auf Delegation) und Frage 4 (Nein). **Offen ist nur noch
+Befund H.**
+
+**NAECHSTER SCHRITT: ENTSCHEIDUNG 19.** Dort liegen zwei Nutzerentscheidungen: (1) `maxCount` x2
+ja/nein und WORAN das zusaetzliche Limit gekoppelt wird (flach nicht empfohlen - Weg 1 wirkt
+ueberall, Weg 2 nur spaet); (2) `MULTI_TARGET_POWER_CORRECTION` unter Weg 2. Dazu der Nachtrag vom
+22.08.2026: Weg 2 trifft `sentinelkanone`/`ultimatekanone` mit.
+
+**BEFUND H BLEIBT LIEGEN, UND ZWAR ABSICHTLICH.** Die FORM der ausbaustandsabhaengigen Untergrenze
+gehoert zu 18, ihr WERT laesst sich erst gegen die Entwicklungskurve aus Schritt 13 kalibrieren.
+Wer H frueher setzt, setzt eine Zahl ohne Massstab.
+
+**EINE FRAGE STAND URSPRUENGLICH VIERFACH BEIM NUTZER, ALLE ZU ENTSCHEIDUNG 18** (drei davon am
+22.08.2026 erledigt, hier zur Nachvollziehbarkeit erhalten):
 1. **Welcher Eskalations-Kandidat** - A (haerter, nicht verlierbar), C (Mittelweg) oder B
    (deutlich verlierbar)? Empfehlung: A als erster Schritt.
 2. **Befund G:** soll der Kampf-Booster ueber Sieg und Niederlage entscheiden duerfen? In allen
