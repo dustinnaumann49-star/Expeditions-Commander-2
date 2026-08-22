@@ -1089,10 +1089,11 @@ Verteidigungsverlust). Verteidigung wird damit faktisch kostenlos, und die Koppl
 Verteidigungswerte an die Kosteneffizienz der Schiffe stimmt nicht mehr. Entscheidung 16 ist
 kalibriert und ungebaut - der beste Zeitpunkt ist jetzt.
 
-**Naechster Messschritt, wenn die Gate-Frage beantwortet ist:** Entscheidung 18, Schritt 2
-(Kriterium festlegen) und Schritt 3 (kalibrieren gegen alle fuenf Faelle). Faellt die Antwort
-"bleibt gesperrt", entfaellt Schritt 2 und es bleibt bei der Haerte-Empfehlung
-`RAID_WAVE_COUNT` = 18, die dann nur noch gegen Entscheidung 3 gegenzupruefen ist.
+~~**Naechster Messschritt, wenn die Gate-Frage beantwortet ist:** Entscheidung 18, Schritt 2
+und Schritt 3.~~ **ERLEDIGT AM 22.08.2026** - beide Schritte sind gemessen, das Ergebnis steht im
+Messkasten bei Entscheidung 18 und im Stand-Eintrag oben. `RAID_WAVE_COUNT` bleibt bei 12; die
+alte Haerte-Empfehlung 18 ist mit Zahlen verworfen (sie reisst Abnahmekriterium 1 der
+30-Tage-Simulation im Mittel und hebt den flachen Container-Topf um 50 %).
 
 **Block C ist seit dem 21.08.2026 vollstaendig.** Schritt 12 (Entscheidung 13.1 + 13.2) ist
 erledigt: 13.1 kalibriert bis auf die Zahl f, 13.2 ohne Messung entschieden, beides nicht gebaut.
@@ -1101,10 +1102,11 @@ zuerst den Messkasten bei Entscheidung 12 UND den bei Entscheidung 13 - dort ste
 Bot-Verhalten ueber 30 Tage der einzige noch offene Nachweis fuer 13.1 ist und dass 13.4 dabei
 mitgeprueft werden muss.
 
-**Die Sammelliste fuer den Einbau umfasst jetzt SIEBEN Pakete, nicht sechs** - neu dazu
-13.1/13.2. Dazu kommen zwei Abschaltungen bzw. Aenderungen aus Entscheidung 17/18, sobald sie
-entschieden sind. Wer die Liste zusammenstellt, faengt bei den Messkaesten am Kopf von
-Entscheidung 2, 3, 4, 7, 12, 13, 16, 17 und 18 an, dazu R16.
+**Die Sammelliste fuer den Einbau umfasst seit dem 22.08.2026 ACHT Pakete** (Block A Schritt 2,
+Block B, Entscheidung 3, 16, 12, 7.2/7.3, 13.1/13.2 und neu Entscheidung 18), dazu R16 und die
+Abschaltung der Piratenbasen-Offensive aus Entscheidung 17. Entscheidung 19 ist gemessen, aber
+noch nicht entschieden und zaehlt deshalb NICHT mit. Wer die Liste zusammenstellt, faengt bei den
+Messkaesten am Kopf von Entscheidung 2, 3, 4, 7, 12, 13, 16, 17 und 18 an.
 
 **Entscheidung 12 (Schritt 11) ist ERLEDIGT im Sinne dieses Plans: entschieden, kalibriert,
 gegengemessen - und wie alles andere nicht gebaut.** `NOVICE_BONUS_ADD = 2,0`, Fenster-Empfehlung
