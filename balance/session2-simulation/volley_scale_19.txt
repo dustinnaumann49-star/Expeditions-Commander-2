@@ -1,0 +1,123 @@
+=== VORFRAGE ZUR REIHENFOLGE 18/19 - KOPPELT WEG 2 IN DIE RAID-ZELLEN? ===
+Gemessen am 22.08.2026. NICHTS IST GEBAUT.
+
+!!! MESSBUILD-WERTE, NICHT REPO-STAND !!!
+  cd server && npm install && npx tsc
+  node make_messbuild_kum.mjs /tmp/mb_kum --rf=4 --evk=0.20 --evm=0.08
+Werkzeug: probe_volley_scale_19.mjs (NEU). RAID_WAVE_ROLL wurde NICHT angefasst.
+
+Anlass: die Reihenfolgeentscheidung zwischen Entscheidung 18 (Raid-Haerte) und Entscheidung 19
+(Salvenschiffe). Wenn Weg 2 aus 19 in die Zellen hineinwirkt, an denen 18 kalibriert wird, muss 19
+vorher stehen - sonst wird zweimal kalibriert (Arbeitsregel Punkt 2).
+
+
+================================================================================
+0. BUILD-PRUEFUNG GEGEN EINEN BEKANNTEN ANKER (Fallen-Liste: normiert vergleichen)
+================================================================================
+run_loot_curve.mjs solo, 12 Durchlaeufe je Zelle (Referenz in loot_curve.txt: 40).
+Verglichen wird NICHT die rohe Belohnung, sondern die Belohnung je Punkt vernichteter Feindmacht.
+
+  Zelle          Referenz (loot_curve.txt)   dieser Lauf        normiert   roh
+  mittel / hoch  1,05 Mrd bei 11,1 Mrd       1,14 bei 12,4      -2,8 %     +8,6 %
+  spaet / hoch   4,61 Mrd bei 79,3 Mrd       4,34 bei 75,3      -0,9 %     -5,9 %
+
+Beide innerhalb der Anker-Streuung von rund 2 % (frueher gemessen: -2,3 % und -1,1 %), und der
+rohe Vergleich sieht in derselben Zelle wieder um Faktor 3 schlechter aus als der normierte -
+die Falle vom 19.08.2026 reproduziert sich exakt. DER BUILD IST GUELTIG.
+
+
+================================================================================
+1. CODE-BEFUND - DER WEG-2-PATCH TRIFFT ZWEI VERTEIDIGUNGSANLAGEN MIT
+================================================================================
+`MULTI_TARGET_VOLLEY_SHIPS` (combatConstants.ts) hat FUENF Eintraege, nicht drei:
+  salvenjaeger, salvenkreuzer, salvendreadnought, sentinelkanone, ultimatekanone
+Die letzten beiden sind VERTEIDIGUNGSANLAGEN (defenses.ts, maxCount 150 bzw. 60) mit eigener
+RapidFire-Tabelle (Sentinel: leicht/schwer; Ultimate: kreuzer/schlachtschiff/bomber/
+schlachtkreuzer/zerstoerer/reaper) UND einem ZIELERFASSUNG_BASE-Eintrag von je 0,35.
+
+Der letzte Punkt entscheidet: ohne diesen Eintrag waere die Salve toter Code (die Falle aus
+Entscheidung 4.4, wo genau dieser Eintrag beim Boss fehlt). Er ist vorhanden, die Salve ist bei
+beiden Anlagen aktiv.
+
+Der Weg-2-Patch aus make_messbuild_salve.mjs greift in `fireShots()` generisch ueber
+`shooter.typeId` und unterscheidet nicht zwischen Schiff und Anlage. Damit gilt:
+**Der Satz aus salven_19.txt ("Verteidigungsanlagen bleiben unberuehrt, weil die Salvenschiffe
+keine RapidFire-Beziehung zu ihnen haben") ist richtig fuer die ZIEL-Seite und falsch fuer die
+SCHUETZEN-Seite.** Die Anlagen sind nicht Ziel der Salve, sie fuehren sie selbst aus.
+
+Zwei Gegenpruefungen, damit der Befund nicht an einer Nebenbedingung haengt:
+- Der Klassen-RF-Patch aus make_messbuild_kum.mjs (Entscheidung 16) laesst die RAPIDFIRE-Tabellen
+  dieser beiden UNVERAENDERT - `rfPatch` schreibt nur die acht Standardschiffe und die sechs
+  Standardanlagen. Ihre Salve ueberlebt Entscheidung 16 also unveraendert.
+- Beide aggregieren als Schuetzen nie: `STACK_AGGREGATE_THRESHOLD_BY_TYPE` fuehrt sie nicht,
+  der Standardwert ist 2.000, ihr maxCount liegt bei 150/60. Sie laufen IMMER durch den
+  Einzelschuetzen-Pfad und damit immer durch die Salven-Verzweigung.
+
+
+================================================================================
+2. DIE MESSUNG - WELLENGROESSE JE TYP GEGEN DIE SCHWELLE JE = 20.000
+================================================================================
+Weg 2 lautet `treffer_je_typ = min(DECKEL, ceil(einheiten_dieses_typs / JE))`. Solange kein
+Gegnertyp die JE-Marke reisst, ist der Ausdruck 1 und Weg 2 aendert NICHTS. Die Frage ist damit
+rein zaehlbar und braucht keinen Kampflauf - gemessen wird die Wellenerzeugung aus run_raid.mjs
+(combinedPower, RAID_WAVE_ROLL, generateFallbackFleet), 40 Wellen je Zelle, jeweils die ERSTE
+Welle und damit die groesste Bemessungsgrundlage (spaetere schrumpfen mit der dezimierten Flotte,
+Befund D aus 18). "groesster Typ" ist das Maximum ueber alle 40 Wellen, nicht der Mittelwert.
+
+Ohne Eskalation:
+  Zelle                              combinedPower   groesster Typ   Typen ueber JE
+  voll / grosse Flotte + volle Vt.        1,92 Mrd   leicht  9.861       0,00
+  mittel / grosse Flotte                  1,92 Mrd   leicht 14.090       0,00
+  voll / kleine Flotte                    0,21 Mrd   leicht  1.555       0,00
+  schwach / kleine Flotte                 0,21 Mrd   leicht  1.534       0,00
+  ENDGAME 993.604 Schiffe                471,58 Mrd  leicht  3.467.158   8,00
+
+Letzte Eskalationsphase (WIDX = 11, BUNKER = 0,5), groesster Typ ueber 40 Wellen:
+  Kandidat                voll      mittel    kleine Flotte   ENDGAME
+  A (1/1,20/1,50)        10.679     10.766        1.156       2.635.238
+  C (1/1,35/2,20)        14.714     15.802        1.709       3.917.379
+  B (1/1,50/2,50)        17.631     17.960        1.917       4.358.394
+In KEINER dieser Zellen reisst ein Typ die 20.000er-Marke ("Typen ueber JE" bleibt 0,00 in allen
+vier Kalibrierzellen und allen drei Kandidaten).
+
+BEFUND 1 - IN DEN KALIBRIERZELLEN VON ENTSCHEIDUNG 18 IST WEG 2 WIRKUNGSLOS. Kein Gegnertyp
+erreicht die Schwelle, auch nicht in der letzten Phase des staerksten Kandidaten. **Die Reihenfolge
+18 vor 19 ist damit sauber - es wird nichts doppelt kalibriert.**
+
+BEFUND 2 - DER ABSTAND IST UNTER KANDIDAT B ABER NUR NOCH 10 %. 17.960 von 20.000 in 40 Wellen.
+Unter A liegt die Reserve bei Faktor 1,9, unter C bei 1,3, unter B bei 1,1. **Folge, ausdruecklich:
+wird B gewaehlt UND spaeter JE gesenkt, kehrt die Kopplung zurueck.** Bei A besteht diese Gefahr
+nicht. Die Zahl gehoert in die Bauanleitung von 19, nicht nur in dieses Protokoll.
+
+BEFUND 3 - AM ENDGAME-MASSSTAB IST DIE WIRKUNG GROSS, UND SIE LIEGT AUF DER VERTEIDIGUNGSSEITE.
+Salven-Treffer je erfolgreichem Schuss, heute gegen Weg 2 (Mittel ueber 40 Wellen):
+  Sentinel-Kanone   2,0 -> 15,8 bis 16,0   (Deckel 8 mal 2 RF-Zieltypen = 16, praktisch ausgereizt)
+  Ultimate-Kanone   6,0 -> 29,5 bis 37,2   (von theoretisch 48)
+Das ist Faktor 8 bzw. 5 bis 6 auf die Feuerkraft dieser beiden Anlagen - genau in der Groesse, um
+die Befund A (Verteidigung wird kostenlos) und Befund F (die Bunkerbrecher-Welle holt sie zurueck)
+in Entscheidung 18 streiten. **Weg 2 wirkt dort gegen Befund F.**
+Einschraenkung, ausdruecklich: die Verteidigungs-Zusammensetzung der Endgame-Zelle ist eine
+SETZUNG, keine Messung. Fuer die Trefferzahl je Schuss ist das folgenlos (sie haengt nur davon ab,
+OB die Anlage vorhanden ist, nicht wie viele), fuer jede daraus abgeleitete Verlustquote nicht.
+
+BEFUND 4 - DAS MESSGITTER VON ENTSCHEIDUNG 18 HAT KEINE ENDGAME-ZELLE. Die groesste Zelle ist
+FLEET_LARGE mit 6.332 Schiffen; das Konto, das Entscheidung 19 ueberhaupt ausgeloest hat, hat
+993.604. Zwischen beiden liegen mehr als zwei Groessenordnungen. Die Eskalation aus 18 ist an
+diesem Konto nie gemessen worden, und die negative Rueckkopplung aus Befund D verhaelt sich dort
+nicht automatisch gleich. **Das ist keine Folge dieses Befunds, wird durch ihn aber sichtbar** -
+verwandt mit der Falle "eine Kennzahl in einer Zelle, die ohnehin jeder gewinnt, misst nichts".
+
+
+================================================================================
+3. WAS DARAUS FOLGT
+================================================================================
+1. Reihenfolge 18 -> 19 -> 13 bleibt. Befund 1 traegt sie mit Zahlen statt mit einer Vermutung.
+2. Der Code-Befund aus Abschnitt 1 gehoert in den Messkasten von Entscheidung 19 - die dortige
+   Aussage zu den Verteidigungsanlagen ist zu eng gefasst.
+3. Die Kopplung Weg 2 x Verteidigung im Raid ist NICHT gemessen (nur die Trefferzahl, nicht der
+   Kampfausgang). Wer sie messen will, braucht eine Endgame-Zelle in run_raid.mjs - die gibt es
+   heute nicht. Vorschlag, nicht ausgefuehrt: erst nach der Kandidatenwahl in 18, damit die Zelle
+   gegen den gewaehlten Stand laeuft und nicht gegen drei.
+4. Offen und hier nicht beruehrt: MULTI_TARGET_POWER_CORRECTION (Befund 3 aus salven_19.txt) gilt
+   ueber `MULTI_TARGET_VOLLEY_SHIPS` ebenfalls fuer die beiden Anlagen - er treibt also auch ueber
+   die VERTEIDIGUNGS-Macht die Wellenstaerke im Raid. Nicht gemessen, nur benannt.
