@@ -102,6 +102,18 @@ anders wirken kann als in der Simulation.
   - **Fuer den Einbau:** ein VIERTES Wellenprofil `bunkerbrecher` ist noetig, die drei vorhandenen
     gewichten den Schiffspool nur nach POSITION im `SHIPS`-Array und kennen keine Rolle. Der
     Bomberanteil 0,5 ist uebernommen, nicht kalibriert.
+  - **Messregel 8 angewandt: KEIN Client-Spiegel noetig.** `RAID_WAVE_COUNT`, `RAID_WAVE_ROLL`,
+    `pickWaveProfile`, `waveProfile`, die drei Profilnamen und `DEFENSE_REPAIR_PERCENT` haben null
+    Treffer in `client/src`; `pages/Galaxie.tsx` liest die Wellenzahl dynamisch aus
+    `state.raid.waveTimes.length`. Nach Entscheidung 7 der zweite Punkt ohne Spiegel - "kein
+    Spiegel" ist ein Messergebnis und keine ausgelassene Pruefung.
+  - **DARAUS EIN NEUER OFFENER PUNKT: DIE ESKALATION IST FUER DEN SPIELER UNSICHTBAR.** Weder
+    Phase noch Wellenprofil noch Bomberanteil erscheinen irgendwo im Client - er sieht "Welle
+    9/12" und dass die spaeten Wellen ploetzlich wehtun. Wer seine Flotte bisher gefahrlos daheim
+    liess, verliert nach dem Einbau rund ein Drittel davon ohne Vorwarnung. **Vorschlag, nicht
+    entschieden:** Phase im Raid-Zaehler anzeigen, Bunkerbrecher im Kampfbericht kenntlich machen.
+    UI-Aenderung, keine Balance-Zahl - faellt nicht unter die Sammel-Regel, darf aber NICHT vor der
+    Eskalation live gehen, sonst kuendigt die Anzeige etwas an, das es noch nicht gibt.
 
 - **NEU 22.08.2026: REIHENFOLGE FUER 13/18/19 ENTSCHIEDEN - 18 ZUERST, DANN 19, DANN 13.**
   Nutzerentscheidung, mit einer vorgeschalteten Messung begruendet statt mit einer Vermutung.

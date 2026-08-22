@@ -3358,7 +3358,29 @@ verfolgt. Was von ihnen ueberlebt, wandert nach Entscheidung 18:
 > ausbaustandsabhaengige Untergrenze fehlt weiterhin. **FORM gehoert hierher, WERT nach Schritt 13**
 > - die 30-Tage-Simulation liefert die Entwicklungskurve, gegen die kalibriert wird.
 > Ebenfalls offen: der Bomberanteil ist uebernommen statt kalibriert, und Entscheidung 3 ist
-> gegenzupruefen (der Ertrag bleibt gleich, das RISIKO steigt).
+> gegenzupruefen (der Ertrag bleibt unveraendert, das RISIKO steigt).
+>
+> **MESSREGEL 8 (CLIENT-SPIEGEL) ANGEWANDT: KEIN SPIEGEL NOETIG.** Gegreppt in `client/src`:
+> `RAID_WAVE_COUNT`, `RAID_WAVE_ROLL`, `pickWaveProfile`, `waveProfile`, die drei Profilnamen
+> `schwarm`/`kampfgruppe`/`elitekader` und `DEFENSE_REPAIR_PERCENT` - **null Treffer.**
+> `pages/Galaxie.tsx` liest die Wellenzahl dynamisch aus `state.raid.waveTimes.length`, eine
+> Aenderung an `RAID_WAVE_COUNT` fliesst also von selbst durch. Damit ist Entscheidung 18 nach
+> Entscheidung 7 der zweite Punkt ohne Client-Spiegel; das gehoert ausdruecklich ins Protokoll,
+> weil "kein Spiegel" ein Messergebnis ist und keine ausgelassene Pruefung.
+>
+> **DARAUS FOLGT ABER EIN OFFENER PUNKT, DER VOR DEM EINBAU ZU ENTSCHEIDEN IST: DIE ESKALATION IST
+> FUER DEN SPIELER UNSICHTBAR.** Weder das Wellenprofil noch die Phase noch der Bomberanteil
+> erscheinen irgendwo im Client - der Spieler sieht nur "Welle 9/12" und dass die spaeten Wellen
+> ploetzlich wehtun. **Das ist dieselbe Form wie die Falle "eine Wahl, die der Spieler nicht sehen
+> kann, ist keine Wahl"**, hier mit umgekehrtem Vorzeichen: es geht nicht um eine Wahl, sondern um
+> eine Schwierigkeitssteigerung ohne Ankuendigung. Ein Spieler, der seine Flotte bisher gefahrlos
+> zu Hause liess, verliert nach dem Einbau in der letzten Phase rund ein Drittel davon, ohne dass
+> ihm irgendetwas gesagt haette, warum. **Vorschlag, nicht entschieden:** die Phase im
+> Raid-Zaehler in `Galaxie.tsx` mit anzeigen (etwa "Welle 9/12 - schwere Phase") und den
+> Bunkerbrecher im Kampfbericht kenntlich machen. Das ist eine UI-Aenderung, keine Balance-Zahl,
+> und faellt damit nicht unter die Sammel-Regel - sie kann vor dem Neustart einzeln ausgeliefert
+> werden, sollte aber NICHT vor der Eskalation selbst live gehen, sonst kuendigt die Anzeige etwas
+> an, das es noch nicht gibt.
 
 > **MESSKASTEN 21.08.2026 - SCHRITT 1 (TRENNSCHAERFE) GEMESSEN. NICHTS GEBAUT.** Protokoll
 > `balance/session2-simulation/raid_hardness_18.txt`, Werkzeug `run_raid.mjs` (bestehend, um
@@ -5196,6 +5218,10 @@ AUSSERHALB DER BLOCKREIHENFOLGE (21./22.08.2026, Reihenfolge 18 -> 19 -> 13 ents
                           hierher, WERT nach Schritt 13.
                        -> Entscheidung 3 danach gegenpruefen: der Ertrag bleibt gleich, das
                           RISIKO steigt.
+                       -> KEIN Client-Spiegel noetig (gegreppt, null Treffer; Galaxie.tsx liest
+                          die Wellenzahl dynamisch). ABER: die Eskalation ist fuer den Spieler
+                          unsichtbar - Phase und Bunkerbrecher erscheinen nirgends. Anzeige
+                          vorschlagen, NICHT vor der Eskalation ausliefern.
  12c. Entscheidung 19  Weg 2 (JE = 20.000, DECKEL = 8) plus Weg 1 nur gekoppelt.
                        GEMESSEN 21.08.2026, NICHT GEBAUT. Offen: maxCount x2 ja/nein und woran
                        gekoppelt, sowie MULTI_TARGET_POWER_CORRECTION.
