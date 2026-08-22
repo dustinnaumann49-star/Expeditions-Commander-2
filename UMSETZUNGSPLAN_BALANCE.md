@@ -3407,6 +3407,18 @@ verfolgt. Was von ihnen ueberlebt, wandert nach Entscheidung 18:
 > ueber Sieg und Niederlage entscheiden duerfen? (3) Befund H - welche Untergrenze schuetzt schwach
 > ausgebaute Konten? (4) `RAID_WAVE_COUNT` 12 -> 18 zusaetzlich, oder reicht die Eskalation?
 > `RAID_WAVE_ROLL` bleibt unangetastet und wird durch die Eskalation auch nicht mehr gebraucht.
+>
+> **NACHTRAG 22.08.2026 - ZWEI EINSCHRAENKUNGEN DES MESSGITTERS, gemessen in
+> `volley_scale_19.txt`:**
+> - **Die Zellen sind gegen Entscheidung 19 unempfindlich, aber nur knapp.** Kein Gegnertyp einer
+>   Welle erreicht die Weg-2-Schwelle von 20.000 Einheiten - unter Kandidat A mit Faktor 1,9
+>   Reserve, unter B nur noch mit 10 % (17.960). Die Kalibrierung von 18 darf deshalb vor 19
+>   laufen; bei Wahl von B ist die Reihenfolge danach nicht mehr beliebig.
+> - **Es gibt keine Endgame-Zelle.** Groesste Zelle ist `FLEET_LARGE` mit 6.332 Schiffen. Am Konto
+>   aus dem Anlass von Entscheidung 19 (993.604 Schiffe) ist die Eskalation nie gemessen worden,
+>   und dort verstaerkt Weg 2 die Salven-Verteidigungsanlagen um Faktor 5-8 - **also gegen
+>   Befund F.** Wer eine Endgame-Zelle nachziehen will, tut das nach der Kandidatenwahl, sonst
+>   laeuft sie gegen drei Staende statt gegen einen.
 
 **Bezug:** Nutzerentscheidung 21.08.2026, unmittelbare Folge aus dem Ausgang von Entscheidung 17.
 Verwandt mit Abschnitt 8 Punkt 7 ("Raid verlierbar machen", entschieden am 09.08.2026 auf
@@ -3533,8 +3545,57 @@ normalen Schiffen, die es in Massen gibt."
 >
 > **OFFEN, NICHT GEMESSEN:** Wechselwirkung mit Entscheidung 6 (Wert je Machtpunkt, Zielwert 1,15);
 > Rueckwirkung auf den Kampfsimulator (nutzt dieselbe Engine, bildet die neue Salve automatisch mit
-> ab - gewollt, aber nicht gegengeprueft); Verteidigungsanlagen bleiben unberuehrt, weil die
-> Salvenschiffe keine RapidFire-Beziehung zu ihnen haben.
+> ab - gewollt, aber nicht gegengeprueft); Verteidigungsanlagen sind nicht ZIEL der Salve, weil die
+> Salvenschiffe keine RapidFire-Beziehung zu ihnen haben. ~~Verteidigungsanlagen bleiben
+> unberuehrt.~~ **Der zweite Halbsatz war zu weit gefasst - siehe Nachtrag 22.08.2026 unten.**
+
+> **NACHTRAG 22.08.2026 - WEG 2 TRIFFT ZWEI VERTEIDIGUNGSANLAGEN MIT. NICHTS GEBAUT.** Protokoll
+> `balance/session2-simulation/volley_scale_19.txt`, Werkzeug `probe_volley_scale_19.mjs` (neu).
+> Entstanden als VORFRAGE zur Reihenfolge zwischen 18 und 19, nicht als eigener Messschritt.
+>
+> **CODE-BEFUND: `MULTI_TARGET_VOLLEY_SHIPS` hat FUENF Eintraege, nicht drei.** `sentinelkanone`
+> (maxCount 150) und `ultimatekanone` (60) sind VERTEIDIGUNGSANLAGEN mit eigener RapidFire-Tabelle
+> (Sentinel: leicht/schwer; Ultimate: kreuzer/schlachtschiff/bomber/schlachtkreuzer/zerstoerer/
+> reaper) **und einem `ZIELERFASSUNG_BASE`-Eintrag von je 0,35** - die Salve ist bei ihnen also
+> kein toter Code (die Falle aus 4.4, wo genau dieser Eintrag beim Boss fehlt). Der Weg-2-Patch
+> greift in `fireShots()` generisch ueber `shooter.typeId`. **Sie sind nicht Ziel der Salve, sie
+> fuehren sie selbst aus.** Zwei Gegenpruefungen: der Klassen-RF-Patch aus Entscheidung 16 laesst
+> ihre Tabellen unveraendert (`rfPatch` schreibt nur die acht Standardschiffe und sechs
+> Standardanlagen), und beide aggregieren als Schuetzen nie (Standardschwelle 2.000 gegen maxCount
+> 150/60), laufen also immer durch die Salven-Verzweigung.
+>
+> **DIE KALIBRIERZELLEN VON ENTSCHEIDUNG 18 SEHEN DAVON NICHTS** (40 Wellen je Zelle, groesster
+> Typ ueber alle Wellen, erste Welle = groesste Bemessungsgrundlage):
+>
+> | Zelle | ohne Eskalation | A (1/1,20/1,50) | C (1/1,35/2,20) | B (1/1,50/2,50) |
+> |---|---|---|---|---|
+> | voll / grosse Flotte | 9.861 | 10.679 | 14.714 | 17.631 |
+> | mittel / grosse Flotte | 14.090 | 10.766 | 15.802 | **17.960** |
+> | kleine Flotte | 1.555 | 1.156 | 1.709 | 1.917 |
+> | ENDGAME 993.604 Schiffe | 3.467.158 | 2.635.238 | 3.917.379 | 4.358.394 |
+>
+> In keiner Kalibrierzelle reisst ein Typ die Schwelle JE = 20.000, auch nicht in der letzten Phase
+> des staerksten Kandidaten. **Damit ist 18 vor 19 sauber - es wird nichts doppelt kalibriert.**
+> **ABER: unter Kandidat B betraegt die Reserve nur noch 10 %** (17.960 von 20.000), unter C 1,3x,
+> unter A 1,9x. **Wird B gewaehlt UND spaeter JE gesenkt, kehrt die Kopplung zurueck** - das gehoert
+> in die Bauanleitung von 19, nicht nur ins Protokoll.
+>
+> **AM ENDGAME-MASSSTAB IST DIE WIRKUNG GROSS UND LIEGT AUF DER VERTEIDIGUNGSSEITE.** Salven-Treffer
+> je erfolgreichem Schuss, heute gegen Weg 2: **Sentinel-Kanone 2,0 -> 15,8-16,0** (Deckel 8 mal
+> 2 Zieltypen, praktisch ausgereizt), **Ultimate-Kanone 6,0 -> 29,5-37,2** (von theoretisch 48).
+> Faktor 8 bzw. 5-6 auf die Feuerkraft dieser beiden Anlagen - **genau die Groesse, um die Befund A
+> (Verteidigung wird kostenlos) und Befund F (Bunkerbrecher holt sie zurueck) in Entscheidung 18
+> streiten. Weg 2 wirkt dort gegen Befund F.** Der Kampfausgang ist NICHT gemessen, nur die
+> Trefferzahl; die Verteidigungs-Zusammensetzung der Endgame-Zelle ist eine Setzung (fuer die
+> Trefferzahl folgenlos, fuer jede Verlustquote nicht).
+>
+> **DAS MESSGITTER VON 18 HAT KEINE ENDGAME-ZELLE.** Groesste Zelle ist `FLEET_LARGE` mit 6.332
+> Schiffen, das ausloesende Konto von 19 hat 993.604 - mehr als zwei Groessenordnungen dazwischen.
+> Die Eskalation ist dort nie gemessen worden.
+>
+> **Ebenfalls betroffen und nur benannt:** `MULTI_TARGET_POWER_CORRECTION` gilt ueber dieselbe
+> Menge auch fuer die beiden Anlagen - er treibt also auch ueber die VERTEIDIGUNGS-Macht die
+> Wellenstaerke im Raid.
 
 ---
 

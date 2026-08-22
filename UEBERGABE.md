@@ -65,6 +65,39 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 22.08.2026: REIHENFOLGE FUER 13/18/19 ENTSCHIEDEN - 18 ZUERST, DANN 19, DANN 13.**
+  Nutzerentscheidung, mit einer vorgeschalteten Messung begruendet statt mit einer Vermutung.
+  Protokoll `volley_scale_19.txt`, Werkzeug `probe_volley_scale_19.mjs` (neu). **Nichts gebaut.**
+  - **Warum 18 zuerst:** die 30-Tage-Simulation (Schritt 13) startet in allen drei Profilen bei
+    `defaultPlayerState()`, liegt also im Bereich "schwach" - und dort geht JEDER Eskalationskandidat
+    auf 99,6-100 % Flottenverlust (Befund H). **Abnahmekriterium 1 der Simulation ("kein Ereignis
+    ueber 70 % Flottenverlust") ist ausdruecklich auf den Raid gemuenzt.** Wer 13 vor 18 baut, misst
+    es gegen eine Raid-Fassung, die danach ersetzt wird. Kriterium 5 haengt zusaetzlich an
+    Entscheidung 3, die 18 ueber die Wellenzahl beruehrt.
+  - **Warum 13 zuletzt:** groesster Bau (V1 gefaelschte Uhr, V2 Wegwerf-Datenbank, 720 Schritte x
+    3 Profile) - und das einzige Werkzeug, mit dem sich die ausbaustandsabhaengige Untergrenze aus
+    Befund H gegen eine echte Entwicklungskurve kalibrieren laesst. **Die FORM der Untergrenze
+    gehoert zu 18, ihr WERT nach 13.**
+  - **NEUER CODE-BEFUND, der die Reihenfolge tragen musste: `MULTI_TARGET_VOLLEY_SHIPS` hat FUENF
+    Eintraege, nicht drei.** `sentinelkanone` und `ultimatekanone` sind VERTEIDIGUNGSANLAGEN, haben
+    einen `ZIELERFASSUNG_BASE`-Eintrag (0,35, die Salve ist also kein toter Code) und werden vom
+    Weg-2-Patch mitgetroffen. Die Aussage in `salven_19.txt` ("Verteidigungsanlagen bleiben
+    unberuehrt") gilt nur fuer die ZIEL-Seite.
+  - **Gemessen: die Kalibrierzellen von 18 sehen davon nichts** - kein Gegnertyp einer Welle
+    erreicht die Schwelle JE = 20.000 (groesster Typ: 9.861 bis 17.960 je nach Kandidat), auch nicht
+    in der letzten Phase des staerksten Kandidaten. **18 vor 19 ist damit sauber.**
+  - **ABER: unter Kandidat B liegt die Reserve nur noch bei 10 %** (17.960 von 20.000), unter A bei
+    Faktor 1,9. Wird B gewaehlt UND spaeter JE gesenkt, kehrt die Kopplung zurueck.
+  - **Am Endgame-Konto ist die Wirkung gross und liegt auf der VERTEIDIGUNGSSEITE:** Salven-Treffer
+    je Schuss Sentinel 2,0 -> 16,0 und Ultimate 6,0 -> bis 37,2, also Faktor 5-8. Das ist dieselbe
+    Groesse, um die Befund A und Befund F in Entscheidung 18 streiten - **Weg 2 wirkt dort gegen die
+    Bunkerbrecher-Welle.** Kampfausgang NICHT gemessen, nur die Trefferzahl.
+  - **Das Messgitter von 18 hat keine Endgame-Zelle** (groesste Zelle `FLEET_LARGE` = 6.332 Schiffe
+    gegen 993.604 im Anlassfall). Nachziehen erst nach der Kandidatenwahl.
+  - **Der kumulative Messbuild wurde vor Gebrauch geprueft** und reproduziert die Anker aus
+    `loot_curve.txt` auf -2,8 % bzw. -0,9 % (normiert auf die vernichtete Feindmacht; roh sahen
+    dieselben Zellen um +8,6 % bzw. -5,9 % daneben aus - die Falle vom 19.08.2026 reproduziert sich).
+
 - **NEU 21.08.2026: ENTSCHEIDUNG 19 - SALVENSCHIFFE IM ENDGAME. Gemessen, NICHT GEBAUT.**
   Protokoll `salven_19.txt`, Werkzeuge `run_salven_19.mjs` und `make_messbuild_salve.mjs` (neu).
   Anlass war ein echter Kampfbericht des Nutzers mit 993.604 Schiffen.
@@ -657,6 +690,17 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Der NAME einer Konstantenmenge kann ihren Inhalt falsch beschreiben - und dann liest man sie nie
+nach.** `MULTI_TARGET_VOLLEY_SHIPS` galt drei Sessions lang als "die drei Salvenschiffe" und hat
+fuenf Eintraege: `sentinelkanone` und `ultimatekanone` sind VERTEIDIGUNGSANLAGEN. Der Messkasten
+von Entscheidung 19 hielt deshalb fest, Verteidigungsanlagen blieben von Weg 2 unberuehrt - richtig
+fuer die ZIEL-Seite, falsch fuer die SCHUETZEN-Seite, und am Endgame-Konto ist der Unterschied
+Faktor 5-8 auf ihre Feuerkraft. **Vor jeder Aussage ueber eine Menge die Menge auszaehlen, nicht
+ihren Namen lesen** - `grep` auf den Konstantennamen kostet zehn Sekunden. Verwandt mit dem
+Salven-Befund aus 4.4: dort fehlte ein `ZIELERFASSUNG_BASE`-Eintrag und machte die Faehigkeit tot,
+hier ist er vorhanden und macht sie lebendig. **Beide Male entschied ein Eintrag in einer ZWEITEN
+Tabelle darueber, ob der Eintrag in der ersten ueberhaupt etwas tut.**
+
 **Ein Kriterium kann bei den Extremwerten trennen und trotzdem mit EINER Zahl unerfuellbar sein -
 wenn die BEZUGSKURVE nicht monoton ist.** Der Zielkorridor "60-100 % des Spielers" aus
 Entscheidung 13 trennt sauber (bei f=1 liegt der Bot bei 0,04-0,12, bei f=20 bei 0,39-1,38) und
@@ -958,6 +1002,11 @@ diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen
 Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
+
+**REIHENFOLGE STEHT SEIT DEM 22.08.2026: 18 -> 19 -> 13.** Begruendung und die Messung, die sie
+traegt, im Stand-Eintrag ganz oben und in `volley_scale_19.txt`. Der naechste Messschritt ist
+**Entscheidung 18, Schritt 2 (Kriterium festlegen)** - und der braucht zuerst Befund G, weil das
+Kriterienband ueber die Zelle "voll ohne Kampf-Boost" hinweg definiert werden muss.
 
 **VIER FRAGEN STEHEN BEIM NUTZER, ALLE ZU ENTSCHEIDUNG 18:**
 1. **Welcher Eskalations-Kandidat** - A (haerter, nicht verlierbar), C (Mittelweg) oder B
