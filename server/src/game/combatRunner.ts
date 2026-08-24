@@ -79,7 +79,7 @@ export interface CombatWorkerRequest {
 // Worker/Kern) - echte Gleichzeitigkeit wird jetzt schlicht in die waitQueue serialisiert statt
 // parallel gerechnet, bei der aktuellen STACK_AGGREGATE_THRESHOLD-Kampfzeit (~1,1s worst case,
 // siehe Punkt 114) kaum spuerbar.
-const POOL_SIZE = 1; // begrenzt gleichzeitig laufende Worker - ohne bei mehr gleichzeitigen
+const POOL_SIZE = 2; // begrenzt gleichzeitig laufende Worker - ohne bei mehr gleichzeitigen
 // Anfragen unbegrenzt viele Worker (und damit Speicher) zu erzeugen.
 
 interface PoolEntry {
