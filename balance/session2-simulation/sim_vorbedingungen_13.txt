@@ -1,0 +1,310 @@
+=== SCHRITT 13 - VORBEDINGUNGEN V1 (ZEITQUELLE), V2 (DATENBANK) UND NEU V3 ===
+Datum: 25.08.2026 (zweite Session dieses Tages)
+Werkzeug: probe_simclock_13.mjs (NEU)
+Gegenstand: Abschnitt 1b des Umsetzungsplans, "Technische Vorbedingungen"
+
+!!! KEIN MESSBUILD-PROTOKOLL. Diese Sonde laeuft absichtlich gegen den REPO-BUILD    !!!
+!!! (server/dist). Sie misst keine Balance-Zahl, sondern nur die Infrastruktur der    !!!
+!!! Simulation. Kein Ergebnis dieses Protokolls haengt an einer der neun ungebauten   !!!
+!!! Entscheidungen. NICHTS IST GEBAUT - es wurde keine Zeile Spielcode geaendert.     !!!
+
+Alles hier ist DETERMINISTISCH. Es wurden keine Serien gefahren und keine vorgetaeuscht
+(Werkzeug-Regel 4 vom 21.08.2026).
+
+Vorbereitung: cd server && npm install && npx tsc   (Messregel 1, der Worker laedt aus dist/)
+
+================================================================================
+0. REIHENFOLGE - WARUM V1 VOR V2 GEKLAERT WURDE
+================================================================================
+Nutzerfrage zu Beginn der Session. Entschieden: V1 zuerst. Vier Gruende, in der
+Reihenfolge ihres Gewichts:
+
+1. V2 hat ein dreifach erprobtes Muster (isolierte dist-Kopie + node_modules-Symlink in
+   run_income_level.mjs, run_income_baseline_v2.mjs, run_novice_bonus.mjs). V1 ist bisher
+   nur PUNKTUELL geloest - run_novice_bonus.mjs biegt Date.now um EINEN Aufruf herum um.
+   720 Schritte ueber den ganzen Zustandsapparat sind nachweislich nicht dasselbe.
+2. V1 entscheidet die Architektur (welche Treiberfunktion je Schritt laeuft, wie die Uhr
+   weiterdreht), V2 nur den Ablageort. V2 folgt aus V1, nicht umgekehrt.
+3. V1 hat eine Gabelung mit Folgen fuer die Sammelliste: Weg (b) griffe in actions.ts,
+   state.ts, raids.ts und missions.ts ein - genau die Dateien, die Block A bis D anfassen.
+   V2 hat keine solche Gabelung.
+4. V1 ist deterministisch und billig zu entscheiden.
+
+================================================================================
+1. V1 - CODE-VORPRUEFUNG: WIE VIELE ZEITQUELLEN GIBT ES WIRKLICH?
+================================================================================
+Abschnitt 1b zaehlt Date.now-Vorkommen und nennt Weg (a) "empfohlen", laesst aber offen,
+ob daneben noch andere Zeitquellen stehen. Ausgezaehlt statt geschaetzt (Fallen-Liste:
+"vor jeder Aussage ueber eine Menge die Menge auszaehlen"):
+
+  Date.now je Datei : actions.ts 19, state.ts 9, db.ts 9, groupOps.ts 9, raids.ts 8,
+                      missions.ts 4, events.ts 0, combat.ts 0, combatRunner.ts 0,
+                      combat.worker.ts 0, index.ts 0
+  new Date() OHNE Argument in server/src : 0 Treffer
+  performance.now / process.hrtime       : 0 Treffer
+  Date.now-Capture auf Modulebene        : 0 Treffer
+  new Date(x) MIT Argument               : 4, alle in data/economy.ts, alle bekommen ein
+                                           explizit durchgereichtes "now"
+
+BEFUND 1 - Date.now IST DIE EINZIGE ZEITQUELLE DES SERVERS. Weg (a) ist damit nicht nur
+"empfohlen", sondern vollstaendig: es gibt keinen zweiten Kanal, an dem die echte Uhr
+vorbeikaeme. Die im Plan geforderte Reihenfolge "setzen VOR dem ersten Import" ist
+eingehalten worden, ist wegen der fehlenden Modul-Captures aber nicht zwingend.
+
+================================================================================
+2. V1 - TRAEGT DIE GEFAELSCHTE UHR DURCH DIE WIRTSCHAFT?
+================================================================================
+Gefaelschte Uhr auf Di, 01.09.2026 12:00 UTC. defaultPlayerState(), Metallmine 10,
+Kristallmine 8, Solarkraftwerk 12. Gemessen wird der Ressourcenzuwachs aus
+runEconomyTick() gegen mineOutputPerHour().
+
+  mineOutputPerHour(metallmine) : 259.374,246 / h
+  Schritt 0 h : Zuwachs 0,000000        (Soll 0)
+  Schritt 1 h : Zuwachs 259.374,246     Abweichung 0,000000 %
+  Schritt 5 h : Zuwachs 1.296.871,230   Abweichung 0,000000 %
+  state.createdAt == gefaelschte Uhr : JA
+
+BEFUND 2 - DIE UHR TRAEGT EXAKT DURCH. Kein Rundungsrest, kein Rueckfall auf die echte
+Uhr, auch nicht bei deltaSec = 0. V1 ist ueber Weg (a) geloest.
+
+================================================================================
+3. V1 - WOCHENTAGE UND RAID-CHECKPOINTS
+================================================================================
+Abnahmekriterium 1 der Simulation ist ausdruecklich auf den Raid gemuenzt, Kriterium 4
+verlangt woertlich "die Simulation muss die Wochentage abbilden, nicht eine Tageschance".
+Beides haengt daran, dass berlinWeekday() und nextWeeklyCheckpoint() der gefaelschten Uhr
+folgen.
+
+  berlinWeekday() ueber sieben gefaelschte Tage : Di Mi Do Fr Sa So Mo  - korrekt
+  naechste drei Checkpoints (Nutzer ShadowEagle, RAID_SCHEDULE_BY_USERNAME):
+      2026-09-01T22:00Z (Mi)   2026-09-05T22:00Z (So)   2026-09-08T22:00Z (Mi)
+  Abstand 1->2 : 4,00 Tage (Mi->So); 2->3 : 3,00 Tage (So->Mi)
+  processRaidTimer() eine Stunde VOR dem Checkpoint : kein Raid
+  processRaidTimer() eine Minute NACH dem Checkpoint: Raid, 12 Wellen im Zeitplan
+
+BEFUND 3 - DIE WOCHENTAGSLOGIK FOLGT DER GEFAELSCHTEN UHR VOLLSTAENDIG, bis hin zum
+tatsaechlichen Raid-Spawn.
+
+BEFUND 3a, KORREKTUR AN EINER OFT WIEDERHOLTEN ANGABE (Messregel 16): die Checkpoints
+liegen auf 0:00 BERLINER ORTSZEIT, NICHT auf 0:00 UTC. Der Plan und die Uebergabe sagen
+an mehreren Stellen "Mi/So 0:00 UTC". Gemessen:
+      Sommerzeit (September) : 22:00Z
+      Winterzeit (November)  : 23:00Z
+Fuer die Haeufigkeit folgenlos (zweimal woechentlich bleibt zweimal woechentlich), fuer
+die Simulation nicht: beide Zeiten sind volle Stunden und werden von der Stundenaufloesung
+getroffen - aber die Umstellung faellt in jedes 30-Tage-Fenster, das den 25.10.2026
+enthaelt, und verschiebt den Checkpoint dann innerhalb des Laufs um eine Stunde. Beim
+Festlegen des Startdatums beruecksichtigen oder bewusst ein Fenster ohne Umstellung
+waehlen.
+
+================================================================================
+4. V1 - DER KAMPF-WORKER
+================================================================================
+Abschnitt 1b nennt als "bekannte Luecke" von Weg (a), dass der Worker in einem eigenen
+Thread laeuft und die gefaelschte Uhr nicht sieht, und verlangt, vor dem ersten Lauf zu
+pruefen, ob im Worker-Pfad ueberhaupt eine Zeitdifferenz gebildet wird.
+
+  Date.now in combat.ts / combatRunner.ts / combat.worker.ts : 0 / 0 / 0
+  Gegenprobe: runCombatInWorker() unter gefaelschter Uhr
+      Kampf gelaufen JA, 44 Runden, Ueberlebende A 325 / B 0, retreated=false
+
+BEFUND 4 - DIE LUECKE IST GEGENSTANDSLOS. Der Worker bildet nirgends eine Zeitdifferenz,
+der Kampf rechnet in Runden. Die Pruefung, die der Plan verlangt, ist damit erledigt.
+
+================================================================================
+5. V1 - DIE DOPPELROLLE VON Date.now IN tick(), EINE AUFLAGE
+================================================================================
+tick() (actions.ts) benutzt Date.now zweimal mit verschiedener Bedeutung: als SPIELUHR
+(now, state.lastUpdate) und als STOPPUHR (t0..t6, SLOW_TICK_PHASE_MS und
+SLOW_TICK_TOTAL_MS). Dasselbe Muster in heartbeat.ts (userTickStart, SLOW_USER_TICK_MS).
+
+BEFUND 5 - DIE GEFAELSCHTE UHR MUSS INNERHALB EINES SCHRITTS KONSTANT SEIN und darf nur
+ZWISCHEN den Schritten springen. Eine naheliegende Alternativfassung - bei jedem
+Date.now-Aufruf um ein festes Delta weiterzaehlen - erzeugt aus jeder Phasenmessung einen
+Stundenwert, flutet den Lauf mit "langsame Phase"-Warnungen und macht jede spaetere
+Performance-Aussage wertlos. Gegengeprueft: unter der schrittkonstanten Fassung bleibt die
+Uhr waehrend tick() unveraendert und state.lastUpdate trifft sie exakt.
+Nebenwirkung, bewusst hingenommen: die Drossel CROSS_USER_SWEEP_MIN_INTERVAL_MS in
+actions.ts und HEARTBEAT_MIN_INTERVAL_MS in heartbeat.ts haengen an derselben Uhr. Bei
+Stundenschritten laeuft jeder Sweep in jedem Schritt - gewollt.
+
+================================================================================
+6. V2 - WO LANDET DIE WEGWERF-DATENBANK WIRKLICH?
+================================================================================
+Die Uebergabe fuehrt V2 als "in der Praxis geloest, nur nicht im Plantext". Gegen den Code
+geprueft ist das nur zur Haelfte richtig.
+
+db.ts bildet seinen Pfad aus dem eigenen Verzeichnis:
+      __dirname/../data/game.db
+db.js liegt in der WURZEL des dist-Baums (tsconfig: rootDir src, outDir dist). Der
+Datenordner liegt damit NEBEN dem Build, nicht IN ihm.
+
+  Empirisch: dist-Kopie nach /tmp/v2check/mb  ->  Datenbank /tmp/v2check/data/game.db
+
+BEFUND 6 - DER PRODUKTIVE SPIELSTAND IST GESCHUETZT, DIE LAEUFE SIND ES NICHT. Wer den
+Build wie bisher direkt nach /tmp/mb_kum kopiert, bekommt /tmp/data/game.db - EIN Ordner,
+geteilt von JEDEM Messbuild unter /tmp (mb_kum, mb_w2, mb_k8, ...), und von keinem Skript
+aufgeraeumt: die rmSync-Aufrufe in make_messbuild_*.mjs treffen nur den Build-Ordner, nie
+den Datenordner daneben. Fuer die bisherigen Skripte folgenlos, weil sie PlayerState-Stubs
+bauen und state.js gar nicht laden. Fuer Schritt 13 nicht: 720 Schritte x 3 Profile
+brauchen einen garantiert leeren Startzustand, sonst wird ein Lauf vom vorherigen
+beeinflusst und ist nicht reproduzierbar.
+
+BEFUND 6a - DIE REPARATUR BRAUCHT KEINEN EINGRIFF IN db.ts. Es genuegt, den Build in einen
+EIGENEN Unterordner des Laufordners zu kopieren (<lauf>/dist statt <lauf>), dann landet die
+Datenbank unter <lauf>/data und verschwindet mit dem Laufordner. Der im Plan erwogene
+Env-Override fuer dbPath wird nicht gebraucht. In probe_simclock_13.mjs so umgesetzt und
+verifiziert.
+
+================================================================================
+7. BEFUND 7 - DER PROZESS ENDET NICHT VON SELBST
+================================================================================
+Nach dem letzten Schritt bleibt der Node-Prozess haengen: der Worker-Pool aus
+combatRunner.js haelt einen Thread am Leben, die better-sqlite3-Verbindung ein Handle. Der
+erste Sondenlauf lief deshalb in ein Zeitlimit, obwohl ALLE Teile bereits sauber
+durchgelaufen waren - das Protokoll war vollstaendig, nur der Prozess endete nicht.
+
+Das ist genau die Fehlerform aus der Fallen-Liste ("ein Fehlschlag sieht aus wie ein
+Defekt"): ein abgebrochener Lauf ist von einem haengenden nicht zu unterscheiden. Ein
+720-Schritt-Lauf muss am Ende ausdruecklich beenden. In der Sonde mit process.exit(0)
+geloest und im Skript kommentiert.
+
+================================================================================
+8. V3 - EIN DRITTER BLOCKER, DEN ABSCHNITT 1b NICHT NENNT
+================================================================================
+Abschnitt 1b nennt V1 und V2. Gegen den Code geprueft gibt es einen dritten, und er ist
+groesser als beide.
+
+BEFUND 8 - DER KUMULATIVE MESSBUILD VERDRAHTET BLOCK A SCHRITT 2 NICHT. Er sagt das selbst
+in seinem Kopf: "Hier ist nur die MESSFLAECHE nachgebaut ... Die Verdrahtung in
+missions.ts/groupOps.ts gehoert in die Bauanleitung, nicht in den Messbuild - beide
+Skripte bauen die Missionsschleife selbst nach." Nachgezaehlt in /tmp/mb_kum
+(--rf=4 --evk=0.20 --evm=0.08):
+
+  game/loot.js vorhanden                          : ja
+  Verweise auf loot.js/LOOT_CURVE in missions.js  : 0
+  Verweise auf loot.js/LOOT_CURVE in groupOps.js  : 0
+  fleetSizeRewardMultiplier in missions.js        : 3 (unveraendert aktiv)
+  fleetSizeRewardMultiplier in groupOps.js        : 3 (unveraendert aktiv)
+  Wrack-Bergung in missions.js                    : 0 Treffer
+
+Die bisherigen Messskripte kommen damit zurecht, weil sie die Missionsschleife SELBST
+nachbauen. Die 30-Tage-Simulation darf das ausdruecklich nicht - Abschnitt 1b verlangt
+woertlich "echte Spiel-Funktionen verwenden, keine nachgebaute Wirtschaft: runEconomyTick(),
+startBuildingConstruction(), startResearch(), startBuild(), processMissions()". Sie laeuft
+also durch missions.js hindurch und wuerde ohne Verdrahtung die ALTE Belohnungsmechanik
+messen.
+
+IST-ZUSTAND DER NEUN PAKETE, GEGEN DEN CODE GEPRUEFT (Nutzervorgabe: vor jeder Aussage
+ueber den Ist-Zustand zuerst im Code nachsehen):
+
+  Block A Schritt 2  game/loot.ts fehlt, fleetSizeRewardMultiplier aktiv        NICHT GEBAUT
+  Block B            kein ADMIRAL_DEFEAT_LOSS_SHARE                             NICHT GEBAUT
+  Entscheidung 3     kein RAID_ALLY_POWER_WEIGHT, RAID_WAVE_WIN 10/6/2          NICHT GEBAUT
+  Entscheidung 16    kein Klassen-RapidFire, kein abgesenkter Ausweichbonus     NICHT GEBAUT
+  Entscheidung 12    NOVICE_BONUS_MULTIPLIER = 3, Fenster 7 Tage                NICHT GEBAUT
+  Entscheidung 7.2/3 stationBuildings unveraendert                              NICHT GEBAUT
+  Entscheidung 13.1  kein BOT_VIRTUAL_ACTIVITY                                  NICHT GEBAUT
+  Entscheidung 18    RAID_WAVE_COUNT 12 (planmaessig), keine Eskalation,
+                     kein viertes Wellenprofil                                  NICHT GEBAUT
+  Entscheidung 19    kein SALVE_JE/DECKEL; maxCount 150/90/30 und
+                     MULTI_TARGET_POWER_CORRECTION = 8 sind planmaessig          NICHT GEBAUT
+  R16                keine Gleichzeitigkeitssperre in groupOps.ts               NICHT GEBAUT
+
+Bestaetigt nebenbei: Imperator maxCount ist 6, nicht 2 - die alte README-Zahl ist auch hier
+falsch, wie in der Fallen-Liste vermerkt.
+
+ZUORDNUNG DER PAKETE AUF DIE SECHS ABNAHMEKRITERIEN (Abschnitt 1b):
+
+  K1  kein Ereignis ueber 70 % Flottenverlust   -> Entscheidung 18 (Eskalation +
+                                                    Bunkerbrecher). Ohne sie misst K1 eine
+                                                    Raid-Fassung, die ersetzt wird - genau
+                                                    der Grund, aus dem 18 vor 13 gezogen
+                                                    wurde. Entscheidung 16 ist bereits im
+                                                    kum-Build.
+  K2  Leerlauf                                  -> Entscheidung 9.2, Block D, noch nicht
+  K3  Ressourcenstau                               entschieden. Schritt 13 misst hier
+                                                    planmaessig den Ist-Zustand und liefert
+                                                    die Kurve, gegen die Block D kalibriert.
+  K4  jede Woche ein neuer Inhalt               -> Entscheidung 13.1 (f) fuer das
+                                                    Bot-Wachstum; Entscheidung 5 ist gebaut.
+  K5  keine Quelle ueber 50 % in Woche 1        -> Entscheidung 3 (der Raid IST die groesste
+                                                    Quelle), Block A Schritt 2 VERDRAHTET
+                                                    (Solo-Einnahme), Entscheidung 12
+                                                    (Mining-Anteil im Nenner).
+  K6  kein Plateau ueber 5 Tage                 -> Entscheidungen 7 und 9.4.
+
+VORSCHLAG FUER DEN UMFANG DES SIMULATIONS-MESSBUILDS - NUTZERENTSCHEIDUNG:
+
+  ZWINGEND, weil ein Abnahmekriterium sonst gegen einen Zustand misst, den es nicht geben
+  wird:
+    (a) Block A Schritt 2, diesmal VERDRAHTET in missions.js und groupOps.js
+        (Bauanleitung im Messkasten bei Entscheidung 2, LOOT_CURVE_* aus data/economy.ts
+        benutzen, keine zweite Kurve)
+    (b) Entscheidung 18: ESC = 1 / 1,20 / 1,60, Bomberanteil 0,5, viertes Wellenprofil
+        bunkerbrecher
+    (c) Entscheidung 3, Variante 6
+    (d) Entscheidung 12: NOVICE_BONUS_ADD = 2,0, Fenster 14 Tage an NEWCOMER_GRACE_MS
+        gekoppelt (Deklarationsreihenfolge in economy.ts beachten, Zeile 30 gegen 397)
+    (e) Entscheidung 13.1: virtueller Bot-Ertrag, k = 4,0, Verlust 0,036, f = 12,
+        ZEITBASIERT ueber deltaSec verbucht
+    Entscheidung 16 ist bereits ueber --rf=4 --evk=0.20 --evm=0.08 enthalten.
+
+  BEGRUENDET WEGLASSEN:
+    (f) Entscheidung 19 (Weg 2). Deterministisch, keine Serie noetig: Weg 2 wirkt erst,
+        wenn ein Gegnertyp die Schwelle JE = 20.000 Einheiten reisst. In den
+        Kalibrierzellen von Entscheidung 18 liegt der groesste Feindstapel bei 14.757, und
+        das sind ENTWICKELTE Konten. Ein Konto, das bei defaultPlayerState() startet,
+        erreicht das in 30 Tagen nicht. Weg 2 ist in diesem Lauf beweisbar wirkungslos.
+        Im Kopf des Builds vermerken, damit es nicht wie eine Auslassung aussieht.
+    (g) R16 und die Abschaltung der Piratenbasen-Offensive. R16 begrenzt gleichzeitige
+        Gruppen-Operationen; ob das ueberhaupt zum Tragen kommt, haengt daran, ob die
+        Simulation Gruppen-Operationen fliegt (siehe offene Frage unten). Die Offensive
+        loest laut Entscheidung 17 faktisch nie aus.
+
+  OFFEN, WEIL DIE ANTWORT AM ZUSCHNITT DER SIMULATION HAENGT:
+    (h) Block B (Piratenadmiral P10). Die Sektoren haben keine Machtschranke, P10 ist aber
+        "Nur Multiplayer" - ob ein 30-Tage-Konto ihn fliegt, entscheidet sich mit der Frage,
+        ob die Simulation Mitspieler abbildet.
+    (i) Entscheidung 7.2/7.3 (Allianz-Station). Die Station setzt eine Allianz voraus und
+        kostet im Vollausbau 558,20 Mrd gegen 46,0 Mrd Wocheneinnahme in Woche 1. Sie
+        duerfte ausserhalb des Fensters liegen - vor dem Bau deterministisch nachrechnen
+        statt anzunehmen.
+
+================================================================================
+9. OFFENER PUNKT, DER NICHT ZU V1/V2/V3 GEHOERT, ABER DEN ZUSCHNITT BETRIFFT
+================================================================================
+BEFUND 9 - BOTS HANDELN JE HEARTBEAT, NICHT JE ZEIT. runGlobalHeartbeat() (heartbeat.ts,
+exportiert) ist der einzige Treiber, der einen kompletten Spielschritt fuer ALLE Nutzer
+ausfuehrt: loadPlayerState, tick(), processPirateAttacks, processMissions,
+processRaidTimer, runBotTurn fuer Bots, savePlayerState. Als Schritt-Treiber der Simulation
+ist er der naechste am echten Spiel.
+
+Aber: runBotTurn() laeuft EINMAL je Heartbeat, gedrosselt nur durch
+HEARTBEAT_MIN_INTERVAL_MS = 60 s gegen HEARTBEAT_INTERVAL_MS = 2 min - im Echtbetrieb also
+30 bis 60 Bau-Entscheidungsschritte je Stunde. Bei Stundenschritten bekaeme ein Bot EINEN.
+Das ist genau die Groesse, an der Kriterium 4 und die Gegenpruefung von f haengen.
+Entscheidung 13.3 hat dieselbe Aufruf-Abhaengigkeit fuer die PIRATENBASEN beseitigt
+(nextEconomyTurn auf PirateBaseState), die KI-Mitspieler haben bis heute kein Raster.
+Die Bau-Vorgabe aus 13.1 (virtuellen Ertrag ueber deltaSec verbuchen) macht das EINKOMMEN
+schrittgroessenunabhaengig, die BAU-ENTSCHEIDUNGEN bleiben es nicht.
+
+Drei Wege, keiner davon hier entschieden:
+  - je Simulationsschritt 30 Bot-Zuege fahren (teuer, aber nahe am Echtbetrieb),
+  - die Drossel im Messbuild auf die Schrittweite setzen (billig, verschiebt aber genau die
+    Groesse, die gemessen werden soll),
+  - den Befund als bekannte Untergrenze protokollieren und die Bot-Kurve entsprechend lesen.
+Gehoert vor den ersten Lauf entschieden, nicht danach.
+
+================================================================================
+10. ERGEBNIS
+================================================================================
+V1 IST GEKLAERT, WEG (a), MIT EINER AUFLAGE (schrittkonstante Uhr, Befund 5). Die im Plan
+genannte Worker-Luecke ist geprueft und gegenstandslos.
+V2 IST GEKLAERT, OHNE EINGRIFF IN db.ts, mit einer Korrektur am bisherigen Muster
+(Build in einen eigenen Unterordner, Befund 6a).
+V3 IST NEU UND OFFEN: der Simulations-Messbuild muss deutlich weiter gehen als jeder
+bisherige. Der Umfang ist eine Nutzerentscheidung, Vorschlag in Abschnitt 8.
+
+NICHTS IST GEBAUT. Geaendert wurde ausschliesslich Dokumentation, neu angelegt wurde
+ausschliesslich das Messwerkzeug probe_simclock_13.mjs.

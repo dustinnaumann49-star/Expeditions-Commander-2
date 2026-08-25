@@ -108,3 +108,48 @@ Plausibilitaet ansehen, statt der Zahl zu glauben.
 
 Zusaetzlicher Messbuild-Ordner: `/tmp/mb_w2d16` (JE 20.000 / DECKEL 16) - die entschiedene
 Fassung.
+
+## Neu (zweite Session am 25.08.2026): `probe_simclock_13.mjs`
+
+Sonde zu den Vorbedingungen V1 (Zeitquelle), V2 (Datenbank) und dem neu gefundenen V3 aus
+Schritt 13. Protokoll `sim_vorbedingungen_13.txt`.
+
+    cd server && npm install && npx tsc
+    cd balance/session2-simulation
+    node probe_simclock_13.mjs
+    node probe_simclock_13.mjs --run=/tmp/sim13-lauf1 --behalten
+
+**Diese Sonde ist die einzige in diesem Ordner, die ABSICHTLICH gegen den REPO-BUILD laeuft
+und deren Ergebnisse KEINE Messbuild-Werte sind.** Sie misst keine Balance-Zahl, sondern die
+Infrastruktur: ob die gefaelschte Uhr durch Wirtschaft, Wochentagslogik und Kampf-Worker
+traegt und wo die Wegwerf-Datenbank landet. `--dist=` nimmt trotzdem einen Messbuild
+entgegen, falls die Frage einmal gegen einen gepatchten Baum zu stellen ist.
+
+Fuenf Teile, alle deterministisch, keine Serien:
+
+| Teil | Frage |
+|---|---|
+| 1 | Wo legt eine dist-Kopie ihre Datenbank ab? |
+| 2 | Traegt `Date.now`-Faelschung exakt durch `runEconomyTick()`? (0 h / 1 h / 5 h) |
+| 3 | Folgen `berlinWeekday()`, `nextWeeklyCheckpoint()` und `processRaidTimer()` der Faelschung? |
+| 4 | Laeuft `runCombatInWorker()` unter der Faelschung? |
+| 5 | Bleibt die Uhr innerhalb eines Schritts konstant? |
+
+**Drei Dinge, die beim Bau der Simulation daraus folgen:**
+
+1. **Die gefaelschte Uhr muss INNERHALB eines Schritts konstant sein.** `tick()` benutzt
+   `Date.now` zugleich als Spieluhr und als Stoppuhr (`t0..t6`, `SLOW_TICK_*`), `heartbeat.ts`
+   ebenso (`SLOW_USER_TICK_MS`). Eine bei jedem Aufruf weiterzaehlende Faelschung erzeugt dort
+   Stundenwerte und flutet den Lauf mit Warnungen.
+2. **Der Build gehoert in einen eigenen Unterordner des Laufordners.** `db.js` bildet seinen
+   Pfad als `__dirname/../data/game.db` und liegt in der Wurzel des dist-Baums - eine Kopie
+   direkt nach `/tmp/mb_kum` legt die Datenbank nach `/tmp/data/game.db`, geteilt von jedem
+   weiteren Messbuild unter `/tmp` und von keinem `rmSync` erfasst. Mit `<lauf>/dist` landet sie
+   unter `<lauf>/data` und verschwindet mit dem Lauf.
+3. **Der Prozess endet nicht von selbst.** Der Worker-Pool aus `combatRunner.js` haelt einen
+   Thread, `better-sqlite3` ein Handle. Der erste Sondenlauf lief deshalb in ein Zeitlimit,
+   obwohl alle fuenf Teile bereits sauber durchgelaufen waren - ein abgebrochener Lauf ist von
+   einem haengenden nicht zu unterscheiden. `process.exit(0)` am Ende ist Pflicht, nicht Kosmetik.
+
+Kein Messbuild-Ordner noetig; der Laufordner wird nach dem Lauf geloescht (`--behalten` haelt
+ihn).
