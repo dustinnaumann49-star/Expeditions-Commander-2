@@ -1108,10 +1108,42 @@ in `fireShots()`.
 "Weg 2 (JE = 20.000, DECKEL = 8) in Kombination mit Weg 1" gesetzt. Die Empfehlung weicht in
 zwei Punkten ab (DECKEL 16 statt 8; ohne Weg 1), allein wegen der neuen Zielrichtung.
 
-**VOR DEM EINBAU VON WEG 2 NOCH ZU PRUEFEN:** Weg 2 trifft ueber `MULTI_TARGET_VOLLEY_SHIPS`
-auch `sentinelkanone`/`ultimatekanone`. Im Raid stehen diesen sehr grosse Feindstapel gegenueber,
-dort wird DECKEL 16 binden - das ist der einzige Punkt, an dem Weg 2 in Entscheidung 18
-(kalibriert) und 16 hineinreicht. Nicht gemessen.
+**ENTSCHEIDUNG 19 IST AM 25.08.2026 ENTSCHIEDEN.** Der Nutzer hat beide Punkte der Empfehlung
+bestaetigt: **DECKEL 16 statt 8 - JA. Verzicht auf Weg 1 - JA.** maxCount bleibt bei 150/90/30,
+Weg 2 wird mit JE = 20.000 und DECKEL = 16 gebaut. `MULTI_TARGET_POWER_CORRECTION` bleibt bei 8.
+"Entschieden" heisst wie immer NICHT gebaut - Entscheidung 19 gehoert ab jetzt auf die
+Sammelliste.
+
+~~**VOR DEM EINBAU VON WEG 2 NOCH ZU PRUEFEN:** Weg 2 trifft auch
+`sentinelkanone`/`ultimatekanone`.~~ **AM 25.08.2026 GEMESSEN UND GEKLAERT**, Protokoll
+`balance/session2-simulation/volley_def_19.txt`. Nutzerhinweis war richtig, die beiden Anlagen
+stehen ebenfalls in `MULTI_TARGET_VOLLEY_SHIPS`. Ergebnis, dreifach abgesichert:
+- **Die Kalibrierung von Entscheidung 18 ist NICHT betroffen.** In der Kalibrierzelle bleibt der
+  groesste Feindstapel auch in der haertesten Eskalationsphase bei 14.757 und damit unter der
+  20.000-Schwelle: `ceil(14.757 / 20.000) = 1`. Das gilt fuer JEDEN Deckelwert, ist Arithmetik
+  und braucht keine Serien. Die Messung bestaetigt es (12,0 gegen 12,0 gewonnene Wellen).
+- **Die Spezialverteidigung hat dasselbe Problem wie die Schiffe, und Weg 2 loest es im selben
+  Mass:** Endgame-Schadensanteil 1,08 -> 4,39 %, Faktor 4,1 gegen Faktor 4,0 bei den Schiffen.
+  Kein separater Regler und keine Ausnahme noetig.
+- **Der Raid-Ausgang verschiebt sich nicht.** Der hoehere Beitrag der beiden Anlagen ERSETZT
+  Schaden, den sonst andere Einheiten getragen haetten. Die offene Frage aus Entscheidung 16
+  wird dadurch nicht verschaerft.
+
+**LETZTER UNGEMESSENER PUNKT AN ENTSCHEIDUNG 19:** ob Weg 2 die Endgame-MISSIONEN merklich
+leichter macht. Der Gesamtschaden der eigenen Seite steigt um rund 9 % - wenig, aber unbelegt.
+Werkzeug dafuer liegt bereit (`run_volley_power_19.mjs aequiv`, Endgame-Zelle). Kein Hindernis
+fuer den Einbau, aber vor der 30-Tage-Simulation (Schritt 13) nachzuholen, weil dort die
+Ertragsseite haengt.
+
+**DIE SAMMELLISTE UMFASST JETZT NEUN PAKETE** (vorher acht): zusaetzlich Entscheidung 19
+(Weg 2, JE = 20.000, DECKEL = 16, KEINE maxCount-Aenderung, KEINE Aenderung an
+`MULTI_TARGET_POWER_CORRECTION`). Messregel 8 dazu: Weg 2 hat **keinen** Client-Spiegel, er
+sitzt allein in `fireShots()`.
+
+**NAECHSTER SCHRITT: SCHRITT 13, DIE 30-TAGE-FORTSCHRITTSSIMULATION.** Die Reihenfolge
+18 -> 19 -> 13 ist damit abgearbeitet bis auf 13. Danach laesst sich auch Befund H aus
+Entscheidung 18 (Wert der ausbaustandsabhaengigen Untergrenze) endlich kalibrieren - die FORM
+gehoert zu 18, der WERT braucht die Entwicklungskurve aus 13.
 
 **ZAHL 2 - `MULTI_TARGET_POWER_CORRECTION` - IST ERLEDIGT.** Protokoll
 `balance/session2-simulation/volley_power_19.txt`, Messkasten vom 25.08.2026 bei Entscheidung 19.

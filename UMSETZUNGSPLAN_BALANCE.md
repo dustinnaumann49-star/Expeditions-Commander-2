@@ -3574,7 +3574,7 @@ Reihenfolge deshalb: erst die Haerte, dann Entscheidung 3 gegenpruefen.
 
 ---
 
-### Entscheidung 19 - Salvenschiffe im Endgame: GEMESSEN, NICHT GEBAUT
+### Entscheidung 19 - Salvenschiffe im Endgame: ENTSCHIEDEN 25.08.2026, NICHT GEBAUT
 
 **Bezug:** Nutzerbeobachtung 21.08.2026 mit echtem Kampfbericht (Endgame-Flotte, 993.604 Schiffe).
 "Im spaeten Spielstand sind Salvenschiffe nutzlos - sie machen so wenig Schaden im Gegensatz zu
@@ -3856,12 +3856,52 @@ normalen Schiffen, die es in Massen gibt."
 > Nutzervorgabe, die das Ziel umgedreht hat - unter der alten Zielsetzung waren 8 und die
 > Kombination folgerichtig.
 >
-> **NICHT GEMESSEN, VOR DEM EINBAU NACHZUHOLEN:** (a) ob Weg 2 die Endgame-Missionen merklich
-> leichter macht (Gesamtschaden der eigenen Seite steigt um rund 9 % - wenig, aber unbelegt);
-> (b) die Wirkung von Weg 2 auf `sentinelkanone`/`ultimatekanone`, die ueber
-> `MULTI_TARGET_VOLLEY_SHIPS` mitgetroffen werden - im Raid stehen ihnen sehr grosse Stapel
-> gegenueber, dort wird DECKEL 16 binden. Das ist der einzige Punkt, an dem Weg 2 ueber
-> Entscheidung 19 hinaus in Entscheidung 18 und 16 hineinreicht.
+> **NICHT GEMESSEN, VOR DEM EINBAU NACHZUHOLEN:** ob Weg 2 die Endgame-MISSIONEN merklich
+> leichter macht (Gesamtschaden der eigenen Seite steigt um rund 9 % - wenig, aber unbelegt).
+> ~~(b) die Wirkung von Weg 2 auf `sentinelkanone`/`ultimatekanone`~~ **AM 25.08.2026 GEMESSEN,
+> siehe Messkasten unten.**
+
+> **MESSKASTEN 25.08.2026 (dritter am selben Tag) - DIE SPEZIALVERTEIDIGUNG IST GEKLAERT.**
+> Protokoll `balance/session2-simulation/volley_def_19.txt`, Werkzeug `run_volley_def_19.mjs`
+> (neu). Anlass: Nutzerhinweis "stimmt, die Spezialverteidigung gibt es ja auch noch".
+> `sentinelkanone`/`ultimatekanone` stehen ebenfalls in `MULTI_TARGET_VOLLEY_SHIPS`
+> (`combatConstants.ts` Z. 527). Raid gefahren MIT der Eskalation aus Entscheidung 18
+> (ESC = 1 / 1,20 / 1,60, Bomberanteil 0,5) und `DEFENSE_LARGE` wie in `run_raid.mjs`.
+>
+> **BEFUND 1 (TRAGEND), DETERMINISTISCH - DIE KALIBRIERUNG VON 18 IST NICHT BETROFFEN.**
+> Groesster Feindstapel je Welle, mit dem Erwartungswert von `RAID_WAVE_ROLL`:
+>
+> | Zelle | ESC 1,0 | ESC 1,6 | Weg 2 bindet? |
+> |---|---|---|---|
+> | E18-Kalibrierzelle (6.332 Schiffe) | 9.223 | **14.757** | **NEIN** |
+> | 99.603 Schiffe | 226.681 | 362.684 | JA |
+> | 993.597 Schiffe | 2.262.045 | 3.619.273 | JA |
+>
+> In der Kalibrierzelle bleibt der groesste Stapel auch in der HAERTESTEN Phase unter der
+> 20.000-Schwelle: `ceil(14.757 / 20.000) = 1`, Weg 2 verhaelt sich dort exakt wie der
+> Ist-Zustand - **fuer jeden Deckelwert**, ohne Serien. Die Schwelle wird erst beim rund
+> Sechsfachen der Kalibrierzelle erreicht.
+>
+> **BEFUND 2 - MESSUNG BESTAETIGT DAS** (je 2 Scheiben zu 5 Raids). E18-Zelle mit/ohne Weg 2:
+> gewonnene Wellen 12,0 gegen 12,0, Verteidigungsverlust 35,5 gegen 32,7 %, Schadensanteil der
+> beiden Anlagen 38,5 gegen 38,6 % - kein Unterschied ueber die Streuung hinaus.
+>
+> **BEFUND 3 - DIE SPEZIALVERTEIDIGUNG HAT DASSELBE PROBLEM UND WEG 2 LOEST ES IM SELBEN MASS.**
+> Ihr Schadensanteil faellt im Ist-Zustand von 38,5 % (Kalibrierstand) ueber 6,1 % auf
+> **1,08 %** im Endgame - dieselbe Kurve wie bei den Schiffen. Mit Weg 2: **4,39 %, Faktor
+> 4,1** - praktisch identisch zum Faktor 4,0 bei den Schiffen. **Es ist kein separater Regler
+> und keine Ausnahme fuer die Verteidigungsanlagen noetig.**
+>
+> **BEFUND 4 - DER RAID-AUSGANG VERSCHIEBT SICH NICHT.** Gewonnene Wellen, Verteidigungs- und
+> Flottenverlust liegen in allen drei Zellen mit und ohne Weg 2 aufeinander (Endgame:
+> Verteidigungsverlust 92,4 gegen 91,3 %). Der hoehere Beitrag der beiden Anlagen ERSETZT
+> Schaden, den sonst andere Einheiten getragen haetten, statt sich obendrauf zu addieren. Die
+> offene Frage aus Entscheidung 16 wird durch Weg 2 also nicht verschaerft.
+>
+> **NEBENBEFUND, GEGENPROBE:** der Verteidigungsverlust in der E18-Zelle liegt bei 32-36 % und
+> reproduziert damit die Uebergabe-Angabe, wonach die Bunkerbrecher-Welle aus 18 den
+> Klassen-RapidFire-Effekt von 0,0 % auf "rund 34 %" entschaerft. Der kumulative Messbuild
+> verhaelt sich wie vorgesehen.
 
 ---
 
