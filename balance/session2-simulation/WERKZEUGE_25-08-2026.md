@@ -81,3 +81,30 @@ Umgebungsvariablen: `FAKTOREN` (Vervielfachung des Salven-Bestands, Weg 1), `ANT
 
 Zusaetzliche Messbuild-Ordner an diesem Tag: `/tmp/mb_w2` (JE 20.000 / DECKEL 8),
 `/tmp/mb_w2d16` (20.000 / 16), `/tmp/mb_w2j10` (10.000 / 8) - alle ausserhalb des Repos.
+
+## Neu (zweiter Nachtrag am selben Tag): `run_volley_def_19.mjs`
+
+Prueft die Wirkung von Weg 2 auf `sentinelkanone`/`ultimatekanone` im Raid.
+
+    MESSBUILD=/tmp/mb_kum   ESC=1,1.20,1.60 BUNKER=0.5 node run_volley_def_19.mjs 5
+    MESSBUILD=/tmp/mb_w2d16 ESC=1,1.20,1.60 BUNKER=0.5 node run_volley_def_19.mjs 5
+
+Zwei Teile. Teil 1 rechnet DETERMINISTISCH aus, ob die Feindstapel der Angriffswellen die
+JE-Schwelle ueberhaupt erreichen - das entscheidet die Frage "ist Entscheidung 18 betroffen"
+ohne eine einzige Serie. Teil 2 faehrt den Raid und weist gewonnene Wellen, Verteidigungs- und
+Flottenverlust sowie den Schadensanteil der beiden Anlagen aus.
+
+`ESC`/`BUNKER`/`WAVES` haben dieselbe Bedeutung wie in `run_raid.mjs`, `DEFENSE_LARGE` ist
+identisch uebernommen, damit die Zahlen mit `raid_hardness_18.txt` vergleichbar bleiben.
+
+**Falle, die hier zugeschnappt ist:** `RAID_WAVE_ROLL` ist `[1.2, 1.7, [2.3, 2.5]]` - der dritte
+Eintrag ist eine SPANNE, kein Wert. Ein naiver Mittelwert `(a+b+c)/3` ergibt `NaN`, und
+`generateFallbackFleet(NaN)` liefert eine LEERE Flotte statt eines Fehlers. Die erste Fassung
+meldete deshalb "groesster Stapel 0, Weg 2 bindet NEIN" fuer ALLE Zellen - eine Antwort, die
+zufaellig plausibel aussah und in die falsche Richtung beruhigt haette. Aufgefallen ist es nur,
+weil auch die Endgame-Zelle mit 470 Mrd Wellenmacht 0 Einheiten auswies. Wo eine Konstante
+gemischte Typen enthaelt, den Erwartungswert explizit ausrechnen und das Ergebnis auf
+Plausibilitaet ansehen, statt der Zahl zu glauben.
+
+Zusaetzlicher Messbuild-Ordner: `/tmp/mb_w2d16` (JE 20.000 / DECKEL 16) - die entschiedene
+Fassung.

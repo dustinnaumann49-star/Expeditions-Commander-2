@@ -1,0 +1,110 @@
+================================================================================
+ENTSCHEIDUNG 19 - WEG 2 UND DIE BEIDEN SALVEN-VERTEIDIGUNGSANLAGEN
+Messprotokoll vom 25.08.2026 (dritter Block des Tages)
+================================================================================
+
+!!! ALLE ZAHLEN IN DIESEM PROTOKOLL SIND MESSBUILD-WERTE, KEIN REPO-STAND. !!!
+
+ANLASS
+------
+Nutzerhinweis 25.08.2026: "stimmt, die Spezialverteidigung gibt es ja auch noch."
+`sentinelkanone` und `ultimatekanone` stehen ebenfalls in `MULTI_TARGET_VOLLEY_SHIPS`
+(`combatConstants.ts` Z. 527). Weg 2 wirkt deshalb auch auf sie - und zwar im RAID, wo ihnen
+die groessten Feindstapel des ganzen Spiels gegenueberstehen. Das war der letzte offene Punkt
+vor der Freigabe von Entscheidung 19 und der einzige, an dem sie in Entscheidung 18
+(kalibrierte Eskalation) und Entscheidung 16 (Verteidigung im Raid) hineinreicht.
+
+Messgrundlage
+-------------
+  node make_messbuild_kum.mjs   /tmp/mb_kum   --rf=4 --evk=0.20 --evm=0.08
+  node make_messbuild_salve.mjs /tmp/mb_kum   /tmp/mb_w2d16 --je=20000 --deckel=16
+  MESSBUILD=... ESC=1,1.20,1.60 BUNKER=0.5 node run_volley_def_19.mjs 5
+
+Der Raid ist MIT der Eskalation aus Entscheidung 18 gefahren (ESC = 1 / 1,20 / 1,60,
+Bomberanteil 0,5 in der letzten Phase), weil das der Zustand nach dem Neustart ist. Ohne
+ESC/BUNKER wuerde man eine Welt messen, die es dann nicht mehr gibt. `DEFENSE_LARGE` ist
+identisch zu `run_raid.mjs`, damit die Zahlen mit `raid_hardness_18.txt` vergleichbar bleiben.
+
+--------------------------------------------------------------------------------
+FRAGE 1 - BINDET WEG 2 IN DER KALIBRIERZELLE VON ENTSCHEIDUNG 18? (DETERMINISTISCH)
+--------------------------------------------------------------------------------
+Weg 2 gibt Treffer je Typ = min(DECKEL, ceil(Einheiten_dieses_Typs / 20.000)). Ob er bindet,
+haengt allein an der groessten Stapelgroesse der Angriffswelle. Das ist Arithmetik, keine
+Messung - hier ohne Serien ausgerechnet, mit dem Erwartungswert von RAID_WAVE_ROLL
+(1,2 / 1,7 / 2,3-2,5 bei 50/30/20) und beiden Eskalationsphasen:
+
+  Zelle                  ESC   Wellenmacht   NPC gesamt   groesster Stapel   Weg 2 bindet?
+  E18-Zelle (6.332)      1,0      3,05 Mrd       13.456              9.223       NEIN
+  E18-Zelle (6.332)      1,6      4,88 Mrd       21.530             14.757       NEIN
+  0.1      (99.603)      1,0     75,04 Mrd      330.725            226.681        JA
+  0.1      (99.603)      1,6    120,06 Mrd      529.156            362.684        JA
+  1.0     (993.597)      1,0    748,82 Mrd    3.300.321          2.262.045        JA
+  1.0     (993.597)      1,6  1.198,11 Mrd    5.280.514          3.619.273        JA
+
+BEFUND 1 (TRAGEND) - DIE KALIBRIERUNG VON ENTSCHEIDUNG 18 IST NICHT BETROFFEN.
+In der Kalibrierzelle bleibt der groesste Feindstapel auch in der HAERTESTEN Phase mit 14.757
+unter der 20.000-Schwelle. `ceil(14.757 / 20.000) = 1` - Weg 2 verhaelt sich dort exakt wie der
+Ist-Zustand, unabhaengig vom Deckel. Das gilt fuer JEDEN Deckelwert und braucht keine Serien.
+Die Eskalation ESC = 1 / 1,20 / 1,60 und der Bomberanteil 0,5 bleiben gueltig.
+
+Zur Einordnung: die Schwelle wird erst bei einer Wellenmacht von rund 4,5 Mrd erreicht, also
+etwa beim Sechsfachen der Kalibrierzelle. Zwischen dem Kalibrierstand und dem ersten Stand, an
+dem Weg 2 bindet, liegt rund eine Groessenordnung Flottengroesse.
+
+--------------------------------------------------------------------------------
+FRAGE 2 - RAID-AUSGANG, MIT UND OHNE WEG 2 (je 2 Scheiben zu 5 Raids)
+--------------------------------------------------------------------------------
+  Zelle        Weg 2   gew. Wellen   Verteid.-Verlust   Flotten-Verlust   Schadensanteil
+                       (von 12)                                           Salven-Verteidigung
+  E18-Zelle    AUS     12,0 / 12,0     35,3 / 35,7 %     37,0 / 39,8 %      38,45 / 38,58 %
+  E18-Zelle    16      12,0 / 12,0     33,3 / 32,0 %     30,8 / 36,1 %      38,17 / 39,11 %
+  0.1          AUS     11,6 / 11,4     83,1 / 80,4 %     70,6 / 67,3 %       6,02 /  6,20 %
+  0.1          16      11,6 / 11,4     80,7 / 87,2 %     70,6 / 71,5 %       7,44 /  8,25 %
+  1.0          AUS     12,0 / 11,6     92,0 / 92,7 %     69,3 / 74,5 %       1,03 /  1,12 %
+  1.0          16      11,4 / 11,8     91,2 / 91,3 %     77,0 / 68,8 %       4,41 /  4,36 %
+
+BEFUND 2 - MESSUNG BESTAETIGT BEFUND 1. In der E18-Zelle ist zwischen "aus" und "Deckel 16"
+kein Unterschied erkennbar, der ueber die Streuung hinausgeht: gewonnene Wellen identisch
+12,0, Verteidigungsverlust 35,5 gegen 32,7 %, Schadensanteil der beiden Anlagen 38,5 gegen
+38,6 %. Genau das sagt die Arithmetik voraus.
+
+BEFUND 3 - DIE SPEZIALVERTEIDIGUNG HAT DASSELBE PROBLEM WIE DIE SALVENSCHIFFE, UND WEG 2 LOEST
+ES IM SELBEN MASS. Ihr Schadensanteil an der Verteidigungsseite faellt im Ist-Zustand von
+38,5 % (Kalibrierstand) ueber 6,1 % auf **1,08 %** im Endgame - dieselbe Kurve wie bei den
+Schiffen (74,8 -> 2,8 %). Mit Weg 2 steigt der Endgame-Wert auf **4,39 %, also Faktor 4,1** -
+praktisch identisch zum Faktor 4,0 bei den Schiffen. Die Nutzervorgabe ("sollen im Kampf
+wirklich was ausmachen") wird damit fuer beide Einheitengruppen im gleichen Mass erfuellt,
+ohne dass dafuer etwas Zusaetzliches eingestellt werden muesste.
+
+BEFUND 4 - DER RAID-AUSGANG VERSCHIEBT SICH NICHT. Gewonnene Wellen, Verteidigungsverlust und
+Flottenverlust liegen in allen drei Zellen mit und ohne Weg 2 aufeinander. Der hoehere Beitrag
+der beiden Anlagen ersetzt Schaden, den sonst andere Einheiten getragen haetten - er addiert
+sich nicht obendrauf. Damit ist auch die Sorge aus Entscheidung 16 (Verteidigung wird im Raid
+unzerstoerbar) durch Weg 2 nicht verschaerft: der Verteidigungsverlust bleibt bei 32-35 % im
+Kalibrierstand und 91-93 % im Endgame.
+
+NEBENBEFUND - GEGENPROBE ZU ENTSCHEIDUNG 16/18. Der gemessene Verteidigungsverlust in der
+E18-Zelle liegt bei 32-36 %. Das reproduziert die Angabe aus der Uebergabe, wonach die
+Bunkerbrecher-Welle aus Entscheidung 18 den Klassen-RapidFire-Effekt von 0,0 % auf "rund 34 %"
+entschaerft. Der kumulative Messbuild verhaelt sich also so, wie er soll.
+
+--------------------------------------------------------------------------------
+ERGEBNIS
+--------------------------------------------------------------------------------
+Der letzte offene Punkt vor der Freigabe von Entscheidung 19 ist geklaert und faellt positiv
+aus. Weg 2 mit JE = 20.000 und DECKEL = 16:
+  - bindet in der Kalibrierzelle von Entscheidung 18 BEWEISBAR NICHT (groesster Stapel 14.757
+    gegen Schwelle 20.000, auch in der haertesten Eskalationsphase),
+  - hebt den Endgame-Beitrag der beiden Salven-Verteidigungsanlagen um Faktor 4,1, im
+    Gleichklang mit den Salvenschiffen (Faktor 4,0),
+  - verschiebt den Raid-Ausgang in keiner Zelle,
+  - verschaerft die offene Frage aus Entscheidung 16 nicht.
+Es ist kein separater Regler und keine Ausnahme fuer die Verteidigungsanlagen noetig.
+
+OFFEN GEBLIEBEN:
+  - Ob Weg 2 die Endgame-MISSIONEN merklich leichter macht (aus volley_mix_19.txt uebernommen,
+    weiterhin ungemessen). Der Raid ist damit geklaert, die Missionsseite nicht.
+  - Die Zellen stehen auf 2 x 5 Raids. Das traegt die Aussage "kein Unterschied" fuer
+    E18/0.1/1.0 im Ausgang und den Faktor 4,1 beim Schadensanteil (1,03/1,12 gegen 4,41/4,36 -
+    die Scheiben liegen jeweils eng beieinander und die Gruppen weit auseinander), nicht aber
+    eine Feinkalibrierung. Eine solche ist hier auch nicht vorgesehen.
