@@ -1071,10 +1071,44 @@ traegt, im Stand-Eintrag oben und in `volley_scale_19.txt`.
 1,60 statt 1,50), Befund G (Nein, auf Delegation) und Frage 4 (Nein). **Offen ist nur noch
 Befund H.**
 
-**NAECHSTER SCHRITT: ENTSCHEIDUNG 19.** Dort liegen zwei Nutzerentscheidungen: (1) `maxCount` x2
-ja/nein und WORAN das zusaetzliche Limit gekoppelt wird (flach nicht empfohlen - Weg 1 wirkt
-ueberall, Weg 2 nur spaet); (2) `MULTI_TARGET_POWER_CORRECTION` unter Weg 2. Dazu der Nachtrag vom
-22.08.2026: Weg 2 trifft `sentinelkanone`/`ultimatekanone` mit.
+~~**NAECHSTER SCHRITT: ENTSCHEIDUNG 19.** Dort liegen zwei Nutzerentscheidungen: (1) `maxCount` x2
+ja/nein und WORAN das zusaetzliche Limit gekoppelt wird; (2) `MULTI_TARGET_POWER_CORRECTION` unter
+Weg 2.~~ **ZAHL 2 IST AM 25.08.2026 GEMESSEN UND BEANTWORTET - NEGATIV.**
+
+**NAECHSTER SCHRITT: ENTSCHEIDUNG 19, ZAHL 1 (`maxCount`).** Es liegt nur noch EINE
+Nutzerentscheidung offen: `maxCount` x2 (300/180/60) ja/nein und WORAN das zusaetzliche Limit
+gekoppelt wird. Flach ist nicht empfohlen (Weg 1 wirkt ueberall, Weg 2 nur spaet).
+
+**ZAHL 2 - `MULTI_TARGET_POWER_CORRECTION` - IST ERLEDIGT.** Protokoll
+`balance/session2-simulation/volley_power_19.txt`, Messkasten vom 25.08.2026 bei Entscheidung 19.
+Kurzfassung: die Konstante ist kein brauchbarer Regler. Sie hebt die bemessene Macht um +11,06 %
+(5.235 Schiffe) bis **+0,06 %** (Endgame) - an dem Ende, an dem Weg 2 wirkt, wirkt sie also gar
+nicht. Von Korrektur 1 bis 100 macht ein HOEHERER Wert die Salvenflotte messbar BESSER (Netto
+1,286 -> 1,334 -> 1,604 Mrd), weil die Beute mit der Gegnerstaerke schneller waechst als die
+Verluste. Der eigentliche Abstand (+76 % gegen eine wertgleiche Flotte ohne Salvenschiffe, z etwa
+5) sitzt auf der VERLUSTSEITE und ist ueber die Machtbemessung nicht erreichbar.
+**Vorlage, noch offen: bei 8 belassen und nicht weiter kalibrieren.** Die Sorge "ein fester Faktor
+kann an beiden Enden nicht stimmen" ist damit gegenstandslos.
+
+**ZWEI KORREKTUREN AM PLAN, AM 25.08.2026 AUS DEM CODE:**
+1. `MULTI_TARGET_POWER_CORRECTION` **erreicht den Raid nicht.** `raids.ts` Z. 333-343 bildet
+   `combinedPower` inline ueber `baseStats()` ohne die Konstante. Die gegenteilige Aussage im
+   Stand-Eintrag vom 22.08.2026 und in `volley_scale_19.txt` Abschnitt 3 Punkt 4 ist gestrichen.
+   Die Messungen sind unberuehrt (`run_raid.mjs` repliziert den Inline-Pfad korrekt).
+   **Folge: Zahl 2 war von Entscheidung 18 vollstaendig entkoppelt** - ESC = 1 / 1,20 / 1,60 und
+   der Bomberanteil 0,5 sind durch nichts davon beruehrt.
+2. **Raids laufen zwei Mal woechentlich**, nicht vier Mal taeglich (`RAID_SCHEDULE_BY_USERNAME`:
+   Mittwoch und Sonntag 00:00, Chance 1,0 fuer die beiden eingetragenen Spieler; Fallback
+   `RAID_SPAWN_CHANCE` 0,7). Die alte README-Aussage ist ueberholt und darf nicht als
+   Rechengrundlage benutzt werden.
+
+**NUTZERHINWEIS VOM 25.08.2026, NACHGEMESSEN:** "Salvenschiffe sterben am Raid-Tag, in einer
+Angriffswelle zur Haelfte weg." Bestaetigt und staerker: Salven-Verlust je Raid 0,0 % / 0,8 % /
+77,8 % / 89,3 % / **100,0 %** ueber die fuenf Ausbaustaende. **Wirtschaftlich ist das trotzdem
+klein:** vollstaendiger Nachbau 2,760 Mrd, zwei Raids die Woche = 0,79 Mrd/Tag gegen 61,11 Mrd/Tag
+Baseline = **1,3 %**. Und es ist umgehbar: `HOME_DEFENSE_SHIP_IDS` zieht nur Schiffe in
+`state.fleet` heran - eine dauerhaft auf Mission gehaltene Staffel traegt gar keine Raid-Kosten.
+Der Raid hebt den +76-%-Vorteil also nicht auf.
 
 **BEFUND H BLEIBT LIEGEN, UND ZWAR ABSICHTLICH.** Die FORM der ausbaustandsabhaengigen Untergrenze
 gehoert zu 18, ihr WERT laesst sich erst gegen die Entwicklungskurve aus Schritt 13 kalibrieren.

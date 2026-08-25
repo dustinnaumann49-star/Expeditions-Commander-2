@@ -3694,8 +3694,102 @@ normalen Schiffen, die es in Massen gibt."
 > Die Eskalation ist dort nie gemessen worden.
 >
 > **Ebenfalls betroffen und nur benannt:** `MULTI_TARGET_POWER_CORRECTION` gilt ueber dieselbe
-> Menge auch fuer die beiden Anlagen - er treibt also auch ueber die VERTEIDIGUNGS-Macht die
-> Wellenstaerke im Raid.
+> Menge auch fuer die beiden Anlagen.
+> ~~er treibt also auch ueber die VERTEIDIGUNGS-Macht die Wellenstaerke im Raid.~~
+> **KORREKTUR 25.08.2026, aus dem Code: FALSCH.** `raids.ts` Z. 333-343 bildet `combinedPower`
+> INLINE ueber `baseStats()`, ohne `MULTI_TARGET_POWER_CORRECTION` - weder ueber die Flotten-
+> noch ueber die Verteidigungsmacht. Die Konstante erreicht den Raid ueberhaupt nicht.
+> Die Messungen sind unberuehrt (`run_raid.mjs` Z. 85-91 und `probe_volley_scale_19.mjs`
+> Z. 93-100 replizieren den Inline-Pfad korrekt), nur die Deutung war falsch.
+> **Folge: Entscheidung 19 Zahl 2 ist von Entscheidung 18 vollstaendig entkoppelt** - die dort
+> kalibrierte Eskalation ESC = 1 / 1,20 / 1,60 und der Bomberanteil 0,5 bleiben unberuehrt.
+
+> **MESSKASTEN 25.08.2026 - ZAHL 2 (`MULTI_TARGET_POWER_CORRECTION`) IST BEANTWORTET, NEGATIV.**
+> Protokoll `balance/session2-simulation/volley_power_19.txt`, Werkzeuge `make_messbuild_korr.mjs`,
+> `probe_volley_power_19.mjs`, `run_volley_power_19.mjs` (alle neu, siehe
+> `WERKZEUGE_25-08-2026.md`). Alle Werte aus dem kumulativen Messbuild
+> (`--rf=4 --evk=0.20 --evm=0.08`), Ankerpruefung normiert -0,8 % / -0,7 % gegen
+> `loot_curve.txt` (roh waeren es +1,9 % / -9,5 % gewesen - die Falle reproduziert sich).
+>
+> **KRITERIUM, vorab festgelegt in der Form von Entscheidung 6:** bei gleichem ausgegebenem
+> FLOTTENWERT gleiches Netto mit und ohne Salvenschiffe. Zelle: 5.235 Schiffe, Flottenwert
+> 6,618 Mrd, Salven-Wertanteil 41,7 % - die Zelle mit dem groessten Hebel. Referenz ohne
+> Salvenschiffe: Netto **0,912 Mrd** (40 Missionen, zwei Scheiben 0,875 / 0,949).
+>
+> **BEFUND A - DER HEBEL EXISTIERT NUR GANZ UNTEN.** Machtaufschlag durch die Korrektur:
+> **+11,06 %** (5.235 Schiffe), +2,80 % (20.135), +0,56 % (99.603), +0,16 % (347.933),
+> **+0,06 %** (Endgame). Deterministisch. Ab 100.000 Schiffen ist die Konstante kein Regler mehr,
+> sondern Rauschen - **an dem Ende, an dem Weg 2 wirkt, wirkt sie gar nicht.**
+>
+> **BEFUND B - DER VERMUTETE GEGENPOSTEN EXISTIERT NICHT.** `sentPower` geht in `missions.ts:378`
+> auch in `fleetSizeRewardMultiplier()`, aber der +50-%-Deckel ist in ALLEN fuenf Zellen bereits
+> erreicht: die Korrektur bewegt die Belohnung um **0,00 %**. Sie hebt nur den Gegner.
+>
+> **BEFUND C - WERT JE MACHTPUNKT.** Normale Schiffe 1,10-1,18 (Zielwert 1,15 aus Entscheidung 6).
+> Salvenschiffe roh **44,8-58,5**, mit Korrektur 8 immer noch **5,6-7,3**. Auch mit Korrektur
+> zahlt man je bemessenem Machtpunkt Salvenschiff das Fuenf- bis Sechsfache; bei gleichem Wert
+> hat die Salvenflotte deshalb WENIGER bemessene Macht (3,79 gegen 5,77 Mrd) und einen
+> SCHWAECHEREN Gegner. "Preisgerecht" nach Entscheidung 6 waere ein Wert um 39-51.
+>
+> **BEFUND D (TRAGEND) - DIE KONSTANTE IST KEIN BRAUCHBARER REGLER.** Netto der Salvenflotte
+> ueber die Korrektur: 1 -> **1,286**, 8 (Ist) -> **1,334**, 40 -> **1,604** (je 40 Missionen),
+> 100 -> 1,499, 130 -> -0,129, 250 -> -1,818 Mrd (je 20). **Von 1 bis 100 macht ein hoeherer Wert
+> die Salvenflotte BESSER, nicht schlechter:** der Gegner steigt, die Beute waechst mit der
+> vernichteten Feindmacht, und die Verluste bleiben klein, weil die Salvenschiffe den Kampf
+> tragen ohne zu sterben. Erst zwischen 100 und 130 kippt das Vorzeichen - durch
+> Flottenvernichtung (Verlust 3,98 gegen 0,06 Mrd im Ist), nicht durch Ausgleich. Befund 3 oben
+> stimmt in der Aussage, der Mechanismus ist ein anderer als dort angenommen.
+>
+> **BEFUND E - DER ABSTAND SITZT NICHT BEI DER MACHTBEMESSUNG.** Bei angeglichener Gegnerstaerke
+> (Korrektur 40: 20,2 gegen 19,5 Mrd) und identischem Flottenwert: **1,604 gegen 0,912 Mrd,
+> +76 %, z etwa 5.** Der Unterschied kommt fast vollstaendig von der Verlustseite (0,265 gegen
+> 1,176 Mrd). Eine Konstante, die nur den Gegner skaliert, kann das nicht schliessen.
+>
+> **BEFUND G - RAID-TAG, nach Nutzerhinweis vom 25.08.2026 nachgemessen.** Der Nutzer meldet,
+> dass die Salvenschiffe am Raid-Tag sterben ("in einer Angriffswelle zur Haelfte weg"). Das
+> bestaetigt sich und faellt staerker aus: Salven-Verlust je Raid **0,0 % / 0,8 % / 77,8 % /
+> 89,3 % / 100,0 %** ueber die fuenf Zellen (12 Wellen, `DEFENSE_LARGE`, Ist-Zustand ohne ESC).
+> Ab mittlerem Ausbau sterben sie fast vollstaendig, im Endgame zu 100 %.
+>
+> **BEFUND H - DIESE KOSTENSEITE IST WIRTSCHAFTLICH KLEIN.** Raids laufen an **zwei festen
+> woechentlichen** Zeitpunkten (`RAID_SCHEDULE_BY_USERNAME`: Mittwoch und Sonntag 00:00, Chance
+> 1,0 fuer die beiden eingetragenen Spieler) - **nicht** vier Mal taeglich, die alte
+> README-Aussage ist ueberholt. Vollstaendiger Nachbau: 2,760 Mrd, zweimal die Woche =
+> 0,79 Mrd/Tag gegen die Einnahmen-Baseline 61,11 Mrd/Tag = **1,3 %** (bei maxCount x2: 2,6 %).
+> Bauzeit 3,75 h seriell, ueber drei Lanes rund 1,5 h. Der Raid-Verlust bremst spuerbar in der
+> Wahrnehmung, aber nicht in der Bilanz - er hebt Befund E nicht auf.
+>
+> **BEFUND I - DIE KOSTENSEITE LAESST SICH UMGEHEN.** `HOME_DEFENSE_SHIP_IDS` (`raids.ts:176`)
+> zieht die Salvenschiffe ueber `COMBAT_SHIP_IDS` in die Heimatverteidigung, aber nur soweit sie
+> in `state.fleet` stehen. Auf Mission entsandte Schiffe sind dort abgezogen und koennen im Raid
+> weder kaempfen noch sterben. Eine dauerhaft auf Mission gehaltene Salvenstaffel traegt also gar
+> keine Raid-Kosten - genau dort, wo sie am staerksten ist. Aus dem Code gelesen, nicht gemessen.
+>
+> **BEFUND L - MESSREGEL 8, CLIENT-SPIEGEL.** `MULTI_TARGET_POWER_CORRECTION`: **kein Spiegel**
+> (gegreppt, null Treffer; ueber `/game/data` geht nur `multiTargetVolleyShips` fuer die
+> Info-Anzeige). `maxCount` flach: **kein Spiegel** (Feld fliesst ueber `/game/data`). `maxCount`
+> AUSBAUSTANDSABHAENGIG gekoppelt: **ZWEI Spiegel** - `ShipBuildCard.tsx` (Z. 77/79/111/163/263)
+> und `DefenseBuildCard.tsx` rechnen `frei = maxCount - bestand` selbst aus dem statischen Feld;
+> ein gekoppeltes Limit muss je Spieler berechnet ausgeliefert werden.
+>
+> **ERGEBNIS.** Die Frage "welcher Wert ist der richtige unter Weg 2" hat keine Antwort, weil die
+> Konstante die Schieflage nicht adressiert: im Endgame wirkungslos (A), im Frueh-/Mittelstand in
+> die falsche Richtung (D), der Abstand sitzt auf der Verlustseite (E). Die Sorge aus dem
+> Stand-Eintrag ("ein fester Faktor kann an beiden Enden nicht stimmen") erledigt sich damit -
+> an dem einen Ende wirkt er ueberhaupt nicht.
+>
+> **VORLAGE AN DEN NUTZER (offen):** `MULTI_TARGET_POWER_CORRECTION` **unveraendert bei 8**
+> belassen und nicht weiter kalibrieren; die Schieflage ueber Weg 1 (maxCount) und Weg 2
+> (JE/DECKEL) regeln, die im Kampf selbst ansetzen. Ein Wert um 40 waere nach Entscheidung 6
+> preisgerecht (C), macht die Salvenflotte aber messbar STAERKER (D) - das Gegenteil des
+> Gemeinten. Ein Regeln ueber die KOSTEN statt ueber die Machtbemessung waere der sachlich
+> naheliegende dritte Weg, gehoert aber nicht in Entscheidung 19, sondern waere eine
+> Wiederaufnahme von Entscheidung 6 (geschlossen).
+>
+> **NICHT GEMESSEN, bewusst:** Stuetzstelle 0.02 im Aequivalenz-Test (Hebel kleiner, Richtung
+> unveraendert); die Punkte 130/160/250 stehen auf 20 Serien (fuer die Lage des
+> Vorzeichenwechsels genug, fuer eine Kalibrierung nicht - die ist nach D nicht vorgesehen);
+> Gegenmessung gegen den Weg-2-Build (nach A ohne Erkenntniswert).
 
 ---
 
