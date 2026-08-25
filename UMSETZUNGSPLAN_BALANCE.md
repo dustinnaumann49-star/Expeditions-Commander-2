@@ -3646,6 +3646,43 @@ Reihenfolge deshalb: erst die Haerte, dann Entscheidung 3 gegenpruefen.
 
 ### Entscheidung 19 - Salvenschiffe im Endgame: ENTSCHIEDEN 25.08.2026, NICHT GEBAUT
 
+> **MESSKASTEN 25.08.2026 (zweite Session) - DER OFFENE PUNKT IST BEANTWORTET: JA, WEG 2 MACHT DIE
+> ENDGAME-MISSIONEN MERKLICH LEICHTER. NICHTS GEBAUT.** Protokoll `volley_mission_19.txt`,
+> Werkzeuge `probe_volley_mission_19.mjs` und `check_build_anker.mjs` (beide neu). Zwei Builds, die
+> sich AUSSCHLIESSLICH in Weg 2 unterscheiden (`--je=20000 --deckel=16`), je zwei Scheiben a 40
+> Serien. Build-Pruefung: normiert -2,3 %, roh +6,7 %.
+>
+> **Vorfrage zuerst deterministisch, ohne eine einzige Serie:** Weg 2 ist unterhalb von rund
+> **20.000 eigenen Schiffen wirkungslos** (Treffer/Typ = 1) und laeuft ab Anteil 0.3 in den Deckel.
+> Die Zelle 0.005, in der Zahl 2 kalibriert wurde, liegt vollstaendig ausserhalb seines
+> Wirkungsraums - deshalb war dort nichts zu sehen.
+>
+> **Verlust je Punkt vernichteter Feindmacht, Seite A** (normiert, weil der Multiplikator-Wurf
+> zwischen den Laeufen streut): 0.02 **-2,3 %**, 0.1 **-8,0 %**, 0.3 **-12,3 %**, 1.0 **-14,3 %**.
+> **Kontrolle:** Seite B fuehrt keine Salvenschiffe und kann von Weg 2 gar nicht erreicht werden;
+> sie schwankt ueber alle vier Zellen zwischen -0,8 % und +3,1 % - das ist das Build-Rauschen bei
+> 80 Serien, und in den beiden tragenden Zellen ist es mit -0,8 % und +0,4 % am flachsten.
+>
+> **Beute je Punkt Feindmacht unveraendert** (-0,1 % bei 0.3, -0,4 % bei 1.0). Weg 2 wirkt auf der
+> Verlustseite, nicht auf Bemessung oder Kurve.
+>
+> **Netto je Mission, Zelle 1.0: VORZEICHENWECHSEL von -6,96 Mrd auf +6,75 Mrd.** Die
+> Endgame-Mission mit Salvenschiffen war im Ist-Zustand ein Verlustgeschaeft und traegt sich mit
+> Weg 2. Zelle 0.3 +52,5 %, Zelle 0.1 +10,5 %, Zelle 0.02 im Rauschen.
+>
+> **Das ist der Zweck von Weg 2 und kein Nebeneffekt** - die Salve traf bisher einen Vertreter je
+> Typ und wuchs nicht mit der Feindflotte mit. Der Regler greift genau dort, wo er soll: unten
+> wirkungslos, oben wirksam. **Ob das gekippte Vorzeichen erwuenscht ist, ist eine Balance-Frage
+> und gehoert vor den Einbau auf den Tisch; an Entscheidung 19 selbst aendert der Befund nichts.**
+>
+> **Folge fuer Schritt 13:** der Ausschluss von Entscheidung 19 aus dem Simulations-Messbuild war
+> bisher nur deterministisch begruendet und ist jetzt gemessen belegt - ein 30-Tage-Konto liegt
+> weit unterhalb der Schwelle.
+>
+> **Messregel 8: KEIN Client-Spiegel.** Weg 2 sitzt vollstaendig in `combat.ts` (`fireShots()`,
+> Einzelziele und Aggregat-Stapel); der Client zeigt ueber `/game/data` nur die Faehigkeit selbst,
+> nicht die Trefferzahl.
+
 **Bezug:** Nutzerbeobachtung 21.08.2026 mit echtem Kampfbericht (Endgame-Flotte, 993.604 Schiffe).
 "Im spaeten Spielstand sind Salvenschiffe nutzlos - sie machen so wenig Schaden im Gegensatz zu
 normalen Schiffen, die es in Massen gibt."
@@ -5531,14 +5568,18 @@ SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
         Date.now ist die einzige Zeitquelle des Servers; Auflage: schrittkonstante Uhr,
         weil tick() sie zugleich als Stoppuhr benutzt. V2 ohne Eingriff in db.ts, aber
         der Build gehoert in einen EIGENEN Unterordner des Laufordners.
-     -> NEU UND OFFEN: V3, der Umfang des Simulations-Messbuilds. Der kumulative Build
-        verdrahtet Block A Schritt 2 NICHT in missions.js/groupOps.js; die bisherigen
-        Skripte bauen die Missionsschleife selbst nach, die Simulation darf das nicht.
-        K1 haengt zusaetzlich an Entscheidung 18, K4 an 13.1, K5 an Entscheidung 3 und 12.
-        Umfang ist eine NUTZERENTSCHEIDUNG, Vorschlag in Abschnitt 8 des Protokolls.
-     -> Ebenfalls vor dem ersten Lauf zu entscheiden: Bots handeln je HEARTBEAT, nicht je
-        Zeit (30-60 Bau-Entscheidungsschritte je Stunde gegen einen bei Stundenschritten).
-        Betrifft Kriterium 4 und die Gegenpruefung von f.
+     -> V3 (Umfang des Simulations-Messbuilds) am 25.08.2026 VOM NUTZER ENTSCHIEDEN:
+        Block A Schritt 2 VERDRAHTET in missions.js/groupOps.js + Entscheidung 18 +
+        Entscheidung 3 + Entscheidung 12 + Entscheidung 13.1. Entscheidung 16 steckt
+        bereits ueber --rf=4 --evk=0.20 --evm=0.08 im kumulativen Build. NICHT enthalten:
+        Entscheidung 19 (unterhalb 20.000 Schiffen GEMESSEN wirkungslos, siehe
+        volley_mission_19.txt), R16, Piratenbasen-Offensive, Block B, 7.2/7.3.
+     -> Bot-Takt am 25.08.2026 VOM NUTZER ENTSCHIEDEN: 30 Bot-Zuege je Simulationsschritt.
+        Bots handeln je HEARTBEAT, nicht je Zeit; ein Zug je Stundenschritt haette die
+        Bot-Kurve um Faktor 30-60 zu flach gemacht und Kriterium 4 sowie die Gegenpruefung
+        von f entwertet.
+     -> NAECHSTER SCHRITT: make_messbuild_sim13.mjs in genau diesem Umfang, gegen
+        check_build_anker.mjs pruefen, dann das Simulationsgeruest.
 
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
  14. Entscheidung 9.1 + R1 + 7.4  Saettigungskurve, additive Reduktionen UND der Client-Spiegel

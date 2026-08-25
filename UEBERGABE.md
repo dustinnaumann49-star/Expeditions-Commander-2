@@ -65,6 +65,34 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 25.08.2026 (zweite Session): DER OFFENE PUNKT AUS ENTSCHEIDUNG 19 IST GEMESSEN - JA, WEG 2
+  MACHT DIE ENDGAME-MISSIONEN MERKLICH LEICHTER. NICHTS GEBAUT.** Protokoll
+  `balance/session2-simulation/volley_mission_19.txt`, Werkzeug `probe_volley_mission_19.mjs` (neu).
+  Zwei Builds, die sich AUSSCHLIESSLICH in Weg 2 unterscheiden (`--je=20000 --deckel=16`), je zwei
+  Scheiben a 40 Serien.
+  - **Deterministische Vorfrage zuerst, ohne eine einzige Serie:** Weg 2 ist unterhalb von rund
+    **20.000 eigenen Schiffen wirkungslos** (Treffer/Typ = 1) und laeuft ab Anteil 0.3 in den
+    Deckel. Die Zelle 0.005, in der Zahl 2 kalibriert wurde, liegt vollstaendig ausserhalb seines
+    Wirkungsraums - deshalb war dort nichts zu sehen.
+  - **Verlust je Punkt vernichteter Feindmacht, Seite A:** 0.02 **-2,3 %**, 0.1 **-8,0 %**,
+    0.3 **-12,3 %**, 1.0 **-14,3 %**. Kontrolle (Seite B, ohne Salvenschiffe, von Weg 2 gar nicht
+    erreichbar) bleibt bei -0,8 % bis +3,1 % - **das ist das Build-Rauschen bei 80 Serien**, und in
+    den beiden tragenden Zellen ist es mit -0,8 % und +0,4 % am flachsten.
+  - **Beute je Punkt Feindmacht unveraendert** (-0,1 % / -0,4 %). Weg 2 wirkt auf der
+    Verlustseite, nicht auf der Bemessung.
+  - **Netto je Mission, Zelle 1.0: VORZEICHENWECHSEL von -6,96 Mrd auf +6,75 Mrd.** Die
+    Endgame-Mission mit Salvenschiffen war im Ist-Zustand ein Verlustgeschaeft und traegt sich mit
+    Weg 2. Zelle 0.3 +52,5 %, Zelle 0.1 +10,5 %, Zelle 0.02 im Rauschen. **Ob das gekippte
+    Vorzeichen erwuenscht ist, ist eine Balance-Frage und gehoert vor den Einbau auf den Tisch -
+    Entscheidung 19 selbst bleibt davon unberuehrt.**
+  - **Bestaetigt den Ausschluss von 19 aus dem Simulations-Messbuild**, der bisher nur
+    deterministisch begruendet war: unterhalb 20.000 Schiffen wirkungslos, ein 30-Tage-Konto liegt
+    weit darunter.
+  - **Messregel 8: KEIN Client-Spiegel.** Weg 2 sitzt vollstaendig in `combat.ts` (`fireShots()`,
+    Einzelziele und Aggregat-Stapel); der Client zeigt nur die Faehigkeit, nicht die Trefferzahl.
+  - Build-Pruefung gegen `loot_curve.txt`: **normiert -2,3 %, roh +6,7 %** - die Falle
+    reproduziert sich erneut.
+
 - **NEU 25.08.2026 (zweite Session): SCHRITT 13 IST BEGONNEN - V1 UND V2 SIND GEKLAERT, V3 IST
   NEU UND OFFEN. NICHTS GEBAUT.** Protokoll `balance/session2-simulation/sim_vorbedingungen_13.txt`,
   Werkzeug `probe_simclock_13.mjs` (neu). **Kein Messbuild-Protokoll** - die Sonde laeuft
@@ -1115,21 +1143,28 @@ ENTSCHEIDUNG BEIM NUTZER.** Wer hier einsteigt, liest zuerst
 noch fehlt. **Ohne die Entscheidung zu V3 (Umfang des Simulations-Messbuilds) wird die
 Simulation nicht gebaut**, sonst misst sie einen Zustand, den es nach dem Neustart nicht gibt.
 
-**ZWEI FRAGEN LIEGEN BEIM NUTZER, BEIDE VOR DEM BAU:**
-1. **Umfang des Simulations-Messbuilds (V3).** Vorschlag im Protokoll, Abschnitt 8: zwingend
-   Block A Schritt 2 **verdrahtet**, Entscheidung 18, 3, 12 und 13.1; begruendet weglassen
-   Entscheidung 19 (unterhalb JE = 20.000 beweisbar wirkungslos), R16 und die
-   Piratenbasen-Offensive; offen Block B und 7.2/7.3, je nach Zuschnitt.
-2. **Bot-Takt.** Bots handeln je Heartbeat, nicht je Zeit - bei Stundenschritten bekommt ein Bot
-   einen statt 30-60 Bau-Entscheidungsschritten. Drei Wege im Protokoll, Abschnitt 9.
+**BEIDE FRAGEN, DIE HIER OFFEN STANDEN, SIND VOM NUTZER AM 25.08.2026 ENTSCHIEDEN:**
+1. **Umfang des Simulations-Messbuilds (V3): Block A Schritt 2 VERDRAHTET + Entscheidung 18 +
+   Entscheidung 3 + Entscheidung 12 + Entscheidung 13.1.** Entscheidung 16 steckt bereits ueber
+   `--rf=4 --evk=0.20 --evm=0.08` im kumulativen Build. NICHT enthalten: Entscheidung 19
+   (unterhalb 20.000 Schiffen **gemessen** wirkungslos, siehe `volley_mission_19.txt`), R16, die
+   Piratenbasen-Offensive, Block B und 7.2/7.3.
+2. **Bot-Takt: 30 Bot-Zuege je Simulationsschritt.** Die teure, aber echtbetriebsnahe Variante.
+   `runBotTurn()` laeuft im Echtbetrieb 30-60 Mal je Stunde; bei einem Zug je Stundenschritt
+   waere die Bot-Kurve um Faktor 30-60 zu flach und Kriterium 4 sowie die Gegenpruefung von f
+   waeren wertlos.
+
+**NAECHSTER SCHRITT: den Simulations-Messbuild in genau diesem Umfang bauen** (Arbeitstitel
+`make_messbuild_sim13.mjs`), gegen `check_build_anker.mjs` pruefen, dann das Simulationsgeruest.
 
 **DANACH ERST** kommen die beiden Punkte, fuer die Schritt 13 vorgezogen wurde: Befund H aus
 Entscheidung 18 (WERT der ausbaustandsabhaengigen Untergrenze) und die Gegenpruefung von f = 12.
 
-**NACHZUHOLEN, BEVOR DIE SIMULATION LAEUFT** (steht seit dem 25.08.2026, erste Session): ob Weg 2
-aus Entscheidung 19 die Endgame-MISSIONEN merklich leichter macht. Werkzeug liegt bereit
-(`run_volley_power_19.mjs aequiv`, Endgame-Zelle). Kein Hindernis fuer den Einbau, aber dort haengt
-die Ertragsseite.
+**ERLEDIGT am 25.08.2026 (zweite Session):** der offene Punkt "macht Weg 2 die Endgame-MISSIONEN
+leichter". Antwort: **ja, deutlich** - Verlust je Punkt Feindmacht -14,3 % in der groessten Zelle,
+Netto mit Vorzeichenwechsel von -6,96 Mrd auf +6,75 Mrd je Mission. Siehe `volley_mission_19.txt`.
+Kein Hindernis fuer den Einbau, aber die Frage, ob das gekippte Vorzeichen erwuenscht ist, gehoert
+vor den Einbau auf den Tisch.
 
 **REIHENFOLGE STEHT SEIT DEM 22.08.2026: 18 -> 19 -> 13.** Begruendung und die Messung, die sie
 traegt, im Stand-Eintrag oben und in `volley_scale_19.txt`.
