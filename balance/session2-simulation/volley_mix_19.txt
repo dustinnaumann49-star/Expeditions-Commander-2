@@ -1,0 +1,141 @@
+================================================================================
+ENTSCHEIDUNG 19, ZAHL 1 - WEG 1 (maxCount) x WEG 2 (JE/DECKEL)
+Messprotokoll vom 25.08.2026
+================================================================================
+
+!!! ALLE ZAHLEN IN DIESEM PROTOKOLL SIND MESSBUILD-WERTE, KEIN REPO-STAND. !!!
+
+NUTZERVORGABE VOM 25.08.2026 - SIE DREHT DIE ZIELRICHTUNG
+---------------------------------------------------------
+"Das sind Glaskanonen, dafuer sollen die aber im Kampf wirklich was ausmachen koennen vom
+Schaden austeilen. Bis jetzt machen sie im spaeteren Spielstand nichts mehr aus, wenn man eh
+schon an die 1 Million Schiffe hat - also sterben sie ohne Leistung erbracht zu haben. Dann
+lieber Preis hoch wenn noetig, aber dafuer leisten die hohen Beitrag. Sterben ist normal, weil
+Glaskanone halt."
+
+Entscheidung 19 war bis dahin als EINDAEMMUNG angelegt (die Schiffe sind im Frueh-/Mittelstand
+zu stark). Ab hier ist das Ziel ein ANHEBEN DES SPAETEN BEITRAGS bei unveraendertem Frueh- und
+Mittelstand. Sterben ist eingepreist und kein Kriterium mehr. Preis darf steigen.
+
+Messgrundlage
+-------------
+  node make_messbuild_kum.mjs   /tmp/mb_kum  --rf=4 --evk=0.20 --evm=0.08
+  node make_messbuild_salve.mjs /tmp/mb_kum  /tmp/mb_w2     --je=20000 --deckel=8
+  node make_messbuild_salve.mjs /tmp/mb_kum  /tmp/mb_w2d16  --je=20000 --deckel=16
+  node make_messbuild_salve.mjs /tmp/mb_kum  /tmp/mb_w2j10  --je=10000 --deckel=8
+  MESSBUILD=... SALVE=1|2 FAKTOREN=... ANTEILE=... node run_volley_mix_19.mjs <N>
+
+Weg 1 (maxCount) ist eine reine BESTANDSaenderung und braucht keinen eigenen Build. Weg 2 steckt
+im Build. Das Skript prueft die Beschriftung gegen den geladenen Build und bricht bei
+Nichtuebereinstimmung ab, damit keine Zelle falsch etikettiert wird.
+
+GEGENPROBE GEGEN salven_19.txt: die Ist-Kurve reproduziert das aeltere Protokoll Zelle fuer
+Zelle (74,79 / 47,66 / 18,39 / 7,19 / 2,76 % gegen dort 73,26 / 45,86 / 19,32 / 6,72 / 2,80 %).
+ACHTUNG: die viel zitierten 1,11 % aus BEFUND 1 von salven_19 stammen aus dem EINZELNEN echten
+Kampfbericht des Nutzers, nicht aus der Kurve. Der Kurvenwert des Ist-Zustands ist 2,8 %.
+Nicht vermischen.
+
+--------------------------------------------------------------------------------
+DAS VOLLE GITTER - SCHADENSANTEIL DER DREI SALVEN-TYPEN (12 Kaempfe je Zelle)
+--------------------------------------------------------------------------------
+  Schiffe        Ist      Weg 2      Weg 1     Weg 1+2      (Weg 1 = maxCount x2 = 540 Stueck,
+                                                             Weg 2 = JE 20.000 / DECKEL 8)
+    5.235     74,79 %    72,02 %    84,81 %    79,68 %
+   20.135     47,66 %    48,86 %    66,03 %    63,45 %
+   99.603     18,39 %    22,20 %    31,96 %    37,26 %
+  347.933      7,19 %    12,27 %    13,62 %    19,49 %
+  993.597      2,76 %     9,57 %     5,24 %    16,76 %
+
+  Salven-Wert  2,76 Mrd   2,76 Mrd   5,52 Mrd   5,52 Mrd
+
+BEFUND 1 - WEG 1 HAT DIE FALSCHE FORM FUER DIESES ZIEL. Die Verdopplung von maxCount kostet den
+doppelten Bestandswert (2,76 -> 5,52 Mrd) und bringt im Endgame nur **+2,5 Prozentpunkte**
+(2,76 -> 5,24 %), waehrend sie den Mittelstand um **+18 Punkte** hebt (47,66 -> 66,03 %) und den
+Fruehstand um **+10** (74,79 -> 84,81 %). Sie wirkt also am staerksten genau dort, wo nichts
+fehlt, und am schwaechsten dort, wo der Nutzer das Problem sieht. Das bestaetigt BEFUND 6 aus
+salven_19 mit Zahlen, jetzt aber unter umgekehrter Zielsetzung: was dort ein Nebenwirkungs-
+argument war, ist hier ein Wirkungsargument.
+
+BEFUND 2 - WEG 2 HAT GENAU DIE RICHTIGE FORM. Endgame 2,76 -> 9,57 % (Faktor 3,5), Fruehstand
+74,79 -> 72,02 % und Mittelstand 47,66 -> 48,86 % - beides innerhalb der Streuung, also
+unveraendert. Weg 2 wirkt AUSSCHLIESSLICH da, wo die Feindstapel gross genug sind.
+
+BEFUND 3 - DAS IST KEIN ZUFALL, SONDERN KONSTRUKTIV. Die Trefferzahl je Typ ist
+min(DECKEL, ceil(Einheiten_dieses_Typs / JE)). In der 5.235-Zelle hat der NPC insgesamt rund
+15.000 Einheiten ueber alle Typen; kein einzelner Typ erreicht 20.000, also ist ceil(...) = 1 und
+Weg 2 ist dort BEWEISBAR wirkungslos - unabhaengig vom Deckel. Das ist deterministisch und
+braucht keine Serien. Die Wirkung setzt ein, wenn die eigene Flotte etwa 100.000 Schiffe
+ueberschreitet, weil erst dann Feindstapel ueber 20.000 entstehen.
+
+--------------------------------------------------------------------------------
+FEINABSTIMMUNG VON WEG 2 - WELCHER REGLER MACHT WAS?
+--------------------------------------------------------------------------------
+  Schiffe      Ist    JE 20k/D 8   JE 20k/D 16   JE 10k/D 8
+   20.135   47,66 %      48,86 %       46,73 %      51,09 %
+   99.603   18,39 %      22,20 %       24,86 %      26,75 %
+  347.933    7,19 %      12,27 %       11,94 %      18,17 %
+  993.597    2,76 %       9,57 %       11,49 %      14,63 %
+
+Endgame-Zelle nachgemessen, drei Scheiben (12 / 25 / 25 Kaempfe):
+  JE 20k / DECKEL 8 :  9,57  8,82  9,78  ->  rund 9,4 %, Streuung etwa 0,5 Punkte
+  JE 20k / DECKEL 16: 11,49 10,47 11,45  ->  rund 11,1 %, Streuung etwa 0,6 Punkte
+  Der Unterschied von 1,7 Punkten liegt deutlich ausserhalb der Streuung - trennscharf.
+
+BEFUND 4 - DIE BEIDEN REGLER SIND NICHT AUSTAUSCHBAR.
+  DECKEL ist der ENDGAME-SELEKTIVE Regler: 8 -> 16 hebt nur die letzte Zelle (9,4 -> 11,1 %)
+  und laesst 347.933 unveraendert (12,27 -> 11,94 %, Streuung). Er kann unterhalb von rund
+  100.000 Schiffen gar nicht binden (BEFUND 3).
+  JE ist der BREITE Regler: 20.000 -> 10.000 hebt das Endgame staerker (9,6 -> 14,6 %), zieht
+  aber den ganzen Mittelbau mit hoch (347.933: 12,3 -> 18,2 %; 20.135: 48,9 -> 51,1 %) - genau
+  die Nebenwirkung, die vermieden werden soll.
+
+--------------------------------------------------------------------------------
+EMPFEHLUNG - BESTE BALANCIERTE KOMBINATION
+--------------------------------------------------------------------------------
+  WEG 1 (maxCount x2): NEIN. maxCount bleibt bei 150 / 90 / 30.
+  WEG 2:               JA, JE = 20.000 unveraendert, DECKEL 8 -> 16.
+
+Ergebnis dieser Kombination gegen den Ist-Zustand:
+  Fruehstand    5.235 Schiffe:  74,8 % -> 74,8 %   (beweisbar unveraendert, BEFUND 3)
+  Mittelstand  20.135 Schiffe:  47,7 % -> 46,7 %   (unveraendert, Streuung)
+  gross        99.603 Schiffe:  18,4 % -> 24,9 %
+  sehr gross  347.933 Schiffe:   7,2 % -> 11,9 %
+  ENDGAME     993.597 Schiffe:   2,8 % -> 11,1 %   (Faktor 4,0)
+  Bestandswert:                2,76 Mrd -> 2,76 Mrd (KEINE Preisaenderung noetig)
+
+Begruendung der Wahl:
+1. Sie trifft die Nutzervorgabe direkt: der spaete Beitrag vervierfacht sich, der Frueh- und
+   Mittelstand bleibt, wo er ist.
+2. Sie flacht die Kurve ab. Der Ist-Zustand faellt ueber die Flottengroessen um den Faktor 27
+   (74,8 auf 2,8 %), mit der Empfehlung nur noch um den Faktor 6,7. Die Schiffe behalten damit
+   ueber den ganzen Spielverlauf eine erkennbare Rolle, statt frueh alles und spaet nichts zu
+   sein.
+3. Sie ist die billigste Loesung. Der Nutzer hat einen hoeheren Preis ausdruecklich angeboten -
+   er wird nicht gebraucht. Weg 1 wuerde den Bestandswert verdoppeln und trotzdem das schlechtere
+   Endgame-Ergebnis liefern (5,24 gegen 11,1 %).
+4. Sie loest zwei offene Nebenfragen ersatzlos auf: die Kopplungsfrage ("WORAN wird das
+   zusaetzliche Limit gekoppelt") entfaellt, weil kein zusaetzliches Limit vergeben wird - und
+   damit auch die ZWEI Client-Spiegel aus Messregel 8 (`ShipBuildCard.tsx`,
+   `DefenseBuildCard.tsx`), die eine ausbaustandsabhaengige Kopplung noetig gemacht haette.
+   Weg 2 hat KEINEN Client-Spiegel: er sitzt allein in `fireShots()`.
+
+ABWEICHUNG VON EINER GESETZTEN ZAHL - AUSDRUECKLICH ZU BESTAETIGEN:
+  In der Sitzung vom 22.08.2026 waren "Weg 2 (JE = 20.000, DECKEL = 8) in Kombination mit Weg 1"
+  gesetzt. Die Empfehlung weicht in ZWEI Punkten davon ab: DECKEL 16 statt 8, und OHNE Weg 1.
+  Beides beruht auf der neuen Nutzervorgabe vom 25.08.2026, die das Ziel umgedreht hat - unter
+  der alten Zielsetzung (Eindaemmung) waren 8 und die Kombination folgerichtig. Die Abweichung
+  ist auf Delegation eingetragen ("messe einfach und suche das beste balancierte Ergebnis
+  raus") und jederzeit umkehrbar.
+
+NICHT GEMESSEN, VOR DEM EINBAU NACHZUHOLEN:
+  - Ob Weg 2 die Missionen im Endgame merklich LEICHTER macht. Der Gesamtschaden der eigenen
+    Seite steigt um rund 9 %, das ist wenig; belegt ist es nicht. Eine Netto-Wertbilanz-Zelle
+    im Endgame (Werkzeug `run_volley_power_19.mjs aequiv`) wuerde das klaeren.
+  - Die Wirkung von Weg 2 auf die beiden Salven-VERTEIDIGUNGSANLAGEN
+    (`sentinelkanone`/`ultimatekanone`, ebenfalls in MULTI_TARGET_VOLLEY_SHIPS). Im Raid stehen
+    ihnen Wellen mit sehr grossen Stapeln gegenueber, dort wird DECKEL 16 binden. Das
+    beruehrt Entscheidung 18 (kalibriert) und Entscheidung 16 (Verteidigung im Raid) und ist der
+    einzige Punkt, an dem Weg 2 ueber Entscheidung 19 hinausreicht.
+  - Die Streuung ist nur fuer die Endgame-Zelle bestimmt (rund 0,5-0,6 Punkte bei 25 Kaempfen).
+    Die uebrigen Zellen stehen auf 12 Kaempfen und tragen die Richtung, nicht die zweite
+    Nachkommastelle.

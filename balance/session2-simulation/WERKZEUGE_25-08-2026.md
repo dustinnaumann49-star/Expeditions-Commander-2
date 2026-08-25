@@ -59,3 +59,25 @@ Laeufen `git status` sauber haben. An diesem Tag wurde das Skript nicht ausgefue
 `/tmp/mb_kum`, `/tmp/mb_k1`, `/tmp/mb_k2`, `/tmp/mb_k4`, `/tmp/mb_k8`, `/tmp/mb_k16`,
 `/tmp/mb_k40`, `/tmp/mb_k100`, `/tmp/mb_k130`, `/tmp/mb_k160`, `/tmp/mb_k250` - alle ausserhalb
 des Repos, wie vorgesehen.
+
+## Neu (Nachtrag am selben Tag): `run_volley_mix_19.mjs`
+
+Misst den Schadensanteil der drei Salven-Typen ueber die Flottengroesse, ueber die Kombinationen
+aus Weg 1 (maxCount, reine Bestandsaenderung, kein eigener Build noetig) und Weg 2 (JE/DECKEL,
+steckt im Build von `make_messbuild_salve.mjs`).
+
+    MESSBUILD=/tmp/mb_kum SALVE=1 FAKTOREN=1,2 node run_volley_mix_19.mjs 12
+    MESSBUILD=/tmp/mb_w2  SALVE=2 FAKTOREN=1,2 node run_volley_mix_19.mjs 12
+
+`SALVE=1|2` dient der Beschriftung und wird gegen den geladenen Build geprueft: enthaelt der
+Build `SALVE_JE`, muss `SALVE=2` gesetzt sein, sonst Abbruch. Damit kann keine Zelle falsch
+etikettiert im Protokoll landen - genau der Fehler, der bei zweistufigen Builds am leichtesten
+passiert. Ausserdem liest das Skript JE und DECKEL aus dem Build und schreibt sie in den Kopf
+der Ausgabe, statt sie aus dem Aufruf zu uebernehmen.
+
+Umgebungsvariablen: `FAKTOREN` (Vervielfachung des Salven-Bestands, Weg 1), `ANTEILE`
+(Skalierung der Endgame-Zusammensetzung). Das Skript haengt seine Ausgabe an
+`volley_mix_19.txt` an.
+
+Zusaetzliche Messbuild-Ordner an diesem Tag: `/tmp/mb_w2` (JE 20.000 / DECKEL 8),
+`/tmp/mb_w2d16` (20.000 / 16), `/tmp/mb_w2j10` (10.000 / 8) - alle ausserhalb des Repos.
