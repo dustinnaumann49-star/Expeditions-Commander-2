@@ -387,3 +387,9 @@ if (modus === 'aequiv') {
 } else {
   throw new Error(`Unbekannter Modus: ${modus}`);
 }
+
+// Nachtrag 25.08.2026 (zweite Session): ohne dieses ausdrueckliche Prozessende bleibt der Lauf
+// nach der letzten Zelle haengen - der Worker-Pool aus combatRunner.js haelt einen Thread offen.
+// Ein abgebrochener Lauf ist von einem haengenden dann nicht zu unterscheiden, siehe
+// sim_vorbedingungen_13.txt Befund 7.
+process.exit(0);
