@@ -65,6 +65,52 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 25.08.2026 (zweite Session): SCHRITT 13 IST BEGONNEN - V1 UND V2 SIND GEKLAERT, V3 IST
+  NEU UND OFFEN. NICHTS GEBAUT.** Protokoll `balance/session2-simulation/sim_vorbedingungen_13.txt`,
+  Werkzeug `probe_simclock_13.mjs` (neu). **Kein Messbuild-Protokoll** - die Sonde laeuft
+  absichtlich gegen den Repo-Build, weil sie Infrastruktur misst und keine Balance-Zahl. Alles
+  deterministisch, keine Serien.
+  - **Reihenfolge auf Nutzerfrage entschieden: V1 vor V2.** V2 hatte ein dreifach erprobtes
+    Muster, V1 nur ein punktuelles; V1 entscheidet die Architektur, V2 nur den Ablageort; V1 hat
+    eine Gabelung (Weg (b) griffe in genau die Dateien ein, die Block A bis D anfassen).
+  - **V1 IST GELOEST, WEG (a).** Ausgezaehlt statt geschaetzt: **`Date.now` ist die EINZIGE
+    Zeitquelle in `server/src`** - null argumentlose `new Date()`, null `performance.now`, null
+    `hrtime`, null Modul-Capture. Ressourcenzuwachs aus `runEconomyTick()` bei 0/1/5 Stunden auf
+    **0,000000 %** genau; Wochentagslogik und `processRaidTimer()` folgen bis zum echten
+    Raid-Spawn.
+  - **DIE "BEKANNTE LUECKE" IM WORKER IST GEGENSTANDSLOS.** `combat.ts`/`combatRunner.ts`/
+    `combat.worker.ts`: null `Date.now`. Kampf unter gefaelschter Uhr laeuft normal (44 Runden).
+    Die vom Plan verlangte Pruefung ist erledigt.
+  - **AUFLAGE: die Uhr muss INNERHALB eines Schritts konstant sein.** `tick()` benutzt `Date.now`
+    zugleich als Spieluhr und als **Stoppuhr** (`t0..t6`, `SLOW_TICK_*`), `heartbeat.ts` ebenso.
+    Eine bei jedem Aufruf weiterzaehlende Faelschung erzeugt dort Stundenwerte.
+  - **V2 IST GELOEST, ABER DAS BISHERIGE MUSTER WAR ES NICHT.** `db.js` liegt in der WURZEL des
+    dist-Baums und bildet `__dirname/../data/game.db` - eine Kopie nach `/tmp/mb_kum` legt die
+    Datenbank nach **`/tmp/data/game.db`**, geteilt von JEDEM Messbuild unter `/tmp` und von
+    keinem `rmSync` erfasst. Fuer Stub-Skripte folgenlos, fuer 720 Schritte x 3 Profile nicht.
+    **Reparatur ohne Eingriff in `db.ts`: Build in einen eigenen Unterordner des Laufordners.**
+  - **Der Prozess endet nicht von selbst** (Worker-Pool + DB-Handle). Der erste Sondenlauf lief
+    in ein Zeitlimit, obwohl alle Teile sauber durchgelaufen waren - ein abgebrochener Lauf sieht
+    aus wie ein haengender.
+  - **KORREKTUR, MESSREGEL 16: die Raid-Checkpoints liegen auf 0:00 BERLINER ORTSZEIT, nicht
+    0:00 UTC** (gemessen 22:00Z im Sommer, 23:00Z im Winter). Fuer die Haeufigkeit folgenlos, fuer
+    das Startdatum der Simulation nicht - die Umstellung faellt in jedes Fenster mit dem
+    25.10.2026 darin.
+  - **V3, NEU UND OFFEN: der kumulative Messbuild verdrahtet Block A Schritt 2 NICHT.**
+    `game/loot.js` liegt im Build, `missions.js` und `groupOps.js` verweisen null Mal darauf und
+    rufen weiterhin je dreimal `fleetSizeRewardMultiplier()`. Die bisherigen Skripte bauen die
+    Missionsschleife selbst nach - **die Simulation darf das ausdruecklich nicht.** Dazu haengen
+    K1 an Entscheidung 18, K4 an 13.1 (f), K5 an Entscheidung 3, Block A Schritt 2 und
+    Entscheidung 12. **Der Umfang des Simulations-Messbuilds ist damit eine NUTZERENTSCHEIDUNG**,
+    Vorschlag in Abschnitt 8 des Protokolls.
+  - **EBENFALLS VOR DEM ERSTEN LAUF ZU ENTSCHEIDEN: Bots handeln je HEARTBEAT, nicht je Zeit.**
+    `runGlobalHeartbeat()` (exportiert) ist der natuerliche Schritt-Treiber, aber `runBotTurn()`
+    laeuft einmal je Heartbeat - im Echtbetrieb 30-60 Bau-Entscheidungsschritte je Stunde, bei
+    Stundenschritten EINER. 13.3 hat diese Aufruf-Abhaengigkeit nur fuer die PIRATENBASEN
+    beseitigt. Betrifft Kriterium 4 und die Gegenpruefung von f.
+  - **Ist-Zustand aller neun Pakete gegen den Code geprueft: keines steht im Repo.** Nebenbei
+    bestaetigt: Imperator `maxCount` ist **6**, nicht 2 - die alte README-Zahl ist auch hier falsch.
+
 - **NEU 22.08.2026: ENTSCHEIDUNG 18 IST KALIBRIERT, NICHT GEBAUT.** Eskalierende Wellen
   **`ESC = 1 / 1,20 / 1,60`** mit **Bomberanteil 0,5** in der letzten Phase, **`RAID_WAVE_COUNT`
   bleibt 12**, `RAID_WAVE_ROLL` unangetastet. Protokoll `raid_hardness_18.txt` Abschnitt 8,
@@ -1062,6 +1108,28 @@ diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen
 Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
+
+**STAND 25.08.2026 (zweite Session): SCHRITT 13 LAEUFT. V1 UND V2 SIND GEKLAERT, V3 LIEGT ZUR
+ENTSCHEIDUNG BEIM NUTZER.** Wer hier einsteigt, liest zuerst
+`balance/session2-simulation/sim_vorbedingungen_13.txt` - dort steht, was geklaert ist und was
+noch fehlt. **Ohne die Entscheidung zu V3 (Umfang des Simulations-Messbuilds) wird die
+Simulation nicht gebaut**, sonst misst sie einen Zustand, den es nach dem Neustart nicht gibt.
+
+**ZWEI FRAGEN LIEGEN BEIM NUTZER, BEIDE VOR DEM BAU:**
+1. **Umfang des Simulations-Messbuilds (V3).** Vorschlag im Protokoll, Abschnitt 8: zwingend
+   Block A Schritt 2 **verdrahtet**, Entscheidung 18, 3, 12 und 13.1; begruendet weglassen
+   Entscheidung 19 (unterhalb JE = 20.000 beweisbar wirkungslos), R16 und die
+   Piratenbasen-Offensive; offen Block B und 7.2/7.3, je nach Zuschnitt.
+2. **Bot-Takt.** Bots handeln je Heartbeat, nicht je Zeit - bei Stundenschritten bekommt ein Bot
+   einen statt 30-60 Bau-Entscheidungsschritten. Drei Wege im Protokoll, Abschnitt 9.
+
+**DANACH ERST** kommen die beiden Punkte, fuer die Schritt 13 vorgezogen wurde: Befund H aus
+Entscheidung 18 (WERT der ausbaustandsabhaengigen Untergrenze) und die Gegenpruefung von f = 12.
+
+**NACHZUHOLEN, BEVOR DIE SIMULATION LAEUFT** (steht seit dem 25.08.2026, erste Session): ob Weg 2
+aus Entscheidung 19 die Endgame-MISSIONEN merklich leichter macht. Werkzeug liegt bereit
+(`run_volley_power_19.mjs aequiv`, Endgame-Zelle). Kein Hindernis fuer den Einbau, aber dort haengt
+die Ertragsseite.
 
 **REIHENFOLGE STEHT SEIT DEM 22.08.2026: 18 -> 19 -> 13.** Begruendung und die Messung, die sie
 traegt, im Stand-Eintrag oben und in `volley_scale_19.txt`.

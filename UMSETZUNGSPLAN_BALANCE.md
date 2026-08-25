@@ -213,8 +213,78 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 25.08.2026 (zweite Session) - V1 UND V2 SIND GEKLAERT, V3 IST NEU UND OFFEN.
+> NICHTS GEBAUT.** Protokoll `balance/session2-simulation/sim_vorbedingungen_13.txt`, Werkzeug
+> `probe_simclock_13.mjs` (neu). **Kein Messbuild-Protokoll:** die Sonde laeuft absichtlich gegen
+> den Repo-Build, weil sie Infrastruktur misst und keine Balance-Zahl. Alles deterministisch,
+> keine Serien.
+>
+> **Reihenfolge V1 vor V2, auf Nutzerfrage entschieden:** V2 hat ein dreifach erprobtes Muster,
+> V1 nur ein punktuelles; V1 entscheidet die Architektur, V2 nur den Ablageort; V1 hat eine
+> Gabelung (Weg (b) greift in genau die Dateien ein, die Block A bis D anfassen), V2 nicht.
+>
+> **V1 IST GELOEST, WEG (a), UND ZWAR VOLLSTAENDIG.** Ausgezaehlt: `Date.now` ist die EINZIGE
+> Zeitquelle in `server/src` - **null** argumentlose `new Date()`, **null** `performance.now`,
+> **null** `process.hrtime`, **null** Zeit-Capture auf Modulebene; die vier `new Date(x)` in
+> `data/economy.ts` bekommen alle ein durchgereichtes `now`. Gemessen: Ressourcenzuwachs aus
+> `runEconomyTick()` bei 0 h / 1 h / 5 h auf **0,000000 %** genau; `berlinWeekday()`,
+> `nextWeeklyCheckpoint()` und `processRaidTimer()` folgen der Faelschung bis zum echten
+> Raid-Spawn (12 Wellen).
+>
+> **DIE "BEKANNTE LUECKE" IM WORKER IST GEGENSTANDSLOS.** `combat.ts`, `combatRunner.ts` und
+> `combat.worker.ts` enthalten **null** `Date.now`; ein Kampf unter der gefaelschten Uhr laeuft
+> normal durch (44 Runden). Die vom Plan verlangte Pruefung ist damit erledigt.
+>
+> **AUFLAGE ZU V1: DIE UHR MUSS INNERHALB EINES SCHRITTS KONSTANT SEIN.** `tick()` benutzt
+> `Date.now` zugleich als Spieluhr (`now`, `state.lastUpdate`) und als **Stoppuhr** (`t0..t6`,
+> `SLOW_TICK_PHASE_MS`/`SLOW_TICK_TOTAL_MS`), `heartbeat.ts` ebenso. Eine bei jedem Aufruf
+> weiterzaehlende Faelschung macht daraus Stundenwerte und flutet den Lauf mit Warnungen.
+>
+> **V2 IST GELOEST, ABER DAS BISHERIGE MUSTER IST ES NICHT.** `db.ts` bildet
+> `__dirname/../data/game.db`, und `db.js` liegt in der WURZEL des dist-Baums - der Datenordner
+> liegt also **neben** dem Build, nicht darin. Eine Kopie nach `/tmp/mb_kum` legt die Datenbank
+> nach **`/tmp/data/game.db`**, geteilt von JEDEM Messbuild unter `/tmp` und von keinem `rmSync`
+> erfasst (die `make_messbuild_*.mjs` loeschen nur den Build-Ordner). Fuer Stub-Skripte folgenlos,
+> fuer 720 Schritte x 3 Profile nicht. **Reparatur ohne Eingriff in `db.ts`:** den Build in einen
+> eigenen Unterordner des Laufordners kopieren (`<lauf>/dist`), dann landet die Datenbank unter
+> `<lauf>/data`. Der im Plan erwogene Env-Override wird nicht gebraucht.
+>
+> **DER PROZESS ENDET NICHT VON SELBST.** Worker-Pool und DB-Handle halten den Event-Loop offen;
+> der erste Sondenlauf lief in ein Zeitlimit, obwohl alle Teile bereits sauber durchgelaufen
+> waren. Ein abgebrochener Lauf ist von einem haengenden nicht zu unterscheiden - der Lauf muss
+> ausdruecklich beenden.
+>
+> **KORREKTUR, MESSREGEL 16: die Raid-Checkpoints liegen auf 0:00 BERLINER ORTSZEIT, nicht
+> 0:00 UTC.** Gemessen 22:00Z im Sommer, 23:00Z im Winter. Fuer die Haeufigkeit folgenlos, fuer
+> die Simulation nicht: die Umstellung faellt in jedes 30-Tage-Fenster, das den 25.10.2026
+> enthaelt. Beim Startdatum beruecksichtigen. Die Angabe "Mi/So 0:00 UTC" steht an mehreren
+> Stellen in Plan und Uebergabe und ist dort so zu lesen.
+>
+> **V3 (NEU) - DER KUMULATIVE MESSBUILD VERDRAHTET BLOCK A SCHRITT 2 NICHT.** Er sagt das selbst
+> in seinem Kopf; nachgezaehlt in `/tmp/mb_kum`: `game/loot.js` ist vorhanden, aber `missions.js`
+> und `groupOps.js` verweisen **null** Mal darauf und rufen weiterhin je dreimal
+> `fleetSizeRewardMultiplier()`. Die bisherigen Skripte kommen damit zurecht, weil sie die
+> Missionsschleife selbst nachbauen - **die Simulation darf das ausdruecklich nicht** (Abschnitt
+> 1b: "echte Spiel-Funktionen verwenden"). Dazu kommen die Kriterien: K1 haengt an Entscheidung 18,
+> K4 an 13.1 (f), K5 an Entscheidung 3, Block A Schritt 2 und Entscheidung 12. **Der
+> Simulations-Messbuild muss also deutlich weiter gehen als jeder bisherige. Umfang ist eine
+> Nutzerentscheidung, Vorschlag in Abschnitt 8 des Protokolls** (zwingend: Block A Schritt 2
+> verdrahtet, 18, 3, 12, 13.1; begruendet weglassen: 19 - beweisbar wirkungslos unterhalb der
+> Schwelle JE = 20.000 -, R16, Piratenbasen-Offensive; offen: Block B und 7.2/7.3, je nach
+> Zuschnitt der Simulation).
+>
+> **OFFEN, GEHOERT VOR DEN ERSTEN LAUF: BOTS HANDELN JE HEARTBEAT, NICHT JE ZEIT.**
+> `runGlobalHeartbeat()` (exportiert) ist der natuerliche Schritt-Treiber - er macht fuer ALLE
+> Nutzer `tick()`, `processMissions()`, `processRaidTimer()`, `runBotTurn()` und speichert. Aber
+> `runBotTurn()` laeuft einmal je Heartbeat, im Echtbetrieb also 30-60 Bau-Entscheidungsschritte
+> je Stunde; bei Stundenschritten bekaeme ein Bot EINEN. Genau daran haengen Kriterium 4 und die
+> Gegenpruefung von f. 13.3 hat diese Aufruf-Abhaengigkeit nur fuer die PIRATENBASEN beseitigt,
+> die KI-Mitspieler haben kein Raster. Drei Wege im Protokoll, keiner entschieden.
+
 Beide Punkte waren im Plan stillschweigend als geloest vorausgesetzt. Sie sind es nicht, und beide
 blockieren den Bau der Simulation - sie gehoeren VOR Schritt 13 geklaert, nicht waehrenddessen.
+*Nachtrag 25.08.2026: beide sind jetzt geklaert (Messkasten oben), dafuer ist mit V3 ein dritter
+Blocker dazugekommen.*
 
 **V1. Die Spielfunktionen lesen die Uhr direkt, es gibt keine einspeisbare Zeitquelle.**
 `Date.now()` steht 19x in `actions.ts`, 9x in `state.ts`, 7x in `raids.ts`, 4x in `missions.ts`.
@@ -5456,6 +5526,19 @@ SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
      -> ZUERST die beiden technischen Vorbedingungen V1 (Zeitquelle) und V2 (Datenbank)
         aus Abschnitt 1b klaeren. Beide blockieren den Bau, beide waren bis zum
         10.08.2026 im Plan stillschweigend als geloest vorausgesetzt.
+     -> 25.08.2026: V1 UND V2 SIND GEKLAERT (Messkasten in Abschnitt 1b, Protokoll
+        sim_vorbedingungen_13.txt, Werkzeug probe_simclock_13.mjs). V1 ueber Weg (a),
+        Date.now ist die einzige Zeitquelle des Servers; Auflage: schrittkonstante Uhr,
+        weil tick() sie zugleich als Stoppuhr benutzt. V2 ohne Eingriff in db.ts, aber
+        der Build gehoert in einen EIGENEN Unterordner des Laufordners.
+     -> NEU UND OFFEN: V3, der Umfang des Simulations-Messbuilds. Der kumulative Build
+        verdrahtet Block A Schritt 2 NICHT in missions.js/groupOps.js; die bisherigen
+        Skripte bauen die Missionsschleife selbst nach, die Simulation darf das nicht.
+        K1 haengt zusaetzlich an Entscheidung 18, K4 an 13.1, K5 an Entscheidung 3 und 12.
+        Umfang ist eine NUTZERENTSCHEIDUNG, Vorschlag in Abschnitt 8 des Protokolls.
+     -> Ebenfalls vor dem ersten Lauf zu entscheiden: Bots handeln je HEARTBEAT, nicht je
+        Zeit (30-60 Bau-Entscheidungsschritte je Stunde gegen einen bei Stundenschritten).
+        Betrifft Kriterium 4 und die Gegenpruefung von f.
 
 BLOCK D (Zeit-Umbau, eigener Block wegen Doppelbremse)
  14. Entscheidung 9.1 + R1 + 7.4  Saettigungskurve, additive Reduktionen UND der Client-Spiegel
