@@ -5428,11 +5428,26 @@ AUSSERHALB DER BLOCKREIHENFOLGE (21./22.08.2026, Reihenfolge 18 -> 19 -> 13 ents
                           die Wellenzahl dynamisch). ABER: die Eskalation ist fuer den Spieler
                           unsichtbar - Phase und Bunkerbrecher erscheinen nirgends. Anzeige
                           vorschlagen, NICHT vor der Eskalation ausliefern.
- 12c. Entscheidung 19  Weg 2 (JE = 20.000, DECKEL = 8) plus Weg 1 nur gekoppelt.
-                       GEMESSEN 21.08.2026, NICHT GEBAUT. Offen: maxCount x2 ja/nein und woran
-                       gekoppelt, sowie MULTI_TARGET_POWER_CORRECTION.
-                       -> Weg 2 trifft AUCH sentinelkanone/ultimatekanone (Nachtrag 22.08.2026).
-                          In den Kalibrierzellen von 18 wirkungslos, am Endgame-Konto Faktor 5-8.
+ 12c. Entscheidung 19  ENTSCHIEDEN 25.08.2026, NICHT GEBAUT.
+                       Weg 2 mit JE = 20.000 und DECKEL = 16. KEIN Weg 1 - maxCount bleibt bei
+                       150/90/30. MULTI_TARGET_POWER_CORRECTION bleibt bei 8.
+                       -> Endgame-Schadensanteil der Salvenschiffe 2,8 -> 11,1 % (Faktor 4,0),
+                          Frueh- und Mittelstand beweisbar unveraendert. Ohne Preisaenderung.
+                       -> Weg 1 verworfen: doppelter Bestandswert fuer +2,5 Punkte im Endgame,
+                          aber +18 im Mittel- und +10 im Fruehstand. Falsche Form.
+                       -> MULTI_TARGET_POWER_CORRECTION ist als Regler untauglich: im Endgame
+                          bewegt sie 0,06 %, und von 1 bis 100 macht ein hoeherer Wert die
+                          Salvenflotte BESSER. Protokoll volley_power_19.txt.
+                       -> Weg 2 trifft AUCH sentinelkanone/ultimatekanone. In den
+                          Kalibrierzellen von 18 BEWEISBAR wirkungslos (groesster Feindstapel
+                          14.757 gegen Schwelle 20.000, auch in der haertesten
+                          Eskalationsphase), am Endgame-Konto Faktor 4,1 - im Gleichklang mit
+                          den Schiffen. Kein separater Regler noetig. Protokoll
+                          volley_def_19.txt.
+                       -> KEIN Client-Spiegel: Weg 2 sitzt allein in fireShots().
+                       -> OFFEN, vor Schritt 13 nachzuholen: ob Weg 2 die Endgame-MISSIONEN
+                          merklich leichter macht (Gesamtschaden der eigenen Seite +9 %,
+                          unbelegt). Werkzeug run_volley_power_19.mjs aequiv, Endgame-Zelle.
 
 SIMULATION (ENTSCHIEDEN 09.08.2026 - vorgezogen aus Block F)
  13. 30-Tage-Fortschrittssimulation nach Abschnitt 1b bauen und erstmals ausfuehren
