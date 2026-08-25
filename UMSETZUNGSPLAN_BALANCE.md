@@ -2255,6 +2255,22 @@ hinaus.
 -> Schiffe/Verteidigung: 3 Bau-Lanes -> **1 Lane + Warteschlange**. `BuildQueue.tsx` ist bereits
 Lane-basiert, die Warteschlange existiert im Ansatz.
 -> Gebaeude: `MAX_BUILDING_SLOTS` steht bereits auf 1, hier nur die Warteschlange sicherstellen.
+-> **OFFEN, nachgetragen 25.08.2026 (Nutzerfrage): die MODUL-Slots fehlen in dieser Aufzaehlung.**
+   `MAX_SHIP_MODULE_SLOTS` und `MAX_DEFENSE_MODULE_SLOTS` stehen beide auf **3** und wurden laut
+   Code-Kommentar in `combatConstants.ts` ausdruecklich "analog zu den 3 normalen Bauplaetzen
+   (`MAX_BUILD_SLOTS`/`MAX_DEFENSE_SLOTS`)" von 1 auf 3 angehoben - also mit genau der Begruendung,
+   die 9.2 gerade umdreht. Gehen die normalen Bauplaetze auf 1, ist unentschieden, ob die
+   Modul-Plaetze mitgehen. Beide Antworten sind vertretbar und haben Folgen:
+   - **Mitziehen (3 -> 1 + Warteschlange):** haelt die Begruendung des Code-Kommentars aufrecht und
+     verhindert, dass Module zum Umgehungsweg fuer den Zeit-Engpass werden. Verschaerft aber die
+     Startphase zusaetzlich, und genau die ist der kritische Punkt von 9.2.
+   - **Bei 3 belassen:** bewusste Ausnahme, weil Module eine LEITER sind (Ressourcen-Seite, Band
+     3-10 Tage nach Entscheidung 9 Punkt 1) und keine Mengenproduktion. Dann muss der Code-Kommentar
+     mit korrigiert werden, sonst begruendet er sich auf einen Wert, den es nicht mehr gibt.
+   Gemessen ist dazu nichts. **Gehoert in dieselbe Kalibrierung wie die uebrigen Slot-Zahlen**, also
+   gegen Kriterium 2 UND 3 der 30-Tage-Simulation - Schiffs-Module tragen ueber
+   `MAX_SHIP_MODULE_SLOTS` direkt zum Leerlauf-Anteil bei und muessen dort ohnehin getrennt je
+   Auftragsart erfasst werden (siehe Abschnitt 1b, "Leerlauf getrennt je Auftragsart erfassen").
 -> **Die Warteschlange ist zwingend, nicht optional.** Der Nutzer ist teils mehrere Wochen
 abwesend. Ohne Warteschlange bestraft 1 Slot genau diese Abwesenheit.
 -> Der Nachteil "fuehlt sich wie eine Wegnahme an" entfaellt durch den Server-Reset (Abschnitt 1a) -

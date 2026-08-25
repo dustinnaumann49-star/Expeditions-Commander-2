@@ -65,6 +65,25 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 25.08.2026 (zweite Session, Nutzerfrage): OFFENER PUNKT BEI ENTSCHEIDUNG 9.2 NACHGETRAGEN -
+  DIE MODUL-SLOTS FEHLTEN IN DER SLOT-REDUKTION.** 9.2 nennt Forschung (4 -> 1), Schiffe und
+  Verteidigung (3 -> 1) und Gebaeude (steht schon auf 1). `MAX_SHIP_MODULE_SLOTS` und
+  `MAX_DEFENSE_MODULE_SLOTS` stehen beide auf **3** und wurden laut Code-Kommentar ausdruecklich
+  "analog zu den 3 normalen Bauplaetzen" von 1 auf 3 angehoben - also mit genau der Begruendung, die
+  9.2 umdreht. Unentschieden, ob sie mitgehen. Gemessen ist dazu nichts; gehoert in dieselbe
+  Kalibrierung gegen Kriterium 2 und 3 der 30-Tage-Simulation. Beide Wege samt Folgen stehen bei 9.2.
+  **Zwei Klarstellungen aus derselben Nachfrage, damit sie nicht wieder aufgerollt werden:**
+  - **Die heutige RF-Tabelle trifft in vier von acht Faellen schon die eigene Klasse**
+    (schwer->leicht, schlachtschiff->kreuzer, zerstoerer->schlachtkreuzer, reaper->zerstoerer), aber
+    immer nur EINEN Vertreter, und drei Faelle treffen die Klasse darunter. Entscheidung 16
+    Variante A aendert trotzdem strukturell etwas: `leicht` bekommt zum ersten Mal ueberhaupt RF
+    (daher der zwingende `ZIELERFASSUNG_BASE`-Eintrag), `bomber` zum ersten Mal Schiffs-RF, und
+    `bomber`/`reaper` werden erstmals von Standardschiffen gekontert. **Der grosse Hebel ist aber
+    nicht die Tabelle, sondern der Groessenklassen-Ausweichbonus** (Befund 4 in `rf_depth.txt`).
+  - **"Eigene Klasse plus die darunter" ist Variante C und wurde am 19.08.2026 gemessen und
+    verworfen** (Befund 3): sie verschiebt das Problem nur von der Elite- auf die Kreuzer-Klasse,
+    die dann in allen drei Wellen bei 0 % Siegquote bleibt.
+
 - **NEU 25.08.2026 (zweite Session): DER OFFENE PUNKT AUS ENTSCHEIDUNG 19 IST GEMESSEN - JA, WEG 2
   MACHT DIE ENDGAME-MISSIONEN MERKLICH LEICHTER. NICHTS GEBAUT.** Protokoll
   `balance/session2-simulation/volley_mission_19.txt`, Werkzeug `probe_volley_mission_19.mjs` (neu).
