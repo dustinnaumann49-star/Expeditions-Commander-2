@@ -153,3 +153,37 @@ Fuenf Teile, alle deterministisch, keine Serien:
 
 Kein Messbuild-Ordner noetig; der Laufordner wird nach dem Lauf geloescht (`--behalten` haelt
 ihn).
+
+## Neu (zweite Session, Fortsetzung): `check_build_anker.mjs` und `probe_volley_mission_19.mjs`
+
+### `check_build_anker.mjs` — Build-Pruefung, herausgeloest und wiederverwendbar
+
+    MESSBUILD=/tmp/mb_kum node check_build_anker.mjs 40
+
+Bisher steckte diese Pruefung als Teilmodus `anker` in `run_novice_bonus.mjs`. Ab Schritt 13
+muessen mehrere aufeinander aufbauende Builds geprueft werden (`kum` -> `salve` -> `sim13`),
+deshalb steht sie jetzt allein. Soll aus `loot_curve.txt` Scheibe 1, Zelle mittel/hoch:
+1,05 Mrd bei 11,1 Mrd Feindmacht, also 0,0946 je Punkt. Ausgegeben werden **beide** Zahlen,
+normiert und roh, mit dem ausdruecklichen Hinweis, welche gilt. Toleranz 5 % normiert.
+
+Am 25.08.2026 gegen `/tmp/mb_kum` gefahren: **normiert -2,3 %, roh +6,7 %** — die Falle
+reproduziert sich zuverlaessig, ein korrekter Build sieht roh verglichen falsch aus.
+
+### `probe_volley_mission_19.mjs` — Vorfrage zu Weg 2 auf der Missionsseite
+
+    MESSBUILD=/tmp/mb_kum node probe_volley_mission_19.mjs 200
+
+Gegenstueck zu `probe_volley_scale_19.mjs`, das dieselbe Frage fuer die Raid-Wellen
+beantwortet hat. Zaehlt **nur die Gegnererzeugung** einer Solo-Mission, kein Kampflauf, keine
+Serien: wie gross ist der groesste Feindstapel je Typ, und wie viele Treffer je Typ ergaebe
+`min(DECKEL, ceil(n / JE))`. Solange dort 1 steht, ist Weg 2 in der Zelle wirkungslos und
+braucht keine Serie. Ergebnis siehe `volley_mission_19.txt`, Befund 1.
+
+### Geaendert: `run_volley_power_19.mjs`
+
+Am Ende ein `process.exit(0)` ergaenzt, sonst nichts. Ohne das blieb der Lauf nach der letzten
+Zelle haengen (Worker-Pool aus `combatRunner.js`) — ein Lauf von 40 Serien ueber vier Zellen
+brauchte dadurch scheinbar ueber vier Minuten statt **drei Sekunden**, und ein per Zeitlimit
+abgebrochener Lauf war von einem haengenden nicht zu unterscheiden. Siehe
+`sim_vorbedingungen_13.txt` Befund 7; dieselbe Ergaenzung gehoert in jedes weitere Skript, das
+`combatRunner` laedt.
