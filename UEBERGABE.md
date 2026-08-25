@@ -1075,9 +1075,43 @@ Befund H.**
 ja/nein und WORAN das zusaetzliche Limit gekoppelt wird; (2) `MULTI_TARGET_POWER_CORRECTION` unter
 Weg 2.~~ **ZAHL 2 IST AM 25.08.2026 GEMESSEN UND BEANTWORTET - NEGATIV.**
 
-**NAECHSTER SCHRITT: ENTSCHEIDUNG 19, ZAHL 1 (`maxCount`).** Es liegt nur noch EINE
-Nutzerentscheidung offen: `maxCount` x2 (300/180/60) ja/nein und WORAN das zusaetzliche Limit
-gekoppelt wird. Flach ist nicht empfohlen (Weg 1 wirkt ueberall, Weg 2 nur spaet).
+~~**NAECHSTER SCHRITT: ENTSCHEIDUNG 19, ZAHL 1 (`maxCount`).**~~ **AM 25.08.2026 GEMESSEN,
+EMPFEHLUNG STEHT, ZUR BESTAETIGUNG VORGELEGT.**
+
+**ENTSCHEIDUNG 19 IST DAMIT KOMPLETT GEMESSEN.** Beide Zahlen sind beantwortet. Was noch fehlt,
+ist ausschliesslich dein Ja/Nein zur Empfehlung.
+
+**NUTZERVORGABE VOM 25.08.2026 HAT DIE ZIELRICHTUNG GEDREHT.** Die Salvenschiffe sollen
+Glaskanonen sein und viel Schaden austeilen; Sterben ist eingepreist; Preis darf steigen. Das
+Problem ist NICHT, dass sie frueh zu stark sind, sondern dass sie im Endgame wirkungslos
+sterben. Entscheidung 19 war vorher als Eindaemmung angelegt - ab hier ist das Ziel, den
+SPAETEN Beitrag zu heben, ohne den Frueh- und Mittelstand anzufassen.
+
+**EMPFEHLUNG (auf Delegation eingetragen, umkehrbar): Weg 1 NEIN, Weg 2 JA mit
+JE = 20.000 und DECKEL 8 -> 16.** Endgame-Schadensanteil 2,8 -> 11,1 % (Faktor 4,0), Fruehstand
+beweisbar unveraendert, Mittelstand unveraendert, **ohne jede Preisaenderung**. maxCount bleibt
+bei 150/90/30. Protokoll `balance/session2-simulation/volley_mix_19.txt`.
+
+**WARUM WEG 1 NICHT:** maxCount x2 kostet den doppelten Bestandswert (2,76 -> 5,52 Mrd) und
+bringt im Endgame nur +2,5 Punkte, hebt dafuer den Mittelstand um +18 und den Fruehstand um +10
+Punkte - es wirkt am staerksten dort, wo nichts fehlt. Weg 2 dagegen ist unterhalb von rund
+100.000 eigenen Schiffen BEWEISBAR wirkungslos (kein Feindtyp erreicht dort die 20.000-Schwelle,
+deterministisch), und DECKEL ist innerhalb von Weg 2 der endgame-selektive Regler, waehrend JE
+den ganzen Mittelbau mitzieht.
+
+**ZWEI OFFENE NEBENFRAGEN ENTFALLEN DAMIT ERSATZLOS:** die Kopplungsfrage ("WORAN wird das
+zusaetzliche Limit gekoppelt") und die ZWEI Client-Spiegel aus Messregel 8
+(`ShipBuildCard.tsx`, `DefenseBuildCard.tsx`). Weg 2 hat KEINEN Client-Spiegel, er sitzt allein
+in `fireShots()`.
+
+**ABWEICHUNG VON EINER GESETZTEN ZAHL, BITTE AUSDRUECKLICH BESTAETIGEN:** am 22.08.2026 waren
+"Weg 2 (JE = 20.000, DECKEL = 8) in Kombination mit Weg 1" gesetzt. Die Empfehlung weicht in
+zwei Punkten ab (DECKEL 16 statt 8; ohne Weg 1), allein wegen der neuen Zielrichtung.
+
+**VOR DEM EINBAU VON WEG 2 NOCH ZU PRUEFEN:** Weg 2 trifft ueber `MULTI_TARGET_VOLLEY_SHIPS`
+auch `sentinelkanone`/`ultimatekanone`. Im Raid stehen diesen sehr grosse Feindstapel gegenueber,
+dort wird DECKEL 16 binden - das ist der einzige Punkt, an dem Weg 2 in Entscheidung 18
+(kalibriert) und 16 hineinreicht. Nicht gemessen.
 
 **ZAHL 2 - `MULTI_TARGET_POWER_CORRECTION` - IST ERLEDIGT.** Protokoll
 `balance/session2-simulation/volley_power_19.txt`, Messkasten vom 25.08.2026 bei Entscheidung 19.

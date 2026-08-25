@@ -3791,6 +3791,78 @@ normalen Schiffen, die es in Massen gibt."
 > Vorzeichenwechsels genug, fuer eine Kalibrierung nicht - die ist nach D nicht vorgesehen);
 > Gegenmessung gegen den Weg-2-Build (nach A ohne Erkenntniswert).
 
+> **MESSKASTEN 25.08.2026 (zweiter am selben Tag) - ZAHL 1 IST GEMESSEN, EMPFEHLUNG STEHT.**
+> Protokoll `balance/session2-simulation/volley_mix_19.txt`, Werkzeug `run_volley_mix_19.mjs`
+> (neu). Messbuild wie oben, Weg-2-Varianten ueber `make_messbuild_salve.mjs`.
+>
+> **NUTZERVORGABE VOM 25.08.2026 - SIE DREHT DIE ZIELRICHTUNG.** "Das sind Glaskanonen, dafuer
+> sollen die aber im Kampf wirklich was ausmachen. Im spaeteren Spielstand machen sie nichts
+> mehr aus - also sterben sie ohne Leistung erbracht zu haben. Dann lieber Preis hoch wenn
+> noetig, aber dafuer leisten die hohen Beitrag. Sterben ist normal, weil Glaskanone halt."
+> Entscheidung 19 war bis dahin als **Eindaemmung** angelegt; ab hier ist das Ziel ein
+> **Anheben des spaeten Beitrags bei unveraendertem Frueh- und Mittelstand.** Sterben ist
+> eingepreist und kein Kriterium mehr.
+>
+> **DAS VOLLE GITTER** (Schadensanteil der drei Salven-Typen, 12 Kaempfe je Zelle):
+>
+> | Schiffe | Ist | Weg 2 | Weg 1 | Weg 1+2 |
+> |---|---|---|---|---|
+> | 5.235 | 74,79 % | 72,02 % | 84,81 % | 79,68 % |
+> | 20.135 | 47,66 % | 48,86 % | 66,03 % | 63,45 % |
+> | 99.603 | 18,39 % | 22,20 % | 31,96 % | 37,26 % |
+> | 347.933 | 7,19 % | 12,27 % | 13,62 % | 19,49 % |
+> | 993.597 | **2,76 %** | **9,57 %** | **5,24 %** | **16,76 %** |
+> | Bestandswert | 2,76 Mrd | 2,76 Mrd | 5,52 Mrd | 5,52 Mrd |
+>
+> Die Ist-Kurve reproduziert `salven_19.txt` Zelle fuer Zelle. **Achtung:** die viel zitierten
+> 1,11 % aus BEFUND 1 stammen aus dem EINZELNEN echten Kampfbericht, nicht aus der Kurve - der
+> Kurvenwert des Ist-Zustands ist 2,8 %. Nicht vermischen.
+>
+> **BEFUND 1 - WEG 1 HAT DIE FALSCHE FORM FUER DIESES ZIEL.** maxCount x2 kostet den doppelten
+> Bestandswert und bringt im Endgame nur **+2,5 Punkte**, waehrend es den Mittelstand um **+18**
+> und den Fruehstand um **+10** hebt. Es wirkt am staerksten, wo nichts fehlt.
+>
+> **BEFUND 2 - WEG 2 HAT DIE RICHTIGE FORM.** Endgame 2,76 -> 9,57 %, Frueh- und Mittelstand
+> unveraendert (innerhalb der Streuung).
+>
+> **BEFUND 3 - DAS IST KONSTRUKTIV, NICHT ZUFALL.** Treffer je Typ =
+> `min(DECKEL, ceil(Einheiten / JE))`. In der 5.235-Zelle hat der NPC rund 15.000 Einheiten ueber
+> ALLE Typen, kein Typ erreicht 20.000 - Weg 2 ist dort **beweisbar wirkungslos, unabhaengig vom
+> Deckel**. Deterministisch, keine Serien noetig. Die Wirkung setzt bei etwa 100.000 eigenen
+> Schiffen ein.
+>
+> **BEFUND 4 - DIE BEIDEN REGLER SIND NICHT AUSTAUSCHBAR.** DECKEL ist **endgame-selektiv**
+> (8 -> 16: letzte Zelle 9,4 -> 11,1 %, 347.933 unveraendert). JE ist **breit** (20.000 ->
+> 10.000: Endgame 9,6 -> 14,6 %, aber 347.933 12,3 -> 18,2 % und 20.135 48,9 -> 51,1 %).
+> Endgame-Zelle je drei Scheiben (12/25/25): DECKEL 8 -> rund 9,4 % (Streuung 0,5 Punkte),
+> DECKEL 16 -> rund 11,1 % (0,6 Punkte). Der Abstand von 1,7 Punkten ist trennscharf.
+>
+> **EMPFEHLUNG - BESTE BALANCIERTE KOMBINATION (auf Delegation eingetragen, umkehrbar):**
+> **Weg 1 NEIN** (maxCount bleibt 150/90/30), **Weg 2 JA mit JE = 20.000 und DECKEL 8 -> 16.**
+> Ergebnis: Fruehstand 74,8 -> 74,8 % (beweisbar unveraendert), Mittelstand 47,7 -> 46,7 %,
+> 99.603 18,4 -> 24,9 %, 347.933 7,2 -> 11,9 %, **Endgame 2,8 -> 11,1 % (Faktor 4,0)**, und das
+> **ohne jede Preisaenderung**. Der vom Nutzer angebotene hoehere Preis wird nicht gebraucht.
+> Zusaetzlich flacht die Kurve ab: Ist faellt ueber die Flottengroessen um Faktor 27, mit der
+> Empfehlung nur noch um Faktor 6,7 - die Schiffe behalten ueber den ganzen Spielverlauf eine
+> Rolle.
+> **Zwei offene Nebenfragen entfallen ersatzlos:** die Kopplungsfrage ("WORAN wird das
+> zusaetzliche Limit gekoppelt") und die ZWEI Client-Spiegel aus Messregel 8
+> (`ShipBuildCard.tsx`, `DefenseBuildCard.tsx`), die eine ausbaustandsabhaengige Kopplung noetig
+> gemacht haette. Weg 2 hat **keinen** Client-Spiegel, er sitzt allein in `fireShots()`.
+>
+> **ABWEICHUNG VON EINER GESETZTEN ZAHL, AUSDRUECKLICH ZU BESTAETIGEN.** Am 22.08.2026 waren
+> "Weg 2 (JE = 20.000, DECKEL = 8) **in Kombination mit Weg 1**" gesetzt. Die Empfehlung weicht
+> in zwei Punkten ab: DECKEL 16 statt 8, und ohne Weg 1. Grund ist allein die neue
+> Nutzervorgabe, die das Ziel umgedreht hat - unter der alten Zielsetzung waren 8 und die
+> Kombination folgerichtig.
+>
+> **NICHT GEMESSEN, VOR DEM EINBAU NACHZUHOLEN:** (a) ob Weg 2 die Endgame-Missionen merklich
+> leichter macht (Gesamtschaden der eigenen Seite steigt um rund 9 % - wenig, aber unbelegt);
+> (b) die Wirkung von Weg 2 auf `sentinelkanone`/`ultimatekanone`, die ueber
+> `MULTI_TARGET_VOLLEY_SHIPS` mitgetroffen werden - im Raid stehen ihnen sehr grosse Stapel
+> gegenueber, dort wird DECKEL 16 binden. Das ist der einzige Punkt, an dem Weg 2 ueber
+> Entscheidung 19 hinaus in Entscheidung 18 und 16 hineinreicht.
+
 ---
 
 ## 2a. Vorgezogene Umsetzung am 10.08.2026 (ausserhalb der Blockreihenfolge)
