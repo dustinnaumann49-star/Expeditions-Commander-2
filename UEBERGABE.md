@@ -65,6 +65,46 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 26.08.2026 (vierte Session): DIE VERDRAHTUNGSPROBE KONNTE NICHT GEFAHREN WERDEN - DIE
+  BEIDEN WERKZEUGE DER VORSITZUNG LIEGEN NICHT IM REPO.** `make_messbuild_sim13.mjs` und
+  `sim13_lauf.mjs` fehlen in `balance/session2-simulation`. Nicht geloescht, sondern **nie
+  hochgeladen**: `git log --all --diff-filter=A` kennt beide Dateinamen nicht, waehrend
+  `sim13_geruest.txt` aus derselben Session vorhanden ist. Der Upload hat das Protokoll
+  mitgenommen und die Werkzeuge nicht. **Nichts gebaut, kein Eingriff in `server/src`.**
+  - **FOLGE 1: die Zahl -2,0 % ist nicht mehr reproduzierbar.** Sie gehoert zu einem Build, den
+    kein vorhandenes Werkzeug erzeugt. Sie bleibt als Protokollwert stehen, taugt aber nicht mehr
+    als Vergleichsanker fuer einen kuenftigen Lauf.
+  - **FOLGE 2: nicht nur Schritt 1 der Liste in `sim13_geruest.txt` Abschnitt 8 haengt, sondern
+    alle vier.** Schritt 2 (Spielermodell entstoeren) und Schritt 3 (Quellen-Instrumentierung)
+    arbeiten beide an `sim13_lauf.mjs`, Schritt 4 faehrt es.
+  - **WAS GEPRUEFT UND GUELTIG IST:** `npm install` + `npx tsc -p tsconfig.json` laufen sauber
+    durch, `make_messbuild_kum.mjs /tmp/mb_kum --rf=4 --evk=0.20 --evm=0.08` baut, und
+    `MESSBUILD=/tmp/mb_kum node check_build_anker.mjs 40` liefert **normiert -1,8 %** (roh +5,3 %,
+    1,105 Mrd bei 11,895 Mrd Feindmacht, 4,67 Siege). Damit liegt der Eingangs-Build im Band der
+    vier bisher gemessenen Werte desselben Ankers (-1,1 / -1,8 / -2,3 / -2,8 %) und die
+    Werkzeugkette ist arbeitsfaehig. **Die roh/normiert-Falle reproduziert sich zum vierten Mal.**
+  - **AM CODE NACHGEZAEHLT, was fuer die Verdrahtung noch fehlt** (Anker aus `/tmp/mb_kum`
+    gelesen, nicht aus der TS-Quelle): `missions.js` und `groupOps.js` importieren
+    `fleetSizeRewardMultiplier` weiterhin aus `combat.js` und rufen sie in `runHourlyCheck()`
+    (Z. 321) bzw. `runGroupHourlyCheck()` (Z. 713) auf; `game/loot.js` liegt im Build und wird von
+    keiner der beiden Dateien referenziert. Die Belohnung laeuft unveraendert ueber
+    `mission.combatWins` und wird in `finalizeMission()` (Z. 604 ff.) als
+    `combatWins * winContainer.count` und `winResources * combatWins` ausgezahlt.
+  - **NEUE OFFENE FRAGE AN DIE BAUANLEITUNG VON ENTSCHEIDUNG 2, aus demselben Nachzaehlen:**
+    `mission.combatWins` traegt heute ZWEI Verdoppler mit sich (Sandronator x2, Wochen-Event
+    Mo/Fr x2, beide in `runHourlyCheck()` direkt auf den Zaehler multipliziert). Faellt der
+    Container-Fund auf EINMAL JE MISSION und wird `winResources` auf die Kurve umgestellt, verliert
+    dieser Zaehler seine Traegerfunktion - und die Bauanleitung sagt nicht, wo die beiden
+    Verdoppler danach landen. Die Referenzschleife in `check_build_anker.mjs` kennt beide nicht.
+    **Das ist keine Randfrage: sie entscheidet mit, ob Probe und Referenz ueberhaupt
+    uebereinstimmen koennen.** Siehe Messkasten bei Entscheidung 2.
+  - **METHODISCHER VORBEHALT ZUR WIEDERHERSTELLUNG, ausdruecklich:** wer die neun Block-A-Patches
+    jetzt neu schreibt und danach gegen `check_build_anker.mjs` prueft, prueft seine eigene
+    Nachbildung gegen die Vorlage, nach der er sie geschrieben hat. Das belegt, dass die Semantik
+    der Referenzschleife im echten Codepfad ueberhaupt herstellbar ist, und es liefert die
+    Patch-Anker fuer die Bauanleitung - es belegt NICHT die urspruengliche Aussage
+    ("der Build vom 26.08. zahlt"). Die ist mit dem Build verloren.
+
 - **NEU 26.08.2026 (dritte Session): SIMULATIONS-MESSBUILD UND SIMULATIONSGERUEST GEBAUT UND
   GEPRUEFT. DER LAUF IST NOCH NICHT AUSWERTBAR.** Protokoll
   `balance/session2-simulation/sim13_geruest.txt`, Werkzeuge `make_messbuild_sim13.mjs` und
@@ -877,6 +917,17 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein Protokoll belegt nicht, dass sein Werkzeug im Repo liegt - und ein Messwert ohne sein
+Werkzeug ist nicht mehr reproduzierbar.** `sim13_geruest.txt` nennt `make_messbuild_sim13.mjs` und
+`sim13_lauf.mjs` in der Kopfzeile, `WERKZEUGE_26-08-2026.md` beschreibt beide mit Aufrufsyntax und
+Schaltern - hochgeladen wurde keines von beiden. Aufgefallen ist es erst in der Folgesitzung, beim
+Versuch, die dokumentierte Befehlszeile auszufuehren. Damit ist der Ankerwert -2,0 % zwar
+protokolliert, aber an keinen erzeugbaren Build mehr gebunden. **Am Ende jeder Session pruefen, ob
+JEDE im Protokoll genannte Datei tatsaechlich im Repo liegt** - `git status` und ein `ls` auf die
+im Werkzeug-Dokument genannten Namen kosten zehn Sekunden. Verwandt mit der Regel "Doku und Code
+duerfen nie auseinanderlaufen" aus der Arbeitsregel, aber eine Ebene tiefer: hier lief nicht die
+Beschreibung dem Code davon, sondern die Beschreibung dem WERKZEUG.
+
 **Ein Kriterium an der 100-%-Kante kann eine Aufloesung haben, die kleiner ist als die eigene
 Streuung.** Bei 40 Serien ist der Unterschied zwischen "100 % perfekt" und "98 % perfekt" EIN
 Ereignis - und genau um dieses eine Ereignis unterscheiden sich zwei unabhaengige Laeufe derselben
@@ -1199,6 +1250,15 @@ diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen
 Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
+
+**STAND 26.08.2026 (vierte Session): ZUERST DIE WERKZEUGLUECKE SCHLIESSEN.**
+`make_messbuild_sim13.mjs` und `sim13_lauf.mjs` fehlen im Repo (Stand-Eintrag oben). Wer hier
+einsteigt, prueft das als Erstes mit einem `ls` - liegen sie inzwischen dort, ist der naechste
+Schritt unveraendert die Verdrahtungsprobe aus `sim13_geruest.txt` Abschnitt 8 Punkt 1. Liegen sie
+nicht dort, ist vorher zu entscheiden, ob Block A neu nachgebaut wird; der methodische Vorbehalt
+dazu steht im Stand-Eintrag. **Gueltig und nachgemessen bleibt:** Vorbedingung (`npm install`,
+`npx tsc`), `make_messbuild_kum.mjs` und `check_build_anker.mjs` arbeiten, Eingangs-Build normiert
+-1,8 %.
 
 **STAND 25.08.2026 (zweite Session): SCHRITT 13 LAEUFT. V1 UND V2 SIND GEKLAERT, V3 LIEGT ZUR
 ENTSCHEIDUNG BEIM NUTZER.** Wer hier einsteigt, liest zuerst
