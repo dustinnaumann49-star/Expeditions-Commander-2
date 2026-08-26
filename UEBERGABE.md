@@ -65,6 +65,50 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 26.08.2026 (dritte Session): SIMULATIONS-MESSBUILD UND SIMULATIONSGERUEST GEBAUT UND
+  GEPRUEFT. DER LAUF IST NOCH NICHT AUSWERTBAR.** Protokoll
+  `balance/session2-simulation/sim13_geruest.txt`, Werkzeuge `make_messbuild_sim13.mjs` und
+  `sim13_lauf.mjs` (beide neu, siehe `WERKZEUGE_26-08-2026.md`). **Messbuild-Protokoll. Keine
+  Zeile `server/src` veraendert.**
+  - **21 Patches in fuenf Bloecken** (Block A Schritt 2 verdrahtet in `missions.js` UND
+    `groupOps.js`, Entscheidung 18, 3, 12, 13.1). Entscheidung 16 aus dem Eingangs-Build,
+    Entscheidung 19 begruendet draussen. Ankercheck **normiert -2,0 %** gegen -1,1 % des
+    Eingangs-Builds, beide gueltig - **aber der Ankercheck prueft die Kurven-KONSTANTEN, nicht die
+    neue Verdrahtung.** Dass Block A tatsaechlich zahlt, ist noch NICHT belegt; die
+    Verdrahtungsprobe ist der naechste Messschritt.
+  - **Zwei vom Nutzer delegierte Entscheidungen eingetragen, beide umkehrbar** (wie f = 12 und
+    Befund G): **Bot-Takt = 30 Unterschritte a 2 Minuten, nur fuer die Bots** - 30 Aufrufe im
+    selben Zeitpunkt waeren an der 60-s-Sperre in `runGlobalHeartbeat()` als `skipped` verpufft,
+    30 direkte `runBotTurn()`-Aufrufe ohne `tick()` dazwischen waeren nach dem dritten Zug an
+    `MAX_BUILD_SLOTS` haengengeblieben. **Gemessen: rund 40 s je Profil und 30-Tage-Lauf** - die
+    im Plan befuerchteten Kosten der "teuren Variante" sind bedeutungslos, der
+    Stundenaufloesungs-Vorbehalt aus Abschnitt 1b laesst sich damit schliessen statt vermerken.
+  - **Entscheidung 3: es fehlte gar keine Zahl** (Lesefehler der Vorsitzung). Der "feste Topf"
+    IST die heutige Vollauszahlung `wavesWon * RAID_WAVE_WIN_*`; neu ist nur, dass sie EINMAL
+    vergeben und nach Beitrag geteilt wird statt fuer Verteidiger, jeden Verstaerker und jeden
+    Halter einzeln zu laufen. Einzelverteidiger ohne Beistand bekommt exakt so viel wie heute.
+  - **ARITHMETISCHER BEFUND, BITTE GEGENLESEN:** mit der Saettigungsform aus 9.1a
+    (`eff = roh / (1 + roh/S_MAX)`) und `S_MAX = 1,5` ergibt die im Messkasten genannte Rohsumme
+    von 2,41 Aequivalenten **0,92**, nicht die dort ausgewiesenen **1,20**. Fuer 1,20 braeuchte es
+    `S_MAX = 2,39`. 0,92 entspricht rund 5,8 Mrd/Tag und liegt UNTER dem Korridor 7-10 Mrd/Tag.
+    Entweder andere Saettigungsform, andere Rohbasis oder Rechenfehler im Messkasten - nicht
+    entschieden.
+  - **NEUE FALLE, im Plan bisher nicht vermerkt:** liegt der Laufordner ausserhalb des
+    Server-Baums, findet das importierte `db.js` `better-sqlite3` nicht. Node loest von
+    `<lauf>/dist/db.js` nach oben auf. `make_messbuild_sim13.mjs` legt deshalb einen Symlink
+    `<lauf>/node_modules` an. Betrifft **jedes** Skript, das `state.js` laedt - die bisherigen
+    fielen nicht darauf herein, weil sie `db.js` nie importieren.
+  - **WAS NICHT GEHT:** das Spielermodell laeuft ab Tag 3 in ein ausgehungertes Gleichgewicht
+    (0,03 Mrd stehend, 100 % Leerlauf). Drei Geruest-Defekte gefunden und behoben (kein Feld
+    `miningCapable` - Messregel 16 in Reinform; Missionsversand beschrieben aber nicht gebaut;
+    Leerlauf muss slotbasiert gezaehlt werden, sonst definiert er Kriterium 2 weg). Ob das
+    Stehenbleiben ein vierter Defekt oder eine echte Aussage zur Startphase ist, ist NICHT
+    getrennt. **Bis dahin darf keine Zahl aus dem Lauf zitiert werden.**
+  - **K5 UND K6 SIND NICHT ERHEBBAR**, solange die Einnahmen nicht nach Quelle instrumentiert
+    sind - die Spielfunktionen buchen direkt auf `state.resources`, ohne Herkunft. Da K5 seit dem
+    20.08.2026 der Traeger von Entscheidung 3 ist, ist genau der neu dazugekommene Block noch
+    nicht messbar. Groesste offene Luecke der Simulation.
+
 - **NEU 25.08.2026 (zweite Session, Nutzerfrage): OFFENER PUNKT BEI ENTSCHEIDUNG 9.2 NACHGETRAGEN -
   DIE MODUL-SLOTS FEHLTEN IN DER SLOT-REDUKTION.** 9.2 nennt Forschung (4 -> 1), Schiffe und
   Verteidigung (3 -> 1) und Gebaeude (steht schon auf 1). `MAX_SHIP_MODULE_SLOTS` und

@@ -213,6 +213,52 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 26.08.2026 (dritte Session) - V3 IST GEKLAERT, GERUEST GEBAUT, LAUF NOCH NICHT
+> AUSWERTBAR. NICHTS AM SPIELCODE GEBAUT.** Protokoll
+> `balance/session2-simulation/sim13_geruest.txt`, Werkzeuge `make_messbuild_sim13.mjs` und
+> `sim13_lauf.mjs` (beide neu). **Messbuild-Protokoll.**
+>
+> **V3 (Bot-Takt) IST GELOEST: 30 UNTERSCHRITTE ZU JE 2 MINUTEN, NUR FUER DIE BOTS.** Zwei
+> naheliegende Wege sind technisch falsch und wurden vor der Messung ausgeschlossen:
+> 30 Aufrufe von `runGlobalHeartbeat()` im selben Zeitpunkt verwirft die 60-s-Sperre am
+> Funktionskopf als `skipped` (man bekaeme EINEN Bot-Zug und wuerde es nicht merken); 30 direkte
+> `runBotTurn()`-Aufrufe ohne `tick()` dazwischen laufen nach dem dritten Zug in
+> `MAX_BUILD_SLOTS`. **GEMESSEN: rund 40 s je Profil und 30-Tage-Lauf.** Die im Plan befuerchteten
+> Kosten der "teuren, echtbetriebsnahen Variante" sind praktisch bedeutungslos - **damit ist auch
+> der Vorbehalt aus dem Zeitschritt-Absatz oben schliessbar** (Mensch mit
+> `--mensch_unterschritte` mitlaufen lassen), statt den Schiffs-Leerlauf weiter als
+> unterschaetzt zu vermerken.
+>
+> **NEUE TECHNISCHE VORBEDINGUNG, HIER BISHER NICHT VERMERKT (V4):** liegt der Laufordner
+> ausserhalb des Server-Baums, findet das importierte `db.js` `better-sqlite3` nicht - Node loest
+> von `<lauf>/dist/db.js` nach oben auf. Abhilfe: Symlink `<lauf>/node_modules` auf
+> `server/node_modules` (macht `make_messbuild_sim13.mjs` automatisch). Betrifft **jedes** Skript,
+> das `state.js` laedt; die bisherigen Messskripte fielen nicht darauf herein, weil `lib.mjs`
+> `db.js` bewusst nie importiert.
+>
+> **ANKERCHECK:** Eingangs-Build normiert **-1,1 %**, Simulationsbuild **-2,0 %**, beide gueltig.
+> **Grenze ausdruecklich:** `check_build_anker.mjs` baut die Missionsschleife selbst nach und
+> prueft damit die Beute-Kurven-KONSTANTEN, **nicht die Verdrahtung** in `missions.js`. Block A
+> Schritt 2 ist damit gebaut, aber **nicht belegt**.
+>
+> **K5 UND K6 SIND MIT DEM HEUTIGEN GERUEST NICHT ERHEBBAR.** Beide brauchen die Einnahmen NACH
+> QUELLE; die Spielfunktionen buchen direkt auf `state.resources`, ohne Herkunft. Da Kriterium 5
+> seit dem 20.08.2026 der Traeger von **Entscheidung 3** ist, ist genau der Block, der in diesem
+> Build neu dazugekommen ist, noch nicht messbar.
+>
+> **ZWEI SETZUNGEN IM GERUEST, zur Bestaetigung vorgelegt:** (1) "Erstmals spielbar" (K4) ist als
+> "Flottenmacht erreicht den `npcFloor` des Sektors" gelesen - `SEKTOREN` enthaelt **keine**
+> Freischaltbedingung, es gibt weder `minPower` noch eine Sperre. (2) Leerlauf wird **slotbasiert**
+> gezaehlt (belegte von moeglichen Slots), nicht als "Warteschlange leer" - bei 3 Schiffs-Slots ist
+> ein einzelner Auftrag zwei Drittel Leerlauf, und "Warteschlange nicht leer" haette Kriterium 2
+> weggezaehlt.
+>
+> **DER LAUF IST NOCH NICHT AUSWERTBAR:** das Spielermodell bleibt ab Tag 3 stehen. Ob das ein
+> weiterer Geruest-Defekt oder eine echte Aussage zur Startphase ist (dann waere es der schaerfste
+> denkbare Befund zu Kriterium 6), ist NICHT getrennt. Bis dahin darf keine Zahl aus dem Lauf
+> zitiert werden. Naechste Schritte in der Reihenfolge: Verdrahtungsprobe Block A, Spielermodell
+> entstoeren, Quellen-Instrumentierung, dann erst die drei Profile.
+
 > **MESSKASTEN 25.08.2026 (zweite Session) - V1 UND V2 SIND GEKLAERT, V3 IST NEU UND OFFEN.
 > NICHTS GEBAUT.** Protokoll `balance/session2-simulation/sim_vorbedingungen_13.txt`, Werkzeug
 > `probe_simclock_13.mjs` (neu). **Kein Messbuild-Protokoll:** die Sonde laeuft absichtlich gegen
@@ -679,6 +725,37 @@ Container-Anzahl (`missions.ts:558`). Jede neue Skalierung multipliziert sich da
 ---
 
 ### Entscheidung 3 - Raid-Ertrag: VARIANTE 6 (fester Topf + Saettigung), GESCHLOSSEN 15.08.2026
+
+> **MESSKASTEN 26.08.2026 (dritte Session) - VARIANTE 6 IST IM SIMULATIONS-MESSBUILD GEBAUT, ABER
+> NOCH NICHT MESSBAR. NICHTS AM SPIELCODE GEBAUT.** Protokoll
+> `balance/session2-simulation/sim13_geruest.txt`, Werkzeug `make_messbuild_sim13.mjs` Block C.
+>
+> **DIE TOPFGROESSE WAR NIE OFFEN.** In der Vorsitzung als fehlende Zahl gefuehrt - das war ein
+> Lesefehler. Der "feste Container-Topf je Raid" IST die heutige Vollauszahlung
+> `wavesWon * RAID_WAVE_WIN_SILBER/GOLD/ELITE` (10/6/2). Der Unterschied zu heute liegt nicht in
+> der Hoehe, sondern darin, dass `grantContainers()` heute fuer den Verteidiger UND jeden
+> Verstaerker UND jeden Halter **einzeln** laeuft. Variante 4 vergibt denselben Topf einmal und
+> teilt ihn nach Beitrag. **Es ist also keine neue Zahl noetig, und der Einzelverteidiger ohne
+> Beistand bekommt exakt so viel wie heute** - genau die Forderung des Messkastens unten.
+>
+> **Gebaut** als: Beitragsanteile ueber die Wellen gemittelt (`contributionShares()` liegt je
+> Welle ohnehin schon vor, seit dem 13.08.2026 fuer die Abschuss-Zurechnung), Saettigung in der
+> Bauform aus **9.1a** auf die Tagessumme, ausgezahlt wird der **Zuwachs** der gesaettigten Summe -
+> dadurch ist die Reihenfolge der Raids eines Tages ohne Belang.
+>
+> **ARITHMETISCHER BEFUND, BITTE GEGENLESEN.** Mit `eff = roh / (1 + roh/S_MAX)` und
+> `S_MAX = 1,5` ergibt die im Messkasten unten genannte Rohsumme von **2,41** Aequivalenten
+> `2,41 / (1 + 2,41/1,5) = ` **0,92** gesaettigte Aequivalente, **nicht die dort ausgewiesenen
+> 1,20**. Fuer 1,20 braeuchte es `S_MAX = 2,39`. 0,92 entspricht rund **5,8 Mrd/Tag** und liegt
+> damit **unter** dem Zielkorridor 7-10 Mrd/Tag. Moegliche Erklaerungen, nicht entschieden: andere
+> Saettigungsform als 9.1a, andere Rohbasis, oder Rechenfehler im Messkasten. `S_MAX` ist im Build
+> ueber `--smax=` einstellbar und hier ohnehin als einziger gesetzter, nicht gemessener Wert des
+> Pakets gefuehrt.
+>
+> **NOCH NICHT MESSBAR:** Kriterium 5 traegt seit dem 20.08.2026 diese Entscheidung, ist aber ohne
+> Instrumentierung der Einnahmen nach Quelle nicht erhebbar (Messkasten in Abschnitt 1b). Der Block
+> ist gebaut und laedt fehlerfrei; belegt ist damit nichts.
+
 
 > **NICHT GEBAUT - festgestellt am 20.08.2026 beim Code-Abgleich fuer Entscheidung 12.** Kein
 > `RAID_ALLY_POWER_WEIGHT`, keine Saettigung ueber die Tagessumme, kein Topf: `RAID_WAVE_WIN_SILBER`
