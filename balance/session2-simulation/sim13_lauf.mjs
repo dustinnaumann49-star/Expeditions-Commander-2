@@ -56,6 +56,7 @@ const TAGE = Number(opt('tage', 30));
 const MENSCH_UNTERSCHRITTE = flag('mensch_unterschritte');
 const BOT_ZUEGE = Number(opt('botzuege', 30));
 const AUSGABE = opt('out', null);
+const SAMMLE_GRUENDE = flag('gruende');
 
 if (!existsSync(resolve(BUILD, 'game/state.js'))) {
   throw new Error(`Kein Messbuild unter ${BUILD} (erst make_messbuild_sim13.mjs).`);
@@ -129,87 +130,135 @@ savePlayerState(defaultPlayerState(mensch.id));
 // SPIELERMODELL - AUSDRUECKLICH NICHT economyBotTurn.ts
 // ===================================================================================
 // Abschnitt 1b verbietet die Bot-Logik als Spielermodell: sie baut gleichverteilt ueber alle Typen
-// und ist damit nachweislich nicht spielertypisch (Entscheidung 13.2). Das Modell hier ist bewusst
-// schlicht und vollstaendig beschrieben, damit spaetere Laeufe reproduzierbar sind:
-//   1. Bau-Lanes fuer GEBAEUDE bevorzugt mit Minen fuellen, guenstigste zuerst.
-//   2. Forschungs-Lane immer besetzt halten, guenstigste offene Forschung zuerst.
-//   3. Schiffs-Lanes: erst Mining-Flotte auf den Bedarf des groessten offenen Asteroidenfelds,
-//      danach Begleitschutz.
-//   4. Freie Flotte auf das staerkste Asteroidenfeld schicken, das die Flotte traegt.
+// und ist damit nachweislich nicht spielertypisch (Entscheidung 13.2).
+//
+// UEBERARBEITET AM 26.08.2026 (vierte Session) NACH DIAGNOSE MIT probe_spielermodell.mjs.
+// Die erste Fassung lief ab Tag 3 in ein ausgehungertes Gleichgewicht. Ursache waren FUENF
+// Defekte, alle gemessen, nicht vermutet - Protokoll: spielermodell_diagnose.txt.
+//   (a) DIE AKTIONEN WERFEN NICHT. startBuild()/startResearch()/startBuildingConstruction()/
+//       sendFleet() liefern `{ ok:false, error }` zurueck. Die alten `try { } catch { }`-Bloecke
+//       konnten deshalb nie etwas fangen, und `handelte = true` wurde auch bei jedem Fehlschlag
+//       gesetzt. Das Modell war blind fuer seine eigenen Ablehnungen. Jetzt wird der
+//       Rueckgabewert ausgewertet.
+//   (b) MINENERTRAG WAR EXAKT NULL. mineOutputPerHour() multipliziert mit energyFactor() =
+//       min(1, produziert/verbraucht). Der alte Gebaeudezweig filterte `b.baseOutput`, und
+//       solarkraftwerk/roboterfabrik/nanitenfabrik haben baseOutput = null - das Modell konnte
+//       ein Kraftwerk konstruktionsbedingt gar nicht bauen. Neun Minenstufen foerderten nichts.
+//   (c) AB 180 MINING-SCHIFFEN KEIN MISSIONSVERSAND MEHR. sendFleet() prueft cfg.miningCap
+//       (300/220/180 je Feld) und cfg.escortCap (500); das Modell bot die GESAMTE Flotte an und
+//       wurde ab Tag 2 jede Stunde abgelehnt. Damit war auch die zweite Einnahmequelle tot.
+//   (d) 1400 SPIONAGESONDEN. `kampf.slice(0,3)` nach Kosten sortiert waehlte die billigsten
+//       Schiffe - Spionagesonden tragen 0 zur Flottenmacht bei, sind nicht asteroidenfaehig und
+//       kosten 8.000 Kristall je Stueck. Gemessen 11,2 Mio Kristall verbrannt, Endbestand 4.520.
+//   (e) 720 FEHLVERSUCHE an gesperrten V2/V3-Stufen je Lauf, folgenlos aber blind.
+//
+// ZWEI SETZUNGEN, vom Nutzer am 26.08.2026 bestaetigt:
+//   1. ENERGIE HAT VORRANG. Faellt energyFactor unter 1, geht die eine Gebaeude-Lane zuerst an
+//      das Solarkraftwerk. Bewusst am IST-Zustand des Faktors festgemacht statt an einer festen
+//      Kopplung ("Solar auf Hoehe der hoechsten Mine") - letztere waere je nach Kostenkurve
+//      ueber- oder unterbauend und willkuerlicher.
+//   2. STAERKSTES TRAGBARES FELD, AUF DEN CAP GEDECKELT. Ertrag je Stunde: Hoch 180x25.000 =
+//      4,5 Mio, Mittel 220x15.000 = 3,3 Mio, Niedrig 300x5.000 = 1,5 Mio. Also weiter das
+//      staerkste Feld, aber die Auswahl beschneiden statt die ganze Flotte anzubieten.
+//
+// AUSDRUECKLICH VERWORFEN: den Schiffsbau zu stoppen, sobald der Cap gedeckt ist. Ein Modell,
+// das aus Zufriedenheit aufhoert zu bauen, erzeugt leere Slots - und Leerlauf IST Kriterium K2.
+// Wir wuerden dann die Abbruchregel des Modells messen statt das Spiel. Deshalb hat das Modell
+// immer etwas zu bauen: Mining bis zum Cap, Begleitschutz bis zum Cap, danach echte
+// Kampfschiffe (die treiben die Flottenmacht und damit die Freischaltungen fuer K4). Leerlauf
+// entsteht so nur noch aus fehlenden Ressourcen - genau das soll K2 abbilden.
+//
 // Das ist KEIN optimaler Spieler. Es ist ein nachvollziehbarer, und das ist fuer die
 // Leerlauf-/Stau-Kennzahlen der Punkt: ein optimaler Spieler wuerde Kriterium 3 wegdefinieren.
+const MINE_KINDS_SIM = ['mine_metall', 'mine_kristall', 'mine_deuterium'];
+const TIER1 = BUILDINGS.filter((b) => (b.tier ?? 1) === 1);
+const SOLAR = TIER1.find((b) => b.kind === 'energie');
+// Kampfschiffe = alles mit Waffen. Schliesst Spionagesonde (Defekt d) und die reinen
+// Mining-Schiffe aus, ohne eine Namensliste pflegen zu muessen.
+// MESSREGEL 16, ZUM ZWEITEN MAL IN DIESER DATEI ZUGESCHNAPPT: es gibt KEIN Feld `sh.waffen`.
+// Die Kampfwerte stehen unter `sh.stats` (waffen/schild/panzerung) - `sh.waffen` ist ueberall
+// undefined, die Liste war damit LEER und das Modell baute null Kampfschiffe. Aufgefallen ist
+// es nur daran, dass die Flottenmacht ueber sieben Tage exakt 0,00 Mrd blieb. Erst am Code
+// nachsehen, dann filtern.
+const KAMPFSCHIFFE = SHIPS.filter((sh) => !sh.specialOnly && !sh.unique && (sh.stats?.waffen || 0) > 0)
+  .sort((a, b) => wert(a.cost) - wert(b.cost));
+
+// Staerkstes Asteroidenfeld, dessen npcFloor die eigene Macht traegt.
+function zielFeld(s) {
+  const macht = combat.combatFleetPowerBase(s.fleet || {});
+  const felder = ['asteroid_hoch', 'asteroid_mittel', 'asteroid_niedrig']
+    .filter((id) => (SEKTOR_CONFIG[id]?.npcFloor || 0) <= macht);
+  return felder[0] || 'asteroid_niedrig';
+}
+
+// Optional (--gruende): sammelt, WARUM eine Aktion abgelehnt wurde. Ohne das ist ein
+// Leerlaufwert nicht deutbar - eine leere Lane kann "kein Geld", "gesperrt" oder "Slot voll"
+// heissen, und die drei fuehren zu voellig verschiedenen Schluessen. Bewusst hier statt in
+// einem zweiten Skript: ein dupliziertes Spielermodell liefe frueher oder spaeter auseinander.
+const GRUENDE = new Map();
+const merkeGrund = (zweig, text) => {
+  if (!SAMMLE_GRUENDE) return;
+  const k = `${zweig}: ${text}`;
+  GRUENDE.set(k, (GRUENDE.get(k) || 0) + 1);
+};
+
 function spielerZug(s) {
-  let handelte = false;
+  let erfolge = 0;
+  const gelang = (r, zweig) => {
+    if (r && r.ok === false) { merkeGrund(zweig, r.error); return false; }
+    return true;
+  };
 
-  // (1) Gebaeude
-  try {
-    const offen = BUILDINGS.filter((b) => b.baseOutput)
-      .map((b) => ({ b, lvl: s.buildings[b.id] || 0 }))
-      .sort((x, y) => x.lvl - y.lvl);
-    for (const { b } of offen) {
-      try {
-        actions.startBuildingConstruction(s, b.id);
-        handelte = true;
-      } catch { /* Slot voll oder Ressourcen fehlen - naechster Kandidat */ }
-    }
-  } catch { /* Gebaeude-Zweig nicht verfuegbar */ }
+  // (1) GEBAEUDE - eine einzige Lane, deshalb nach dem ersten Erfolg abbrechen.
+  //     Energie zuerst, sonst foerdern die Minen nichts (Defekt b). Danach alle Stufe-1-Bauten
+  //     nach Stufe aufsteigend - das zieht die Roboterfabrik (Bauzeit) automatisch mit hoch,
+  //     ohne dass dafuer eine eigene Schwelle erfunden werden muesste.
+  const reihe = [];
+  if (SOLAR && actions.energyFactor(s, 1) < 1) reihe.push(SOLAR);
+  reihe.push(...TIER1.slice().sort((x, y) => (s.buildings[x.id] || 0) - (s.buildings[y.id] || 0)));
+  for (const b of reihe) {
+    if (gelang(actions.startBuildingConstruction(s, b.id), 'GEBAEUDE')) { erfolge++; break; }
+  }
 
-  // (2) Forschung
-  try {
-    const offen = RESEARCH.map((r) => ({ r, lvl: s.research[r.id] || 0 })).sort((x, y) => x.lvl - y.lvl);
-    for (const { r } of offen) {
-      try {
-        actions.startResearch(s, r.id);
-        handelte = true;
-        break;
-      } catch { /* nicht startbar */ }
-    }
-  } catch { /* ignorieren */ }
+  // (2) FORSCHUNG - Lane offen halten, guenstigste offene zuerst.
+  const forschung = RESEARCH.map((r) => ({ r, lvl: s.research[r.id] || 0 }))
+    .sort((x, y) => x.lvl - y.lvl);
+  for (const { r } of forschung) {
+    if (gelang(actions.startResearch(s, r.id), 'FORSCHUNG')) { erfolge++; break; }
+  }
 
-  // (3) Schiffe
-  try {
-    // Es gibt KEIN Feld "miningCapable" - die asteroidenfaehige Menge steht fest in
-    // availableFleetForSektor() (missions.ts): mining, begleitschiff, sandronator. Die erste
-    // Fassung filterte auf ein erfundenes Feld, traf null Schiffe und baute deshalb nie eine
-    // Mining-Flotte. Messregel 16: Feldnamen am Code pruefen, nicht aus der Beschreibung nehmen.
-    const MINING_IDS = ['mining', 'begleitschiff'];
-    const mining = SHIPS.filter((sh) => MINING_IDS.includes(sh.id));
-    const kampf = SHIPS.filter((sh) => !sh.specialOnly && !sh.unique && !MINING_IDS.includes(sh.id))
-      .sort((a, b) => wert(a.cost) - wert(b.cost));
-    const kandidaten = [...mining, ...kampf.slice(0, 3)];
-    for (const sh of kandidaten) {
-      try {
-        actions.startBuild(s, sh.id, 25);
-        handelte = true;
-      } catch { /* Slot voll oder zu teuer */ }
-    }
-  } catch { /* ignorieren */ }
+  // (3) SCHIFFE - Reihenfolge: Mining bis zum Cap, Begleitschutz bis zum Cap, dann Kampfschiffe.
+  //     Gezaehlt wird der Bestand OHNE die Warteschlange; bei 25 Stueck je Auftrag ueberschiesst
+  //     das den Cap um hoechstens einen Auftrag. Bewusst in Kauf genommen - eine exakte
+  //     Verrechnung mit buildQueue haette den Cap zur harten Grenze gemacht und damit wieder
+  //     leere Slots erzeugt (siehe "ausdruecklich verworfen" oben).
+  const cfgZiel = SEKTOR_CONFIG[zielFeld(s)] || {};
+  const wunsch = [];
+  if ((s.fleet.mining || 0) < (cfgZiel.miningCap || 0)) wunsch.push('mining');
+  if ((s.fleet.begleitschiff || 0) < (cfgZiel.escortCap || 0)) wunsch.push('begleitschiff');
+  wunsch.push(...KAMPFSCHIFFE.map((sh) => sh.id));
+  for (const id of wunsch) {
+    if (gelang(actions.startBuild(s, id, 25), 'SCHIFFE')) erfolge++;
+  }
 
-  // (4) Freie Flotte auf das ertragreichste Asteroidenfeld schicken, dessen npcFloor die eigene
-  // Macht traegt. Ohne diesen Schritt gibt es ueberhaupt KEINE Einnahme ausser den Minen - die
-  // erste Fassung des Geruests hatte ihn nur beschrieben, nicht gebaut, und lief deshalb ab Tag 3
-  // in einen Dauerzustand aus 100 % Leerlauf bei stehender Flottenmacht. Der Rauchtest hat das
-  // sichtbar gemacht; die Zahlen jenes Laufs sind wertlos.
-  try {
-    const macht = combat.combatFleetPowerBase(s.fleet || {});
-    const felder = ['asteroid_hoch', 'asteroid_mittel', 'asteroid_niedrig']
-      .filter((id) => (SEKTOR_CONFIG[id]?.npcFloor || 0) <= macht);
-    const ziel = felder[0] || 'asteroid_niedrig';
-    const laeuftSchon = (s.missions || []).some((m) => !m.finalized);
-    if (!laeuftSchon) {
-      const erlaubt = missions.availableFleetForSektor(ziel);
-      const auswahl = {};
-      erlaubt.forEach((id) => {
-        if ((s.fleet[id] || 0) > 0) auswahl[id] = s.fleet[id];
-      });
-      if (Object.keys(auswahl).length > 0) {
-        missions.sendFleet(s, ziel, auswahl);
-        handelte = true;
-      }
-    }
-  } catch { /* Sektor nicht versandfaehig */ }
+  // (4) FLOTTE ENTSENDEN - auf miningCap/escortCap beschnitten (Defekt c).
+  const laeuftSchon = (s.missions || []).some((m) => !m.finalized);
+  if (!laeuftSchon) {
+    const ziel = zielFeld(s);
+    const cfg = SEKTOR_CONFIG[ziel] || {};
+    const grenze = { mining: cfg.miningCap, begleitschiff: cfg.escortCap };
+    const auswahl = {};
+    missions.availableFleetForSektor(ziel).forEach((id) => {
+      const da = s.fleet[id] || 0;
+      if (da <= 0) return;
+      const g = grenze[id];
+      const n = g ? Math.min(da, g) : da;
+      if (n > 0) auswahl[id] = n;
+    });
+    if (Object.keys(auswahl).length > 0 && gelang(missions.sendFleet(s, ziel, auswahl), 'MISSION')) erfolge++;
+  }
 
-  return handelte;
+  return erfolge > 0;
 }
 
 // ===================================================================================
@@ -379,6 +428,11 @@ console.log(`K3 Ressourcenstau (<25 %)      : ${p(gesamt.stau, gesamt.proben).to
 console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}`);
 console.log(`K5 Quellenanteil Woche 1       : NICHT ERHOBEN - braucht Quellen-Instrumentierung, siehe Protokoll`);
 console.log(`K6 Plateau > 5 Tage            : NICHT BEWERTET - braucht die Einnahmenkurve aus K5`);
+if (SAMMLE_GRUENDE) {
+  console.log('\n--- ABLEHNUNGSGRUENDE, HAEUFIGSTE ZUERST ---');
+  [...GRUENDE.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)
+    .forEach(([k, n]) => console.log(`${String(n).padStart(6)} x  ${k}`));
+}
 console.log(`\nLaufzeit: ${((ECHT() - t0) / 1000).toFixed(1)} s echte Zeit fuer ${TAGE * 24} Stunden x ${UNTER} Unterschritte`);
 
 if (AUSGABE) {
