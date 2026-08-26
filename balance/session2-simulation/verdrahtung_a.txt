@@ -1,0 +1,179 @@
+VERDRAHTUNGSPROBE BLOCK A SCHRITT 2
+Protokoll vom 26.08.2026 (vierte Session)
+Werkzeug: probe_verdrahtung_a.mjs (neu)
+Vorausgesetzte Werkzeuge: make_messbuild_kum.mjs, make_messbuild_sim13.mjs (beide unveraendert)
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen unten stammen aus gepatchten dist-Baeumen, nicht aus dem  !!!
+!!! Repo-Stand. Es wurde KEINE Zeile server/src veraendert.                                    !!!
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+BLOCK A SCHRITT 2 IST IM SIMULATIONS-MESSBUILD VERDRAHTET UND ZAHLT. Die echte
+Missionsschleife liefert normiert 0,0925 Wert-Einheiten je Punkt vernichteter Feindmacht,
+die Referenzschleife 0,0924 - eine Abweichung von 0,1 % bei 40 Durchlaeufen je Seite.
+Die Gegenprobe gegen den unverdrahteten Eingangs-Build weicht mit +72,8 % ab.
+
+Damit ist die Grenze geschlossen, die sim13_geruest.txt Abschnitt 4 ausdruecklich offen
+gelassen hat ("check_build_anker.mjs prueft die Kurven-KONSTANTEN, nicht die Verdrahtung").
+
+================================================================================
+1. VORGESCHICHTE DIESER SESSION - DIE WERKZEUGE FEHLTEN ZUNAECHST
+================================================================================
+make_messbuild_sim13.mjs und sim13_lauf.mjs waren am Sessionbeginn NICHT im Repo. Sie sind
+vom Nutzer nachgereicht und vor Gebrauch auf Echtheit geprueft worden, weil ein Nachbau als
+Original etikettiert das Schlechteste aller Ergebnisse gewesen waere:
+
+  Blockzaehlung          A 9 / B 2 / C 3 / D 5 / E 2 = 21 Patches   wie protokolliert
+  C3-Bezeichner          ownerUsername (nicht das erfundene ownerUsernameForRaid)
+  Zielpruefung           bricht ab, wenn das Ziel nicht auf /dist endet
+  node_modules-Symlink   wird auf <lauf>/node_modules angelegt
+  Schalter               --f= --smax= --nm= --nur=
+
+Dazu Implementierungsdetails, die aus dem Protokoll nicht rekonstruierbar sind (die
+Sammelfelder mission.curvedWin und mission.lostUnits). Kein Nachbau.
+
+Ankercheck des wiederhergestellten Simulationsbuilds: NORMIERT -1,2 % (roh +2,8 %).
+Protokolliert waren -2,0 %. Fuenf Messungen desselben Ankers liegen jetzt bei
+-1,1 / -1,2 / -1,8 / -2,3 / -2,8 % - Streuung rund zwei Prozentpunkte, wie dokumentiert.
+
+Verdrahtung im Build nachgezaehlt (nicht angenommen):
+  missions.js  -> loot.js : 1 Verweis   (Eingangs-Build: 0)
+  groupOps.js  -> loot.js : 1 Verweis   (Eingangs-Build: 0)
+  fleetSizeRewardMultiplier(sentPower, ...) in missions.js : 0 Aufrufe (vorher 1)
+
+================================================================================
+2. VERFAHREN
+================================================================================
+Dieselbe Zelle wie der Ankercheck: Profil mittel (Forschung 6, Module 5, Kanonier,
+Kampf-Booster), Sektor piraten_hoch, FLEET_LARGE, 40 Durchlaeufe je Seite.
+
+SEITE A - die echte Schleife:
+  sendFleet() -> 7 Zeitschritte a 4 h (= PIRATEN_CHECK_INTERVAL_MS) durch processMissions()
+  -> ein Schritt hinter returnTime loest finalizeMission() aus. Kein Nachbau irgendeiner
+  Teilrechnung; ausgewertet wird, was hinterher auf state.resources und in state.inventory
+  steht.
+
+SEITE B - die Referenzschleife aus check_build_anker.mjs, zeichengleich uebernommen.
+
+Vernichtete Feindmacht auf Seite A kommt aus dem SPIELEIGENEN Bericht
+(mission.skirmishTotals.npc, destroyedCount je Typ, summiert ueber alle Checks durch
+mergeUnitResults() in messages.js), nicht aus einer Instrumentierung des Builds. Der
+Piratenkapitaen ist ausgeschlossen - wie in der Referenzschleife und wie im Patch A3.
+
+Verglichen wird NORMIERT auf die vernichtete Feindmacht. Roh waere die Zelle wertlos, weil
+sie ueber die Zahl der gewonnenen Checks streut (4,63 gegen 4,70 Siege in diesem Lauf).
+
+================================================================================
+3. FUENF FALLEN, DIE HIER GREIFEN MUSSTEN
+================================================================================
+(1) UHR KONSTANT INNERHALB EINES SCHRITTS. SIM_NOW wird nur zwischen den Zeitschritten
+    bewegt; tick()/missions benutzen Date.now auch als Stoppuhr.
+(2) STARTDATUM AUF EINEN MITTWOCH. isWeeklyEventActive('piraten_bonus') verdoppelt Mo/Fr
+    ueber PIRATEN_EVENT_BONUS_MULTIPLIER, und die Referenzschleife kennt diesen Verdoppler
+    NICHT - an einem Montag lagen Probe und Referenz um Faktor 2 auseinander und es saehe
+    wie ein Verdrahtungsfehler aus. Das Skript prueft deterministisch fuer sechs Zeitpunkte
+    im Missionsfenster nach und bricht ab, wenn das Event aktiv waere.
+(3) KEIN SANDRONATOR IN DER PRUEFFLOTTE. Zweiter Verdoppler derselben Art. FLEET_LARGE
+    enthaelt ohnehin keinen - das Skript prueft es trotzdem, statt es anzunehmen.
+(4) LAUFORDNER MIT node_modules-SYMLINK. state.js, galaxy.js und stats.js importieren
+    db.js; ohne den Verweis scheitert der Import (V4 aus sim13_geruest.txt). Die Datenbank
+    landet unter <lauf>/data statt im geteilten /tmp/data.
+(5) process.exit(0) am Ende - combatRunner haelt einen Worker-Thread offen.
+
+Eine sechste Falle ist beim Diagnoselauf zugeschnappt und war MEIN Fehler, nicht der des
+Builds: die Bergung zieht ihren Betrag ueber Math.max(0, ...) von
+stats.resourcesSpentShipsDefense ab. Bei einem Startwert von 0 ist der Abzug rechnerisch
+nicht sichtbar, und die Probe meldete "0,000 Mrd" - was wie ein FEHLENDER Abzug aussieht.
+Mit realistischem Ausgangsbestand erscheint er korrekt mit -0,092 Mrd. Merksatz:
+eine Buchung, die gegen eine Untergrenze laeuft, ist bei leerem Konto nicht beobachtbar.
+
+================================================================================
+4. ERGEBNIS, 40 DURCHLAEUFE JE SEITE
+================================================================================
+ECHTE MISSIONSSCHLEIFE (Simulationsbuild /tmp/sim13/dist)
+  Checks / Siege                    6,00 / 4,63
+  vernichtete Feindmacht           12,003 Mrd
+  Ressourcen (Kurve + Bergung)      0,996 Mrd
+    davon Wrack-Bergung             0,123 Mrd
+  Container                         1,00 Stueck = 0,238 Mrd
+  Belohnung gesamt                  1,233 Mrd  -> 0,1028 je Punkt
+  Belohnung OHNE Bergung            1,111 Mrd  -> 0,0925 je Punkt
+  Punkte-Korrektur                 -0,092 Mrd auf stats.resourcesSpentShipsDefense
+
+REFERENZSCHLEIFE (kennt keine Bergung)
+  Siege                             4,70
+  vernichtete Feindmacht           12,119 Mrd
+  Belohnung gesamt                  1,120 Mrd  -> 0,0924 je Punkt
+
+VERGLEICH, NORMIERT
+  echt ohne Bergung gegen Referenz        +0,1 %   <- die Verdrahtungsfrage
+  echt ohne Bergung gegen Soll 0,0946     -2,2 %
+  echt MIT Bergung gegen Referenz        +11,2 %   (die Bergung ist Teil von Block A)
+  Bergungsanteil an der Belohnung         10,0 %
+
+================================================================================
+5. GEGENPROBE - DIE PROBE ERKENNT DIE ABWESENHEIT DER VERDRAHTUNG
+================================================================================
+Ohne diesen Teil koennte die Uebereinstimmung oben Zufall sein. Dieselbe Probe gegen den
+UNVERDRAHTETEN Eingangs-Build (/tmp/mb_kum, 20 Durchlaeufe):
+
+  Container                         4,40 Stueck = 1,045 Mrd   (statt 1,00 = 0,238 Mrd)
+  Belohnung gesamt                  1,896 Mrd  -> 0,1711 je Punkt
+  gegen Referenz                  +72,8 %
+  Punkte-Korrektur                  0,000 Mrd   (kein Patch A6, also kein Abzug)
+
+Die mitlaufende Kontrollrechnung "was zahlte die alte, flache Formel"
+(winResources * combatWins + Container je Sieg) trifft im unverdrahteten Build exakt
+0,1711 je Punkt, also 0 % Abweichung - der Build verhaelt sich genau so, wie die alte Formel
+es vorhersagt, und die Probe zeigt das an.
+
+DIE PROBE TRENNT DAMIT ZWEISEITIG: sie meldet 0,1 % Abweichung, wo die Verdrahtung liegt,
+und 72,8 %, wo sie fehlt. Ein Trennabstand von 73 Punkten gegen eine Streuung von rund
+2 Punkten.
+
+Drei unabhaengige Merkmale unterscheiden die beiden Builds, nicht nur die Summe:
+  - Container je Mission        1,00 gegen 4,40 (Patch A5)
+  - Ertrag je Punkt Feindmacht  0,1028 gegen 0,1711 (Patch A3)
+  - Punkte-Korrektur           -0,092 Mrd gegen 0,000 (Patch A6, Fehlerform R6)
+
+================================================================================
+6. WAS DAMIT NEBENBEI GEKLAERT IST - DIE ZWEI VERDOPPLER
+================================================================================
+Am Sessionbeginn war offen, wo Sandronator x2 und Wochen-Event x2 nach der Umstellung
+landen: mission.combatWins traegt beide heute und zahlt sie auf Container UND Ressourcen
+aus, waehrend die Bauanleitung dem Zaehler beide Aufgaben abnimmt. Der wiederhergestellte
+Build beantwortet das:
+
+  Patch A3: die Verdoppler wirken auf den RESSOURCEN-Teil
+            (__m = __kurve * sandronatorBonus * eventBonus)
+  Patch A5: der Container faellt EINMAL je Mission, OHNE die Verdoppler
+
+Das ist Weg (1) aus dem Plankasten bei Entscheidung 2, in einer Form, die dort nicht
+vorgeschlagen war. Es ist eine gebaute Setzung, keine gemessene Groesse - die Wirkung auf
+den Ertrag an Montagen und Freitagen ist NICHT gemessen. Ausserdem folgt daraus die Auflage
+an jede kuenftige Probe: sie darf nicht an einem Montag oder Freitag laufen und keinen
+Sandronator einsetzen, sonst ist sie mit der Referenzschleife nicht vergleichbar.
+
+================================================================================
+7. GRENZEN DIESER PROBE, AUSDRUECKLICH
+================================================================================
+- Sie prueft SOLO-MISSIONEN (missions.js). Die Verdrahtung in groupOps.js (Patches A7 bis
+  A9, Elite-Bollwerk, zusaetzlich Koop-Aufschlag und Beitragsanteil V2) ist NICHT geprueft.
+  Der Verweis auf loot.js ist dort vorhanden; dass er zahlt, ist nicht belegt.
+- Sie prueft EINE Zelle (mittel / piraten_hoch / FLEET_LARGE). Der Anker ist gegen genau
+  diese Zelle kalibriert; andere Flottengroessen sind nicht mitgemessen.
+- Die Bergung ist in der Hoehe nicht gegen einen unabhaengigen Sollwert geprueft, nur auf
+  Vorhandensein und Groessenordnung (10,0 % der Belohnung bei SALVAGE_SHARE = 0,3).
+- Blocks B bis E (Entscheidung 18, 3, 12, 13.1) sind von dieser Probe nicht beruehrt.
+
+================================================================================
+8. NAECHSTE SCHRITTE, UNVERAENDERT AUS sim13_geruest.txt ABSCHNITT 8
+================================================================================
+1. ERLEDIGT - diese Probe.
+2. Spielermodell entstoeren (sim13_lauf.mjs, Stehenbleiben ab Tag 3).
+3. Einnahmen nach Quelle instrumentieren, sonst bleiben K5 und K6 unbewertbar.
+4. Erst dann die drei Profile ueber 30 Tage.
+
+Empfohlen als 1b, klein und jetzt naheliegend: dieselbe Probe fuer groupOps.js, weil das
+Werkzeug steht und nur die Schleife auszutauschen ist.
