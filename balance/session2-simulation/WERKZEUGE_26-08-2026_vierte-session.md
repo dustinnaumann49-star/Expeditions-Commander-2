@@ -83,6 +83,14 @@ Spielermodell ueberarbeitet (Protokoll: `spielermodell_diagnose.txt`), neuer Sch
 Wert 0,02 -> 3,19 Mrd und Flottenmacht 0,06 -> 0,80 Mrd ueber sieben Tage. K1 erfuellt (6,6 %
 groesster Einzelverlust), Forschungs-Leerlauf 2,4 %.
 
+Zweite Aenderungsrunde am selben Tag nach Nutzerentscheidung: `begleitschiff` ist aus der
+Kampfschiff-Liste ausgeschlossen (Kosten je Machtpunkt 3,37 gegen 1,10-1,18 bei echten
+Kampfschiffen) und wird nur noch ueber den `escortCap`-Zweig gebaut - **Flottenmacht steigt
+dadurch bei gleichem Ressourceneinsatz von 0,80 auf 1,41 Mrd**. Dazu die neue Kennzahl **K3b
+(Rohstoff-Schieflage)**: Lane leer, Ablehnung "Nicht genug Ressourcen", Gesamtwert reicht
+trotzdem. K3 selbst bleibt unangetastet, damit die Vergleichswerte frueherer Sessions gueltig
+bleiben. K3b meldet **50,0 %**, wo K3 **0,0 %** meldet.
+
 Aufruf unveraendert, plus optional:
 
 ```

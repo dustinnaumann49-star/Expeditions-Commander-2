@@ -180,8 +180,20 @@ const SOLAR = TIER1.find((b) => b.kind === 'energie');
 // undefined, die Liste war damit LEER und das Modell baute null Kampfschiffe. Aufgefallen ist
 // es nur daran, dass die Flottenmacht ueber sieben Tage exakt 0,00 Mrd blieb. Erst am Code
 // nachsehen, dann filtern.
-const KAMPFSCHIFFE = SHIPS.filter((sh) => !sh.specialOnly && !sh.unique && (sh.stats?.waffen || 0) > 0)
-  .sort((a, b) => wert(a.cost) - wert(b.cost));
+// NUTZERENTSCHEIDUNG 26.08.2026, GEMESSEN STATT GESCHAETZT: `begleitschiff` traegt
+// stats.waffen = 350 und landete dadurch zusaetzlich in dieser Liste - das Modell baute 3420
+// Stueck gegen einen escortCap von 500. Kosten je Machtpunkt (combatFleetPowerBase, 1 Stueck):
+//   schlachtschiff 1,10 | leicht 1,11 | kreuzer/bomber/reaper 1,15 | schwer 1,18
+//   BEGLEITSCHIFF 3,37  <- dreimal ineffizienter als jedes echte Kampfschiff
+// Es hat genau eine sinnvolle Rolle, die Eskorte bis escortCap; alles darueber ist Verschwendung
+// und nicht spielertypisch. Wird deshalb hier ausgeschlossen und ausschliesslich ueber den
+// escortCap-Zweig gebaut.
+// VORBEHALT: combatFleetPowerBase() kennt keine Sonderfaehigkeiten. Die Salven-Schiffe stehen
+// mit 5,6 bis 7,3 nur deshalb schlecht da - fuer die fruehe Phase ohne Belang, bei spaeteren
+// Laeufen zu beachten.
+const KAMPFSCHIFFE = SHIPS.filter(
+  (sh) => !sh.specialOnly && !sh.unique && sh.id !== 'begleitschiff' && (sh.stats?.waffen || 0) > 0
+).sort((a, b) => wert(a.cost) - wert(b.cost));
 
 // Staerkstes Asteroidenfeld, dessen npcFloor die eigene Macht traegt.
 function zielFeld(s) {
@@ -202,10 +214,21 @@ const merkeGrund = (zweig, text) => {
   GRUENDE.set(k, (GRUENDE.get(k) || 0) + 1);
 };
 
+// K3b (Nutzerentscheidung 26.08.2026): haelt fest, ob eine Lane in diesem Zug an FEHLENDEN
+// RESSOURCEN gescheitert ist. probe() liest das direkt danach aus. Siehe Kasten bei K3b unten.
+const ressourcenAblehnung = { GEBAEUDE: false, FORSCHUNG: false, SCHIFFE: false };
+
 function spielerZug(s) {
   let erfolge = 0;
+  ressourcenAblehnung.GEBAEUDE = false;
+  ressourcenAblehnung.FORSCHUNG = false;
+  ressourcenAblehnung.SCHIFFE = false;
   const gelang = (r, zweig) => {
-    if (r && r.ok === false) { merkeGrund(zweig, r.error); return false; }
+    if (r && r.ok === false) {
+      merkeGrund(zweig, r.error);
+      if (/Nicht genug Ressourcen/i.test(r.error || '')) ressourcenAblehnung[zweig] = true;
+      return false;
+    }
     return true;
   };
 
@@ -274,6 +297,7 @@ function neuerTag(nr) {
     leerForschung: 0,
     leerSchiffe: 0,
     stau: 0,
+    schieflage: 0,
     wertStart: null,
     wertEnde: null,
     flottenmacht: 0,
@@ -300,6 +324,19 @@ function probe(s) {
   const guenstigstes = Math.min(...SHIPS.filter((x) => !x.specialOnly && !x.unique).map((x) => wert(x.cost)));
   const allesBelegt = belegtG >= SLOTS.gebaeude && belegtF >= SLOTS.forschung && belegtS >= SLOTS.schiffe;
   if (wert(s.resources) >= guenstigstes && allesBelegt) tagJetzt.stau++;
+
+  // K3b ROHSTOFF-SCHIEFLAGE. K3 verlangt, dass ALLE Lanes belegt sind, und uebersieht damit den
+  // haeufigeren Fall: eine Lane steht LEER, weil genau EIN Rohstoff fehlt, waehrend die anderen
+  // sich tuermen. Gemessen am 26.08.2026: Metall 1 Mio gegen Kristall 337 Mio und Deuterium
+  // 979 Mio, dazu 335 Gebaeude-Ablehnungen "Nicht genug Ressourcen" - K3 meldete dafuer 0,0 %.
+  // K3 bleibt bewusst UNVERAENDERT, damit die Vergleichswerte frueherer Sessions gueltig
+  // bleiben; K3b steht daneben. Massstab ist derselbe wie bei K3 (Wert des guenstigsten
+  // Schiffs), damit keine neue willkuerliche Konstante entsteht.
+  const laneLeerWegenGeld =
+    (belegtG < SLOTS.gebaeude && ressourcenAblehnung.GEBAEUDE) ||
+    (belegtF < SLOTS.forschung && ressourcenAblehnung.FORSCHUNG) ||
+    (belegtS < SLOTS.schiffe && ressourcenAblehnung.SCHIFFE);
+  if (wert(s.resources) >= guenstigstes && laneLeerWegenGeld) tagJetzt.schieflage++;
 }
 
 // SETZUNG, NICHT GEMESSEN, und ausdruecklich zur Bestaetigung vorgelegt: SEKTOREN enthaelt KEINE
@@ -408,8 +445,9 @@ const gesamt = tage.reduce(
     leerF: a.leerF + t.leerForschung,
     leerS: a.leerS + t.leerSchiffe,
     stau: a.stau + t.stau,
+    schieflage: a.schieflage + t.schieflage,
   }),
-  { proben: 0, leerG: 0, leerF: 0, leerS: 0, stau: 0 }
+  { proben: 0, leerG: 0, leerF: 0, leerS: 0, stau: 0, schieflage: 0 }
 );
 const groessterVerlust = Math.max(0, ...tage.flatMap((t) => t.verluste.map((v) => v.anteil)));
 const wochenOhneInhalt = [0, 1, 2, 3].filter(
@@ -425,6 +463,7 @@ console.log(`K2 Leerlauf (Forschung)        : ${p(gesamt.leerF, gesamt.proben).t
 console.log(`K2 Leerlauf (Schiffe+Vert.)    : ${p(gesamt.leerS, gesamt.proben).toFixed(1)} %` +
   (MENSCH_UNTERSCHRITTE ? '' : '   <- stuendlich abgetastet, laut Abschnitt 1b UNTERSCHAETZT'));
 console.log(`K3 Ressourcenstau (<25 %)      : ${p(gesamt.stau, gesamt.proben).toFixed(1)} %`);
+console.log(`K3b Rohstoff-Schieflage        : ${p(gesamt.schieflage, gesamt.proben).toFixed(1)} %   <- Lane leer, weil EIN Rohstoff fehlt`);
 console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}`);
 console.log(`K5 Quellenanteil Woche 1       : NICHT ERHOBEN - braucht Quellen-Instrumentierung, siehe Protokoll`);
 console.log(`K6 Plateau > 5 Tage            : NICHT BEWERTET - braucht die Einnahmenkurve aus K5`);

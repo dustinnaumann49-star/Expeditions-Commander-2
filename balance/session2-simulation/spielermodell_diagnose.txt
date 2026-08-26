@@ -133,7 +133,59 @@ den drei billigsten bewaffneten Typen (leicht, schwer, begleitschiff) ist die di
 der Regel "nach Kosten aufsteigend".
 
 ================================================================================
-7. NAECHSTE SCHRITTE
+7. BEIDE OFFENEN PUNKTE AUS ABSCHNITT 6 - VOM NUTZER ENTSCHIEDEN AM 26.08.2026
+================================================================================
+PUNKT 1: BEGLEITSCHIFF NUR NOCH BIS escortCap. Aus der Geschmacksfrage wurde eine Messung -
+Kosten je Machtpunkt (combatFleetPowerBase, 1 Stueck, Wert-Einheiten):
+
+  schlachtschiff 1,10 | leicht 1,11 | kreuzer 1,15 | bomber 1,15 | schlachtkreuzer 1,15
+  zerstoerer 1,15 | reaper 1,15 | schwer 1,18 | BEGLEITSCHIFF 3,37
+
+Begleitschiff ist DREIMAL ineffizienter als jedes echte Kampfschiff und hat genau eine
+sinnvolle Rolle: die Eskorte bis escortCap. Es ist deshalb aus der Kampfschiff-Liste
+ausgeschlossen und wird nur noch ueber den escortCap-Zweig gebaut.
+VORBEHALT: combatFleetPowerBase() kennt keine Sonderfaehigkeiten - die Salven-Schiffe stehen
+mit 5,61 bis 7,31 nur deshalb schlecht da. Fuer die fruehe Phase ohne Belang, bei spaeteren
+Laeufen zu beachten.
+
+PUNKT 2: K3 BLEIBT UNVERAENDERT, K3b KOMMT DANEBEN. Die K3-Definition NICHT anzufassen war
+ausdrueckliche Entscheidung: sie hat ueber mehrere Sessions Vergleichswerte, und eine geaenderte
+Definition haette alle frueheren Zahlen entwertet - dieselbe Falle, die im Plan schon einmal
+zugeschnappt ist. K3b zaehlt stattdessen: eine Lane steht LEER, die Ablehnung lautet "Nicht
+genug Ressourcen", und der Gesamtwert reicht trotzdem fuer das guenstigste Schiff. Massstab
+bewusst derselbe wie bei K3, damit keine neue willkuerliche Konstante entsteht.
+
+================================================================================
+8. STAND NACH BEIDEN ENTSCHEIDUNGEN, sieben Tage, Profil aktiv
+================================================================================
+Tag  2 | Wert 1.92 Mrd | Macht 0.31 Mrd | Leerlauf G/F/S  0/4/60 %
+Tag  4 | Wert 2.08 Mrd | Macht 1.19 Mrd | Leerlauf G/F/S 33/0/66 %
+Tag  6 | Wert 2.92 Mrd | Macht 1.41 Mrd | Leerlauf G/F/S 79/1/81 %
+
+K1 groesster Einzelverlust : 6,1 %
+K2 Leerlauf Gebaeude       : 28,0 %
+K2 Leerlauf Forschung      : 1,6 %
+K2 Leerlauf Schiffe+Vert.  : 70,6 %   (stuendlich abgetastet, unterschaetzt)
+K3 Ressourcenstau          : 0,0 %
+K3b Rohstoff-Schieflage    : 50,0 %   <- NEU, und der eigentliche Befund
+K4                         : bei sieben Tagen nicht aussagefaehig
+
+ZWEI WIRKUNGEN, BEIDE GEMESSEN:
+- Die FLOTTENMACHT STEIGT VON 0,80 AUF 1,41 MRD bei gleichem Ressourceneinsatz - der
+  Begleitschiff-Ausschluss bestaetigt die Effizienzrechnung empirisch. Flotte am Tag 7:
+  leicht 2950, schwer 1750, kreuzer 1225, schlachtkreuzer 25, mining 195, begleitschiff 522
+  (Cap 500 + ein Auftrag Ueberschuss, wie vorhergesagt).
+- K3b MELDET 50,0 %, WO K3 0,0 % MELDET. In der Haelfte aller Proben steht eine Lane still,
+  weil genau ein Rohstoff fehlt. Ressourcen am Tag 7: Metall 1 Mio, Kristall 328 Mio,
+  Deuterium 811 Mio. Der Metall-Engpass ist damit erstmals als Zahl greifbar, statt nur als
+  Beobachtung im Endzustand.
+
+WICHTIG FUER DIE DEUTUNG: 50 % Schieflage ist ein BEFUND UEBER DAS SPIEL, nicht ueber das
+Modell - und er ist noch NICHT bewertet. Ob eine so starke Metall-Bindung gewollt ist, ist
+eine Balance-Frage; die Zahl belegt nur, dass sie existiert und dass K3 sie nicht sieht.
+
+================================================================================
+9. NAECHSTE SCHRITTE
 ================================================================================
 1. ERLEDIGT (26.08.2026): Verdrahtungsprobe Block A Schritt 2.
 2. ERLEDIGT (26.08.2026): Spielermodell entstoert - dieses Protokoll.
