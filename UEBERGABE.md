@@ -65,15 +65,60 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
-- **NEU 26.08.2026 (vierte Session): DIE VERDRAHTUNGSPROBE KONNTE NICHT GEFAHREN WERDEN - DIE
-  BEIDEN WERKZEUGE DER VORSITZUNG LIEGEN NICHT IM REPO.** `make_messbuild_sim13.mjs` und
-  `sim13_lauf.mjs` fehlen in `balance/session2-simulation`. Nicht geloescht, sondern **nie
-  hochgeladen**: `git log --all --diff-filter=A` kennt beide Dateinamen nicht, waehrend
-  `sim13_geruest.txt` aus derselben Session vorhanden ist. Der Upload hat das Protokoll
+- **NEU 26.08.2026 (vierte Session, nach Nachreichung der Werkzeuge): BLOCK A SCHRITT 2 IST
+  VERDRAHTET UND ZAHLT - BELEGT. NICHTS GEBAUT, KEIN EINGRIFF IN `server/src`.** Protokoll
+  `balance/session2-simulation/verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu),
+  Werkzeugdoku `WERKZEUGE_26-08-2026_vierte-session.md`. **Messbuild-Protokoll.**
+  - **Die Grenze aus `sim13_geruest.txt` Abschnitt 4 ist geschlossen.** Echte Missionsschleife
+    (`sendFleet()` -> sieben Zeitschritte a 4 h durch `processMissions()` -> `finalizeMission()`)
+    **0,0925** Wert-Einheiten je Punkt vernichteter Feindmacht, Referenzschleife **0,0924** -
+    **+0,1 % bei 40 Durchlaeufen je Seite.** Kein Nachbau einer Teilrechnung: ausgewertet wird,
+    was hinterher auf `state.resources` und in `state.inventory` steht.
+  - **DIE GEGENPROBE IST DER EIGENTLICHE BELEG.** Dieselbe Probe gegen den UNVERDRAHTETEN
+    Eingangs-Build: **+72,8 %**. Trennabstand 73 Punkte gegen rund 2 Punkte Streuung. Ohne diesen
+    Lauf waere die Uebereinstimmung oben nicht von Zufall zu unterscheiden. Drei unabhaengige
+    Merkmale trennen die Builds, nicht nur die Summe: Container je Mission 1,00 gegen 4,40
+    (Patch A5), Ertrag je Punkt 0,1028 gegen 0,1711 (A3), Punkte-Korrektur -0,092 Mrd gegen
+    0,000 (A6, Fehlerform R6).
+  - **DIE ZWEI VERDOPPLER SIND BEANTWORTET - DURCH DEN CODE, NICHT DURCH EINE ENTSCHEIDUNG.**
+    Patch A3 legt Sandronator x2 und Wochen-Event x2 auf den RESSOURCEN-Teil
+    (`__m = __kurve * sandronatorBonus * eventBonus`), Patch A5 zahlt den Container EINMAL je
+    Mission OHNE die Verdoppler. Das ist Weg (1) aus dem Plankasten bei Entscheidung 2, in einer
+    dort nicht vorgeschlagenen Form. **Gebaute Setzung, keine gemessene Groesse** - die Wirkung
+    an Montagen und Freitagen ist nicht gemessen. **Auflage an jede kuenftige Probe:** nicht an
+    einem Mo/Fr laufen lassen, keinen Sandronator einsetzen, sonst liegen Probe und Referenz um
+    Faktor 2 auseinander und es sieht wie ein Verdrahtungsfehler aus.
+  - **Die Bergung ist im Ertrag sichtbar:** 10,0 % der Belohnung, und der Abzug auf
+    `stats.resourcesSpentShipsDefense` erfolgt (-0,092 Mrd).
+  - **GRENZEN, ausdruecklich:** geprueft ist `missions.js` in EINER Zelle (mittel /
+    piraten_hoch / FLEET_LARGE). **`groupOps.js` ist NICHT geprueft** - der Verweis auf
+    `loot.js` ist dort vorhanden, dass er zahlt, ist nicht belegt (Patches A7-A9, zusaetzlich
+    Koop-Aufschlag und Beitragsanteil V2). Die Bergungs-HOEHE ist nur auf Groessenordnung
+    geprueft, nicht gegen einen unabhaengigen Sollwert. Bloecke B bis E sind unberuehrt.
+  - **Werkzeug-Herkunft geprueft, bevor gemessen wurde:** Blockzaehlung A 9 / B 2 / C 3 / D 5 /
+    E 2 = 21, `ownerUsername` in C3, Zielpruefung auf `/dist`, `node_modules`-Symlink, dazu
+    `mission.curvedWin`/`mission.lostUnits` - Details, die aus dem Protokoll nicht
+    rekonstruierbar sind. **Kein Nachbau.** Ankercheck des wiederhergestellten Builds
+    **-1,2 %**; fuenf Messungen desselben Ankers liegen jetzt bei -1,1 / -1,2 / -1,8 / -2,3 /
+    -2,8 %.
+  - **EIGENER MESSFEHLER, im Diagnoselauf gefangen:** die Bergung bucht ueber
+    `Math.max(0, ...)` gegen `stats.resourcesSpentShipsDefense`. Bei Startwert 0 ist der Abzug
+    rechnerisch nicht sichtbar - die Probe meldete "0,000 Mrd", was wie ein FEHLENDER Abzug
+    aussieht. **Eine Buchung, die gegen eine Untergrenze laeuft, ist bei leerem Konto nicht
+    beobachtbar.**
+  - **NAECHSTER SCHRITT unveraendert Punkt 2 aus `sim13_geruest.txt` Abschnitt 8** (Spielermodell
+    entstoeren). Klein und jetzt naheliegend als 1b: dieselbe Probe fuer `groupOps.js` - das
+    Werkzeug steht, nur die Schleife ist auszutauschen.
+
+- **~~NEU 26.08.2026 (vierte Session): DIE VERDRAHTUNGSPROBE KONNTE NICHT GEFAHREN WERDEN~~ -
+  AUFGELOEST AM SELBEN TAG, die Werkzeuge wurden nachgereicht. Der Eintrag bleibt wegen der
+  Falle stehen, die daraus folgt.** `make_messbuild_sim13.mjs` und
+  `sim13_lauf.mjs` fehlten in `balance/session2-simulation`. Nicht geloescht, sondern **nie
+  hochgeladen**: `git log --all --diff-filter=A` kannte beide Dateinamen nicht, waehrend
+  `sim13_geruest.txt` aus derselben Session vorhanden war. Der Upload hatte das Protokoll
   mitgenommen und die Werkzeuge nicht. **Nichts gebaut, kein Eingriff in `server/src`.**
-  - **FOLGE 1: die Zahl -2,0 % ist nicht mehr reproduzierbar.** Sie gehoert zu einem Build, den
-    kein vorhandenes Werkzeug erzeugt. Sie bleibt als Protokollwert stehen, taugt aber nicht mehr
-    als Vergleichsanker fuer einen kuenftigen Lauf.
+  - **FOLGE 1 ~~: die Zahl -2,0 % ist nicht mehr reproduzierbar~~** - erledigt, der Build laesst
+    sich wieder erzeugen; der Ankercheck liefert jetzt -1,2 % in derselben Streubreite.
   - **FOLGE 2: nicht nur Schritt 1 der Liste in `sim13_geruest.txt` Abschnitt 8 haengt, sondern
     alle vier.** Schritt 2 (Spielermodell entstoeren) und Schritt 3 (Quellen-Instrumentierung)
     arbeiten beide an `sim13_lauf.mjs`, Schritt 4 faehrt es.
@@ -917,16 +962,49 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Eine Buchung, die gegen eine Untergrenze laeuft, ist bei leerem Konto nicht beobachtbar - und
+ihre Abwesenheit sieht dann aus wie ein Defekt.** Die Wrack-Bergung zieht ihren Betrag ueber
+`Math.max(0, (stats.resourcesSpentShipsDefense || 0) - betrag)` ab (Fehlerform R6). Im ersten
+Diagnoselauf der Verdrahtungsprobe stand der Zaehler auf 0, die Klammer lieferte 0, und die
+Ausgabe meldete "Punkte-Korrektur 0,000 Mrd" - also genau das, was ein FEHLENDER Patch A6 auch
+gemeldet haette. Mit realistischem Ausgangsbestand erscheint der Abzug korrekt mit -0,092 Mrd.
+**Vor jeder Pruefung auf "wird abgezogen" den Ausgangsbestand so setzen, dass ein Abzug
+ueberhaupt Platz hat.** Verwandt mit "ein Mechanismus kann exakt das Richtige tun und trotzdem
+nichts bewirken", hier aber auf der MESSSEITE statt im Spiel.
+
+**Zwei Verdoppler koennen an einem Zaehler haengen, der bei einem Umbau seine Aufgabe verliert.**
+`mission.combatWins` traegt Sandronator x2 und Wochen-Event Mo/Fr x2 und zahlt beide auf
+Container UND Ressourcen aus. Block A Schritt 2 nimmt dem Zaehler beide Aufgaben ab (Container
+einmal je Mission, Ressourcen ueber die Kurve) - die Bauanleitung sagt aber nicht, wo die
+Verdoppler danach landen, und die Referenzschleife in `check_build_anker.mjs` kennt keinen von
+beiden. **Folge fuer jede Messung an dieser Stelle: nicht an einem Montag oder Freitag laufen
+lassen und keinen Sandronator einsetzen**, sonst liegen Probe und Referenz um Faktor 2
+auseinander und es sieht wie ein Verdrahtungsfehler aus. Der wiederhergestellte Build beantwortet
+die Frage (Verdoppler auf den Ressourcenteil, Container ohne sie) - **das ist eine gebaute
+Setzung und keine gemessene Groesse.** Allgemein: **bei jedem Umbau pruefen, ob der abgeloeste
+Zaehler noch etwas anderes getragen hat als das, wofuer er benannt ist.**
+
 **Ein Protokoll belegt nicht, dass sein Werkzeug im Repo liegt - und ein Messwert ohne sein
 Werkzeug ist nicht mehr reproduzierbar.** `sim13_geruest.txt` nennt `make_messbuild_sim13.mjs` und
 `sim13_lauf.mjs` in der Kopfzeile, `WERKZEUGE_26-08-2026.md` beschreibt beide mit Aufrufsyntax und
 Schaltern - hochgeladen wurde keines von beiden. Aufgefallen ist es erst in der Folgesitzung, beim
-Versuch, die dokumentierte Befehlszeile auszufuehren. Damit ist der Ankerwert -2,0 % zwar
-protokolliert, aber an keinen erzeugbaren Build mehr gebunden. **Am Ende jeder Session pruefen, ob
-JEDE im Protokoll genannte Datei tatsaechlich im Repo liegt** - `git status` und ein `ls` auf die
-im Werkzeug-Dokument genannten Namen kosten zehn Sekunden. Verwandt mit der Regel "Doku und Code
+Versuch, die dokumentierte Befehlszeile auszufuehren. **Am Ende jeder Session pruefen, ob JEDE im
+Protokoll genannte Datei tatsaechlich im Repo liegt** - `git status` und ein `ls` auf die im
+Werkzeug-Dokument genannten Namen kosten zehn Sekunden. Verwandt mit der Regel "Doku und Code
 duerfen nie auseinanderlaufen" aus der Arbeitsregel, aber eine Ebene tiefer: hier lief nicht die
 Beschreibung dem Code davon, sondern die Beschreibung dem WERKZEUG.
+*Nachtrag am selben Tag: die Werkzeuge wurden nachgereicht und vor Gebrauch auf Echtheit geprueft
+(Blockzaehlung, Bezeichner, Schalter, nicht rekonstruierbare Implementierungsdetails). Die Regel
+bleibt - und um eine zweite ergaenzt: **wer ein nachgereichtes Werkzeug annimmt, prueft zuerst, ob
+es das Original ist oder ein Nachbau**, sonst geht eine Rekonstruktion als unabhaengiger Beleg
+durch.*
+
+**Eine Uebereinstimmung ist erst ein Beleg, wenn die Probe auch die ABWESENHEIT erkennen kann.**
+Die Verdrahtungsprobe lag mit +0,1 % an der Referenz - das allein haette auch ein Zufall sein
+koennen oder eine Probe, die konstruktionsbedingt gar nicht abweichen KANN. Erst der Lauf gegen
+den unverdrahteten Build (+72,8 %, Container 4,40 statt 1,00 je Mission) macht daraus einen
+Beleg. **Zu jeder Uebereinstimmungspruefung gehoert eine Zelle, in der das Gesuchte nachweislich
+fehlt** - und der Trennabstand ist gegen die Streuung zu lesen, hier 73 gegen rund 2 Punkte.
 
 **Ein Kriterium an der 100-%-Kante kann eine Aufloesung haben, die kleiner ist als die eigene
 Streuung.** Bei 40 Serien ist der Unterschied zwischen "100 % perfekt" und "98 % perfekt" EIN
@@ -1251,7 +1329,20 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**STAND 26.08.2026 (vierte Session): ZUERST DIE WERKZEUGLUECKE SCHLIESSEN.**
+**STAND 26.08.2026 (vierte Session, Abschluss): BLOCK A SCHRITT 2 IST BELEGT. NAECHSTER SCHRITT
+IST PUNKT 2 AUS `sim13_geruest.txt` ABSCHNITT 8 - DAS SPIELERMODELL ENTSTOEREN.** Es bleibt ab
+Tag 3 in einem ausgehungerten Gleichgewicht stehen (`sim13_lauf.mjs`, Protokoll Abschnitt 7);
+solange das nicht von einer echten Aussage zur Startphase getrennt ist, darf keine Zahl aus dem
+Lauf zitiert werden. Danach Punkt 3 (Einnahmen nach Quelle instrumentieren, sonst bleiben K5/K6
+und damit Entscheidung 3 unbewertbar), dann erst die drei Profile.
+
+**Klein und jetzt naheliegend, empfohlen als Schritt 1b:** dieselbe Verdrahtungsprobe fuer
+`groupOps.js`. Das Werkzeug (`probe_verdrahtung_a.mjs`) steht, nur die Schleife ist
+auszutauschen - dort haengen zusaetzlich der Koop-Aufschlag und der Beitragsanteil V2, und der
+Elite-Anker ist ein anderer (`LOOT_CURVE_ELITE_CHECK_POWER`).
+
+**~~STAND 26.08.2026 (vierte Session): ZUERST DIE WERKZEUGLUECKE SCHLIESSEN.~~ ERLEDIGT** - die
+Werkzeuge wurden am selben Tag nachgereicht und vor Gebrauch auf Echtheit geprueft.
 `make_messbuild_sim13.mjs` und `sim13_lauf.mjs` fehlen im Repo (Stand-Eintrag oben). Wer hier
 einsteigt, prueft das als Erstes mit einem `ls` - liegen sie inzwischen dort, ist der naechste
 Schritt unveraendert die Verdrahtungsprobe aus `sim13_geruest.txt` Abschnitt 8 Punkt 1. Liegen sie

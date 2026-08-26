@@ -213,7 +213,39 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
-> **MESSKASTEN 26.08.2026 (vierte Session) - DIE VERDRAHTUNGSPROBE IST NICHT GELAUFEN. DIE
+> **MESSKASTEN 26.08.2026 (vierte Session, Abschluss) - BLOCK A SCHRITT 2 IST VERDRAHTET UND
+> ZAHLT. BELEGT. NICHTS AM SPIELCODE GEBAUT.** Protokoll
+> `balance/session2-simulation/verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu).
+> **Messbuild-Protokoll.**
+>
+> Die im Kasten der dritten Session ausdruecklich offen gelassene Grenze ist geschlossen. Echte
+> Missionsschleife (`sendFleet()` -> sieben Zeitschritte a 4 h durch `processMissions()` ->
+> `finalizeMission()`) **0,0925** Wert-Einheiten je Punkt vernichteter Feindmacht,
+> Referenzschleife **0,0924** - **+0,1 % bei 40 Durchlaeufen je Seite.** Es wird keine
+> Teilrechnung nachgebaut: ausgewertet wird, was hinterher auf `state.resources` und in
+> `state.inventory` steht; die vernichtete Feindmacht kommt aus dem spieleigenen Bericht
+> (`mission.skirmishTotals.npc`).
+>
+> **DIE GEGENPROBE IST DER EIGENTLICHE BELEG:** dieselbe Probe gegen den UNVERDRAHTETEN
+> Eingangs-Build liefert **+72,8 %**. Trennabstand 73 Punkte gegen rund 2 Punkte Streuung. Drei
+> unabhaengige Merkmale trennen die Builds: Container je Mission 1,00 gegen 4,40 (Patch A5),
+> Ertrag je Punkt 0,1028 gegen 0,1711 (A3), Punkte-Korrektur -0,092 Mrd gegen 0,000 (A6).
+>
+> **GRENZEN:** geprueft ist `missions.js` in EINER Zelle (mittel / piraten_hoch / FLEET_LARGE).
+> **`groupOps.js` ist NICHT geprueft** - der Verweis auf `loot.js` ist dort vorhanden, dass er
+> zahlt, ist nicht belegt (Patches A7-A9, zusaetzlich Koop-Aufschlag und Beitragsanteil V2). Die
+> Bergungs-HOEHE ist nur auf Groessenordnung geprueft (10,0 % der Belohnung), nicht gegen einen
+> unabhaengigen Sollwert. Bloecke B bis E sind unberuehrt.
+>
+> **Werkzeug-Herkunft vor der Messung geprueft** (Blockzaehlung A 9 / B 2 / C 3 / D 5 / E 2 = 21,
+> `ownerUsername` in C3, Zielpruefung auf `/dist`, Symlink, dazu `mission.curvedWin` und
+> `mission.lostUnits` als nicht rekonstruierbare Details). Kein Nachbau. Ankercheck des
+> wiederhergestellten Simulationsbuilds **-1,2 %**; fuenf Messungen desselben Ankers liegen jetzt
+> bei -1,1 / -1,2 / -1,8 / -2,3 / -2,8 %.
+
+> **~~MESSKASTEN 26.08.2026 (vierte Session) - DIE VERDRAHTUNGSPROBE IST NICHT GELAUFEN.~~
+> AM SELBEN TAG AUFGELOEST, die Werkzeuge wurden nachgereicht. Der Kasten bleibt wegen der
+> Falle stehen. NICHT GELAUFEN WAR ZUNAECHST: DIE
 > WERKZEUGE DER VORSITZUNG FEHLEN IM REPO. NICHTS GEBAUT.**
 >
 > `make_messbuild_sim13.mjs` und `sim13_lauf.mjs` liegen nicht in `balance/session2-simulation`.
@@ -519,7 +551,18 @@ Flotten spuerbar zaeher - pruefen, ob Sektoren dadurch zu leicht werden.
 ### Entscheidung 2 - Beute-Kurve: EXPONENT 0,85, NICHT LINEAR
 
 > **LUECKE IN DER BAUANLEITUNG, GEFUNDEN AM 26.08.2026 (vierte Session) BEIM VORBEREITEN DER
-> VERDRAHTUNGSPROBE. NUTZERENTSCHEIDUNG NOETIG, BEVOR DIE VERDRAHTUNG FESTGEZURRT WIRD.**
+> VERDRAHTUNGSPROBE. AM SELBEN TAG AUS DEM WIEDERHERGESTELLTEN BUILD BEANTWORTET - ALS GEBAUTE
+> SETZUNG, NICHT ALS GEMESSENE GROESSE.**
+>
+> **Antwort:** Patch A3 legt beide Verdoppler auf den RESSOURCEN-Teil
+> (`__m = __kurve * sandronatorBonus * eventBonus`), Patch A5 zahlt den Container EINMAL je
+> Mission OHNE sie. Das ist Weg (1) unten, in einer dort nicht vorgeschlagenen Form. **Die
+> Wirkung an Montagen und Freitagen ist NICHT gemessen** - wer sie fuer erheblich haelt, misst
+> sie, bevor gebaut wird. **Auflage an jede Messung an dieser Stelle:** nicht an einem Mo/Fr
+> laufen lassen und keinen Sandronator einsetzen, sonst liegen Probe und Referenzschleife um
+> Faktor 2 auseinander (`verdrahtung_a.txt` Abschnitt 3, Falle 2 und 3).
+>
+> **Die Ausgangslage, zur Nachvollziehbarkeit erhalten:**
 >
 > `mission.combatWins` ist heute nicht nur ein Sieg-Zaehler, sondern der TRAEGER von zwei
 > Verdopplern: Sandronator x2 und Wochen-Event Mo/Fr x2 (`PIRATEN_EVENT_BONUS_MULTIPLIER`) werden
@@ -6385,6 +6428,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 26.08.2026 (vierte Session, Abschluss) | **Verdrahtungsprobe fuer Block A Schritt 2 gelaufen - BLOCK A IST VERDRAHTET UND ZAHLT.** Protokoll `verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu). Die beiden zu Sessionbeginn fehlenden Werkzeuge wurden nachgereicht und vor Gebrauch auf Echtheit geprueft (Blockzaehlung A 9 / B 2 / C 3 / D 5 / E 2 = 21, `ownerUsername` in C3, Zielpruefung auf `/dist`, Symlink, dazu `mission.curvedWin`/`mission.lostUnits` als nicht rekonstruierbare Details) - kein Nachbau. **Ergebnis:** echte Missionsschleife 0,0925 je Punkt vernichteter Feindmacht gegen 0,0924 der Referenzschleife, **+0,1 % bei 40 Durchlaeufen je Seite**; die Probe baut keine Teilrechnung nach, sondern liest `state.resources`/`state.inventory` nach `finalizeMission()` und nimmt die vernichtete Feindmacht aus dem spieleigenen Bericht. **Gegenprobe gegen den unverdrahteten Eingangs-Build +72,8 %** - Trennabstand 73 Punkte gegen rund 2 Punkte Streuung, mit drei unabhaengigen Merkmalen (Container je Mission 1,00 gegen 4,40; Ertrag je Punkt 0,1028 gegen 0,1711; Punkte-Korrektur -0,092 Mrd gegen 0,000). **Die Verdopplerfrage aus dem Kasten bei Entscheidung 2 ist damit beantwortet**, als gebaute Setzung: Sandronator x2 und Wochen-Event x2 wirken auf den Ressourcenteil, der Container faellt einmal je Mission ohne sie; die Wirkung an Mo/Fr ist ungemessen. **Grenzen:** nur `missions.js`, nur eine Zelle; `groupOps.js` ist NICHT geprueft; die Bergungshoehe nur auf Groessenordnung (10,0 % der Belohnung). Ankercheck des wiederhergestellten Simulationsbuilds -1,2 %. **Nichts gebaut, kein Eingriff in `server/src`.** |
 | 26.08.2026 (vierte Session) | **Verdrahtungsprobe fuer Block A Schritt 2 NICHT gelaufen - die beiden Werkzeuge der Vorsitzung fehlen im Repo.** `make_messbuild_sim13.mjs` und `sim13_lauf.mjs` liegen nicht in `balance/session2-simulation`; `git log --all --diff-filter=A` kennt beide Namen nicht, waehrend `sim13_geruest.txt` aus derselben Session vorhanden ist - sie wurden nie hochgeladen, nicht geloescht. **Folge: der Ankerwert -2,0 % des Simulationsbuilds ist nicht mehr reproduzierbar** und taugt nicht als Vergleichsanker; betroffen sind alle vier Punkte aus `sim13_geruest.txt` Abschnitt 8, weil Punkt 2 und 3 an `sim13_lauf.mjs` arbeiten und Punkt 4 es faehrt. **Geprueft und gueltig:** Vorbedingung (`npm install`, `npx tsc -p tsconfig.json`), `make_messbuild_kum.mjs` und `check_build_anker.mjs` arbeiten; Eingangs-Build `/tmp/mb_kum` normiert **-1,8 %** (roh +5,3 %, 1,105 Mrd bei 11,895 Mrd Feindmacht, 4,67 Siege). Vier Messungen desselben Ankers liegen damit bei -1,1 / -1,8 / -2,3 / -2,8 %, die roh/normiert-Falle reproduziert sich zum vierten Mal. **Am Code nachgezaehlt (Anker aus dem kompilierten dist, nicht aus der TS-Quelle):** `missions.js` und `groupOps.js` rufen `fleetSizeRewardMultiplier()` weiterhin auf (Z. 321 bzw. Z. 713) und referenzieren `game/loot.js` null Mal; was die Verdrahtung braucht, liegt an der Stelle bereits vor (`npcLosses`, `losses`). **Neue Luecke in der Bauanleitung von Entscheidung 2, dort als eigener Kasten eingetragen:** `mission.combatWins` traegt heute Sandronator x2 und Wochen-Event x2 und zahlt beides auf Container UND Ressourcen aus - faellt der Container-Fund auf einmal je Mission und `winResources` auf die Kurve, haben beide Verdoppler keinen Ort mehr, und die Referenzschleife in `check_build_anker.mjs` kennt keinen von beiden. **Methodischer Vorbehalt festgehalten:** wer Block A jetzt neu nachbaut und gegen den Ankercheck prueft, prueft seine eigene Nachbildung gegen ihre Vorlage - Machbarkeitsnachweis und Quelle der Patch-Anker, aber kein Ersatz fuer die verlorene Aussage. **Nichts gebaut, kein Eingriff in `server/src`.** |
 | 21.08.2026 (Entscheidung 19, neu) | **Salvenschiffe im Endgame - gemessen, NICHT GEBAUT.** Anlass: Nutzer-Kampfbericht mit 993.604 Schiffen. Werkzeuge `run_salven_19.mjs` und `make_messbuild_salve.mjs` (neu), Protokoll `salven_19.txt`, kumulativer Messbuild (also mit Entscheidung 16). **Die Beobachtung stimmt, die Ursache ist eine andere als vermutet: die Salvenschiffe sind nicht schwach, es sind zu wenige.** 270 von 993.604 Schiffen (0,027 %) liefern 1,11 % des Schadens bei 0,06 % Machtanteil - das 18-fache ihres Anteils; pro Stueck ist ein Salvenkreuzer 86-mal so stark wie ein normaler Kreuzer. **Kernbefund: die Mehrfachziel-Salve ist mechanisch schwaecher als RapidFire.** Der Imperator macht 313 Mio Schaden je Stueck, der Salvendreadnought nur 195 Mio - bei fast gleichen Waffenwerten (50.400 gegen 52.000). Die Salve gibt EINEN Treffer je praesentem Typ (hoechstens drei, unabhaengig von der Feindmenge), RapidFire gibt wiederholte verkettete Schuesse. Der Sondermechanismus ist also schwaecher als der gewoehnliche. **`MULTI_TARGET_POWER_CORRECTION = 8` wirkt zusaetzlich falsch herum** - er treibt ueber die Flottenmacht die Gegnerstaerke und bremst die Schiffe damit genau im Frueh-/Mittelstand, wo sie stark sind, waehrend er im Endgame folgenlos ist. **Die Kurve zeigt eine reine Mengenfrage:** Schadensanteil 73,26 / 45,86 / 19,32 / 6,72 / 2,80 % bei 5.235 / 20.135 / 99.603 / 347.933 / 993.597 Schiffen, waehrend der Schaden JE STUECK von 23,2 auf 301,1 Mio STEIGT und der Abstand zum Reaper von 41x auf 189x waechst. **Nutzerentscheidung: Weg 2 (Salve an die Stapelgroesse koppeln) kombiniert mit Weg 1 (maxCount).** Weg 2 gemessen als `treffer_je_typ = min(DECKEL, ceil(einheiten / JE))`, Einzelziele UND Aggregat-Stapel. Erster Versuch JE = 500 / DECKEL = 12 verworfen (mittlerer Stand springt von 45,9 auf 76,4 %, Endgame auf 25,5 % - zu stark und an der falschen Stelle). **Gewaehlt JE = 20.000, DECKEL = 8:** Endgame 2,80 -> 9,22 %, mittlerer Stand 19,32 -> 20,83 % (im Rauschen). Weg 1 obendrauf: x1 8,83 %, x2 15,11 %, x3 22,94 % (Kosten 1,82 / 3,65 / 5,47 Mrd Rohressourcen). **Wichtige Einschraenkung: Weg 1 wirkt UEBERALL, Weg 2 nur spaet** - eine flache Verdopplung von `maxCount` verdoppelt auch den Frueh-/Mittelstand-Anteil, wo die Schiffe bereits bei 43-73 % liegen. Weg 1 deshalb nur mit Kopplung an den Ausbaustand empfohlen. Offen: Wechselwirkung mit Entscheidung 6 und die Frage, ob `MULTI_TARGET_POWER_CORRECTION` unter Weg 2 noch stimmen kann. |
 | 21.08.2026 (Entscheidung 18, Nachtrag) | **Eskalierende Wellen und Bunkerbrecher - Nutzervorschlag, gemessen, NICHT GEBAUT.** Die Wand aus Befund D ist damit aufgeloest, **ohne `RAID_WAVE_ROLL` anzufassen**: die Eskalation ist eine NEUE Groesse, der Wuerfel bleibt unangetastet und wirkt obendrauf. Inhaltlich tut sie dasselbe wie eine Erhoehung des Wuerfels - deshalb ausdruecklich als Nutzerentscheidung gefuehrt und nicht als eigenmaechtiger Ausweg um die Sperre herum. **BEFUND E: die Eskalation ist der einzige gefundene Regler, der nicht nur die Kosten, sondern den AUSGANG bewegt** - sie hebt das Verhaeltnis EINER Welle zum Verteidiger, und genau daran haengt Sieg oder Niederlage. Die negative Rueckkopplung bleibt als Daempfer bestehen, es entsteht deshalb **kein Kliff wie bei Entscheidung 17**, sondern ein kontinuierlicher Uebergang. **BEFUND F: die Bunkerbrecher-Welle holt die Verteidigung zurueck ins Spiel und ist die direkte Gegenmassnahme zu Befund A** - Verteidigungsverlust 0,2 % -> 41,2 % (voll) und 3,8 % -> 38,8 % (mittel) bei fast gleichem Flottenverlust (44,0 -> 43,0 %); die Bomber VERLAGERN den Schaden, statt zusaetzlichen anzurichten. Hintergrund: der Bomber ist der einzige Bunkerbrecher (RapidFire 20/20/10 gegen Raketenwerfer/Leichtes Laser/Schweres Laser), aber die Wellenprofile gewichten den Schiffspool nur nach POSITION im `SHIPS`-Array und kennen keine Rolle - fuer den Einbau waere ein viertes Profil `bunkerbrecher` die naheliegende Form. **Drei Kandidaten mit je 40 Raids** (perfekte Abwehr / Flottenverlust, jeweils 50 % Bomber in der letzten Phase): Ist-Zustand voll 100 %/20,0 %, mittel 100 %/28,7 %; **A (1/1,20/1,50)** voll 100 %/34,3 %, mittel 100 %/43,4 %, schwach 0 %/99,6 %; **C (1/1,35/2,20)** voll 100 %/56,1 %, mittel 80 %/69,2 %; **B (1/1,50/2,50)** voll 93 %/65,2 %, mittel 65 %/74,1 %. **BEFUND G: der Kampf-Booster wird zum ausschlaggebenden Faktor** - "voll ohne Kampf-Boost" kippt in allen drei Kandidaten als erster entwickelter Stand (100/48/38 % perfekt gegen 100/100/93 % mit Booster). Bei Kandidat C entscheidet der Booster ueber knapp die Haelfte aller Raids; **der Raid wuerde zum staerksten Kaufargument fuer den Kampf-Booster im ganzen Spiel.** Vor der Wahl eines Kandidaten zu entscheiden. **BEFUND H: die Eskalation trifft die Schwachen am haertesten, also in die falsche Richtung** - "schwach / kleine Flotte" geht bei JEDER Eskalation auf 100 % Totalverlust, und Entscheidung 10 hilft nicht, weil ihr Neulingsschutz ZEITBASIERT ist (14 Tage). **Wer eskalierende Wellen einbaut, braucht eine ausbaustandsabhaengige Untergrenze.** Empfehlung: **Kandidat A als erster Schritt** (verdoppelt den Flottenverlust an den entwickelten Staenden, holt die Verteidigung mit rund einem Drittel Verlust zurueck, laesst "schwach" praktisch unveraendert); verlierbar wird der Raid damit bewusst noch nicht, weil G und H vorher zu klaeren sind. Werkzeug: `run_raid.mjs` um `ESC` und `BUNKER` erweitert, ohne die Variablen unveraendert. |
