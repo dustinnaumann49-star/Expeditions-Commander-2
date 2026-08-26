@@ -1,0 +1,142 @@
+SPIELERMODELL: DIAGNOSE UND KORREKTUR
+Protokoll vom 26.08.2026 (vierte Session, zweiter Teil)
+Werkzeuge: probe_spielermodell.mjs (neu, Diagnose), sim13_lauf.mjs (geaendert)
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen stammen aus /tmp/sim13/dist, nicht aus dem Repo-Stand. !!!
+!!! Es wurde KEINE Zeile server/src veraendert.                                             !!!
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+Der Stillstand ab Tag 3 hatte FUENF Ursachen, nicht eine; zwei davon hatten jeweils fuer sich
+allein schon beide Einnahmequellen abgeschaltet. Nach der Korrektur laeuft die Simulation
+ueber sieben Tage durch: Wert 0,02 -> 3,19 Mrd, Flottenmacht 0,06 -> 0,80 Mrd.
+
+================================================================================
+1. BEFUND VORHER (reproduziert)
+================================================================================
+Tag  2 | Wert 0.05 Mrd | Macht 0.02 Mrd | Leerlauf G/F/S   0/ 75/ 50 %
+Tag  3 | Wert 0.04 Mrd | Macht 0.02 Mrd | Leerlauf G/F/S  58/ 88/ 87 %
+Tag  4 | Wert 0.04 Mrd | Macht 0.02 Mrd | Leerlauf G/F/S 100/100/100 %
+
+================================================================================
+2. DIE FUENF DEFEKTE, ALLE GEMESSEN
+================================================================================
+(a) DIE AKTIONEN WERFEN NICHT. startBuild(), startResearch(),
+    startBuildingConstruction() und sendFleet() liefern `{ ok:false, error }` ZURUECK. Die
+    `try { ... } catch { }`-Bloecke des alten Modells konnten deshalb nie etwas fangen, und
+    `handelte = true` wurde auch bei jedem Fehlschlag gesetzt. Das Modell war blind fuer seine
+    eigenen Ablehnungen - der Grund, warum der Defekt so lange unentdeckt blieb.
+
+(b) MINENERTRAG WAR EXAKT NULL - der schwerste Einzelbefund.
+    mineOutputPerHour() (actions.js) multipliziert mit energyFactor() = min(1, produziert /
+    verbraucht). Der alte Gebaeudezweig filterte `BUILDINGS.filter(b => b.baseOutput)`, und
+    solarkraftwerk/roboterfabrik/nanitenfabrik haben baseOutput = null. Das Modell konnte ein
+    Kraftwerk KONSTRUKTIONSBEDINGT nicht bauen. Endzustand des alten Laufs:
+    metallmine 9, kristallmine 8, deuteriummine 8, solarkraftwerk 0 -> Faktor 0 -> neun
+    Minenstufen foerderten nichts.
+
+(c) AB 180 MINING-SCHIFFEN KEIN MISSIONSVERSAND MEHR.
+    sendFleet() prueft cfg.miningCap (asteroid_niedrig 300, mittel 220, hoch 180) und
+    cfg.escortCap (500). Das Modell bot die GESAMTE Flotte an. Ab Tag 2 hatte es 1200
+    Mining-Schiffe und zielte auf asteroid_hoch - 93 Ablehnungen im Fuenf-Tage-Lauf, kein
+    einziger Start mehr. Damit war die zweite Einnahmequelle ebenfalls tot.
+
+(d) 1400 SPIONAGESONDEN. `kampf.slice(0, 3)` nach Kosten sortiert waehlte die billigsten
+    Schiffe. Spionagesonde: stats.waffen = 0, nicht asteroidenfaehig, 8.000 Kristall je Stueck.
+    Gemessen 11,2 Mio Kristall verbrannt; Kristall-Endbestand 4.520.
+
+(e) 720 FEHLVERSUCHE JE LAUF an gesperrten V2/V3-Stufen ("Diese Stufe ist noch nicht
+    freigeschaltet"). Folgenlos, aber das Modell rannte jede Stunde gegen dieselbe Wand.
+
+Zusatzbefund: `mining` traegt stats.waffen = 0, also 0 zur Flottenmacht bei. Die gesamte Macht
+des alten Laufs kam aus `begleitschiff`.
+
+================================================================================
+3. ZWEI EIGENE FEHLER IN DIESER SITZUNG, BEIDE FESTGEHALTEN
+================================================================================
+MESSREGEL 16, ZUM ZWEITEN MAL: die erste Korrektur filterte Kampfschiffe ueber `sh.waffen`.
+Dieses Feld GIBT ES NICHT - die Kampfwerte stehen unter `sh.stats` (waffen/schild/panzerung).
+`sh.waffen` ist ueberall undefined, die Liste war damit LEER und das Modell baute null
+Kampfschiffe. Aufgefallen ist es nur daran, dass die Flottenmacht ueber sieben Tage exakt
+0,00 Mrd blieb - eine Zahl, die man leicht als "Modell baut halt wenig" abtut. Merksatz
+unveraendert: erst am Code nachsehen, dann filtern.
+
+VERWORFENER EIGENER VORSCHLAG: den Schiffsbau zu stoppen, sobald der Mining-Cap gedeckt ist.
+Ein Modell, das aus Zufriedenheit aufhoert zu bauen, erzeugt leere Slots - und Leerlauf IST
+Kriterium K2. Gemessen wuerde dann die Abbruchregel des Modells statt das Spiel. Dieselbe
+Fehlerform wie bei Entscheidung 3, wo eine Rueckzugsregel die Siegstatistik verfaelschte.
+
+================================================================================
+4. WAS GEAENDERT WURDE (nur sim13_lauf.mjs, kein Spielcode)
+================================================================================
+- Rueckgabewerte werden ausgewertet statt `try/catch`.
+- Gebaeudezweig arbeitet auf allen Stufe-1-Gebaeuden (kind: mine_*, energie, roboter, nanit),
+  nicht mehr auf `b.baseOutput`. ENERGIE HAT VORRANG: faellt energyFactor(s,1) unter 1, geht
+  die eine Lane zuerst an das Solarkraftwerk. Danach nach Stufe aufsteigend - das zieht die
+  Roboterfabrik (Bauzeit) automatisch mit hoch, ohne erfundene Schwelle.
+- Kampfschiffe ueber `sh.stats.waffen > 0` statt einer Namensliste. Schliesst Spionagesonde
+  und reine Mining-Schiffe aus.
+- Schiffsbau: Mining bis miningCap, Begleitschutz bis escortCap, danach Kampfschiffe nach
+  Kosten. Gezaehlt wird der Bestand OHNE Warteschlange - Ueberschuss hoechstens ein Auftrag
+  (25 Stueck), bewusst in Kauf genommen.
+- Missionsversand auf miningCap/escortCap BESCHNITTEN statt die ganze Flotte anzubieten.
+- Neuer Schalter --gruende sammelt die Ablehnungsgruende. Bewusst IN sim13_lauf.mjs statt in
+  einem zweiten Skript: ein dupliziertes Spielermodell liefe frueher oder spaeter auseinander.
+
+Zwei Setzungen, vom Nutzer am 26.08.2026 bestaetigt: Energie-Vorrang am Ist-Faktor (statt
+fester Kopplung an die hoechste Mine) und staerkstes tragbares Feld statt Ausweichen auf ein
+kleineres mit hoeherem Cap (Ertrag/h: Hoch 4,5 Mio, Mittel 3,3 Mio, Niedrig 1,5 Mio).
+
+================================================================================
+5. BEFUND NACHHER, sieben Tage, Profil aktiv
+================================================================================
+Tag  0 | Wert 0.02 Mrd | Macht 0.06 Mrd | Leerlauf G/F/S  0/ 6/65 %
+Tag  2 | Wert 2.96 Mrd | Macht 0.21 Mrd | Leerlauf G/F/S  4/ 0/60 %
+Tag  4 | Wert 1.99 Mrd | Macht 0.58 Mrd | Leerlauf G/F/S 29/ 0/62 %
+Tag  6 | Wert 3.19 Mrd | Macht 0.80 Mrd | Leerlauf G/F/S 75/ 1/66 %
+
+K1 groesster Einzelverlust : 6,6 %      (Grenze 70 % - erfuellt)
+K2 Leerlauf Gebaeude       : 24,4 %
+K2 Leerlauf Forschung      : 2,4 %
+K2 Leerlauf Schiffe+Vert.  : 65,7 %     (stuendlich abgetastet, laut Abschnitt 1b unterschaetzt)
+K3 Ressourcenstau          : 0,0 %      (Grenze 25 % - siehe Abschnitt 6, die Zahl taeuscht)
+K4 Wochen ohne neuen Inhalt: NICHT AUSSAGEFAEHIG bei sieben Tagen - Wochen 2 bis 4 haben keine
+                             Daten. Braucht den 30-Tage-Lauf.
+
+Endzustand: Minen 22/21/21, Solar 26, Roboterfabrik 19, Nanitenfabrik 13.
+Flotte: leicht 2575, schwer 2025, begleitschiff 3420, mining 195 (Cap 180 + ein Auftrag
+Ueberschuss, wie vorhergesagt).
+
+================================================================================
+6. NEUER BEFUND, NOCH NICHT ENTSCHIEDEN: METALL IST DER ENGPASS, UND K3 SIEHT ES NICHT
+================================================================================
+Ressourcen am Tag 7: Metall 1 Mio, Kristall 337 Mio, Deuterium 979 Mio.
+Dazu 335 x "GEBAEUDE: Nicht genug Ressourcen" gegenueber nur 18 x "Es kann immer nur ein
+Gebaeude gleichzeitig gebaut werden".
+
+Der Gebaeude-Leerlauf von 75 % an Tag 6 ist also KEIN Modellfehler, sondern ein echter
+Engpass: Metall ist leer, Kristall und Deuterium tuermen sich. Der Spieler ist blockiert.
+
+**K3 meldet dafuer 0,0 %.** Die Kennzahl verlangt, dass ALLE Lanes belegt sind; hier ist die
+Gebaeude-Lane leer, weil das EINE noetige Metall fehlt, waehrend der Gesamtwert der Ressourcen
+mit 3,19 Mrd hoch aussieht. Ein Ressourcenstau, den die Stau-Kennzahl nicht erfasst.
+Das ist eine Schwaeche der K3-DEFINITION, keine Frage des Modells - und sie gehoert dem Nutzer
+vorgelegt, bevor Zahlen aus K3 zitiert werden.
+
+OFFENE FRAGE ZUM MODELL, ebenfalls Nutzerentscheidung: `begleitschiff` traegt stats.waffen =
+350 und landet deshalb ZUSAETZLICH in der Kampfschiff-Liste. Es wird darum ueber escortCap
+hinaus gebaut (3420 gegen Cap 500) - als billigstes bewaffnetes Schiff sogar bevorzugt. Ob
+das spielertypisch ist oder ob das Modell groessere Schiffe bevorzugen soll, sobald sie
+verfuegbar sind, ist eine Spielurteilsfrage. Wirkung ungemessen. Die heutige Monokultur aus
+den drei billigsten bewaffneten Typen (leicht, schwer, begleitschiff) ist die direkte Folge
+der Regel "nach Kosten aufsteigend".
+
+================================================================================
+7. NAECHSTE SCHRITTE
+================================================================================
+1. ERLEDIGT (26.08.2026): Verdrahtungsprobe Block A Schritt 2.
+2. ERLEDIGT (26.08.2026): Spielermodell entstoert - dieses Protokoll.
+3. OFFEN: Einnahmen nach Quelle instrumentieren (K5), sonst bleiben K5 und K6 unbewertbar.
+4. OFFEN: die drei Profile ueber 30 Tage.
+Vorher zu klaeren: die beiden offenen Punkte aus Abschnitt 6 (K3-Definition, Schiffswahl).

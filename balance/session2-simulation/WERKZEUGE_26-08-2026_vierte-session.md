@@ -54,6 +54,41 @@ ln -s <repo>/server/node_modules /tmp/mbkum_run/node_modules
 MESSBUILD=/tmp/mbkum_run/dist node probe_verdrahtung_a.mjs 20
 ```
 
+### `probe_spielermodell.mjs`
+
+Einmal-Diagnose fuer den Stillstand des Spielermodells ab Tag 3. Faehrt denselben Treiber wie
+`sim13_lauf.mjs`, ersetzt aber jedes `try/catch` durch ein Protokoll der Ablehnungsgruende.
+
+```
+MESSBUILD=/tmp/sim13/dist node probe_spielermodell.mjs 5
+```
+
+Der Grund fuer ein eigenes Werkzeug war genau der Defekt, den es aufdeckte: die Aktionen
+**werfen nicht**, sie liefern `{ ok:false, error }` zurueck. Ein `catch` faengt dort nie etwas.
+Ergebnis: fuenf Defekte, darunter zwei, die jeder fuer sich beide Einnahmequellen abschalteten
+(Minenertrag exakt 0 mangels Solarkraftwerk; kein Missionsversand mehr ab 180 Mining-Schiffen).
+
+**Achtung, dieses Skript enthaelt eine KOPIE des alten Spielermodells** und ist damit ab sofort
+historisch. Es dokumentiert den Zustand vor der Korrektur; fuer neue Diagnosen ist der Schalter
+`--gruende` in `sim13_lauf.mjs` zu benutzen, der auf dem einen echten Modell arbeitet. Ein
+zweites Modell zu pflegen, hiesse zwei Dinge zu messen und eines davon fuer das andere zu
+halten.
+
+## Geaendert
+
+### `sim13_lauf.mjs`
+
+Spielermodell ueberarbeitet (Protokoll: `spielermodell_diagnose.txt`), neuer Schalter
+`--gruende` fuer die Ablehnungsstatistik. Der Lauf steht damit nicht mehr ab Tag 3 still:
+Wert 0,02 -> 3,19 Mrd und Flottenmacht 0,06 -> 0,80 Mrd ueber sieben Tage. K1 erfuellt (6,6 %
+groesster Einzelverlust), Forschungs-Leerlauf 2,4 %.
+
+Aufruf unveraendert, plus optional:
+
+```
+node sim13_lauf.mjs --build=/tmp/sim13/dist --profil=aktiv --tage=7 --gruende
+```
+
 ## Unveraendert weiterverwendet
 
 - `make_messbuild_kum.mjs`, `make_messbuild_sim13.mjs` - Eingangs- und Simulationsbuild.
