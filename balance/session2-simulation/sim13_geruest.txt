@@ -1,0 +1,190 @@
+SIMULATIONS-MESSBUILD UND GERUEST FUER SCHRITT 13
+Protokoll vom 26.08.2026 (dritte Session)
+Werkzeuge: make_messbuild_sim13.mjs (neu), sim13_lauf.mjs (neu), check_build_anker.mjs (unveraendert)
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen unten stammen aus einem gepatchten dist-Baum, nicht aus dem  !!!
+!!! Repo-Stand. Es wurde KEINE Zeile server/src veraendert.                                       !!!
+
+================================================================================
+0. WAS IN DIESER SESSION ENTSTANDEN IST
+================================================================================
+- make_messbuild_sim13.mjs: 21 Patches in fuenf Bloecken (A, B, C, D, E), jeder mit hartem
+  Abbruch bei fehlendem Anker.
+- sim13_lauf.mjs: Treiber der 30-Tage-Simulation. Uhr, Datenbank-Isolierung, Bot-Takt,
+  Kennzahlen, Abnahmekriterien K1 bis K4. K5 und K6 sind NICHT erhoben, siehe Abschnitt 6.
+- Zwei vom Nutzer delegierte Entscheidungen eingetragen (Abschnitt 1), beide umkehrbar.
+
+DER LAUF IST NOCH NICHT AUSWERTBAR. Die Verrohrung steht und ist geprueft; das Spielermodell
+laeuft ab Tag 3 in ein ausgehungertes Gleichgewicht (Abschnitt 7). Es gibt aus dieser Session
+KEINE gueltige Balance-Zahl.
+
+================================================================================
+1. ZWEI DELEGIERTE ENTSCHEIDUNGEN, BEIDE EINGETRAGEN UND UMKEHRBAR
+================================================================================
+Der Nutzer hat am 26.08.2026 beide offenen Punkte ausdruecklich delegiert ("mach einfach das
+richtige"). Sie sind damit Empfehlungen mit Begruendung, keine Nutzerentscheidungen, und werden
+wie f = 12 und Befund G gefuehrt: eingetragen, jederzeit umkehrbar.
+
+1.1 BOT-TAKT: 30 UNTERSCHRITTE ZU JE 2 MINUTEN, NUR FUER DIE BOTS.
+Zwei Wege waren technisch falsch und sind ausgeschlossen worden, BEVOR gemessen wurde:
+ - 30 Aufrufe von runGlobalHeartbeat() im selben Zeitpunkt. Die Funktion prueft am Kopf
+   `heartbeatStart - lastHeartbeatRun < 60_000`. Unter der schrittkonstanten Uhr liefern die
+   Aufrufe 2 bis 30 `skipped: true`. Ergebnis waere EIN Bot-Zug statt 30, ohne Fehlermeldung.
+ - 30 direkte runBotTurn()-Aufrufe ohne tick() dazwischen. Es laeuft keine Warteschlange leer,
+   MAX_BUILD_SLOTS = 3 bindet nach dem dritten Zug, der Rest sind No-ops.
+Gewaehlt: 30 Unterschritte a 2 Minuten (= HEARTBEAT_INTERVAL_MS), Uhr konstant INNERHALB eines
+Unterschritts, Sprung dazwischen. Der simulierte Mensch handelt weiter stuendlich; runEconomyTick()
+rechnet ueber state.lastUpdate und ist von der Aufrufhaeufigkeit unabhaengig.
+GEMESSEN: 12,9 s echte Zeit fuer 240 Stunden x 30 Unterschritte, also rund 40 s je Profil und
+30-Tage-Lauf. Der im Plan befuerchtete 30-fache Aufwand ist praktisch bedeutungslos. FOLGE: die
+teure Variante (Mensch mit Unterschritten, --mensch_unterschritte) ist bezahlbar und sollte
+verwendet werden, sobald Kriterium 2 nah an die 20-%-Grenze kommt - der Vorbehalt aus Abschnitt 1b
+("Schiffs-Leerlauf wird bei Stundenaufloesung systematisch unterschaetzt") laesst sich damit
+schliessen statt nur zu vermerken.
+
+1.2 ENTSCHEIDUNG 3, TOPFGROESSE: ES FEHLTE KEINE ZAHL.
+In der vorigen Sitzung wurde die Topfgroesse als offene Luecke gefuehrt. Das war ein Lesefehler
+meinerseits. Der "feste Container-Topf je Raid" IST die heutige Vollauszahlung
+wavesWon * RAID_WAVE_WIN_SILBER/GOLD/ELITE (10/6/2). Der Unterschied zu heute liegt nicht in der
+Hoehe, sondern darin, dass grantContainers() heute fuer den Verteidiger UND jeden Verstaerker UND
+jeden Halter EINZELN laeuft. Variante 4 vergibt denselben Topf einmal und teilt ihn nach Beitrag.
+Damit ist keine neue Zahl noetig, und der Einzelverteidiger ohne Beistand bekommt exakt so viel
+wie heute - genau die Forderung aus dem Messkasten.
+
+1.3 ARITHMETISCHER BEFUND ZU S_MAX - BITTE GEGENLESEN.
+Die Saettigung ist in der Bauform aus Entscheidung 9.1a gebaut: eff = roh / (1 + roh / S_MAX),
+angewandt auf die Tagessumme der Beitragsanteile, ausgezahlt wird der Zuwachs der gesaettigten
+Summe (dadurch ist die Reihenfolge der Raids eines Tages ohne Belang).
+Mit S_MAX = 1,5 und der im Messkasten genannten Rohsumme von 2,41 Aequivalenten ergibt das
+   2,41 / (1 + 2,41/1,5) = 0,92 gesaettigte Aequivalente,
+nicht die dort ausgewiesenen 1,20. Fuer 1,20 braeuchte es S_MAX = 2,39.
+Moegliche Erklaerungen, nicht entschieden: andere Saettigungsform als 9.1a, andere Rohbasis, oder
+ein Rechenfehler im Messkasten. S_MAX ist ueber --smax= einstellbar und im Plan ohnehin als
+einziger gesetzter, nicht gemessener Wert des Pakets gefuehrt. 0,92 Aequivalente entsprechen rund
+5,8 Mrd/Tag und liegen damit UNTER dem Zielkorridor von 7 bis 10 Mrd/Tag.
+
+================================================================================
+2. UMFANG DES BUILDS
+================================================================================
+ENTHALTEN:
+  A  Block A Schritt 2, VERDRAHTET in missions.js und groupOps.js (9 Patches)
+  B  Entscheidung 18  - ESC = 1 / 1,20 / 1,60, Bomberanteil 0,5 in der letzten Phase (2)
+  C  Entscheidung 3   - Topf nach Beitrag + Saettigung, S_MAX = 1,5 (3)
+  D  Entscheidung 12  - NOVICE_BONUS_ADD = 2, Fenster an NEWCOMER_GRACE_MS (5)
+  E  Entscheidung 13.1 - virtueller Bot-Ertrag, k = 4,0, f = 12, zeitbasiert (2)
+  16 stammt aus dem Eingangs-Build (--rf=4 --evk=0.20 --evm=0.08).
+NICHT ENTHALTEN, BEGRUENDET:
+  19 (gemessen wirkungslos unter 20.000 eigenen Schiffen), R16, Piratenbasen-Offensive,
+  Block B, 7.2/7.3.
+
+BEWUSSTE ABWEICHUNG VON DER BAUANLEITUNG BEI ENTSCHEIDUNG 18:
+Der Plan verlangt fuer den EINBAU ein viertes Wellenprofil 'bunkerbrecher'. Der Messbuild baut es
+NICHT, sondern repliziert die Form aus run_raid.mjs (Bomber nach generateFallbackFleet() als
+waveTargetPower * 0,5 / Stueckwert aufaddiert). Grund: ESC = 1,60 ist gegen GENAU diese Form
+kalibriert. Ein echtes Profil streut ueber weightsForProfile() positionsgewichtet und erzeugt eine
+andere Wellenzusammensetzung - der Build waere dann nicht mehr mit raid_hardness_18.txt
+vergleichbar. Das vierte Profil gehoert in die Bauanleitung, nicht in den Messbuild.
+
+================================================================================
+3. VIER FALLEN, ALLE VIER GEGRIFFEN
+================================================================================
+(1) UHR KONSTANT INNERHALB EINES SCHRITTS. SIM_NOW wird ausschliesslich zwischen den
+    Unterschritten bewegt. Keine einzige Falsch-Warnung aus SLOW_TICK_PHASE_MS ueber 240
+    simulierte Stunden.
+(2) DIST-KOPIE IN EINEM EIGENEN UNTERORDNER. Ziel ist <lauf>/dist, das Skript verweigert jedes
+    Ziel, das nicht auf /dist endet. Datenbank landet unter <lauf>/data.
+    NEU HINZUGEKOMMEN, im Plan bisher nicht vermerkt: liegt der Laufordner ausserhalb des
+    Server-Baums, findet das importierte db.js better-sqlite3 nicht ("Cannot find package"). Node
+    loest von <lauf>/dist/db.js nach oben auf. make_messbuild_sim13.mjs legt deshalb einen
+    Symlink <lauf>/node_modules auf server/node_modules an. Ohne diesen Verweis scheitert JEDES
+    Skript, das den Zustand ueber state.js laedt - die bisherigen Skripte fielen nicht darauf
+    herein, weil sie db.js nie importieren.
+(3) process.exit(0) am Ende von sim13_lauf.mjs.
+(4) BUILD-PRUEFUNG NORMIERT GELESEN. Siehe Abschnitt 4.
+
+================================================================================
+4. ANKERCHECK
+================================================================================
+check_build_anker.mjs, Zelle "Profil mittel / piraten_hoch / FLEET_LARGE", 40 Durchlaeufe,
+Soll 0,0946 Wert je Punkt Feindmacht, Toleranz 5 % NORMIERT.
+
+  Eingangs-Build /tmp/mb_kum   : 0,0936 je Punkt -> NORMIERT -1,1 %  (roh 3,6 %)
+  Simulationsbuild /tmp/sim13  : 0,0927 je Punkt -> NORMIERT -2,0 %  (roh 4,5 %)
+
+Beide gueltig. Die roh gelesene Abweichung ist in beiden Faellen positiv und die normierte
+negativ - das Musterbeispiel dafuer, warum die rohe Zahl nicht verwendet werden darf.
+Frueher gemessene Werte desselben Ankers: -2,3 % und -2,8 %. Die Streuung ueber 40 Durchlaeufe
+liegt also bei rund 2 Prozentpunkten; -2,0 % ist damit ununterscheidbar vom Eingangs-Build.
+
+GRENZE DIESER PRUEFUNG, ausdruecklich: check_build_anker.mjs baut die Missionsschleife SELBST nach
+und prueft damit die Beute-Kurven-KONSTANTEN, nicht die neue VERDRAHTUNG in missions.js. Dass
+Block A tatsaechlich zahlt, ist damit NICHT belegt. Eine Verdrahtungsprobe (echte Mission durch
+processMissions() gegen die Referenzschleife) fehlt und ist der naechste Messschritt.
+
+================================================================================
+5. LADETEST
+================================================================================
+missions.js, raids.js, groupOps.js und actions.js laden nach allen 21 Patches fehlerfrei.
+Drei Anker mussten korrigiert werden, alle drei durch den harten Abbruch sofort sichtbar:
+ - D2: Einrueckung im dist-JS ist 4 Leerzeichen, nicht 8 (aus der TS-Quelle abgeschrieben).
+ - C3: `ownerUsernameForRaid` war ein von mir erfundener Bezeichner. Der vorhandene heisst
+   `ownerUsername` und steht in finalizeRaidWaves() bereits zur Verfuegung.
+ - node_modules-Symlink, siehe Abschnitt 3 Punkt 2.
+Der harte Abbruch hat damit dreimal genau das getan, wofuer er da ist. Ohne ihn waeren drei
+Patches still uebersprungen worden und der Lauf haette den Ist-Zustand gemessen.
+
+================================================================================
+6. WAS DAS GERUEST ERHEBT UND WAS NICHT
+================================================================================
+ERHOBEN: K1 (groesster Einzelverlust), K2 (Leerlauf getrennt nach Gebaeude / Forschung /
+Schiffe+Verteidigung, SLOTBASIERT), K3 (Ressourcenstau), K4 (Wochen ohne neuen Inhalt).
+NICHT ERHOBEN: K5 (Anteil jeder Einnahmequelle an der Wochensumme) und K6 (Plateau der
+Einnahmenkurve). Beide brauchen eine Instrumentierung der Einnahmen NACH QUELLE - die
+Spielfunktionen buchen Ressourcen direkt auf state.resources, ohne Herkunft. Ohne diese
+Instrumentierung ist K5 nicht bewertbar, und da K5 seit dem 20.08.2026 der Traeger von
+Entscheidung 3 ist, ist genau der Block, der in diesem Build neu dazugekommen ist, noch nicht
+messbar. Das ist die groesste offene Luecke der Simulation.
+
+ZWEI SETZUNGEN IM GERUEST, beide zur Bestaetigung vorgelegt:
+ - "Erstmals spielbar" (K4) ist gelesen als "eigene Flottenmacht erreicht den npcFloor des
+   Sektors". SEKTOREN enthaelt KEINE Freischaltbedingung; es gibt im Code weder ein minPower noch
+   eine Sperre. Die erste Fassung fragte ein nicht existentes Feld ab und meldete deshalb am Tag 0
+   alle acht Sektoren als freigeschaltet.
+ - Leerlauf ist SLOTBASIERT gerechnet (belegte von moeglichen Slots), nicht als "Warteschlange
+   leer". Bei 3 Schiffs-Slots ist ein einzelner laufender Auftrag zwei Drittel Leerlauf. Die
+   erste Fassung zaehlte "Warteschlange nicht leer" als 0 % Leerlauf und haette Kriterium 2
+   wegdefiniert - aufgefallen im Rauchtest durch 0/0/0 % Leerlauf bei gleichzeitig 100 % Stau.
+
+================================================================================
+7. WAS NOCH NICHT FUNKTIONIERT - DER LAUF IST NICHT AUSWERTBAR
+================================================================================
+Das Spielermodell laeuft ab Tag 3 in ein ausgehungertes Gleichgewicht: Ressourcenwert bleibt bei
+rund 0,03 Mrd stehen, Flottenmacht bei 0,01 Mrd, Leerlauf 100/100/100 %, Stau 0 %, keine weitere
+Freischaltung. Der Startbestand von 117,5 Mio Wert-Einheiten wird in den ersten zwei Tagen
+ausgegeben, danach traegt die Mining-Einnahme keinen weiteren Bauauftrag mehr.
+
+Drei Defekte wurden im Rauchtest gefunden und behoben (alle drei im Geruest, keiner im Messbuild):
+ - Es gibt kein Schiffsfeld "miningCapable". Der Filter traf null Schiffe, es wurde nie ein
+   Mining-Schiff gebaut. Der asteroidenfaehige Satz steht fest in availableFleetForSektor():
+   mining, begleitschiff, sandronator. Messregel 16 in Reinform.
+ - Schritt 4 des Spielermodells (Flotte auf ein Asteroidenfeld schicken) war beschrieben, aber
+   nicht gebaut. Ohne ihn gibt es ueberhaupt keine Einnahme ausser den Minen.
+ - Leerlauf-/Freischaltungs-Definitionen, siehe Abschnitt 6.
+
+OFFEN und Gegenstand des naechsten Messschritts: ob das Stehenbleiben ab Tag 3 ein weiterer
+Defekt des Spielermodells ist (zu grosse Bauauftraege, Mission wird nach Rueckkehr nicht neu
+entsandt, Minen zu selten ausgebaut) oder eine echte Aussage ueber die Startphase. Beides ist
+moeglich, und der Unterschied ist bedeutsam: waere es echt, waere es der schaerfste denkbare
+Befund zu Kriterium 6. SOLANGE DAS NICHT GETRENNT IST, DARF KEINE DER ZAHLEN AUS ABSCHNITT 7
+ZITIERT WERDEN.
+
+================================================================================
+8. NAECHSTE SCHRITTE, IN DIESER REIHENFOLGE
+================================================================================
+1. Verdrahtungsprobe fuer Block A: eine echte Mission durch processMissions() gegen die
+   Referenzschleife aus check_build_anker.mjs. Erst danach ist Block A belegt.
+2. Spielermodell entstoeren, bis der Verlauf nicht mehr stehenbleibt (Abschnitt 7).
+3. Einnahmen nach Quelle instrumentieren, sonst bleiben K5 und K6 unbewertbar - und damit
+   Entscheidung 3, die in diesem Build neu dazugekommen ist.
+4. Erst dann die drei Profile ueber 30 Tage fahren, mit --mensch_unterschritte (bezahlbar, siehe
+   Abschnitt 1.1).
