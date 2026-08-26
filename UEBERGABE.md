@@ -65,6 +65,43 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 26.08.2026 (vierte Session, zweiter Teil): SPIELERMODELL ENTSTOERT - SCHRITT 2 DER
+  LISTE IST ERLEDIGT. NICHTS AM SPIELCODE GEBAUT.** Protokoll
+  `balance/session2-simulation/spielermodell_diagnose.txt`. **Messbuild-Protokoll.**
+  - **Der Stillstand ab Tag 3 hatte FUENF Ursachen, nicht eine**, und zwei davon schalteten
+    jede fuer sich schon BEIDE Einnahmequellen ab: (b) der Minenertrag war **exakt null**, weil
+    `mineOutputPerHour()` mit `energyFactor() = min(1, produziert/verbraucht)` multipliziert und
+    der alte Gebaeudezweig ueber `b.baseOutput` filterte - Solarkraftwerk, Roboterfabrik und
+    Nanitenfabrik haben dort `null`, das Modell konnte ein Kraftwerk **konstruktionsbedingt
+    nicht bauen**; (c) `sendFleet()` prueft `miningCap` (300/220/180) und `escortCap` (500),
+    das Modell bot die GANZE Flotte an und wurde ab 180 Mining-Schiffen jede Stunde abgelehnt.
+  - **(a) DIE AKTIONEN WERFEN NICHT** - `startBuild()`/`startResearch()`/
+    `startBuildingConstruction()`/`sendFleet()` liefern `{ ok:false, error }` zurueck. Die
+    `try/catch`-Bloecke fingen deshalb nie etwas, und `handelte = true` wurde auch bei jedem
+    Fehlschlag gesetzt. **Das ist der Grund, warum der Defekt so lange unentdeckt blieb.**
+  - Dazu (d) 1400 Spionagesonden (0 Kampfkraft, 8.000 Kristall je Stueck, 11,2 Mio Kristall
+    verbrannt) und (e) 720 Fehlversuche je Lauf an gesperrten V2/V3-Stufen.
+  - **NACH DER KORREKTUR laeuft es durch:** Wert 0,02 -> 3,19 Mrd, Flottenmacht 0,06 -> 0,80 Mrd
+    ueber sieben Tage; K1 erfuellt (6,6 % groesster Einzelverlust), Forschungs-Leerlauf 2,4 %.
+    Endzustand Minen 22/21/21, Solar 26, Roboterfabrik 19.
+  - **NEUER BEFUND, NUTZERENTSCHEIDUNG NOETIG: METALL IST DER ENGPASS, UND K3 SIEHT ES NICHT.**
+    Ressourcen am Tag 7: Metall 1 Mio, Kristall 337 Mio, Deuterium 979 Mio, dazu 335 x
+    "GEBAEUDE: Nicht genug Ressourcen". Der Gebaeude-Leerlauf von 75 % ist also ein echter
+    Engpass - **K3 meldet trotzdem 0,0 %**, weil die Kennzahl verlangt, dass ALLE Lanes belegt
+    sind. Ein Ressourcenstau, den die Stau-Kennzahl nicht erfasst. Das ist eine Schwaeche der
+    K3-DEFINITION, keine Frage des Modells, und gehoert geklaert, **bevor Zahlen aus K3 zitiert
+    werden.** Zweite offene Frage: `begleitschiff` traegt `stats.waffen = 350`, landet dadurch
+    zusaetzlich in der Kampfschiff-Liste und wird ueber `escortCap` hinaus gebaut (3420 gegen
+    Cap 500).
+  - **EIGENER FEHLER, MESSREGEL 16 ZUM ZWEITEN MAL:** die erste Korrektur filterte ueber
+    `sh.waffen`. Das Feld gibt es nicht - die Kampfwerte stehen unter `sh.stats`. Die Liste war
+    LEER, das Modell baute null Kampfschiffe, und aufgefallen ist es nur an einer Flottenmacht
+    von exakt 0,00 Mrd ueber sieben Tage. Zweiter eigener Fehler: der Vorschlag, den Schiffsbau
+    bei gedecktem Cap zu stoppen - **ein Modell, das aus Zufriedenheit aufhoert zu bauen,
+    erzeugt leere Slots, und Leerlauf IST K2.** Verworfen, bevor er gebaut wurde.
+  - **NAECHSTER SCHRITT: Punkt 3 - Einnahmen nach Quelle instrumentieren (K5).** Vorher die
+    beiden offenen Punkte oben klaeren.
+
 - **NEU 26.08.2026 (vierte Session, nach Nachreichung der Werkzeuge): BLOCK A SCHRITT 2 IST
   VERDRAHTET UND ZAHLT - BELEGT. NICHTS GEBAUT, KEIN EINGRIFF IN `server/src`.** Protokoll
   `balance/session2-simulation/verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu),
@@ -962,6 +999,21 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Eine Funktion, die `{ ok:false }` ZURUECKGIBT statt zu werfen, macht jedes `try/catch` zur
+Attrappe - und der Aufrufer haelt dann jeden Fehlschlag fuer einen Erfolg.** Das Spielermodell
+in `sim13_lauf.mjs` war so gebaut und deshalb blind fuer seine eigenen Ablehnungen; fuenf
+Defekte konnten sich dahinter monatelang halten, darunter zwei, die beide Einnahmequellen
+abschalteten. **Vor jedem `try/catch` um eine fremde Funktion am Code nachsehen, ob sie
+ueberhaupt wirft.** Erkennbar an `return { ok: false, error: ... }` in der Signatur.
+
+**Ein Multiplikator, der null werden kann, macht jede Investition dahinter wertlos - und sieht
+dabei aus wie Fortschritt.** `mineOutputPerHour()` multipliziert mit `energyFactor()`; ohne
+Solarkraftwerk ist der Faktor 0, und neun Minenstufen foerdern exakt nichts. Der Spielstand
+sah dabei gesund aus (Minen wachsen, Warteschlangen laufen). **Bei jeder Ertragsformel pruefen,
+welche Faktoren null werden koennen, und ob das Modell den noetigen Gegenpart ueberhaupt bauen
+KANN** - hier konnte es nicht, weil der Filter `b.baseOutput` das Kraftwerk ausschloss.
+
+
 **Eine Buchung, die gegen eine Untergrenze laeuft, ist bei leerem Konto nicht beobachtbar - und
 ihre Abwesenheit sieht dann aus wie ein Defekt.** Die Wrack-Bergung zieht ihren Betrag ueber
 `Math.max(0, (stats.resourcesSpentShipsDefense || 0) - betrag)` ab (Fehlerform R6). Im ersten
@@ -1329,8 +1381,15 @@ Antwort war eine voellig andere als die Vermutung.
 
 ## Erster Schritt beim naechsten Mal
 
-**STAND 26.08.2026 (vierte Session, Abschluss): BLOCK A SCHRITT 2 IST BELEGT. NAECHSTER SCHRITT
-IST PUNKT 2 AUS `sim13_geruest.txt` ABSCHNITT 8 - DAS SPIELERMODELL ENTSTOEREN.** Es bleibt ab
+**STAND 26.08.2026 (vierte Session, Abschluss): SCHRITTE 1 UND 2 SIND ERLEDIGT. NAECHSTER
+SCHRITT IST PUNKT 3 - DIE EINNAHMEN NACH QUELLE INSTRUMENTIEREN (K5).** Ohne die Quellenkurve
+bleiben K5 und K6 unbewertbar und damit auch Entscheidung 3. **Vorher zwei Punkte klaeren, die
+beim Nutzer liegen** (Stand-Eintrag oben): die K3-Definition erfasst den gemessenen
+Metall-Engpass nicht, und `begleitschiff` wird ueber `escortCap` hinaus gebaut, weil es
+`stats.waffen` traegt.
+
+**~~STAND 26.08.2026: NAECHSTER SCHRITT IST PUNKT 2 - DAS SPIELERMODELL ENTSTOEREN.~~
+ERLEDIGT**, Protokoll `spielermodell_diagnose.txt`. Es bleibt ab
 Tag 3 in einem ausgehungerten Gleichgewicht stehen (`sim13_lauf.mjs`, Protokoll Abschnitt 7);
 solange das nicht von einer echten Aussage zur Startphase getrennt ist, darf keine Zahl aus dem
 Lauf zitiert werden. Danach Punkt 3 (Einnahmen nach Quelle instrumentieren, sonst bleiben K5/K6
