@@ -99,8 +99,24 @@ anders wirken kann als in der Simulation.
     von exakt 0,00 Mrd ueber sieben Tage. Zweiter eigener Fehler: der Vorschlag, den Schiffsbau
     bei gedecktem Cap zu stoppen - **ein Modell, das aus Zufriedenheit aufhoert zu bauen,
     erzeugt leere Slots, und Leerlauf IST K2.** Verworfen, bevor er gebaut wurde.
-  - **NAECHSTER SCHRITT: Punkt 3 - Einnahmen nach Quelle instrumentieren (K5).** Vorher die
-    beiden offenen Punkte oben klaeren.
+  - **BEIDE OFFENEN PUNKTE SIND ENTSCHIEDEN (26.08.2026) UND GEBAUT:**
+    - **`begleitschiff` nur noch bis `escortCap`.** Aus der Geschmacksfrage wurde eine Messung:
+      Kosten je Machtpunkt betragen 1,10 bis 1,18 bei allen echten Kampfschiffen und **3,37
+      beim Begleitschiff** - dreimal ineffizienter, mit genau einer sinnvollen Rolle. Wirkung
+      gemessen: **die Flottenmacht steigt bei gleichem Ressourceneinsatz von 0,80 auf 1,41 Mrd.**
+      Flotte am Tag 7 jetzt plausibel: leicht 2950, schwer 1750, kreuzer 1225, begleitschiff 522.
+      *Vorbehalt:* `combatFleetPowerBase()` kennt keine Sonderfaehigkeiten, die Salven-Schiffe
+      stehen mit 5,6 bis 7,3 nur deshalb schlecht da.
+    - **K3 bleibt unveraendert, K3b kommt daneben.** Die Definition NICHT anzufassen war
+      ausdrueckliche Entscheidung - K3 hat ueber mehrere Sessions Vergleichswerte, eine
+      geaenderte Definition haette sie alle entwertet. K3b zaehlt: Lane leer, Ablehnung "Nicht
+      genug Ressourcen", Gesamtwert reicht trotzdem. **Ergebnis: K3b 50,0 %, wo K3 0,0 %
+      meldet.** In der Haelfte aller Proben steht eine Lane still, weil genau ein Rohstoff fehlt.
+    - **DEUTUNG STEHT NOCH AUS:** die 50 % sind ein Befund ueber das SPIEL, nicht ueber das
+      Modell. Ob die starke Metall-Bindung gewollt ist (Metall 1 Mio gegen Kristall 328 Mio und
+      Deuterium 811 Mio), ist eine Balance-Frage und **nicht bewertet**.
+  - **NAECHSTER SCHRITT: Punkt 3 - Einnahmen nach Quelle instrumentieren (K5).** Nichts blockiert
+    ihn mehr.
 
 - **NEU 26.08.2026 (vierte Session, nach Nachreichung der Werkzeuge): BLOCK A SCHRITT 2 IST
   VERDRAHTET UND ZAHLT - BELEGT. NICHTS GEBAUT, KEIN EINGRIFF IN `server/src`.** Protokoll
@@ -1383,10 +1399,9 @@ Antwort war eine voellig andere als die Vermutung.
 
 **STAND 26.08.2026 (vierte Session, Abschluss): SCHRITTE 1 UND 2 SIND ERLEDIGT. NAECHSTER
 SCHRITT IST PUNKT 3 - DIE EINNAHMEN NACH QUELLE INSTRUMENTIEREN (K5).** Ohne die Quellenkurve
-bleiben K5 und K6 unbewertbar und damit auch Entscheidung 3. **Vorher zwei Punkte klaeren, die
-beim Nutzer liegen** (Stand-Eintrag oben): die K3-Definition erfasst den gemessenen
-Metall-Engpass nicht, und `begleitschiff` wird ueber `escortCap` hinaus gebaut, weil es
-`stats.waffen` traegt.
+bleiben K5 und K6 unbewertbar und damit auch Entscheidung 3. Die beiden vorher offenen Punkte (K3-Definition,
+`begleitschiff` ueber `escortCap`) sind am 26.08.2026 entschieden und gebaut - Stand-Eintrag
+oben. **Es blockiert nichts mehr.**
 
 **~~STAND 26.08.2026: NAECHSTER SCHRITT IST PUNKT 2 - DAS SPIELERMODELL ENTSTOEREN.~~
 ERLEDIGT**, Protokoll `spielermodell_diagnose.txt`. Es bleibt ab
