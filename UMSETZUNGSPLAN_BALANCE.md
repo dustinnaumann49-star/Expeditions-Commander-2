@@ -213,6 +213,87 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 27.08.2026 (sechste Session) - DER REICHE FUND IST GEMESSEN. JA, SEINE HOEHE IST
+> EINE FOLGE DER MISSIONSVERLAENGERUNG. NICHTS AM SPIELCODE GEBAUT, NICHTS ENTSCHIEDEN.**
+> Protokoll `balance/session2-simulation/reicherfund_11.txt`, Werkzeuge
+> `make_messbuild_reicherfund.mjs` und `run_reicherfund.mjs` (beide neu),
+> `WERKZEUGE_27-08-2026.md`. **Messbuild-Protokoll.** Sieben Zellen a 20 Laeufe ueber 7 Tage,
+> Profil aktiv, Treiber `economy`.
+>
+> **MESSREGEL 16, FUENFTER FUNDORT - DIESER KASTEN SELBST TRUG DIE FALSCHE ZAHL.** Der Messkasten
+> der fuenften Session, `k5_quellen.txt` Abschnitt 11 und die Aufgabenstellung sprechen alle von
+> **12-Stunden-Missionen** und verweisen auf Punkt 23 der ALTEN README. Im kompilierten dist steht
+> `ASTEROID_MISSION_DURATION_MS = 24 * 3600 * 1000`, Kommentar daneben "Umbau 28.07.2026: von 12h
+> auf 24h angehoben". **Es gab ZWEI Verlaengerungen: 4h -> 12h -> 24h.** Die gesperrte alte README
+> ist ueber zwei Zwischenschritte trotzdem in die Messung gelangt.
+>
+> **BEFUND 1 - DIE ERSTE FRAGE IST BEANTWORTET.** Wocheneinnahme gegen die Nullmessung
+> (4,91 Mrd), bei UNVERAENDERTER Chance 0,08 und unveraenderter `farmRate`:
+>
+> | Missionsdauer | Woche 1 | Faktor | Fund-Anteil am Farmertrag |
+> |---|---|---|---|
+> | 4 h | 5,29 Mrd | 1,08x | 18,2 % |
+> | 12 h | 7,86 Mrd | 1,60x | 39,0 % |
+> | **24 h (heute)** | **15,27 Mrd** | **3,11x** | **68,8 %** |
+>
+> An Chance und Rate wurde nie etwas geaendert. Der Reiche Fund ist allein dadurch von einem 8-%-
+> Aufschlag zur groessten Einzelquelle des Spiels geworden, dass die Missionsdauer zweimal angehoben
+> wurde. Beide Code-Kommentare pruefen ausdruecklich, was mit `dmCap` und `farmRate` passiert - die
+> einzige Mechanik, die UEBERPROPORTIONAL mitwaechst, kommt in keinem von beiden vor.
+>
+> **BEFUND 2 - DIE STREUUNG IST GROESSER ALS DER EINWAND IN ABSCHNITT 11 UNTERSTELLTE.**
+>
+> | Zelle | Mittel | VarKoeff | Min | Max | Spanne | Median/Mittel |
+> |---|---|---|---|---|---|---|
+> | 24 h / 0,08 (heute) | 15,27 | **64,1 %** | 6,35 | 48,48 | **7,63x** | 0,766 |
+> | 24 h / 0,04 | 8,60 | 30,2 % | 5,46 | 14,69 | 2,69x | 0,917 |
+> | 24 h / 0,02 | 6,40 | 18,0 % | 4,91 | 8,79 | 1,79x | 0,945 |
+> | 12 h / 0,08 | 7,86 | 22,7 % | 5,80 | 13,17 | 2,27x | 0,930 |
+> | 4 h / 0,08 | 5,29 | 10,7 % | 4,37 | 6,71 | 1,53x | 0,984 |
+> | ohne Reichen Fund | 4,91 | 0,4 % | 4,87 | 4,94 | 1,01x | 0,999 |
+>
+> "Verdreifachen oder nicht" ist untertrieben: zwischen der schlechtesten und der besten von zwanzig
+> Wochen liegt **Faktor 7,6** bei identischem Spielverhalten. **Der Mittelwert beschreibt keine
+> einzige typische Woche** - der Median liegt bei 76,6 % des Mittels, 13 von 20 Wochen darunter, und
+> der Abstand entsteht praktisch allein aus dem hoechsten Wert (48,48 gegen 26,49 beim zweiten).
+> Jede frueher gegen diese Quelle gerechnete Zahl traegt das mit.
+>
+> **BEFUND 3, DIE WICHTIGSTE ZELLE - NIVEAU UND STREUUNG SIND TRENNBAR.** Ein FESTER Aufschlag von
+> +336,4 % je Stunde, gegen den gemessenen Mittelwert kalibriert statt geraten, liefert
+> **15,36 gegen 15,27 Mrd (+0,6 %) bei VarKoeff 0,2 % statt 64,1 %.** Die gesamte Streuung stammt
+> aus der FORM, nicht aus der Hoehe. Damit wird die Balance-Frage ueberhaupt erst zu einer Wahl:
+> bisher stand "Hoehe senken" gegen "Hoehe lassen", und beide Wege haetten die Schwankung behalten.
+>
+> **BEFUND 4 - ABNAHMEKRITERIUM 5 DARF HIER NICHT ALS MASSSTAB DIENEN.** Es bewegt sich nicht
+> monoton (59,5 / 44,9 / 50,3 / 62,3 %), und **die Nullmessung ist sein SCHLECHTESTER Wert**: ohne
+> Reichen Fund wird `asteroid_mining` groesste Quelle und K5 ist in 20 von 20 Laeufen verletzt statt
+> in 13. Ursache ist der Nenner - ohne Raid steht neben den Asteroiden nichts. Woertlich derselbe
+> Befund wie am 20.08.2026, dritte Wiederholung derselben Fehlerform.
+>
+> **BEFUND 5 - CHANCE UND MISSIONSDAUER SIND EIN REGLER, NICHT ZWEI.** Beide bewegen `(1+p)^n`.
+> Fuer das NIVEAU sind sie austauschbar (7,86 gegen 8,60 Mrd, bei SE 5-7 % nicht sicher trennbar),
+> fuer die STREUUNG nicht (22,7 gegen 30,2 %) - die kuerzere Mission mittelt zusaetzlich ueber mehr
+> unabhaengige Missionen. Wer an der Missionsdauer dreht, verstellt den Reichen Fund exponentiell mit.
+>
+> **VIER WEGE LIEGEN ZUR ENTSCHEIDUNG VOR, KEINER IST GEWAEHLT:** (1) nichts aendern; (2) Form
+> aendern, Niveau behalten; (3) Chance senken (0,04 -> 8,60 Mrd / 30,2 %, 0,02 -> 6,40 / 18,0 %);
+> (4) Missionsdauer zuruecknehmen - beruehrt weit mehr als den Reichen Fund, nicht empfohlen.
+> Der Code-Kommentar benennt die Schwankung ausdruecklich als Absicht ("bewusst als
+> Gluecksspiel-Mechanik"); die Mechanik tut also genau das, wofuer sie gebaut wurde. **Ob sie es in
+> dieser Groessenordnung tun soll, ist eine Nutzerentscheidung und hier NICHT bewertet.**
+>
+> **NEBENERGEBNIS FUER PUNKT 4:** `--mensch_unterschritte` kostet **Faktor 1,58**, nicht 30 (2 Tage
+> `tick`: 5,7 gegen 9,1 s). Der Kopf von `sim13_lauf.mjs` sagt "den 30-fachen Aufwand" - das trifft
+> nicht zu, weil die Unterschritte fuer die Bots ohnehin laufen. Punkt 4 kostet damit rund
+> 75 Minuten. **Vorbehalt, nicht behoben:** mit dem Schalter laeuft `probe()` 30x je Stunde,
+> `spielerZug()` nur einmal - `ressourcenAblehnung` wird nur dort zurueckgesetzt, **K3b ist dadurch
+> vermutlich nach oben verzerrt.** K2 ist nicht betroffen.
+>
+> **ANKERCHECK, ZWEI LAEUFE: +0,4 % und -1,5 %.** Neun Messungen desselben Ankers liegen bei
+> +0,4 / -1,0 / -1,1 / -1,2 / -1,5 / -1,6 / -1,8 / -2,3 / -2,8 %. **Die Spanne ist 3,2 Punkte, nicht
+> "rund 2", und der Anker kann positiv ausfallen** - die bisher notierte Erwartung "-1 bis -3 %" ist
+> zu eng. Ein einzelner Wert ausserhalb des Bandes belegt keinen defekten Build.
+
 > **MESSKASTEN 26.08.2026 (fuenfte Session) - ABNAHMEKRITERIUM 5 UND 6 SIND AB SOFORT ERHEBBAR.
 > DIE GROESSTE EINZELQUELLE DER WOCHE 1 STAND AUF KEINER LISTE. NICHTS AM SPIELCODE GEBAUT.**
 > Protokoll `balance/session2-simulation/k5_quellen.txt`, Werkzeug `make_messbuild_k5.mjs` (neu),

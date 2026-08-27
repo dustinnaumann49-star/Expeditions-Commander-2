@@ -1,4 +1,4 @@
-# Uebergabe - Stand 20.08.2026
+# Uebergabe - Stand 27.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -64,6 +64,77 @@ R14 wie Entscheidung 10 sind beide Belege dafuer, dass ein gemessener Mechanismu
 anders wirken kann als in der Simulation.
 
 ## Stand
+
+- **NEU 27.08.2026 (sechste Session): DER REICHE FUND IST GEMESSEN. JA, SEINE HOEHE IST EINE FOLGE
+  DER MISSIONSVERLAENGERUNG - UND DIE STREUUNG IST GROESSER ALS DER EINWAND UNTERSTELLTE. NICHTS
+  AM SPIELCODE GEBAUT, NICHTS ENTSCHIEDEN.** Protokoll
+  `balance/session2-simulation/reicherfund_11.txt`, Werkzeuge `make_messbuild_reicherfund.mjs` und
+  `run_reicherfund.mjs` (beide neu), `WERKZEUGE_27-08-2026.md`. **Messbuild-Protokoll.** Sieben
+  Zellen a 20 Laeufe ueber 7 Tage, Profil aktiv, Treiber `economy`. Loest die in `k5_quellen.txt`
+  Abschnitt 11 vorgeschlagene Messung ein; sie geht Punkt 4 vor, weil eine spaetere Aenderung am
+  Reichen Fund jede vorher gefahrene 30-Tage-Baseline entwerten wuerde.
+  - **MESSREGEL 16, FUENFTER FUNDORT - DIESMAL IN DER AUFGABENSTELLUNG SELBST.** `k5_quellen.txt`
+    Abschnitt 11, der Messkasten in Abschnitt 1b und der Auftrag nennen alle "12 Stunden" und
+    verweisen auf Punkt 23 der ALTEN README. Im dist steht
+    `ASTEROID_MISSION_DURATION_MS = 24 * 3600 * 1000`, Kommentar daneben "Umbau 28.07.2026: von 12h
+    auf 24h angehoben". **Es gab ZWEI Verlaengerungen: 4h -> 12h -> 24h.** Die als gesperrt
+    gefuehrte alte README ist ueber zwei Zwischenschritte trotzdem in die Messung gelangt - und wer
+    die Zahl uebernimmt, baut sein Messgitter um einen Wert herum, den es im Code nicht gibt.
+    **Die Missionsdauer fehlte in Abschnitt 11 als Regler vollstaendig**, obwohl die erste zu
+    klaerende Frage an ihr haengt; sie ist hier als eigene Zellengruppe nachgetragen.
+  - **BEFUND 1, DIE FRAGE IST BEANTWORTET:** Wocheneinnahme gegen die Nullmessung (4,91 Mrd), bei
+    unveraenderter Chance 0,08 - **4h: 5,29 Mrd (1,08x), 12h: 7,86 Mrd (1,60x), 24h heute:
+    15,27 Mrd (3,11x)**, Fund-Anteil am Farmertrag 18,2 / 39,0 / 68,8 %. An Chance und `farmRate`
+    wurde nie etwas geaendert. **Der Reiche Fund ist allein durch die zwei Dauer-Anhebungen von
+    einem 8-%-Aufschlag zur groessten Einzelquelle des Spiels geworden.** Beide Code-Kommentare bei
+    `ASTEROID_MISSION_DURATION_MS` pruefen ausdruecklich, was mit `dmCap` und `farmRate` passiert -
+    die einzige Mechanik, die UEBERPROPORTIONAL mitwaechst, kommt in keinem von beiden vor.
+  - **BEFUND 2, DIE STREUUNG:** heute VarKoeff **64,1 %**, Min 6,35 gegen Max 48,48 Mrd,
+    **Spanne 7,63x** bei identischem Spielverhalten. "Verdreifachen oder nicht" aus Abschnitt 11
+    war untertrieben. **Der Mittelwert beschreibt keine einzige typische Woche:** Median 76,6 % des
+    Mittels, 13 von 20 Wochen darunter, und der Abstand entsteht praktisch allein aus dem hoechsten
+    Wert (48,48 gegen 26,49 beim zweithoechsten). Jede frueher gegen diese Quelle gerechnete Zahl
+    traegt das mit - auch die Schwankung der Kopfzahl "Wert am Tag 7" (2,92 bis 6,77 Mrd) ist damit
+    endgueltig erklaert, jetzt mit 20 Laeufen statt mit vieren.
+  - **BEFUND 3, DIE WICHTIGSTE ZELLE: NIVEAU UND STREUUNG SIND TRENNBAR.** Ein FESTER Aufschlag von
+    +336,4 % je Stunde - gegen den gemessenen Mittelwert kalibriert, nicht geraten - liefert
+    **15,36 gegen 15,27 Mrd (+0,6 %) bei VarKoeff 0,2 % statt 64,1 %.** Die gesamte Streuung stammt
+    aus der FORM, nicht aus der Hoehe. Erst dadurch ist die Balance-Frage eine Wahl: bisher stand
+    "Hoehe senken" gegen "Hoehe lassen", und beide Wege haetten die Schwankung behalten.
+  - **BEFUND 4, ABNAHMEKRITERIUM 5 TAUGT HIER NICHT ALS MASSSTAB.** Es bewegt sich nicht monoton
+    (59,5 / 44,9 / 50,3 / 62,3 %), und **die Nullmessung ist sein SCHLECHTESTER Wert** - ohne
+    Reichen Fund wird `asteroid_mining` groesste Quelle, K5 ist dann in 20 von 20 Laeufen verletzt
+    statt in 13. Ursache ist der Nenner: ohne Raid steht neben den Asteroiden nichts. Woertlich
+    derselbe Befund wie am 20.08.2026, **dritte Wiederholung derselben Fehlerform.** Die Hoehe des
+    Reichen Fundes darf nicht gegen K5 kalibriert werden.
+  - **BEFUND 5, CHANCE UND MISSIONSDAUER SIND EIN REGLER, NICHT ZWEI.** Beide bewegen `(1+p)^n`.
+    Fuer das NIVEAU austauschbar (12h/0,08 = 7,86 gegen 24h/0,04 = 8,60 Mrd, bei SE 5-7 % nicht
+    sicher trennbar), fuer die STREUUNG nicht (22,7 gegen 30,2 %) - die kuerzere Mission mittelt
+    zusaetzlich ueber mehr unabhaengige Missionen. **Wer kuenftig an einer Missionsdauer dreht,
+    verstellt den Reichen Fund exponentiell mit.**
+  - **VIER WEGE LIEGEN VOR, KEINER IST GEWAEHLT** (Protokoll Abschnitt 12): nichts aendern; Form
+    aendern bei gleichem Niveau; Chance senken (0,04 -> 8,60 Mrd / 30,2 %, 0,02 -> 6,40 / 18,0 %);
+    Missionsdauer zuruecknehmen (beruehrt weit mehr, nicht empfohlen). Der Code-Kommentar benennt
+    die Schwankung ausdruecklich als Absicht ("bewusst als Gluecksspiel-Mechanik") - **die Mechanik
+    tut genau das, wofuer sie gebaut wurde; ob in dieser Groessenordnung, ist eine
+    Nutzerentscheidung und hier NICHT bewertet.**
+  - **NEBENERGEBNIS FUER PUNKT 4, vorab geklaert:** `--mensch_unterschritte` kostet **Faktor 1,58**,
+    nicht 30 (2 Tage `tick`: 5,7 gegen 9,1 s) - die 30 Unterschritte laufen fuer die Bots ohnehin,
+    der zusaetzliche Menschen-tick ist daneben billig. Punkt 4 kostet damit rund **75 Minuten**
+    statt der befuerchteten Stunden, der Schalter kann verwendet werden. **Vorbehalt, NICHT
+    behoben:** mit dem Schalter laeuft `probe()` 30x je Stunde, `spielerZug()` nur einmal -
+    `ressourcenAblehnung` wird nur dort zurueckgesetzt, **K3b ist dadurch vermutlich nach oben
+    verzerrt.** K2 ist nicht betroffen. Vor Punkt 4 zu klaeren.
+  - **ANKERCHECK, ZWEI LAEUFE: +0,4 % und -1,5 %.** Neun Messungen desselben Ankers liegen bei
+    +0,4 / -1,0 / -1,1 / -1,2 / -1,5 / -1,6 / -1,8 / -2,3 / -2,8 %. **Die Spanne ist 3,2 Punkte,
+    nicht "rund 2", und der Anker kann positiv ausfallen** - die Erwartung "-1 bis -3 %" ist zu eng
+    gefasst. Ein einzelner Wert ausserhalb des Bandes belegt keinen defekten Build; erst der zweite
+    Lauf hat das entschieden.
+  - **GRENZEN:** ein Profil, ein Treiber (`economy`, also ohne Raid - die K5-Spalte ist deshalb
+    NICHT mit `k5_quellen.txt` Abschnitt 8b vergleichbar), 7 Tage. Die absoluten Betraege der
+    4-h-Zelle unterschaetzen um rund 13 %, weil das Modell stuendlich handelt und bis zu eine Stunde
+    zwischen Rueckkehr und Neustart verliert; die normierte Spalte ist dagegen immun. Die
+    Form-Gegenprobe ist ein Messbuild-Konstrukt, **kein Bauvorschlag.**
 
 - **NEU 26.08.2026 (fuenfte Session): EINNAHMEN NACH QUELLE INSTRUMENTIERT - SCHRITT 3 DER LISTE
   IST ERLEDIGT. K5 UND K6 SIND AB SOFORT ERHEBBAR. NICHTS AM SPIELCODE GEBAUT.** Protokoll
@@ -1102,6 +1173,33 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Eine Aenderung an einer LAUFZEIT kann eine Mechanik umskalieren, die an einer ganz anderen
+Konstante haengt - exponentiell.** (27.08.2026.) Der Reiche Fund verdoppelt den bis dahin
+ANGESAMMELTEN Betrag; sein Beitrag waechst deshalb mit `(1+p)^n` in der Zahl der Stunden-Checks,
+nicht linear. Die Missionsdauer der Asteroidenfelder wurde zweimal angehoben (4 -> 12 -> 24 h),
+und der Fund ist dadurch von einem 8-%-Aufschlag auf die Woche zur groessten Einzelquelle des
+Spiels geworden - **ohne dass an seiner Chance oder an `farmRate` je etwas geaendert wurde.** Beide
+Code-Kommentare bei `ASTEROID_MISSION_DURATION_MS` pruefen ausdruecklich die Folgen fuer `dmCap`
+und `farmRate` ("bleiben BEWUSST unveraendert"); die einzige Groesse, die ueberproportional
+mitwaechst, kommt in keinem von beiden vor. **Bei jeder Aenderung an einer Laufzeit auflisten,
+welche Mechanik mit ihr nicht linear skaliert.**
+
+**Eine gesperrte Quelle kann ueber zwei Zwischenschritte in eine Messung gelangen.**
+(27.08.2026, fuenfter Fundort von Messregel 16.) Die alte README mit 33 Punkten steht ausdruecklich
+auf der Nicht-verwenden-Liste. Ihr Punkt 23 ("Asteroiden-Felder laufen 12h statt 4h") ist trotzdem
+in `k5_quellen.txt` Abschnitt 11 zitiert worden, von dort in den Messkasten in Abschnitt 1b und von
+dort in die Aufgabenstellung einer Folgesitzung - real steht im Code 24 h. Wer die Zahl uebernimmt,
+baut sein Messgitter um einen Wert herum, den es nicht gibt. **Nicht nur die eigenen Anker aus dem
+dist lesen, sondern auch jede Zahl, die eine Aufgabenstellung mitliefert** - besonders, wenn sie
+mit einem Datum oder einer Punktnummer daherkommt.
+
+**Ein abgebrochenes WARTEKOMMANDO sieht aus wie ein abgebrochener Lauf.** (27.08.2026.) Der Sweep
+lief korrekt abgekoppelt; ein `sleep` zum Nachsehen riss dagegen das Zeitlimit der
+Werkzeugausfuehrung und meldete einen Fehler. Der Messlauf war unberuehrt, per `pgrep` geprueft.
+**Aus einer Fehlermeldung des Wartekommandos nichts ueber den Lauf schliessen - den Prozess
+pruefen.** Die Gegenrichtung der bekannten Regel "ein abgebrochener Lauf sieht aus wie ein
+haengender", und ein zweiter Grund fuer `setsid nohup ... &` mit `--out=`.
+
 **Eine Funktion, die `{ ok:false }` ZURUECKGIBT statt zu werfen, macht jedes `try/catch` zur
 Attrappe - und der Aufrufer haelt dann jeden Fehlschlag fuer einen Erfolg.** Das Spielermodell
 in `sim13_lauf.mjs` war so gebaut und deshalb blind fuer seine eigenen Ablehnungen; fuenf
@@ -1525,16 +1623,48 @@ Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier
 
 ## Erster Schritt beim naechsten Mal
 
-**STAND 26.08.2026 (fuenfte Session): SCHRITTE 1 BIS 3 SIND ERLEDIGT. NAECHSTER SCHRITT IST
-PUNKT 4 - DIE DREI PROFILE UEBER 30 TAGE.** Buildpfad um eine Stufe erweitert:
+**STAND 27.08.2026 (sechste Session): DIE MESSUNG ZUM REICHEN FUND IST GEFAHREN. NAECHSTER
+SCHRITT IST EINE NUTZERENTSCHEIDUNG, NICHT EINE MESSUNG - erst danach Punkt 4.**
+
+**WAS DEM NUTZER VORLIEGT: welcher der vier Wege beim Reichen Fund** (Protokoll
+`reicherfund_11.txt` Abschnitt 12). Nichts davon ist entschieden, und **nichts davon darf gegen
+Abnahmekriterium 5 kalibriert werden** - K5 bewegt sich hier nicht monoton, und sein schlechtester
+Wert ist ausgerechnet die Nullmessung.
+
+| Weg | Woche 1 | VarKoeff | Spanne |
+|---|---|---|---|
+| (1) nichts aendern | 15,27 Mrd | 64,1 % | 7,63x |
+| (2) feste Form, Niveau behalten | 15,36 Mrd | **0,2 %** | 1,01x |
+| (3) Chance 0,04 | 8,60 Mrd | 30,2 % | 2,69x |
+| (3) Chance 0,02 | 6,40 Mrd | 18,0 % | 1,79x |
+| (4) Dauer zurueck auf 12 h | 7,86 Mrd | 22,7 % | 2,27x |
+
+**PUNKT 4 ERST DANACH.** Wird der Reiche Fund angefasst, sind alle vorher gefahrenen
+30-Tage-Baselines wertlos - er stellt 40 bis 82 % der Wocheneinnahmen.
+
+Buildpfad, jetzt vierstufig (die vierte Stufe ist optional, nur fuer Reicher-Fund-Zellen):
 
 ```
-node make_messbuild_kum.mjs   /tmp/mb_kum      --rf=4 --evk=0.20 --evm=0.08
-node make_messbuild_sim13.mjs /tmp/mb_kum   /tmp/sim13/dist
-node make_messbuild_k5.mjs    /tmp/sim13/dist /tmp/k5/dist
-MESSBUILD=/tmp/k5/dist node check_build_anker.mjs 40      # normiert rund -1 bis -3 %
+node make_messbuild_kum.mjs         /tmp/mb_kum       --rf=4 --evk=0.20 --evm=0.08
+node make_messbuild_sim13.mjs       /tmp/mb_kum    /tmp/sim13/dist
+node make_messbuild_k5.mjs          /tmp/sim13/dist /tmp/k5/dist
+node make_messbuild_reicherfund.mjs /tmp/k5/dist   /tmp/rf/dist  [--chance= --dauer_h= --aufschlag=]
+MESSBUILD=/tmp/k5/dist node check_build_anker.mjs 40    # normiert -2,8 bis +0,4 %, NEUN Messungen
 node sim13_lauf.mjs --build=/tmp/k5/dist --profil=aktiv --tage=14 [--treiber=tick]
+node run_reicherfund.mjs --n=20 --out=rf.json           # 7 Zellen, rund 25 min
 ```
+
+**DIE ANKER-ERWARTUNG IST BREITER ALS BISHER NOTIERT: -2,8 bis +0,4 %, nicht "-1 bis -3 %".**
+Neun Messungen. Der Anker kann positiv ausfallen; ein einzelner Wert ausserhalb des Bandes belegt
+keinen defekten Build. Zwei Laeufe fahren, bevor daraus etwas geschlossen wird.
+
+**VOR PUNKT 4 ZUSAETZLICH ZU KLAEREN, klein:** mit `--mensch_unterschritte` laeuft `probe()` 30x je
+Stunde, `spielerZug()` nur einmal - `ressourcenAblehnung` wird nur dort zurueckgesetzt, **K3b ist
+dadurch vermutlich nach oben verzerrt.** K2 ist nicht betroffen. Die Rechenzeit ist geklaert:
+Faktor **1,58**, nicht 30, also rund 75 Minuten fuer neun Laeufe.
+
+**~~STAND 26.08.2026 (fuenfte Session): SCHRITTE 1 BIS 3 SIND ERLEDIGT. NAECHSTER SCHRITT IST
+PUNKT 4.~~ UEBERHOLT** - die Messung zum Reichen Fund war vorzuziehen, siehe oben.
 
 **DREI DER VIER OFFENEN FRAGEN SIND AM 26.08.2026 ENTSCHIEDEN - der Nutzer hat die Entscheidung
 ausdruecklich ueberlassen. Alle drei sind umkehrbar und in `k5_quellen.txt` begruendet:**
