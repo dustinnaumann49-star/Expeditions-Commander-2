@@ -2,7 +2,8 @@ DER REICHE FUND - HOEHE, HERKUNFT UND STREUUNG
 Protokoll vom 27.08.2026 (sechste Session)
 Werkzeuge: make_messbuild_reicherfund.mjs (neu), run_reicherfund.mjs (neu),
            make_messbuild_kum/sim13/k5.mjs, sim13_lauf.mjs, check_build_anker.mjs (alle unveraendert)
-Rohdaten:  reicherfund_11.json (alle 140 Laeufe einzeln)
+Rohdaten:  reicherfund_11.json (140 Laeufe, Abschnitte 5-10)
+           reicherfund_11_form.json (80 Laeufe, Abschnitt 12a)
 
 !!! MESSBUILD-PROTOKOLL. Alle Zahlen unten stammen aus gepatchten dist-Baeumen, nicht aus dem !!!
 !!! Repo-Stand. Es wurde KEINE Zeile server/src veraendert.                                   !!!
@@ -324,8 +325,102 @@ messbar; sie ist hier nicht gefahren, weil ohne eine Zielvorgabe kein Wert kalib
 AUSDRUECKLICH NICHT ALS MASSSTAB VERWENDEN: Abnahmekriterium 5, siehe Abschnitt 9.
 
 ================================================================================
-13. NEBENERGEBNIS - RECHENZEIT VON --mensch_unterschritte FUER PUNKT 4
+12a. NACHTRAG 27.08.2026 - EINE FUENFTE MOEGLICHKEIT, GEMESSEN
 ================================================================================
+Die vier Wege oben behandeln Hoehe und Streuung als eine Frage. Befund 3 zeigt, dass sie es nicht
+sind. Daraus folgt eine Form, die in Abschnitt 11 nicht vorgesehen war:
+
+  ZEITPUNKTUNABHAENGIGER FUND. Ein Treffer ist `faktor` mal die NOMINALE GESAMTAUSBEUTE der
+  Mission wert, statt eine Verdopplung des bis dahin Angesammelten.
+     E[Faktor auf den Mining-Ertrag] = 1 + n * p * faktor      (LINEAR in n statt (1+p)^n)
+     Treffer ~ Binomial(n, p), also SD = faktor * sqrt(n*p*(1-p))
+
+Bei FESTEM Produkt p*faktor bleibt der Erwartungswert konstant, und die Streuung wird zum REGLER:
+viele kleine Funde streuen weniger als wenige grosse. Das Produkt ist auf 0,140 gesetzt, kalibriert
+gegen den GEMESSENEN Fund-Anteil von d24_c008 (10,28 Mrd auf 3,06 Mrd Mining ueber 24 Checks) -
+nicht gegen die geschlossene Form, die die mitverdoppelte Praemie nicht kennt.
+
+VIER ZELLEN, je 20 Laeufe, gleiches Verfahren wie oben:
+
+  Zelle      Chance  Faktor   Mittel    VarKoeff   Min      Max     Spanne
+  (heute)     0,08   Verdopp.  15,27      64,1 %    6,35    48,48    7,63x
+  v_p008      0,08   1,750     14,91      27,8 %    9,75    26,55    2,72x
+  v_p016      0,16   0,875     15,53      12,9 %   12,39    19,38    1,56x
+  v_p024      0,24   0,583     15,49       8,8 %   13,24    18,36    1,39x
+  v_p032      0,32   0,438     15,66       7,2 %   13,60    17,52    1,29x
+
+DAS NIVEAU IST IN ALLEN VIER ZELLEN GETROFFEN: 14,91 bis 15,66 gegen 15,27 Mrd, also -2,4 bis
++2,6 %. Die Kalibrierung gegen den gemessenen statt den gerechneten Wert war dafuer noetig.
+
+ZWEI BEFUNDE, DIE ERST DIESE TABELLE ZEIGT:
+
+(1) DIE KOMPOUNDIERUNG ALLEIN KOSTET DEN GROESSTEN TEIL DER STREUUNG. Bei UNVERAENDERTER Chance
+    0,08 faellt der VarKoeff von 64,1 auf 27,8 % und die Spanne von 7,63x auf 2,72x - ohne dass an
+    der Haeufigkeit oder am Niveau etwas geaendert waere. Die Verdopplung des ANGESAMMELTEN Betrags
+    ist damit als Einzelursache belegt, nicht nur plausibel.
+
+(2) DIE STREUUNGSKURVE HAT EINEN KNICK BEI CHANCE 0,16. Zuwachs an Beruhigung je Verdopplung der
+    Chance: 0,08 -> 0,16 bringt -14,9 Punkte, 0,16 -> 0,24 nur noch -4,1, 0,24 -> 0,32 nur -1,6.
+    Der Regler zahlt sich oberhalb von 0,16 nicht mehr aus. Das ist eine gemessene Aussage und
+    keine Geschmacksfrage - und sie liefert den Wert, den eine Setzung sonst braeuchte.
+
+================================================================================
+12b. ENTSCHEIDUNG - VOM NUTZER DELEGIERT AM 27.08.2026, UMKEHRBAR, NICHT GEBAUT
+================================================================================
+Gefuehrt wie f = 12 und Befund G: eingetragen als Empfehlung mit Begruendung, jederzeit umkehrbar.
+"Entschieden" heisst wie immer NICHT gebaut - der Punkt gehoert auf die Sammelliste.
+
+  EMPFOHLEN: ZEITPUNKTUNABHAENGIGE FORM MIT CHANCE 0,16 UND FAKTOR 0,875 (Zelle v_p016).
+  Niveau unveraendert (15,53 gegen 15,27 Mrd, +1,7 %), Streuung 64,1 -> 12,9 %,
+  Spanne 7,63x -> 1,56x.
+
+WAS DAMIT BEHOBEN IST:
+ - Die unbeabsichtigte Drift. Der Erwartungswert waechst kuenftig LINEAR mit der Missionsdauer wie
+   jede andere Ertragsgroesse auch. Eine weitere Aenderung an der Dauer verstellt den Fund dann
+   proportional statt exponentiell - Befund 6 kann sich nicht wiederholen.
+ - Die Spanne 7,6x. Eine schlechte Woche ist nicht mehr ein anderes Spiel als eine gute.
+ - Der Abstand zwischen Mittel und Median (0,766 heute) verschwindet weitgehend, weil die
+   Verteilung nicht mehr von einem einzelnen Ausreisser getragen wird.
+
+WAS BEWUSST BLEIBT:
+ - DAS NIVEAU. Es ist nicht gesenkt, und zwar aus einem gemessenen Grund: die Woche-1-Baseline vom
+   20.08.2026 fuehrt die Asteroiden mit 18,1 Mrd, und der Zielkorridor von Entscheidung 3
+   (7-10 Mrd/Tag fuer den Raid) ist so gewaehlt, dass weder Raid noch Elite die 50-%-Marke reisst.
+   Jede Kuerzung hier verkleinert den NENNER und hebt damit den Anteil beider - Entscheidung 3
+   waere neu zu kalibrieren und Abnahmekriterium 5 gleich mit. Der Befund dieser Session
+   rechtfertigt keine Niveauaenderung; er rechtfertigt eine Formaenderung.
+ - DAS GLUECKSSPIEL. Rund 3,8 Funde je 24-Stunden-Mission, jeder rund sieben Achtel der ganzen
+   Ausbeute wert. Der Kampfbericht zeigt weiterhin einzelne Funde. Die vollstaendig deterministische
+   Form (d24_fest, VarKoeff 0,2 %) ist ausdruecklich VERWORFEN: sie loescht eine Mechanik, die der
+   Code-Kommentar als Nutzerentscheidung vom Juli 2026 benennt, und der Befund verlangt das nicht.
+ - DIE MISSIONSDAUER von 24 Stunden. Sie ist eine Nutzerentscheidung vom 28.07.2026 und beruehrt
+   Spielrhythmus, dmCap-Rate und Nachschau-Haeufigkeit. Weg (4) ist damit vom Tisch.
+
+WARUM 0,16 UND NICHT 0,08 ODER 0,24: der Knick aus 12a(2). Unterhalb bleibt die Spanne bei 2,7x -
+noch immer genug, um eine Baseline unbrauchbar zu machen; oberhalb kauft man je Verdopplung der
+Chance nur noch vier bzw. anderthalb Punkte und macht den Fund zur Routine (5,8 bis 7,7 Treffer je
+Mission statt 3,8). Der Wert steht damit auf einer gemessenen Kurve und nicht auf einem Geschmack.
+
+WAS VOR DEM EINBAU NOCH ZU KLAEREN IST - die Empfehlung ist NICHT vollstaendig:
+ 1. K5 IN EINER tick-ZELLE. Alle Zellen dieser Session laufen ohne Raid; K5 ist dort strukturell
+    nicht entscheidbar (Abschnitt 9). Ob die neue Form den K5-Ausgang stabilisiert, ist damit
+    NICHT belegt - nur, dass sie die Streuung der Quelle beseitigt. Fuenf 14-Tage-Laeufe mit
+    `--treiber=tick` je Form, rund 25 Minuten.
+ 2. MESSREGEL 8, ES GIBT EINEN CLIENT-SPIEGEL. `RichFindList` in `pages/Nachrichten.tsx` rendert
+    `msg.detail.richFinds`, und `missions.ts` Z. 745 baut den Text "Reicher Fund in Stunde X".
+    Unter der neuen Form ist die STUNDE fuer den Wert bedeutungslos - die Anzeige wuerde eine
+    Information hervorheben, die nichts mehr bedeutet. Beides gehoert in die Bauanleitung.
+ 3. DIE ESKORTEN-PRAEMIE WIRD NICHT MEHR MITVERDOPPELT. Heute landet sie in `mission.farmed` und
+    wird vom Fund miterfasst (Abschnitt 5); die neue Form bemisst sich am Mining allein. Das ist
+    sachlich richtiger - ein Minenfund ist keine Kampfbelohnung - aber es ist eine zweite
+    Aenderung im selben Paket und muss als solche benannt werden, nicht stillschweigend mitlaufen.
+ 4. DER FUND IST FUER PIRATEN-SEKTOREN SEIT DEM 29.07.2026 OHNEHIN TOT (kein `mission.farmed` mehr
+    zum Verdoppeln). Die Aenderung betrifft ausschliesslich Asteroidenfelder. Geprueft, nicht
+    angenommen.
+
+DAMIT WAECHST DIE SAMMELLISTE AUF ZEHN PAKETE (elf, falls Entscheidung 15 aufgenommen wird).
+
+
 Vorab geklaert, weil Punkt 4 den Schalter verlangt und neun Laeufe sonst blind gestartet wuerden.
 Gemessen an einer kurzen Zelle (2 Tage, Profil aktiv, Treiber tick):
 
@@ -348,9 +443,15 @@ nach oben. Vor Punkt 4 zu klaeren.
 14. NAECHSTE SCHRITTE
 ================================================================================
 1. ERLEDIGT: die Messung aus Abschnitt 11 - dieses Protokoll.
-2. OFFEN, NUTZERENTSCHEIDUNG: welcher der vier Wege aus Abschnitt 12. Erst danach ist Punkt 4
-   sinnvoll - wird der Reiche Fund angefasst, sind alle 30-Tage-Baselines wertlos, die vorher
-   gefahren wurden.
-3. OFFEN, klein: der K3b-Vorbehalt aus Abschnitt 13, vor Punkt 4.
-4. OFFEN: die drei Profile ueber 30 Tage (Punkt 4), mit --treiber=tick und
-   --mensch_unterschritte, drei Laeufe je Profil.
+2. ERLEDIGT: die Entscheidung, vom Nutzer delegiert (Abschnitt 12b). Umkehrbar, nicht gebaut,
+   auf der Sammelliste.
+3. OFFEN, klein, vor dem Einbau: die drei Punkte aus 12b (K5 in einer tick-Zelle, Client-Spiegel,
+   Eskorten-Praemie). Rund eine halbe Stunde Messung plus Bauanleitung.
+4. OFFEN, klein, vor Punkt 4: der K3b-Vorbehalt aus Abschnitt 13.
+5. OFFEN: die drei Profile ueber 30 Tage (Punkt 4), mit --treiber=tick und
+   --mensch_unterschritte, drei Laeufe je Profil, rund 75 Minuten.
+   ACHTUNG: Punkt 4 misst dann den IST-Zustand, nicht den empfohlenen. Solange die Empfehlung
+   nicht gebaut ist, tragen seine Baselines den heutigen Reichen Fund mit 64 % Streuung - das
+   ist zu kennzeichnen, sonst steht spaeter eine Baseline neben einem Spiel, das es nicht mehr
+   gibt. Alternativ Punkt 4 gegen einen Messbuild mit v_p016 fahren; das ist die sauberere
+   Reihenfolge, aber eine eigene Entscheidung.

@@ -72,6 +72,16 @@ const ZELLEN = [
   { id: 'd24_c002', gruppe: 'B', dauer_h: 24, chance: 0.02, text: 'viertel Chance' },
   { id: 'd24_c000', gruppe: 'B', dauer_h: 24, chance: 0.0, text: 'NULLMESSUNG' },
   { id: 'd24_fest', gruppe: 'C', dauer_h: 24, chance: 0.0, aufschlag: 'kalibriert', text: 'fester Aufschlag' },
+  // D: ZEITPUNKTUNABHAENGIGE FORM. Ein Treffer ist `voll_faktor` mal die nominale Gesamtausbeute
+  //    wert statt eine Verdopplung des Angesammelten. Das Produkt chance*voll_faktor ist in allen
+  //    vier Zellen 0,140 und gegen den GEMESSENEN Fund-Anteil von d24_c008 kalibriert (10,28 von
+  //    3,06 Mrd Mining ueber 24 Checks). Der Erwartungswert ist dadurch konstant und die STREUUNG
+  //    der einzige Unterschied zwischen den Zellen - viele kleine Funde streuen weniger als wenige
+  //    grosse. Genau das macht die Streuung erstmals zu einem Regler statt zu einer Nebenwirkung.
+  { id: 'v_p008', gruppe: 'D', dauer_h: 24, chance: 0.08, voll_faktor: 1.750, text: 'selten, sehr gross' },
+  { id: 'v_p016', gruppe: 'D', dauer_h: 24, chance: 0.16, voll_faktor: 0.875, text: 'mittel' },
+  { id: 'v_p024', gruppe: 'D', dauer_h: 24, chance: 0.24, voll_faktor: 0.583, text: 'haeufig, kleiner' },
+  { id: 'v_p032', gruppe: 'D', dauer_h: 24, chance: 0.32, voll_faktor: 0.438, text: 'sehr haeufig, klein' },
 ];
 
 // ===================================================================================
@@ -118,6 +128,7 @@ function baue(zelle, aufschlag) {
   const a = [resolve(HIER, 'make_messbuild_reicherfund.mjs'), K5, ziel,
     `--chance=${zelle.chance}`, `--dauer_h=${zelle.dauer_h}`];
   if (aufschlag > 0) a.push(`--aufschlag=${aufschlag}`);
+  if (zelle.voll_faktor) a.push(`--voll_faktor=${zelle.voll_faktor}`);
   execFileSync('node', a, { stdio: 'pipe' });
   return ziel;
 }
@@ -211,9 +222,11 @@ console.log('2. NORMIERT - REICHER FUND JE EINHEIT MINING (immun gegen die Farmz
 console.log('='.repeat(78));
 console.log('Zelle        gemessen   Erwartung*  | je (Mining+Praemie)   Fund-Anteil am Farm');
 for (const e of ergebnisse) {
-  const erw = e.zelle.chance > 0
-    ? (() => { const m = momente(e.zelle.dauer_h, e.zelle.chance); return m.mittel / m.ohne - 1; })()
-    : (e.aufschlag || 0);
+  const erw = e.zelle.voll_faktor
+    ? e.zelle.dauer_h * e.zelle.chance * e.zelle.voll_faktor
+    : e.zelle.chance > 0
+      ? (() => { const m = momente(e.zelle.dauer_h, e.zelle.chance); return m.mittel / m.ohne - 1; })()
+      : (e.aufschlag || 0);
   const anteil = 100 * (e.stat.jeFarm.mittel / (1 + e.stat.jeFarm.mittel));
   console.log(
     `${e.zelle.id.padEnd(11)} ${e.stat.jeMining.mittel.toFixed(3).padStart(8)}   ${erw.toFixed(3).padStart(9)}   | ` +

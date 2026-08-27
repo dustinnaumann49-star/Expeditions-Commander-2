@@ -25,6 +25,9 @@
 //   --aufschlag=0     Fester Aufschlag auf den STUNDENERTRAG statt/zusaetzlich zur Verdopplung.
 //                     1.0 = +100 % je Stunde. Gebucht als `reicher_fund`, damit die K5-Zeile
 //                     vergleichbar bleibt. Fuer die Form-Gegenprobe zusammen mit --chance=0.
+//   --voll_faktor=0   ZEITPUNKTUNABHAENGIGE FORM (siehe R4 unten): ein Treffer ist `faktor` mal die
+//                     NOMINALE GESAMTAUSBEUTE der Mission wert statt eine Verdopplung des bis dahin
+//                     Angesammelten. Schliesst --aufschlag aus.
 //
 // ===================================================================================
 // MESSREGEL 16, FUENFTER FUNDORT - DIE AUFGABENSTELLUNG SELBST TRUG EINE FALSCHE ZAHL
@@ -63,10 +66,12 @@ const opt = (name, def) => {
 const CHANCE = Number(opt('chance', '0.08'));
 const DAUER_H = Number(opt('dauer_h', '24'));
 const AUFSCHLAG = Number(opt('aufschlag', '0'));
+const VOLL_FAKTOR = Number(opt('voll_faktor', '0'));
 
 if (!Number.isFinite(CHANCE) || CHANCE < 0 || CHANCE > 1) throw new Error(`--chance ausserhalb 0..1: ${CHANCE}`);
 if (!Number.isFinite(DAUER_H) || DAUER_H < 1) throw new Error(`--dauer_h muss >= 1 sein: ${DAUER_H}`);
 if (!Number.isFinite(AUFSCHLAG) || AUFSCHLAG < 0) throw new Error(`--aufschlag muss >= 0 sein: ${AUFSCHLAG}`);
+if (!Number.isFinite(VOLL_FAKTOR) || VOLL_FAKTOR < 0) throw new Error(`--voll_faktor muss >= 0 sein: ${VOLL_FAKTOR}`);
 
 if (!existsSync(SRC)) throw new Error(`Eingangs-Build fehlt: ${SRC} (erst make_messbuild_k5.mjs)`);
 // Echtheitspruefung des Eingangs: ohne die K5-Instrumentierung ist die Messung nicht auswertbar,
@@ -162,11 +167,60 @@ if (AUFSCHLAG > 0) {
   );
 }
 
+// ===================================================================================
+// R4 - ZEITPUNKTUNABHAENGIGE FORM: BONUS = ANTEIL DER NOMINALEN GESAMTAUSBEUTE
+// ===================================================================================
+// Die heutige Form verdoppelt den BIS DAHIN angesammelten Betrag; ihr Wert haengt damit an der
+// Stunde des Treffers, und ihr Erwartungswert waechst mit (1+p)^n - exponentiell in der
+// Missionsdauer. Diese Form entkoppelt beides: ein Treffer ist IMMER `faktor` mal die nominale
+// Gesamtausbeute der Mission wert, unabhaengig davon, wann er faellt.
+//   E[Faktor auf den Mining-Ertrag] = 1 + n * p * faktor        (linear in n statt exponentiell)
+//   Treffer ~ Binomial(n, p), also SD = faktor * sqrt(n*p*(1-p))
+// Bei FESTEM Produkt p*faktor bleibt der Erwartungswert konstant und die Streuung wird zum
+// Regler: viele kleine Funde streuen weniger als wenige grosse.
+//
+// ZWEI FOLGEN, die nicht auf der Hand liegen und beide gewollt sind:
+//   - Die Eskorten-Praemie wird NICHT mehr mitverdoppelt. Der Fund ist ein Minenfund, keine
+//     Kampfbelohnung; heute verdoppelt er beides, weil beide in mission.farmed landen.
+//   - Ein FENSTER-Ansatz (Bonus = Ertrag der letzten K Stunden) ist arithmetisch ausgeschlossen:
+//     um das heutige Niveau zu halten, muesste K groesser sein als die Mission lang ist.
+if (VOLL_FAKTOR > 0) {
+  if (AUFSCHLAG > 0) throw new Error('--aufschlag und --voll_faktor schliessen sich aus.');
+  // Der Stundenertrag muss festgehalten werden - runRichFindCheck() sieht weder state noch cfg.
+  patch(
+    g('missions.js'),
+    `            __k5Mission(mission, 'asteroid_mining', { metall: total * 0.5, kristall: total * 0.3, deuterium: total * 0.2 });`,
+    `            __k5Mission(mission, 'asteroid_mining', { metall: total * 0.5, kristall: total * 0.3, deuterium: total * 0.2 });
+            // MESSBUILD: letzter Stundenertrag als Bemessungsgrundlage der zeitpunktunabhaengigen Form
+            mission.__rfStunde = { metall: total * 0.5, kristall: total * 0.3, deuterium: total * 0.2 };`,
+    'R4a missions.js Stundenertrag merken'
+  );
+  patch(
+    g('missions.js'),
+    `    const bonus = {
+        metall: mission.farmed.metall,
+        kristall: mission.farmed.kristall,
+        deuterium: mission.farmed.deuterium,
+    };`,
+    `    // ===== MESSBUILD: zeitpunktunabhaengige Form =====
+    const __std = mission.__rfStunde || { metall: 0, kristall: 0, deuterium: 0 };
+    const __n = Math.max(1, Math.round((mission.endTime - mission.arriveTime) / 3600000));
+    const __f = ${VOLL_FAKTOR} * __n;
+    const bonus = {
+        metall: __std.metall * __f,
+        kristall: __std.kristall * __f,
+        deuterium: __std.deuterium * __f,
+    };`,
+    'R4b missions.js Bonus zeitpunktunabhaengig'
+  );
+}
+
 console.log(`Reicher-Fund-Messbuild: ${OUT}`);
 console.log(`  Eingang     : ${SRC}`);
 console.log(`  Chance      : ${CHANCE}${CHANCE === 0 ? '   (Nullmessung)' : CHANCE === 0.08 ? '   (heutiger Code)' : ''}`);
 console.log(`  Dauer       : ${DAUER_H} h${DAUER_H === 24 ? '   (heutiger Code - NICHT 12, siehe Kopf)' : ''}`);
 console.log(`  Aufschlag   : ${AUFSCHLAG === 0 ? 'keiner' : `+${(100 * AUFSCHLAG).toFixed(1)} % je Stunde, gebucht als reicher_fund`}`);
+console.log(`  Form        : ${VOLL_FAKTOR > 0 ? `zeitpunktunabhaengig, ${VOLL_FAKTOR} x nominale Gesamtausbeute je Treffer` : 'Verdopplung des Angesammelten (heutiger Code)'}`);
 console.log(`  Patches     : ${patches} (jeder mit hartem Abbruch bei fehlendem Anker)`);
 console.log(`  Datenbank landet unter ${resolve(OUT, '../data')}`);
 console.log(`  Quellcode unberuehrt.`);

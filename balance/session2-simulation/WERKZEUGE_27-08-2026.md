@@ -24,6 +24,26 @@ Stellschrauben fuer die Messung aus `k5_quellen.txt` Abschnitt 11.
 | `--chance=` | `0.08` | `ASTEROID_RICH_FIND_CHANCE`, an der **Aufrufstelle** gesetzt. `0` = Nullmessung. |
 | `--dauer_h=` | `24` | `ASTEROID_MISSION_DURATION_MS` in Stunden. |
 | `--aufschlag=` | `0` | fester Aufschlag auf den Stundenertrag statt der Verdopplung, gebucht als `reicher_fund`. |
+| `--voll_faktor=` | `0` | **zeitpunktunabhaengige Form**: ein Treffer ist `faktor` mal die nominale Gesamtausbeute wert. Schliesst `--aufschlag` aus. |
+
+### Die zeitpunktunabhaengige Form (`--voll_faktor`)
+
+Heute verdoppelt der Fund den **bis dahin angesammelten** Betrag; sein Wert haengt damit an der
+Stunde des Treffers und sein Erwartungswert waechst mit `(1+p)^n`. Diese Form entkoppelt beides:
+
+```
+E[Faktor auf den Mining-Ertrag] = 1 + n * p * faktor        (LINEAR in n)
+Treffer ~ Binomial(n, p)  ->  SD = faktor * sqrt(n*p*(1-p))
+```
+
+Bei **festem Produkt `p*faktor`** bleibt der Erwartungswert konstant und die Streuung wird zum
+Regler. Gemessen (vier Zellen, Produkt 0,140): VarKoeff 27,8 / 12,9 / 8,8 / 7,2 % bei praktisch
+identischem Mittel.
+
+Umgesetzt in zwei Patches: `accrueFarming()` legt den letzten Stundenertrag in `mission.__rfStunde`
+ab (`runRichFindCheck()` sieht weder `state` noch `cfg`), und der Bonus wird daraus mal
+`faktor * Missionsdauer` gebildet. **Ein FENSTER-Ansatz waere arithmetisch ausgeschlossen** - um das
+heutige Niveau zu halten, muesste das Fenster 25 Stunden umfassen, die Mission dauert 24.
 
 **Vierte Stufe statt Erweiterung von `make_messbuild_k5.mjs`** - Abschnitt 11 schlug einen
 zusaetzlichen Patch-Block dort vor. Das waere genau der Fehler, den der k5-Kasten fuer sim13
