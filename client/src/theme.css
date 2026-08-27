@@ -509,6 +509,12 @@
      stehen und die zweizeiligen Zellen nicht flackern. */
   .combat-table{ font-variant-numeric: tabular-nums; }
   .zellen-summe{ font-size:11px; opacity:0.55; margin-top:1px; }
+  /* `white-space:nowrap` auf BEIDEN Zeilen: ohne das bricht "217,76 Mio" zwischen Zahl und
+     Einheit um und die Zeile wird drei statt zwei Zeilen hoch - beobachtet im ersten echten
+     Bericht am 28.08.2026. Die Tabelle scrollt ohnehin waagerecht (`.table-scroll`), Breite ist
+     hier also billiger als Hoehe. */
+  .combat-table td{ white-space:nowrap; }
+  .combat-table td:first-child{ white-space:normal; }
 
   /* Waagerechter Scroll-Bereich fuer BREITE Tabellen (`.combat-table` ohne `narrow`).
      Bewusst so eng wie moeglich um die Tabelle gelegt: Handy-Browser legen die Wischrichtung in
