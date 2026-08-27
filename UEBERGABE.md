@@ -101,11 +101,56 @@ anders wirken kann als in der Simulation.
     bindend (V3 aendert 63,7 -> 64,5), was zum R14-Befund vom 17.08.2026 passt; die Kaskade wird
     durch den Durchschlags-Daempfungsfaktor geometrisch abgewuergt, lange bevor die Stufenzahl
     greift. "nie Totalverlust" bleibt in allen Varianten gewahrt.
-  - **DIE URSACHE IST WEITER OFFEN.** Naechster Verdacht, ausdruecklich als Vermutung und NICHT
-    als Befund gefuehrt: die Paarung "einer gegen viele" selbst - der Gegner ist ein einzelnes
-    Kapitalschiff, dessen Feuerkraft in wenigen sehr grossen Schuessen steckt, waehrend eine Flotte
-    linear mit der Stueckzahl skaliert. Pruefbar mit einer **Sonde** (Schuesse/Treffer/
-    Schadensverteilung des Bosses ueber die Leiter), nicht mit einem weiteren Sweep.
+  - **DIE URSACHE IST AM 28.08.2026 GEFUNDEN: ES IST DIE BAUART DES PIRATENKAPITAENS, NICHT DAS
+    KAMPFMODELL.** Zwei weitere Messungen gegen den UNVERAENDERTEN Build (`probe_bossverlust.mjs`,
+    `run_gegenprobe.mjs`/`gegenprobe.txt`), Protokoll-Abschnitt 4a.
+    - **Sonde.** Ausgangspunkt: der Boss toetet gegen grosse Flotten ABSOLUT weniger (264 -> 8
+      Einheiten), nicht gleich viel - das folgt keiner Deckel-Erklaerung.
+
+      | n | Boss-Waffen | vernichtet | Schaden/Treffer | Verschwendung | Regen/Schaden |
+      |---|---|---|---|---|---|
+      | 90 | 110,6M | 264 | **13,5M** | 87,8 % | 0,00 |
+      | 400 | 491,5M | 203 | **13,6M** | 97,2 % | 0,24 |
+      | 2500 | 3.072,0M | 8 | **13,7M** | 99,6 % | **0,97** |
+
+      **Die Waffen wachsen um Faktor 28, der Schaden je Treffer bleibt konstant bei 13,6 Mio.**
+      Ein Treffer erreicht ueber die Durchschlags-Kaskade nur wenige Ziele, alles darueber wird
+      weggeworfen - bei 11.250 Einheiten verpuffen **99,6 %** der Feuerkraft. **Den Gegner ueber
+      seine MACHT zu skalieren macht ihn nicht staerker, sondern verschwenderischer.** Zweiter
+      Mechanismus: die Schild-Regeneration der Spielerflotte schluckt den Rest - bei 11.250
+      Einheiten regeneriert sie **97 %** dessen, was ueberhaupt ankommt.
+    - **Gegenprobe.** Dieselbe Leiter, dieselbe Gegner-MACHT, einmal auf einer Einheit und einmal
+      ueber `generatePiratenFleet()` verteilt:
+
+      | n | konzentriert | verteilt |
+      |---|---|---|
+      | 150 | 36,2 % | 32,2 % |
+      | 400 | 10,7 % | 38,2 % |
+      | 1.000 | 2,5 % | 38,3 % |
+      | 2.500 | 0,1 % | **38,4 %** |
+
+      **Bei verteilter Gegnermacht ist die Verlustquote flach.** Der Masse-Vorteil ist vollstaendig
+      weg, und beide Mechanismen verschwinden mit (Schaden je Treffer 0,01 statt 13,6 Mio,
+      Regen/Schaden konstant 0,23-0,25 statt ansteigend). **Wo dem Spieler VIELE Gegner
+      gegenueberstehen - normale Piratenflotten, Raid-Verteidigung, Elite-Bollwerk - verhaelt sich
+      die Engine massstabsneutral.** Nur die Kapitaens-Begegnung kippt.
+    - **METHODISCHER BEFUND ZUR EIGENEN KENNZAHL:** die Zusammenfassung "Spanne ueber die Leiter"
+      wies fuer beide Formen fast denselben Wert aus (62,3 gegen 61,6) und haette den Schluss
+      "kein Unterschied" nahegelegt - das GEGENTEIL des Befunds. Ursache: die Zelle n=90 wechselt
+      bei verteilter Macht das REGIME (100 % eigener Verlust, Kampf endet nach 87 statt 100
+      Runden). **Eine Spanne ueber eine Leiter, in der eine Zelle das Regime wechselt, misst den
+      Regimewechsel und nicht die Steigung.** Zusammenfassende Kennzahlen erst bilden, NACHDEM die
+      Einzelzellen angesehen wurden.
+    - **KORREKTUR EINES EIGENEN MESSFEHLERS:** ein erster Sondenlauf las `r.shotsB.fired` aus und
+      meldete 0 Schuesse bei 52 Treffern - das sah nach einem Fehler im Spiel aus und wurde
+      kurzzeitig auch so berichtet. Das Feld heisst `shotsFired` (`ShotStats` in `combat.ts`);
+      korrekt ausgelesen 100 Schuesse bei 52 Treffern, voellig unauffaellig. **Feldnamen am Typ
+      nachsehen, nicht raten** - dieselbe Regel wie bei den dist-Ankern.
+  - **OFFEN, NUTZERENTSCHEIDUNG:** ob die Kapitaene umgebaut werden. Die Messung sagt, WO das
+    Problem sitzt, nicht ob es behoben werden soll - "ein grosses Schiff" ist eine Design-Aussage,
+    kein Versehen. **VOR jeder Richtung zu klaeren: was richtet die ESKORTE heute schon aus?** Sie
+    war in ALLEN Zellen ausgeblendet, um die Boss-Mechanik zu isolieren; im echten Spiel kaempft
+    sie mit, der Effekt duerfte dort also schwaecher sein als hier gemessen.
   - **FUER DEN PLAN WICHTIG:** Entscheidung 2 (Beute-Kurve) greift an den BELOHNUNGEN und aendert
     nichts daran, dass eine 4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert.
     **"Weglauf-Wachstum bremsen" und "Masse macht unverwundbar" sind zwei Probleme, im Plan bisher
@@ -1757,12 +1802,14 @@ Stunde X"; und die Eskorten-Praemie, die kuenftig nicht mehr mitverdoppelt wird.
 **NICHTS DAVON DARF GEGEN ABNAHMEKRITERIUM 5 KALIBRIERT WERDEN** - K5 bewegt sich hier nicht
 monoton, und sein schlechtester Wert ist ausgerechnet die Nullmessung.
 
-**ZWEITER OFFENER STRANG: DIE MASSENFRAGE.** Aggregat und Deckel sind als Ursache ausgeschlossen
-(Stand-Eintrag oben). Naechster Schritt ist eine **Sonde**, kein Sweep: wieviele Schuesse gibt der
-Boss je Runde tatsaechlich ab, wieviele treffen, wo geht seine Ausgabe verloren? Danach eine
-Gegenprobe in der Raid-Verteidigung (viele gegen viele), bevor daraus eine allgemeine Aussage
-ueber "Masse" wird. **Nicht die Schwelle anheben, nicht die Deckel anheben** - beides gemessen und
-verworfen.
+**ZWEITER OFFENER STRANG: DIE MASSENFRAGE - URSACHE GEFUNDEN, ENTSCHEIDUNG OFFEN.** Es ist die
+Bauart des Piratenkapitaens, nicht das Kampfmodell (Stand-Eintrag oben). Bei verteilter
+Gegnermacht ist die Verlustquote flach (32-38 % ueber die ganze Leiter). **Nicht die Schwelle
+anheben, nicht die Deckel anheben** - beides gemessen und verworfen.
+**NAECHSTER SCHRITT: messen, was die ESKORTE des Kapitaens heute schon ausrichtet.** Sie war in
+allen Zellen ausgeblendet; im echten Spiel kaempft sie mit, der Effekt duerfte also schwaecher
+sein als gemessen. Erst danach ist ueber einen Umbau zu reden - und das ist eine
+Nutzerentscheidung, keine Messfrage.
 
 **PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
 gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
