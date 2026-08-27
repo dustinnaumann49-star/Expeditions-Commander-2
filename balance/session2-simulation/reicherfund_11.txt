@@ -1,0 +1,356 @@
+DER REICHE FUND - HOEHE, HERKUNFT UND STREUUNG
+Protokoll vom 27.08.2026 (sechste Session)
+Werkzeuge: make_messbuild_reicherfund.mjs (neu), run_reicherfund.mjs (neu),
+           make_messbuild_kum/sim13/k5.mjs, sim13_lauf.mjs, check_build_anker.mjs (alle unveraendert)
+Rohdaten:  reicherfund_11.json (alle 140 Laeufe einzeln)
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen unten stammen aus gepatchten dist-Baeumen, nicht aus dem !!!
+!!! Repo-Stand. Es wurde KEINE Zeile server/src veraendert.                                   !!!
+
+Loest die in k5_quellen.txt Abschnitt 11 vorgeschlagene, dort nicht gefahrene Messung ein.
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+JA - die heutige Hoehe ist ueberwiegend eine Folge der Missionsverlaengerung, und zwar von ZWEI
+Verlaengerungen statt der einen aus der Fragestellung; der eigentliche Befund ist aber nicht die
+Hoehe, sondern dass zwischen der schlechtesten und der besten von zwanzig gemessenen Wochen ein
+Faktor 7,6 liegt - und dass sich diese Streuung bei UNVERAENDERTEM Erwartungswert vollstaendig
+beseitigen laesst.
+
+================================================================================
+1. MESSREGEL 16, FUENFTER FUNDORT - DIE FRAGESTELLUNG SELBST TRUG EINE FALSCHE ZAHL
+================================================================================
+k5_quellen.txt Abschnitt 11, der Messkasten in Abschnitt 1b des Plans und die Aufgabenstellung
+dieser Session nennen alle "12-Stunden-Missionen" und verweisen auf Punkt 23 der ALTEN README
+("Asteroiden-Felder laufen 12h statt 4h").
+
+Im kompilierten dist steht:
+
+  game/data/economy.js:315   export const ASTEROID_MISSION_DURATION_MS = 24 * 3600 * 1000;
+
+und im Quelltext daneben der Kommentar "Umbau 28.07.2026: von 12h auf 24h angehoben
+(Nutzerentscheidung)". ES GAB ALSO ZWEI VERLAENGERUNGEN, NICHT EINE: 4h -> 12h -> 24h.
+
+Folge fuer die Frage: der Hebel ist groesser als unterstellt. Der Fund verdoppelt den BIS DAHIN
+angesammelten Betrag, ein Treffer in der letzten Stunde ist damit rund 24-mal so viel wert wie
+einer in der ersten, nicht zwoelfmal. Und die Messung braucht die MISSIONSDAUER als eigenen
+Regler - in Abschnitt 11 kam sie ueberhaupt nicht vor, obwohl die erste zu klaerende Frage an ihr
+haengt. Genau deshalb steht sie hier als Zellengruppe A.
+
+Fuenfter Fundort derselben Fehlerform nach miningCapable, sh.waffen, der D2-Einrueckung und den
+groupOps-Ankern. NEU AN DIESEM FUNDORT: die falsche Zahl stand nicht in einem Werkzeug, sondern in
+der AUFGABENSTELLUNG - und wer sie uebernimmt, baut ein Messgitter um einen Wert herum, den es im
+Code nicht gibt. Die alte README ist als Quelle gesperrt; hier ist sie ueber zwei Zwischenschritte
+(Abschnitt 11 zitiert sie, der Auftrag zitiert Abschnitt 11) trotzdem in die Messung gelangt.
+
+================================================================================
+2. WAS GEBAUT WURDE
+================================================================================
+make_messbuild_reicherfund.mjs - VIERTE STUFE der Buildkette, auf /tmp/k5/dist aufgesetzt.
+Abschnitt 11 schlug "ein zusaetzlicher Patch-Block" in make_messbuild_k5.mjs vor; das waere genau
+der Fehler, den der k5-Kasten fuer sim13 ausdruecklich vermeidet - die Patchzahl 18 ist dort die
+Echtheitspruefung. Zweistufig bleibt sie unberuehrt, der Ankerwert des Eingangs bleibt
+vergleichbar, und die Stellschrauben lassen sich abschalten.
+
+  --chance=0.08   ASTEROID_RICH_FIND_CHANCE, an der AUFRUFSTELLE gesetzt (nicht an der Konstante,
+                  damit die Aenderung im diff sofort sichtbar ist). 0 = Nullmessung.
+  --dauer_h=24    ASTEROID_MISSION_DURATION_MS in Stunden.
+  --aufschlag=0   fester Aufschlag auf den Stundenertrag statt der Verdopplung, gebucht als
+                  `reicher_fund`, damit die K5-Zeile zwischen beiden Formen vergleichbar bleibt.
+
+SELBSTTEST STATT ZUSICHERUNG: mit Standardwerten (--chance=0.08 --dauer_h=24) unterscheidet sich
+der erzeugte Build vom Eingang in genau ZWEI Zeilen, beide semantisch identisch (0.08 statt der
+Konstanten mit dem Wert 0.08, 24 statt 24). Damit ist die Passivitaet strukturell belegt und nicht
+nur behauptet - dieselbe Form des Nachweises wie der 61-Zeilen-diff bei make_messbuild_k5.mjs.
+
+run_reicherfund.mjs - Messtreiber. Baut je Zelle einen eigenen Build, faehrt sim13_lauf.mjs N-mal
+als Unterprozess und wertet aus. Beide Anker aus dem KOMPILIERTEN dist gelesen.
+
+================================================================================
+3. DETERMINISTISCHE VORFRAGE - VOR DER ERSTEN SERIE
+================================================================================
+Aus dem Code abgelesen, nicht nachgebaut: accrueFarming() laeuft in tickMission() VOR der
+Check-Schleife, runRichFindCheck() verdoppelt danach den bis dahin angesammelten Betrag. Also
+
+  F_k = (F_{k-1} + c) * (1 + X_k),   X_k ~ Bernoulli(p),   c = Stundenertrag
+
+Daraus exakt (keine Serien, kein Monte-Carlo, weil (1+X)^2 = 1+3X fuer X aus {0,1}):
+
+  E[F_k]   = (E[F_{k-1}] + c) * (1+p)
+  E[F_k^2] = (E[F^2_{k-1}] + 2c*E[F_{k-1}] + c^2) * (1+3p)
+
+  Dauer   E[Farm]/ohne Fund   Fund-Anteil   VarKoeff je Mission   P(0 Treffer)
+   4 h          1,217            17,8 %          36,1 %              71,6 %
+  12 h          1,708            41,4 %          65,0 %              36,8 %
+  24 h (heute)  3,004            66,7 %         113,4 %              13,5 %
+
+DIESE RECHNUNG BEANTWORTET DIE ERSTE FRAGE SCHON, aber sie ist eine Rechnung und kein Messwert -
+sie kennt die Eskorten-Praemie nicht, die ebenfalls in mission.farmed laeuft und mitverdoppelt
+wird, und sie unterstellt einen konstanten Stundenertrag. Sie steht deshalb als
+Plausibilitaetspruefung neben der Messung, nicht an ihrer Stelle. Verwendet wurde sie fuer den
+Zuschnitt: sie zeigt, dass die Zellen der Gruppe A ueberhaupt trennen koennen.
+
+================================================================================
+4. AUFBAU DER MESSUNG
+================================================================================
+Sieben Zellen, je 20 Laeufe ueber 7 Tage, Profil aktiv, Treiber economy. 140 Laeufe, rund 25 min.
+
+WARUM TREIBER economy UND NICHT tick: der Raid zahlt ausschliesslich in Containern und verbreitert
+nur den NENNER. Gemessen werden soll die Mechanik selbst, und die sitzt vollstaendig in der
+Asteroidenmission. Mit Raid waere jede Zelle um eine zweite, unabhaengige Zufallsquelle verrauscht.
+FOLGE, ausdruecklich: die K5-Spalte in Abschnitt 8 ist damit die Lesart OHNE Raid und NICHT mit den
+30-Tage-Zahlen aus k5_quellen.txt Abschnitt 8b vergleichbar.
+
+WARUM 20 LAEUFE UND NICHT DIE FUENF AUS ABSCHNITT 11: bei einem Variationskoeffizienten von 64 %
+liegt der Standardfehler des Mittels bei fuenf Laeufen bei 29 % - die Zellen d24_c004 und d12_c008
+liegen 9 % auseinander und waeren nicht trennbar gewesen. Bei 20 Laeufen sind es 14,3 %. Das ist
+dieselbe Regel wie bei Entscheidung 18 ("ausrechnen, wie viele Serien noetig sind, damit der
+geforderte Abstand ueberhaupt darstellbar ist") - hier vor der Messung angewandt.
+
+NORMIERT GELESEN: die Zellen unterscheiden sich in der Missionsdauer und damit in der
+tatsaechlichen Farmzeit je Woche. Bei 4-h-Missionen liegt zwischen Rueckkehr und Neustart bis zu
+eine Stunde Leerlauf, weil das Modell stuendlich handelt (gemessen: Mining 2,65 gegen 3,06 Mrd,
+also 87 %). `asteroid_mining` ist der Ertrag OHNE jeden Fund und exakt proportional zur wirklich
+geflogenen Farmzeit; das Verhaeltnis reicher_fund/asteroid_mining ist deshalb der saubere
+Vergleichswert. Dieselbe Regel wie "Belohnungszellen auf die vernichtete Feindmacht normieren".
+
+ANKERCHECK des instrumentierten Builds vor der Messung, ZWEI Laeufe:
+  Lauf 1  normiert +0,4 %  (roh -3,4 %)   4,13 Siege
+  Lauf 2  normiert -1,5 %  (roh +3,0 %)   4,45 Siege
+Neun Messungen desselben Ankers liegen jetzt bei
+  +0,4 / -1,0 / -1,1 / -1,2 / -1,5 / -1,6 / -1,8 / -2,3 / -2,8 %.
+DIE SPANNE IST 3,2 PUNKTE, NICHT "RUND 2", UND DER ANKER KANN POSITIV AUSFALLEN. Die bisher
+notierte Erwartung "-1 bis -3 %" ist damit zu eng. Wer den ersten Lauf allein gesehen haette,
+haette einen gueltigen Build fuer auffaellig gehalten - der zweite Lauf war die Gegenprobe.
+Die roh/normiert-Falle reproduziert sich zum siebten Mal, diesmal mit umgekehrten Vorzeichen.
+
+================================================================================
+5. NIVEAU - WOCHE 1, ABSOLUT (Mrd Wert-Einheiten, Mittel aus 20 Laeufen)
+================================================================================
+  Zelle       Dauer  Chance   gesamt   reicher_fund   asteroid_mining
+  d24_c008     24 h   0,08     15,27       10,28           3,06        <- HEUTIGER CODE
+  d12_c008     12 h   0,08      7,86        2,94           3,00
+  d04_c008      4 h   0,08      5,29        0,91           2,65
+  d24_c004     24 h   0,04      8,60        3,63           3,05
+  d24_c002     24 h   0,02      6,40        1,46           3,06
+  d24_c000     24 h   0,00      4,91        0,00           3,06        <- NULLMESSUNG
+  d24_fest     24 h   fest*    15,36       10,28           3,06        <- Form-Gegenprobe
+  * +336,4 % je Stunde, gegen den GEMESSENEN Mittelwert von d24_c008 kalibriert (siehe Abschnitt 7)
+
+NORMIERT, reicher_fund je Einheit asteroid_mining:
+
+  Zelle       gemessen   Rechnung aus Abschnitt 3   je (Mining+Praemie)   Fund-Anteil am Farm
+  d24_c008      3,364            2,004                    2,208                68,8 %
+  d12_c008      0,981            0,708                    0,641                39,0 %
+  d04_c008      0,340            0,217                    0,222                18,2 %
+  d24_c004      1,189            0,694                    0,779                43,8 %
+  d24_c002      0,478            0,293                    0,313                23,9 %
+
+DIE RECHNUNG AUS ABSCHNITT 3 IST BESTAETIGT, ABER NUR IN DER RICHTIGEN SPALTE. Gegen den reinen
+Mining-Nenner liegt die Messung um 39 bis 71 % daneben; gegen (Mining + Praemie) auf -9 bis +12 %.
+Die Differenz ist die mitverdoppelte Eskorten-Praemie: runAsteroidEscortCheck() schreibt ihre
+Abschusspraemie ebenfalls nach mission.farmed, und der Fund verdoppelt sie mit. Die geschlossene
+Form beschreibt also das Mining und nicht die Mechanik - **wer nur gerechnet und nicht gemessen
+haette, haette den Beitrag des Reichen Fundes um rund ein Drittel zu niedrig angesetzt.**
+
+================================================================================
+6. BEFUND 1 - JA, DIE HOEHE IST EINE FOLGE DER VERLAENGERUNG
+================================================================================
+Die erste zu klaerende Frage ist damit beantwortet, und die Antwort ist eindeutig.
+
+Faktor auf die gesamte Wocheneinnahme gegen die Nullmessung (4,91 Mrd), bei UNVERAENDERTER
+Chance von 0,08 und unveraenderter farmRate:
+
+    4 h  ->  1,08x        (Fund-Anteil am Farmertrag 18,2 %)
+   12 h  ->  1,60x        (39,0 %)
+   24 h  ->  3,11x        (68,8 %)   <- heutiger Stand
+
+Es ist an Chance und Rate NIE etwas geaendert worden. Der Reiche Fund ist allein dadurch von einer
+Randnotiz (8 % Aufschlag auf die Woche) zur groessten Einzelquelle des Spiels geworden, dass die
+Missionsdauer zweimal angehoben wurde - am 16.08.2026 von 4 auf 12 und am 28.07.2026 von 12 auf 24
+Stunden. Beide Aenderungen sind im Code mit Gruenden versehen, die den Reichen Fund nicht
+erwaehnen; die Verdopplungsmechanik kommt in keinem der beiden Kommentare vor.
+
+DAS IST EINE NEUE FEHLERFORM FUER DIE FALLENLISTE: eine Aenderung an der DAUER hat eine Mechanik
+umskaliert, die an einer ganz anderen Konstante haengt. Die Kommentare bei
+ASTEROID_MISSION_DURATION_MS pruefen ausdruecklich, was mit dmCap und farmRate passiert
+("bleiben BEWUSST unveraendert ... berechnet sich ohnehin dynamisch") - der Reiche Fund, der als
+einziger UEBERPROPORTIONAL mitwaechst, ist dabei uebersehen worden. Merksatz: bei jeder Aenderung
+an einer LAUFZEIT pruefen, welche Mechanik mit der Laufzeit nicht linear, sondern exponentiell
+skaliert.
+
+================================================================================
+7. BEFUND 2 - DIE STREUUNG IST DER EIGENTLICHE BEFUND, UND SIE IST GROESSER ALS VERMUTET
+================================================================================
+Abschnitt 11 formulierte den Einwand als "kann den Wochenertrag verdreifachen oder nicht".
+Gemessen ist es mehr:
+
+  Zelle       Mittel     SD    VarKoeff    Min      Max    Spanne   Median  Median/Mittel
+  d24_c008     15,27    9,79     64,1 %    6,35    48,48    7,63x    11,70      0,766
+  d12_c008      7,86    1,78     22,7 %    5,80    13,17    2,27x     7,30      0,930
+  d04_c008      5,29    0,57     10,7 %    4,37     6,71    1,53x     5,21      0,984
+  d24_c004      8,60    2,60     30,2 %    5,46    14,69    2,69x     7,89      0,917
+  d24_c002      6,40    1,15     18,0 %    4,91     8,79    1,79x     6,05      0,945
+  d24_c000      4,91    0,02      0,4 %    4,87     4,94    1,01x     4,90      0,999
+  d24_fest     15,36    0,03      0,2 %   15,32    15,42    1,01x    15,36      1,000
+
+Die zwanzig Wochen der heutigen Zelle, sortiert (Mrd):
+  6,35  7,81  8,15  8,27  8,33  8,34  9,61  10,03  10,81  11,70
+ 13,04 13,66 15,24 15,80 16,44 20,28 22,19 24,48 26,49 48,48
+
+ZWISCHEN DER SCHLECHTESTEN UND DER BESTEN WOCHE LIEGT FAKTOR 7,6 - bei identischem Spielverhalten,
+identischer Flotte und identischer Bauabfolge. Der Unterschied ist ausschliesslich der Wuerfel.
+
+DER MITTELWERT BESCHREIBT KEINE EINZIGE TYPISCHE WOCHE. Der Median liegt bei 76,6 % des Mittels,
+13 von 20 Wochen liegen darunter, und der Abstand zwischen Mittel und Median entsteht praktisch
+allein aus dem obersten Wert (48,48 gegen 26,49 beim zweithoechsten). Wer gegen den Mittelwert
+kalibriert, kalibriert gegen eine Zahl, die zwei von drei Spielern nicht erreichen. Das gilt fuer
+JEDE frueher gegen diese Quelle gerechnete Zahl mit.
+
+DAMIT IST NEBENBEI DIE SCHWANKUNG DER KOPFZAHL AUS DEN FRUEHEREN SESSIONS VOLLSTAENDIG ERKLAERT -
+"Wert am Tag 7" lag zwischen 2,92 und 6,77 Mrd, ohne dass sich am Modell etwas geaendert haette.
+k5_quellen.txt hatte das bereits vermutet; hier ist es mit 20 Laeufen belegt statt mit vieren.
+
+================================================================================
+8. BEFUND 3 - NIVEAU UND STREUUNG SIND TRENNBAR (die wichtigste Zelle)
+================================================================================
+d24_fest ersetzt die zufaellige Verdopplung durch einen FESTEN Aufschlag von +336,4 % auf den
+Stundenertrag. Die Hoehe ist nicht geraten, sondern gegen den GEMESSENEN Mittelwert von d24_c008
+kalibriert - sonst haette man Niveau und Streuung gleichzeitig verstellt ("Angleichen legt ein
+Verhaeltnis fest, kein Niveau").
+
+  Erwartungswert   15,36 gegen 15,27 Mrd   -> +0,6 %, also getroffen
+  VarKoeff          0,2 % gegen 64,1 %
+  Spanne           1,01x gegen 7,63x
+
+DIE GESAMTE STREUUNG STAMMT AUS DER FORM, NICHT AUS DER HOEHE. Wer das Einkommensniveau der
+Asteroidenfelder unveraendert lassen und nur die Schwankung beseitigen will, kann das vollstaendig
+tun. Das ist die Zelle, die die Balance-Frage ueberhaupt erst zu einer Wahl macht: bisher stand
+"Hoehe senken" gegen "Hoehe lassen", und beide Wege haetten die Schwankung behalten.
+
+AUSDRUECKLICH NICHT BEWERTET: ob die Schwankung erwuenscht ist. Der Code-Kommentar bei
+ASTEROID_RICH_FIND_CHANCE nennt sie ausdruecklich als Absicht ("bewusst als Gluecksspiel-Mechanik:
+frueh in der Mission bringt ein Treffer wenig, spaet einen grossen Bonus"). Die Mechanik tut also
+genau das, wofuer sie gebaut wurde - die Frage ist allein, ob sie das in dieser Groessenordnung
+tun soll. Das ist eine Nutzerentscheidung.
+
+================================================================================
+9. BEFUND 4 - K5 TAUGT HIER NICHT ALS MASSSTAB, UND ZWAR STRUKTURELL
+================================================================================
+  Zelle       K5 Mittel   Min     Max    ueber 50 %   groesste Quelle
+  d24_c008      59,5 %   39,1 %  89,5 %    13/20      reicher_fund 18x, asteroid_mining 2x
+  d12_c008      44,9 %   38,6 %  62,3 %     3/20      asteroid_mining 14x, reicher_fund 6x
+  d04_c008      50,3 %   45,5 %  58,4 %    10/20      asteroid_mining 20x
+  d24_c004      48,4 %   38,6 %  65,7 %     7/20      asteroid_mining 11x, reicher_fund 9x
+  d24_c002      50,0 %   39,1 %  62,2 %    11/20      asteroid_mining 18x, reicher_fund 2x
+  d24_c000      62,3 %   61,9 %  62,7 %    20/20      asteroid_mining 20x
+  d24_fest      66,9 %   66,7 %  67,4 %    20/20      reicher_fund 20x
+
+DIE NULLMESSUNG IST DER SCHLECHTESTE K5-WERT DER GANZEN TABELLE. Schaltet man den Reichen Fund
+ganz ab, wird `asteroid_mining` die groesste Quelle und K5 steht bei 62,3 % - in ZWANZIG von
+zwanzig Laeufen verletzt, statt in dreizehn wie heute. K5 laesst sich durch keine Aenderung am
+Reichen Fund erfuellen.
+
+Ursache ist der Nenner, nicht der Zaehler: ohne Raid steht neben den Asteroiden praktisch nichts.
+Das ist woertlich derselbe Befund wie am 20.08.2026 ("rechnet man den Raid heraus, liegen die
+Asteroiden bei 93 % und selbst ohne jeden Bonus noch bei 81 %") - und die dritte Wiederholung
+derselben Fehlerform in diesem Plan.
+
+FOLGE, WICHTIG FUER DIE ENTSCHEIDUNG: die Hoehe des Reichen Fundes darf NICHT gegen
+Abnahmekriterium 5 kalibriert werden. Das Kriterium bewegt sich hier nicht monoton (59,5 -> 44,9
+-> 50,3 -> 62,3 %), es hat kein Minimum an einem sinnvollen Punkt, und sein bester Wert (44,9 %
+bei 12-h-Missionen) entsteht aus einem Zufall der Zusammensetzung. Es ist damit dasselbe wie die
+Fensterfrage bei Entscheidung 12: eine Regel, die aussieht wie eine Messung und keine ist.
+
+================================================================================
+10. BEFUND 5 - CHANCE UND MISSIONSDAUER SIND NICHT ZWEI REGLER, SONDERN EINER
+================================================================================
+Beide bewegen dieselbe Groesse, naemlich (1+p)^n. Die Rechnung aus Abschnitt 3 sagt fuer
+"Dauer halbieren" 0,708 und fuer "Chance halbieren" 0,694 voraus - praktisch identisch. Gemessen:
+
+  d12_c008 (Dauer halbiert)    Fund/Mining 0,981   Woche 7,86 Mrd   VarKoeff 22,7 %
+  d24_c004 (Chance halbiert)   Fund/Mining 1,189   Woche 8,60 Mrd   VarKoeff 30,2 %
+
+Die beiden Wege liegen im Niveau 9 % auseinander (bei einem Standardfehler von 5,1 bzw. 6,8 % also
+nicht sicher unterscheidbar), in der STREUUNG dagegen sichtbar: die Verkuerzung der Mission
+daempft staerker als die Halbierung der Chance. Plausibel, weil sie zusaetzlich die Zahl der
+unabhaengigen Missionen je Woche verdoppelt und damit mittelt.
+
+FOLGE FUER JEDE KUENFTIGE AENDERUNG: wer an der Missionsdauer dreht, verstellt den Reichen Fund
+mit - und zwar exponentiell. Umgekehrt ist "Chance senken" kein Ersatz fuer "Dauer senken", wenn
+es um die Streuung geht. Die beiden sind fuer das NIVEAU austauschbar und fuer die STREUUNG nicht.
+
+================================================================================
+11. GRENZEN DIESER MESSUNG, AUSDRUECKLICH
+================================================================================
+- EIN Profil (aktiv), EIN Treiber (economy), 7 Tage. Die K5-Spalte ist damit die Lesart OHNE Raid
+  und nicht mit k5_quellen.txt Abschnitt 8b vergleichbar.
+- Das Spielermodell handelt stuendlich. Bei 4-h-Missionen kostet das bis zu eine Stunde Leerlauf
+  je Mission (Mining 2,65 gegen 3,06 Mrd). Die normierte Spalte ist dagegen immun, die absoluten
+  Betraege der Zelle d04_c008 sind es NICHT - sie unterschaetzen den 4-h-Stand um rund 13 %.
+- Die Verdopplung trifft auch die angesammelte Eskorten-Praemie. Das ist gemessen (Abschnitt 5)
+  und im Ergebnis enthalten, war aber weder in Abschnitt 11 noch in der geschlossenen Form
+  vorgesehen.
+- Die Form-Gegenprobe d24_fest ist ein MESSBUILD-Konstrukt, kein Bauvorschlag. Sie belegt, dass
+  Niveau und Streuung trennbar sind; sie sagt nicht, wie ein Ersatz aussehen soll.
+- Nicht gemessen: die Wirkung auf die Piraten-Sektoren (dort gibt es seit dem 29.07.2026 kein
+  mission.farmed mehr zum Verdoppeln, der Fund ist dort schon heute wirkungslos) und auf die
+  Gruppen-Expeditionen.
+- Nicht gemessen: was eine Aenderung fuer die Spieler bedeutet, die heute auf den grossen Treffer
+  spielen. Das ist eine Spielgefuehlsfrage, keine Messgroesse.
+
+================================================================================
+12. WAS DEM NUTZER ZUR ENTSCHEIDUNG VORLIEGT - NICHTS DAVON IST ENTSCHIEDEN
+================================================================================
+Die Messung liefert die Zahlen, nicht die Wahl. Vier Wege, alle mit gemessener Wirkung:
+
+  (1) NICHTS AENDERN. Die Mechanik tut, wofuer sie gebaut wurde. Preis: der groesste Einzelposten
+      des Spiels ist ein Wuerfel mit Spanne 7,6x, und jede kuenftige Kalibrierung gegen die
+      Einnahmen-Baseline traegt diese Streuung mit.
+  (2) FORM AENDERN, NIVEAU BEHALTEN (d24_fest). Streuung 64,1 -> 0,2 % bei +0,6 % Niveau.
+      Preis: die Gluecksspiel-Mechanik ist weg - genau das, was der Code-Kommentar als Absicht
+      benennt.
+  (3) NIVEAU SENKEN (Chance 0,04 oder 0,02). Woche 15,27 -> 8,60 bzw. 6,40 Mrd, Streuung
+      64,1 -> 30,2 bzw. 18,0 %. Behaelt die Mechanik, daempft beides zugleich.
+  (4) MISSIONSDAUER ZURUECKNEHMEN. Wirkt auf denselben Hebel, beruehrt aber weit mehr als den
+      Reichen Fund (Spielrhythmus, dmCap-Rate, Nachschau-Haeufigkeit) und ist eine
+      Nutzerentscheidung vom 28.07.2026. NICHT empfohlen, hier nur der Vollstaendigkeit halber -
+      die Messung zeigt, dass der Weg existiert, nicht dass er sinnvoll ist.
+
+Eine Zwischenform (Form aendern UND Niveau senken) ist mit demselben Werkzeug in einem Lauf
+messbar; sie ist hier nicht gefahren, weil ohne eine Zielvorgabe kein Wert kalibrierbar ist.
+
+AUSDRUECKLICH NICHT ALS MASSSTAB VERWENDEN: Abnahmekriterium 5, siehe Abschnitt 9.
+
+================================================================================
+13. NEBENERGEBNIS - RECHENZEIT VON --mensch_unterschritte FUER PUNKT 4
+================================================================================
+Vorab geklaert, weil Punkt 4 den Schalter verlangt und neun Laeufe sonst blind gestartet wuerden.
+Gemessen an einer kurzen Zelle (2 Tage, Profil aktiv, Treiber tick):
+
+  ohne Unterschritte        5,75 s
+  mit --mensch_unterschritte 9,08 s      -> Faktor 1,58
+
+NICHT Faktor 30, wie die Formulierung "kostet den 30-fachen Aufwand" im Kopf von sim13_lauf.mjs
+nahelegt. Grund: die 30 Unterschritte laufen fuer die BOTS ohnehin schon; der zusaetzliche
+Menschen-tick ist daneben billig. Hochgerechnet auf die dokumentierten 318,5 s eines
+30-Tage-tick-Laufs sind das rund 500 s je Lauf, fuer neun Laeufe rund 75 Minuten plus die drei
+economy-Bruecken. BEZAHLBAR - der Schalter kann verwendet werden.
+
+VORBEHALT, beim Messen aufgefallen und NICHT behoben: mit --mensch_unterschritte wird probe() 30x
+je Stunde aufgerufen, spielerZug() aber weiterhin nur einmal. Das Feld `ressourcenAblehnung`, an
+dem K3b haengt, wird nur in spielerZug() zurueckgesetzt - in 29 von 30 Proben steht damit der
+Wert des letzten Stundenzugs. K2 (Leerlauf) ist davon nicht betroffen, K3b schon und vermutlich
+nach oben. Vor Punkt 4 zu klaeren.
+
+================================================================================
+14. NAECHSTE SCHRITTE
+================================================================================
+1. ERLEDIGT: die Messung aus Abschnitt 11 - dieses Protokoll.
+2. OFFEN, NUTZERENTSCHEIDUNG: welcher der vier Wege aus Abschnitt 12. Erst danach ist Punkt 4
+   sinnvoll - wird der Reiche Fund angefasst, sind alle 30-Tage-Baselines wertlos, die vorher
+   gefahren wurden.
+3. OFFEN, klein: der K3b-Vorbehalt aus Abschnitt 13, vor Punkt 4.
+4. OFFEN: die drei Profile ueber 30 Tage (Punkt 4), mit --treiber=tick und
+   --mensch_unterschritte, drei Laeufe je Profil.
