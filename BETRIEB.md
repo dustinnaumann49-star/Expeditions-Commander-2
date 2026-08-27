@@ -286,7 +286,58 @@ Fehlerzeile aus dem Log haette beides in einer Minute erledigt.**
 
 ---
 
-## 9. Merksaetze
+## 9. Der Datenverbrauch vom 27.08.2026 — 60 GB in einer Nacht
+
+**Symptom:** ueber Nacht 60 GB Mobilfunkvolumen und ein leerer Akku, im Android-Menue beides
+Termux zugeordnet.
+
+**Kein Einbruch.** Geprueft und sauber: `docker ps` zeigte acht Container, alle bekannt, kein
+fremdes Image. `ps aux --sort=-%cpu` zeigte keinen auffaelligen Prozess. `last -20` zeigte
+ausschliesslich eigene Anmeldungen (`10.0.1.5` ist das Coolify-Terminal von innen, die
+Mobilfunk-IP war die eigene).
+
+**Was tatsaechlich passierte**, aus den Hetzner-Graphen (Server → Graphs → 12 Stunden):
+
+| Zeitraum | Beobachtung |
+|---|---|
+| ca. 01:00 bis 03:30 | Netzwerk **out** in Wellen bis 8 MB/s, **20.000 pps**, CPU bis **300 %** |
+| Festplatte | unauffaellig |
+| ab 03:30 | schlagartig Ende (Handy ging aus) |
+
+Dazu passend in `last`:
+
+```
+root  pts/2  <eigene Mobilfunk-IP>  Wed Aug 26 16:11 - 02:38  (10:27)
+```
+
+Eine SSH-Sitzung, **zehneinhalb Stunden offen**. Das Ende deckt sich mit dem Abbruch der
+Verkehrswelle.
+
+**Eine Sitzung, die nur am Prompt steht, verbraucht nichts** — wenige Kilobyte pro Stunde. Die
+Last passt zu einem Befehl, der ununterbrochen Ausgabe erzeugte und ueber die Verbindung
+schickte; die 300 % CPU entstehen dabei durch das laufende Verschluesseln. Welcher Befehl es
+war, ist mit dem Schliessen der Sitzung verloren und liess sich nicht mehr klaeren.
+
+**Der wahrscheinlichste Kandidat ist `docker logs` ohne `--tail` oder mit `-f`.** Beides laeuft
+unbegrenzt weiter; `-f` sogar dauerhaft, weil es auf neue Zeilen wartet. Bei einem Server, der
+alle zwei Minuten einen Heartbeat protokolliert, sendet das endlos.
+
+### Regeln, die daraus folgen
+
+- **Nach der Arbeit `exit`**, danach Termux ueber die Benachrichtigung beenden. Die App zu
+  schliessen beendet den Prozess NICHT — eine SSH-Sitzung ueberlebt so die ganze Nacht.
+- **`docker logs` nie ohne `--tail`**, und `-f` ueber Mobilfunk gar nicht.
+- **Laengere Ausgaben abgekoppelt in eine Datei** (`nohup … > /root/datei.log 2>&1 &`) und die
+  Datei danach mit `tail` lesen, statt den Strom ueber die Verbindung laufen zu lassen.
+- **Bei Serverarbeit WLAN bevorzugen.**
+- **Bei unerklaerlichem Verbrauch zuerst die Hetzner-Graphen ansehen**, Zeitraum auf 12 oder 24
+  Stunden stellen. Die Fuenf-Minuten-Ansicht ist der Standard und zeigt eine Nacht nicht. Ist
+  die Kurve dort flach, hat der Verkehr den Server nie beruehrt und die Zuordnung im
+  Android-Menue taeuscht.
+
+---
+
+## 10. Merksaetze
 
 - **Ein Login in eine Verwaltungsoberflaeche ist kein Zugang zum Server darunter.**
 - **Eine Fehlermeldung, die zwei Faelle zusammenfasst, beweist keinen von beiden.**
