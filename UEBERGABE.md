@@ -65,6 +65,74 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 27.08.2026 (sechste Session, zweiter Teil): DIE MASSENFRAGE - ZWEI ERKLAERUNGEN
+  AUSGESCHLOSSEN, DIE URSACHE WEITER OFFEN. NICHTS GEBAUT AUSSER EINER REINEN ANZEIGE.**
+  Protokoll `balance/session2-simulation/massenfrage_protokoll.txt`, Rohausgaben `massenfrage.txt`
+  und `deckel.txt`, Werkzeuge `make_messbuild_aggregat.mjs`, `run_massenfrage.mjs`,
+  `run_deckel.mjs` (alle neu). Anlass: Nutzerbeobachtung beim Spielen mit dem Vorschlag, die
+  Aggregationsschwelle auf 4.000-5.000 anzuheben.
+  - **RICHTIGSTELLUNG:** die Schwelle liegt nicht bei 2.000, sondern bei **50** (Elite-Klasse),
+    **100** (Kreuzer-Klasse und Verteidigungsanlagen) und **500** (Jaeger). In echten Flotten
+    laeuft damit praktisch alles aggregiert; nur die Salvenschiffe werden einzeln gerechnet.
+  - **BEFUND 1 - DAS AGGREGAT IST NICHT DIE URSACHE.** Dieselbe Leiter zweimal gefahren, einmal
+    mit den Code-Schwellen und einmal mit Schwelle 100.000 (nie aggregiert), Gegner auf die
+    Flottenmacht skaliert und damit eigentlich massstabsneutral:
+
+    | n | Einheiten | IST | nie aggregiert | Differenz |
+    |---|---|---|---|---|
+    | 90 | 405 | 63,4 % | 64,2 % | -0,8 |
+    | 99 | 447 | 58,0 % | 58,6 % | -0,6 |
+    | 101 | 456 | 53,6 % | 56,7 % | -3,1 |
+    | 400 | 1.800 | 10,7 % | 14,6 % | -3,9 |
+    | 1.000 | 4.500 | 2,3 % | 5,7 % | -3,3 |
+    | 2.500 | 11.250 | 0,1 % | 2,3 % | -2,2 |
+
+    **98 % des Absturzes passieren auch ohne jede Aggregation.** Eingebaute Gegenprobe: n=90 und
+    n=99 laufen in BEIDEN Builds unaggregiert und stimmen auf 0,8 bzw. 0,6 Punkte ueberein - der
+    Patch veraendert nichts ausser der Schwelle.
+  - **DER URSPRUENGLICHE VORSCHLAG IST NICHT EMPFOHLEN:** eine Schwelle von 4.000-5.000 bewegt bei
+    4.500 Einheiten 3,3 Punkte und kostet **Faktor 7** Rechenzeit (bei 11.250 Einheiten Faktor 8,3,
+    also 1.025 ms je Kampf). Der Rueckstau-Vorfall vom 30.07.2026 waere zurueck.
+  - **BEFUND 2 - DIE ZWEI DECKEL SIND ES AUCH NICHT.** `OVERKILL_MAX_CASCADE` (5) und
+    `MAX_SHOTS_PER_UNIT` (50) als Gitter variiert (sie multiplizieren sich, einzeln zu messen
+    misst den Deckel der jeweils anderen). Obergrenze von 250 auf **25.000** Abschuesse je Runde:
+    die Spanne bewegt sich von 63,7 auf 67,0 Punkte - **nichts, und in die falsche Richtung**
+    (kleine Flotten 63,8 -> 68,7 %, grosse 0,1 -> 1,6 %). `MAX_SHOTS_PER_UNIT` ist gar nicht
+    bindend (V3 aendert 63,7 -> 64,5), was zum R14-Befund vom 17.08.2026 passt; die Kaskade wird
+    durch den Durchschlags-Daempfungsfaktor geometrisch abgewuergt, lange bevor die Stufenzahl
+    greift. "nie Totalverlust" bleibt in allen Varianten gewahrt.
+  - **DIE URSACHE IST WEITER OFFEN.** Naechster Verdacht, ausdruecklich als Vermutung und NICHT
+    als Befund gefuehrt: die Paarung "einer gegen viele" selbst - der Gegner ist ein einzelnes
+    Kapitalschiff, dessen Feuerkraft in wenigen sehr grossen Schuessen steckt, waehrend eine Flotte
+    linear mit der Stueckzahl skaliert. Pruefbar mit einer **Sonde** (Schuesse/Treffer/
+    Schadensverteilung des Bosses ueber die Leiter), nicht mit einem weiteren Sweep.
+  - **FUER DEN PLAN WICHTIG:** Entscheidung 2 (Beute-Kurve) greift an den BELOHNUNGEN und aendert
+    nichts daran, dass eine 4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert.
+    **"Weglauf-Wachstum bremsen" und "Masse macht unverwundbar" sind zwei Probleme, im Plan bisher
+    als eines gefuehrt.**
+  - **GRENZEN:** eine Paarung, ein Profil, ein Faktor, `allowRetreat` aus. Ob dieselbe Kurve gegen
+    normale Piratenflotten und in der Raid-Verteidigung auftritt (viele gegen viele), ist NICHT
+    gemessen - gerade dort koennte es anders ausfallen.
+
+- **NEU 27.08.2026: ANZEIGE DER KAMPFZAHLEN GEKUERZT - EINZIGE GEBAUTE AENDERUNG DIESER SESSION,
+  AUF NUTZERWUNSCH.** `client/src/pages/Nachrichten.tsx` und `client/src/theme.css`. **Reine
+  Anzeige: kein Serverpfad, kein Rechenweg, keine Messung beruehrt.** Anlass: eine Zeile wie
+  "2.365.541.334" ist bei grossen Flotten nicht mehr lesbar, und mit `MAX_PLAYER_SHIPS = 1.000.000`
+  werden daraus 13-stellige Zahlen.
+  - Neue Hilfsfunktion `kurz()`: ab 100.000 Kurzform (`2,37 Mrd`, `1,20 Mio`, `254k`), darunter
+    unveraendert - kleine Kaempfe, also die haeufigsten, sehen genauso aus wie bisher.
+  - Die vier Summenspalten (Schaden ausgeteilt/erlitten, Schild absorbiert/regeneriert) und
+    Schuesse/Treffer zeigen jetzt den **Wert JE EINHEIT als Hauptzahl** und die Summe klein
+    darunter (`.zellen-summe`). Grund: die Summe traegt die Stueckzahl mit und sagt bei grossen
+    Flotten fast nichts - der Wert je Einheit bleibt ueber alle Flottengroessen vergleichbar und
+    macht Schiffstypen zum ersten Mal direkt gegeneinander lesbar. **Beide Zahlen stehen weiter da.**
+  - Bezugsgroesse ist die ENTSANDTE Stueckzahl, nicht die ueberlebende: sonst saehe ausgerechnet
+    eine schwer getroffene Staffel als besonders wirksam aus.
+  - `UnitTable` ist die einzige breite Tabelle im Projekt und wird von allen vier Berichtsarten
+    benutzt - die Aenderung wirkt ueberall gleichzeitig.
+  - Geprueft: `tsc --noEmit` fehlerfrei, `vite build` erfolgreich. **Braucht einen manuellen Deploy
+    der Client-Anwendung** (Auto-Deploy steht auf "Manual").
+
 - **NEU 27.08.2026 (sechste Session): DER REICHE FUND IST GEMESSEN. JA, SEINE HOEHE IST EINE FOLGE
   DER MISSIONSVERLAENGERUNG - UND DIE STREUUNG IST GROESSER ALS DER EINWAND UNTERSTELLTE. NICHTS
   AM SPIELCODE GEBAUT, NICHTS ENTSCHIEDEN.** Protokoll
@@ -1675,6 +1743,13 @@ Stunde X"; und die Eskorten-Praemie, die kuenftig nicht mehr mitverdoppelt wird.
 
 **NICHTS DAVON DARF GEGEN ABNAHMEKRITERIUM 5 KALIBRIERT WERDEN** - K5 bewegt sich hier nicht
 monoton, und sein schlechtester Wert ist ausgerechnet die Nullmessung.
+
+**ZWEITER OFFENER STRANG: DIE MASSENFRAGE.** Aggregat und Deckel sind als Ursache ausgeschlossen
+(Stand-Eintrag oben). Naechster Schritt ist eine **Sonde**, kein Sweep: wieviele Schuesse gibt der
+Boss je Runde tatsaechlich ab, wieviele treffen, wo geht seine Ausgabe verloren? Danach eine
+Gegenprobe in der Raid-Verteidigung (viele gegen viele), bevor daraus eine allgemeine Aussage
+ueber "Masse" wird. **Nicht die Schwelle anheben, nicht die Deckel anheben** - beides gemessen und
+verworfen.
 
 **PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
 gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
