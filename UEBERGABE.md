@@ -98,21 +98,44 @@ anders wirken kann als in der Simulation.
     der Raid dort mit 58-64 % die groesste Quelle ist, waere K5 formal erhoben und sachlich leer
     gewesen. Neuer Schalter **`--treiber=economy|tick`**, Standard unveraendert. Mit `tick`
     kommt der Raid an: **26,6 % der Woche 1 ueber 123 Container**, Kosten Faktor 7,6.
-  - **BEFUND 3, K1 UEBERSIEHT EINEN RAID-TOTALVERLUST - AUS DEMSELBEN GRUND WIE K3.** In einem
-    abgebrochenen 30-Tage-Lauf mit `tick`: Flottenmacht Tag 15 1,93 Mrd, Tag 16 0,01 Mrd bei 11
-    Verlustereignissen. **K1 zaehlt je STUNDE, ein Raid laeuft ueber zwoelf Wellen** - der Verlust
-    zerfaellt in elf kleine Ereignisse, von denen keines die 70-%-Schwelle reisst; K1 meldete
-    6,1 %. Zuordnung deterministisch: das Modell schickt auf Asteroidenfelder nur `mining` und
-    `begleitschiff`, die Kampfschiffe verlassen die Heimatbasis nie - der Einbruch kann NUR aus der
-    Heimatverteidigung stammen. Exakt die K3-Fehlerform ("misst genau das, was die Definition sagt,
-    und verfehlt die Frage"). **Kriteriums-Definition = Nutzerentscheidung, deshalb NICHT gebaut.**
-  - **BEFUND 4, DIE K4-SETZUNG IST GEMESSEN WIRKUNGSLOS.** Am Tag 0 meldet der Lauf SIEBEN Sektoren
-    gleichzeitig als erstmals spielbar, danach nie wieder einen; K4 meldet immer "Wochen 2, 3, 4".
-    Ursache: die `npcFloor`-Werte liegen bei 300.000 bis 3.000.000, die Startflotte nach der ersten
-    Bauwelle bei rund 60.000.000. Die Setzung war in der dritten Session eingefuehrt worden, nachdem
-    die erste Fassung ein nicht existentes Feld abfragte und ALLE acht Sektoren meldete - sie meldet
-    jetzt sieben statt acht und ist damit praktisch unveraendert wirkungslos. Der Punkt war schon
-    offen; **neu ist, dass er nicht mehr unbestaetigt, sondern gemessen wirkungslos ist.**
+  - **BEFUND 3, DIE HEIMATFLOTTE WIRD AB TAG 20 BEI JEDEM RAID VOLLSTAENDIG VERNICHTET -
+    ABNAHMEKRITERIUM 1 IST VERLETZT.** 30 Tage, Profil aktiv, `tick`, vollstaendig durchgelaufen:
+    Tag 20, 23 und 27 jeweils elf Verlustereignisse und Flottenmacht auf 0,00 bis 0,05 Mrd. **K1
+    92,0 %, K1b 99,9 %.** Der Aufbau zwischen zwei Checkpoints (rund drei Tage) reicht nicht, um
+    wieder verteidigungsfaehig zu sein. Ohne `tick`-Treiber war das unsichtbar. Zuordnung
+    deterministisch: das Modell schickt auf Asteroidenfelder nur `mining` und `begleitschiff`, die
+    Kampfschiffe verlassen die Heimatbasis nie.
+    **KORREKTUR EINER FRUEHEREN FASSUNG DIESES EINTRAGS:** dort stand, K1 uebersehe den Verlust und
+    melde 6,1 %. Das war falsch zugeordnet - die 6,1 % stammten aus dem 14-Tage-Lauf ohne
+    Totalverlust, der 30-Tage-Lauf war abgebrochen und hatte nie eine Endauswertung geliefert.
+    **Genau die Fehlerform, vor der die Fallen-Liste warnt: eine Zahl aus einem Lauf neben einer
+    Beobachtung aus einem anderen.** Richtig und schwaecher: K1 unterschaetzt systematisch (92,0
+    gegen 99,9 %), weil es je STUNDE zaehlt und ein Raid ueber zwoelf Wellen laeuft - es haette die
+    Schwelle verfehlen koennen, hat sie hier aber gerissen.
+  - **K1b IST GEBAUT** (Nutzer hat die Entscheidung am 26.08.2026 ueberlassen): groesster Rueckgang
+    vom Hoch der letzten 24 Stunden. **K1 bleibt unveraendert**, wie bei K3/K3b - es hat ueber
+    mehrere Sessions Vergleichswerte. Fenster bewusst begrenzt, sonst zaehlte auch eine langsame
+    Zermuerbung ueber Wochen als ein Ereignis. Gegenprobe: ohne mehrstuendiges Ereignis liefern K1
+    und K1b denselben Wert (zweimal 6,1 %) - die Kennzahl erfindet nichts.
+  - **BEFUND 4, K4 WAR WIRKUNGSLOS UND IST JETZT AN DIE ECHTEN SPERREN GEHAENGT.** Vorher meldete
+    der Lauf am Tag 0 sieben Sektoren gleichzeitig (npcFloor 300.000 bis 3.000.000 gegen rund
+    60.000.000 Startflottenmacht). **Sektoren taugen strukturell nicht als Massstab:** es gibt keine
+    Sperre, und die Piraten-Sektoren skalieren mit der eigenen Macht mit - dort wird nie etwas
+    freigeschaltet, es wird nur schwerer. Schiffe, Verteidigung und Forschung haben ueberhaupt keine
+    Voraussetzung (`tier` in `ships.ts` ist eine Klassenbezeichnung, keine Sperre). **Gestaffelt
+    freigeschaltet wird genau viererlei:** Heimatbasis-Stufe V2/V3 (`HOME_TIER_UNLOCK_LEVELS`,
+    Minen 36/32/30), Stations-Stufe (`checkTierUnlock()`), Imperator (Teile-Sperre 1.000 je
+    Kategorie), Sandronator (`unique`). **Ergebnis nach der Umstellung: Wochen 1 bis 4 ohne eine
+    einzige Freischaltung** - jetzt eine Aussage ueber das Spiel statt ein Artefakt der Kennzahl.
+    Belegt von den Minen-Staenden 22/21/21 am Tag 7 gegen die Schwelle 36/32/30.
+  - **BEFUND 5, K6 IST DEUTLICH VERLETZT:** laengstes Plateau **26 Tage ab Tag 4** (Kriterium:
+    keines ueber 5 Tage). Erste Erhebung ueberhaupt.
+  - **EINSCHRAENKUNG ZU BEFUND 1, WICHTIG:** ueber acht Laeufe liegt der groesste K5-Anteil zwischen
+    **39,8 % und 81,9 %** - die 50-%-Schwelle verlaeuft mitten durch die Spanne. Ohne Raid ist K5
+    verletzt, im 30-Tage-Lauf mit Raid ist es **erfuellt** (39,8 %), nicht weil der Reiche Fund
+    kleiner waere, sondern weil der Raid den Nenner verbreitert. **K5 ist damit nicht stabil
+    entschieden, und was entscheidet, ist ein einzelner Wuerfel.** Deshalb mindestens drei Laeufe
+    je Profil.
   - **FALLE, DIE VOR DEM ERSTEN LAUF GEGRIFFEN HAT:** `mission.farmed` sammelt VIER Quellen ein -
     an der Auszahlung in `finalizeMission()` zu buchen trennt nichts, gebucht werden muss beim
     FUELLEN. Genau daraus folgt: `abortMissionDestroyed()` zahlt NICHTS aus. Wer beim Auflaufen
@@ -1480,12 +1503,25 @@ Startphase ist. Nichts hat gefehlt gemeldet; die Zeile stand einfach nicht da. *
 Kennzahl, die eine Mechanik voraussetzt, am Code nachzaehlen, wer sie ueberhaupt aufruft** - hier
 genuegte ein `grep` nach den Aufrufern.
 
-**Eine Kennzahl, die je ZEITSCHRITT misst, kann ein Ereignis uebersehen, das sich ueber mehrere
+**Eine Kennzahl, die je ZEITSCHRITT misst, unterschaetzt ein Ereignis, das sich ueber mehrere
 Zeitschritte erstreckt.** (26.08.2026, Befund 3.) K1 vergleicht die Flottenmacht je Stunde; ein Raid
-laeuft ueber zwoelf Wellen. Ein vollstaendiger Verlust der Heimatflotte zerfiel dadurch in elf
-Ereignisse unter der Schwelle, und K1 meldete 6,1 %. **Zweiter Fall derselben Fehlerform nach K3** -
-die Kennzahl misst genau das, was ihre Definition sagt, und verfehlt dabei die Frage, fuer die sie
-da ist.
+laeuft ueber zwoelf Wellen. Ein vollstaendiger Verlust der Heimatflotte zerfaellt in elf
+Einzelabfaelle, und K1 sieht nur den groessten: **92,0 % statt 99,9 %.** Die Schwelle wurde hier
+gerissen, konnte aber bei gleichmaessigerer Verteilung verfehlt werden. Verwandt mit der
+K3-Fehlerform, nicht identisch.
+
+**Eine Zahl aus einem Lauf gehoert nicht neben eine Beobachtung aus einem anderen.** (26.08.2026,
+selbst passiert.) Die erste Fassung des Befunds 3 stellte die Tageszeilen eines ABGEBROCHENEN
+30-Tage-Laufs neben den K1-Wert eines 14-Tage-Laufs und schloss daraus, K1 uebersehe den Verlust.
+Der abgebrochene Lauf hatte nie eine Endauswertung geliefert - es gab zu diesem Ereignis gar keinen
+K1-Wert. Der nachgeholte Lauf widerlegte die Aussage. **Bei jeder Zahl mitschreiben, aus welchem
+Lauf sie stammt, und einen abgebrochenen Lauf nie als Quelle einer Kennzahl verwenden.**
+
+**Ein Freischalt-Kriterium braucht eine Sperre, die es im Code wirklich gibt.** (26.08.2026,
+Befund 4.) K4 mass "neuer Inhalt" an den Sektoren - dort gibt es keine Sperre, und die
+Piraten-Sektoren skalieren mit der eigenen Macht mit, es wird also nie etwas freigeschaltet,
+sondern nur schwerer. Auch Schiffe, Verteidigung und Forschung haben keine Voraussetzung. Vor jedem
+Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier genau viererlei.
 
 ## Erster Schritt beim naechsten Mal
 
@@ -1500,18 +1536,24 @@ MESSBUILD=/tmp/k5/dist node check_build_anker.mjs 40      # normiert rund -1 bis
 node sim13_lauf.mjs --build=/tmp/k5/dist --profil=aktiv --tage=14 [--treiber=tick]
 ```
 
-**VIER FRAGEN GEHOEREN VOR PUNKT 4 ENTSCHIEDEN, sonst muessen die Laeufe zweimal gefahren
-werden** (Begruendungen im Stand-Eintrag oben und in `k5_quellen.txt` Abschnitt 10):
+**DREI DER VIER OFFENEN FRAGEN SIND AM 26.08.2026 ENTSCHIEDEN - der Nutzer hat die Entscheidung
+ausdruecklich ueberlassen. Alle drei sind umkehrbar und in `k5_quellen.txt` begruendet:**
 
-1. **Laeuft Punkt 4 mit `--treiber=tick`?** Ohne ihn kein Raid und damit kein Traeger fuer
-   Entscheidung 3 (Befund 2). Kosten Faktor 7,6, also rund 16 Minuten statt zwei fuer drei
-   Profile ueber 30 Tage.
-2. **Bekommt K1 ein Gegenstueck, das je EREIGNIS statt je Stunde zaehlt?** (Befund 3 - K1
-   uebersieht einen Raid-Totalverlust.) Das Muster dafuer steht bereits: K3 wurde nicht
-   geaendert, sondern um K3b ergaenzt.
-3. **Bleibt die K4-Setzung ueber `npcFloor`, obwohl sie gemessen nicht trennt?** (Befund 4.)
-4. **Ist die Hoehe des Reichen Fundes gewollt?** (Befund 1.) Einzige der vier Fragen, die nicht
-   die Messung betrifft, sondern das Spiel.
+1. **Punkt 4 laeuft mit `--treiber=tick`**, dazu je Profil EIN `economy`-Lauf als Bruecke zu den
+   bisherigen Zahlen. Ohne `tick` kein Raid und damit kein Traeger fuer Entscheidung 3; ohne die
+   Bruecke ist kein Wert aus den vorherigen Sessions mehr vergleichbar. Kosten rund 16 Minuten.
+2. **K1b ist GEBAUT, K1 bleibt unveraendert** - Muster K3/K3b.
+3. **K4 haengt jetzt an den echten Sperren** (Heimatstufe V2/V3, Stations-Stufe, Imperator,
+   Sandronator) statt an `npcFloor`.
+
+**OFFEN UND BEWUSST NICHT ENTSCHIEDEN: die Hoehe des Reichen Fundes.** Das ist eine
+BALANCE-Frage, und ihr fehlt die Zahl - sie hier zu entscheiden waere ein Verstoss gegen die
+Arbeitsregel. Vorgeschlagene Messung in `k5_quellen.txt` Abschnitt 11 (Chance 0,08 gegen 0,04 und
+0,02; Verdopplung gegen festen Stundenaufschlag; Nullmessung ohne die Mechanik; zu protokollieren
+ist die STREUUNG, nicht nur der Mittelwert). Rund eine halbe Sitzung. **Zu pruefen ist dabei
+zuerst, ob die heutige Hoehe eine Folge der Verlaengerung der Asteroidenmissionen von 4 auf 12
+Stunden ist** - der Fund verdoppelt den ANGESAMMELTEN Betrag, ein Treffer in der letzten Stunde
+ist also rund zwoelfmal so viel wert wie einer in der ersten.
 
 **MINDESTENS DREI LAEUFE JE PROFIL, NICHT EINER.** Die Streuung aus dem Reichen Fund betraegt rund
 20 Prozentpunkte auf den groessten K5-Anteil; ein Einzellauf traegt daraus keine Aussage.
