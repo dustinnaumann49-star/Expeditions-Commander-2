@@ -1,0 +1,266 @@
+EINNAHMEN NACH QUELLE - INSTRUMENTIERUNG FUER K5 UND K6
+Protokoll vom 26.08.2026 (fuenfte Session)
+Werkzeuge: make_messbuild_k5.mjs (neu), sim13_lauf.mjs (geaendert),
+           make_messbuild_kum.mjs / make_messbuild_sim13.mjs / check_build_anker.mjs (unveraendert)
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen unten stammen aus gepatchten dist-Baeumen, nicht aus dem !!!
+!!! Repo-Stand. Es wurde KEINE Zeile server/src veraendert.                                   !!!
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+K5 UND K6 SIND AB SOFORT ERHEBBAR - und die groesste Einzelquelle der Woche 1 ist eine, die auf
+keiner Liste stand: der REICHE FUND der Asteroidenfelder, in sechs Laeufen zwischen 54,2 % und
+81,9 % der Wocheneinnahmen. Die Aufschluesselung ist vollstaendig, belegt durch einen unabhaengig
+gemessenen Nenner: "nicht zugeordnet" liegt in JEDEM Lauf bei 0,000 %.
+
+================================================================================
+1. WAS GEBAUT WURDE
+================================================================================
+make_messbuild_k5.mjs, ZWEISTUFIG auf /tmp/sim13/dist aufgesetzt statt make_messbuild_sim13.mjs zu
+erweitern - dasselbe Muster wie make_messbuild_korr.mjs und make_messbuild_salve.mjs. Drei Gruende:
+
+ (a) Die Blockzaehlung A 9 / B 2 / C 3 / D 5 / E 2 = 21 ist die Echtheitspruefung von
+     make_messbuild_sim13.mjs (verdrahtung_a.txt Abschnitt 1). Sie bleibt unberuehrt.
+ (b) Der Ankerwert des Simulationsbuilds bleibt ohne erneute Pruefung vergleichbar.
+ (c) Die Instrumentierung laesst sich abschalten - und nur dadurch ist ueberhaupt pruefbar, ob
+     sie das Ergebnis veraendert.
+
+18 Patches, jeder mit hartem Abbruch bei fehlendem Anker. Jede eingesetzte Zeile ruft
+globalThis.__K5?.(...). Ohne gesetzten Haken - also in JEDEM anderen Skript dieses Ordners - tut
+der Build nichts.
+
+QUELLEN, DIE GETRENNT WERDEN:
+  mine                     Minenertrag (actions.js, accrueBuildingProduction)
+  asteroid_mining          Asteroidenfeld-Ertrag (accrueFarming)
+  eskorte_praemie          Abschusspraemie der Asteroiden-Eskorte
+  reicher_fund             Verdopplung des angesammelten Farm-Betrags
+  piraten_pluenderung      lootBase x lootMultiplier
+  piraten_beutekurve       winResources ueber die Beute-Kurve (Block A Schritt 2)
+  wrack_bergung            SALVAGE_SHARE-Erstattung, getrennt von der Kurve
+  container_mission / _kapitaen / _raid / _gruppe / _gruppe_kapitaen
+  gruppe_event / gruppe_expedition
+  dm_mission / dm_raid     Dunkle Materie, getrennt ausgewiesen, NICHT im Wert-Nenner
+  teile_mission            Spezialteile, bewertet mit 325.000 je Stueck
+  rundung                  Rundungsrest aus Math.round(kurve + bergung), eigene Zeile
+  container_eingeloest     NEUTRAL, siehe Abschnitt 4
+
+================================================================================
+2. DREI ENTSCHEIDUNGEN IM AUFBAU, ALLE UMKEHRBAR
+================================================================================
+2.1 CONTAINER WERDEN BEIM FUND BEWERTET, NICHT BEIM OEFFNEN.
+addContainers() schreibt nach state.inventory, nicht nach state.resources. Der Raid zahlt
+AUSSCHLIESSLICH in Containern - ohne Bewertung beim Fund waere die groesste Quelle der Startphase
+in K5 unsichtbar, und zwar unabhaengig davon, ob der Treiber Raids ausloest. Verwendet werden die
+Erwartungswerte aus raid_yield.txt (silber 60,1 / gold 127,2 / elite 237,6 Mio), weil genau sie die
+Woche-1-Zusammensetzung vom 20.08.2026 tragen (46,0 Mrd: Raid 26,5 / Asteroiden 18,1 / Solo 1,2).
+Eine eigene Bewertung haette den Vergleich mit dieser Messung wertlos gemacht.
+
+2.2 K5 WIRD IN ZWEI LESARTEN AUSGEWIESEN, MIT UND OHNE WRACK-BERGUNG.
+Die Bergung ist eine Erstattung auf eigene Verluste, keine Einnahme - sie steht aber im Nenner und
+verschiebt damit ALLE Anteile. Beide Zahlen auszuweisen ist billiger, als die Frage per Definition
+zu entscheiden. In den Laeufen dieser Session ist die Differenz null, weil das Spielermodell keine
+Piraten-Sektoren anfliegt.
+
+2.3 K6-PLATEAU, SETZUNG, ZUR BESTAETIGUNG VORGELEGT.
+Der Plan nennt keine Schwelle ("kein Plateau ueber 5 Tage"). Gelesen als: ein Tag gehoert zum
+Plateau, wenn seine Tageseinnahme das bis dahin erreichte Maximum um weniger als 5 % uebertrifft;
+gemessen wird die laengste solche Folge. Die volle Tageskurve steht in der Ausgabe daneben, damit
+die Zahl nachpruefbar bleibt und die Setzung notfalls anders gelesen werden kann.
+
+================================================================================
+3. DIE FALLE, DIE VOR DEM ERSTEN LAUF GEGRIFFEN HAT
+================================================================================
+Der naheliegende Weg waere gewesen, an den drei Zeilen in finalizeMission() zu buchen, an denen
+mission.farmed auf state.resources geht. DAS TRENNT NICHTS: mission.farmed sammelt VIER
+verschiedene Quellen ein (Asteroiden-Mining, Abschusspraemie, Reicher Fund, Piraten-Pluenderung).
+Gebucht werden muss dort, wo mission.farmed GEFUELLT wird.
+
+Genau daraus folgt die Falle: abortMissionDestroyed() zahlt NICHTS aus ("Flotte vollstaendig
+vernichtet, keine Ressourcen geborgen"). Wer beim Auflaufen bucht, zaehlt eine verlorene Mission
+als Einnahme - und zwar unsichtbar, weil die Summe dann schlicht zu hoch ist und nichts danebensteht,
+woran das auffiele. Deshalb sammelt die Instrumentierung je Mission in mission.__k5 und COMMITTED
+erst in finalizeMission(), dem einzigen Pfad, der tatsaechlich auszahlt.
+
+Merksatz: WER EINE EINNAHME AN IHRER ENTSTEHUNG BUCHT, MUSS PRUEFEN, OB ES EINEN PFAD GIBT, AUF DEM
+SIE NIE AUSGEZAHLT WIRD.
+
+EIGENER FEHLER, MESSREGEL 16 ZUM DRITTEN MAL: zwei Anker fuer groupOps.js waren aus der
+TypeScript-Quelle statt aus dem kompilierten dist uebernommen - im dist stehen die Zeilen mit acht
+statt vier Leerzeichen Einrueckung. Der harte Abbruch hat es sofort gemeldet. Vierter Fundort
+derselben Fehlerform nach miningCapable, sh.waffen und der D2-Einrueckung aus der dritten Session.
+
+================================================================================
+4. DIE GEGENPROBE - OHNE SIE IST DIE AUFSCHLUESSELUNG NICHT BELASTBAR
+================================================================================
+Ein Anteilskriterium normiert auf seinen Nenner. Wird der Nenner aus den instrumentierten Zeilen
+selbst gebildet, sieht eine uebersehene Buchungsstelle wie ein sauberes Ergebnis aus - die Anteile
+summieren sich weiter auf 100 %. Deshalb misst sim13_lauf.mjs den Nenner UNABHAENGIG:
+state.resources des Menschen wird nach jedem loadPlayerState() mit Accessoren umhuellt, die jeden
+positiven Zuwachs aufsummieren. Erfasst werden dadurch auch die indizierten Zugriffe
+(economyActions.js und stations.js schreiben state.resources[key]).
+
+  Bruttozuwachs state.resources : identisch
+  Summe aller Hauptbuch-Zeilen  : identisch
+  NICHT ZUGEORDNET              : 0,000 % in SECHS von sechs Laeufen
+
+Die Container-EINLOESUNG (applyReward, Typ 'resources') wird als NEUTRALE Zeile gemeldet, nicht als
+Einnahme - der Container ist beim Fund bereits bewertet. Gemeldet werden muss sie trotzdem, sonst
+erschiene ein geoeffneter Container in der Gegenprobe als "nicht zugeordnet" und saehe aus wie eine
+vergessene Buchungsstelle.
+
+ZWEITER, UNABHAENGIGER NACHWEIS DER PASSIVITAET, strukturell statt statistisch: diff zwischen
+/tmp/sim13/dist und /tmp/k5/dist ergibt 61 eingefuegte Zeilen, alle innerhalb von Hook-Bloecken,
+und EINE entfernte Zeile (eine if-Zeile, um die geschweifte Klammern ergaenzt wurden). Kein
+Spielwert wird gelesen oder geschrieben ausser dem Sammler mission.__k5, den es ohne gesetzten
+Haken gar nicht gibt. Das ist belastbarer als der Ankercheck, dessen Streuung von rund zwei
+Prozentpunkten eine kleine Verhaltensaenderung ohnehin nicht aufloesen koennte.
+
+ANKERCHECK, trotzdem gefahren:
+  /tmp/sim13/dist (Eingang)        normiert -1,0 %  (roh +2,7 %)
+  /tmp/k5/dist    (instrumentiert) normiert -1,6 %  (roh +4,4 %)
+Sieben Messungen desselben Ankers liegen jetzt bei -1,0 / -1,1 / -1,2 / -1,6 / -1,8 / -2,3 / -2,8 %.
+Die roh/normiert-Falle reproduziert sich zum sechsten Mal.
+
+================================================================================
+5. BEFUND 1 - DER REICHE FUND IST DIE GROESSTE EINZELQUELLE DER WOCHE 1
+================================================================================
+ASTEROID_RICH_FIND_CHANCE = 0,08 je Stunden-Check. Der Fund VERDOPPELT den bis dahin angesammelten
+Farm-Betrag der Mission (runRichFindCheck: bonus = mission.farmed, dann farmed += bonus). Bei
+12-Stunden-Asteroidenmissionen kompoundiert das ueber mehrere Treffer.
+
+Vier Laeufe ueber sieben Tage, Profil aktiv, Treiber unveraendert (economy):
+
+  Quelle             Lauf 1   Lauf 2   Lauf 3   Lauf 4
+  reicher_fund        62,5 %   66,1 %   69,7 %   81,9 %
+  asteroid_mining     22,8 %   20,4 %   18,0 %   10,9 %
+  eskorte_praemie     12,0 %   10,9 %    9,6 %    5,7 %
+  mine                 2,6 %    2,6 %    2,6 %    1,5 %
+  GESAMT             13,4 Mrd 15,0 Mrd 16,9 Mrd 28,0 Mrd
+
+DIE GESAMTE STREUUNG DES LAUFS KOMMT AUS DIESER EINEN MECHANIK. Mining (3,054 bis 3,055 Mrd),
+Praemie (1,61 bis 1,63) und Minen (0,35 bis 0,45) liegen ueber alle vier Laeufe praktisch fest;
+reicher_fund schwankt zwischen 8,4 und 23,0 Mrd. Damit ist nebenbei erklaert, warum die Kopfzahl
+"Wert am Tag 7" ueber die Sessions zwischen 2,92 und 6,77 Mrd schwankte, ohne dass sich am Modell
+etwas geaendert haette - das war kein Rauschen des Kampfsystems, sondern ein einziger Wuerfel mit
+sehr grossem Hebel.
+
+ABNAHMEKRITERIUM 5 IST IN JEDEM LAUF VERLETZT, und zwar durch eine Quelle, die weder im Plan noch
+in der Aufgabenstellung vorkam. Das ist die dritte Wiederholung derselben Fehlerform: ein
+Anteilskriterium zeigt auf die falsche Quelle, und man sieht es erst, wenn alle Quellen
+NEBENEINANDER stehen (20.08.2026 Raid statt Asteroiden, heute Reicher Fund statt Mining).
+
+NICHT BEWERTET: ob die Verdopplung in dieser Hoehe gewollt ist. Das ist eine Balance-Frage und
+gehoert dem Nutzer vorgelegt, nicht hier entschieden.
+
+================================================================================
+6. BEFUND 2 - DER TREIBER LOESTE BISHER KEINEN EINZIGEN RAID AUS
+================================================================================
+Am Code nachgezaehlt, nicht vermutet: processRaidTimer() hat im Build genau ZWEI Aufrufer,
+actions.js (in tick()) und heartbeat.js (in runGlobalHeartbeat()). sim13_lauf.mjs rief fuer den
+Menschen bisher runEconomyTick() und fuer die Bots runEconomyTick() + runBotTurn() - keines von
+beidem. heartbeat.js war zwar importiert, wurde aber nirgends benutzt.
+
+FOLGE: im Lauf existierten exakt zwei Einnahmequellen. Kein Raid, keine Gruppen-Operation, keine
+Piraten-Sektor-Mission (zielFeld() waehlt nur Asteroidenfelder), kein geoeffneter Container.
+Da Abnahmekriterium 5 seit dem 20.08.2026 ausdruecklich Entscheidung 3 traegt und der Raid dort
+mit 58-64 % die groesste Quelle ist, waere K5 formal erhoben und sachlich leer gewesen.
+
+NEUER SCHALTER --treiber=economy|tick, Standard unveraendert economy, damit die Wirkung der
+Umstellung getrennt sichtbar bleibt statt sich mit der Instrumentierung zu vermischen.
+
+VERGLEICH, beide 14 Tage, Profil aktiv, identischer Startzeitpunkt:
+
+  Quelle (Woche 1)        economy        tick
+  reicher_fund             55,6 %       54,2 %
+  container_raid              --        26,6 %   (123 Container)
+  asteroid_mining          27,2 %       11,5 %
+  eskorte_praemie          14,1 %        5,9 %
+  mine                      3,1 %        1,8 %
+  GESAMT                  11,23 Mrd    26,73 Mrd
+  Laufzeit                 19,1 s      145,3 s
+
+Der Raid kommt an und ist mit 26,6 % die zweitgroesste Quelle. Der Aufwand steigt um Faktor 7,6 -
+fuer drei Profile ueber 30 Tage rund 16 Minuten statt zwei, also weiterhin bezahlbar.
+
+WARUM EIN SIEBEN-TAGE-LAUF DIE FRAGE NICHT BEANTWORTEN KANN: der Startzeitpunkt ist Montag,
+05.01.2026. RAID_FALLBACK_SCHEDULE liegt auf Mittwoch und Sonntag 0:00 Berliner Zeit, Chance 0,7.
+In sieben Tagen liegen also nur zwei Checkpoints, und ein am Sonntag gespawnter Raid ist bei
+Laufende noch nicht abgearbeitet (Vorbereitung, Anflug, zwoelf Wellen). Im ersten tick-Lauf ueber
+sieben Tage stand state.raid am Ende auf AKTIV, raidsRepelledFull/Partial auf 0/0 - es sah aus wie
+"kein Raid", war aber ein noch laufender.
+
+================================================================================
+7. BEFUND 3 - K1 UEBERSIEHT EINEN RAID-TOTALVERLUST, AUS DEMSELBEN GRUND WIE K3
+================================================================================
+In einem 30-Tage-Lauf mit tick-Treiber, der vor dem Ende abgebrochen wurde (Prozess beendet, keine
+Endauswertung - die Zahlen daraus sind deshalb NICHT zitierfaehig ausser dieser einen Beobachtung
+aus der Tageszeile):
+
+  Tag 15 | Macht 1,93 Mrd | Verluste  0
+  Tag 16 | Macht 0,01 Mrd | Verluste 11
+  Tag 17 | Macht 0,47 Mrd | Verluste  1
+
+Die Heimatflotte ist an einem Tag praktisch vollstaendig vernichtet worden. K1 zaehlt aber
+STUENDLICH: es vergleicht die Flottenmacht vor und nach jedem Stundenschritt und merkt sich den
+groessten Einzelabfall. Ein Raid laeuft ueber zwoelf Wellen und mehrere Stunden - der Verlust
+zerfaellt dadurch in elf kleine Ereignisse, von denen keines die 70-%-Schwelle reisst.
+
+Zuordnung, deterministisch statt vermutet: das Spielermodell schickt auf Asteroidenfelder
+ausschliesslich mining und begleitschiff (availableFleetForSektor). Die Kampfschiffe, die
+combatFleetPowerBase() traegt, verlassen die Heimatbasis nie. Ein Einbruch der Heimat-Flottenmacht
+von 1,93 auf 0,01 Mrd kann daher NUR aus der Heimatverteidigung stammen, also aus einem Raid.
+
+DAS IST EXAKT DIE FEHLERFORM VON K3: eine Kennzahl misst genau das, was ihre Definition sagt, und
+verfehlt dabei die Frage, fuer die sie da ist. Bei K3 war es "alle Lanes belegt", hier ist es "je
+Stunde statt je Ereignis". K3 wurde am 26.08.2026 bewusst NICHT geaendert, sondern um K3b ergaenzt,
+damit frueherer Vergleichswerte gueltig bleiben. Fuer K1 stellt sich dieselbe Frage - sie ist eine
+Kriteriums-Definition und damit Nutzerentscheidung, hier deshalb NICHT gebaut.
+
+================================================================================
+8. BEFUND 4 - K4 IST MIT DER HEUTIGEN SETZUNG WIRKUNGSLOS
+================================================================================
+Nebenbefund, in jedem Lauf dieser Session identisch: am Tag 0 meldet der Lauf SIEBEN Sektoren
+gleichzeitig als "erstmals spielbar", danach nie wieder einen. K4 meldet folglich immer "Wochen
+2, 3, 4 ohne neuen Inhalt".
+
+Ursache: die Setzung liest "erstmals spielbar" als "eigene Flottenmacht erreicht den npcFloor des
+Sektors". Die npcFloor-Werte liegen zwischen 300.000 und 3.000.000; der Startzustand aus
+defaultPlayerState() finanziert rund 2.200 Schiffe und liegt nach der ersten Bauwelle bei rund
+60.000.000 - also um mehr als eine Groessenordnung darueber. Die Setzung war in der dritten Session
+eingefuehrt worden, nachdem die erste Fassung ein nicht existentes Feld abfragte und am Tag 0 ALLE
+Sektoren meldete. Sie meldet jetzt sieben statt acht und ist damit praktisch unveraendert
+wirkungslos.
+
+Das war schon vorher ein offener Punkt beim Nutzer ("die beiden Setzungen im Geruest"). Neu ist,
+dass er nicht mehr unbestaetigt, sondern GEMESSEN wirkungslos ist.
+
+================================================================================
+9. GRENZEN DIESER SESSION, AUSDRUECKLICH
+================================================================================
+- Die 30-Tage-Laeufe der drei Profile (Punkt 4) sind NICHT gefahren. Die Laeufe hier sind
+  Funktionsnachweise der Instrumentierung: ein Profil, keine Wiederholungen der langen Zellen.
+- Bei einer Streuung von rund 20 Prozentpunkten allein aus dem Reichen Fund traegt KEIN
+  Anteilswert aus diesen Laeufen eine Entscheidung. Was sie tragen, ist die Rangfolge - und die
+  ist in sechs von sechs Laeufen dieselbe.
+- piraten_pluenderung, piraten_beutekurve, wrack_bergung, container_mission, gruppe_* und
+  dm_raid sind instrumentiert, aber in keinem Lauf dieser Session belegt worden: das Spielermodell
+  fliegt keine Piraten-Sektoren und nimmt an keiner Gruppen-Operation teil. Ihre Zeilen stehen auf
+  0,00 - das ist Abwesenheit im Modell, kein Nachweis, dass die Buchung sitzt.
+- Der Anteil des Raids (26,6 %) stammt aus EINEM Lauf mit EINEM erfolgreichen Checkpoint.
+
+================================================================================
+10. NAECHSTE SCHRITTE
+================================================================================
+1. ERLEDIGT (26.08.2026): Verdrahtungsprobe Block A Schritt 2.
+2. ERLEDIGT (26.08.2026): Spielermodell entstoert.
+3. ERLEDIGT (26.08.2026): Einnahmen nach Quelle instrumentiert - dieses Protokoll.
+4. OFFEN: die drei Profile ueber 30 Tage, mit --mensch_unterschritte.
+
+VOR PUNKT 4 ZU ENTSCHEIDEN, weil es sonst zweimal gefahren werden muss:
+  (a) Laeuft Punkt 4 mit --treiber=tick? Ohne ihn kein Raid und damit kein Traeger fuer
+      Entscheidung 3 (Befund 2).
+  (b) Bekommt K1 ein Gegenstueck, das je EREIGNIS statt je Stunde zaehlt (Befund 3)?
+  (c) Bleibt die K4-Setzung ueber npcFloor, obwohl sie gemessen nicht trennt (Befund 4)?
+  (d) Ist die Hoehe des Reichen Fundes gewollt (Befund 1)? Das ist die einzige der vier Fragen,
+      die nicht die Messung betrifft, sondern das Spiel.

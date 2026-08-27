@@ -57,6 +57,18 @@ const MENSCH_UNTERSCHRITTE = flag('mensch_unterschritte');
 const BOT_ZUEGE = Number(opt('botzuege', 30));
 const AUSGABE = opt('out', null);
 const SAMMLE_GRUENDE = flag('gruende');
+// TREIBER DES MENSCHEN. 'economy' ist der bisherige Stand und bleibt Standard.
+// 'tick' ist die Antwort auf einen Befund vom 26.08.2026 (fuenfte Session): runEconomyTick()
+// ruft weder processRaidTimer() noch die Cross-User-Sweeps auf - im Lauf gab es deshalb ueber
+// 30 Tage KEINEN einzigen Raid, obwohl der Raid gemessen 58-64 % der Woche-1-Einnahmen stellt
+// und Abnahmekriterium 5 seit dem 20.08.2026 an ihm haengt. Am Code nachgezaehlt: processRaidTimer
+// hat im Build genau zwei Aufrufer, actions.js (in tick()) und heartbeat.js.
+// EINGETRAGEN ALS UMKEHRBARE SETZUNG, Standard bewusst unveraendert, damit die Wirkung der
+// Umstellung getrennt sichtbar bleibt statt sich mit der Instrumentierung zu vermischen.
+const TREIBER = opt('treiber', 'economy');
+if (!['economy', 'tick'].includes(TREIBER)) {
+  throw new Error(`Unbekannter Treiber "${TREIBER}" - erlaubt: economy, tick.`);
+}
 
 if (!existsSync(resolve(BUILD, 'game/state.js'))) {
   throw new Error(`Kein Messbuild unter ${BUILD} (erst make_messbuild_sim13.mjs).`);
@@ -81,6 +93,90 @@ const START = new Date('2026-01-05T00:00:00+01:00').getTime();
 let SIM_NOW = START;
 const ECHT = Date.now;
 Date.now = () => SIM_NOW;
+
+// ===================================================================================
+// K5/K6: EINNAHMEN NACH QUELLE (Punkt 3 aus sim13_geruest.txt Abschnitt 8)
+// ===================================================================================
+// Die Spielfunktionen buchen direkt auf state.resources, ohne Herkunft - deshalb war K5 bisher
+// "NICHT ERHOBEN". Der Haken hier wird von den Patches aus make_messbuild_k5.mjs gerufen; ohne
+// ihn ist der instrumentierte Build verhaltensgleich zum uninstrumentierten.
+//
+// CONTAINER WERDEN BEIM FUND BEWERTET, NICHT BEIM OEFFNEN. Zwei Gruende: der Raid zahlt
+// AUSSCHLIESSLICH in Containern (addContainers schreibt nach state.inventory, nicht nach
+// state.resources) und waere sonst in K5 unsichtbar; und die Woche-1-Zusammensetzung vom
+// 20.08.2026 (46,0 Mrd: Raid 26,5 / Asteroiden 18,1 / Solo 1,2) ist mit genau diesen
+// Erwartungswerten gerechnet - eine eigene Bewertung machte den Vergleich wertlos.
+// Herkunft: raid_yield.txt, Setzung 1 Spezialteil = 325.000 Wert-Einheiten, Zeitgutscheine 0.
+const CONTAINER_EV = { silber: 60.1e6, gold: 127.2e6, elite: 237.6e6 };
+const TEIL_WERT = 325_000;
+
+let MENSCH_ID = null;
+// Quelle -> { wert, dm, stueck } je Tag; daneben die neutralen Zeilen (siehe unten).
+const QUELLEN_TAG = () => ({ ein: new Map(), neutral: new Map(), dm: new Map() });
+let quellenJetzt = QUELLEN_TAG();
+const quellenTage = [];
+const addMap = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
+
+// Gegenprobe: unabhaengig vom Hauptbuch gemessener BRUTTOZUWACHS auf state.resources. Ohne sie
+// normiert K5 auf die Summe dessen, was zufaellig instrumentiert wurde, und eine uebersehene
+// Buchungsstelle sieht aus wie ein sauberes Ergebnis - dieselbe Luecke, die bei der
+// Verdrahtungsprobe erst die Gegenprobe gegen den unverdrahteten Build geschlossen hat.
+let bruttoRes = 0;   // Wert-Einheiten, nur positive Aenderungen
+let bruttoDm = 0;
+let buchRes = 0;     // Summe aller Ressourcen-Zeilen des Hauptbuchs, dieselbe Gewichtung
+let buchDm = 0;
+
+globalThis.__K5 = (quelle, art, state, betrag) => {
+  if (!state || state.userId !== MENSCH_ID) return;
+  if (art === 'res' || art === 'res_neutral') {
+    const w = (betrag.metall || 0) + (betrag.kristall || 0) * 1.5 + (betrag.deuterium || 0) * 3;
+    buchRes += w;
+    addMap(art === 'res' ? quellenJetzt.ein : quellenJetzt.neutral, quelle, w);
+    return;
+  }
+  if (art === 'container') {
+    const ev = CONTAINER_EV[betrag.tier] || 0;
+    addMap(quellenJetzt.ein, quelle, ev * (betrag.count || 0));
+    addMap(quellenJetzt.neutral, `__stueck_${quelle}`, betrag.count || 0);
+    return;
+  }
+  if (art === 'teile') {
+    const n = (betrag.waffen || 0) + (betrag.schild || 0) + (betrag.panzerung || 0);
+    addMap(quellenJetzt.ein, quelle, n * TEIL_WERT);
+    return;
+  }
+  if (art === 'dm' || art === 'dm_neutral') {
+    buchDm += betrag.dm || 0;
+    if (art === 'dm') addMap(quellenJetzt.dm, quelle, betrag.dm || 0);
+  }
+};
+
+// Legt Accessoren ueber state.resources und summiert jeden positiven Zuwachs. Erfasst AUCH die
+// indizierten Zugriffe (economyActions.js/stations.js schreiben state.resources[key]).
+// JSON.stringify in savePlayerState() serialisiert aufzaehlbare Getter unveraendert.
+function umhuellen(s) {
+  const roh = { ...s.resources };
+  const felder = ['metall', 'kristall', 'deuterium', 'dm'];
+  const gewicht = { metall: 1, kristall: 1.5, deuterium: 3 };
+  const ziel = {};
+  felder.forEach((f) => {
+    Object.defineProperty(ziel, f, {
+      enumerable: true,
+      configurable: true,
+      get: () => roh[f],
+      set: (v) => {
+        const d = v - (roh[f] || 0);
+        if (d > 0) {
+          if (f === 'dm') bruttoDm += d;
+          else bruttoRes += d * gewicht[f];
+        }
+        roh[f] = v;
+      },
+    });
+  });
+  s.resources = ziel;
+  return s;
+}
 
 // Dynamische Importe - siehe Falle 2.
 const M = (f) => import(`${BUILD}/game/${f}`);
@@ -118,6 +214,7 @@ const flottenWert = (fleet) =>
 const bcrypt = await import(`${BUILD}/../node_modules/bcryptjs/index.js`).catch(() => null);
 const hash = bcrypt ? await bcrypt.default.hash('sim', 4) : 'x';
 const mensch = db.createUser(`Sim_${PROFIL}`, hash, false);
+MENSCH_ID = mensch.id;   // ab hier bucht das K5-Hauptbuch (nur der Mensch, nicht die Bots)
 await botMod.ensureBotUsers();
 const alleNutzer = db.listAllUsers().map((u) => ({ id: u.id, username: u.username, isBot: u.isBot }));
 const botIds = db.listBotUserIds();
@@ -383,6 +480,8 @@ let letzteFlottenmacht = 0;
 for (let h = 0; h < TAGE * 24; h++) {
   const tagNr = Math.floor(h / 24);
   if (!tagJetzt || tagJetzt.tag !== tagNr) {
+    if (tagJetzt) quellenTage.push(quellenJetzt);
+    quellenJetzt = QUELLEN_TAG();
     neuerTag(tagNr);
     tagJetzt.wertStart = wert(loadPlayerState(mensch.id).resources);
   }
@@ -397,8 +496,8 @@ for (let h = 0; h < TAGE * 24; h++) {
       savePlayerState(bs);
     }
     if (MENSCH_UNTERSCHRITTE) {
-      const s = loadPlayerState(mensch.id);
-      await actions.runEconomyTick(s);
+      const s = umhuellen(loadPlayerState(mensch.id));
+      await (TREIBER === 'tick' ? actions.tick(s) : actions.runEconomyTick(s));
       probe(s);
       savePlayerState(s);
     }
@@ -406,9 +505,10 @@ for (let h = 0; h < TAGE * 24; h++) {
 
   // --- Stundenschritt des Menschen ---
   SIM_NOW = START + (h + 1) * STUNDE;
-  const s = loadPlayerState(mensch.id);
+  const s = umhuellen(loadPlayerState(mensch.id));
   const machtVor = combat.combatFleetPowerBase(s.fleet || {});
-  await actions.runEconomyTick(s);
+  // TREIBER, siehe Kopf: runEconomyTick() loest keinen Raid aus, tick() schon.
+  await (TREIBER === 'tick' ? actions.tick(s) : actions.runEconomyTick(s));
   if (handeltInStunde(h)) spielerZug(s);
   if (!MENSCH_UNTERSCHRITTE) probe(s);
   const machtNach = combat.combatFleetPowerBase(s.fleet || {});
@@ -465,8 +565,72 @@ console.log(`K2 Leerlauf (Schiffe+Vert.)    : ${p(gesamt.leerS, gesamt.proben).t
 console.log(`K3 Ressourcenstau (<25 %)      : ${p(gesamt.stau, gesamt.proben).toFixed(1)} %`);
 console.log(`K3b Rohstoff-Schieflage        : ${p(gesamt.schieflage, gesamt.proben).toFixed(1)} %   <- Lane leer, weil EIN Rohstoff fehlt`);
 console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}`);
-console.log(`K5 Quellenanteil Woche 1       : NICHT ERHOBEN - braucht Quellen-Instrumentierung, siehe Protokoll`);
-console.log(`K6 Plateau > 5 Tage            : NICHT BEWERTET - braucht die Einnahmenkurve aus K5`);
+// ===================================================================================
+// K5 UND K6 - EINNAHMEN NACH QUELLE
+// ===================================================================================
+quellenTage.push(quellenJetzt);
+const mrd = (x) => (x / 1e9).toFixed(3);
+const summeUeber = (tageAuswahl, feld) => {
+  const m = new Map();
+  tageAuswahl.forEach((q) => q[feld].forEach((v, k) => addMap(m, k, v)));
+  return m;
+};
+const woche1 = quellenTage.slice(0, 7);
+const einWoche1 = summeUeber(woche1, 'ein');
+const gesamtWoche1 = [...einWoche1.values()].reduce((a, b) => a + b, 0);
+
+console.log(`\n--- K5: EINNAHMEN NACH QUELLE, WOCHE 1 (Wert-Einheiten) ---`);
+if (gesamtWoche1 <= 0) {
+  console.log('  keine Einnahmen erfasst');
+} else {
+  [...einWoche1.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([k, v]) => console.log(`  ${k.padEnd(26)} ${mrd(v).padStart(9)} Mrd   ${((100 * v) / gesamtWoche1).toFixed(1).padStart(5)} %`));
+  console.log(`  ${'GESAMT'.padEnd(26)} ${mrd(gesamtWoche1).padStart(9)} Mrd`);
+}
+const groessteQuelle = [...einWoche1.entries()].sort((a, b) => b[1] - a[1])[0];
+const anteilGroesste = gesamtWoche1 > 0 ? (100 * groessteQuelle[1]) / gesamtWoche1 : 0;
+console.log(`K5 groesste Einzelquelle (<50%): ${anteilGroesste.toFixed(1)} % (${groessteQuelle ? groessteQuelle[0] : '-'})`);
+// Zweite Lesart, weil die Wrack-Bergung eine ERSTATTUNG auf eigene Verluste ist und keine
+// Einnahme - sie steht im Nenner und verschiebt damit alle Anteile. Beide Zahlen ausweisen
+// statt die Frage per Definition zu entscheiden.
+const ohneBergung = new Map([...einWoche1.entries()].filter(([k]) => k !== 'wrack_bergung'));
+const gesamtOhne = [...ohneBergung.values()].reduce((a, b) => a + b, 0);
+const groessteOhne = [...ohneBergung.entries()].sort((a, b) => b[1] - a[1])[0];
+console.log(`K5 dasselbe OHNE Bergung       : ${gesamtOhne > 0 ? ((100 * groessteOhne[1]) / gesamtOhne).toFixed(1) : '0.0'} % (${groessteOhne ? groessteOhne[0] : '-'})`);
+
+// GEGENPROBE. Ohne sie ist die Aufschluesselung nicht belastbar: sie normiert sonst auf die
+// Summe dessen, was zufaellig instrumentiert wurde.
+const restRes = bruttoRes - buchRes;
+console.log(`\n--- GEGENPROBE: HAUPTBUCH GEGEN GEMESSENEN BRUTTOZUWACHS (GANZER LAUF, nicht Woche 1) ---`);
+console.log(`  Bruttozuwachs state.resources : ${mrd(bruttoRes)} Mrd`);
+console.log(`  Summe aller Hauptbuch-Zeilen  : ${mrd(buchRes)} Mrd`);
+console.log(`  NICHT ZUGEORDNET              : ${mrd(restRes)} Mrd   (${bruttoRes > 0 ? ((100 * restRes) / bruttoRes).toFixed(3) : '0.000'} %)`);
+console.log(`  DM: Zuwachs ${bruttoDm.toFixed(0)} gegen Hauptbuch ${buchDm.toFixed(0)}`);
+if (bruttoRes > 0 && Math.abs(restRes) / bruttoRes > 0.001) {
+  console.log(`  ACHTUNG: ueber 0,1 % nicht zugeordnet - eine Buchungsstelle fehlt in make_messbuild_k5.mjs.`);
+}
+const stueck = summeUeber(quellenTage, 'neutral');
+[...stueck.entries()].filter(([k]) => k.startsWith('__stueck_')).forEach(([k, v]) =>
+  console.log(`  Container ${k.replace('__stueck_', '').padEnd(24)} ${v} Stueck`));
+const neutralWert = [...stueck.entries()].filter(([k]) => !k.startsWith('__stueck_'))
+  .reduce((a, [, v]) => a + v, 0);
+if (neutralWert > 0) console.log(`  davon aus geoeffneten Containern (NICHT als Einnahme gezaehlt): ${mrd(neutralWert)} Mrd`);
+
+// K6: Plateau. SETZUNG, umkehrbar und zur Bestaetigung vorgelegt - der Plan nennt keine
+// Schwelle ("kein Plateau ueber 5 Tage"). Gelesen als: ein Tag gehoert zum Plateau, wenn seine
+// Tageseinnahme das bis dahin erreichte Maximum um weniger als 5 % uebertrifft. Gemessen wird
+// die laengste solche Folge. Die Tageskurve steht darunter, damit die Zahl nachpruefbar bleibt.
+const tagesEinnahme = quellenTage.map((q) => [...q.ein.values()].reduce((a, b) => a + b, 0));
+let max = 0, lauf = 0, plateau = 0, plateauStart = 0, besterStart = 0;
+tagesEinnahme.forEach((e, i) => {
+  if (e > max * 1.05) { max = Math.max(max, e); lauf = 0; plateauStart = i + 1; }
+  else { max = Math.max(max, e); lauf++; if (lauf > plateau) { plateau = lauf; besterStart = plateauStart; } }
+});
+console.log(`\n--- K6: EINNAHMENKURVE JE TAG (Mrd Wert-Einheiten) ---`);
+console.log('  ' + tagesEinnahme.map((e, i) => `T${i}:${(e / 1e9).toFixed(2)}`).join('  '));
+console.log(`K6 laengstes Plateau (<=5 Tage): ${plateau} Tage${plateau > 0 ? ` ab Tag ${besterStart}` : ''}` +
+  (TAGE < 30 ? '   <- bei weniger als 30 Tagen nur eingeschraenkt aussagefaehig' : ''));
 if (SAMMLE_GRUENDE) {
   console.log('\n--- ABLEHNUNGSGRUENDE, HAEUFIGSTE ZUERST ---');
   [...GRUENDE.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)
@@ -475,7 +639,13 @@ if (SAMMLE_GRUENDE) {
 console.log(`\nLaufzeit: ${((ECHT() - t0) / 1000).toFixed(1)} s echte Zeit fuer ${TAGE * 24} Stunden x ${UNTER} Unterschritte`);
 
 if (AUSGABE) {
-  writeFileSync(AUSGABE, JSON.stringify({ profil: PROFIL, tage, gesamt }, null, 2));
+  writeFileSync(AUSGABE, JSON.stringify({
+    profil: PROFIL, treiber: TREIBER, tage, gesamt,
+    quellen: quellenTage.map((q) => ({
+      ein: Object.fromEntries(q.ein), neutral: Object.fromEntries(q.neutral), dm: Object.fromEntries(q.dm),
+    })),
+    gegenprobe: { bruttoRes, buchRes, bruttoDm, buchDm },
+  }, null, 2));
   console.log(`Rohdaten: ${AUSGABE}`);
 }
 
