@@ -28,6 +28,42 @@ function groupByOwner(results: CombatUnitResult[], defaultOwner = 'Deine Flotte'
   return Array.from(groups.entries());
 }
 
+// ===================================================================================
+// KURZFORMAT FUER GROSSE KAMPFZAHLEN (Nutzerentscheidung 27.08.2026)
+// ===================================================================================
+// Anlass: eine Zeile wie "2.365.541.334" ist bei grossen Flotten nicht mehr lesbar, und mit
+// MAX_PLAYER_SHIPS = 1.000.000 werden daraus 13-stellige Zahlen. Reine ANZEIGE - es wird kein
+// einziger Wert veraendert, keine Messung beruehrt, kein Serverpfad angefasst.
+// Schwelle bewusst erst ab 100.000: darunter ist die volle Zahl gut lesbar und praeziser, und
+// kleine Kaempfe (die haeufigsten) sehen unveraendert aus.
+function kurz(n: number): string {
+  const x = Math.round(n);
+  const a = Math.abs(x);
+  if (a < 100_000) return x.toLocaleString('de-DE');
+  const f = (wert: number, einheit: string) =>
+    `${wert.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${einheit}`;
+  if (a >= 1e12) return f(x / 1e12, 'Bio');
+  if (a >= 1e9) return f(x / 1e9, 'Mrd');
+  if (a >= 1e6) return f(x / 1e6, 'Mio');
+  return `${Math.round(x / 1e3).toLocaleString('de-DE')}k`;
+}
+
+// Eine Zahl je Einheit als HAUPTZAHL, die Summe darunter klein.
+// Grund: die Summe traegt die Stueckzahl mit und sagt deshalb bei grossen Flotten fast nichts -
+// "2,37 Mrd" heisst nur "es sind viele Jaeger", was die Spalte "Gesendet" schon sagt. Der Wert je
+// Einheit bleibt dagegen bei jeder Flottengroesse vergleichbar und macht Schiffstypen zum ersten
+// Mal direkt gegeneinander lesbar. Beide Zahlen stehen weiterhin da - es geht um die Reihenfolge,
+// nicht ums Weglassen.
+function Wert({ summe, stueck }: { summe: number; stueck: number }) {
+  if (!stueck || stueck <= 1) return <>{kurz(summe)}</>;
+  return (
+    <>
+      <div>{kurz(summe / stueck)}</div>
+      <div className="zellen-summe">{kurz(summe)}</div>
+    </>
+  );
+}
+
 function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] }) {
   if (units.length === 0) return null;
   return (
@@ -56,19 +92,38 @@ function UnitTable({ title, units }: { title: string; units: CombatUnitResult[] 
         <tbody>
           {units.map((u, i) => {
             const lost = u.lost ?? u.destroyedCount ?? 0;
+            // Bezugsgroesse fuer "je Einheit" ist die ENTSANDTE Stueckzahl, nicht die
+            // ueberlebende: alle entsandten Einheiten haben gefeuert und Schaden kassiert, auch
+            // die, die den Kampf nicht ueberlebt haben. Mit den Ueberlebenden im Nenner wuerde
+            // ausgerechnet eine schwer getroffene Staffel als besonders wirksam dastehen.
+            const stueck = u.sent ?? u.count ?? 0;
             return (
               <tr key={i}>
                 <td style={{ textAlign: 'left' }}>{u.name}</td>
-                <td>{u.sent ?? u.count}</td>
-                <td className={lost > 0 ? '' : 'level-gruen'}>{u.survived ?? u.survivedCount}</td>
-                <td className={lost > 0 ? 'level-rot' : ''}>{lost}</td>
-                <td>{Math.round(u.dmgDealt || 0).toLocaleString('de-DE')}</td>
-                <td>{u.dmgTaken.toLocaleString('de-DE')}</td>
-                <td>{u.shieldDmgTaken.toLocaleString('de-DE')}</td>
-                <td>{u.shieldRegen.toLocaleString('de-DE')}</td>
+                <td>{(u.sent ?? u.count ?? 0).toLocaleString('de-DE')}</td>
+                <td className={lost > 0 ? '' : 'level-gruen'}>
+                  {(u.survived ?? u.survivedCount ?? 0).toLocaleString('de-DE')}
+                </td>
+                <td className={lost > 0 ? 'level-rot' : ''}>{lost.toLocaleString('de-DE')}</td>
+                <td><Wert summe={u.dmgDealt || 0} stueck={stueck} /></td>
+                <td><Wert summe={u.dmgTaken} stueck={stueck} /></td>
+                <td><Wert summe={u.shieldDmgTaken} stueck={stueck} /></td>
+                <td><Wert summe={u.shieldRegen} stueck={stueck} /></td>
                 <td>
-                  {u.shotsFired}/{u.hits}
-                  {u.rapidFireTriggers ? ` (⚡${u.rapidFireTriggers})` : ''}
+                  {/* Schuesse/Treffer bleiben als Paar zusammen - sie ergeben nur im Verhaeltnis
+                      zueinander Sinn. Bei grossen Flotten steht die Zahl je Einheit darueber:
+                      "9,8/6,6" sagt, wie oft ein einzelnes Schiff feuert und trifft, und genau
+                      das ist die Zahl, an der man RapidFire ueberhaupt erkennen kann. */}
+                  {stueck > 1 && (
+                    <div>
+                      {(u.shotsFired / stueck).toFixed(1).replace('.', ',')}/
+                      {(u.hits / stueck).toFixed(1).replace('.', ',')}
+                    </div>
+                  )}
+                  <div className={stueck > 1 ? 'zellen-summe' : undefined}>
+                    {kurz(u.shotsFired)}/{kurz(u.hits)}
+                    {u.rapidFireTriggers ? ` (⚡${kurz(u.rapidFireTriggers)})` : ''}
+                  </div>
                 </td>
               </tr>
             );
