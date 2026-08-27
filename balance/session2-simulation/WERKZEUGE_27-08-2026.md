@@ -136,3 +136,49 @@ Werkzeugausfuehrung und meldete einen Fehler. Der Messlauf war davon unberuehrt 
 geprueft). **In kurzen Schritten nachsehen und den Prozess pruefen, statt aus einer Fehlermeldung
 auf den Lauf zu schliessen** - die Gegenrichtung der bekannten Regel "ein abgebrochener Lauf sieht
 aus wie ein haengender".
+
+
+## Nachtrag 28.08.2026 - Massenfrage
+
+Vier neue Werkzeuge, alle unter `balance/session2-simulation/`.
+
+| Werkzeug | Zweck | Braucht Messbuild |
+|---|---|---|
+| `make_messbuild_aggregat.mjs` | Schwelle (`--schwelle=`) und die zwei Deckel (`--kaskade=`, `--schuesse=`) als Regler | erzeugt selbst |
+| `run_massenfrage.mjs` | dieselbe Leiter aggregiert gegen nie-aggregiert | ja |
+| `run_deckel.mjs` | Gitter ueber Kaskade x Schuesse | ja |
+| `probe_bossverlust.mjs` | Sonde: wo geht die Feuerkraft des Bosses verloren | **nein** |
+| `run_gegenprobe.mjs` | konzentrierte gegen verteilte Gegnermacht | **nein** |
+
+Die beiden letzten lesen nur aus und laufen gegen `server/dist` - sie brauchen keinen Patch und
+sind deshalb billig zu wiederholen.
+
+### Warum die Nachschlagefunktion gepatcht wird und nicht die Tabelle
+
+`make_messbuild_aggregat.mjs` ersetzt `stackAggregateThresholdFor()` als Ganzes statt der zwoelf
+Typ-Eintraege einzeln. Damit sind Default UND Tabelle in einem Zug erfasst. Bei zwoelf
+Einzelpatches waere ein vergessener Typ weiter aggregiert gelaufen und die Zelle waere still halb
+falsch gewesen.
+
+`MAX_SHOTS_PER_UNIT` steht im dist an **zwei** Stellen (Einzel- und Aggregat-Pfad) und ist dort
+eine lokale `const`. Beide muessen denselben Wert bekommen, sonst rechnen die Pfade verschieden -
+deshalb ein Ersatz beider Vorkommen mit Zaehlpruefung auf genau 2 statt eines Einzelankers.
+
+### Eingebaute Gegenprobe in `run_massenfrage.mjs`
+
+Die Zellen n=90 und n=99 laufen in BEIDEN Builds unaggregiert und muessen uebereinstimmen
+(gemessen 0,8 und 0,6 Punkte). Ohne diese Kontrollzeile waere jede Differenz weiter unten nicht von
+einem Patchfehler zu unterscheiden.
+
+### Zwei Fallen dieser Messreihe
+
+**Zusammenfassende Kennzahlen erst NACH den Einzelzellen bilden.** Die Spalte "Spanne ueber die
+Leiter" wies in der Gegenprobe fuer beide Gegnerformen fast denselben Wert aus (62,3 gegen 61,6)
+und haette "kein Unterschied" nahegelegt - das Gegenteil des Befunds. Ursache: eine einzige Zelle
+(n=90) wechselt das Regime auf 100 % Verlust. Eine Spanne ueber eine Leiter mit Regimewechsel misst
+den Wechsel, nicht die Steigung.
+
+**Feldnamen der Ergebnisstruktur am Typ nachsehen, nicht raten.** `r.shotsB.fired` gibt es nicht,
+das Feld heisst `shotsFired` (`ShotStats` in `combat.ts`). Der erste Sondenlauf meldete dadurch
+0 Schuesse bei 52 Treffern - das sah nach einem Fehler im Spiel aus und war einer im Messskript.
+Dieselbe Regel wie Messregel 16 fuer die dist-Anker, hier auf `CombatResult` angewandt.

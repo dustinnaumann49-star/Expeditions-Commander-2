@@ -1,7 +1,8 @@
 DIE MASSENFRAGE - WARUM GROSSE FLOTTEN FAST NICHTS VERLIEREN
 Protokoll vom 27.08.2026 (sechste Session)
-Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs (alle neu)
-Rohausgaben: massenfrage.txt, deckel.txt
+Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs,
+           probe_bossverlust.mjs, run_gegenprobe.mjs (alle neu)
+Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt
 
 !!! MESSBUILD-PROTOKOLL. Alle Zahlen aus gepatchten dist-Kopien. server/src unberuehrt.        !!!
 
@@ -11,6 +12,10 @@ dem Vorschlag, die Aggregationsschwelle auf 4.000-5.000 anzuheben.
 ================================================================================
 0. ZWEI ERGEBNISSE, BEIDE NEGATIV FUER DIE NAHELIEGENDEN ERKLAERUNGEN
 ================================================================================
+ERGAENZT AM 28.08.2026: DIE URSACHE IST INZWISCHEN GEFUNDEN, SIEHE ABSCHNITT 4a. Es ist die
+Bauart des Piratenkapitaens, nicht das Kampfmodell. Die beiden Negativbefunde unten bleiben
+gueltig und waren der Weg dorthin.
+
 (1) DAS AGGREGAT IST NICHT DIE URSACHE. 98 % des Absturzes von 63,4 auf 0,1 % Verlust passieren
     auch dann, wenn NICHTS aggregiert wird.
 (2) DIE BEIDEN DECKEL SIND ES AUCH NICHT. Ihre Obergrenze um Faktor 100 anzuheben (250 -> 25.000
@@ -139,12 +144,88 @@ Weglauf-Wachstum, aber kein Gegenmittel gegen "Masse macht unverwundbar". Die be
 im Plan bisher als eines gefuehrt.
 
 ================================================================================
+4a. NACHTRAG 28.08.2026 - DIE URSACHE IST GEFUNDEN
+================================================================================
+Zwei weitere Messungen, beide gegen den UNVERAENDERTEN Build (keine Messbuilds noetig - es wird
+nur ausgelesen): `probe_bossverlust.mjs` und `run_gegenprobe.mjs`/`gegenprobe.txt`.
+
+--- SONDE: WO GEHT DIE FEUERKRAFT DES BOSSES VERLOREN? ---
+Ausgangspunkt war eine Beobachtung, die keiner Deckel-Erklaerung folgt: der Boss toetet gegen
+GROSSE Flotten ABSOLUT weniger, nicht gleich viel. Waere ein Deckel bindend, muesste die absolute
+Zahl konstant bleiben und nur ihr Anteil fallen.
+
+    n  Einheiten  Boss-Waffen  Treffer  vernichtet  Schaden/Treffer  Verschwendung  Regen/Schaden
+   90        405       110,6M       53         264          13,5M          87,8 %          0,00
+  150        675       184,3M       52         239          13,6M          92,6 %          0,08
+  400      1.800       491,5M       54         203          13,6M          97,2 %          0,24
+ 1000      4.500     1.228,8M       52         109          13,5M          98,9 %          0,59
+ 2500     11.250     3.072,0M       52           8          13,7M          99,6 %          0,97
+
+ZWEI MECHANISMEN, BEIDE GEMESSEN:
+
+(1) DIE WAFFEN WACHSEN UM FAKTOR 28, DER SCHADEN JE TREFFER BLEIBT KONSTANT BEI 13,6 MIO.
+    Ein Treffer erreicht ueber die Durchschlags-Kaskade nur wenige Ziele; alles darueber wird
+    weggeworfen. Bei 11.250 Einheiten verpuffen 99,6 % der Feuerkraft. **Den Gegner ueber seine
+    MACHT zu skalieren macht ihn nicht staerker, sondern verschwenderischer.** Der Plan hatte
+    genau das am 15.08.2026 fuer ADMIRAL_STAT_SHARE notiert ("ein hoeherer Wert macht den Gegner
+    SCHWAECHER"); hier ist es als allgemeine Eigenschaft der Machtskalierung belegt.
+
+(2) DIE SCHILD-REGENERATION SCHLUCKT DEN REST. Der wenige ankommende Schaden verteilt sich auf so
+    viele Einheiten, dass jeder getroffene Schild sich vor dem naechsten Treffer wieder auflaedt.
+    Regen/Schaden steigt von 0,00 auf 0,97 - bei 11.250 Einheiten regeneriert die Flotte 97 %
+    dessen, was der Boss ueberhaupt anrichtet. Der Schaden staut sich nie zu einem Abschuss.
+
+--- GEGENPROBE: KONZENTRIERTE GEGEN VERTEILTE GEGNERMACHT ---
+Beide Mechanismen haengen daran, dass die Feuerkraft auf EINER Einheit sitzt. Vorhersage: verteilt
+man dieselbe Macht ueber viele Einheiten, verschwinden beide. Geprueft mit derselben Leiter,
+derselben Zielmacht, 30 Laeufe je Zelle - einziger Unterschied ist die Gegnerform.
+
+     n   eigene   Gegner  konzentriert   verteilt   Gegner-Verlust (verteilt)
+    90      405    3.165       62,3 %     100,0 %          35,3 %
+   150      675    5.276       36,2 %      32,2 %         100,0 %
+   400    1.800   14.071       10,7 %      38,2 %         100,0 %
+  1000    4.500   35.168        2,5 %      38,3 %         100,0 %
+  2500   11.250   87.922        0,1 %      38,4 %         100,0 %
+
+**BEI VERTEILTER GEGNERMACHT IST DIE VERLUSTQUOTE VON n=150 BIS n=2500 FLACH: 32,2 / 38,2 / 38,3 /
+38,4 %.** Genau das massstabsneutrale Verhalten, das man erwarten wuerde. Der Masse-Vorteil ist
+vollstaendig weg. Auch die beiden Mechanismen verschwinden: Schaden je Treffer 0,01 Mio statt
+13,6 Mio (keine Verschwendung, weil kein Schuss in den Deckel laeuft), Regen/Schaden konstant
+0,23-0,25 statt ansteigend auf 0,97.
+
+ERGEBNIS: **ES IST KEIN MASSENPROBLEM DES KAMPFMODELLS, SONDERN EINE EIGENSCHAFT DER
+KAPITAENS-BAUART.** Wo dem Spieler viele Gegner gegenueberstehen - normale Piratenflotten,
+Raid-Verteidigung, Elite-Bollwerk - verhaelt sich die Engine massstabsneutral. Nur dort, wo die
+gesamte Gegnermacht auf einer einzigen Einheit sitzt, kippt es.
+
+--- METHODISCHER BEFUND ZUR EIGENEN KENNZAHL ---
+Die zusammenfassende Spalte "Spanne ueber die Leiter" wies fuer beide Formen fast denselben Wert
+aus (62,3 gegen 61,6 Punkte) und haette den Schluss "kein Unterschied" nahegelegt - das GEGENTEIL
+des Befunds. Ursache: die Zelle n=90 wechselt bei verteilter Macht das REGIME (100 % eigener
+Verlust, der Spieler wird schlicht ueberrannt, Kampf endet nach 87 statt 100 Runden). Eine Spanne
+ueber eine Leiter, in der eine Zelle das Regime wechselt, misst den Regimewechsel und nicht die
+Steigung. **Zusammenfassende Kennzahlen erst bilden, nachdem die Einzelzellen angesehen wurden -
+nicht davor.** Richtig gelesen wird der Abschnitt n=150 bis n=2500: konzentriert faellt er um
+36,1 Punkte, verteilt steigt er um 6,2.
+
+--- KORREKTUR EINES EIGENEN MESSFEHLERS ---
+Ein erster Sondenlauf las `r.shotsB.fired` aus und meldete 0 Schuesse bei 52 Treffern. Das sah nach
+einem Fehler im Spiel aus und wurde kurzzeitig auch so berichtet. Das Feld heisst `shotsFired`
+(siehe `ShotStats` in `combat.ts`); korrekt ausgelesen sind es 100 Schuesse bei rund 52 Treffern,
+also voellig unauffaellig. **Feldnamen am Typ nachsehen, nicht raten** - dieselbe Regel wie bei den
+dist-Ankern, hier auf die Ergebnisstruktur angewandt.
+
+================================================================================
 5. GRENZEN
 ================================================================================
-- EINE Paarung (Mischflotte gegen den Piratenadmiral), EIN Profil (voll), EIN Faktor (1,75x).
-  Ob dieselbe Kurve auch gegen normale Piratenflotten und in der Raid-Verteidigung auftritt, ist
-  NICHT gemessen. Gerade dort stehen viele Gegner gegen viele - also genau die Paarung, die nach
-  Abschnitt 4 anders ausfallen koennte.
+- ~~EINE Paarung.~~ ERLEDIGT durch die Gegenprobe in Abschnitt 4a: die zweite Paarung (verteilte
+  Gegnermacht, viele gegen viele) ist gemessen und verhaelt sich massstabsneutral.
+- WEITERHIN OFFEN: EIN Profil (voll), EIN Faktor (1,75x). Und die ESKORTE des Kapitaens war in
+  ALLEN Zellen ausgeblendet, um die Boss-Mechanik zu isolieren. Im echten Spiel kaempft sie mit -
+  der Effekt duerfte dort also SCHWAECHER ausfallen als hier gemessen. Wie viel schwaecher, ist
+  nicht bekannt und sollte vor jedem Eingriff geklaert werden.
+- Die Zelle n=90 bei verteilter Macht wechselt das Regime (100 % eigener Verlust). Aussagen ueber
+  die Steigung gelten dort nicht - siehe den methodischen Befund in Abschnitt 4a.
 - Alle Zellen laufen ueber die vollen 100 Runden (MAX_ROUNDS). Der Boss stirbt in keiner Zelle.
   Ob das an seiner Zaehigkeit oder an der Rundengrenze liegt, ist nicht getrennt.
 - allowRetreat ist aus. Im echten Spiel wuerde der gestaffelte Rueckzug bei den kleinen Zellen
@@ -154,10 +235,21 @@ im Plan bisher als eines gefuehrt.
 ================================================================================
 6. NAECHSTE SCHRITTE
 ================================================================================
-1. NICHT die Aggregationsschwelle anheben (Abschnitt 2). Nicht die Deckel anheben (Abschnitt 3).
-2. Sonde zum Gegner: Schuesse/Treffer/Schadensverteilung des Bosses ueber die Leiter. Klein,
-   kein Sweep. Erst danach ist ein Eingriff begruendbar.
-3. Gegenprobe in einer zweiten Paarung (Raid-Verteidigung, viele gegen viele), bevor aus dem
-   Befund eine allgemeine Aussage ueber "Masse" wird.
-4. Im Plan trennen: "Weglauf-Wachstum bremsen" (Entscheidung 2, Belohnungen) und "Masse macht
-   unverwundbar" (Kampf) sind zwei Probleme, nicht eines.
+1. ERLEDIGT: Aggregationsschwelle und Deckel gemessen und verworfen (Abschnitte 2 und 3).
+2. ERLEDIGT: Sonde und Gegenprobe (Abschnitt 4a). Die Ursache ist gefunden.
+3. OFFEN, NUTZERENTSCHEIDUNG: ob die Piratenkapitaene umgebaut werden. Die Messung sagt, WO das
+   Problem sitzt; sie sagt nicht, ob es behoben werden soll. Der Kapitaen ist ein bewusst
+   gestalteter Gegner, und "ein grosses Schiff" ist eine Design-Aussage, kein Versehen.
+   Denkbare Richtungen, KEINE davon gemessen:
+     - Die Macht des Kapitaens auf eine Eskorte verteilen statt auf ihn allein (die Eskorte
+       existiert bereits in generateAdmiralEncounter(), sie wurde in diesen Messungen nur
+       ausgeblendet, um die Boss-Mechanik zu isolieren - der Anteil ist der Hebel).
+     - Den Kapitaen NICHT ueber Machtskalierung wachsen lassen, sondern ueber Stueckzahl seiner
+       Begleiter. Seine eigenen Werte blieben dann konstant und liefen nicht in den Deckel.
+     - Nichts tun und akzeptieren, dass Kapitaene gegen sehr grosse Flotten harmlos sind.
+   VOR jeder dieser Richtungen: messen, was die ESKORTE heute schon ausrichtet. Sie war in allen
+   bisherigen Zellen ausgeblendet - moeglicherweise ist der Effekt im echten Spiel deutlich
+   kleiner als hier, weil sie einen Teil der Arbeit uebernimmt.
+4. OFFEN: Im Plan trennen: "Weglauf-Wachstum bremsen" (Entscheidung 2, Belohnungen) und "Masse
+   macht unverwundbar" (Kampf) sind zwei Probleme, nicht eines. Nach Abschnitt 4a ist das zweite
+   deutlich kleiner als befuerchtet - es betrifft nur die Kapitaens-Begegnungen.
