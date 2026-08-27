@@ -94,6 +94,9 @@ Wenn Deploys wieder automatisch laufen sollen, vorher diese Einstellung pruefen.
 
 ---
 
+> **Vor jedem Deploy pruefen, ob Coolify ein Update anbietet — und es NICHT vorher einspielen.**
+> Erst deployen, kontrollieren, dann aktualisieren. Begruendung und Log-Pfade in Abschnitt 4a.
+
 ## 4. Der Ausfall vom 26.08.2026 — Symptom, Ursache, Reparatur
 
 **Symptom:** aus dem Spiel geworfen, danach beim Login „Passwort falsch".
@@ -159,6 +162,48 @@ Erwartung: nur noch `[{"Subnet":"10.0.1.0/24","Gateway":"10.0.1.1"}]`.
 `docker-compose.yaml` verweist auf `image: 'k135…:HEAD'` ohne `build:`-Anweisung; existiert
 dieses Image lokal nicht, versucht Docker es aus einer Registry zu laden. Behoben mit
 **Deploy (without cache)**, das einen echten Neubau erzwingt.
+
+---
+
+## 4a. Coolify aktualisieren — Reihenfolge und Selbstupdate
+
+**Regel: erst deployen, dann aktualisieren. Nie beides gleichzeitig.** Coolify sagt es im
+Update-Dialog selbst:
+
+> Any deployments running during the update process will fail.
+
+Reihenfolge:
+
+1. Deploy vollstaendig durchlaufen lassen, gruenes Ergebnis abwarten.
+2. Im Spiel nachsehen, ob die Aenderung wirkt.
+3. Erst danach **Upgrade now**.
+
+Der Grund ist nicht nur der Warnhinweis. **Das Coolify-Selbstupdate ist der Hauptverdaechtige fuer
+den Ausfall vom 25./26.08.2026** (Abschnitt 4): ein Docker-Update ueber apt gab es nachweislich
+nicht, das kaputte IPv6-Gateway muss also anders entstanden sein. Belegt ist es nicht — aber wer
+ein Update und einen Deploy zusammenlegt und danach einen Fehler sieht, kann die beiden Ursachen
+nicht mehr trennen. Getrennt ausgefuehrt weiss man sofort, welcher Schritt es war.
+
+**Wenn beim Update etwas schiefgeht, ZUERST hier nachsehen:**
+
+```
+/data/coolify/source/upgrade*
+```
+
+Der Pfad steht auch im Update-Dialog. Erst wenn dort nichts Brauchbares steht und das Symptom
+nach dem Netz aussieht (`ParseAddr(... "/64")` im Deploy-Log, „Failed to fetch" im Client), ist
+`fixnet.sh` aus Abschnitt 4 dran. Nicht umgekehrt — `fixnet.sh` nimmt das Docker-Netz auseinander
+und ist kein Diagnosewerkzeug.
+
+**Automatisches Update pruefen und ausschalten.** In den Coolify-Einstellungen gibt es eine
+Auto-Update-Option. Ist sie an, springt die Version irgendwann von allein — und dann passiert
+genau das, was die Regel oben verhindern soll: ein Update mitten in einem Deploy, zu einem
+Zeitpunkt, den niemand gewaehlt hat. Das passt zum Muster des Ausfalls vom 25.08. (abends,
+ohne Zutun). Bei zwei Spielern und manuellem Deploy gibt es keinen Grund fuer automatische
+Updates.
+
+**Vor groesseren Spruengen ein Snapshot**, falls der Hoster das anbietet. Bei Patch-Releases
+(z.B. 4.3.11 → 4.3.12) ist das Risiko gering; bei einem Wechsel der zweiten Stelle lohnt es sich.
 
 ---
 
@@ -349,3 +394,7 @@ alle zwei Minuten einen Heartbeat protokolliert, sendet das endlos.
   schlimmer als gar keine.
 - **Pfade und Feldnamen am Code nachsehen, nicht raten.** Der falsch geratene `/app/server/data`
   hat einen kompletten Fehlstart gekostet; die richtige Antwort stand in drei Zeilen `db.ts`.
+- **Nie zwei Veraenderungen gleichzeitig ausrollen.** Deploy und Coolify-Update getrennt, mit
+  einer Kontrolle dazwischen. Sonst ist bei einem Fehler nicht mehr zu unterscheiden, welcher der
+  beiden Schritte ihn verursacht hat — genau die Lage, in der der Ausfall vom 25.08. bis heute
+  ungeklaert ist (Abschnitt 4a).

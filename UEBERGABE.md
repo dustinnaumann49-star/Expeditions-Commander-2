@@ -114,6 +114,19 @@ anders wirken kann als in der Simulation.
     normale Piratenflotten und in der Raid-Verteidigung auftritt (viele gegen viele), ist NICHT
     gemessen - gerade dort koennte es anders ausfallen.
 
+- **NEU 27.08.2026: BETRIEB.md um Abschnitt 4a ergaenzt (Coolify-Updates).** Anlass: Update
+  4.3.11 -> 4.3.12 stand an, waehrend ein Deploy offen war. **Regel: erst deployen, kontrollieren,
+  dann aktualisieren** - Coolify warnt selbst ("Any deployments running during the update process
+  will fail"), und das Selbstupdate ist der Hauptverdaechtige fuer den ungeklaerten Ausfall vom
+  25./26.08.2026. Wer beides zusammenlegt, kann die Ursache eines Fehlers hinterher nicht mehr
+  trennen. Neu dokumentiert: der Log-Pfad `/data/coolify/source/upgrade*` als ERSTE Anlaufstelle
+  (vor `fixnet.sh`, das ein Reparatur- und kein Diagnosewerkzeug ist), und die Empfehlung,
+  **automatische Updates in den Coolify-Einstellungen auszuschalten** - bei zwei Spielern und
+  manuellem Deploy gibt es keinen Grund dafuer, und ein Selbstupdate zu unbestimmter Zeit ist
+  genau das Szenario, das die Regel verhindern soll. Merksatz Nr. 6 ergaenzt: "Nie zwei
+  Veraenderungen gleichzeitig ausrollen." **NOCH OFFEN beim Nutzer: pruefen, ob Auto-Update
+  eingeschaltet ist.**
+
 - **NEU 27.08.2026: ANZEIGE DER KAMPFZAHLEN GEKUERZT - EINZIGE GEBAUTE AENDERUNG DIESER SESSION,
   AUF NUTZERWUNSCH.** `client/src/pages/Nachrichten.tsx` und `client/src/theme.css`. **Reine
   Anzeige: kein Serverpfad, kein Rechenweg, keine Messung beruehrt.** Anlass: eine Zeile wie
