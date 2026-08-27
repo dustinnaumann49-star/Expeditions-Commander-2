@@ -65,6 +65,70 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 26.08.2026 (fuenfte Session): EINNAHMEN NACH QUELLE INSTRUMENTIERT - SCHRITT 3 DER LISTE
+  IST ERLEDIGT. K5 UND K6 SIND AB SOFORT ERHEBBAR. NICHTS AM SPIELCODE GEBAUT.** Protokoll
+  `balance/session2-simulation/k5_quellen.txt`, Werkzeuge
+  `WERKZEUGE_26-08-2026_fuenfte-session.md`. **Messbuild-Protokoll.**
+  - Neues Werkzeug `make_messbuild_k5.mjs`, **zweistufig auf `/tmp/sim13/dist` aufgesetzt** statt
+    `make_messbuild_sim13.mjs` zu erweitern - so bleibt dessen Blockzaehlung
+    A 9 / B 2 / C 3 / D 5 / E 2 = 21 als Echtheitspruefung unberuehrt und die Instrumentierung
+    laesst sich abschalten. 18 Patches, jeder mit hartem Abbruch. Alle Haken rufen
+    `globalThis.__K5?.(...)`, ohne gesetzten Haken tut der Build nichts.
+  - **DIE GEGENPROBE IST DER EIGENTLICHE BELEG, NICHT DIE TABELLE.** Ein Anteilskriterium, dessen
+    Nenner aus den instrumentierten Zeilen selbst gebildet wird, sieht auch dann sauber aus, wenn
+    eine Buchungsstelle fehlt - die Anteile summieren sich weiter auf 100 %. Deshalb misst
+    `sim13_lauf.mjs` den Nenner UNABHAENGIG (Accessoren ueber `state.resources`, erfassen auch die
+    indizierten Zugriffe). Ergebnis: **"nicht zugeordnet" = 0,000 % in sechs von sechs Laeufen.**
+  - **BEFUND 1, GROESSTE EINZELQUELLE DER WOCHE 1 IST DER REICHE FUND** - 54,2 bis 81,9 % in sechs
+    Laeufen. `ASTEROID_RICH_FIND_CHANCE = 0,08` je Stunden-Check, und der Fund VERDOPPELT den bis
+    dahin angesammelten Farm-Betrag; bei 12-Stunden-Missionen kompoundiert das.
+    **Die gesamte Streuung des Laufs kommt aus dieser einen Mechanik**: Mining (3,054 bis 3,055
+    Mrd), Praemie (1,61 bis 1,63) und Minen (0,35 bis 0,45) liegen ueber alle Laeufe praktisch
+    fest, `reicher_fund` schwankt zwischen 8,4 und 23,0 Mrd. Damit ist nebenbei erklaert, warum die
+    Kopfzahl "Wert am Tag 7" ueber die Sessions zwischen 2,92 und 6,77 Mrd schwankte, ohne dass sich
+    am Modell etwas geaendert haette. **K5 ist in jedem Lauf verletzt - durch eine Quelle, die
+    weder im Plan noch in der Aufgabenstellung vorkam.** Dritte Wiederholung derselben Fehlerform:
+    ein Anteilskriterium zeigt auf die falsche Quelle, und man sieht es erst, wenn alle Quellen
+    NEBENEINANDER stehen. **Ob die Hoehe gewollt ist, ist eine Balance-Frage und NICHT bewertet.**
+  - **BEFUND 2, DER TREIBER LOESTE BISHER KEINEN EINZIGEN RAID AUS.** Am Code nachgezaehlt:
+    `processRaidTimer()` hat genau zwei Aufrufer, `actions.js` (in `tick()`) und `heartbeat.js`.
+    `sim13_lauf.mjs` rief keines von beidem - `heartbeat.js` war importiert und nirgends benutzt.
+    Im Lauf existierten dadurch **exakt zwei Einnahmequellen**; kein Raid, keine Gruppen-Operation,
+    kein geoeffneter Container. Da K5 seit dem 20.08.2026 ausdruecklich Entscheidung 3 traegt und
+    der Raid dort mit 58-64 % die groesste Quelle ist, waere K5 formal erhoben und sachlich leer
+    gewesen. Neuer Schalter **`--treiber=economy|tick`**, Standard unveraendert. Mit `tick`
+    kommt der Raid an: **26,6 % der Woche 1 ueber 123 Container**, Kosten Faktor 7,6.
+  - **BEFUND 3, K1 UEBERSIEHT EINEN RAID-TOTALVERLUST - AUS DEMSELBEN GRUND WIE K3.** In einem
+    abgebrochenen 30-Tage-Lauf mit `tick`: Flottenmacht Tag 15 1,93 Mrd, Tag 16 0,01 Mrd bei 11
+    Verlustereignissen. **K1 zaehlt je STUNDE, ein Raid laeuft ueber zwoelf Wellen** - der Verlust
+    zerfaellt in elf kleine Ereignisse, von denen keines die 70-%-Schwelle reisst; K1 meldete
+    6,1 %. Zuordnung deterministisch: das Modell schickt auf Asteroidenfelder nur `mining` und
+    `begleitschiff`, die Kampfschiffe verlassen die Heimatbasis nie - der Einbruch kann NUR aus der
+    Heimatverteidigung stammen. Exakt die K3-Fehlerform ("misst genau das, was die Definition sagt,
+    und verfehlt die Frage"). **Kriteriums-Definition = Nutzerentscheidung, deshalb NICHT gebaut.**
+  - **BEFUND 4, DIE K4-SETZUNG IST GEMESSEN WIRKUNGSLOS.** Am Tag 0 meldet der Lauf SIEBEN Sektoren
+    gleichzeitig als erstmals spielbar, danach nie wieder einen; K4 meldet immer "Wochen 2, 3, 4".
+    Ursache: die `npcFloor`-Werte liegen bei 300.000 bis 3.000.000, die Startflotte nach der ersten
+    Bauwelle bei rund 60.000.000. Die Setzung war in der dritten Session eingefuehrt worden, nachdem
+    die erste Fassung ein nicht existentes Feld abfragte und ALLE acht Sektoren meldete - sie meldet
+    jetzt sieben statt acht und ist damit praktisch unveraendert wirkungslos. Der Punkt war schon
+    offen; **neu ist, dass er nicht mehr unbestaetigt, sondern gemessen wirkungslos ist.**
+  - **FALLE, DIE VOR DEM ERSTEN LAUF GEGRIFFEN HAT:** `mission.farmed` sammelt VIER Quellen ein -
+    an der Auszahlung in `finalizeMission()` zu buchen trennt nichts, gebucht werden muss beim
+    FUELLEN. Genau daraus folgt: `abortMissionDestroyed()` zahlt NICHTS aus. Wer beim Auflaufen
+    bucht, zaehlt eine verlorene Mission als Einnahme, und zwar unsichtbar. Loesung: je Mission in
+    `mission.__k5` sammeln, Commit ausschliesslich in `finalizeMission()`.
+  - **EIGENER FEHLER, MESSREGEL 16 ZUM DRITTEN MAL:** zwei Anker fuer `groupOps.js` aus der
+    TypeScript-Quelle statt aus dem kompilierten `dist` uebernommen (acht statt vier Leerzeichen).
+    Der harte Abbruch hat es sofort gemeldet. **Vierter Fundort derselben Fehlerform.**
+  - **GRENZEN, AUSDRUECKLICH:** die 30-Tage-Laeufe der drei Profile (Punkt 4) sind NICHT gefahren.
+    Die Laeufe hier sind Funktionsnachweise: ein Profil, keine Wiederholungen. Bei rund 20
+    Prozentpunkten Streuung allein aus dem Reichen Fund traegt **kein Anteilswert daraus eine
+    Entscheidung** - was sie tragen, ist die Rangfolge, und die ist in sechs von sechs Laeufen
+    dieselbe. `piraten_pluenderung`, `piraten_beutekurve`, `wrack_bergung`, `container_mission`,
+    `gruppe_*` und `dm_raid` sind instrumentiert, aber in keinem Lauf belegt worden - ihre 0,00 ist
+    Abwesenheit im Modell, **kein Nachweis, dass die Buchung sitzt.**
+
 - **NEU 26.08.2026 (vierte Session, zweiter Teil): SPIELERMODELL ENTSTOERT - SCHRITT 2 DER
   LISTE IST ERLEDIGT. NICHTS AM SPIELCODE GEBAUT.** Protokoll
   `balance/session2-simulation/spielermodell_diagnose.txt`. **Messbuild-Protokoll.**
@@ -1395,13 +1459,70 @@ Protokoll weg. Logs VOR dem Deploy abrufen, sonst ist die Spur verloren.
 diskutiert; die Phasen-Aufschluesselung beantwortete die Frage in einem einzigen Log - und die
 Antwort war eine voellig andere als die Vermutung.
 
+**Wer eine Einnahme an ihrer ENTSTEHUNG bucht, muss pruefen, ob es einen Pfad gibt, auf dem sie nie
+ausgezahlt wird.** (26.08.2026, fuenfte Session, vor dem ersten Lauf gefunden.) `mission.farmed`
+sammelt VIER Quellen ein - an der Auszahlung zu buchen trennt deshalb nichts, gebucht werden muss
+beim Fuellen. Genau daraus folgt die Falle: `abortMissionDestroyed()` zahlt NICHTS aus. Eine
+verlorene Mission waere als Einnahme gezaehlt worden, und zwar unsichtbar - die Summe waere schlicht
+zu hoch gewesen, ohne dass etwas danebenstuende, woran das auffiele.
+
+**Ein Anteilskriterium braucht einen Nenner, der NICHT aus den eigenen Zeilen gebildet wird.**
+(26.08.2026.) Summieren sich die instrumentierten Anteile auf 100 %, beweist das nichts - eine
+uebersehene Buchungsstelle sieht genauso aus. Der Nenner muss unabhaengig gemessen werden (hier:
+Accessoren ueber `state.resources`, die jeden positiven Zuwachs zaehlen), und die Differenz gehoert
+als eigene Zeile "nicht zugeordnet" in die Ausgabe. Verwandt mit der aelteren Regel "vor jeder
+Kalibrierung gegen ein Anteils-Kriterium zuerst ALLE Quellen messen".
+
+**Ein Treiber kann eine ganze Spielmechanik stillschweigend auslassen.** (26.08.2026.)
+`sim13_lauf.mjs` rief `runEconomyTick()` statt `tick()` - dadurch lief `processRaidTimer()` nie, und
+im Lauf gab es ueber 30 Tage keinen einzigen Raid, obwohl der Raid gemessen die groesste Quelle der
+Startphase ist. Nichts hat gefehlt gemeldet; die Zeile stand einfach nicht da. **Bei jeder
+Kennzahl, die eine Mechanik voraussetzt, am Code nachzaehlen, wer sie ueberhaupt aufruft** - hier
+genuegte ein `grep` nach den Aufrufern.
+
+**Eine Kennzahl, die je ZEITSCHRITT misst, kann ein Ereignis uebersehen, das sich ueber mehrere
+Zeitschritte erstreckt.** (26.08.2026, Befund 3.) K1 vergleicht die Flottenmacht je Stunde; ein Raid
+laeuft ueber zwoelf Wellen. Ein vollstaendiger Verlust der Heimatflotte zerfiel dadurch in elf
+Ereignisse unter der Schwelle, und K1 meldete 6,1 %. **Zweiter Fall derselben Fehlerform nach K3** -
+die Kennzahl misst genau das, was ihre Definition sagt, und verfehlt dabei die Frage, fuer die sie
+da ist.
+
 ## Erster Schritt beim naechsten Mal
 
-**STAND 26.08.2026 (vierte Session, Abschluss): SCHRITTE 1 UND 2 SIND ERLEDIGT. NAECHSTER
-SCHRITT IST PUNKT 3 - DIE EINNAHMEN NACH QUELLE INSTRUMENTIEREN (K5).** Ohne die Quellenkurve
-bleiben K5 und K6 unbewertbar und damit auch Entscheidung 3. Die beiden vorher offenen Punkte (K3-Definition,
-`begleitschiff` ueber `escortCap`) sind am 26.08.2026 entschieden und gebaut - Stand-Eintrag
-oben. **Es blockiert nichts mehr.**
+**STAND 26.08.2026 (fuenfte Session): SCHRITTE 1 BIS 3 SIND ERLEDIGT. NAECHSTER SCHRITT IST
+PUNKT 4 - DIE DREI PROFILE UEBER 30 TAGE.** Buildpfad um eine Stufe erweitert:
+
+```
+node make_messbuild_kum.mjs   /tmp/mb_kum      --rf=4 --evk=0.20 --evm=0.08
+node make_messbuild_sim13.mjs /tmp/mb_kum   /tmp/sim13/dist
+node make_messbuild_k5.mjs    /tmp/sim13/dist /tmp/k5/dist
+MESSBUILD=/tmp/k5/dist node check_build_anker.mjs 40      # normiert rund -1 bis -3 %
+node sim13_lauf.mjs --build=/tmp/k5/dist --profil=aktiv --tage=14 [--treiber=tick]
+```
+
+**VIER FRAGEN GEHOEREN VOR PUNKT 4 ENTSCHIEDEN, sonst muessen die Laeufe zweimal gefahren
+werden** (Begruendungen im Stand-Eintrag oben und in `k5_quellen.txt` Abschnitt 10):
+
+1. **Laeuft Punkt 4 mit `--treiber=tick`?** Ohne ihn kein Raid und damit kein Traeger fuer
+   Entscheidung 3 (Befund 2). Kosten Faktor 7,6, also rund 16 Minuten statt zwei fuer drei
+   Profile ueber 30 Tage.
+2. **Bekommt K1 ein Gegenstueck, das je EREIGNIS statt je Stunde zaehlt?** (Befund 3 - K1
+   uebersieht einen Raid-Totalverlust.) Das Muster dafuer steht bereits: K3 wurde nicht
+   geaendert, sondern um K3b ergaenzt.
+3. **Bleibt die K4-Setzung ueber `npcFloor`, obwohl sie gemessen nicht trennt?** (Befund 4.)
+4. **Ist die Hoehe des Reichen Fundes gewollt?** (Befund 1.) Einzige der vier Fragen, die nicht
+   die Messung betrifft, sondern das Spiel.
+
+**MINDESTENS DREI LAEUFE JE PROFIL, NICHT EINER.** Die Streuung aus dem Reichen Fund betraegt rund
+20 Prozentpunkte auf den groessten K5-Anteil; ein Einzellauf traegt daraus keine Aussage.
+
+**Achtung bei langen Laeufen:** ein 30-Tage-Lauf mit `tick` braucht ueber zehn Minuten und ist in
+dieser Session einmal vorzeitig beendet worden, ohne Endauswertung. Mit `--out=` fahren, damit die
+Rohdaten auch dann vorliegen, und die Tageszeilen mitschreiben.
+
+**~~STAND 26.08.2026 (vierte Session, Abschluss): NAECHSTER SCHRITT IST PUNKT 3.~~ ERLEDIGT**,
+Protokoll `k5_quellen.txt`. Die beiden vorher offenen Punkte (K3-Definition, `begleitschiff` ueber
+`escortCap`) sind am 26.08.2026 entschieden und gebaut.
 
 **~~STAND 26.08.2026: NAECHSTER SCHRITT IST PUNKT 2 - DAS SPIELERMODELL ENTSTOEREN.~~
 ERLEDIGT**, Protokoll `spielermodell_diagnose.txt`. Es bleibt ab

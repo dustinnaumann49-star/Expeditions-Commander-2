@@ -213,6 +213,58 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 26.08.2026 (fuenfte Session) - ABNAHMEKRITERIUM 5 UND 6 SIND AB SOFORT ERHEBBAR.
+> DIE GROESSTE EINZELQUELLE DER WOCHE 1 STAND AUF KEINER LISTE. NICHTS AM SPIELCODE GEBAUT.**
+> Protokoll `balance/session2-simulation/k5_quellen.txt`, Werkzeug `make_messbuild_k5.mjs` (neu),
+> `sim13_lauf.mjs` erweitert. **Messbuild-Protokoll.**
+>
+> **DIE GROESSTE EINZELQUELLE IST DER REICHE FUND** (`ASTEROID_RICH_FIND_CHANCE = 0,08` je
+> Stunden-Check, VERDOPPELT den bis dahin angesammelten Farm-Betrag, kompoundiert ueber
+> 12-Stunden-Missionen): **54,2 bis 81,9 % der Wocheneinnahmen in sechs Laeufen.**
+>
+> | Quelle (Woche 1, Profil aktiv) | Spanne ueber sechs Laeufe |
+> |---|---|
+> | `reicher_fund` | **54,2 - 81,9 %** (8,4 - 23,0 Mrd) |
+> | `asteroid_mining` | 10,9 - 27,2 % (3,054 - 3,069 Mrd, praktisch fest) |
+> | `eskorte_praemie` | 5,7 - 14,1 % (1,58 - 1,63 Mrd, praktisch fest) |
+> | `mine` | 1,5 - 3,5 % (0,35 - 0,47 Mrd) |
+> | `container_raid` | 26,6 % - **nur mit `--treiber=tick`, sonst 0** |
+>
+> **Abnahmekriterium 5 ist in jedem Lauf verletzt** - und die Streuung des gesamten Laufs kommt
+> aus dieser einen Mechanik. Damit ist nebenbei erklaert, warum die Kopfzahl "Wert am Tag 7" ueber
+> die Sessions zwischen 2,92 und 6,77 Mrd schwankte, ohne Aenderung am Modell. **Ob die Hoehe
+> gewollt ist, ist eine Balance-Frage und hier NICHT bewertet.**
+>
+> **DER TREIBER LOESTE BISHER KEINEN EINZIGEN RAID AUS.** Am Code nachgezaehlt: `processRaidTimer()`
+> hat genau zwei Aufrufer, `actions.js` (in `tick()`) und `heartbeat.js` - `sim13_lauf.mjs` rief
+> keines von beidem. Im Lauf existierten dadurch exakt zwei Einnahmequellen. Neuer Schalter
+> **`--treiber=economy|tick`**, Standard unveraendert; mit `tick` kommt der Raid mit **26,6 % ueber
+> 123 Container** an, Kosten Faktor 7,6. **Ein Sieben-Tage-Lauf kann die Frage nicht beantworten:**
+> Start Montag, Checkpoints Mi/So 0:00 Berlin - ein sonntags gespawnter Raid ist bei Laufende noch
+> nicht abgearbeitet und sieht wie "kein Raid" aus. **Ab 14 Tagen brauchbar.**
+>
+> **DIE GEGENPROBE IST DER EIGENTLICHE BELEG, NICHT DIE TABELLE.** Der Nenner wird UNABHAENGIG
+> gemessen (Accessoren ueber `state.resources`, erfassen auch die indizierten Zugriffe): **"nicht
+> zugeordnet" = 0,000 % in sechs von sechs Laeufen.** Ohne das saehe eine uebersehene
+> Buchungsstelle genauso aus wie ein sauberes Ergebnis.
+>
+> **ZWEI WEITERE KENNZAHLEN SIND DABEI AUFFAELLIG GEWORDEN:**
+> - **K1 uebersieht einen Raid-Totalverlust.** Flottenmacht 1,93 -> 0,01 Mrd an einem Tag, K1
+>   meldete 6,1 % - weil es je STUNDE zaehlt und ein Raid ueber zwoelf Wellen laeuft. **Zweiter
+>   Fall der K3-Fehlerform.** Kriteriums-Definition = Nutzerentscheidung, deshalb nicht gebaut.
+> - **Die K4-Setzung ueber `npcFloor` ist gemessen wirkungslos**: `npcFloor` 300.000 bis 3.000.000
+>   gegen rund 60.000.000 Startflottenmacht - am Tag 0 werden sieben Sektoren gleichzeitig
+>   freigeschaltet, danach nie wieder einer.
+>
+> **GRENZEN:** die 30-Tage-Laeufe der drei Profile (Punkt 4) sind NICHT gefahren; die Laeufe hier
+> sind Funktionsnachweise (ein Profil, keine Wiederholungen der langen Zellen). Bei rund 20
+> Prozentpunkten Streuung traegt **kein Anteilswert daraus eine Entscheidung** - was sie tragen,
+> ist die Rangfolge. `piraten_pluenderung`, `piraten_beutekurve`, `wrack_bergung`,
+> `container_mission`, `gruppe_*` und `dm_raid` sind instrumentiert, aber in keinem Lauf belegt
+> worden (das Modell fliegt keine Piraten-Sektoren) - ihre 0,00 ist Abwesenheit im Modell, **kein
+> Nachweis, dass die Buchung sitzt.** Ankercheck des instrumentierten Builds **-1,6 %**; sieben
+> Messungen desselben Ankers liegen jetzt bei -1,0 / -1,1 / -1,2 / -1,6 / -1,8 / -2,3 / -2,8 %.
+
 > **MESSKASTEN 26.08.2026 (vierte Session, Abschluss) - BLOCK A SCHRITT 2 IST VERDRAHTET UND
 > ZAHLT. BELEGT. NICHTS AM SPIELCODE GEBAUT.** Protokoll
 > `balance/session2-simulation/verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu).
@@ -847,9 +899,23 @@ Container-Anzahl (`missions.ts:558`). Jede neue Skalierung multipliziert sich da
 > ueber `--smax=` einstellbar und hier ohnehin als einziger gesetzter, nicht gemessener Wert des
 > Pakets gefuehrt.
 >
-> **NOCH NICHT MESSBAR:** Kriterium 5 traegt seit dem 20.08.2026 diese Entscheidung, ist aber ohne
-> Instrumentierung der Einnahmen nach Quelle nicht erhebbar (Messkasten in Abschnitt 1b). Der Block
-> ist gebaut und laedt fehlerfrei; belegt ist damit nichts.
+> **~~NOCH NICHT MESSBAR~~ - ERHEBBAR SEIT DEM 26.08.2026 (fuenfte Session).** Die
+> Instrumentierung steht (`make_messbuild_k5.mjs`, Protokoll `k5_quellen.txt`, Messkasten in
+> Abschnitt 1b). Der Block ist gebaut und laedt fehlerfrei; **belegt ist damit weiterhin nichts** -
+> aus drei Gruenden, die vor der naechsten Messung zu beachten sind:
+>
+> 1. **Der Lauf loeste bis zum 26.08.2026 keinen einzigen Raid aus** (`runEconomyTick()` ruft
+>    `processRaidTimer()` nicht). Jede Zahl zu Entscheidung 3 braucht **`--treiber=tick`**.
+> 2. **Mindestens 14 Tage.** Start ist Montag, die Checkpoints liegen Mi/So 0:00 Berlin bei Chance
+>    0,7 - in sieben Tagen ist ein sonntags gespawnter Raid bei Laufende noch nicht abgearbeitet.
+> 3. **Mindestens drei Laeufe je Zelle.** Der Reiche Fund streut den groessten K5-Anteil um rund
+>    20 Prozentpunkte; ein Einzellauf traegt daraus keine Aussage.
+>
+> **Erster Messwert, ausdruecklich als Funktionsnachweis und nicht als Beleg:** mit `tick` ueber
+> 14 Tage stellt der Raid **26,6 % der Wocheneinnahmen** ueber 123 Container - zweitgroesste
+> Quelle hinter dem Reichen Fund (54,2 %). Das stammt aus EINEM Lauf mit EINEM erfolgreichen
+> Checkpoint. **Der Vergleichswert 58-64 % aus `novice_bonus.txt` ist damit nicht widerlegt**, denn
+> dort war der Reiche Fund nicht als eigene Quelle gefuehrt.
 
 
 > **NICHT GEBAUT - festgestellt am 20.08.2026 beim Code-Abgleich fuer Entscheidung 12.** Kein
@@ -6428,6 +6494,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 26.08.2026 (fuenfte Session) | **Einnahmen nach Quelle instrumentiert - Schritt 3 der Liste aus `sim13_geruest.txt` Abschnitt 8 erledigt, Abnahmekriterium 5 und 6 sind erhebbar.** Protokoll `k5_quellen.txt`, Werkzeug `make_messbuild_k5.mjs` (neu, zweistufig auf den Simulationsbuild aufgesetzt, damit dessen Blockzaehlung als Echtheitspruefung unberuehrt bleibt und die Instrumentierung abschaltbar ist), `sim13_lauf.mjs` erweitert. 18 Patches mit hartem Abbruch, alle passiv ueber `globalThis.__K5?.(...)`. **BEFUND 1: die groesste Einzelquelle der Woche 1 ist der REICHE FUND** (`ASTEROID_RICH_FIND_CHANCE = 0,08` je Stunden-Check, verdoppelt den angesammelten Farm-Betrag, kompoundiert ueber 12-Stunden-Missionen) mit **54,2 bis 81,9 % in sechs Laeufen**; Mining, Praemie und Minen liegen dagegen praktisch fest. **Die gesamte Streuung des Laufs kommt aus dieser einen Mechanik** - damit ist nebenbei erklaert, warum "Wert am Tag 7" ueber die Sessions zwischen 2,92 und 6,77 Mrd schwankte, ohne Aenderung am Modell. Kriterium 5 ist in jedem Lauf verletzt, durch eine Quelle, die weder im Plan noch in der Aufgabenstellung vorkam - **dritte Wiederholung derselben Fehlerform** (ein Anteilskriterium zeigt auf die falsche Quelle, sichtbar erst, wenn alle Quellen nebeneinander stehen). **Ob die Hoehe gewollt ist, ist NICHT bewertet.** **BEFUND 2: der Treiber loeste bis dahin keinen einzigen Raid aus** - `processRaidTimer()` hat genau zwei Aufrufer (`actions.js` in `tick()`, `heartbeat.js`), `sim13_lauf.mjs` rief keines von beidem; im Lauf existierten exakt zwei Einnahmequellen. Neuer Schalter `--treiber=economy|tick` (Standard unveraendert); mit `tick` stellt der Raid 26,6 % ueber 123 Container, Kosten Faktor 7,6. Ein Sieben-Tage-Lauf kann die Frage nicht beantworten (Start Montag, Checkpoints Mi/So, ein sonntags gespawnter Raid ist bei Laufende noch nicht abgearbeitet) - **ab 14 Tagen brauchbar.** **BEFUND 3: K1 uebersieht einen Raid-Totalverlust** (Flottenmacht 1,93 -> 0,01 Mrd, K1 meldete 6,1 %), weil es je STUNDE zaehlt und ein Raid ueber zwoelf Wellen laeuft - **zweiter Fall der K3-Fehlerform**, Kriteriums-Definition und damit Nutzerentscheidung, nicht gebaut. **BEFUND 4: die K4-Setzung ueber `npcFloor` ist gemessen wirkungslos** (300.000-3.000.000 gegen rund 60.000.000 Startflottenmacht, sieben Sektoren am Tag 0). **Die Gegenprobe ist der eigentliche Beleg:** der Nenner wird unabhaengig gemessen (Accessoren ueber `state.resources`), "nicht zugeordnet" = 0,000 % in sechs von sechs Laeufen. **Falle festgehalten:** `mission.farmed` sammelt vier Quellen ein, und `abortMissionDestroyed()` zahlt nichts aus - wer beim Auflaufen bucht, zaehlt eine verlorene Mission unsichtbar als Einnahme; Commit deshalb nur in `finalizeMission()`. **Eigener Fehler: Messregel 16 zum dritten Mal** (zwei Anker aus der TS-Quelle statt aus `dist`, andere Einrueckung; vierter Fundort derselben Fehlerform). **Grenzen:** Punkt 4 nicht gefahren, ein Profil, keine Wiederholungen; sechs instrumentierte Quellen sind in keinem Lauf belegt worden. Ankercheck -1,6 %. **Nichts gebaut, kein Eingriff in `server/src`.** |
 | 26.08.2026 (vierte Session, dritter Teil) | **Beide offenen Punkte zum Spielermodell entschieden und gebaut.** (1) **`begleitschiff` nur noch bis `escortCap`** - aus der Geschmacksfrage wurde eine Messung: Kosten je Machtpunkt 1,10 (schlachtschiff) bis 1,18 (schwer) bei allen echten Kampfschiffen, **3,37 beim Begleitschiff**. Wirkung gemessen: **Flottenmacht steigt bei gleichem Ressourceneinsatz von 0,80 auf 1,41 Mrd**, Flotte am Tag 7 jetzt plausibel (leicht 2950, schwer 1750, kreuzer 1225, begleitschiff 522). Vorbehalt notiert: `combatFleetPowerBase()` kennt keine Sonderfaehigkeiten, die Salven-Schiffe stehen mit 5,6-7,3 nur deshalb schlecht da. (2) **K3 bleibt UNVERAENDERT, K3b kommt daneben** - die Definition nicht anzufassen war ausdrueckliche Entscheidung, weil K3 ueber mehrere Sessions Vergleichswerte hat und eine Aenderung sie alle entwertet haette. K3b zaehlt: Lane leer, Ablehnung 'Nicht genug Ressourcen', Gesamtwert reicht trotzdem; Massstab bewusst derselbe wie K3 (guenstigstes Schiff), damit keine neue willkuerliche Konstante entsteht. **Ergebnis: K3b 50,0 %, wo K3 0,0 % meldet** - in der Haelfte aller Proben steht eine Lane still, weil genau ein Rohstoff fehlt (Metall 1 Mio gegen Kristall 328 Mio und Deuterium 811 Mio). **Die Deutung steht ausdruecklich aus:** ob diese Metall-Bindung gewollt ist, ist eine Balance-Frage und nicht bewertet. Protokoll `spielermodell_diagnose.txt` Abschnitte 7 und 8. **Kein Eingriff in `server/src`.** |
 | 26.08.2026 (vierte Session, zweiter Teil) | **Spielermodell in `sim13_lauf.mjs` entstoert - Schritt 2 der Liste aus `sim13_geruest.txt` Abschnitt 8 erledigt.** Protokoll `spielermodell_diagnose.txt`, Diagnosewerkzeug `probe_spielermodell.mjs` (neu). **Der Stillstand ab Tag 3 hatte FUENF Ursachen**, zwei davon schalteten jede fuer sich beide Einnahmequellen ab: der Minenertrag war **exakt null** (`mineOutputPerHour()` x `energyFactor()`; der alte Filter `b.baseOutput` schloss das Solarkraftwerk aus, das Modell konnte es konstruktionsbedingt nicht bauen), und ab 180 Mining-Schiffen wurde jeder Missionsversand abgelehnt (`miningCap` 300/220/180, `escortCap` 500 - das Modell bot die ganze Flotte an). Dahinter stand als Sichtbarkeitsproblem, dass die Aktionen **nicht werfen**, sondern `{ok:false,error}` zurueckgeben - die `try/catch`-Bloecke fingen nie etwas. Dazu 1400 Spionagesonden (0 Kampfkraft, 11,2 Mio Kristall) und 720 Fehlversuche je Lauf an gesperrten V2/V3-Stufen. **Nach der Korrektur:** Wert 0,02 -> 3,19 Mrd, Flottenmacht 0,06 -> 0,80 Mrd ueber sieben Tage, K1 erfuellt (6,6 %), Forschungs-Leerlauf 2,4 %. **Zwei Setzungen vom Nutzer bestaetigt** (Energie-Vorrang am Ist-Faktor; staerkstes tragbares Feld, auf den Cap beschnitten). **Neuer Befund, Nutzerentscheidung noetig: Metall ist der Engpass (1 Mio gegen 337 Mio Kristall und 979 Mio Deuterium, 335 Gebaeude-Ablehnungen wegen Ressourcen) - und K3 meldet dafuer 0,0 %, weil die Kennzahl ALLE Lanes belegt verlangt. Schwaeche der K3-Definition, zu klaeren bevor K3-Zahlen zitiert werden.** Zweiter offener Punkt: `begleitschiff` traegt `stats.waffen=350` und wird deshalb ueber `escortCap` hinaus gebaut (3420 gegen 500). **Zwei eigene Fehler festgehalten:** Messregel 16 zum zweiten Mal (`sh.waffen` existiert nicht, die Kampfwerte stehen unter `sh.stats` - die Liste war leer, null Kampfschiffe, erkennbar nur an 0,00 Mrd Flottenmacht), und der verworfene Vorschlag, den Schiffsbau bei gedecktem Cap zu stoppen (ein Modell, das aus Zufriedenheit aufhoert zu bauen, erzeugt leere Slots - und Leerlauf IST K2). **Kein Eingriff in `server/src`.** |
 | 26.08.2026 (vierte Session, Abschluss) | **Verdrahtungsprobe fuer Block A Schritt 2 gelaufen - BLOCK A IST VERDRAHTET UND ZAHLT.** Protokoll `verdrahtung_a.txt`, Werkzeug `probe_verdrahtung_a.mjs` (neu). Die beiden zu Sessionbeginn fehlenden Werkzeuge wurden nachgereicht und vor Gebrauch auf Echtheit geprueft (Blockzaehlung A 9 / B 2 / C 3 / D 5 / E 2 = 21, `ownerUsername` in C3, Zielpruefung auf `/dist`, Symlink, dazu `mission.curvedWin`/`mission.lostUnits` als nicht rekonstruierbare Details) - kein Nachbau. **Ergebnis:** echte Missionsschleife 0,0925 je Punkt vernichteter Feindmacht gegen 0,0924 der Referenzschleife, **+0,1 % bei 40 Durchlaeufen je Seite**; die Probe baut keine Teilrechnung nach, sondern liest `state.resources`/`state.inventory` nach `finalizeMission()` und nimmt die vernichtete Feindmacht aus dem spieleigenen Bericht. **Gegenprobe gegen den unverdrahteten Eingangs-Build +72,8 %** - Trennabstand 73 Punkte gegen rund 2 Punkte Streuung, mit drei unabhaengigen Merkmalen (Container je Mission 1,00 gegen 4,40; Ertrag je Punkt 0,1028 gegen 0,1711; Punkte-Korrektur -0,092 Mrd gegen 0,000). **Die Verdopplerfrage aus dem Kasten bei Entscheidung 2 ist damit beantwortet**, als gebaute Setzung: Sandronator x2 und Wochen-Event x2 wirken auf den Ressourcenteil, der Container faellt einmal je Mission ohne sie; die Wirkung an Mo/Fr ist ungemessen. **Grenzen:** nur `missions.js`, nur eine Zelle; `groupOps.js` ist NICHT geprueft; die Bergungshoehe nur auf Groessenordnung (10,0 % der Belohnung). Ankercheck des wiederhergestellten Simulationsbuilds -1,2 %. **Nichts gebaut, kein Eingriff in `server/src`.** |
