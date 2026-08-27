@@ -500,6 +500,16 @@
      solange die Tabelle in die Breite passt). */
   .combat-table{ width:100%; border-collapse:collapse; font-size:13px; }
 
+  /* Zweite Zeile in einer Kampf-Tabellenzelle: die SUMME unter dem Wert je Einheit
+     (Nutzerentscheidung 27.08.2026, siehe `Wert` in pages/Nachrichten.tsx).
+     Bewusst nur kleiner und gedaempft statt in einer eigenen Spalte: eine zehnte Spalte haette die
+     ohnehin waagerecht scrollende Tabelle weiter verbreitert, waehrend die Zeilenhoehe hier
+     ohnehin schon zweizeilig ist (lange Einheitennamen wie "Leichtes Lasergeschuetz" brechen um).
+     `font-variant-numeric: tabular-nums` auf der ganzen Tabelle, damit die Ziffern untereinander
+     stehen und die zweizeiligen Zellen nicht flackern. */
+  .combat-table{ font-variant-numeric: tabular-nums; }
+  .zellen-summe{ font-size:11px; opacity:0.55; margin-top:1px; }
+
   /* Waagerechter Scroll-Bereich fuer BREITE Tabellen (`.combat-table` ohne `narrow`).
      Bewusst so eng wie moeglich um die Tabelle gelegt: Handy-Browser legen die Wischrichtung in
      den ersten Millimetern einer Geste fest. Beginnt eine Geste in einem waagerecht scrollbaren
