@@ -112,12 +112,52 @@ anders wirken kann als in der Simulation.
     sicher trennbar), fuer die STREUUNG nicht (22,7 gegen 30,2 %) - die kuerzere Mission mittelt
     zusaetzlich ueber mehr unabhaengige Missionen. **Wer kuenftig an einer Missionsdauer dreht,
     verstellt den Reichen Fund exponentiell mit.**
-  - **VIER WEGE LIEGEN VOR, KEINER IST GEWAEHLT** (Protokoll Abschnitt 12): nichts aendern; Form
-    aendern bei gleichem Niveau; Chance senken (0,04 -> 8,60 Mrd / 30,2 %, 0,02 -> 6,40 / 18,0 %);
-    Missionsdauer zuruecknehmen (beruehrt weit mehr, nicht empfohlen). Der Code-Kommentar benennt
-    die Schwankung ausdruecklich als Absicht ("bewusst als Gluecksspiel-Mechanik") - **die Mechanik
-    tut genau das, wofuer sie gebaut wurde; ob in dieser Groessenordnung, ist eine
-    Nutzerentscheidung und hier NICHT bewertet.**
+  - **ENTSCHEIDUNG AM 27.08.2026 VOM NUTZER DELEGIERT, EINGETRAGEN UND UMKEHRBAR** (gefuehrt wie
+    f = 12 und Befund G, NICHT gebaut). Die vier urspruenglichen Wege behandeln Hoehe und Streuung
+    als eine Frage - Befund 3 zeigt, dass sie es nicht sind. Gemessen wurde deshalb eine fuenfte,
+    in Abschnitt 11 nicht vorgesehene Form: **ein Treffer ist `faktor` mal die NOMINALE
+    GESAMTAUSBEUTE der Mission wert statt eine Verdopplung des bis dahin Angesammelten.**
+    Erwartungswert dann `1 + n*p*faktor`, also LINEAR in der Missionsdauer statt `(1+p)^n`; bei
+    festem Produkt `p*faktor` wird die Streuung zum Regler. Vier Zellen a 20 Laeufe, Produkt 0,140
+    gegen den GEMESSENEN Fund-Anteil kalibriert:
+
+    | Zelle | Chance | Faktor | Mittel | VarKoeff | Spanne |
+    |---|---|---|---|---|---|
+    | heute | 0,08 | Verdopplung | 15,27 | 64,1 % | 7,63x |
+    | v_p008 | 0,08 | 1,750 | 14,91 | 27,8 % | 2,72x |
+    | **v_p016** | **0,16** | **0,875** | **15,53** | **12,9 %** | **1,56x** |
+    | v_p024 | 0,24 | 0,583 | 15,49 | 8,8 % | 1,39x |
+    | v_p032 | 0,32 | 0,438 | 15,66 | 7,2 % | 1,29x |
+
+    **DIE KOMPOUNDIERUNG ALLEIN KOSTET DEN GROESSTEN TEIL DER STREUUNG:** bei UNVERAENDERTER
+    Chance 0,08 faellt der VarKoeff von 64,1 auf 27,8 % und die Spanne von 7,63x auf 2,72x. Damit
+    ist die Verdopplung des ANGESAMMELTEN Betrags als Einzelursache belegt, nicht nur plausibel.
+  - **EMPFOHLEN: v_p016 (Chance 0,16, Faktor 0,875).** Niveau unveraendert (+1,7 %), Streuung
+    64,1 -> 12,9 %, Spanne 7,63x -> 1,56x. **Warum genau dieser Wert:** die Streuungskurve hat dort
+    einen Knick - 0,08 -> 0,16 bringt -14,9 Punkte, 0,16 -> 0,24 nur noch -4,1, 0,24 -> 0,32 nur
+    -1,6. Oberhalb kauft man nichts mehr und macht den Fund zur Routine (5,8 bis 7,7 Treffer je
+    Mission statt 3,8). Der Wert steht auf einer gemessenen Kurve und nicht auf einem Geschmack.
+  - **DAS NIVEAU BLEIBT, AUS EINEM GEMESSENEN GRUND.** Die Woche-1-Baseline vom 20.08.2026 fuehrt
+    die Asteroiden mit 18,1 Mrd, und der Zielkorridor von **Entscheidung 3** (7-10 Mrd/Tag) ist so
+    gewaehlt, dass weder Raid noch Elite die 50-%-Marke reisst. Jede Kuerzung hier verkleinert den
+    NENNER und hebt den Anteil beider - Entscheidung 3 waere neu zu kalibrieren und
+    Abnahmekriterium 5 gleich mit. **Der Befund rechtfertigt eine Formaenderung, keine
+    Niveauaenderung.** Ebenfalls verworfen: die vollstaendig deterministische Form (VarKoeff
+    0,2 %), weil sie eine Mechanik loescht, die der Code-Kommentar ausdruecklich als
+    Nutzerentscheidung vom Juli 2026 benennt ("bewusst als Gluecksspiel-Mechanik"); und die
+    Ruecknahme der Missionsdauer (Nutzerentscheidung vom 28.07.2026, beruehrt Spielrhythmus,
+    dmCap-Rate und Nachschau-Haeufigkeit).
+  - **DIE EMPFEHLUNG IST NICHT VOLLSTAENDIG - DREI PUNKTE VOR DEM EINBAU:** (1) **K5 in einer
+    `tick`-Zelle**, weil alle Zellen dieser Session ohne Raid laufen und K5 dort strukturell nicht
+    entscheidbar ist (Befund 4); (2) **Messregel 8: es GIBT einen Client-Spiegel** -
+    `RichFindList` in `pages/Nachrichten.tsx` rendert `msg.detail.richFinds`, und `missions.ts`
+    Z. 745 baut den Text "Reicher Fund in Stunde X"; unter der neuen Form ist die STUNDE fuer den
+    Wert bedeutungslos, die Anzeige wuerde also etwas hervorheben, das nichts mehr bedeutet;
+    (3) **die Eskorten-Praemie wird nicht mehr mitverdoppelt** - sachlich richtiger (ein Minenfund
+    ist keine Kampfbelohnung), aber eine zweite Aenderung im selben Paket und als solche zu
+    benennen. Geprueft und unproblematisch: fuer Piraten-Sektoren ist der Fund seit dem 29.07.2026
+    ohnehin tot (kein `mission.farmed` mehr zum Verdoppeln).
+  - **DIE SAMMELLISTE WAECHST DAMIT AUF ZEHN PAKETE** (elf, falls Entscheidung 15 aufgenommen wird).
   - **NEBENERGEBNIS FUER PUNKT 4, vorab geklaert:** `--mensch_unterschritte` kostet **Faktor 1,58**,
     nicht 30 (2 Tage `tick`: 5,7 gegen 9,1 s) - die 30 Unterschritte laufen fuer die Bots ohnehin,
     der zusaetzliche Menschen-tick ist daneben billig. Punkt 4 kostet damit rund **75 Minuten**
@@ -1623,24 +1663,23 @@ Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier
 
 ## Erster Schritt beim naechsten Mal
 
-**STAND 27.08.2026 (sechste Session): DIE MESSUNG ZUM REICHEN FUND IST GEFAHREN. NAECHSTER
-SCHRITT IST EINE NUTZERENTSCHEIDUNG, NICHT EINE MESSUNG - erst danach Punkt 4.**
+**STAND 27.08.2026 (sechste Session): DIE MESSUNG ZUM REICHEN FUND IST GEFAHREN UND DIE
+ENTSCHEIDUNG IST GEFALLEN** (vom Nutzer delegiert, eingetragen, umkehrbar, **nicht gebaut**):
+**zeitpunktunabhaengige Form, Chance 0,16, Faktor 0,875.** Niveau unveraendert, Streuung
+64,1 -> 12,9 %, Spanne 7,63x -> 1,56x. Begruendung im Stand-Eintrag oben und in
+`reicherfund_11.txt` Abschnitt 12b. **Sammelliste jetzt bei ZEHN Paketen.**
 
-**WAS DEM NUTZER VORLIEGT: welcher der vier Wege beim Reichen Fund** (Protokoll
-`reicherfund_11.txt` Abschnitt 12). Nichts davon ist entschieden, und **nichts davon darf gegen
-Abnahmekriterium 5 kalibriert werden** - K5 bewegt sich hier nicht monoton, und sein schlechtester
-Wert ist ausgerechnet die Nullmessung.
+**DREI KLEINE PUNKTE VOR DEM EINBAU, rund eine halbe Stunde:** K5 in einer `tick`-Zelle (ohne Raid
+ist K5 nicht entscheidbar); der Client-Spiegel `RichFindList` samt dem Text "Reicher Fund in
+Stunde X"; und die Eskorten-Praemie, die kuenftig nicht mehr mitverdoppelt wird.
 
-| Weg | Woche 1 | VarKoeff | Spanne |
-|---|---|---|---|
-| (1) nichts aendern | 15,27 Mrd | 64,1 % | 7,63x |
-| (2) feste Form, Niveau behalten | 15,36 Mrd | **0,2 %** | 1,01x |
-| (3) Chance 0,04 | 8,60 Mrd | 30,2 % | 2,69x |
-| (3) Chance 0,02 | 6,40 Mrd | 18,0 % | 1,79x |
-| (4) Dauer zurueck auf 12 h | 7,86 Mrd | 22,7 % | 2,27x |
+**NICHTS DAVON DARF GEGEN ABNAHMEKRITERIUM 5 KALIBRIERT WERDEN** - K5 bewegt sich hier nicht
+monoton, und sein schlechtester Wert ist ausgerechnet die Nullmessung.
 
-**PUNKT 4 ERST DANACH.** Wird der Reiche Fund angefasst, sind alle vorher gefahrenen
-30-Tage-Baselines wertlos - er stellt 40 bis 82 % der Wocheneinnahmen.
+**PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
+gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
+64 % Streuung. Entweder das kennzeichnen, oder Punkt 4 gegen einen Messbuild mit v_p016 fahren -
+letzteres ist die sauberere Reihenfolge, aber eine eigene Entscheidung.
 
 Buildpfad, jetzt vierstufig (die vierte Stufe ist optional, nur fuer Reicher-Fund-Zellen):
 

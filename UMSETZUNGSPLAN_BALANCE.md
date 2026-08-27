@@ -294,6 +294,50 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 > "rund 2", und der Anker kann positiv ausfallen** - die bisher notierte Erwartung "-1 bis -3 %" ist
 > zu eng. Ein einzelner Wert ausserhalb des Bandes belegt keinen defekten Build.
 
+> **NACHTRAG 27.08.2026, ENTSCHEIDUNG VOM NUTZER DELEGIERT - UMKEHRBAR, NICHT GEBAUT.** Gefuehrt
+> wie f = 12 und Befund G. Die vier Wege oben behandeln Hoehe und Streuung als eine Frage; Befund 3
+> zeigt, dass sie es nicht sind. Daraus eine fuenfte, in Abschnitt 11 nicht vorgesehene Form:
+> **ein Treffer ist `faktor` mal die NOMINALE GESAMTAUSBEUTE wert statt eine Verdopplung des bis
+> dahin Angesammelten.** Erwartungswert dann `1 + n*p*faktor`, also LINEAR in der Missionsdauer;
+> bei festem Produkt `p*faktor` wird die Streuung zum Regler. Produkt 0,140, gegen den GEMESSENEN
+> Fund-Anteil kalibriert.
+>
+> | Zelle | Chance | Faktor | Mittel | VarKoeff | Spanne |
+> |---|---|---|---|---|---|
+> | heute | 0,08 | Verdopplung | 15,27 | 64,1 % | 7,63x |
+> | v_p008 | 0,08 | 1,750 | 14,91 | 27,8 % | 2,72x |
+> | **v_p016** | **0,16** | **0,875** | **15,53** | **12,9 %** | **1,56x** |
+> | v_p024 | 0,24 | 0,583 | 15,49 | 8,8 % | 1,39x |
+> | v_p032 | 0,32 | 0,438 | 15,66 | 7,2 % | 1,29x |
+>
+> **DIE KOMPOUNDIERUNG ALLEIN KOSTET DEN GROESSTEN TEIL DER STREUUNG:** bei UNVERAENDERTER Chance
+> 0,08 faellt der VarKoeff von 64,1 auf 27,8 % und die Spanne von 7,63x auf 2,72x. Als Einzelursache
+> belegt, nicht nur plausibel.
+>
+> **EMPFOHLEN: v_p016 (Chance 0,16, Faktor 0,875).** Niveau unveraendert (+1,7 %), Streuung
+> 64,1 -> 12,9 %, Spanne 7,63x -> 1,56x. **Warum genau dieser Wert:** die Streuungskurve hat einen
+> Knick dort - 0,08 -> 0,16 bringt -14,9 Punkte, 0,16 -> 0,24 nur noch -4,1, 0,24 -> 0,32 nur -1,6.
+> Oberhalb kauft man nichts mehr und macht den Fund zur Routine (5,8 bis 7,7 Treffer je Mission
+> statt 3,8). Der Wert steht auf einer gemessenen Kurve, nicht auf einem Geschmack.
+>
+> **DAS NIVEAU BLEIBT, UND ZWAR AUS EINEM GEMESSENEN GRUND:** die Woche-1-Baseline vom 20.08.2026
+> fuehrt die Asteroiden mit 18,1 Mrd, und der Zielkorridor von **Entscheidung 3** (7-10 Mrd/Tag)
+> ist so gewaehlt, dass weder Raid noch Elite die 50-%-Marke reisst. Jede Kuerzung hier verkleinert
+> den NENNER und hebt den Anteil beider - Entscheidung 3 waere neu zu kalibrieren und
+> Abnahmekriterium 5 gleich mit. **Der Befund rechtfertigt eine Formaenderung, keine
+> Niveauaenderung.** Ebenfalls verworfen: die vollstaendig deterministische Form (VarKoeff 0,2 %),
+> weil sie eine Mechanik loescht, die der Code-Kommentar als Nutzerentscheidung vom Juli 2026
+> benennt; und die Ruecknahme der Missionsdauer (Nutzerentscheidung vom 28.07.2026, beruehrt
+> Spielrhythmus und dmCap-Rate).
+>
+> **VOR DEM EINBAU NOCH ZU KLAEREN, die Empfehlung ist NICHT vollstaendig:** (1) K5 in einer
+> `tick`-Zelle - alle Zellen hier laufen ohne Raid, K5 ist dort strukturell nicht entscheidbar;
+> (2) **Messregel 8: es GIBT einen Client-Spiegel** - `RichFindList` in `pages/Nachrichten.tsx` und
+> der Text "Reicher Fund in Stunde X" in `missions.ts` Z. 745, und unter der neuen Form ist die
+> STUNDE fuer den Wert bedeutungslos; (3) die Eskorten-Praemie wird nicht mehr mitverdoppelt - das
+> ist sachlich richtiger, aber eine zweite Aenderung im selben Paket. **Die Sammelliste waechst
+> damit auf ZEHN Pakete** (elf mit Entscheidung 15).
+
 > **MESSKASTEN 26.08.2026 (fuenfte Session) - ABNAHMEKRITERIUM 5 UND 6 SIND AB SOFORT ERHEBBAR.
 > DIE GROESSTE EINZELQUELLE DER WOCHE 1 STAND AUF KEINER LISTE. NICHTS AM SPIELCODE GEBAUT.**
 > Protokoll `balance/session2-simulation/k5_quellen.txt`, Werkzeug `make_messbuild_k5.mjs` (neu),
