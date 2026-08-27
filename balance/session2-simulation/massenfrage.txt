@@ -1,0 +1,33 @@
+=== MASSENFRAGE: AGGREGAT-EFFEKT GEGEN MODELL-EFFEKT ===
+Mischflotte aus sechs Standardtypen, Gegner = generateAdmiralEncounter(Flottenmacht x 1,30 x 1,75),
+Profil voll, allowRetreat aus, 40 Laeufe je Zelle. MESSBUILD-Werte.
+Der Gegner ist auf die Flottenmacht SKALIERT - die Verlustquote sollte also ungefaehr
+konstant bleiben. Tut sie das nicht, ist genau das der gesuchte Effekt.
+
+    n   Einheiten | IST-ZUSTAND              | NIE AGGREGIERT          | Differenz
+                  | agg  Verlust %  ms/Lauf  | Verlust %  ms/Lauf      | Punkte
+   90         405 |   0       63.4 %       33 |      64.2 %       28      |    -0.8
+   99         447 |   0       58.0 %       31 |      58.6 %       35      |    -0.6
+  101         456 |   6       53.6 %       12 |      56.7 %       30      |    -3.1
+  150         675 |   6       35.4 %       15 |      38.8 %       49      |    -3.5
+  400        1800 |   6       10.7 %       30 |      14.6 %      133      |    -3.9
+ 1000        4500 |   6        2.3 %       55 |       5.7 %      381      |    -3.3
+ 2500       11250 |   6        0.1 %      123 |       2.3 %     1025      |    -2.2
+
+--- GEGENPROBE: n=90 und n=99 laufen in BEIDEN Builds unaggregiert ---
+  n=90: 63.4 % gegen 64.2 %, Differenz -0.8 Punkte   (unauffaellig)
+  n=99: 58.0 % gegen 58.6 %, Differenz -0.6 Punkte   (unauffaellig)
+
+--- AUFTEILUNG DES ABSTURZES ---
+  Gesamtabsturz IST     n=90 -> n=2500: 63.4 -> 0.1 % (63.3 Punkte)
+  davon OHNE Aggregat   n=90 -> n=2500: 64.2 -> 2.3 % (61.9 Punkte)
+  Anteil Kampfmodell: 98 %   Anteil Aggregat: 2 %
+
+--- RECHENZEIT: waere eine Schwelle von 4.000-5.000 tragbar? ---
+  n=  90 (  405 Einheiten): aggregiert    33 ms, einzeln     28 ms   Faktor 0.8
+  n=  99 (  447 Einheiten): aggregiert    31 ms, einzeln     35 ms   Faktor 1.1
+  n= 101 (  456 Einheiten): aggregiert    12 ms, einzeln     30 ms   Faktor 2.5
+  n= 150 (  675 Einheiten): aggregiert    15 ms, einzeln     49 ms   Faktor 3.3
+  n= 400 ( 1800 Einheiten): aggregiert    30 ms, einzeln    133 ms   Faktor 4.5
+  n=1000 ( 4500 Einheiten): aggregiert    55 ms, einzeln    381 ms   Faktor 7.0
+  n=2500 (11250 Einheiten): aggregiert   123 ms, einzeln   1025 ms   Faktor 8.3

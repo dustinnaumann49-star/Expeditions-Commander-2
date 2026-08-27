@@ -1,0 +1,163 @@
+DIE MASSENFRAGE - WARUM GROSSE FLOTTEN FAST NICHTS VERLIEREN
+Protokoll vom 27.08.2026 (sechste Session)
+Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs (alle neu)
+Rohausgaben: massenfrage.txt, deckel.txt
+
+!!! MESSBUILD-PROTOKOLL. Alle Zahlen aus gepatchten dist-Kopien. server/src unberuehrt.        !!!
+
+Anlass: Nutzerbeobachtung beim Spielen ("ich trete immer wieder auf dieses Stack-Aggregat"), mit
+dem Vorschlag, die Aggregationsschwelle auf 4.000-5.000 anzuheben.
+
+================================================================================
+0. ZWEI ERGEBNISSE, BEIDE NEGATIV FUER DIE NAHELIEGENDEN ERKLAERUNGEN
+================================================================================
+(1) DAS AGGREGAT IST NICHT DIE URSACHE. 98 % des Absturzes von 63,4 auf 0,1 % Verlust passieren
+    auch dann, wenn NICHTS aggregiert wird.
+(2) DIE BEIDEN DECKEL SIND ES AUCH NICHT. Ihre Obergrenze um Faktor 100 anzuheben (250 -> 25.000
+    moegliche Abschuesse je Runde) veraendert die Spanne von 63,7 auf 67,0 Punkte - also nichts,
+    und in die falsche Richtung.
+Die Ursache des Masse-Vorteils ist damit weiterhin unbekannt, aber zwei Verdaechtige sind
+ausgeschlossen. Das ist der Stand, und er ist ehrlicher als eine dritte Vermutung.
+
+================================================================================
+1. RICHTIGSTELLUNG ZUR AUSGANGSANNAHME
+================================================================================
+Der Vorschlag ging davon aus, die Aggregation setze bei rund 2.000 Einheiten ein. Tatsaechlich
+(STACK_AGGREGATE_THRESHOLD_BY_TYPE, `combatConstants.ts`):
+
+  Schlachtkreuzer / Zerstoerer / Reaper / Sandronator      50
+  Kreuzer / Schlachtschiff / Bomber / Verteidigungsanlagen 100
+  Leichter / Schwerer Jaeger                               500
+  alles uebrige (Salvenschiffe, Imperator, Kuppeln)       2000  - greift praktisch nie
+
+In den vorgelegten Kampfberichten laeuft damit praktisch alles aggregiert (25.916 Jaeger,
+8.072 Kreuzer, 10.000 Bomber); nur die Salvenschiffe (105/90/30) werden einzeln gerechnet. Die
+Grenze liegt bei Dutzenden, nicht bei Tausenden - eine Anhebung auf 4.000-5.000 waere bei der
+Elite-Klasse Faktor 100.
+
+================================================================================
+2. MESSUNG 1 - AGGREGAT GEGEN MODELL (massenfrage.txt)
+================================================================================
+Aufbau: Mischflotte aus sechs Standardtypen, Gegner ueber den echten
+generateAdmiralEncounter(Flottenmacht x 1,30 x 1,75), Profil voll, allowRetreat aus, 40 Laeufe je
+Zelle. Dieselbe Leiter zweimal - einmal mit den Schwellen aus dem Code, einmal mit Schwelle 100.000
+fuer ALLE Typen (also nie aggregiert).
+
+DER GEGNER IST AUF DIE FLOTTENMACHT SKALIERT. Eine massstabsneutrale Engine muesste ueber die
+ganze Leiter dieselbe Verlustquote liefern. Genau das ist der Massstab.
+
+     n  Einheiten   IST-Zustand   nie aggregiert   Differenz
+    90        405       63,4 %          64,2 %        -0,8
+    99        447       58,0 %          58,6 %        -0,6
+   101        456       53,6 %          56,7 %        -3,1
+   150        675       35,4 %          38,8 %        -3,5
+   400      1.800       10,7 %          14,6 %        -3,9
+ 1.000      4.500        2,3 %           5,7 %        -3,3
+ 2.500     11.250        0,1 %           2,3 %        -2,2
+
+  Gesamtabsturz IST            63,4 -> 0,1 %   (63,3 Punkte)
+  davon ohne jede Aggregation  64,2 -> 2,3 %   (61,9 Punkte)
+  ANTEIL KAMPFMODELL 98 %   ANTEIL AGGREGAT 2 %
+
+GEGENPROBE, eingebaut: n=90 und n=99 laufen in BEIDEN Builds unaggregiert und muessen deshalb
+uebereinstimmen. Gemessen 0,8 und 0,6 Punkte Abstand - reine Streuung. Der Patch veraendert also
+nichts ausser der Schwelle; ohne diese Kontrollzeile waere jede Differenz weiter unten nicht von
+einem Patchfehler zu unterscheiden gewesen.
+
+RECHENZEIT, als Nebenprodukt:
+
+     n  Einheiten   aggregiert   einzeln    Faktor
+    90        405        33 ms     28 ms       0,8
+   101        456        12 ms     30 ms       2,5
+   400      1.800        30 ms    133 ms       4,5
+ 1.000      4.500        55 ms    381 ms       7,0
+ 2.500     11.250       123 ms  1.025 ms       8,3
+
+FOLGERUNG FUER DEN URSPRUENGLICHEN VORSCHLAG: eine Schwelle von 4.000-5.000 wuerde die
+Verlustquote bei 4.500 Einheiten von 2,3 auf 5,7 % heben - 3,3 Punkte - und dafuer Faktor 7 an
+Rechenzeit kosten, bei 11.250 Einheiten Faktor 8,3 (1.025 ms je Kampf). Der Rueckstau-Vorfall vom
+30.07.2026, der die gestaffelten Schwellen ueberhaupt erst ausgeloest hat, waere damit zurueck.
+NICHT EMPFOHLEN.
+
+================================================================================
+3. MESSUNG 2 - DIE ZWEI DECKEL (deckel.txt)
+================================================================================
+Nach Messung 1 blieb als Verdaechtiger der Einzelpfad. Dort setzen zwei Konstanten eine ABSOLUTE
+Obergrenze an Abschuessen je Runde und Schuetze:
+    OVERKILL_MAX_CASCADE (5) x MAX_SHOTS_PER_UNIT (50) = 250
+Weil die Zahl absolut ist, faellt ihr ANTEIL mit jeder weiteren gebauten Einheit. Der Plan hatte
+das am 17.08.2026 als Nebenbefund zu 4.4 notiert, aber nie gemessen, ob sich die Kurve durch
+Anheben begradigen laesst. Beide Konstanten wurden als GITTER variiert, weil sie sich
+multiplizieren - wer nur eine anhebt, laeuft in die andere und misst deren Deckel.
+
+  Variante                       Abschuesse/Runde   Spanne   n=90    n=2500   total n=90
+  V0 Ist-Zustand                            250      63,7   63,8 %    0,1 %        0 %
+  V1 nur Kaskade 25                       1.250      69,5   71,1 %    1,7 %        0 %
+  V2 nur Kaskade 50                       2.500      69,1   70,8 %    1,7 %        0 %
+  V3 nur Schuesse 250                     1.250      64,5   64,6 %    0,1 %        0 %
+  V4 Kaskade 25 + Schuesse 250            6.250      69,2   70,9 %    1,7 %        0 %
+  V5 Kaskade 50 + Schuesse 500           25.000      67,0   68,7 %    1,6 %        0 %
+
+DIE HYPOTHESE IST WIDERLEGT, UND ZWAR DEUTLICH:
+- Die Spanne bleibt bei 63,7 bis 69,5 Punkten. Die Kurve wird NICHT flacher, sie verschiebt sich
+  nur nach oben. Faktor 100 auf die Obergrenze bewegt 3,3 Punkte.
+- Die Wirkung geht in die FALSCHE Richtung: kleine Flotten verlieren mehr (63,8 -> 70,8 %), grosse
+  bleiben praktisch unberuehrt (0,1 -> 1,7 %). Genau umgekehrt zum Ziel.
+- MAX_SHOTS_PER_UNIT ist gar nicht bindend: V3 (Schuesse verfuenffacht, Kaskade unveraendert)
+  aendert nichts (63,7 -> 64,5). Der Boss kommt nie in die Naehe von 50 Schuessen je Runde - das
+  passt zum R14-Befund vom 17.08.2026 ("gemessen feuert der Boss exakt einen Schuss je Runde").
+- Die Kaskade ist bindend, aber schwach: sie wird durch den Daempfungsfaktor (Durchschlag-
+  Forschung, `effectPerLevel` 0,05, also 0,5 bei Stufe 10) geometrisch abgewuergt, lange bevor die
+  Stufenzahl greift. Bei Halbierung je Stufe ist nach wenigen Schritten nichts mehr uebrig -
+  deshalb bringt 50 kaum mehr als 25.
+- "nie Totalverlust" bleibt in ALLEN Varianten gewahrt (total 0 % bei n=90).
+
+================================================================================
+4. WAS DAS ZUSAMMEN HEISST
+================================================================================
+Drei Erklaerungen standen im Raum, zwei sind jetzt ausgeschlossen und die dritte ist nie geprueft
+worden:
+  - Aggregation          AUSGESCHLOSSEN (2 % Anteil)
+  - Kaskade / Schuesse   AUSGESCHLOSSEN (Faktor 100 bewegt 3,3 Punkte, falsche Richtung)
+  - der Gegner selbst    OFFEN
+
+Der dritte Verdacht ist nach diesen zwei Messungen der naheliegende: der Gegner ist EIN einzelnes
+Kapitalschiff. Seine Feuerkraft steckt in wenigen, sehr grossen Schuessen, und ein Schuss kann per
+Bauart nur wenige Ziele erreichen - unabhaengig von jedem Deckel. Eine Flotte skaliert ihre
+Feuerkraft dagegen linear mit der Stueckzahl. Dass die Verlustquote faellt, waere dann kein Fehler
+in einer Konstanten, sondern eine Eigenschaft der Paarung "einer gegen viele".
+
+Das ist eine Vermutung und ausdruecklich KEIN Befund. Sie ist mit einer Sonde pruefbar, nicht mit
+einem weiteren Sweep: wieviele Schuesse gibt der Boss je Runde tatsaechlich ab, wieviele treffen,
+und wie verteilt sich sein Schaden ueber die Leiter? Erst wenn feststeht, WO seine Ausgabe
+verlorengeht, ist ein Eingriff sinnvoll.
+
+WICHTIG FUER DEN PLAN: die vorgesehene Bremse (Entscheidung 2, Beute-Kurve, Exponent 0,85) greift
+an den BELOHNUNGEN. Sie senkt, was ein Raid einbringt. Sie aendert nichts daran, dass eine
+4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert. Sie ist eine Bremse gegen
+Weglauf-Wachstum, aber kein Gegenmittel gegen "Masse macht unverwundbar". Die beiden Probleme sind
+im Plan bisher als eines gefuehrt.
+
+================================================================================
+5. GRENZEN
+================================================================================
+- EINE Paarung (Mischflotte gegen den Piratenadmiral), EIN Profil (voll), EIN Faktor (1,75x).
+  Ob dieselbe Kurve auch gegen normale Piratenflotten und in der Raid-Verteidigung auftritt, ist
+  NICHT gemessen. Gerade dort stehen viele Gegner gegen viele - also genau die Paarung, die nach
+  Abschnitt 4 anders ausfallen koennte.
+- Alle Zellen laufen ueber die vollen 100 Runden (MAX_ROUNDS). Der Boss stirbt in keiner Zelle.
+  Ob das an seiner Zaehigkeit oder an der Rundengrenze liegt, ist nicht getrennt.
+- allowRetreat ist aus. Im echten Spiel wuerde der gestaffelte Rueckzug bei den kleinen Zellen
+  greifen und deren Verluste senken - die Spanne waere also im Spiel kleiner als hier gemessen.
+- Rechenzeiten stammen von EINEM Kern in dieser Umgebung, nicht vom Zielserver.
+
+================================================================================
+6. NAECHSTE SCHRITTE
+================================================================================
+1. NICHT die Aggregationsschwelle anheben (Abschnitt 2). Nicht die Deckel anheben (Abschnitt 3).
+2. Sonde zum Gegner: Schuesse/Treffer/Schadensverteilung des Bosses ueber die Leiter. Klein,
+   kein Sweep. Erst danach ist ein Eingriff begruendbar.
+3. Gegenprobe in einer zweiten Paarung (Raid-Verteidigung, viele gegen viele), bevor aus dem
+   Befund eine allgemeine Aussage ueber "Masse" wird.
+4. Im Plan trennen: "Weglauf-Wachstum bremsen" (Entscheidung 2, Belohnungen) und "Masse macht
+   unverwundbar" (Kampf) sind zwei Probleme, nicht eines.
