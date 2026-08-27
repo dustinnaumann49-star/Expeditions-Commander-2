@@ -128,3 +128,60 @@ Zwei Anker fuer `groupOps.js` waren aus der TypeScript-Quelle statt aus dem komp
 uebernommen (dort acht statt vier Leerzeichen Einrueckung). Der harte Abbruch hat es sofort
 gemeldet. **Vierter Fundort derselben Fehlerform** nach `miningCapable`, `sh.waffen` und der
 D2-Einrueckung - Messregel 16 gilt unveraendert: Anker immer aus `dist` lesen.
+
+---
+
+## Nachtrag: K1b neu, K4 umgestellt
+
+Beide am 26.08.2026 gebaut, nachdem der Nutzer die Entscheidung ueberlassen hat. Beide umkehrbar.
+
+### K1b - ereignisbasiert statt stuendlich
+
+```
+K1  kein Totalverlust (<70 %) : groesster Einzelverlust 92.0 %   <- je STUNDE, siehe K1b
+K1b groesster Rueckgang (24 h): 99.9 % (Stunde 503, Tag 20)      <- K1 VERLETZT, wenn je Ereignis
+```
+
+**K1 bleibt unveraendert** - es hat ueber mehrere Sessions Vergleichswerte, und eine Aenderung der
+Definition entwertet sie alle. Dasselbe Muster wie K3/K3b.
+
+K1b misst den groessten Rueckgang vom Hoch der letzten `K1B_FENSTER = 24` Stunden auf den aktuellen
+Stand. **Das Fenster ist bewusst begrenzt:** ohne Grenze zaehlte auch eine langsame Zermuerbung
+ueber Wochen als "ein Ereignis", und das ist nicht die Frage, die K1 stellt.
+
+**Gegenprobe:** in Laeufen ohne mehrstuendiges Ereignis liefern K1 und K1b denselben Wert (zweimal
+6,1 %) - die neue Kennzahl erfindet nichts.
+
+### K4 - an den echten Sperren
+
+Vorher: "Flottenmacht erreicht `npcFloor`". Gemessen wirkungslos (300.000-3.000.000 gegen rund
+60.000.000 Startflottenmacht, sieben Sektoren am Tag 0).
+
+**Sektoren taugen strukturell nicht als Massstab.** Am Code nachgesehen: es gibt keine Sperre, und
+die Piraten-Sektoren skalieren ihre Gegnerstaerke mit der eigenen Macht mit - dort wird nie etwas
+freigeschaltet, es wird nur schwerer. Schiffe, Verteidigung und Forschung haben **ueberhaupt keine**
+Voraussetzung; `tier` in `ships.ts` ist eine Klassenbezeichnung, keine Sperre.
+
+Gestaffelt freigeschaltet wird genau viererlei, und `pruefeFreischaltung()` liest jetzt das:
+
+| Sperre | Woran ablesbar |
+|---|---|
+| Heimatbasis V2 / V3 | `state.buildingTier`, Schwelle `HOME_TIER_UNLOCK_LEVELS` (Minen 36/32/30) |
+| Stations-Stufe | `station.tier`, `checkTierUnlock()` |
+| Imperator | `fleet.imperator > 0` (Teile-Sperre, 1.000 je Kategorie) |
+| Sandronator | `fleet.sandronator > 0` (`unique`) |
+
+Alle vier direkt aus dem Spielstand, ohne Nachbau einer Bedingung. **Ergebnis: Wochen 1-4 ohne
+eine einzige Freischaltung** - jetzt eine Aussage ueber das Spiel statt ein Artefakt der Kennzahl.
+
+### Laufzeiten, gemessen
+
+| Zelle | Laufzeit |
+|---|---|
+| 14 Tage, `economy` | 19,1 s |
+| 14 Tage, `tick` | 145,3 s |
+| 30 Tage, `tick` | 318,5 s |
+
+**Lange Laeufe abgekoppelt starten** (`setsid nohup ... < /dev/null &`) und immer mit `--out=`:
+ein 30-Tage-Lauf ist in dieser Session einmal vorzeitig beendet worden, ohne Endauswertung - und
+die daraus gezogene Schlussfolgerung war falsch.

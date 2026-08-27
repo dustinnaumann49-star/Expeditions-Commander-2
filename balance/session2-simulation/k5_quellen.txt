@@ -10,7 +10,7 @@ Werkzeuge: make_messbuild_k5.mjs (neu), sim13_lauf.mjs (geaendert),
 0. ERGEBNIS IN EINEM SATZ
 ================================================================================
 K5 UND K6 SIND AB SOFORT ERHEBBAR - und die groesste Einzelquelle der Woche 1 ist eine, die auf
-keiner Liste stand: der REICHE FUND der Asteroidenfelder, in sechs Laeufen zwischen 54,2 % und
+keiner Liste stand: der REICHE FUND der Asteroidenfelder, in acht Laeufen zwischen 39,8 % und
 81,9 % der Wocheneinnahmen. Die Aufschluesselung ist vollstaendig, belegt durch einen unabhaengig
 gemessenen Nenner: "nicht zugeordnet" liegt in JEDEM Lauf bei 0,000 %.
 
@@ -145,8 +145,9 @@ reicher_fund schwankt zwischen 8,4 und 23,0 Mrd. Damit ist nebenbei erklaert, wa
 etwas geaendert haette - das war kein Rauschen des Kampfsystems, sondern ein einziger Wuerfel mit
 sehr grossem Hebel.
 
-ABNAHMEKRITERIUM 5 IST IN JEDEM LAUF VERLETZT, und zwar durch eine Quelle, die weder im Plan noch
-in der Aufgabenstellung vorkam. Das ist die dritte Wiederholung derselben Fehlerform: ein
+ABNAHMEKRITERIUM 5 IST IN DIESEN VIER LAEUFEN VERLETZT, und zwar durch eine Quelle, die weder im
+Plan noch in der Aufgabenstellung vorkam. EINSCHRAENKUNG, siehe Abschnitt 8c: mit Raid faellt der
+groesste Anteil auf 39,8 % und das Kriterium ist erfuellt - K5 ist nicht stabil entschieden. Das ist die dritte Wiederholung derselben Fehlerform: ein
 Anteilskriterium zeigt auf die falsche Quelle, und man sieht es erst, wenn alle Quellen
 NEBENEINANDER stehen (20.08.2026 Raid statt Asteroiden, heute Reicher Fund statt Mining).
 
@@ -191,49 +192,113 @@ sieben Tage stand state.raid am Ende auf AKTIV, raidsRepelledFull/Partial auf 0/
 "kein Raid", war aber ein noch laufender.
 
 ================================================================================
-7. BEFUND 3 - K1 UEBERSIEHT EINEN RAID-TOTALVERLUST, AUS DEMSELBEN GRUND WIE K3
+7. BEFUND 3 - DIE HEIMATFLOTTE WIRD AB TAG 20 BEI JEDEM RAID VOLLSTAENDIG VERNICHTET
 ================================================================================
-In einem 30-Tage-Lauf mit tick-Treiber, der vor dem Ende abgebrochen wurde (Prozess beendet, keine
-Endauswertung - die Zahlen daraus sind deshalb NICHT zitierfaehig ausser dieser einen Beobachtung
-aus der Tageszeile):
+ACHTUNG, KORREKTUR EINER FRUEHEREN FASSUNG DIESES ABSCHNITTS. Die erste Fassung behauptete, K1
+uebersehe den Verlust und melde 6,1 %. Das war FALSCH ZUGEORDNET: die 6,1 % stammten aus dem
+14-Tage-Lauf, in dem es gar keinen Totalverlust gab. Der 30-Tage-Lauf, aus dem die Tageszeilen
+stammen, war abgebrochen worden und hatte nie eine Endauswertung geliefert - es gab also keinen
+K1-Wert zu diesem Ereignis. Der Fehler ist derselbe, vor dem die Fallen-Liste warnt: eine Zahl aus
+einem Lauf neben einer Beobachtung aus einem anderen. Nachgeholt wurde der Lauf am selben Tag.
 
-  Tag 15 | Macht 1,93 Mrd | Verluste  0
-  Tag 16 | Macht 0,01 Mrd | Verluste 11
-  Tag 17 | Macht 0,47 Mrd | Verluste  1
+GEMESSEN, 30 Tage, Profil aktiv, Treiber tick, vollstaendig durchgelaufen:
 
-Die Heimatflotte ist an einem Tag praktisch vollstaendig vernichtet worden. K1 zaehlt aber
-STUENDLICH: es vergleicht die Flottenmacht vor und nach jedem Stundenschritt und merkt sich den
-groessten Einzelabfall. Ein Raid laeuft ueber zwoelf Wellen und mehrere Stunden - der Verlust
-zerfaellt dadurch in elf kleine Ereignisse, von denen keines die 70-%-Schwelle reisst.
+  Tag 13 | Macht 1,71 Mrd | Verluste  1
+  Tag 20 | Macht 0,00 Mrd | Verluste 11
+  Tag 21 | Macht 0,32 Mrd | Verluste  1
+  Tag 23 | Macht 0,04 Mrd | Verluste 11
+  Tag 27 | Macht 0,05 Mrd | Verluste 11
+
+  K1  groesster Einzelverlust  92,0 %
+  K1b groesster Rueckgang 24 h 99,9 %  (Stunde 503, Tag 20)
+
+ABNAHMEKRITERIUM 1 IST VERLETZT - und zwar deutlich und wiederholt. Ab Tag 20 vernichtet JEDER
+Raid die gesamte Heimatflotte; der Aufbau dazwischen (rund drei Tage) reicht nicht, um bis zum
+naechsten Checkpoint wieder verteidigungsfaehig zu sein. Das ist der eigentliche Befund dieses
+Abschnitts, und er war ohne den tick-Treiber unsichtbar.
 
 Zuordnung, deterministisch statt vermutet: das Spielermodell schickt auf Asteroidenfelder
 ausschliesslich mining und begleitschiff (availableFleetForSektor). Die Kampfschiffe, die
 combatFleetPowerBase() traegt, verlassen die Heimatbasis nie. Ein Einbruch der Heimat-Flottenmacht
-von 1,93 auf 0,01 Mrd kann daher NUR aus der Heimatverteidigung stammen, also aus einem Raid.
+auf null kann daher NUR aus der Heimatverteidigung stammen, also aus einem Raid.
 
-DAS IST EXAKT DIE FEHLERFORM VON K3: eine Kennzahl misst genau das, was ihre Definition sagt, und
-verfehlt dabei die Frage, fuer die sie da ist. Bei K3 war es "alle Lanes belegt", hier ist es "je
-Stunde statt je Ereignis". K3 wurde am 26.08.2026 bewusst NICHT geaendert, sondern um K3b ergaenzt,
-damit frueherer Vergleichswerte gueltig bleiben. Fuer K1 stellt sich dieselbe Frage - sie ist eine
-Kriteriums-Definition und damit Nutzerentscheidung, hier deshalb NICHT gebaut.
+WAS AN DER K1-DEFINITION TROTZDEM SCHWACH IST, jetzt praezise statt uebertrieben: K1 vergleicht je
+STUNDE, ein Raid laeuft ueber zwoelf Wellen. Der Verlust zerfaellt dadurch in elf Einzelabfaelle,
+und K1 sieht nur den groessten davon - hier 92,0 % gegen tatsaechliche 99,9 %. K1 hat die Schwelle
+in diesem Lauf ALSO GERISSEN; es haette sie aber verfehlen koennen, wenn sich derselbe Totalverlust
+gleichmaessiger auf die Wellen verteilt haette. **K1 unterschaetzt systematisch, verfehlt aber nicht
+zwangslaeufig.** Das ist eine schwaechere Aussage als die erste Fassung und die einzige, die die
+Messung traegt.
+
+Verwandt mit der Fehlerform von K3 (eine Kennzahl misst genau das, was ihre Definition sagt, und
+verfehlt dabei die Frage, fuer die sie da ist), aber NICHT identisch: K3 meldet 0,0 %, wo ein
+echter Engpass besteht - K1 meldet 92,0 %, wo 99,9 % richtig waeren.
+
+K1b IST GEBAUT (26.08.2026, fuenfte Session, Nutzer hat die Entscheidung ueberlassen): groesster
+Rueckgang vom Hoch der letzten 24 Stunden auf den aktuellen Stand. K1 bleibt UNVERAENDERT - es hat
+ueber mehrere Sessions Vergleichswerte, genau wie bei K3/K3b am 26.08.2026. Das Fenster von 24
+Stunden ist bewusst begrenzt: ohne Grenze zaehlte auch eine langsame Zermuerbung ueber Wochen als
+"ein Ereignis". Gegenprobe: in Laeufen ohne mehrstuendiges Ereignis liefern K1 und K1b denselben
+Wert (zweimal 6,1 %) - die neue Kennzahl erfindet also nichts.
 
 ================================================================================
-8. BEFUND 4 - K4 IST MIT DER HEUTIGEN SETZUNG WIRKUNGSLOS
+8. BEFUND 4 - K4 WAR WIRKUNGSLOS UND IST JETZT AN DIE ECHTEN SPERREN GEHAENGT
 ================================================================================
-Nebenbefund, in jedem Lauf dieser Session identisch: am Tag 0 meldet der Lauf SIEBEN Sektoren
-gleichzeitig als "erstmals spielbar", danach nie wieder einen. K4 meldet folglich immer "Wochen
-2, 3, 4 ohne neuen Inhalt".
+Nebenbefund, in jedem Lauf identisch: am Tag 0 meldete der Lauf SIEBEN Sektoren gleichzeitig als
+"erstmals spielbar", danach nie wieder einen. K4 meldete folglich immer "Wochen 2, 3, 4".
 
-Ursache: die Setzung liest "erstmals spielbar" als "eigene Flottenmacht erreicht den npcFloor des
-Sektors". Die npcFloor-Werte liegen zwischen 300.000 und 3.000.000; der Startzustand aus
-defaultPlayerState() finanziert rund 2.200 Schiffe und liegt nach der ersten Bauwelle bei rund
-60.000.000 - also um mehr als eine Groessenordnung darueber. Die Setzung war in der dritten Session
-eingefuehrt worden, nachdem die erste Fassung ein nicht existentes Feld abfragte und am Tag 0 ALLE
-Sektoren meldete. Sie meldet jetzt sieben statt acht und ist damit praktisch unveraendert
-wirkungslos.
+Ursache: die Setzung las "erstmals spielbar" als "eigene Flottenmacht erreicht den npcFloor des
+Sektors". Die npcFloor-Werte liegen zwischen 300.000 und 3.000.000; die Startflotte liegt nach der
+ersten Bauwelle bei rund 60.000.000 - um mehr als eine Groessenordnung darueber.
 
-Das war schon vorher ein offener Punkt beim Nutzer ("die beiden Setzungen im Geruest"). Neu ist,
-dass er nicht mehr unbestaetigt, sondern GEMESSEN wirkungslos ist.
+SEKTOREN TAUGEN STRUKTURELL NICHT ALS MASSSTAB, am Code nachgesehen: es gibt keine Sperre, und die
+Piraten-Sektoren skalieren ihre Gegnerstaerke mit der eigenen Macht mit - dort wird nie etwas
+freigeschaltet, es wird nur schwerer. Ebenso haben Schiffe und Verteidigungsanlagen KEINE
+Voraussetzung (`tier` in ships.ts ist eine Klassenbezeichnung, keine Sperre), und die Forschungen
+haben keine Vorbedingung. Wer genug Ressourcen hat, baut ab Stunde 0 alles.
+
+GESTAFFELT FREIGESCHALTET WIRD IM SPIEL GENAU DIES, und danach fragt K4 jetzt:
+  1. Heimatbasis-Stufe V2 und V3 (HOME_TIER_UNLOCK_LEVELS: Minen 36/32/30 je Stufe,
+     checkHomeBuildingTierUnlock()) - der einzige echte Gebaeude-Gate.
+  2. Stations-Stufe (checkTierUnlock() in stations.ts).
+  3. Imperator - Teile-Sperre, 1.000 je Kategorie.
+  4. Sandronator - unique, Bauzeit 3.000 vor Multiplikator.
+Alle vier sind aus dem Spielstand direkt ablesbar, ohne Nachbau einer Bedingung.
+
+ERGEBNIS DER UMSTELLUNG: K4 meldet jetzt "Wochen 1, 2, 3, 4 ohne neuen Inhalt" - also ueber den
+gesamten 30-Tage-Lauf KEINE einzige Freischaltung. Das ist eine Aussage ueber das Spiel und nicht
+mehr ein Artefakt der Kennzahl. Belegt wird sie von den Minen-Staenden: 22/21/21 am Tag 7 gegen die
+Schwelle 36/32/30 - die zweite Ausbaustufe der Heimatbasis liegt im ersten Monat nicht in
+Reichweite.
+
+================================================================================
+8b. WAS DER 30-TAGE-LAUF SONST NOCH GEZEIGT HAT
+================================================================================
+Gefahren als Positivprobe fuer K1b und die neue K4-Definition, deshalb hier und nicht als Punkt 4.
+Ein Lauf, ein Profil - die Zahlen sind Hinweise, keine Belege.
+
+  K1  92,0 %   K1b 99,9 %   K2 Gebaeude 79,4 %   K3 0,0 %   K3b 85,1 %
+  K4  Wochen 1-4 ohne Freischaltung
+  K5  reicher_fund 39,8 % / container_raid 33,3 % / asteroid_mining 16,4 %
+  K6  laengstes Plateau 26 Tage ab Tag 4
+
+DREI KRITERIEN SIND DAMIT ERSTMALS SICHTBAR VERLETZT (K1, K4, K6), UND K5 IST IN DIESEM LAUF
+ERFUELLT. Das letzte ist wichtig genug fuer eine eigene Zeile, weil es eine frueher in diesem
+Protokoll getroffene Aussage einschraenkt.
+
+================================================================================
+8c. KORREKTUR ZU ABSCHNITT 5 - "K5 IN JEDEM LAUF VERLETZT" WAR ZU WEIT GEFASST
+================================================================================
+Ueber acht Laeufe liegt der groesste K5-Anteil zwischen 39,8 % und 81,9 %. Die 50-%-Schwelle
+verlaeuft mitten durch diese Spanne: in den Laeufen OHNE Raid ist K5 verletzt (54,2 bis 81,9 %),
+in dem einen 30-Tage-Lauf MIT Raid ist es erfuellt (39,8 %) - nicht, weil der Reiche Fund kleiner
+geworden waere, sondern weil der Raid als zweite grosse Quelle den Nenner verbreitert.
+
+RICHTIG IST ALSO: K5 ist nicht stabil entschieden, und was ueber Erfuellung oder Verletzung
+entscheidet, ist ein einzelner Wuerfel mit sehr grossem Hebel. Ein Kriterium, dessen Ergebnis so
+stark an einer Zufallsmechanik haengt, traegt keine Entscheidung, solange nicht mehrere Laeufe je
+Zelle vorliegen. Das ist genau der Grund fuer die Forderung "mindestens drei Laeufe je Profil" in
+Abschnitt 10.
 
 ================================================================================
 9. GRENZEN DIESER SESSION, AUSDRUECKLICH
@@ -257,10 +322,44 @@ dass er nicht mehr unbestaetigt, sondern GEMESSEN wirkungslos ist.
 3. ERLEDIGT (26.08.2026): Einnahmen nach Quelle instrumentiert - dieses Protokoll.
 4. OFFEN: die drei Profile ueber 30 Tage, mit --mensch_unterschritte.
 
+ZWISCHENSTAND 26.08.2026, vom Nutzer delegiert und hier entschieden:
+  (a) Punkt 4 laeuft mit --treiber=tick, dazu je Profil EIN economy-Lauf als Bruecke zu den
+      bisherigen Zahlen. Ohne tick kein Raid und damit kein Traeger fuer Entscheidung 3.
+  (b) K1b ist GEBAUT (Abschnitt 7). K1 bleibt unveraendert.
+  (c) K4 ist auf die echten Sperren umgestellt (Abschnitt 8).
+  (d) Der Reiche Fund bleibt BEWUSST UNENTSCHIEDEN - das ist eine Balance-Frage, und ihr fehlt
+      die Zahl. Vorgeschlagene Messung in Abschnitt 11.
+
 VOR PUNKT 4 ZU ENTSCHEIDEN, weil es sonst zweimal gefahren werden muss:
   (a) Laeuft Punkt 4 mit --treiber=tick? Ohne ihn kein Raid und damit kein Traeger fuer
       Entscheidung 3 (Befund 2).
   (b) Bekommt K1 ein Gegenstueck, das je EREIGNIS statt je Stunde zaehlt (Befund 3)?
   (c) Bleibt die K4-Setzung ueber npcFloor, obwohl sie gemessen nicht trennt (Befund 4)?
   (d) Ist die Hoehe des Reichen Fundes gewollt (Befund 1)? Das ist die einzige der vier Fragen,
-      die nicht die Messung betrifft, sondern das Spiel.
+      die nicht die Messung betrifft, sondern das Spiel - siehe Abschnitt 11.
+
+================================================================================
+11. VORGESCHLAGENE MESSUNG ZUM REICHEN FUND - NICHT GEFAHREN, NICHT ENTSCHIEDEN
+================================================================================
+Die Hoehe des Reichen Fundes ist eine BALANCE-Frage. Sie hier zu entscheiden waere ein Verstoss
+gegen die Arbeitsregel: nichts wird geaendert, bevor es gemessen ist. Was fehlt, ist der
+Erwartungswert der Mechanik und die Wirkung einer Aenderung.
+
+WAS DIE MECHANIK BESONDERS MACHT, und warum sie nicht wie ein normaler Bonus zu behandeln ist:
+runRichFindCheck() verdoppelt den BIS DAHIN ANGESAMMELTEN Betrag, nicht den Stundenertrag. Ein
+Treffer in der letzten Stunde einer 12-Stunden-Mission ist damit rund zwoelfmal so viel wert wie
+einer in der ersten, und zwei Treffer vervierfachen. Der Erwartungswert haengt also nicht nur an
+der Chance, sondern an der MISSIONSDAUER - und die wurde am 16.08.2026 fuer Asteroidenfelder von
+4 auf 12 Stunden angehoben (Punkt 23 der alten README). Ob die heutige Hoehe eine Folge dieser
+Aenderung ist, ist ungeprueft und die erste Frage, die eine Messung beantworten sollte.
+
+VORSCHLAG, eine Zelle, drei Regler, je mindestens fuenf Laeufe ueber 7 Tage:
+  - ASTEROID_RICH_FIND_CHANCE 0,08 (heute) gegen 0,04 und 0,02
+  - Verdopplung gegen einen festen Aufschlag auf den Stundenertrag (entkoppelt vom Zeitpunkt)
+  - beides gegen einen Lauf ganz ohne Reichen Fund, als Nullmessung
+Zu protokollieren ist nicht nur der Mittelwert, sondern die STREUUNG - der eigentliche Einwand
+gegen die heutige Form ist nicht ihre Hoehe, sondern dass sie den Wochenertrag eines Spielers
+verdreifachen oder nicht kann, ohne dass er etwas anders gemacht haette.
+
+Aufwand rund eine halbe Sitzung. Das Werkzeug dafuer existiert (make_messbuild_k5.mjs, ein
+zusaetzlicher Patch-Block), die Auswertung steht bereits.

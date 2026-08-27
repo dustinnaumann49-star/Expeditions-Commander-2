@@ -443,18 +443,48 @@ function probe(s) {
 // Fassung hatte hier ein nicht existentes Feld abgefragt und deshalb am Tag 0 alle acht Sektoren
 // als freigeschaltet gemeldet.
 
+// K1b: Zustand fuer die ereignisbasierte Verlustmessung (Begruendung an der Messstelle unten).
+const K1B_FENSTER = 24;
+const machtVerlauf = [];
+let k1b = { anteil: 0, stunde: -1 };
+
+// ===================================================================================
+// K4 - "NEUER INHALT", AB 26.08.2026 (FUENFTE SESSION) AN DEN ECHTEN SPERREN
+// ===================================================================================
+// VORHER: gelesen als "eigene Flottenmacht erreicht den npcFloor des Sektors". Das ist gemessen
+// wirkungslos - npcFloor liegt zwischen 300.000 und 3.000.000, die Startflotte nach der ersten
+// Bauwelle bei rund 60.000.000. Ergebnis war jedes Mal: sieben Sektoren am Tag 0, danach nie
+// wieder einer, also immer "Wochen 2, 3, 4 ohne neuen Inhalt".
+//
+// SEKTOREN TAUGEN STRUKTURELL NICHT ALS MASSSTAB. Am Code nachgesehen: es gibt keine Sperre. Die
+// Piraten-Sektoren skalieren ihre Gegnerstaerke mit der eigenen Macht mit - dort wird nie etwas
+// "freigeschaltet", es wird nur schwerer. Ebenso haben Schiffe und Verteidigungsanlagen KEINE
+// Voraussetzung; `tier` in ships.ts ist eine Klassenbezeichnung, keine Sperre, und auch die
+// Forschungen haben keine Vorbedingung. Wer genug Ressourcen hat, baut ab Stunde 0 alles.
+//
+// WAS TATSAECHLICH GESTAFFELT FREIGESCHALTET WIRD, ist genau dies:
+//   1. Heimatbasis-Stufe V2 und V3 (`HOME_TIER_UNLOCK_LEVELS`: Minen 36/32/30 je Stufe,
+//      geprueft in `checkHomeBuildingTierUnlock()`) - der einzige echte Gebaeude-Gate.
+//   2. Stations-Stufe (`checkTierUnlock()` in stations.ts).
+//   3. Imperator - keine Bauzeit-, sondern eine Teile-Sperre (1.000 je Kategorie).
+//   4. Sandronator - `unique`, Bauzeit 3.000 vor Multiplikator.
+// Alle vier sind aus dem Spielstand direkt ablesbar, ohne Nachbau einer Bedingung.
+//
+// DAS ERGEBNIS IST DAMIT NICHT MEHR TRIVIAL: meldet K4 jetzt "keine Freischaltung in Woche 1-4",
+// ist das eine AUSSAGE ueber das Spiel und nicht mehr ein Artefakt der Kennzahl.
 const freigeschaltet = new Set();
 function pruefeFreischaltung(s) {
-  const macht = combat.combatFleetPowerBase(s.fleet || {});
-  for (const sek of SEKTOREN) {
-    if (freigeschaltet.has(sek.id)) continue;
-    const cfg = SEKTOR_CONFIG[sek.id];
-    if (!cfg) continue;
-    if (cfg.npcFloor > 0 && macht >= cfg.npcFloor) {
-      freigeschaltet.add(sek.id);
-      tagJetzt.freischaltungen.push(sek.id);
-    }
-  }
+  const melde = (id) => {
+    if (freigeschaltet.has(id)) return;
+    freigeschaltet.add(id);
+    tagJetzt.freischaltungen.push(id);
+  };
+  if ((s.buildingTier || 1) >= 2) melde('heimatbasis_V2');
+  if ((s.buildingTier || 1) >= 3) melde('heimatbasis_V3');
+  if ((s.fleet?.imperator || 0) > 0) melde('imperator');
+  if ((s.fleet?.sandronator || 0) > 0) melde('sandronator');
+  const st = s.station || s.stations?.[0];
+  if (st && (st.tier || 1) >= 2) melde(`station_stufe_${st.tier}`);
 }
 
 // ===================================================================================
@@ -516,6 +546,22 @@ for (let h = 0; h < TAGE * 24; h++) {
     const anteil = (machtVor - machtNach) / machtVor;
     if (anteil > 0.05) tagJetzt.verluste.push({ stunde: h, anteil });
   }
+  // K1b, EREIGNISBASIERT. K1 selbst bleibt unveraendert - es hat ueber mehrere Sessions
+  // Vergleichswerte, und eine Aenderung der Definition entwertet sie alle (dasselbe Muster wie
+  // K3/K3b am 26.08.2026). Grund fuer das Gegenstueck: K1 vergleicht je STUNDE, ein Raid laeuft
+  // ueber zwoelf Wellen und mehrere Stunden. Ein vollstaendiger Verlust der Heimatflotte zerfaellt
+  // dadurch in ein Dutzend Einzelabfaelle, von denen keines die 70-%-Schwelle reisst - gemessen am
+  // 26.08.2026: Flottenmacht 1,93 -> 0,01 Mrd an einem Tag, K1 meldete 6,1 %.
+  // Gemessen wird der groesste Rueckgang vom Hoch der letzten K1B_FENSTER Stunden auf den
+  // aktuellen Stand. Das Fenster ist bewusst begrenzt: ohne Grenze zaehlte auch eine langsame
+  // Zermuerbung ueber Wochen als "ein Ereignis", und das ist nicht die Frage, die K1 stellt.
+  machtVerlauf.push(machtNach);
+  if (machtVerlauf.length > K1B_FENSTER) machtVerlauf.shift();
+  const hoch = Math.max(...machtVerlauf);
+  if (hoch > 0) {
+    const rueckgang = (hoch - machtNach) / hoch;
+    if (rueckgang > k1b.anteil) k1b = { anteil: rueckgang, stunde: h };
+  }
   tagJetzt.flottenmacht = machtNach;
   tagJetzt.wertEnde = wert(s.resources);
   pruefeFreischaltung(s);
@@ -557,14 +603,16 @@ const wochenOhneInhalt = [0, 1, 2, 3].filter(
 console.log('\n============================================================');
 console.log(`ABNAHMEKRITERIEN - Profil "${PROFIL}", ${TAGE} Tage, MESSBUILD-WERTE`);
 console.log('============================================================');
-console.log(`K1 kein Totalverlust (<70 %)   : groesster Einzelverlust ${(100 * groessterVerlust).toFixed(1)} %`);
+console.log(`K1 kein Totalverlust (<70 %)   : groesster Einzelverlust ${(100 * groessterVerlust).toFixed(1)} %   <- je STUNDE, siehe K1b`);
+console.log(`K1b groesster Rueckgang (24 h) : ${(100 * k1b.anteil).toFixed(1)} %${k1b.stunde >= 0 ? ` (Stunde ${k1b.stunde}, Tag ${Math.floor(k1b.stunde / 24)})` : ''}` +
+  (k1b.anteil > 0.7 ? '   <- K1 VERLETZT, wenn je Ereignis gemessen' : ''));
 console.log(`K2 Leerlauf (Gebaeude)         : ${p(gesamt.leerG, gesamt.proben).toFixed(1)} %`);
 console.log(`K2 Leerlauf (Forschung)        : ${p(gesamt.leerF, gesamt.proben).toFixed(1)} %`);
 console.log(`K2 Leerlauf (Schiffe+Vert.)    : ${p(gesamt.leerS, gesamt.proben).toFixed(1)} %` +
   (MENSCH_UNTERSCHRITTE ? '' : '   <- stuendlich abgetastet, laut Abschnitt 1b UNTERSCHAETZT'));
 console.log(`K3 Ressourcenstau (<25 %)      : ${p(gesamt.stau, gesamt.proben).toFixed(1)} %`);
 console.log(`K3b Rohstoff-Schieflage        : ${p(gesamt.schieflage, gesamt.proben).toFixed(1)} %   <- Lane leer, weil EIN Rohstoff fehlt`);
-console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}`);
+console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}   <- an den echten Sperren (Heimatstufe/Station/Imperator/Sandronator)`);
 // ===================================================================================
 // K5 UND K6 - EINNAHMEN NACH QUELLE
 // ===================================================================================
