@@ -213,6 +213,58 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 28.08.2026 - DIE MASSENFRAGE. FUENF HYPOTHESEN, VIER WIDERLEGT, DIE FUENFTE TRIFFT.
+> NICHTS GEBAUT, NICHTS ENTSCHIEDEN.** Protokoll `balance/session2-simulation/
+> massenfrage_protokoll.txt` (Abschnitte 2, 3, 4a-4d), Rohausgaben `massenfrage.txt`, `deckel.txt`,
+> `gegenprobe.txt`, `eskorte.txt`, `eskorte_kombi.txt`. Anlass: Nutzerbeobachtung beim Spielen.
+>
+> **DER BEFUND:** bei auf die Flottenmacht SKALIERTEM Gegner - also maßstabsneutraler Vorgabe -
+> faellt die Verlustquote des Spielers von 50,6 % (675 Einheiten) auf 15,2 % (11.250 Einheiten).
+> Masse macht anteilig immer unverwundbarer.
+>
+> **VIER WIDERLEGTE ERKLAERUNGEN**, alle gemessen: (1) Stapel-Aggregation - 98 % des Absturzes
+> passieren auch unaggregiert; (2) Overkill-Kaskade und Schuss-Obergrenze - Faktor 100 auf die
+> Obergrenze bewegt 3,3 Punkte, und in die falsche Richtung; (3) Machtanteil des Kapitaens;
+> (4) Koernigkeit der Eskorte. **Alle vier drehen an der STAERKE des Gegners und lassen die
+> Steigung bei 34-36 Punkten stehen.**
+>
+> **DIE URSACHE (Abschnitt 4c):** die Eskorte stirbt in JEDER Zelle nach 17 % der Kampfdauer,
+> danach feuert der Kapitaen 83 % der Zeit allein weiter - und stirbt nie (81 % seiner Macht sind
+> Panzerung). Sein Schaden je Treffer ist bei 13,6 Mio gedeckelt, waehrend seine Waffen um Faktor
+> 28 wachsen; er gibt also einen FESTBETRAG ab, dessen Anteil mit der Flottengroesse verschwindet.
+>
+> | n | Verlust gesamt | Eskorten-Phase | Kapitaens-Nachlauf |
+> |---|---|---|---|
+> | 150 | 49,7 % | 19,9 % | 29,8 % |
+> | 2.500 | 15,2 % | **15,0 %** | **0,2 %** |
+> | **Abfall** | **34,5** | **4,8** | **29,7** |
+>
+> **Die Eskorten-Phase ist massstabsneutral. 29,7 der 34,5 Punkte stecken im Nachlauf.**
+>
+> **DIE FUENFTE HYPOTHESE TRIFFT (Abschnitt 4d):** den Kapitaen ueber STUECKZAHL skalieren statt
+> ueber Staerke - Gesamtmacht identisch, aber auf mehrere gleich starke Einheiten verteilt. Der
+> Deckel wirkt JE TREFFER, mehr Treffer gehen also vollstaendig durch. **Abfall 35,4 -> 6,8
+> Punkte, und bei n=150 aendert sich NICHTS** (50,7 gegen 50,6 %, dort steht weiterhin ein
+> Kapitaen). Der fruehe Spielverlauf bleibt unberuehrt, nur die Immunitaet grosser Flotten faellt.
+>
+> **WARNUNGEN:** der Regler ist extrem empfindlich (176M statt 658M je Stueck vernichtet den
+> Spieler in JEDER Zelle vollstaendig). Ein Ausgleich ueber kleineren `ADMIRAL_STAT_SHARE` macht
+> es messbar SCHLECHTER. **658M ist ein Messwert und KEIN Bauwert** - er haengt an der
+> Kapitaensmacht bei n=150 dieser Leiter und muesste vor einem Einbau aus einer stabilen
+> Bezugsgroesse abgeleitet werden. Ungeprueft: Wrack-Bergung, Kampfberichte und Beutelogik bei
+> mehreren Kapitaenen.
+>
+> **FUER DEN PLAN WICHTIG - ZWEI PROBLEME WERDEN BISHER ALS EINES GEFUEHRT.** Entscheidung 2
+> (Beute-Kurve, Exponent 0,85) greift an den BELOHNUNGEN und bremst Weglauf-Wachstum. Sie aendert
+> nichts daran, dass grosse Flotten kaum Verluste haben - das ist ein KAMPF-Thema und sitzt
+> ausschliesslich in der Kapitaens-Begegnung. Beide Punkte gehoeren getrennt gefuehrt.
+>
+> **METHODISCHER BEFUND, ZWEIMAL AUFGETRETEN:** eine Spanne ueber eine Leiter, in der eine Zelle
+> das REGIME wechselt (Totalverlust, oder Kapitaen stirbt statt zu ueberleben), misst den
+> Regimewechsel und nicht die Steigung. Beim ersten Mal (Gegenprobe) haette es fast zum
+> entgegengesetzten Schluss gefuehrt. **Zusammenfassende Kennzahlen erst bilden, NACHDEM die
+> Einzelzellen angesehen wurden.**
+
 > **MESSKASTEN 27.08.2026 (sechste Session) - DER REICHE FUND IST GEMESSEN. JA, SEINE HOEHE IST
 > EINE FOLGE DER MISSIONSVERLAENGERUNG. NICHTS AM SPIELCODE GEBAUT, NICHTS ENTSCHIEDEN.**
 > Protokoll `balance/session2-simulation/reicherfund_11.txt`, Werkzeuge
