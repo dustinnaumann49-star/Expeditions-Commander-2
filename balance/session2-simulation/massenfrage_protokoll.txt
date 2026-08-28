@@ -1,7 +1,8 @@
 DIE MASSENFRAGE - WARUM GROSSE FLOTTEN FAST NICHTS VERLIEREN
 Protokoll vom 27.08.2026 (sechste Session)
 Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs,
-           probe_bossverlust.mjs, run_gegenprobe.mjs, run_eskorte.mjs (alle neu)
+           probe_bossverlust.mjs, run_gegenprobe.mjs, run_eskorte.mjs,
+           probe_kampfverlauf.mjs (alle neu)
 Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt, eskorte.txt
 
 !!! MESSBUILD-PROTOKOLL. Alle Zahlen aus gepatchten dist-Kopien. server/src unberuehrt.        !!!
@@ -12,7 +13,9 @@ dem Vorschlag, die Aggregationsschwelle auf 4.000-5.000 anzuheben.
 ================================================================================
 0. ZWEI ERGEBNISSE, BEIDE NEGATIV FUER DIE NAHELIEGENDEN ERKLAERUNGEN
 ================================================================================
-ERGAENZT AM 28.08.2026: VIER HYPOTHESEN GEPRUEFT, VIER WIDERLEGT. Abschnitt 4a hielt die Bauart
+ERGAENZT AM 28.08.2026: DIE URSACHE IST GEFUNDEN, SIEHE ABSCHNITT 4c - der gesamte Masse-Vorteil
+steckt im NACHLAUF des unsterblichen Kapitaens (29,7 von 34,5 Punkten), die Eskorten-Phase ist
+nahezu massstabsneutral. Der Weg dorthin fuehrte ueber VIER WIDERLEGTE HYPOTHESEN. Abschnitt 4a hielt die Bauart
 des Kapitaens fuer die Ursache - Abschnitt 4b nimmt das TEILWEISE ZURUECK: der Machtanteil des
 Kapitaens und die Koernigkeit der Eskorte aendern das Niveau, aber nicht die Steigung. Ausserdem
 wurde in 4a die Eskorte weggelassen; im echten Spiel ist der Effekt milder (15,2 % statt 0,1 %
@@ -291,6 +294,76 @@ Verursacher (Kapitaen gegen Eskorte). Der `CombatReplay` im Ergebnis liefert ber
 je Runde und je Typ; daraus laesst sich ablesen, WANN die Verluste entstehen. Steht die Antwort
 "in den ersten Runden, bevor die Eskorte stirbt", ist es ein Frage der Kampfdauer und nicht der
 Gegnerzusammensetzung - eine ganz andere Baustelle als bisher vermutet.
+
+================================================================================
+4c. NACHTRAG 28.08.2026 - DIE URSACHE, MIT ZAHLEN STATT MIT EINER GESCHICHTE
+================================================================================
+Werkzeug `probe_kampfverlauf.mjs`. Liest nur aus, laeuft gegen den unveraenderten Build.
+
+Nach vier widerlegten Hypothesen nicht wieder eine Konstante gedreht, sondern den VERLAUF
+aufgezeichnet: `CombatReplay` fuehrt je Runde die Ueberlebenden je Schiffstyp. Frage: WANN
+entstehen die Verluste?
+
+    n  Runden  Eskorte tot bei  0-25 %  25-50 %  50-75 %  75-100 %  nach Eskortentod
+  150     100          17 %      44 %     19 %      16 %      21 %        60 %
+  400     100          17 %      68 %      9 %       9 %      13 %        34 %
+ 1000     100          17 %      89 %      3 %       4 %       4 %        12 %
+ 2500     100          17 %      99 %      0 %       0 %       0 %         1 %
+
+**DIE ESKORTE STIRBT IN JEDER ZELLE NACH 17 % DER KAMPFDAUER - KONSTANT.** Die restlichen 83 %
+kaempft der Spieler gegen den Kapitaen allein, der nie stirbt (81 % seiner Macht sind Panzerung).
+Was sich ueber die Leiter dramatisch aendert, ist der ANTEIL der Verluste, die in dieser langen
+zweiten Phase entstehen: 60 % bei kleiner Flotte, 1 % bei grosser.
+
+DARAUS DIE ZERLEGUNG DER VERLUSTKURVE IN IHRE ZWEI PHASEN:
+
+     n   Verlust gesamt   Eskorten-Phase   Kapitaens-Nachlauf
+   150        49,7 %          19,9 %             29,8 %
+   400        25,9 %          17,1 %              8,8 %
+  1000        17,5 %          15,4 %              2,1 %
+  2500        15,2 %          15,0 %              0,2 %
+
+  Abfall Eskorten-Phase    :  4,8 Punkte
+  Abfall Kapitaens-Nachlauf: 29,7 Punkte
+  Abfall gesamt            : 34,5 Punkte
+
+**DIE ESKORTEN-PHASE IST NAHEZU MASSSTABSNEUTRAL (19,9 -> 15,0 %, 4,8 Punkte). DER GESAMTE
+MASSE-VORTEIL STECKT IM NACHLAUF DES KAPITAENS (29,8 -> 0,2 %, 29,7 der 34,5 Punkte).**
+
+Das passt exakt zur Sonde aus Abschnitt 4a und erklaert sie erst richtig: der Kapitaen richtet je
+Treffer konstant 13,6 Mio an, egal wie stark er wird, und dieser feste Betrag wird ueber 83 % der
+Kampfdauer immer wieder abgegeben. Gegen 675 Einheiten summiert sich das auf 29,8 Prozentpunkte
+Verlust; gegen 11.250 Einheiten verpufft es (Verschwendung 99,6 %, Schild-Regeneration faengt
+97 % des Rests ab) und bleibt bei 0,2.
+
+WARUM DIE VIER FRUEHEREN HYPOTHESEN SCHEITERN MUSSTEN: alle vier haben an der STAERKE des Gegners
+gedreht (Aggregation, Deckel, Machtanteil, Koernigkeit). Der Effekt haengt aber nicht an seiner
+Staerke, sondern an der DAUER, ueber die eine unsterbliche Einheit einen gedeckelten Betrag
+abgibt. Eine staerkere oder schwaechere Version derselben Struktur verschiebt das Niveau und
+laesst die Steigung stehen - genau das wurde viermal gemessen.
+
+AUFLOESUNG DES WIDERSPRUCHS AUS ABSCHNITT 4b: dort blieb der Abfall auch bei share 0,20 bei
+35,4 Punkten, obwohl der Kapitaen dort stirbt. Die Rundenzahlen dieser Zeile lauten
+100 / 100 / 80,9 / 63,6 / 61,4 - **die Zeile wechselt INNERHALB der Leiter das Regime** (Kapitaen
+ueberlebt bei kleinen Flotten, stirbt bei grossen). Eine Spanne ueber eine Leiter mit
+Regimewechsel misst den Wechsel und nicht die Steigung - dieselbe Falle wie in Abschnitt 4a, hier
+zum zweiten Mal. Die Zeile ist damit kein Gegenbeleg, sondern nicht auswertbar.
+
+--- WAS DARAUS FOLGT ---
+Der Hebel ist weder die Staerke des Kapitaens noch die Zusammensetzung der Gegner, sondern
+**dass eine unsterbliche Einheit 83 % der Kampfdauer weiterfeuert.** Zwei Richtungen, KEINE davon
+gemessen:
+  - Den Kapitaen sterblich machen. ADMIRAL_STAT_RATIO gibt ihm 81 % Panzerung; ein kleinerer Wert
+    beendet den Kampf mit dem Tod der Eskorte. Achtung: das aendert auch die Beute-Bedingungen und
+    das Spielgefuehl der Begegnung - der Kapitaen ist als zaeher Brocken gedacht.
+  - Die Kampfdauer begrenzen (MAX_ROUNDS oder ein Rueckzug, wenn die Gegenseite nur noch aus
+    unerreichbaren Einheiten besteht). Greift breiter und beruehrt jede Kampfart.
+Beide sind mit `probe_kampfverlauf.mjs` und `run_eskorte.mjs` direkt pruefbar.
+
+--- GRENZE DIESER SONDE ---
+`MAX_SNAPSHOTS` (30) tastet lange Kaempfe ab; die Viertel sind deshalb Anteile der Kampfdauer und
+nicht exakte Rundenfenster. Fuer die Frage "erste oder zweite Haelfte" reicht das, fuer eine
+runden-genaue Aussage nicht. Ausserdem: 10 Laeufe je Zelle, ein Profil, eine Paarung.
 
 ================================================================================
 5. GRENZEN
