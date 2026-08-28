@@ -407,6 +407,8 @@ function neuerTag(nr) {
     leerSchiffe: 0,
     stau: 0,
     schieflage: 0,
+    k3cProben: 0,
+    k3cSchieflage: 0,
     wertStart: null,
     wertEnde: null,
     flottenmacht: 0,
@@ -446,6 +448,43 @@ function probe(s) {
     (belegtF < SLOTS.forschung && ressourcenAblehnung.FORSCHUNG) ||
     (belegtS < SLOTS.schiffe && ressourcenAblehnung.SCHIFFE);
   if (wert(s.resources) >= guenstigstes && laneLeerWegenGeld) tagJetzt.schieflage++;
+}
+
+// ===================================================================================
+// K3c - K3b MIT GUELTIGEN FLAGS (28.08.2026, siebte Session)
+// ===================================================================================
+// DER BEFUND, DER DAZU GEFUEHRT HAT. `ressourcenAblehnung` ist eine Momentaufnahme des
+// HANDELNS: spielerZug() setzt die drei Flags zurueck und fuellt sie neu. probe() liest sie
+// gegen einen Zustand, der laufend abgetastet wird. Beides faellt nur dann zusammen, wenn
+// probe() unmittelbar nach spielerZug() laeuft - und genau das ist in zwei Faellen NICHT so:
+//
+//   (1) MIT `--mensch_unterschritte` laeuft probe() 30x je Stunde im Unterschritt, spielerZug()
+//       aber nur einmal am Stundenende - und dort wird probe() gar nicht mehr gerufen
+//       (`if (!MENSCH_UNTERSCHRITTE) probe(s)`). ALLE 30 Proben lesen damit Flags aus dem Zug
+//       der VORHERIGEN Stunde. Das ist der in reicherfund_11.txt Abschnitt 13 notierte
+//       Vorbehalt.
+//   (2) OHNE den Schalter, sobald das Profil nicht `aktiv` ist. handeltInStunde() liefert bei
+//       `gelegenheit` nur alle 12 Stunden true, bei `abwesend` an den Tagen 1 bis 14 NIE.
+//       probe() laeuft trotzdem stuendlich und liest dann bis zu ZWEI WOCHEN alte Flags.
+//       DIESER FALL WAR BISHER NIRGENDS NOTIERT und trifft Punkt 4 unmittelbar, weil der
+//       genau diese drei Profile faehrt.
+//
+// K3b BLEIBT UNVERAENDERT - Muster K1/K1b und K3/K3b: eine Kennzahl mit Vergleichswerten wird
+// nicht umdefiniert, sie bekommt ein Gegenstueck. K3c erhebt dieselbe Frage an der einzigen
+// Stelle, an der die Flags gueltig sind: unmittelbar nach dem Zug, der sie gesetzt hat. Der
+// Nenner ist deshalb ein EIGENER (Zahl der Zuege), nicht die Zahl der Proben - sonst wuerde
+// gegen einen Nenner normiert, der die Flags gar nicht gesehen hat.
+function probeK3b(s) {
+  tagJetzt.k3cProben++;
+  const belegtG = (s.buildingQueue || []).length;
+  const belegtF = (s.researchQueue || []).length;
+  const belegtS = (s.buildQueue || []).length + (s.defenseQueue || []).length;
+  const guenstigstes = Math.min(...SHIPS.filter((x) => !x.specialOnly && !x.unique).map((x) => wert(x.cost)));
+  const laneLeerWegenGeld =
+    (belegtG < SLOTS.gebaeude && ressourcenAblehnung.GEBAEUDE) ||
+    (belegtF < SLOTS.forschung && ressourcenAblehnung.FORSCHUNG) ||
+    (belegtS < SLOTS.schiffe && ressourcenAblehnung.SCHIFFE);
+  if (wert(s.resources) >= guenstigstes && laneLeerWegenGeld) tagJetzt.k3cSchieflage++;
 }
 
 // SETZUNG, NICHT GEMESSEN, und ausdruecklich zur Bestaetigung vorgelegt: SEKTOREN enthaelt KEINE
@@ -551,7 +590,7 @@ for (let h = 0; h < TAGE * 24; h++) {
   const machtVor = combat.combatFleetPowerBase(s.fleet || {});
   // TREIBER, siehe Kopf: runEconomyTick() loest keinen Raid aus, tick() schon.
   await (TREIBER === 'tick' ? actions.tick(s) : actions.runEconomyTick(s));
-  if (handeltInStunde(h)) spielerZug(s);
+  if (handeltInStunde(h)) { spielerZug(s); probeK3b(s); }
   if (!MENSCH_UNTERSCHRITTE) probe(s);
   const machtNach = combat.combatFleetPowerBase(s.fleet || {});
   if (machtVor > 0 && machtNach < machtVor) {
@@ -604,8 +643,10 @@ const gesamt = tage.reduce(
     leerS: a.leerS + t.leerSchiffe,
     stau: a.stau + t.stau,
     schieflage: a.schieflage + t.schieflage,
+    k3cProben: a.k3cProben + t.k3cProben,
+    k3cSchieflage: a.k3cSchieflage + t.k3cSchieflage,
   }),
-  { proben: 0, leerG: 0, leerF: 0, leerS: 0, stau: 0, schieflage: 0 }
+  { proben: 0, leerG: 0, leerF: 0, leerS: 0, stau: 0, schieflage: 0, k3cProben: 0, k3cSchieflage: 0 }
 );
 const groessterVerlust = Math.max(0, ...tage.flatMap((t) => t.verluste.map((v) => v.anteil)));
 const wochenOhneInhalt = [0, 1, 2, 3].filter(
@@ -629,7 +670,14 @@ console.log(`K2 Leerlauf (Forschung)        : ${p(gesamt.leerF, gesamt.proben).t
 console.log(`K2 Leerlauf (Schiffe+Vert.)    : ${p(gesamt.leerS, gesamt.proben).toFixed(1)} %` +
   (MENSCH_UNTERSCHRITTE ? '' : '   <- stuendlich abgetastet, laut Abschnitt 1b UNTERSCHAETZT'));
 console.log(`K3 Ressourcenstau (<25 %)      : ${p(gesamt.stau, gesamt.proben).toFixed(1)} %`);
-console.log(`K3b Rohstoff-Schieflage        : ${p(gesamt.schieflage, gesamt.proben).toFixed(1)} %   <- Lane leer, weil EIN Rohstoff fehlt`);
+console.log(`K3b Rohstoff-Schieflage        : ${p(gesamt.schieflage, gesamt.proben).toFixed(1)} %   <- Lane leer, weil EIN Rohstoff fehlt` +
+  (MENSCH_UNTERSCHRITTE || PROFIL !== 'aktiv'
+    ? `   ACHTUNG: liest veraltete Flags, siehe K3c` : ''));
+// K3c: dieselbe Frage, erhoben unmittelbar nach dem Zug, der die Flags gesetzt hat. Eigener
+// Nenner (Zuege statt Proben). Begruendung am Kopf von probeK3b().
+console.log(`K3c dasselbe, Flags gueltig    : ${p(gesamt.k3cSchieflage, gesamt.k3cProben).toFixed(1)} %   <- ` +
+  `${gesamt.k3cSchieflage}/${gesamt.k3cProben} Zuege` +
+  (gesamt.k3cProben === 0 ? '   (keine Zuege - Profil handelt in diesem Zeitraum nicht)' : ''));
 console.log(`K4 Wochen ohne neuen Inhalt    : ${wochenOhneInhalt.length ? wochenOhneInhalt.map((w) => w + 1).join(', ') : 'keine'}   <- an den echten Sperren (Heimatstufe/Station/Imperator/Sandronator)`);
 // ===================================================================================
 // K5 UND K6 - EINNAHMEN NACH QUELLE
