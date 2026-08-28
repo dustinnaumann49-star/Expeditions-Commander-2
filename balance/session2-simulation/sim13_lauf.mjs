@@ -69,6 +69,18 @@ const TREIBER = opt('treiber', 'economy');
 if (!['economy', 'tick'].includes(TREIBER)) {
   throw new Error(`Unbekannter Treiber "${TREIBER}" - erlaubt: economy, tick.`);
 }
+// NUTZERNAME DES SIMULIERTEN MENSCHEN. Standard unveraendert `Sim_<profil>`.
+// GRUND FUER DEN SCHALTER (28.08.2026, am dist nachgesehen): getRaidSchedule() in raids.js
+// vergibt den Raid-Rhythmus NACH DEM NUTZERNAMEN.
+//     RAID_SCHEDULE_BY_USERNAME = { ShadowEagle: [Mi 0:00, So 0:00], SchnelleRatte: [dito] }
+//     -> chance 1   (die beiden echten Spieler bekommen JEDEN Checkpoint einen Raid)
+//     alles andere -> RAID_FALLBACK_SCHEDULE mit RAID_SPAWN_CHANCE = 0.7
+// `Sim_aktiv` steht in keiner der beiden Listen und lief deshalb bisher ueber den 0,7-Fallback.
+// Fuer eine Zelle mit Raid ist das die falsche Umgebung: es gibt genau zwei Spieler, beide
+// namentlich eingetragen, beide mit Chance 1. Mit `--nutzer=ShadowEagle` misst der Lauf den
+// Rhythmus, den das Spiel tatsaechlich fahren wird - und die 0/1-Ziehung faellt als groesste
+// Stoerquelle im K5-NENNER weg. KEIN Messbuild-Patch noetig, der Build bleibt unberuehrt.
+const NUTZER = opt('nutzer', null);
 
 if (!existsSync(resolve(BUILD, 'game/state.js'))) {
   throw new Error(`Kein Messbuild unter ${BUILD} (erst make_messbuild_sim13.mjs).`);
@@ -213,7 +225,7 @@ const flottenWert = (fleet) =>
 // ===================================================================================
 const bcrypt = await import(`${BUILD}/../node_modules/bcryptjs/index.js`).catch(() => null);
 const hash = bcrypt ? await bcrypt.default.hash('sim', 4) : 'x';
-const mensch = db.createUser(`Sim_${PROFIL}`, hash, false);
+const mensch = db.createUser(NUTZER || `Sim_${PROFIL}`, hash, false);
 MENSCH_ID = mensch.id;   // ab hier bucht das K5-Hauptbuch (nur der Mensch, nicht die Bots)
 await botMod.ensureBotUsers();
 const alleNutzer = db.listAllUsers().map((u) => ({ id: u.id, username: u.username, isBot: u.isBot }));
@@ -602,6 +614,12 @@ const wochenOhneInhalt = [0, 1, 2, 3].filter(
 
 console.log('\n============================================================');
 console.log(`ABNAHMEKRITERIEN - Profil "${PROFIL}", ${TAGE} Tage, MESSBUILD-WERTE`);
+// Der Raid-Rhythmus haengt am Nutzernamen (getRaidSchedule in raids.js) und ist damit eine
+// Eigenschaft der ZELLE, keine Nebensache - er gehoert neben jede Zahl, die einen Raid enthaelt.
+console.log(`Nutzer "${mensch.username}" - Raid-Checkpoints ${
+  ['ShadowEagle', 'SchnelleRatte'].includes(mensch.username)
+    ? 'Mi/So mit Chance 1 (Zeitplan der echten Spieler)'
+    : 'Mi/So mit Chance 0,7 (Fallback fuer unbekannte Namen)'}`);
 console.log('============================================================');
 console.log(`K1 kein Totalverlust (<70 %)   : groesster Einzelverlust ${(100 * groessterVerlust).toFixed(1)} %   <- je STUNDE, siehe K1b`);
 console.log(`K1b groesster Rueckgang (24 h) : ${(100 * k1b.anteil).toFixed(1)} %${k1b.stunde >= 0 ? ` (Stunde ${k1b.stunde}, Tag ${Math.floor(k1b.stunde / 24)})` : ''}` +

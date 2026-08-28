@@ -51,6 +51,43 @@ const NUR = opt('nur', null)?.split(',').map((s) => s.trim()).filter(Boolean) ||
 const WURZEL = resolve(opt('wurzel', '/tmp/rfmess'));
 const HIER = new URL('.', import.meta.url).pathname;
 
+// ===================================================================================
+// ERGAENZT 28.08.2026 - DREI SCHALTER, ALLE MIT UNVERAENDERTEM STANDARD
+// ===================================================================================
+// Anlass: Punkt 1 der drei offenen Punkte aus reicherfund_11.txt Abschnitt 12b ("K5 in einer
+// tick-Zelle"). Die sieben Zellen der sechsten Session liefen alle mit `--treiber=economy`,
+// also ohne Raid; K5 ist dort strukturell nicht entscheidbar (Befund 4). Der Zellensatz und
+// die Standardwerte bleiben unveraendert, damit reicherfund_11.txt reproduzierbar bleibt.
+//
+//   --treiber=economy|tick   an sim13_lauf.mjs durchgereicht. Standard economy wie bisher.
+//   --nutzer=<name>          an sim13_lauf.mjs durchgereicht. Steuert ueber getRaidSchedule()
+//                            den Raid-Rhythmus: `ShadowEagle`/`SchnelleRatte` -> Chance 1,
+//                            alles andere -> RAID_FALLBACK_SCHEDULE mit Chance 0,7.
+//   --k5fenster=<tage>       Fensterlaenge der ZWEITEN K5-Lesart. 0 = ganzer Lauf.
+//                            Die erste Lesart bleibt fest bei Woche 1 (Tage 0-6).
+//
+// WARUM DAS FENSTER EINE ZWEITE LESART IST UND NICHT DIE ERSTE ERSETZT: K5 ist seit dem
+// 20.08.2026 als Kennzahl der STARTPHASE definiert und hat ueber mehrere Sessions
+// Vergleichswerte. Eine geaenderte Definition wuerde sie alle entwerten - dasselbe Muster wie
+// K1/K1b und K3/K3b. Beide Zahlen stehen deshalb nebeneinander.
+//
+// WARUM DAS FENSTER UEBERHAUPT GEBRAUCHT WIRD: `sim13_lauf.mjs` wertet K5 ueber
+// `quellen.slice(0, 7)` aus, unabhaengig von `--tage`. Ein 14-Tage-Lauf liefert fuer die
+// Woche-1-Lesart damit exakt dieselbe Zahl wie ein 7-Tage-Lauf - die zusaetzliche Rechenzeit
+// waere ohne diese zweite Lesart vollstaendig verschenkt. Am Code nachgerechnet:
+// RAID_PREP_MS = 1 h, RAID_ASSAULT_DURATION_MS = 24 h, Checkpoints Mi/So 0:00 - in Woche 1
+// kann genau EIN Raid fertig werden (Mi, Tag 2 -> Tag 3), der Sonntags-Raid endet an Tag 7 und
+// faellt aus dem Fenster.
+const TREIBER = opt('treiber', 'economy');
+if (!['economy', 'tick'].includes(TREIBER)) {
+  throw new Error(`Unbekannter Treiber "${TREIBER}" - erlaubt: economy, tick.`);
+}
+const NUTZER = opt('nutzer', null);
+const K5FENSTER = Number(opt('k5fenster', '0'));
+if (!Number.isFinite(K5FENSTER) || K5FENSTER < 0) {
+  throw new Error(`--k5fenster muss >= 0 sein (0 = ganzer Lauf): ${K5FENSTER}`);
+}
+
 if (!existsSync(resolve(K5, 'game/missions.js'))) {
   throw new Error(`Kein instrumentierter Build unter ${K5} (erst make_messbuild_k5.mjs).`);
 }
@@ -137,8 +174,11 @@ function fahre(zelle, build) {
   const werte = [];
   const tmp = resolve(WURZEL, zelle.id, 'lauf.json');
   for (let i = 0; i < N; i++) {
-    execFileSync('node', [resolve(HIER, 'sim13_lauf.mjs'),
-      `--build=${build}`, `--profil=${PROFIL}`, `--tage=${TAGE}`, `--out=${tmp}`], { stdio: 'pipe' });
+    const argv = [resolve(HIER, 'sim13_lauf.mjs'),
+      `--build=${build}`, `--profil=${PROFIL}`, `--tage=${TAGE}`, `--out=${tmp}`,
+      `--treiber=${TREIBER}`];
+    if (NUTZER) argv.push(`--nutzer=${NUTZER}`);
+    execFileSync('node', argv, { stdio: 'pipe' });
     const roh = JSON.parse(readFileSync(tmp, 'utf8'));
     const woche = roh.quellen.slice(0, 7);
     const summe = (k) => woche.reduce((a, q) => a + (q.ein[k] || 0), 0);
@@ -149,12 +189,30 @@ function fahre(zelle, build) {
     const mining = summe('asteroid_mining');
     const fund = summe('reicher_fund');
     const praemie = summe('eskorte_praemie');
+    // ZWEITE LESART, siehe Kopf: dasselbe Kriterium ueber ein laengeres Fenster. Sie ERSETZT die
+    // Woche-1-Zahl nicht, sie steht daneben. Ohne sie traegt ein 14-Tage-Lauf fuer K5 exakt
+    // dieselbe Information wie ein 7-Tage-Lauf.
+    const lang = K5FENSTER > 0 ? roh.quellen.slice(0, K5FENSTER) : roh.quellen;
+    const alleLang = new Map();
+    lang.forEach((q) => Object.entries(q.ein).forEach(([k, v]) => alleLang.set(k, (alleLang.get(k) || 0) + v)));
+    const gesamtLang = [...alleLang.values()].reduce((a, b) => a + b, 0);
+    const groessteLang = [...alleLang.entries()].sort((a, b) => b[1] - a[1])[0] || ['-', 0];
+    // Der Raid gehoert als eigene Spalte danebengeschrieben: er ist der zweite Posten im NENNER
+    // und entscheidet bei `--treiber=tick` mit darueber, ob K5 die 50-%-Schwelle reisst. Ohne die
+    // Spalte saehe ein Unterschied zwischen zwei Zellen nach Formwirkung aus, waehrend er in
+    // Wahrheit aus der Zahl der abgeschlossenen Raids stammt.
+    const raidWoche1 = summe('container_raid');
+    const raidLang = lang.reduce((a, q) => a + (q.ein.container_raid || 0), 0);
     werte.push({
-      gesamt, fund, mining, praemie,
+      gesamt, fund, mining, praemie, raidWoche1,
       jeMining: mining > 0 ? fund / mining : 0,
       jeFarm: mining + praemie > 0 ? fund / (mining + praemie) : 0,
       k5Anteil: gesamt > 0 ? (100 * groesste[1]) / gesamt : 0,
       k5Quelle: groesste[0],
+      gesamtLang, raidLang,
+      k5AnteilLang: gesamtLang > 0 ? (100 * groessteLang[1]) / gesamtLang : 0,
+      k5QuelleLang: groessteLang[0],
+      tageLang: lang.length,
       // Gegenprobe des Laufs selbst - muss 0 bleiben, sonst fehlt eine Buchungsstelle.
       nichtZugeordnet: roh.gegenprobe.bruttoRes > 0
         ? (100 * (roh.gegenprobe.bruttoRes - roh.gegenprobe.buchRes)) / roh.gegenprobe.bruttoRes : 0,
@@ -175,7 +233,7 @@ mkdirSync(WURZEL, { recursive: true });
 
 console.log('='.repeat(78));
 console.log(`REICHER FUND - ${laufende.length} Zellen a ${N} Laeufe, ${TAGE} Tage, Profil ${PROFIL}`);
-console.log('MESSBUILD-WERTE. Treiber economy (kein Raid) - siehe Kopf des Protokolls.');
+console.log(`MESSBUILD-WERTE. Treiber ${TREIBER}${TREIBER === 'economy' ? ' (kein Raid)' : ' (mit Raid)'} - siehe Kopf des Protokolls.`);
 console.log('='.repeat(78));
 
 for (const zelle of laufende) {
@@ -195,7 +253,8 @@ for (const zelle of laufende) {
   const build = baue(zelle, aufschlag);
   const werte = fahre(zelle, build);
   const stat = {};
-  ['gesamt', 'fund', 'mining', 'praemie', 'jeMining', 'jeFarm', 'k5Anteil'].forEach(
+  ['gesamt', 'fund', 'mining', 'praemie', 'jeMining', 'jeFarm', 'k5Anteil',
+   'k5AnteilLang', 'gesamtLang', 'raidWoche1', 'raidLang'].forEach(
     (f) => (stat[f] = statistik(werte.map((w) => w[f])))
   );
   const maxNichtZugeordnet = Math.max(...werte.map((w) => Math.abs(w.nichtZugeordnet)));
@@ -205,6 +264,17 @@ for (const zelle of laufende) {
 // ===================================================================================
 // AUSGABE
 // ===================================================================================
+// TREIBER UND NUTZERNAME GEHOEREN NEBEN JEDE ZAHL. Der Treiber entscheidet, ob es ueberhaupt
+// Raids gibt (runEconomyTick ruft processRaidTimer nicht), der Nutzername entscheidet ueber
+// deren Haeufigkeit (getRaidSchedule: Chance 1 gegen 0,7). Beides veraendert den K5-NENNER und
+// damit jede Anteilszahl unten - eine Tabelle ohne diese Kopfzeile ist spaeter nicht mehr
+// zuzuordnen.
+console.log('\n' + '='.repeat(78));
+console.log(`ZELLEN-UMGEBUNG: Treiber ${TREIBER}, Nutzer ${NUTZER || `Sim_${PROFIL}`} -> Raid-Chance ` +
+  `${['ShadowEagle', 'SchnelleRatte'].includes(NUTZER || '') ? '1 (Zeitplan der echten Spieler)' : '0,7 (Fallback)'}` +
+  `${TREIBER === 'economy' ? '   ABER: economy loest gar keinen Raid aus' : ''}`);
+console.log(`${TAGE} Tage je Lauf, ${N} Laeufe je Zelle, Profil ${PROFIL}`);
+
 console.log('\n' + '='.repeat(78));
 console.log('1. NIVEAU - WOCHE 1, ABSOLUT (Mrd Wert-Einheiten)');
 console.log('='.repeat(78));
@@ -269,6 +339,48 @@ for (const e of ergebnisse) {
   );
 }
 
+// ===================================================================================
+// 5. ZWEITE K5-LESART UND DER RAID ALS EIGENE SPALTE
+// ===================================================================================
+// K5 oben bleibt die Kennzahl der STARTPHASE (Woche 1) und ist unveraendert - sie hat ueber
+// mehrere Sessions Vergleichswerte, dasselbe Muster wie K1/K1b und K3/K3b. Hier steht dasselbe
+// Kriterium ueber ein laengeres Fenster daneben.
+//
+// DIE RAID-SPALTE IST DER PUNKT DIESES ABSCHNITTS, nicht die zweite Lesart: bei `tick` steht der
+// Raid als zweiter grosser Posten im NENNER. Zwei Zellen koennen sich in K5 unterscheiden, ohne
+// dass die FORM des Reichen Fundes daran beteiligt waere - es reicht, dass in der einen Zelle
+// mehr Raids fertig geworden sind. Wer die Spalte nicht danebenstellt, schreibt diesen
+// Unterschied der Form zu (dieselbe Fehlerform wie "ein Anteilskriterium hat einen Nenner mit
+// mehreren Spalten - und die Spalte entscheidet").
+if (TREIBER === 'tick' || K5FENSTER > 0 || ergebnisse.some((e) => e.stat.raidWoche1.mittel > 0)) {
+  console.log('\n' + '='.repeat(78));
+  console.log(`5. ZWEITE K5-LESART (Fenster ${K5FENSTER > 0 ? `${K5FENSTER} Tage` : 'ganzer Lauf'}) UND RAID IM NENNER`);
+  console.log('='.repeat(78));
+  console.log('Zelle        K5 Woche1  ueber50   K5 lang   ueber50   Raid W1     Raid lang   Nenner lang');
+  for (const e of ergebnisse) {
+    const w1 = e.werte.filter((w) => w.k5Anteil > 50).length;
+    const lg = e.werte.filter((w) => w.k5AnteilLang > 50).length;
+    console.log(
+      `${e.zelle.id.padEnd(11)} ${e.stat.k5Anteil.mittel.toFixed(1).padStart(7)} % ` +
+      `${String(w1 + '/' + e.werte.length).padStart(7)}  ${e.stat.k5AnteilLang.mittel.toFixed(1).padStart(7)} % ` +
+      `${String(lg + '/' + e.werte.length).padStart(7)}  ${mrd(e.stat.raidWoche1.mittel).padStart(8)}    ` +
+      `${mrd(e.stat.raidLang.mittel).padStart(8)}    ${mrd(e.stat.gesamtLang.mittel).padStart(8)}`
+    );
+  }
+  console.log('Raid-Spalten in Mrd Wert-Einheiten (Container beim FUND bewertet, siehe k5_quellen.txt 2.1).');
+  // Streuung des Raids getrennt ausweisen: sie ist die Konkurrenz-Erklaerung fuer jeden
+  // Unterschied in K5 und muss gegen die Streuung des Fundes lesbar sein.
+  console.log('\nSTREUUNG DER BEIDEN NENNER-POSTEN (Variationskoeffizient ueber die Laeufe):');
+  console.log('Zelle        Fund W1    Raid W1    Raid lang   K5 W1      K5 lang');
+  for (const e of ergebnisse) {
+    const cv = (s) => (s && s.mittel > 0 ? (100 * s.cv).toFixed(1) + ' %' : '   -  ');
+    console.log(
+      `${e.zelle.id.padEnd(11)} ${cv(e.stat.fund).padStart(8)}  ${cv(e.stat.raidWoche1).padStart(9)}  ` +
+      `${cv(e.stat.raidLang).padStart(9)}   ${cv(e.stat.k5Anteil).padStart(8)}  ${cv(e.stat.k5AnteilLang).padStart(8)}`
+    );
+  }
+}
+
 const schlecht = ergebnisse.filter((e) => e.maxNichtZugeordnet > 0.1);
 console.log(`\nGegenprobe aller Laeufe: groesste "nicht zugeordnet"-Abweichung ` +
   `${Math.max(...ergebnisse.map((e) => e.maxNichtZugeordnet)).toFixed(4)} %` +
@@ -281,6 +393,9 @@ if (aufschlagKalibriert !== null) {
 if (AUSGABE) {
   writeFileSync(AUSGABE, JSON.stringify({
     n: N, tage: TAGE, profil: PROFIL, aufschlagKalibriert,
+    // Umgebung mitschreiben: ohne sie ist eine Rohdatei spaeter nicht mehr zuzuordnen, und
+    // genau dieser Unterschied (Treiber/Raid-Rhythmus) verschiebt jede Anteilszahl darin.
+    treiber: TREIBER, nutzer: NUTZER || `Sim_${PROFIL}`, k5fenster: K5FENSTER,
     zellen: ergebnisse.map((e) => ({ ...e.zelle, aufschlag: e.aufschlag, stat: e.stat, werte: e.werte })),
   }, null, 2));
   console.log(`Rohdaten: ${AUSGABE}`);
