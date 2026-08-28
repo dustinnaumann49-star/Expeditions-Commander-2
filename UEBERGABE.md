@@ -146,11 +146,41 @@ anders wirken kann als in der Simulation.
       kurzzeitig auch so berichtet. Das Feld heisst `shotsFired` (`ShotStats` in `combat.ts`);
       korrekt ausgelesen 100 Schuesse bei 52 Treffern, voellig unauffaellig. **Feldnamen am Typ
       nachsehen, nicht raten** - dieselbe Regel wie bei den dist-Ankern.
-  - **OFFEN, NUTZERENTSCHEIDUNG:** ob die Kapitaene umgebaut werden. Die Messung sagt, WO das
-    Problem sitzt, nicht ob es behoben werden soll - "ein grosses Schiff" ist eine Design-Aussage,
-    kein Versehen. **VOR jeder Richtung zu klaeren: was richtet die ESKORTE heute schon aus?** Sie
-    war in ALLEN Zellen ausgeblendet, um die Boss-Mechanik zu isolieren; im echten Spiel kaempft
-    sie mit, der Effekt duerfte dort also schwaecher sein als hier gemessen.
+  - **NACHTRAG 28.08.2026 VORMITTAGS - TEILWEISE RUECKNAHME DES OBIGEN BEFUNDS**
+    (`run_eskorte.mjs`, `eskorte.txt`, Protokoll-Abschnitt 4b).
+    - **Die Eskorte war in ALLEN bisherigen Zellen weggelassen.** Im Code gilt
+      `ADMIRAL_STAT_SHARE = 0.55` - nur 55 % der Gegnermacht sitzen auf dem Kapitaen, 45 % auf
+      einer Eskorte. Die bisher berichteten Zahlen beschreiben also einen isolierten Sonderfall,
+      nicht das Spiel. **Im echten Spiel verliert der Spieler bei 11.250 Einheiten 15,2 %, nicht
+      0,1 %.** Der Effekt ist deutlich milder als berichtet - der Abfall bleibt aber (49,7 -> 15,2 %,
+      Faktor 3,3).
+    - **DRITTE UND VIERTE HYPOTHESE, BEIDE WIDERLEGT.** Weder ein kleinerer Machtanteil des
+      Kapitaens noch eine feinkoernigere Eskorte begradigen die Kurve:
+
+      | Variante | 150 | 400 | 1000 | 2500 | Abfall ab 150 |
+      |---|---|---|---|---|---|
+      | nur Kapitaen | 35,9 % | 10,7 % | 2,4 % | 0,1 % | 35,8 |
+      | **ECHTES SPIEL, share 0,55** | 49,7 % | 25,9 % | 17,5 % | **15,2 %** | 34,5 |
+      | share 0,35 | 62,6 % | 39,4 % | 30,3 % | 27,7 % | 34,8 |
+      | share 0,20 | 81,6 % | 56,6 % | 48,1 % | 46,1 % | 35,4 |
+      | share 0,55 + feine Eskorte | 37,9 % | 15,1 % | 6,4 % | 3,7 % | 34,1 |
+
+      **Der Abfall bleibt in JEDER Variante bei 34 bis 36 Punkten.** Der Machtanteil verschiebt
+      nur das Niveau. Die feine Eskorte wirkt sogar gegenlaeufig.
+    - **AUSGESCHLOSSEN SIND DAMIT VIER ERKLAERUNGEN:** Aggregation, Overkill-Kaskade und
+      Schuss-Obergrenze, Machtanteil des Kapitaens, Koernigkeit der Gegnereinheiten. Zusaetzlich
+      geprueft: `generateCappedFleet` deckelt die Eskorte NICHT (kein `maxCount` bei
+      Standardschiffen, Stueckzahl waechst von 640 auf 10.662).
+    - **DIE URSACHE IST WEITER OFFEN.** Einzige flache Konfiguration bleibt die Gegenprobe ohne
+      Kapitaen. Beobachtung dazu: in allen Zellen MIT Kapitaen laufen die Kaempfe ueber die vollen
+      100 Runden und der Gegnerverlust bleibt bei 99,8-100,0 % stehen - **der Kapitaen stirbt nie**
+      (81 % seiner Macht sind Panzerung). Das ist eine Beobachtung und KEINE Erklaerung: bei
+      share 0,20 stirbt er nachweislich (Kaempfe enden nach 61-64 Runden) und der Abfall bleibt
+      trotzdem.
+    - **NAECHSTER SCHRITT, UND NUR DIESER:** nicht wieder eine Konstante variieren, sondern den
+      KAMPFVERLAUF aufzeichnen - wann entstehen die Verluste? Der `CombatReplay` im Ergebnis
+      liefert Ueberlebende je Runde und Typ. Lautet die Antwort "in den ersten Runden, bevor die
+      Eskorte stirbt", ist es eine Frage der Kampfdauer und nicht der Gegnerzusammensetzung.
   - **FUER DEN PLAN WICHTIG:** Entscheidung 2 (Beute-Kurve) greift an den BELOHNUNGEN und aendert
     nichts daran, dass eine 4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert.
     **"Weglauf-Wachstum bremsen" und "Masse macht unverwundbar" sind zwei Probleme, im Plan bisher
@@ -1806,10 +1836,12 @@ monoton, und sein schlechtester Wert ist ausgerechnet die Nullmessung.
 Bauart des Piratenkapitaens, nicht das Kampfmodell (Stand-Eintrag oben). Bei verteilter
 Gegnermacht ist die Verlustquote flach (32-38 % ueber die ganze Leiter). **Nicht die Schwelle
 anheben, nicht die Deckel anheben** - beides gemessen und verworfen.
-**NAECHSTER SCHRITT: messen, was die ESKORTE des Kapitaens heute schon ausrichtet.** Sie war in
-allen Zellen ausgeblendet; im echten Spiel kaempft sie mit, der Effekt duerfte also schwaecher
-sein als gemessen. Erst danach ist ueber einen Umbau zu reden - und das ist eine
-Nutzerentscheidung, keine Messfrage.
+**ERLEDIGT:** die Eskorte ist gemessen (Abschnitt 4b). Der Effekt ist milder als berichtet
+(15,2 % statt 0,1 % Verlust bei 11.250 Einheiten), der Abfall bleibt aber - und weder Machtanteil
+noch Koernigkeit begradigen ihn. **VIER Hypothesen sind jetzt widerlegt.**
+**NAECHSTER SCHRITT: den KAMPFVERLAUF aufzeichnen** (`CombatReplay` liefert Ueberlebende je Runde
+und Typ) - wann entstehen die Verluste? Nicht wieder eine Konstante variieren; das hat viermal
+nichts ergeben.
 
 **PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
 gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
