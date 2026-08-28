@@ -1,0 +1,134 @@
+DER K3b-VORBEHALT - GEPRUEFT, QUANTIFIZIERT, MIT GEGENSTUECK BEHOBEN
+Protokoll vom 28.08.2026 (siebte Session, zweiter Teil)
+Loest reicherfund_11.txt Abschnitt 13 ("Vorbehalt, NICHT behoben") und Abschnitt 14 Punkt 4 ein.
+
+Werkzeug: sim13_lauf.mjs (ERWEITERT um K3c, K3b unveraendert)
+Rohdaten: k3b_vorbehalt.json (18 Laeufe)
+
+!!! MESSBUILD-PROTOKOLL. Laeuft gegen /tmp/k5/dist. KEINE Zeile server/src oder client/src.  !!!
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+DER VORBEHALT IST BESTAETIGT UND DIE RICHTUNG STIMMT: mit `--mensch_unterschritte` ueberschaetzt
+K3b um **14,7 Prozentpunkte** (67,5 statt 52,8 %). Dabei ist ein ZWEITER Fundort aufgefallen,
+der bisher nirgends notiert war und Punkt 4 unmittelbar betrifft - und ein dritter Befund, der
+schwerer wiegt als beide: **bei Profil `abwesend` ist die Kennzahl grundsaetzlich nicht
+erhebbar**, mit oder ohne Schalter.
+
+================================================================================
+1. DIE URSACHE, AM CODE
+================================================================================
+`ressourcenAblehnung` ist eine Momentaufnahme des HANDELNS: `spielerZug()` setzt die drei Flags
+zurueck und fuellt sie neu. `probe()` liest sie gegen einen Zustand, der laufend abgetastet
+wird. Beides faellt nur zusammen, wenn `probe()` unmittelbar nach `spielerZug()` laeuft.
+
+FUNDORT 1 - MIT `--mensch_unterschritte` (der notierte Vorbehalt).
+  In der Unterschritt-Schleife laeuft `probe()` 30x je Stunde. `spielerZug()` laeuft am
+  Stundenende, und dort wird `probe()` gar nicht mehr gerufen:
+      if (MENSCH_UNTERSCHRITTE) { ... probe(s); }      <- 30x, ohne Zug
+      if (handeltInStunde(h)) spielerZug(s);
+      if (!MENSCH_UNTERSCHRITTE) probe(s);             <- entfaellt
+  ALLE 30 Proben lesen Flags aus dem Zug der VORHERIGEN Stunde.
+
+FUNDORT 2 - OHNE DEN SCHALTER, SOBALD DAS PROFIL NICHT `aktiv` IST. BISHER NIRGENDS NOTIERT.
+  `handeltInStunde()` liefert bei `gelegenheit` nur alle 12 Stunden true, bei `abwesend` an den
+  Tagen 1 bis 14 NIE. `probe()` laeuft trotzdem stuendlich und liest dann bis zu ZWEI WOCHEN
+  alte Flags. **Punkt 4 faehrt genau diese drei Profile** - der Vorbehalt galt also nie nur fuer
+  den Schalter.
+
+================================================================================
+2. WAS GEBAUT WURDE - K3c, NICHT EINE AENDERUNG AN K3b
+================================================================================
+K3b BLEIBT UNVERAENDERT. Muster K1/K1b und K3/K3b, aus demselben Grund: eine Kennzahl mit
+Vergleichswerten wird nicht umdefiniert, sie bekommt ein Gegenstueck. Waere K3b korrigiert
+worden, waeren die Werte vom 26.08.2026 (50,0 %) und aus dem 30-Tage-Lauf (85,1 %) still
+entwertet worden, ohne dass irgendwo stuende, warum.
+
+`probeK3b()` erhebt dieselbe Frage an der einzigen Stelle, an der die Flags gueltig sind:
+unmittelbar nach dem Zug, der sie gesetzt hat - in BEIDEN Modi. Der Nenner ist ein EIGENER
+(Zahl der ZUEGE statt Zahl der Proben); gegen die Probenzahl zu normieren hiesse, gegen einen
+Nenner zu rechnen, der die Flags nie gesehen hat.
+
+================================================================================
+3. DIE MESSUNG
+================================================================================
+Drei Profile x mit/ohne Schalter x 3 Wiederholungen, 7 Tage, Treiber economy. 18 Laeufe.
+
+  Profil        Modus  | K3b (Nenner)      K3c (Nenner)      Differenz
+  aktiv         ohne   |  48,2 % ( 168)     48,2 % ( 168)    +0,0 Punkte
+  aktiv         mit    |  67,5 % (5040)     52,8 % ( 168)   +14,7 Punkte
+  gelegenheit   ohne   |   0,0 % ( 168)      0,0 % (  14)    +0,0 Punkte
+  gelegenheit   mit    |   0,0 % (5040)      0,0 % (  14)    +0,0 Punkte
+  abwesend      ohne   |   0,0 % ( 168)      0,0 % (   2)    +0,0 Punkte
+  abwesend      mit    |   0,0 % (5040)      0,0 % (   2)    +0,0 Punkte
+
+BEFUND 1 - DIE GEGENPROBE ZUERST. Bei `aktiv` ohne Schalter sind K3b und K3c auf die
+Nachkommastelle identisch (48,2 %, 168 gegen 168). Genau dort muessen sie es sein: der Mensch
+handelt jede Stunde, `probe()` laeuft direkt danach. **Die neue Kennzahl erfindet nichts** -
+dasselbe Argument, das bei K1/K1b die zweimal 6,1 % getragen hat. Ohne diese Zelle waere jede
+Differenz unten nicht von einem Fehler in K3c zu unterscheiden.
+
+BEFUND 2 - DER VORBEHALT IST BESTAETIGT, RICHTUNG UND GROESSE. Mit dem Schalter meldet K3b
+**67,5 %, korrekt sind 52,8 %** - eine Ueberschaetzung um 14,7 Punkte. Die Vermutung aus
+reicherfund_11.txt Abschnitt 13 ("vermutlich nach oben verzerrt") ist damit belegt und beziffert.
+Mechanik: nach einem erfolgreichen Zug ist die Lane belegt und K3b zaehlt nicht; im Lauf der
+folgenden 30 Unterschritte wird der Auftrag fertig, die Lane faellt leer - und das Flag aus der
+Vorstunde steht noch. Der Zaehler trifft also einen Zustand, den der Zug nicht mehr beschreibt.
+
+BEFUND 3 - DER SCHWERSTE, UND ER BETRIFFT NICHT DEN SCHALTER. Bei `gelegenheit` und `abwesend`
+melden BEIDE Kennzahlen 0,0 %. Das ist keine Uebereinstimmung, sondern ein leerer Zaehler: in
+diesen Profilen sammeln sich zwischen zwei Zuegen genug Ressourcen an, dass gar keine Ablehnung
+"Nicht genug Ressourcen" entsteht - die Flags werden nie gesetzt. Fundort 2 ist damit strukturell
+vorhanden, in diesen Zellen aber wirkungslos. **Wirkungslos ist nicht dasselbe wie unbedenklich:**
+sobald in einem laengeren Lauf eine Ablehnung faellt, steht das Flag bei `abwesend` bis zu zwei
+Wochen.
+
+================================================================================
+4. WAS DAS FUER PUNKT 4 HEISST - VORAB AUSGEZAEHLT
+================================================================================
+Aus `handeltInStunde()` nachgezaehlt, wieviele ZUEGE ein 30-Tage-Lauf je Profil liefert - also
+den Nenner, den K3c dort haette:
+
+  Profil        Zuege in 30 Tagen   K3c-Nenner
+  aktiv                       720   tragfaehig
+  gelegenheit                  60   knapp, aber lesbar
+  abwesend                     17   ZU KLEIN FUER EINE AUSSAGE
+
+**K3b HAT BEI `abwesend` EINEN NENNER VON 21.600 PROBEN, DIE AUF 17 ZUEGE ZURUECKGEHEN.** Das
+ist formal eine Zahl mit drei Stellen und sachlich leer - dieselbe Fehlerform wie "K5 waere
+formal erhoben und sachlich leer gewesen" (k5_quellen.txt Abschnitt 6) und wie K3, das 0,0 %
+meldet, wo ein echter Engpass besteht. Wer bei Punkt 4 eine K3b-Zahl fuer `abwesend` zitiert,
+zitiert 17 Beobachtungen in der Verkleidung von 21.600.
+
+EMPFEHLUNG FUER PUNKT 4, nicht entschieden:
+ 1. `--mensch_unterschritte` kann verwendet werden - die Verzerrung ist jetzt bekannt und
+    K3c steht daneben. K2 ist unveraendert nicht betroffen (der Schalter existiert gerade
+    deshalb: er schliesst die Unterschaetzung des Schiffs-Leerlaufs).
+ 2. **Fuer `aktiv` K3c zitieren, fuer `gelegenheit` mit Vorbehalt, fuer `abwesend` gar nicht.**
+ 3. K3b weiterhin mitausweisen, damit die Reihe zu den frueheren Sessions nicht abreisst.
+
+================================================================================
+5. GRENZEN
+================================================================================
+- 7 Tage, Treiber economy, 3 Wiederholungen je Zelle. Die 14,7 Punkte sind eine Groessenordnung,
+  keine kalibrierte Zahl; mit Raid (`tick`) ist die Ressourcenlage eine andere und die
+  Verzerrung kann groesser oder kleiner ausfallen. NICHT gemessen.
+- Die Zellen `gelegenheit` und `abwesend` liefern 0,0 % in beiden Kennzahlen. Sie belegen
+  NICHT, dass Fundort 2 harmlos ist - sie belegen, dass er in diesen sieben Tagen nicht
+  ausgeloest wurde.
+- K3c aendert nichts am Spielermodell und nichts an K2/K3/K3b: es zaehlt in einem eigenen
+  Zaehlerpaar und wird an einer Stelle gerufen, an der vorher gar nicht gemessen wurde.
+- Der Ankercheck wurde fuer diese Laeufe nicht wiederholt; sie laufen gegen denselben Build
+  /tmp/k5/dist, der am selben Tag zweimal geprueft wurde (-1,1 / -1,7 % normiert).
+
+================================================================================
+6. OFFEN
+================================================================================
+- Ob die 14,7 Punkte unter `--treiber=tick` gleich bleiben. Waere in einer Zelle pruefbar,
+  ist hier nicht gefahren.
+- Ob K3b fuer `gelegenheit`/`abwesend` ueberhaupt je einen Wert ungleich 0 liefert. Falls nein,
+  ist die Kennzahl dort nicht nur unsicher, sondern gegenstandslos - das waere vor Punkt 4
+  billig mit einem 30-Tage-Lauf je Profil zu klaeren.
+- Die Deutung der Zahl selbst bleibt offen wie am 26.08.2026: ob die starke Metall-Bindung
+  gewollt ist, ist eine Balance-Frage und in keiner dieser Sessions bewertet.

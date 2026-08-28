@@ -104,3 +104,27 @@ Elf Messungen desselben Ankers gegen `/tmp/k5/dist` liegen jetzt vor:
 
 Die beiden neuen (-1,1 und -1,7) liegen im Band. **Roh waeren beide POSITIV gewesen**
 (+1,8 und +4,3 %) - die roh/normiert-Falle zum achten Mal.
+
+
+---
+
+# Zweiter Teil der Session: `sim13_lauf.mjs` um K3c erweitert
+
+Anlass: der K3b-Vorbehalt aus `reicherfund_11.txt` Abschnitt 13. Protokoll `k3b_vorbehalt.txt`.
+
+**`K3b` ist unveraendert.** Neu ist `probeK3b()` mit eigenem Zaehlerpaar
+(`k3cProben`/`k3cSchieflage`) und einer neuen Ausgabezeile `K3c dasselbe, Flags gueltig`.
+Gerufen wird sie unmittelbar nach `spielerZug()` - in beiden Modi, also auch mit
+`--mensch_unterschritte`, wo `probe()` am Stundenende gar nicht mehr laeuft.
+
+**Der Nenner ist ein eigener: Zuege statt Proben.** Gegen die Probenzahl zu normieren hiesse,
+gegen einen Nenner zu rechnen, der die Flags nie gesehen hat. Die Ausgabe weist ihn deshalb
+mit aus (`30/72 Zuege`), damit sofort sichtbar ist, wieviele Beobachtungen dahinterstehen.
+
+**Kein neuer Schalter, keine Verhaltensaenderung.** K2, K3, K3b und das Spielermodell sind
+unberuehrt; gemessen wird an einer Stelle, an der vorher gar nicht gemessen wurde. Bei Profil
+`aktiv` ohne `--mensch_unterschritte` liefern K3b und K3c denselben Wert (48,2 %) - die
+eingebaute Gegenprobe.
+
+`K3b` bekommt zusaetzlich einen Warnhinweis in der Ausgabe, sobald der Schalter gesetzt ist
+oder das Profil nicht `aktiv` ist - genau die beiden Faelle, in denen es veraltete Flags liest.
