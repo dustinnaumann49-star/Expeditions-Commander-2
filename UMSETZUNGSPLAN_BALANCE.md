@@ -213,6 +213,71 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 
 ### Technische Vorbedingungen (ergaenzt am 10.08.2026, Code-Pruefung)
 
+> **MESSKASTEN 28.08.2026 (siebte Session) - DIE DREI OFFENEN PUNKTE VOR DEM EINBAU. PUNKT 1
+> IST BEANTWORTET (NEIN), UND DIE EMPFOHLENE ZAHL IST EINE NIVEAUAENDERUNG. NICHTS GEBAUT,
+> NICHTS ENTSCHIEDEN.** Protokoll `balance/session2-simulation/reicherfund_12_offene_punkte.txt`,
+> Rohdaten `reicherfund_12_tick.json` (20 Laeufe), Werkzeugdoku
+> `WERKZEUGE_28-08-2026_siebte-session.md`. Geaendert wurde ein einziges Werkzeug
+> (`run_reicherfund.mjs`, drei Schalter, Standardwerte unveraendert). **Messbuild-Protokoll.**
+>
+> **PUNKT 1 - K5 IN EINER `tick`-ZELLE: NICHT BELEGT.** Zwei Runden a 5 Laeufe, gepoolt n = 10,
+> 14 Tage, `--treiber=tick`, `--nutzer=ShadowEagle` (Raid-Chance 1 statt 0,7 - der Rhythmus der
+> beiden echten Spieler und damit die realistischere Zelle).
+>
+> | Lesart | heute | v_p016 | F | Schwelle 3,18 |
+> |---|---|---|---|---|
+> | Woche 1 | 39,2 % SD 6,5 | 51,2 % SD 8,8 | 0,54 | nicht signifikant |
+> | 14 Tage | 43,3 % SD 6,5 | 51,6 % SD 5,3 | 1,51 | nicht signifikant |
+>
+> Die Streuung der QUELLE faellt weiterhin (64,1 -> 12,9 %), die des K5-AUSGANGS nicht: mit Raid
+> ist der Raid der groessere bewegliche Posten im Nenner (VarKoeff 43 % gegen Fund 26 %).
+> **Vierte Wiederholung des Befunds, dass K5 diese Entscheidung nicht tragen kann.**
+>
+> **DER BEFUND, DER NICHT GESUCHT WAR UND SCHWERER WIEGT: 0,875 IST EINE NIVEAUAENDERUNG.**
+> Wocheneinnahme 16,71 gegen 21,04 Mrd = **+26,0 %** (t = 2,54 gegen t(18) = 2,10; verteilungs-
+> frei gegengeprueft Mann-Whitney U = 22 gegen kritisch 23).
+>
+> | economy-Zellen, n=20 | Mittel | Median | Median/Mittel |
+> |---|---|---|---|
+> | heute | 15,27 | 12,37 | 0,810 |
+> | v_p016 | 15,53 | 15,27 | 0,983 |
+> | | **+1,7 %** | **+23,5 %** | |
+>
+> Rein arithmetisch: wer eine rechtsschiefe Verteilung durch eine symmetrische ersetzt und den
+> MITTELWERT festhaelt, hebt den Median zwangslaeufig. **Das widerspricht dem Nachtrag vom
+> 27.08.2026 in seinem Kern** ("Der Befund rechtfertigt eine Formaenderung, keine
+> Niveauaenderung"). `reicherfund_11.txt` benennt die Falle zwei Abschnitte vor der Kalibrierung
+> woertlich und uebersieht sie dann. Faktor, der den Median festhielte: **0,709** - eine
+> RECHNUNG, keine gemessene Zelle.
+>
+> **PUNKT 2 - ES SIND FUENF STELLEN, NICHT ZWEI.** Ausgezaehlt statt uebernommen:
+> `Nachrichten.tsx` Z. 321 und 325/334, `missions.ts` Z. 745, **`economy.ts` Z. 403-406**,
+> `types.ts` Z. 394-395; `changelog.ts` Z. 507 bleibt als historischer Eintrag stehen.
+> **Der wichtigste Fundort ist keine Textpflege:** der Kommentar bei `ASTEROID_RICH_FIND_CHANCE`
+> benennt ZWEI Bestandteile der Nutzerentscheidung vom Juli 2026 - das Gluecksspiel UND die
+> Zeitpunkt-Abhaengigkeit. v_p016 erhaelt den ersten und loescht den zweiten. Der Nachtrag vom
+> 27.08.2026 fuehrt nur "DAS GLUECKSSPIEL bleibt" und trennt beides nicht.
+> Bauanleitung im Protokoll Abschnitt 4; darin zwingend: **`RichFindEntry.hour` bleibt im Typ**
+> (alte Nachrichten brechen sonst), Server-Text und Client-Tabelle gemeinsam aendern.
+>
+> **PUNKT 3 - DIE ESKORTEN-PRAEMIE IST VORAUSSETZUNG DER ZAHL, KEINE ZWEITE AENDERUNG.** Sie ist
+> in v_p016 bereits ausgeschlossen und steckt in den gemessenen 15,53 Mrd. Heute haengen
+> **23,1 % der Wocheneinnahme** an ihrer Mitverdopplung; der Ertragsanteil einer Eskorte faellt
+> um **69 %** (Schutzwirkung unberuehrt). **Bliebe sie im Bemessungstopf, waere der Faktor 0,586
+> statt 0,875** - wer Punkt 3 ablehnt, verwirft 0,875 mit. **Punkt 3 und die Median-Frage sind
+> NICHT unabhaengig, beide senken die Zahl - gemeinsam kalibrieren.**
+>
+> **EIGENER METHODENFEHLER, BELEGT:** die Trennschaerfe wurde vorab gerechnet, aber gegen die
+> K5-Streuung einer Zelle OHNE Raid (16,0 Punkte). Mit Raid sind es 7,3 - derselbe Raid, der die
+> Frage entscheidbar macht, daempft den Unterschied mit. Zweite Runde mit VORHER festgelegtem
+> Kriterium nachgefahren.
+>
+> **ANKERCHECK: -1,1 % und -1,7 % normiert**, beide im Band; elf Messungen liegen jetzt vor.
+> Roh waeren beide positiv gewesen (+1,8 / +4,3 %) - die roh/normiert-Falle zum achten Mal.
+>
+> **DREI FRAGEN BEIM NUTZER:** (A) die Zahl 0,875, (B) der Wegfall der Zeitpunkt-Abhaengigkeit,
+> (C) der Ausschluss der Eskorten-Praemie. **A und C gemeinsam.**
+
 > **MESSKASTEN 28.08.2026 - DIE MASSENFRAGE. FUENF HYPOTHESEN, VIER WIDERLEGT, DIE FUENFTE TRIFFT.
 > NICHTS GEBAUT, NICHTS ENTSCHIEDEN.** Protokoll `balance/session2-simulation/
 > massenfrage_protokoll.txt` (Abschnitte 2, 3, 4a-4d), Rohausgaben `massenfrage.txt`, `deckel.txt`,
@@ -366,6 +431,13 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 > 0,08 faellt der VarKoeff von 64,1 auf 27,8 % und die Spanne von 7,63x auf 2,72x. Als Einzelursache
 > belegt, nicht nur plausibel.
 >
+> **ACHTUNG, EINGESCHRAENKT AM 28.08.2026 (siebte Session): "Niveau unveraendert" gilt fuer den
+> MITTELWERT, nicht fuer die typische Woche.** Der Median steigt um 23,5 %, die gemessene
+> Wocheneinnahme in einer tick-Zelle um 26,0 %. Der Faktor 0,875 ist damit eine
+> NIVEAUAENDERUNG - genau das, was der Absatz "DAS NIVEAU BLEIBT" unten ausschliessen wollte.
+> Ausserdem eingeschraenkt: Punkt 1 der drei offenen Punkte ist beantwortet und die Antwort ist
+> NEIN. Einzelheiten im Messkasten der siebten Session in Abschnitt 1b.
+>
 > **EMPFOHLEN: v_p016 (Chance 0,16, Faktor 0,875).** Niveau unveraendert (+1,7 %), Streuung
 > 64,1 -> 12,9 %, Spanne 7,63x -> 1,56x. **Warum genau dieser Wert:** die Streuungskurve hat einen
 > Knick dort - 0,08 -> 0,16 bringt -14,9 Punkte, 0,16 -> 0,24 nur noch -4,1, 0,24 -> 0,32 nur -1,6.
@@ -381,6 +453,11 @@ Bauten erhoehen Ressourcen, Flotte schaltet Inhalte frei, Inhalte liefern Beute.
 > weil sie eine Mechanik loescht, die der Code-Kommentar als Nutzerentscheidung vom Juli 2026
 > benennt; und die Ruecknahme der Missionsdauer (Nutzerentscheidung vom 28.07.2026, beruehrt
 > Spielrhythmus und dmCap-Rate).
+>
+> **STAND 28.08.2026: ALLE DREI PUNKTE SIND ABGEARBEITET** (Messkasten der siebten Session in
+> Abschnitt 1b). Punkt 1 beantwortet mit NEIN; Punkt 2 sind fuenf Stellen statt zwei, darunter
+> der Code-Kommentar, der die Mechanik begruendet; Punkt 3 ist Voraussetzung der Zahl und keine
+> zweite Aenderung (0,586 statt 0,875, wenn die Praemie bliebe). Ursprungstext:
 >
 > **VOR DEM EINBAU NOCH ZU KLAEREN, die Empfehlung ist NICHT vollstaendig:** (1) K5 in einer
 > `tick`-Zelle - alle Zellen hier laufen ohne Raid, K5 ist dort strukturell nicht entscheidbar;
@@ -6697,6 +6774,7 @@ so steht - insbesondere bei Entscheidungen, deren urspruengliche Begruendung spa
 
 | Datum | Aenderung |
 |---|---|
+| 28.08.2026 (siebte Session) | **Die drei offenen Punkte vor dem Einbau des Reichen Fundes abgearbeitet. NICHTS GEBAUT, weder Spielcode noch Client.** Protokoll `reicherfund_12_offene_punkte.txt`, Rohdaten `reicherfund_12_tick.json`, Werkzeugdoku `WERKZEUGE_28-08-2026_siebte-session.md`. Geaendert: `run_reicherfund.mjs` (Schalter `--treiber`, `--nutzer`, `--k5fenster`; alle Standardwerte unveraendert, `reicherfund_11.txt` bleibt reproduzierbar) plus eine fest verdrahtete Ausgabezeile korrigiert, die eine tick-Serie als economy-Serie protokolliert haette. **PUNKT 1 beantwortet, mit NEIN:** die neue Form stabilisiert den K5-Ausgang nicht nachweisbar (F = 1,51 gegen die vorab festgelegte Schwelle 3,18; Woche-1-Lesart sogar F = 0,54), weil mit Raid der Raid der groessere bewegliche Posten im Nenner ist (VarKoeff 43 % gegen Fund 26 %). Die Streuung der QUELLE faellt weiterhin - die des KRITERIUMS nicht. **DER BEFUND, DER NICHT GESUCHT WAR:** 0,875 ist gegen den MITTELWERT einer rechtsschiefen Verteilung kalibriert und hebt den MEDIAN um 23,5 %, die gemessene Wocheneinnahme in einer tick-Zelle um 26,0 % (t = 2,54; Mann-Whitney U = 22 gegen kritisch 23). **Das widerspricht dem Nachtrag vom 27.08.2026 in seinem Kern** ("eine Formaenderung, keine Niveauaenderung") - und `reicherfund_11.txt` benennt die Falle zwei Abschnitte vor der eigenen Kalibrierung woertlich. Faktor, der den Median festhielte: 0,709, eine Rechnung und keine gemessene Zelle. **PUNKT 2: fuenf Stellen statt zwei**, ausgezaehlt statt uebernommen; der wichtigste ist der Kommentar bei `ASTEROID_RICH_FIND_CHANCE`, der ZWEI Bestandteile der Nutzerentscheidung vom Juli 2026 nennt (Gluecksspiel UND Zeitpunkt-Abhaengigkeit) - v_p016 loescht den zweiten, was 12b nicht ausweist. `RichFindEntry.hour` muss im Typ bleiben, sonst brechen zugestellte Nachrichten. **PUNKT 3: Voraussetzung der Zahl, keine zweite Aenderung** - die Praemie ist in v_p016 bereits ausgeschlossen; bliebe sie drin, waere der Faktor 0,586. Heute haengen 23,1 % der Wocheneinnahme daran, der Ertragsanteil einer Eskorte faellt um 69 %. **Punkt 3 und die Median-Frage sind nicht unabhaengig und muessen gemeinsam kalibriert werden.** **Eigener Methodenfehler, belegt:** die Trennschaerfe wurde regelkonform vorab gerechnet, aber gegen die Streuung einer Zelle OHNE Raid (16,0 statt 7,3 Punkte) - erste Runde deshalb ohne Ergebnis, zweite mit vorher festgelegtem Kriterium nachgefahren. Drei neue Eintraege in der Fallen-Liste. Ankercheck -1,1 / -1,7 % normiert, elf Messungen. **Drei Fragen liegen beim Nutzer (A: die Zahl, B: die Zeitpunkt-Abhaengigkeit, C: die Praemie), A und C gemeinsam.** |
 | 26.08.2026 (fuenfte Session, Nachtrag) | **Drei vom Nutzer delegierte Entscheidungen getroffen, alle umkehrbar, plus eine Selbstkorrektur.** (1) **Punkt 4 laeuft mit `--treiber=tick`**, dazu je Profil EIN `economy`-Lauf als Bruecke zu den bisherigen Zahlen. (2) **K1b gebaut, K1 unveraendert** (Muster K3/K3b): groesster Rueckgang vom Hoch der letzten 24 Stunden; Fenster bewusst begrenzt, sonst zaehlte eine Zermuerbung ueber Wochen als ein Ereignis. Gegenprobe: ohne mehrstuendiges Ereignis liefern K1 und K1b denselben Wert. (3) **K4 auf die echten Sperren umgestellt** - Sektoren taugen strukturell nicht (keine Sperre im Code, Piraten-Sektoren skalieren mit der eigenen Macht mit; Schiffe/Verteidigung/Forschung haben ueberhaupt keine Voraussetzung). Gestaffelt ist genau viererlei: Heimatstufe V2/V3, Stations-Stufe, Imperator, Sandronator. **BEWUSST NICHT ENTSCHIEDEN: die Hoehe des Reichen Fundes** - Balance-Frage ohne Zahl, Messvorschlag in `k5_quellen.txt` Abschnitt 11; zu pruefen ist zuerst, ob die heutige Hoehe eine Folge der Verlaengerung der Asteroidenmissionen von 4 auf 12 Stunden ist (der Fund verdoppelt den ANGESAMMELTEN Betrag). **30-Tage-Positivprobe: K1 92,0 % / K1b 99,9 % (VERLETZT, ab Tag 20 vernichtet jeder Raid die gesamte Heimatflotte), K4 Wochen 1-4 ohne Freischaltung (VERLETZT), K6 Plateau 26 Tage ab Tag 4 (VERLETZT), K5 39,8 % (erfuellt).** **SELBSTKORREKTUR:** die erste Fassung von Befund 3 stellte Tageszeilen eines ABGEBROCHENEN Laufs neben den K1-Wert eines anderen Laufs und schloss daraus, K1 uebersehe den Verlust und melde 6,1 %. Der nachgeholte Lauf widerlegte das - K1 meldete 92,0 %. Richtig und schwaecher: K1 unterschaetzt systematisch, verfehlt aber nicht zwangslaeufig. **Ebenfalls korrigiert: "K5 in jedem Lauf verletzt" war zu weit gefasst** - ueber acht Laeufe liegt der groesste Anteil zwischen 39,8 % und 81,9 %, die Schwelle verlaeuft mitten durch die Spanne. **Nichts gebaut, kein Eingriff in `server/src`.** |
 | 26.08.2026 (fuenfte Session) | **Einnahmen nach Quelle instrumentiert - Schritt 3 der Liste aus `sim13_geruest.txt` Abschnitt 8 erledigt, Abnahmekriterium 5 und 6 sind erhebbar.** Protokoll `k5_quellen.txt`, Werkzeug `make_messbuild_k5.mjs` (neu, zweistufig auf den Simulationsbuild aufgesetzt, damit dessen Blockzaehlung als Echtheitspruefung unberuehrt bleibt und die Instrumentierung abschaltbar ist), `sim13_lauf.mjs` erweitert. 18 Patches mit hartem Abbruch, alle passiv ueber `globalThis.__K5?.(...)`. **BEFUND 1: die groesste Einzelquelle der Woche 1 ist der REICHE FUND** (`ASTEROID_RICH_FIND_CHANCE = 0,08` je Stunden-Check, verdoppelt den angesammelten Farm-Betrag, kompoundiert ueber 12-Stunden-Missionen) mit **54,2 bis 81,9 % in sechs Laeufen**; Mining, Praemie und Minen liegen dagegen praktisch fest. **Die gesamte Streuung des Laufs kommt aus dieser einen Mechanik** - damit ist nebenbei erklaert, warum "Wert am Tag 7" ueber die Sessions zwischen 2,92 und 6,77 Mrd schwankte, ohne Aenderung am Modell. Kriterium 5 ist in jedem Lauf verletzt, durch eine Quelle, die weder im Plan noch in der Aufgabenstellung vorkam - **dritte Wiederholung derselben Fehlerform** (ein Anteilskriterium zeigt auf die falsche Quelle, sichtbar erst, wenn alle Quellen nebeneinander stehen). **Ob die Hoehe gewollt ist, ist NICHT bewertet.** **BEFUND 2: der Treiber loeste bis dahin keinen einzigen Raid aus** - `processRaidTimer()` hat genau zwei Aufrufer (`actions.js` in `tick()`, `heartbeat.js`), `sim13_lauf.mjs` rief keines von beidem; im Lauf existierten exakt zwei Einnahmequellen. Neuer Schalter `--treiber=economy|tick` (Standard unveraendert); mit `tick` stellt der Raid 26,6 % ueber 123 Container, Kosten Faktor 7,6. Ein Sieben-Tage-Lauf kann die Frage nicht beantworten (Start Montag, Checkpoints Mi/So, ein sonntags gespawnter Raid ist bei Laufende noch nicht abgearbeitet) - **ab 14 Tagen brauchbar.** **BEFUND 3: K1 uebersieht einen Raid-Totalverlust** (Flottenmacht 1,93 -> 0,01 Mrd, K1 meldete 6,1 %), weil es je STUNDE zaehlt und ein Raid ueber zwoelf Wellen laeuft - **zweiter Fall der K3-Fehlerform**, Kriteriums-Definition und damit Nutzerentscheidung, nicht gebaut. **BEFUND 4: die K4-Setzung ueber `npcFloor` ist gemessen wirkungslos** (300.000-3.000.000 gegen rund 60.000.000 Startflottenmacht, sieben Sektoren am Tag 0). **Die Gegenprobe ist der eigentliche Beleg:** der Nenner wird unabhaengig gemessen (Accessoren ueber `state.resources`), "nicht zugeordnet" = 0,000 % in sechs von sechs Laeufen. **Falle festgehalten:** `mission.farmed` sammelt vier Quellen ein, und `abortMissionDestroyed()` zahlt nichts aus - wer beim Auflaufen bucht, zaehlt eine verlorene Mission unsichtbar als Einnahme; Commit deshalb nur in `finalizeMission()`. **Eigener Fehler: Messregel 16 zum dritten Mal** (zwei Anker aus der TS-Quelle statt aus `dist`, andere Einrueckung; vierter Fundort derselben Fehlerform). **Grenzen:** Punkt 4 nicht gefahren, ein Profil, keine Wiederholungen; sechs instrumentierte Quellen sind in keinem Lauf belegt worden. Ankercheck -1,6 %. **Nichts gebaut, kein Eingriff in `server/src`.** |
 | 26.08.2026 (vierte Session, dritter Teil) | **Beide offenen Punkte zum Spielermodell entschieden und gebaut.** (1) **`begleitschiff` nur noch bis `escortCap`** - aus der Geschmacksfrage wurde eine Messung: Kosten je Machtpunkt 1,10 (schlachtschiff) bis 1,18 (schwer) bei allen echten Kampfschiffen, **3,37 beim Begleitschiff**. Wirkung gemessen: **Flottenmacht steigt bei gleichem Ressourceneinsatz von 0,80 auf 1,41 Mrd**, Flotte am Tag 7 jetzt plausibel (leicht 2950, schwer 1750, kreuzer 1225, begleitschiff 522). Vorbehalt notiert: `combatFleetPowerBase()` kennt keine Sonderfaehigkeiten, die Salven-Schiffe stehen mit 5,6-7,3 nur deshalb schlecht da. (2) **K3 bleibt UNVERAENDERT, K3b kommt daneben** - die Definition nicht anzufassen war ausdrueckliche Entscheidung, weil K3 ueber mehrere Sessions Vergleichswerte hat und eine Aenderung sie alle entwertet haette. K3b zaehlt: Lane leer, Ablehnung 'Nicht genug Ressourcen', Gesamtwert reicht trotzdem; Massstab bewusst derselbe wie K3 (guenstigstes Schiff), damit keine neue willkuerliche Konstante entsteht. **Ergebnis: K3b 50,0 %, wo K3 0,0 % meldet** - in der Haelfte aller Proben steht eine Lane still, weil genau ein Rohstoff fehlt (Metall 1 Mio gegen Kristall 328 Mio und Deuterium 811 Mio). **Die Deutung steht ausdruecklich aus:** ob diese Metall-Bindung gewollt ist, ist eine Balance-Frage und nicht bewertet. Protokoll `spielermodell_diagnose.txt` Abschnitte 7 und 8. **Kein Eingriff in `server/src`.** |

@@ -1,4 +1,4 @@
-# Uebergabe - Stand 27.08.2026
+# Uebergabe - Stand 28.08.2026
 
 Kurze Datei, bewusst. Der Inhalt steht im `UMSETZUNGSPLAN_BALANCE.md`; hier steht nur, wie man
 einsteigt und was NICHT im Plan steht.
@@ -64,6 +64,100 @@ R14 wie Entscheidung 10 sind beide Belege dafuer, dass ein gemessener Mechanismu
 anders wirken kann als in der Simulation.
 
 ## Stand
+
+- **NEU 28.08.2026 (siebte Session): DIE DREI OFFENEN PUNKTE VOR DEM EINBAU DES REICHEN FUNDES
+  SIND ABGEARBEITET. PUNKT 1 IST BEANTWORTET - MIT NEIN. DABEI EIN NICHT GESUCHTER BEFUND, DER
+  SCHWERER WIEGT: DIE EMPFOHLENE ZAHL 0,875 IST EINE NIVEAUAENDERUNG. NICHTS GEBAUT, WEDER
+  SPIELCODE NOCH CLIENT.** Protokoll
+  `balance/session2-simulation/reicherfund_12_offene_punkte.txt`, Rohdaten
+  `reicherfund_12_tick.json` (20 Laeufe), Werkzeugdoku
+  `WERKZEUGE_28-08-2026_siebte-session.md`. Geaendert wurde genau ein Werkzeug
+  (`run_reicherfund.mjs`, drei Schalter, alle Standardwerte unveraendert - `reicherfund_11.txt`
+  bleibt reproduzierbar). **Messbuild-Protokoll.**
+  - **PUNKT 1, K5 IN EINER tick-ZELLE: NICHT BELEGT.** Zwei Runden a 5 Laeufe je Zelle, gepoolt
+    n = 10, 14 Tage, Treiber `tick`, `--nutzer=ShadowEagle`. Vorab festgelegt: 14-Tage-Lesart,
+    Schwelle F(9,9) = 3,18.
+
+    | Lesart | heute | v_p016 | F | Befund |
+    |---|---|---|---|---|
+    | Woche 1 | 39,2 % SD 6,5 | 51,2 % SD 8,8 | 0,54 | nicht signifikant |
+    | 14 Tage | 43,3 % SD 6,5 | 51,6 % SD 5,3 | 1,51 | nicht signifikant |
+
+    **Die Streuung der QUELLE faellt weiterhin (64,1 -> 12,9 %), die des K5-AUSGANGS nicht.**
+    Grund: mit Raid ist der Raid der groessere bewegliche Posten im Nenner (VarKoeff Fund 26 %
+    gegen Raid 43 % bei v_p016). Wer die Streuung der einen Quelle beseitigt, macht die der
+    anderen sichtbar. **Vierte Wiederholung des Befunds, dass K5 diese Entscheidung nicht
+    tragen kann.**
+  - **DER EIGENTLICHE BEFUND, NICHT GESUCHT: DAS NIVEAU IST NICHT UNVERAENDERT.**
+    Wocheneinnahme 16,71 gegen 21,04 Mrd, **+26,0 %** (t = 2,54 gegen t(18) = 2,10;
+    verteilungsfrei gegengeprueft, Mann-Whitney U = 22 gegen kritisch 23, Mediane 15,74 gegen
+    21,03).
+    - **Ursache, arithmetisch und zwingend:** 0,875 ist gegen den MITTELWERT der heutigen Form
+      kalibriert, deren Verteilung stark rechtsschief ist. In den economy-Zellen der sechsten
+      Session (n = 20): heute Mittel 15,27 / Median 12,37 (Verhaeltnis 0,810), v_p016 Mittel
+      15,53 / Median 15,27 (0,983). **Mittelwerte +1,7 %, MEDIANE +23,5 %.** Wer eine
+      rechtsschiefe Verteilung durch eine symmetrische ersetzt und den Mittelwert festhaelt,
+      hebt den Median zwangslaeufig an.
+    - **`reicherfund_11.txt` hat diese Falle SELBST benannt und ist ihr dann in die
+      Kalibrierung gelaufen.** Abschnitt 7 woertlich: "Wer gegen den Mittelwert kalibriert,
+      kalibriert gegen eine Zahl, die zwei von drei Spielern nicht erreichen." Zwei Abschnitte
+      spaeter ist genau dagegen kalibriert worden.
+    - **Das widerspricht 12b in seinem eigenen Kern** ("Der Befund rechtfertigt eine
+      Formaenderung, keine Niveauaenderung"). Faktor, der stattdessen den Median festhielte:
+      **0,709** - eine RECHNUNG, keine gemessene Zelle, nicht als kalibrierter Wert fuehren.
+  - **PUNKT 2, DER CLIENT-SPIEGEL: ES SIND FUENF STELLEN, NICHT EINE.** Ausgezaehlt statt
+    uebernommen (`grep` ueber client/src und server/src): `Nachrichten.tsx` Z. 321 (Ueberschrift
+    "Ertrag verdoppelt") und Z. 325/334 (Spalte "Stunde"), `missions.ts` Z. 745,
+    **`economy.ts` Z. 403-406** und `types.ts` Z. 394-395; dazu `changelog.ts` Z. 507, der als
+    historischer Eintrag bewusst stehen bleibt.
+    - **Der wichtigste Fundort steht nicht in 12b und ist keine Textpflege.** Der Kommentar bei
+      `ASTEROID_RICH_FIND_CHANCE` nennt ZWEI Bestandteile der Nutzerentscheidung vom Juli 2026:
+      das Gluecksspiel UND die Zeitpunkt-Abhaengigkeit ("frueh in der Mission bringt ein Treffer
+      wenig, spaet einen grossen Bonus"). **v_p016 erhaelt den ersten und loescht den zweiten
+      vollstaendig** - "zeitpunktunabhaengig" ist ihre Definition. 12b fuehrt unter "WAS BEWUSST
+      BLEIBT" nur "DAS GLUECKSSPIEL" und trennt beides nicht; gemessen am eigenen Massstab
+      loescht auch die empfohlene Form eine Nutzerentscheidung, nur die andere Haelfte.
+    - Bauanleitung im Protokoll Abschnitt 4. Wichtig darin: **`RichFindEntry.hour` bleibt im
+      Typ** (server und client) - alte Nachrichten tragen das Feld, wer es entfernt, bricht jede
+      bereits zugestellte Nachricht; dasselbe Muster wie das optionale `replay`-Feld. Server-Text
+      und Client-Tabelle muessen GEMEINSAM geaendert werden, sonst spricht der Fliesstext von
+      "3 Reiche Funde" und die Tabelle darunter listet Stunden.
+  - **PUNKT 3, DIE ESKORTEN-PRAEMIE: KEINE ZWEITE AENDERUNG, SONDERN VORAUSSETZUNG DER ZAHL.**
+    Der Messbuild-Patch R4b bemisst den Bonus allein am Mining; die Praemie ist in v_p016
+    **bereits ausgeschlossen** und steckt in den gemessenen 15,53 Mrd.
+    - Heute haengen **23,1 % der Wocheneinnahme** an der mitverdoppelten Praemie (3,53 von
+      15,27 Mrd). Der Ertragsanteil einer Eskorte faellt von 5,13 auf 1,61 Mrd, **-69 %** - die
+      Schutzwirkung bleibt unberuehrt, sie ist darin nicht enthalten.
+    - **Gegenrechnung, der eigentliche Befund:** bliebe die Praemie im Bemessungstopf, waere bei
+      gleichem Niveau ein Faktor von **0,586 statt 0,875** noetig. **Wer Punkt 3 ablehnt,
+      verwirft 0,875 mit.** Damit ist es keine Frage neben der Empfehlung, sondern eine davor.
+    - **ACHTUNG: Punkt 3 und die Median-Frage sind NICHT unabhaengig** - beide senken die Zahl.
+      Gemeinsam kalibrieren, sonst wird zweimal dieselbe Korrektur angebracht.
+  - **EIGENER METHODENFEHLER, MIT ZAHLEN BELEGT:** die Trennschaerfe wurde vor der Messung
+    ausgerechnet (Regel aus Entscheidung 18) - aber gegen die K5-Streuung einer Zelle OHNE Raid
+    (16,0 Punkte, Verhaeltnis 3,78x, F = 14,3, also "fuenf Laeufe reichen"). Mit Raid liegt die
+    Streuung bei **7,3** Punkten: **derselbe Raid, der die Frage erst entscheidbar macht,
+    daempft den zu messenden Unterschied mit.** Erste Runde deshalb ohne Ergebnis (F = 0,47 und
+    4,58 gegen Schwelle 6,39), zweite Runde mit VORHER festgelegtem Kriterium nachgefahren.
+    **Neue Fallenform:** die Referenzstreuung einer Trennschaerfe-Rechnung muss aus DERSELBEN
+    Zelle stammen, die spaeter gefahren wird.
+  - **KORRIGIERT im Werkzeug:** `run_reicherfund.mjs` gab fest verdrahtet "Treiber economy (kein
+    Raid)" aus, auch bei `--treiber=tick` - eine tick-Serie waere als economy-Serie
+    protokolliert worden.
+  - **ANKERCHECK, ZWEI LAEUFE: -1,1 % und -1,7 % normiert**, beide im Band. Elf Messungen
+    liegen jetzt bei +0,4 / -1,0 / -1,1 / -1,1 / -1,2 / -1,5 / -1,6 / -1,7 / -1,8 / -2,3 /
+    -2,8 %. **Roh waeren beide POSITIV gewesen** (+1,8 / +4,3 %) - die roh/normiert-Falle zum
+    achten Mal.
+  - **DREI FRAGEN LIEGEN BEIM NUTZER** (Protokoll Abschnitt 7): (A) die Zahl 0,875 - behalten
+    und die Anhebung als gewollt eintragen, gegen den Median kalibrieren (rechnerisch 0,709,
+    zu messen) oder gegen einen anderen Bezug; (B) ob der Wegfall der Zeitpunkt-Abhaengigkeit
+    gewollt ist; (C) Ausschluss der Eskorten-Praemie ja oder nein. **A und C gemeinsam.**
+  - **GRENZEN:** ein Profil, eine Paarung, n = 10 - die Streuungsfrage ist auf rund 1,8x
+    aufloesbar, nicht feiner; F = 1,51 heisst NICHT "die Formen streuen gleich", sondern
+    "mit dieser Stichprobe nicht nachweisbar". Der arithmetische Teil (Median +23,5 %) haengt
+    dagegen NICHT an dieser Messung, sondern an den 20er-Zellen der sechsten Session.
+    Zellen mit `--nutzer=ShadowEagle` sind mit den 0,7-Zellen aus `k5_quellen.txt` nicht
+    unmittelbar vergleichbar.
 
 - **NEU 27.08.2026 (sechste Session, zweiter Teil): DIE MASSENFRAGE - ZWEI ERKLAERUNGEN
   AUSGESCHLOSSEN, DIE URSACHE WEITER OFFEN. NICHTS GEBAUT AUSSER EINER REINEN ANZEIGE.**
@@ -1427,6 +1521,38 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Die Referenzstreuung einer Trennschaerfe-Rechnung muss aus DERSELBEN Zelle stammen, die
+spaeter gefahren wird.** (28.08.2026.) Vor der K5-tick-Messung wurde ausgerechnet, ob fuenf
+Laeufe je Form reichen - regelkonform, vor der Messung, mit F-Test. Verwendet wurde dafuer die
+K5-Streuung aus den economy-Zellen (16,0 gegen 4,2 Punkte, Verhaeltnis 3,78x, F = 14,3). Mit
+Raid im Nenner liegt dieselbe Streuung bei **7,3** Punkten, das Verhaeltnis faellt auf rund
+1,5x, und fuenf Laeufe reichen nicht mehr. **Erschwerend und der eigentliche Punkt: genau die
+Aenderung, die die Messung ueberhaupt erst moeglich macht (der Raid im Nenner), verkleinert den
+zu messenden Unterschied mit.** Eine Trennschaerfe-Rechnung gegen eine fremde Umgebung ist eine
+Schaetzung und als solche zu kennzeichnen. Verwandt mit "eine Spanne ueber eine Leiter mit
+Regimewechsel misst den Regimewechsel", hier aber auf der Planungs- statt der Auswertungsseite.
+
+**Gegen einen MITTELWERT zu kalibrieren, dessen Verteilung schief ist, aendert das Niveau -
+auch wenn der Mittelwert exakt gehalten wird.** (28.08.2026.) Der Faktor 0,875 des Reichen
+Fundes haelt den Erwartungswert auf +1,7 % genau; der MEDIAN steigt dabei um 23,5 % und die
+gemessene Wocheneinnahme in einer tick-Zelle um 26,0 %. Ursache ist rein arithmetisch: die
+heutige Form ist stark rechtsschief (Median 81,0 % des Mittels), die neue nahezu symmetrisch
+(98,3 %) - wer die eine durch die andere ersetzt und den Mittelwert festhaelt, HEBT den Median
+zwangslaeufig. **Besonders lehrreich ist, dass dasselbe Protokoll die Falle zwei Abschnitte
+vorher woertlich benennt** ("Wer gegen den Mittelwert kalibriert, kalibriert gegen eine Zahl,
+die zwei von drei Spielern nicht erreichen") und sie dann in der eigenen Kalibrierung
+uebersieht. **Bei jeder Kalibrierung gegen eine Zufallsgroesse zuerst Median und Mittel
+nebeneinander legen und entscheiden, welche der beiden festgehalten werden soll.**
+
+**Eine Aenderung kann die Streuung einer QUELLE beseitigen und die eines KRITERIUMS unberuehrt
+lassen.** (28.08.2026.) Die zeitpunktunabhaengige Form senkt den Variationskoeffizienten des
+Reichen Fundes von 64,1 auf 12,9 % - der K5-Ausgang wird dadurch nicht nachweisbar stabiler
+(F = 1,51 gegen Schwelle 3,18). Grund: K5 ist ein ANTEIL, und sein Nenner enthaelt mit dem Raid
+einen zweiten beweglichen Posten, der nach der Aenderung der groessere ist (VarKoeff 43 % gegen
+26 %). **Wer die Streuung der einen Quelle beseitigt, macht die der anderen sichtbar.** Vor
+jeder Aussage "das stabilisiert Kennzahl X" pruefen, ob X ein Anteil ist und welcher Posten im
+Nenner nach der Aenderung dominiert.
+
 **Eine Aenderung an einer LAUFZEIT kann eine Mechanik umskalieren, die an einer ganz anderen
 Konstante haengt - exponentiell.** (27.08.2026.) Der Reiche Fund verdoppelt den bis dahin
 ANGESAMMELTEN Betrag; sein Beitrag waechst deshalb mit `(1+p)^n` in der Zahl der Stunden-Checks,
@@ -1877,8 +2003,39 @@ Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier
 
 ## Erster Schritt beim naechsten Mal
 
-**STAND 27.08.2026 (sechste Session): DIE MESSUNG ZUM REICHEN FUND IST GEFAHREN UND DIE
-ENTSCHEIDUNG IST GEFALLEN** (vom Nutzer delegiert, eingetragen, umkehrbar, **nicht gebaut**):
+**STAND 28.08.2026 (siebte Session): DIE DREI OFFENEN PUNKTE SIND ABGEARBEITET. DER EINBAU DES
+REICHEN FUNDES IST DAMIT NICHT NAEHER, SONDERN GENAUER BESCHRIEBEN - UND DREI FRAGEN LIEGEN BEIM
+NUTZER.** Protokoll `balance/session2-simulation/reicherfund_12_offene_punkte.txt`.
+
+**NICHTS TUN, BEVOR FRAGE A UND C BEANTWORTET SIND.** Sie bestimmen beide dieselbe Zahl und
+duerfen nicht getrennt entschieden werden:
+- **(A) Die Zahl 0,875 ist eine Niveauaenderung.** Sie haelt den Erwartungswert (+1,7 %) und
+  hebt den Median um 23,5 %, die gemessene Wocheneinnahme in einer tick-Zelle um 26,0 %. Das
+  widerspricht 12b in seinem Kern ("eine Formaenderung, keine Niveauaenderung"). Wege: behalten
+  und die Anhebung als gewollt eintragen; gegen den Median kalibrieren (rechnerisch 0,709 - eine
+  RECHNUNG, keine gemessene Zelle); oder gegen einen anderen Bezug.
+- **(C) Die Eskorten-Praemie.** Ausschluss ja oder nein. Mit Praemie im Bemessungstopf waere der
+  Faktor 0,586 statt 0,875. Kostet den Ertragsanteil einer Eskorte 69 %.
+- **(B) daneben, unabhaengig:** der Code-Kommentar bei `ASTEROID_RICH_FIND_CHANCE` benennt zwei
+  Bestandteile der Nutzerentscheidung vom Juli 2026 - Gluecksspiel UND Zeitpunkt-Abhaengigkeit.
+  v_p016 loescht die zweite. Ist das gewollt?
+
+**PUNKT 1 IST BEANTWORTET UND BRAUCHT KEINE WEITEREN LAEUFE: NEIN.** Die neue Form stabilisiert
+den K5-Ausgang nicht nachweisbar (F = 1,51 gegen 3,18), weil mit Raid der Raid der groessere
+bewegliche Posten im Nenner ist. **K5 kann diese Entscheidung nicht tragen** - vierte
+Wiederholung desselben Befunds. Nicht erneut gegen K5 kalibrieren.
+
+**PUNKT 2 IST EINE BAUANLEITUNG, KEINE MESSUNG** (Protokoll Abschnitt 4, fuenf Stellen statt
+zwei). Client-Aenderungen sind gesondert freizugeben und wurden NICHT gebaut.
+
+**PUNKT 4 DANACH.** Empfehlung zur Reihenfolgefrage: gegen den IST-Zustand fahren und
+kennzeichnen. Ein Messbuild mit v_p016 wuerde eine Baseline mit um 26 % angehobenem Niveau
+erzeugen, solange die Zahl nicht steht. Der K3b-Vorbehalt ist unveraendert offen.
+
+---
+
+**~~STAND 27.08.2026 (sechste Session): DIE MESSUNG ZUM REICHEN FUND IST GEFAHREN UND DIE
+ENTSCHEIDUNG IST GEFALLEN~~ - ERGAENZT, siehe oben** (vom Nutzer delegiert, eingetragen, umkehrbar, **nicht gebaut**):
 **zeitpunktunabhaengige Form, Chance 0,16, Faktor 0,875.** Niveau unveraendert, Streuung
 64,1 -> 12,9 %, Spanne 7,63x -> 1,56x. Begruendung im Stand-Eintrag oben und in
 `reicherfund_11.txt` Abschnitt 12b. **Sammelliste jetzt bei ZEHN Paketen.**
