@@ -1,8 +1,8 @@
 DIE MASSENFRAGE - WARUM GROSSE FLOTTEN FAST NICHTS VERLIEREN
 Protokoll vom 27.08.2026 (sechste Session)
 Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs,
-           probe_bossverlust.mjs, run_gegenprobe.mjs (alle neu)
-Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt
+           probe_bossverlust.mjs, run_gegenprobe.mjs, run_eskorte.mjs (alle neu)
+Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt, eskorte.txt
 
 !!! MESSBUILD-PROTOKOLL. Alle Zahlen aus gepatchten dist-Kopien. server/src unberuehrt.        !!!
 
@@ -12,9 +12,11 @@ dem Vorschlag, die Aggregationsschwelle auf 4.000-5.000 anzuheben.
 ================================================================================
 0. ZWEI ERGEBNISSE, BEIDE NEGATIV FUER DIE NAHELIEGENDEN ERKLAERUNGEN
 ================================================================================
-ERGAENZT AM 28.08.2026: DIE URSACHE IST INZWISCHEN GEFUNDEN, SIEHE ABSCHNITT 4a. Es ist die
-Bauart des Piratenkapitaens, nicht das Kampfmodell. Die beiden Negativbefunde unten bleiben
-gueltig und waren der Weg dorthin.
+ERGAENZT AM 28.08.2026: VIER HYPOTHESEN GEPRUEFT, VIER WIDERLEGT. Abschnitt 4a hielt die Bauart
+des Kapitaens fuer die Ursache - Abschnitt 4b nimmt das TEILWEISE ZURUECK: der Machtanteil des
+Kapitaens und die Koernigkeit der Eskorte aendern das Niveau, aber nicht die Steigung. Ausserdem
+wurde in 4a die Eskorte weggelassen; im echten Spiel ist der Effekt milder (15,2 % statt 0,1 %
+Verlust bei 11.250 Einheiten). Die Ursache ist WEITER OFFEN.
 
 (1) DAS AGGREGAT IST NICHT DIE URSACHE. 98 % des Absturzes von 63,4 auf 0,1 % Verlust passieren
     auch dann, wenn NICHTS aggregiert wird.
@@ -214,6 +216,81 @@ einem Fehler im Spiel aus und wurde kurzzeitig auch so berichtet. Das Feld heiss
 (siehe `ShotStats` in `combat.ts`); korrekt ausgelesen sind es 100 Schuesse bei rund 52 Treffern,
 also voellig unauffaellig. **Feldnamen am Typ nachsehen, nicht raten** - dieselbe Regel wie bei den
 dist-Ankern, hier auf die Ergebnisstruktur angewandt.
+
+================================================================================
+4b. NACHTRAG 28.08.2026 (vormittags) - DIE ESKORTE, UND EINE TEILWEISE RUECKNAHME
+================================================================================
+Werkzeug `run_eskorte.mjs`, Rohausgabe `eskorte.txt`. ADMIRAL_STAT_SHARE und die Koernigkeit der
+Eskorte als Regler in `make_messbuild_aggregat.mjs` ergaenzt.
+
+--- ZUERST DIE RUECKNAHME ---
+Alle Zellen bis einschliesslich Abschnitt 4a haben `sideBShips = { admiral: 1 }` gesetzt und damit
+die ESKORTE weggelassen. Im Code gilt aber `ADMIRAL_STAT_SHARE = 0.55`: nur 55 % der Gegnermacht
+sitzen auf dem Kapitaen, 45 % auf einer Eskorte. **Die bisher berichteten Zahlen beschreiben also
+nicht das Spiel, sondern einen isolierten Sonderfall.** Mit Eskorte:
+
+     n   eigene   Gegner   nur Kapitaen   ECHTES SPIEL (share 0,55)
+    90      405      384        64,9 %          100,0 %
+   150      675      640        35,9 %           49,7 %
+   400    1.800    1.707        10,7 %           25,9 %
+  1000    4.500    4.266         2,4 %           17,5 %
+  2500   11.250   10.662         0,1 %           15,2 %
+
+**Bei 11.250 Einheiten verliert der Spieler im echten Spiel 15,2 %, nicht 0,1 %.** Der Effekt ist
+also deutlich milder als in Abschnitt 4a berichtet - die dortige Aussage "der Boss richtet fast
+nichts mehr aus" gilt fuer den Boss allein und nicht fuer die Begegnung.
+DER ABFALL BLEIBT ABER BESTEHEN: von 49,7 auf 15,2 %, also Faktor 3,3.
+
+--- DRITTE UND VIERTE HYPOTHESE, BEIDE WIDERLEGT ---
+Aus Abschnitt 4a folgte: wenn konzentrierte Macht die Ursache ist, muss ein kleinerer
+ADMIRAL_STAT_SHARE die Kurve begradigen. Und wenn es auf die Koernigkeit ankommt, muss eine
+feinere Eskorte (Jaeger/Kreuzer statt Elitekader, `--eskorte_fein`) dasselbe tun.
+
+  Variante                              90     150     400    1000    2500   Abfall ab 150
+  nur Kapitaen                       64,9%   35,9%   10,7%    2,4%    0,1%           35,8
+  ECHTES SPIEL, share 0,55          100,0%   49,7%   25,9%   17,5%   15,2%           34,5
+  share 0,35                        100,0%   62,6%   39,4%   30,3%   27,7%           34,8
+  share 0,20                        100,0%   81,6%   56,6%   48,1%   46,1%           35,4
+  share 0,05                        100,0%  100,0%   99,8%   95,3%   89,6%           10,4 *
+  share 0,55 + feine Eskorte         78,8%   37,9%   15,1%    6,4%    3,7%           34,1
+  share 0,35 + feine Eskorte         53,6%   45,6%   19,9%   12,4%   10,2%           35,4
+  * Deckeneffekt: die Zellen stehen bei 100 %, die Steigung ist dort nicht ablesbar.
+
+**DER ABFALL BLEIBT IN JEDER VARIANTE BEI 34 BIS 36 PUNKTEN.** Der Machtanteil des Kapitaens
+verschiebt nur das NIVEAU, nicht die Steigung. Die feine Eskorte macht es sogar SCHLECHTER
+(3,7 % statt 15,2 % bei n=2500) - genau umgekehrt zur Vorhersage.
+
+--- WAS DAMIT AUSGESCHLOSSEN IST ---
+  1. Aggregation                              (Abschnitt 2, 2 % Anteil)
+  2. Overkill-Kaskade und Schuss-Obergrenze   (Abschnitt 3, Faktor 100 bewegt 3,3 Punkte)
+  3. Machtanteil des Kapitaens                (dieser Abschnitt, Abfall bleibt 34-36)
+  4. Koernigkeit der Gegnereinheiten          (dieser Abschnitt, wirkt gegenlaeufig)
+Ebenfalls geprueft und NICHT die Ursache: `generateCappedFleet` deckelt nichts - ausser
+Sandronator, Imperator, Kuppeln und Salvenschiffen hat kein Schiffstyp ein `maxCount`, die Eskorte
+skaliert also ungehindert mit der Macht mit (Stueckzahl waechst von 640 auf 10.662).
+
+--- DER EINE FALL, DER FLACH WAR ---
+Genau eine Konfiguration zeigte massstabsneutrales Verhalten: die Gegenprobe aus Abschnitt 4a mit
+`generatePiratenFleet` bei 100 % der Macht und OHNE Kapitaen (32,2 / 38,2 / 38,3 / 38,4 %).
+Der Unterschied zu den Zellen hier ist damit nicht die Verteilung und nicht die Koernigkeit -
+beides wurde inzwischen variiert, ohne die Steigung zu aendern -, sondern die ANWESENHEIT des
+Kapitaens. Passend dazu: in ALLEN Zellen mit Kapitaen laufen die Kaempfe ueber die vollen
+100 Runden und der Gegnerverlust bleibt bei "99,8-100,0 %" stehen - **der Kapitaen selbst stirbt
+nie** (ADMIRAL_STAT_RATIO gibt ihm 81 % seiner Macht als Panzerung). In der flachen Zelle endete
+der Kampf dagegen nach 87 bis 99 Runden mit vollstaendiger Vernichtung des Gegners.
+
+DAS IST EINE BEOBACHTUNG, KEINE ERKLAERUNG. Sie erklaert insbesondere NICHT, warum der Abfall auch
+bei share 0,20 unveraendert bleibt, wo der Kapitaen nachweislich stirbt (Kaempfe enden dort nach
+61-64 Runden). Wer daraus jetzt eine Ursache macht, tut dasselbe wie bei den vier widerlegten
+Hypothesen: eine plausible Geschichte vor der Messung.
+
+--- NAECHSTER SCHRITT, UND NUR DIESER ---
+Nicht wieder eine Konstante variieren. Stattdessen den KAMPFVERLAUF selbst aufzeichnen: wieviel
+Schaden nimmt die Spielerflotte in Runde 1, 5, 20, 50, 100 - je Leiterstufe, aufgeteilt nach
+Verursacher (Kapitaen gegen Eskorte). Der `CombatReplay` im Ergebnis liefert bereits Ueberlebende
+je Runde und je Typ; daraus laesst sich ablesen, WANN die Verluste entstehen. Steht die Antwort
+"in den ersten Runden, bevor die Eskorte stirbt", ist es ein Frage der Kampfdauer und nicht der
+Gegnerzusammensetzung - eine ganz andere Baustelle als bisher vermutet.
 
 ================================================================================
 5. GRENZEN

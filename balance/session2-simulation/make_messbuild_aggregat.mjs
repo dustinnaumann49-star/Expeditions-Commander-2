@@ -38,6 +38,8 @@ const opt = (n, d) => {
 const SCHWELLE = opt('schwelle', null);  // null = unveraendert (Ist-Zustand)
 const KASKADE = opt('kaskade', null);    // OVERKILL_MAX_CASCADE, Standard 5
 const SCHUESSE = opt('schuesse', null);  // MAX_SHOTS_PER_UNIT, Standard 50
+const ADMIRAL_SHARE = opt('admiral_share', null); // ADMIRAL_STAT_SHARE, Standard 0.55
+const ESK_FEIN = args.includes('--eskorte_fein'); // Eskorte feinkoerniger statt Elitekader
 const DIST = resolve(opt('dist', new URL('../../server/dist', import.meta.url).pathname));
 
 if (!existsSync(resolve(DIST, 'game/combat.js'))) {
@@ -129,10 +131,60 @@ if (SCHUESSE !== null) {
   patches += 2;
 }
 
+// ===================================================================================
+// ADMIRAL_STAT_SHARE - WIEVIEL DER GEGNERMACHT AUF DEM KAPITAEN SELBST SITZT
+// ===================================================================================
+// Der Befund vom 28.08.2026 (massenfrage_protokoll.txt Abschnitt 4a): der Kapitaen wandelt
+// zusaetzliche Macht in VERSCHWENDUNG statt in Wirkung um, weil ein Treffer ueber die
+// Durchschlags-Kaskade nur wenige Ziele erreicht. Sein Schaden je Treffer bleibt bei 13,6 Mio,
+// egal wie stark er wird. Verteilte Gegnermacht zeigt das Verhalten NICHT.
+// ADMIRAL_STAT_SHARE ist damit der direkte Regler: er bestimmt, welcher Anteil der Gegnermacht in
+// die verschwendende Form geht (Kapitaen) und welcher in die wirksame (Eskorte).
+// Der Plan hatte am 15.08.2026 bereits notiert, dass ein HOEHERER Wert den Gegner SCHWAECHER
+// macht - hier wird die Gegenrichtung gemessen.
+if (ADMIRAL_SHARE !== null) {
+  patch(
+    resolve(OUT, 'game/combat.js'),
+    `const ADMIRAL_STAT_SHARE = 0.55;`,
+    `const ADMIRAL_STAT_SHARE = ${Number(ADMIRAL_SHARE)}; // MESSBUILD (Standard 0.55)`,
+    'A4 ADMIRAL_STAT_SHARE'
+  );
+}
+
+// ===================================================================================
+// --eskorte_fein - KOERNIGKEIT DER GEGNERMACHT STATT NUR IHRER VERTEILUNG
+// ===================================================================================
+// Die Eskorte ist heute ausdruecklich als "wenige starke statt vieler schwacher Schiffe" gebaut
+// (Profil `elitekader`, Pool nur Schlachtschiff/Schlachtkreuzer/Zerstoerer/Reaper, siehe Kommentar
+// bei ADMIRAL_ESCORT_POOL). Sie ist damit zwar VERTEILT, aber grobkoernig - jede Einheit traegt
+// selbst viel Waffenwert und laeuft mit ihren Schuessen ebenfalls in die Durchschlags-Kaskade.
+// Die Gegenprobe vom 28.08.2026 zeigte flaches Verhalten fuer `generatePiratenFleet`, die mit dem
+// Profil `schwarm` VIELE KLEINE Einheiten erzeugt (87.922 statt 10.662 bei gleicher Macht).
+// Der Verdacht ist deshalb praeziser als "verteilen hilft": es geht um die KOERNIGKEIT, also um
+// Waffenwert JE EINHEIT im Verhaeltnis zur Zielgroesse - nicht um die blosse Stueckzahl.
+// Dieser Schalter prueft genau das: gleicher Machtanteil, gleicher Kapitaen, nur die Eskorte
+// feinkoerniger (Jaeger und Kreuzer im Pool, Schwarm-Gewichtung).
+if (ESK_FEIN) {
+  patch(
+    resolve(OUT, 'game/combat.js'),
+    `const ADMIRAL_ESCORT_POOL = ['schlachtschiff', 'schlachtkreuzer', 'zerstoerer', 'reaper'];`,
+    `const ADMIRAL_ESCORT_POOL = ['leicht', 'schwer', 'kreuzer', 'schlachtschiff']; // MESSBUILD: feinkoernig`,
+    'A5a ADMIRAL_ESCORT_POOL'
+  );
+  patch(
+    resolve(OUT, 'game/combat.js'),
+    `const escortWeights = weightsForProfile('elitekader', ADMIRAL_ESCORT_POOL.length);`,
+    `const escortWeights = weightsForProfile('schwarm', ADMIRAL_ESCORT_POOL.length); // MESSBUILD`,
+    'A5b Eskorten-Gewichtung'
+  );
+}
+
 console.log(`Aggregat-Messbuild: ${OUT}`);
 console.log(`  Eingang   : ${DIST}`);
 console.log(`  Schwelle  : ${SCHWELLE === null ? 'unveraendert (50/100/500, Default 2000) - IST-ZUSTAND' : `${SCHWELLE} fuer ALLE Typen`}`);
 console.log(`  Kaskade   : ${KASKADE === null ? 'unveraendert (5)' : `${KASKADE} Einheiten je Treffer`}`);
 console.log(`  Schuesse  : ${SCHUESSE === null ? 'unveraendert (50)' : `${SCHUESSE} je Einheit und Runde`}`);
+console.log(`  Admiral   : ${ADMIRAL_SHARE === null ? 'unveraendert (0.55)' : `${ADMIRAL_SHARE} Machtanteil auf dem Kapitaen`}`);
+console.log(`  Eskorte   : ${ESK_FEIN ? 'FEINKOERNIG (leicht/schwer/kreuzer/schlachtschiff, schwarm)' : 'unveraendert (Elitekader, grosse Klassen)'}`);
 console.log(`  Patches   : ${patches}${patches === 0 ? ' (reine Kopie, verhaltensgleich zum Eingang)' : ''}`);
 console.log(`  Quellcode unberuehrt.`);
