@@ -65,6 +65,55 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 28.08.2026 (siebte Session, zweiter Teil): DER K3b-VORBEHALT IST GEPRUEFT UND
+  QUANTIFIZIERT - 14,7 PUNKTE UEBERSCHAETZUNG. DABEI EIN ZWEITER FUNDORT, DER BISHER NIRGENDS
+  STAND, UND EIN DRITTER BEFUND, DER SCHWERER WIEGT ALS BEIDE. NICHTS AM SPIELCODE GEBAUT.**
+  Protokoll `balance/session2-simulation/k3b_vorbehalt.txt`, Rohdaten `k3b_vorbehalt.json`
+  (18 Laeufe). Geaendert: `sim13_lauf.mjs` (K3c ergaenzt, **K3b unveraendert**).
+  **Messbuild-Protokoll.** Loest `reicherfund_11.txt` Abschnitt 13 ein.
+  - **URSACHE:** `ressourcenAblehnung` ist eine Momentaufnahme des HANDELNS, `probe()` liest sie
+    gegen einen laufend abgetasteten Zustand. Beides faellt nur zusammen, wenn `probe()`
+    unmittelbar nach `spielerZug()` laeuft.
+  - **FUNDORT 1, der notierte:** mit `--mensch_unterschritte` laeuft `probe()` 30x je Stunde im
+    Unterschritt, am Stundenende dagegen **gar nicht** (`if (!MENSCH_UNTERSCHRITTE) probe(s)`).
+    Alle 30 Proben lesen Flags aus dem Zug der VORSTUNDE.
+  - **FUNDORT 2, BISHER NIRGENDS NOTIERT und wichtiger:** das gilt auch OHNE den Schalter,
+    sobald das Profil nicht `aktiv` ist. `handeltInStunde()` liefert bei `gelegenheit` nur alle
+    12 Stunden true, bei `abwesend` an den Tagen 1 bis 14 **nie** - `probe()` laeuft trotzdem
+    stuendlich und liest bis zu ZWEI WOCHEN alte Flags. **Punkt 4 faehrt genau diese Profile;
+    der Vorbehalt galt also nie nur fuer den Schalter.**
+  - **GEBAUT: K3c, nicht eine Aenderung an K3b.** Muster K1/K1b und K3/K3b - eine Kennzahl mit
+    Vergleichswerten wird nicht umdefiniert. K3c erhebt dieselbe Frage unmittelbar nach dem Zug,
+    der die Flags gesetzt hat, mit EIGENEM Nenner (Zuege statt Proben).
+
+    | Profil | Modus | K3b (Nenner) | K3c (Nenner) | Differenz |
+    |---|---|---|---|---|
+    | aktiv | ohne | 48,2 % (168) | 48,2 % (168) | +0,0 |
+    | **aktiv** | **mit** | **67,5 % (5040)** | **52,8 % (168)** | **+14,7** |
+    | gelegenheit | ohne/mit | 0,0 % | 0,0 % (14) | +0,0 |
+    | abwesend | ohne/mit | 0,0 % | 0,0 % (2) | +0,0 |
+
+  - **DIE GEGENPROBE ZUERST:** bei `aktiv` ohne Schalter sind beide auf die Nachkommastelle
+    identisch - genau dort muessen sie es sein. **Die neue Kennzahl erfindet nichts**, dasselbe
+    Argument wie die zweimal 6,1 % bei K1/K1b. Ohne diese Zelle waere jede Differenz nicht von
+    einem Fehler in K3c zu unterscheiden.
+  - **DER VORBEHALT IST BESTAETIGT, RICHTUNG UND GROESSE:** 67,5 statt 52,8 %, also **+14,7
+    Punkte nach oben** - wie in Abschnitt 13 vermutet, jetzt beziffert. Mechanik: nach einem
+    erfolgreichen Zug ist die Lane belegt; in den folgenden 30 Unterschritten wird der Auftrag
+    fertig, die Lane faellt leer, und das Flag der Vorstunde steht noch.
+  - **DER SCHWERSTE BEFUND BETRIFFT NICHT DEN SCHALTER.** Aus `handeltInStunde()` vorab
+    ausgezaehlt, wieviele ZUEGE ein 30-Tage-Lauf liefert: aktiv **720**, gelegenheit **60**,
+    abwesend **17**. **K3b hat bei `abwesend` einen Nenner von 21.600 Proben, die auf 17 Zuege
+    zurueckgehen** - formal eine dreistellige Zahl, sachlich leer. Dieselbe Fehlerform wie "K5
+    waere formal erhoben und sachlich leer gewesen". **Bei Punkt 4 fuer `aktiv` K3c zitieren,
+    fuer `gelegenheit` mit Vorbehalt, fuer `abwesend` gar nicht.**
+  - Die 0,0 % bei `gelegenheit`/`abwesend` sind kein Freispruch fuer Fundort 2, sondern ein
+    leerer Zaehler: dort sammeln sich zwischen zwei Zuegen genug Ressourcen an, dass gar keine
+    Ablehnung entsteht und die Flags nie gesetzt werden.
+  - **GRENZEN:** 7 Tage, Treiber `economy`, drei Wiederholungen. Die 14,7 Punkte sind eine
+    Groessenordnung, keine kalibrierte Zahl - unter `--treiber=tick` ist die Ressourcenlage eine
+    andere und die Verzerrung NICHT gemessen.
+
 - **NEU 28.08.2026 (siebte Session): DIE DREI OFFENEN PUNKTE VOR DEM EINBAU DES REICHEN FUNDES
   SIND ABGEARBEITET. PUNKT 1 IST BEANTWORTET - MIT NEIN. DABEI EIN NICHT GESUCHTER BEFUND, DER
   SCHWERER WIEGT: DIE EMPFOHLENE ZAHL 0,875 IST EINE NIVEAUAENDERUNG. NICHTS GEBAUT, WEDER
@@ -1521,6 +1570,24 @@ ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
 
+**Ein FLAG, das beim Handeln gesetzt wird, und eine PROBE, die laufend abtastet, messen nur
+dann dasselbe, wenn die Probe direkt auf das Handeln folgt.** (28.08.2026.) `ressourcenAblehnung`
+wird in `spielerZug()` gesetzt, `probe()` liest es - mit `--mensch_unterschritte` 30x je Stunde,
+und zwar ausschliesslich VOR dem Zug der laufenden Stunde. Gemessen ueberschaetzt K3b dadurch um
+**14,7 Punkte**. Der zweite, laenger uebersehene Teil derselben Falle wirkt OHNE jeden Schalter:
+bei Profil `gelegenheit` handelt der Mensch alle 12 Stunden, bei `abwesend` an den Tagen 1 bis 14
+gar nicht - die Probe liest dort bis zu zwei Wochen alte Flags. **Bei jeder Kennzahl, die einen
+beim Handeln gesetzten Zustand ausliest, pruefen, wie weit Setzen und Lesen auseinanderliegen
+koennen - und zwar fuer JEDES Profil, nicht nur fuer das, mit dem gerade gemessen wird.**
+
+**Ein grosser Nenner kann auf sehr wenige Beobachtungen zurueckgehen - und sieht dann aus wie
+eine belastbare Zahl.** (28.08.2026.) K3b faehrt bei Profil `abwesend` ueber 30 Tage einen Nenner
+von 21.600 Proben; dahinter stehen **17 Zuege**, denn nur die setzen die Flags, die K3b
+auswertet. Die Kennzahl meldet drei Stellen und traegt keine Aussage. Verwandt mit "K5 waere
+formal erhoben und sachlich leer gewesen" und mit "ein Anteilskriterium braucht einen Nenner,
+der nicht aus den eigenen Zeilen gebildet wird". **Vor jeder Anteilszahl auszaehlen, wieviele
+UNABHAENGIGE Beobachtungen tatsaechlich dahinterstehen - nicht, wie oft gezaehlt wurde.**
+
 **Die Referenzstreuung einer Trennschaerfe-Rechnung muss aus DERSELBEN Zelle stammen, die
 spaeter gefahren wird.** (28.08.2026.) Vor der K5-tick-Messung wurde ausgerechnet, ob fuenf
 Laeufe je Form reichen - regelkonform, vor der Messung, mit F-Test. Verwendet wurde dafuer die
@@ -2028,9 +2095,12 @@ Wiederholung desselben Befunds. Nicht erneut gegen K5 kalibrieren.
 **PUNKT 2 IST EINE BAUANLEITUNG, KEINE MESSUNG** (Protokoll Abschnitt 4, fuenf Stellen statt
 zwei). Client-Aenderungen sind gesondert freizugeben und wurden NICHT gebaut.
 
-**PUNKT 4 DANACH.** Empfehlung zur Reihenfolgefrage: gegen den IST-Zustand fahren und
-kennzeichnen. Ein Messbuild mit v_p016 wuerde eine Baseline mit um 26 % angehobenem Niveau
-erzeugen, solange die Zahl nicht steht. Der K3b-Vorbehalt ist unveraendert offen.
+**PUNKT 4 DANACH, UND ER IST JETZT STARTKLAR.** Empfehlung zur Reihenfolgefrage: gegen den
+IST-Zustand fahren und kennzeichnen. Ein Messbuild mit v_p016 wuerde eine Baseline mit um 26 %
+angehobenem Niveau erzeugen, solange die Zahl nicht steht.
+**Der K3b-Vorbehalt ist ERLEDIGT** (28.08.2026, `k3b_vorbehalt.txt`): `--mensch_unterschritte`
+kann verwendet werden, K2 ist nicht betroffen. Beim Zitieren von K3b/K3c gilt: **fuer `aktiv`
+K3c (720 Zuege), fuer `gelegenheit` mit Vorbehalt (60), fuer `abwesend` gar nicht (17).**
 
 ---
 
