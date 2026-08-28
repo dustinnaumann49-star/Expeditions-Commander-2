@@ -177,10 +177,38 @@ anders wirken kann als in der Simulation.
       (81 % seiner Macht sind Panzerung). Das ist eine Beobachtung und KEINE Erklaerung: bei
       share 0,20 stirbt er nachweislich (Kaempfe enden nach 61-64 Runden) und der Abfall bleibt
       trotzdem.
-    - **NAECHSTER SCHRITT, UND NUR DIESER:** nicht wieder eine Konstante variieren, sondern den
-      KAMPFVERLAUF aufzeichnen - wann entstehen die Verluste? Der `CombatReplay` im Ergebnis
-      liefert Ueberlebende je Runde und Typ. Lautet die Antwort "in den ersten Runden, bevor die
-      Eskorte stirbt", ist es eine Frage der Kampfdauer und nicht der Gegnerzusammensetzung.
+  - **NACHTRAG 28.08.2026 - DIE URSACHE IST GEFUNDEN** (`probe_kampfverlauf.mjs`,
+    Protokoll-Abschnitt 4c). Nicht wieder eine Konstante gedreht, sondern der VERLAUF aufgezeichnet.
+    - **Die Eskorte stirbt in JEDER Zelle nach 17 % der Kampfdauer - konstant.** Die restlichen
+      83 % kaempft der Spieler gegen den Kapitaen allein, der nie stirbt (81 % seiner Macht sind
+      Panzerung). Der Anteil der Verluste, die in dieser zweiten Phase entstehen, faellt von
+      **60 % auf 1 %** ueber die Leiter.
+    - **ZERLEGUNG DER VERLUSTKURVE:**
+
+      | n | Verlust gesamt | Eskorten-Phase | Kapitaens-Nachlauf |
+      |---|---|---|---|
+      | 150 | 49,7 % | 19,9 % | 29,8 % |
+      | 400 | 25,9 % | 17,1 % | 8,8 % |
+      | 1.000 | 17,5 % | 15,4 % | 2,1 % |
+      | 2.500 | 15,2 % | **15,0 %** | **0,2 %** |
+      | **Abfall** | **34,5** | **4,8** | **29,7** |
+
+      **Die Eskorten-Phase ist nahezu massstabsneutral. Der gesamte Masse-Vorteil steckt im
+      Nachlauf des unsterblichen Kapitaens - 29,7 von 34,5 Punkten.**
+    - **WARUM ALLE VIER FRUEHEREN HYPOTHESEN SCHEITERN MUSSTEN:** sie haben samt und sonders an
+      der STAERKE des Gegners gedreht. Der Effekt haengt aber an der DAUER, ueber die eine
+      unsterbliche Einheit einen gedeckelten Betrag abgibt (konstant 13,6 Mio je Treffer, ueber
+      83 % der Kampfdauer). Eine staerkere oder schwaechere Version derselben Struktur verschiebt
+      das Niveau und laesst die Steigung stehen - viermal gemessen.
+    - **AUFLOESUNG DES WIDERSPRUCHS AUS 4b:** die Zeile share 0,20 hat Rundenzahlen
+      100/100/80,9/63,6/61,4 - **sie wechselt INNERHALB der Leiter das Regime** (Kapitaen
+      ueberlebt klein, stirbt gross) und ist deshalb nicht auswertbar, kein Gegenbeleg.
+      **Zweites Mal dieselbe Falle** nach der Gegenprobe.
+  - **OFFEN, NUTZERENTSCHEIDUNG - zwei Richtungen, KEINE gemessen:** (a) den Kapitaen sterblich
+    machen (`ADMIRAL_STAT_RATIO`, heute 81 % Panzerung) - aendert aber auch Beute-Bedingungen und
+    das Spielgefuehl, er ist als zaeher Brocken gedacht; (b) die Kampfdauer begrenzen (`MAX_ROUNDS`
+    oder Abbruch, wenn nur noch unerreichbare Einheiten stehen) - greift breiter und beruehrt jede
+    Kampfart. Beide mit den vorhandenen Werkzeugen direkt pruefbar.
   - **FUER DEN PLAN WICHTIG:** Entscheidung 2 (Beute-Kurve) greift an den BELOHNUNGEN und aendert
     nichts daran, dass eine 4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert.
     **"Weglauf-Wachstum bremsen" und "Masse macht unverwundbar" sind zwei Probleme, im Plan bisher
@@ -1839,9 +1867,11 @@ anheben, nicht die Deckel anheben** - beides gemessen und verworfen.
 **ERLEDIGT:** die Eskorte ist gemessen (Abschnitt 4b). Der Effekt ist milder als berichtet
 (15,2 % statt 0,1 % Verlust bei 11.250 Einheiten), der Abfall bleibt aber - und weder Machtanteil
 noch Koernigkeit begradigen ihn. **VIER Hypothesen sind jetzt widerlegt.**
-**NAECHSTER SCHRITT: den KAMPFVERLAUF aufzeichnen** (`CombatReplay` liefert Ueberlebende je Runde
-und Typ) - wann entstehen die Verluste? Nicht wieder eine Konstante variieren; das hat viermal
-nichts ergeben.
+**URSACHE GEFUNDEN (Abschnitt 4c): der Nachlauf des unsterblichen Kapitaens traegt 29,7 der
+34,5 Punkte.** Die Eskorte stirbt nach 17 % der Kampfdauer, danach feuert er 83 % der Zeit allein
+weiter - ein gedeckelter Festbetrag, der gegen kleine Flotten viel und gegen grosse nichts
+ausmacht. **NAECHSTER SCHRITT ist eine Nutzerentscheidung, keine Messung:** Kapitaen sterblich
+machen oder Kampfdauer begrenzen. Beides pruefbar, beides mit Nebenwirkungen.
 
 **PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
 gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
