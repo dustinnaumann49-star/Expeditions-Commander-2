@@ -44,7 +44,21 @@ const VARIANTEN = [
   // KOERNIGKEIT statt nur Verteilung - siehe --eskorte_fein in make_messbuild_aggregat.mjs.
   { id: 'f055', share: null, fein: true, eskorte: true, text: 'share 0,55 + feine Eskorte' },
   { id: 'f035', share: 0.35, fein: true, eskorte: true, text: 'share 0,35 + feine Eskorte' },
+  // FUENFTE HYPOTHESE: Kapitaen ueber Stueckzahl statt Staerke skalieren (--admiral_ref).
+  // Die drei Referenzwerte entsprechen der Kapitaensmacht bei n=150 (1 Stueck bei der kleinsten
+  // Leiterstufe), bei n=400 und einem Viertel davon - damit ist die Koernigkeit selbst variiert
+  // und nicht nur ein Punkt geprueft.
+  { id: 'r658', share: null, ref: 658e6, eskorte: true, text: 'Kapitaen 658M je Stueck' },
+  { id: 'r176', share: null, ref: 176e6, eskorte: true, text: 'Kapitaen 176M je Stueck' },
+  { id: 'r044', share: null, ref: 44e6, eskorte: true, text: 'Kapitaen 44M je Stueck' },
+  // Die Stueckzahl-Skalierung hebt das NIVEAU deutlich an, weil die heutige Kapitaensmacht gegen
+  // eine Mechanik kalibriert ist, die 88-99 % davon wegwirft. Wer die Verschwendung beseitigt,
+  // muss die Macht mitsenken - sonst wird die Begegnung schlagartig toedlich. Diese beiden Zellen
+  // pruefen genau das Zusammenspiel.
+  { id: 'k030', share: 0.30, ref: 658e6, eskorte: true, text: 'share 0,30 + 658M je Stueck' },
+  { id: 'k020', share: 0.20, ref: 658e6, eskorte: true, text: 'share 0,20 + 658M je Stueck' },
 ];
+const NUR = (process.argv.find((a) => a.startsWith('--nur=')) || '').split('=')[1]?.split(',');
 
 const ZELLE = `
 import { combat, runner, cc, ships, stateFor, value } from '${resolve(HIER, 'lib4.mjs')}';
@@ -91,11 +105,12 @@ sag('Steigung ab n=150 lesen - n=90 kann das Regime wechseln (Spieler wird ueber
 sag('');
 
 const alle = [];
-for (const v of VARIANTEN) {
+for (const v of VARIANTEN.filter((x) => !NUR || NUR.includes(x.id))) {
   const build = `/tmp/esk_${v.id}/dist`;
   const a = [resolve(HIER, 'make_messbuild_aggregat.mjs'), build];
   if (v.share !== null) a.push(`--admiral_share=${v.share}`);
   if (v.fein) a.push('--eskorte_fein');
+  if (v.ref) a.push(`--admiral_ref=${v.ref}`);
   execFileSync('node', a, { stdio: 'pipe' });
 
   const werte = LEITER.map((n) => JSON.parse(execFileSync('node', [ZELLE_DATEI], {

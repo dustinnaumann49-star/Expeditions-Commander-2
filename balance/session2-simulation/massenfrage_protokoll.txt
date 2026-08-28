@@ -3,7 +3,7 @@ Protokoll vom 27.08.2026 (sechste Session)
 Werkzeuge: make_messbuild_aggregat.mjs, run_massenfrage.mjs, run_deckel.mjs,
            probe_bossverlust.mjs, run_gegenprobe.mjs, run_eskorte.mjs,
            probe_kampfverlauf.mjs (alle neu)
-Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt, eskorte.txt
+Rohausgaben: massenfrage.txt, deckel.txt, gegenprobe.txt, eskorte.txt, eskorte_kombi.txt
 
 !!! MESSBUILD-PROTOKOLL. Alle Zahlen aus gepatchten dist-Kopien. server/src unberuehrt.        !!!
 
@@ -364,6 +364,68 @@ Beide sind mit `probe_kampfverlauf.mjs` und `run_eskorte.mjs` direkt pruefbar.
 `MAX_SNAPSHOTS` (30) tastet lange Kaempfe ab; die Viertel sind deshalb Anteile der Kampfdauer und
 nicht exakte Rundenfenster. Fuer die Frage "erste oder zweite Haelfte" reicht das, fuer eine
 runden-genaue Aussage nicht. Ausserdem: 10 Laeufe je Zelle, ein Profil, eine Paarung.
+
+================================================================================
+4d. NACHTRAG 28.08.2026 - DIE FUENFTE HYPOTHESE TRIFFT
+================================================================================
+Regler `--admiral_ref` in `make_messbuild_aggregat.mjs`, Zellen in `run_eskorte.mjs`,
+Rohausgaben `eskorte.txt` und `eskorte_kombi.txt`.
+
+ANSATZ: nicht an der Struktur um den Kapitaen herum drehen (das ist viermal gescheitert), sondern
+an der gemessenen Ursache. Der Deckel wirkt JE TREFFER, nicht je Runde - mehr Treffer bei gleicher
+Trefferstaerke gehen also vollstaendig durch. Statt EINEN Kapitaen immer staerker zu machen, wird
+seine Macht auf MEHRERE Kapitaene derselben Staerke verteilt:
+    Stueckzahl = round(Kapitaensmacht / ref),   Staerke je Stueck = ref
+Die Gesamtmacht bleibt exakt gleich, nur ihre Koernigkeit aendert sich - und zwar bei der EINEN
+Einheit, die den Deckel ueberhaupt reisst. Die Eskorte bleibt unberuehrt (sie ist laut 4c schon
+massstabsneutral, dort war nichts zu holen).
+
+  Variante                              90     150     400    1000    2500   Abfall ab 150
+  ECHTES SPIEL (heute)              100,0%   50,6%   26,2%   17,6%   15,2%           35,4
+  658M je Stueck                    100,0%   50,7%   51,2%   46,5%   43,9%            6,8
+  176M je Stueck                    100,0%  100,0%  100,0%  100,0%  100,0%            0,0 *
+   44M je Stueck                    100,0%  100,0%  100,0%  100,0%  100,0%            0,0 *
+  * Deckeneffekt - der Spieler wird vollstaendig vernichtet, die Steigung ist nicht ablesbar.
+
+**MIT 658 MIO MACHT JE KAPITAEN FAELLT DER ABFALL VON 35,4 AUF 6,8 PUNKTE.** Die Kurve ist damit
+praktisch flach - das erste Mal ueberhaupt, dass ein Eingriff die STEIGUNG bewegt statt nur das
+Niveau.
+
+DER ENTSCHEIDENDE NEBENBEFUND: **bei n=150 aendert sich NICHTS** (50,7 gegen 50,6 %). Der
+Referenzwert ist so gewaehlt, dass dort genau EIN Kapitaen steht - wie heute. Erst darueber
+waechst die Stueckzahl (3 bei n=400, 7 bei n=1000, 17 bei n=2500), und genau dort steigt die
+Schwierigkeit: 15,2 -> 43,9 % bei n=2500. **Der fruehe Spielverlauf bleibt unberuehrt, nur die
+Immunitaet grosser Flotten verschwindet.** Genau das war das Ziel.
+
+--- DIE EMPFINDLICHKEIT IST EXTREM, UND DAS IST DIE WICHTIGSTE WARNUNG ---
+Von 658M auf 176M je Stueck (Faktor 3,7 feiner) kippt das Ergebnis von "50,7 % Verlust" auf
+"vollstaendige Vernichtung in JEDER Zelle" - auch bei n=150, wo es nur vier Stueck waeren.
+Das belegt die Ursache noch einmal von der anderen Seite: der heutige Kapitaen wirft selbst gegen
+KLEINE Flotten schon 88 % seines Schadens weg (Abschnitt 4a). Wer die Verschwendung beseitigt,
+setzt schlagartig die volle Macht frei. **Dieser Regler ist kein Feinjustierer, sondern ein
+Schalter mit einem sehr schmalen brauchbaren Bereich.**
+
+--- WAS NICHT FUNKTIONIERT HAT ---
+Der naheliegende Gedanke, die freigesetzte Macht durch einen kleineren ADMIRAL_STAT_SHARE
+auszugleichen, macht es SCHLECHTER statt besser:
+
+  share 0,30 + 658M je Stueck       100,0%   70,5%   44,3%   51,6%   47,8%           22,7
+  share 0,20 + 658M je Stueck       100,0%   83,7%   56,5%   52,4%   54,6%           29,1
+
+Beide sind sowohl steiler als auch haerter als 658M allein. Grund: der Anteil, den man dem
+Kapitaen wegnimmt, geht an die Eskorte - und die trifft vor allem kleine Flotten hart, waehrend
+sie den Nachlauf gar nicht beruehrt. **Die Stueckzahl-Skalierung braucht keinen Ausgleich; sie
+funktioniert nur ohne ihn.** Das war eine Vermutung von mir vor der Messung und war falsch.
+
+--- WAS DAS FUER EINEN ECHTEN EINBAU HIESSE, FALLS ER JE KOMMT ---
+Der Wert 658M ist an die Kapitaensmacht bei n=150 dieser Leiter gebunden, also an eine
+Messgroesse und nicht an etwas im Spiel Verankertes. Vor einem Einbau muesste er aus einer
+stabilen Bezugsgroesse abgeleitet werden - naheliegend aus dem Verhaeltnis zur Panzerung eines
+typischen Zielschiffs, denn genau daran haengt der Deckel. Solange das nicht geklaert ist, ist
+658M ein Messwert und KEIN Bauwert.
+Ausserdem ungeprueft: Beute und Berichte. Mehrere Kapitaene statt einem aendern die
+Wrack-Bergung, die Kampfberichte (mehrere Zeilen statt einer) und moeglicherweise die
+Kapitaens-Beutelogik. Nichts davon ist in dieser Messung enthalten.
 
 ================================================================================
 5. GRENZEN

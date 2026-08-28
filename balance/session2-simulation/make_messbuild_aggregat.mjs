@@ -40,6 +40,7 @@ const KASKADE = opt('kaskade', null);    // OVERKILL_MAX_CASCADE, Standard 5
 const SCHUESSE = opt('schuesse', null);  // MAX_SHOTS_PER_UNIT, Standard 50
 const ADMIRAL_SHARE = opt('admiral_share', null); // ADMIRAL_STAT_SHARE, Standard 0.55
 const ESK_FEIN = args.includes('--eskorte_fein'); // Eskorte feinkoerniger statt Elitekader
+const ADM_REF = opt('admiral_ref', null); // Kapitaen ueber STUECKZAHL statt Staerke skalieren
 const DIST = resolve(opt('dist', new URL('../../server/dist', import.meta.url).pathname));
 
 if (!existsSync(resolve(DIST, 'game/combat.js'))) {
@@ -179,6 +180,55 @@ if (ESK_FEIN) {
   );
 }
 
+// ===================================================================================
+// --admiral_ref - KAPITAEN UEBER STUECKZAHL SKALIEREN STATT UEBER STAERKE
+// ===================================================================================
+// FUENFTE HYPOTHESE, nach vier Widerlegungen. Sie setzt als erste an der GEMESSENEN Ursache an
+// (massenfrage_protokoll.txt Abschnitt 4c) statt an der Struktur drumherum:
+//   Der Schaden JE TREFFER des Kapitaens ist bei 13,6 Mio gedeckelt, seine Waffen wachsen mit der
+//   Flottenmacht aber um Faktor 28. Alles darueber wird weggeworfen (Verschwendung 87,8 -> 99,6 %).
+//   Seine Ausgabe ist deshalb ein FESTBETRAG, dessen Anteil mit wachsender Flotte verschwindet -
+//   29,7 der 34,5 Punkte des Masse-Vorteils stecken genau darin.
+//
+// DER DECKEL WIRKT JE TREFFER, NICHT JE RUNDE. Mehr Treffer bei gleicher Trefferstaerke gehen
+// also vollstaendig durch. Statt EINEN Kapitaen immer staerker zu machen, wird seine Macht
+// deshalb auf MEHRERE Kapitaene derselben Staerke verteilt:
+//     Stueckzahl = round(Kapitaensmacht / admiral_ref),  Staerke je Stueck = admiral_ref
+// Die Gesamtmacht bleibt exakt gleich. Nur ihre Koernigkeit aendert sich - und zwar bei der
+// EINEN Einheit, die den Deckel ueberhaupt reisst.
+//
+// ABGRENZUNG ZU DEN WIDERLEGTEN HYPOTHESEN 3 UND 4 (Abschnitt 4b): dort wurde Macht vom Kapitaen
+// zur ESKORTE verschoben bzw. die Eskorte feiner gemacht. Die Eskorten-Phase ist aber laut
+// Abschnitt 4c schon heute massstabsneutral (Abfall 4,8 Punkte) - dort war nichts zu holen.
+// Dieser Schalter laesst die Eskorte unberuehrt und teilt ausschliesslich den Kapitaen.
+//
+// REFERENZWERTE zur Orientierung (Kapitaensmacht bei ADMIRAL_STAT_SHARE 0,55):
+//     n=150 -> 658M     n=400 -> 1.755M     n=1000 -> 4.389M     n=2500 -> 10.972M
+// Mit --admiral_ref=658000000 bleibt es bei n=150 also bei EINEM Kapitaen und waechst auf 17
+// Stueck bei n=2500 - die Staerke je Stueck bleibt konstant.
+if (ADM_REF !== null) {
+  patch(
+    resolve(OUT, 'game/combat.js'),
+    `    return {
+        npcShips: { [ADMIRAL_BOSS_ID]: 1, ...escort },
+        statsOverride: { [ADMIRAL_BOSS_ID]: adminStats },
+    };`,
+    `    // ===== MESSBUILD: Kapitaen ueber Stueckzahl statt ueber Staerke skalieren =====
+    const __ref = ${Number(ADM_REF)};
+    const __stk = Math.max(1, Math.round(adminPower / __ref));
+    const __je = adminPower / __stk;
+    return {
+        npcShips: { [ADMIRAL_BOSS_ID]: __stk, ...escort },
+        statsOverride: { [ADMIRAL_BOSS_ID]: {
+            waffen: __je * ADMIRAL_STAT_RATIO.waffen,
+            schild: __je * ADMIRAL_STAT_RATIO.schild,
+            panzerung: __je * ADMIRAL_STAT_RATIO.panzerung,
+        } },
+    };`,
+    'A6 Kapitaen ueber Stueckzahl'
+  );
+}
+
 console.log(`Aggregat-Messbuild: ${OUT}`);
 console.log(`  Eingang   : ${DIST}`);
 console.log(`  Schwelle  : ${SCHWELLE === null ? 'unveraendert (50/100/500, Default 2000) - IST-ZUSTAND' : `${SCHWELLE} fuer ALLE Typen`}`);
@@ -186,5 +236,6 @@ console.log(`  Kaskade   : ${KASKADE === null ? 'unveraendert (5)' : `${KASKADE}
 console.log(`  Schuesse  : ${SCHUESSE === null ? 'unveraendert (50)' : `${SCHUESSE} je Einheit und Runde`}`);
 console.log(`  Admiral   : ${ADMIRAL_SHARE === null ? 'unveraendert (0.55)' : `${ADMIRAL_SHARE} Machtanteil auf dem Kapitaen`}`);
 console.log(`  Eskorte   : ${ESK_FEIN ? 'FEINKOERNIG (leicht/schwer/kreuzer/schlachtschiff, schwarm)' : 'unveraendert (Elitekader, grosse Klassen)'}`);
+console.log(`  Kapitaen  : ${ADM_REF === null ? 'unveraendert (1 Stueck, Staerke waechst)' : `Stueckzahl waechst, ${(Number(ADM_REF)/1e6).toFixed(0)}M Macht je Stueck`}`);
 console.log(`  Patches   : ${patches}${patches === 0 ? ' (reine Kopie, verhaltensgleich zum Eingang)' : ''}`);
 console.log(`  Quellcode unberuehrt.`);

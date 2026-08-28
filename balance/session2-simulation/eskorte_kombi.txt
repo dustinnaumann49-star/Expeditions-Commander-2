@@ -1,0 +1,27 @@
+=== DIE ESKORTE: WIE GROSS IST DER KAPITAENS-EFFEKT IM ECHTEN SPIEL? ===
+Mischflotte, Gegner auf Flottenmacht x1,30 x1,75 skaliert, Profil voll, 25 Laeufe je Zelle.
+ADMIRAL_STAT_SHARE bestimmt, welcher Anteil der Gegnermacht auf dem Kapitaen sitzt (Rest Eskorte).
+Steigung ab n=150 lesen - n=90 kann das Regime wechseln (Spieler wird ueberrannt).
+
+--- k030: share 0,30 + 658M je Stueck ---
+    n   eigene   Gegner  Runden  eig. Verlust  total %  Gegn. Verlust  ms/Lauf
+   90      405      597    34.5        100.0 %     100 %         38.5 %       29
+  150      675      996   100.0         70.5 %       0 %         99.9 %       20
+  400     1800     2655    99.5         44.3 %       0 %        100.0 %       26
+ 1000     4500     6637   100.0         51.6 %       0 %         99.9 %       38
+ 2500    11250    16594   100.0         47.8 %       0 %         99.9 %       62
+  ABFALL n=150 -> n=2500: 22.7 Punkte   (faellt - Masse lohnt sich)
+
+--- k020: share 0,20 + 658M je Stueck ---
+    n   eigene   Gegner  Runden  eig. Verlust  total %  Gegn. Verlust  ms/Lauf
+   90      405      683    31.1        100.0 %     100 %         37.4 %       29
+  150      675     1138   100.0         83.7 %       0 %         99.9 %       19
+  400     1800     3034    80.2         56.5 %       0 %        100.0 %       21
+ 1000     4500     7583    70.6         52.4 %       0 %        100.0 %       24
+ 2500    11250    18960    76.8         54.6 %       0 %        100.0 %       35
+  ABFALL n=150 -> n=2500: 29.1 Punkte   (faellt - Masse lohnt sich)
+
+=== VERGLEICH: VERLUSTQUOTE JE ZELLE ===
+Variante                                90     150     400    1000    2500   Abfall ab 150
+k030 share 0,30 + 658M je Stueck    100.0%   70.5%   44.3%   51.6%   47.8%           22.7
+k020 share 0,20 + 658M je Stueck    100.0%   83.7%   56.5%   52.4%   54.6%           29.1
