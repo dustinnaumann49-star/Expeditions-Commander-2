@@ -204,11 +204,41 @@ anders wirken kann als in der Simulation.
       100/100/80,9/63,6/61,4 - **sie wechselt INNERHALB der Leiter das Regime** (Kapitaen
       ueberlebt klein, stirbt gross) und ist deshalb nicht auswertbar, kein Gegenbeleg.
       **Zweites Mal dieselbe Falle** nach der Gegenprobe.
-  - **OFFEN, NUTZERENTSCHEIDUNG - zwei Richtungen, KEINE gemessen:** (a) den Kapitaen sterblich
-    machen (`ADMIRAL_STAT_RATIO`, heute 81 % Panzerung) - aendert aber auch Beute-Bedingungen und
-    das Spielgefuehl, er ist als zaeher Brocken gedacht; (b) die Kampfdauer begrenzen (`MAX_ROUNDS`
-    oder Abbruch, wenn nur noch unerreichbare Einheiten stehen) - greift breiter und beruehrt jede
-    Kampfart. Beide mit den vorhandenen Werkzeugen direkt pruefbar.
+  - **NACHTRAG 28.08.2026 - DIE FUENFTE HYPOTHESE TRIFFT** (Regler `--admiral_ref`,
+    Protokoll-Abschnitt 4d). Nicht an der Struktur um den Kapitaen herum gedreht (viermal
+    gescheitert), sondern an der gemessenen Ursache: **der Deckel wirkt JE TREFFER, nicht je
+    Runde.** Mehr Treffer bei gleicher Trefferstaerke gehen vollstaendig durch. Statt EINEN
+    Kapitaen staerker zu machen, wird seine Macht auf MEHRERE derselben Staerke verteilt -
+    Gesamtmacht identisch, nur die Koernigkeit aendert sich. Eskorte unberuehrt.
+
+    | Variante | 150 | 400 | 1000 | 2500 | Abfall |
+    |---|---|---|---|---|---|
+    | ECHTES SPIEL (heute) | 50,6 % | 26,2 % | 17,6 % | 15,2 % | 35,4 |
+    | **658M je Stueck** | **50,7 %** | 51,2 % | 46,5 % | **43,9 %** | **6,8** |
+    | 176M je Stueck | 100 % | 100 % | 100 % | 100 % | Deckeneffekt |
+
+    **Der Abfall faellt von 35,4 auf 6,8 Punkte - der erste Eingriff ueberhaupt, der die STEIGUNG
+    bewegt statt nur das Niveau.** Entscheidender Nebenbefund: **bei n=150 aendert sich nichts**
+    (50,7 gegen 50,6 %), weil dort genau ein Kapitaen steht wie heute. Erst darueber waechst die
+    Stueckzahl (3 / 7 / 17) und genau dort steigt die Schwierigkeit. **Der fruehe Spielverlauf
+    bleibt unberuehrt, nur die Immunitaet grosser Flotten verschwindet.**
+  - **WARNUNG - DIE EMPFINDLICHKEIT IST EXTREM.** Von 658M auf 176M je Stueck kippt das Ergebnis
+    von 50,7 % Verlust auf **vollstaendige Vernichtung in JEDER Zelle**, auch bei n=150. Das
+    belegt die Ursache von der anderen Seite: der heutige Kapitaen wirft selbst gegen kleine
+    Flotten 88 % seines Schadens weg; wer die Verschwendung beseitigt, setzt schlagartig die volle
+    Macht frei. **Kein Feinjustierer, sondern ein Schalter mit sehr schmalem brauchbarem Bereich.**
+  - **WAS NICHT FUNKTIONIERT HAT:** die freigesetzte Macht ueber einen kleineren
+    `ADMIRAL_STAT_SHARE` auszugleichen macht es SCHLECHTER (share 0,30: Abfall 22,7; share 0,20:
+    29,1 - beide steiler und haerter als 658M allein). Der Anteil, den man dem Kapitaen wegnimmt,
+    geht an die Eskorte und trifft vor allem kleine Flotten, waehrend er den Nachlauf gar nicht
+    beruehrt. **Die Stueckzahl-Skalierung funktioniert nur OHNE Ausgleich.** Das war meine
+    Vermutung vor der Messung und sie war falsch.
+  - **658M IST EIN MESSWERT UND KEIN BAUWERT.** Er haengt an der Kapitaensmacht bei n=150 dieser
+    Leiter, also an einer Messgroesse. Vor einem Einbau muesste er aus einer stabilen
+    Bezugsgroesse abgeleitet werden - naheliegend aus dem Verhaeltnis zur Panzerung eines
+    typischen Zielschiffs, denn genau daran haengt der Deckel. **Ebenfalls ungeprueft:** mehrere
+    Kapitaene statt einem aendern Wrack-Bergung, Kampfberichte (mehrere Zeilen) und moeglicherweise
+    die Kapitaens-Beutelogik. Nichts davon steckt in dieser Messung.
   - **FUER DEN PLAN WICHTIG:** Entscheidung 2 (Beute-Kurve) greift an den BELOHNUNGEN und aendert
     nichts daran, dass eine 4.500er-Flotte 2,3 % verliert, wo eine 405er 63,4 % verliert.
     **"Weglauf-Wachstum bremsen" und "Masse macht unverwundbar" sind zwei Probleme, im Plan bisher
@@ -1870,8 +1900,10 @@ noch Koernigkeit begradigen ihn. **VIER Hypothesen sind jetzt widerlegt.**
 **URSACHE GEFUNDEN (Abschnitt 4c): der Nachlauf des unsterblichen Kapitaens traegt 29,7 der
 34,5 Punkte.** Die Eskorte stirbt nach 17 % der Kampfdauer, danach feuert er 83 % der Zeit allein
 weiter - ein gedeckelter Festbetrag, der gegen kleine Flotten viel und gegen grosse nichts
-ausmacht. **NAECHSTER SCHRITT ist eine Nutzerentscheidung, keine Messung:** Kapitaen sterblich
-machen oder Kampfdauer begrenzen. Beides pruefbar, beides mit Nebenwirkungen.
+ausmacht. **LOESUNGSRICHTUNG GEMESSEN (Abschnitt 4d): den Kapitaen ueber STUECKZAHL skalieren statt ueber
+Staerke** - Abfall 35,4 -> 6,8 Punkte, fruehes Spiel unveraendert. **Aber: 658M je Stueck ist ein
+Messwert, kein Bauwert, und der brauchbare Bereich ist sehr schmal** (176M vernichtet den Spieler
+vollstaendig). Vor einem Einbau: stabile Bezugsgroesse ableiten, und Beute/Berichte pruefen.
 
 **PUNKT 4 DANACH - UND MIT EINER ENTSCHEIDUNG ZUR REIHENFOLGE.** Solange die Empfehlung nicht
 gebaut ist, misst Punkt 4 den IST-Zustand und seine Baselines tragen den heutigen Reichen Fund mit
