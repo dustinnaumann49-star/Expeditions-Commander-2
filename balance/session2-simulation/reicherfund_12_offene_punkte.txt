@@ -191,10 +191,18 @@ steht hier als Wirkung, nicht als Kriterium.
   1. Punkt 1 ist beantwortet, und die Antwort ist NEIN: die Stabilisierung des K5-Ausgangs ist
      nicht belegt. Sie ist auch nicht widerlegt - sie ist strukturell nicht die Groesse, an der
      der Reiche Fund haengt.
-  2. Ein Befund, der nicht gesucht war und schwerer wiegt als der gesuchte: die empfohlene Zahl
-     0,875 hebt das Einkommen der typischen Woche um rund ein Viertel. Das ist eine
-     NIVEAUAENDERUNG - genau das, was 12b ausdruecklich ausgeschlossen hat ("Der Befund
-     rechtfertigt eine Formaenderung, keine Niveauaenderung").
+  2. Ein Befund, der nicht gesucht war: die empfohlene Zahl 0,875 hebt das Einkommen der
+     typischen Woche um rund ein Viertel.
+
+     >>> EINGESCHRAENKT AM 28.08.2026, DRITTER TEIL DER SESSION (reicherfund_13_entscheidungen.txt
+     >>> Abschnitt 2). Hier stand zunaechst, das sei "eine NIVEAUAENDERUNG - genau das, was 12b
+     >>> ausdruecklich ausgeschlossen hat". Das ist fuer die EINZELWOCHE richtig und fuer die
+     >>> Balance zu scharf. Der Unterschied klingt mit der Laufzeit ab: +26,0 % ueber 7 Tage,
+     >>> +14,6 % ueber 14 Tage, +1,7 % im Erwartungswert. Ueber die Zeitraeume, in denen hier
+     >>> gerechnet wird, ist das Niveau unveraendert - ein Spieler bekommt ueber viele Wochen
+     >>> unter beiden Formen gleich viel, nur anders verteilt. Richtig bleibt: JEDE
+     >>> WOCHENKENNZAHL liest in den ersten Wochen hoeher, und das ist beim Vergleich mit
+     >>> Zahlen von vor dem Einbau zu beruecksichtigen.
 
 ================================================================================
 4. PUNKT 2 - DER CLIENT-SPIEGEL, UND WARUM ER NICHT DER EINZIGE IST

@@ -1,0 +1,154 @@
+DIE DREI OFFENEN FRAGEN ZUM REICHEN FUND - VOM NUTZER DELEGIERT, ENTSCHIEDEN
+Protokoll vom 28.08.2026 (siebte Session, dritter Teil)
+
+Der Nutzer hat die Entscheidung ueber A, B und C ausdruecklich delegiert. Sie sind hier
+getroffen, begruendet und **jederzeit umkehrbar** - dasselbe Verfahren wie bei f = 12,
+Befund G, K1b, K4 und v_p016 selbst. Es ist NICHTS gebaut worden.
+
+================================================================================
+0. DIE DREI ENTSCHEIDUNGEN IN JE EINEM SATZ
+================================================================================
+A. **Der Faktor bleibt bei 0,875.** Die gemessene Anhebung ist ein Kurzzeit-Artefakt, das mit
+   der Laufzeit abklingt; eine Median-Kalibrierung waere dagegen eine echte Kuerzung des
+   Erwartungswerts um 19 % und wuerde Entscheidung 3 neu kalibrierungsbeduerftig machen.
+B. **Der Wegfall der Zeitpunkt-Abhaengigkeit ist gewollt** - sie IST die Ursache der Drift,
+   und ohne ihren Wegfall ist das Problem nicht behoben. Das Gluecksspiel bleibt vollstaendig.
+C. **Die Eskorten-Praemie wird ausgeschlossen** - ein Minenfund ist keine Kampfbelohnung, und
+   die Kopplung ist genau die Art unentworfener Verkettung, die den Fund zum Problem gemacht hat.
+
+Reihenfolge der Begruendung: C zuerst, weil sie die Zahl in A mitbestimmt.
+
+================================================================================
+1. FRAGE C - DIE ESKORTEN-PRAEMIE: AUSSCHLIESSEN
+================================================================================
+ENTSCHEIDUNG: Der Bonus des Reichen Fundes bemisst sich kuenftig allein am Mining-Ertrag, nicht
+mehr an `mission.farmed` als Ganzem. Die Abschusspraemie der Eskorte wird nicht mitverdoppelt.
+
+BEGRUENDUNG:
+ 1. **Sachliche Kohaerenz.** Ein Fund im Asteroidenfeld ist ein Mineralfund. Dass er eine
+    Kampfbelohnung mitverdoppelt, ist kein Entwurf, sondern eine Folge davon, dass beide Ertraege
+    in denselben Zaehler (`mission.farmed`) geschrieben werden.
+ 2. **Das eigentliche Argument: es ist dieselbe Fehlerform, die den Fund ueberhaupt erst zum
+    Problem gemacht hat.** Der Fund driftete, weil eine Aenderung an der MISSIONSDAUER eine
+    Mechanik an ganz anderer Stelle mitskalierte. Die Praemien-Kopplung ist derselbe Bautyp:
+    eine Aenderung an der ESKORTE (Praemienhoehe, Trefferrate, Piratendichte) skaliert den Fund
+    mit, ohne dass das irgendwo stuende. Wer sie drinlaesst, behaelt eine Kopplung, die niemand
+    entworfen hat - und die beim naechsten Eingriff an den Eskorten wieder zuschlaegt.
+ 3. **Der Ausschluss ist bereits gemessen.** Der Messbuild R4b bemisst am Mining allein; die
+    Zelle v_p016 und ihre 15,53 Mrd enthalten ihn schon.
+
+DER PREIS, ausdruecklich benannt: der Ertragsanteil einer eingesetzten Eskorte faellt von 5,13
+auf 1,61 Mrd, also **um 69 %**. Die SCHUTZWIRKUNG (verhinderte Verluste an Mining-Schiffen)
+bleibt unberuehrt und ist darin nicht enthalten.
+
+WAS DARAUS FOLGT UND ZU BEOBACHTEN IST: ob Spieler daraufhin weniger Begleitschiffe mitschicken.
+Das ist nicht gemessen (das Spielermodell setzt eine feste Zahl ein) und waere an steigenden
+Verlusten in den Asteroiden-Skirmishes sichtbar. **Falls das eintritt, ist die richtige Antwort
+eine hoehere Praemie, nicht die Rueckkehr zur Kopplung** - dann steht die Groesse dort, wo sie
+hingehoert.
+
+FOLGE FUER DIE ZAHL: mit Ausschluss gilt der Faktor 0,875. Ohne Ausschluss waeren es 0,586.
+Die beiden Fragen sind damit beantwortet, ohne dass dieselbe Korrektur zweimal angebracht wird.
+
+================================================================================
+2. FRAGE A - DER FAKTOR 0,875 BLEIBT
+================================================================================
+ENTSCHEIDUNG: Es bleibt bei Chance 0,16 und Faktor 0,875. Es wird NICHT gegen den Median
+kalibriert (das waere 0,709 gewesen).
+
+DER BEFUND, DER DIE FRAGE AUFGEWORFEN HAT, IST RICHTIG - ABER ER TRAEGT DIE UMKEHRUNG NICHT.
+Gemessen (siehe `reicherfund_12_offene_punkte.txt` Abschnitt 3): der Faktor haelt den
+Erwartungswert und hebt den Median. Entscheidend ist, wie sich das ueber die Zeit verhaelt:
+
+  Betrachtungsfenster        heute      v_p016     Unterschied
+  Woche 1  (7 Tage)          16,71      21,04      +26,0 %
+  ganzer Lauf (14 Tage)      39,24      44,95      +14,6 %
+  Erwartungswert (n=20)      15,27      15,53       +1,7 %
+
+**DER UNTERSCHIED KLINGT MIT DER LAUFZEIT AB, UND ZWAR GEGEN +1,7 %.** Das ist keine
+Ueberraschung, sondern die Arithmetik der Sache: die heutige Form erzeugt selten sehr grosse
+Wochen: ueber wenige Wochen sieht man sie meist nicht (Median unter Mittel), ueber viele Wochen
+holt man sie ein. Ein Spieler, der zwanzig Wochen spielt, bekommt unter beiden Formen **gleich
+viel**. Was sich aendert, ist die Verteilung, nicht die Summe.
+
+DAMIT IST DIE ZUSICHERUNG "NIVEAU UNVERAENDERT" KORREKT. Zu praezisieren ist sie trotzdem: **die
+ersten Wochen fallen besser aus, weil die schlechten Wochen wegfallen.** Das ist die erklaerte
+Absicht in anderen Worten - wer die Streuung beseitigt und den Erwartungswert haelt, MUSS die
+typische Woche anheben. Kein Nebeneffekt, sondern der Zweck.
+
+WARUM NICHT GEGEN DEN MEDIAN KALIBRIEREN. Der Faktor 0,709 haette den Median gehalten und den
+Erwartungswert um rund 19 % gesenkt. Das ist genau die Bewegung, die der Absatz "DAS NIVEAU
+BLEIBT" aus einem gemessenen Grund ausschliesst: **jede Kuerzung verkleinert den NENNER und hebt
+damit den Anteil von Raid und Elite-Bollwerk - Entscheidung 3 waere neu zu kalibrieren und
+Abnahmekriterium 5 gleich mit.** Eine Anhebung ist in dieser Hinsicht ungefaehrlich (sie
+entfernt sich von der 50-%-Marke), eine Kuerzung nicht. Der Median-Weg loest ein
+Darstellungsproblem und schafft ein Kalibrierungsproblem.
+
+WAS DAFUER IM AUGE ZU BEHALTEN IST, und das ist der bleibende Wert des Befunds:
+ - **Jede WOCHENkennzahl liest in den ersten Wochen hoeher** - die Woche-1-Baseline vom
+   20.08.2026, K5, und jeder Kurzlauf. Wer nach dem Einbau eine Woche-1-Zahl mit einer von
+   vorher vergleicht, vergleicht zwei verschiedene Verteilungen bei gleichem Erwartungswert.
+ - **Fuer Punkt 4 (30 Tage) ist der Effekt klein** (Konvergenz gegen +1,7 %), aber die
+   Startphase der ersten Tage traegt ihn noch.
+ - Nebenbefund, der fuer die Empfehlung spricht: die Streuung des Wochenertrags faellt von
+   25 auf 17 % (7 Tage) und von 16 auf 9 % (14 Tage).
+
+KORREKTUR AN DER EIGENEN FRUEHEREN FORMULIERUNG: im Protokoll dieser Session stand zunaechst,
+der Befund "widerspricht 12b in seinem Kern". Das ist fuer die Einzelwoche richtig und fuer die
+Balance zu scharf - ueber die Zeitraeume, in denen hier gerechnet wird, ist das Niveau
+unveraendert. Die Stelle ist entsprechend eingeschraenkt worden, statt sie stehenzulassen.
+
+================================================================================
+3. FRAGE B - DER WEGFALL DER ZEITPUNKT-ABHAENGIGKEIT IST GEWOLLT
+================================================================================
+ENTSCHEIDUNG: Ja. Der Bonus wird zeitpunktunabhaengig, und der Verlust dieser Mechanik wird
+ausdruecklich eingetragen statt stillschweigend hingenommen.
+
+BEGRUENDUNG:
+ 1. **Die Zeitpunkt-Abhaengigkeit IST die Ursache.** Weil der Fund den bis dahin akkumulierten
+    Ertrag verdoppelt, waechst sein Erwartungswert ueberproportional mit der Missionsdauer. Genau
+    daran ist die Verdreifachung bei der Verlaengerung von 4 auf 12 Stunden entstanden - niemand
+    hat den Fund angefasst. **Bleibt die Kompoundierung, bleibt die Drift**, und die naechste
+    Aenderung an einer Missionsdauer skaliert ihn wieder mit. Eine Formaenderung, die das nicht
+    beseitigt, loest die Aufgabe nicht.
+ 2. **Das Gluecksspiel bleibt vollstaendig erhalten.** Ob und wie viele Treffer fallen, bleibt
+    Zufall (Chance 0,16 je Stunden-Check, 3,84 Treffer im Mittel, Binomialstreuung). Verworfen
+    bleibt weiterhin die vollstaendig deterministische Form.
+ 3. **Was faellt, faellt bewusst.** Der Code-Kommentar nennt zwei Bestandteile der
+    Nutzerentscheidung vom Juli 2026; der zweite ("frueh wenig, spaet viel") entfaellt. Der
+    Spielwert dieser Haelfte war ohnehin gering: sie belohnte nicht eine ENTSCHEIDUNG des
+    Spielers, sondern nur den Zeitpunkt eines Wuerfels, auf den er keinen Einfluss hat. Eine
+    "Nutzerentscheidung" war sie dem Namen nach, nicht der Sache nach - der Spieler entscheidet
+    ueber die Missionsdauer, nicht ueber die Trefferstunde.
+
+AUFLAGE, die zu dieser Entscheidung gehoert: der Kommentar bei `ASTEROID_RICH_FIND_CHANCE` muss
+die neue Form beschreiben UND festhalten, dass die Zeitpunkt-Abhaengigkeit am 28.08.2026 bewusst
+aufgegeben wurde, mit Grund. Ebenso ein Changelog-Eintrag, der BEIDE Aenderungen benennt (Form
+und Praemien-Ausschluss) - die Spieler saehen von der zweiten sonst nur, dass sich Eskorten
+weniger lohnen.
+
+================================================================================
+4. WAS DAMIT FESTSTEHT - DAS EINBAUPAKET
+================================================================================
+  Chance je Stunden-Check      0,16            (heute 0,08)
+  Bonus je Treffer             0,875 x nominale Gesamtausbeute der Mission
+  Bemessungsgrundlage          Mining-Ertrag ALLEIN, ohne Eskorten-Praemie
+  Zeitpunkt                    ohne Einfluss auf die Hoehe
+  Erwartete Treffer je Mission 3,84
+  Erwartungswert               unveraendert (+1,7 %)
+  Streuung der Quelle          64,1 % -> 12,9 %
+
+NICHT ENTSCHIEDEN UND WEITERHIN OFFEN: der Einbau selbst. Dieses Protokoll legt die Zahlen fest,
+es baut nichts. Die Bauanleitung fuer die fuenf Textstellen steht in
+`reicherfund_12_offene_punkte.txt` Abschnitt 4; Client-Aenderungen sind gesondert freizugeben.
+
+================================================================================
+5. WAS BEIM EINBAU ZU PRUEFEN IST
+================================================================================
+ - Die drei Zahlen (0,16 / 0,875 / Bemessung am Mining) stammen aus einem MESSBUILD. Beim
+   Einbau in `server/src` sind sie gegen die Messbuild-Patches R1 bis R4b zu spiegeln, nicht
+   frei nachzuprogrammieren - `make_messbuild_reicherfund.mjs` ist die Referenz.
+ - Nach dem Einbau eine Zelle gegen den echten Code fahren und mit v_p016 vergleichen. Weicht
+   sie ab, ist der Einbau anders als die Messung, nicht die Messung falsch.
+ - Die Woche-1-Baseline vom 20.08.2026 ist nach dem Einbau NICHT mehr unmittelbar vergleichbar
+   (Abschnitt 2, letzter Block). Beim naechsten Zitieren kennzeichnen.
