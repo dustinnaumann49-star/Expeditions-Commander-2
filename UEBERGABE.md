@@ -65,6 +65,41 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 29.08.2026 (siebte Session, vierter Teil): BOT-BAURATE GEMESSEN - DIE AUSGANGSVERMUTUNG
+  WAR FALSCH, UND MEIN EIGENER VORSCHLAG IST IN DER NAIVEN FORM SCHAEDLICH. NICHTS GEBAUT.**
+  Anlass: Nutzerbeobachtung an KI-Nyx und KI-Vega (26 Mrd Guthaben, aber nur 21-29 Schiffe je
+  Typ). Protokoll `balance/session2-simulation/bot_baurate.txt`, Rohdaten `bot_baurate.json`.
+  Neue Werkzeuge `make_messbuild_botrate.mjs` und `run_bot_baurate.mjs`. **Messbuild-Protokoll.**
+  - **DER STUECKZAHLDECKEL IST NICHT DER HAUPTENGPASS.** Er wirkt (Deckel 500 statt 5:
+    x2,76 Kampfschiffe, x2,52 Flottenmacht), aber **das Restguthaben liegt in ALLEN fuenf Zellen
+    bei 12,4-12,6 Mrd** - der Deckel aendert daran nichts.
+  - **DIE SPALTE, DIE SICH NICHT BEWEGT, TRAEGT DAS ERGEBNIS: `spendableResources()`** zieht die
+    Kosten des naechsten Gebaeudes UND der naechsten Forschung ab, bevor ein Schiff erwogen wird.
+    Bei Minenstufe 21 ist diese Reserve zweistellig in Milliarden. **Diesen Teil des Kontos kann
+    der Bot strukturell nie in Flotte umsetzen.** Von 31,3 Mrd Ausgaben in 7 Tagen landen nur
+    **3,2-4,1 Mrd in Flotte und Verteidigung zusammen**; die Minenstufen steigen dabei kaum.
+  - **MEIN VORSCHLAG (Stueckzahl an den Kontostand koppeln) IST ERLEDIGT.** Er liefert die
+    meisten Schiffe (4.615), aber die schlechteste Mischung: leichte Jaeger 2.679 gegen Bomber 27
+    - **genau die Monokultur, die der Fix vom 13.08.2026 beseitigt hat.** Ablesbar an
+    x4,00 Schiffszahl bei nur x2,23 Flottenmacht (Deckel 500: x2,76 bei x2,52). Nur brauchbar in
+    Verbindung mit einer Typ-Quote.
+  - **DIE LEITER IST NICHT MONOTON** (25 -> 1.855, aber 100 -> 1.780): grosse Bloecke verschieben
+    die "geringster Bestand zuerst"-Reihenfolge sprunghaft, einzelne Typen ueberspringen ganze
+    Runden (bei Deckel 500 bleiben Bomber und Schlachtkreuzer bei 25, alle anderen bei ~520).
+    **Eine Spanne ueber diese Leiter waere sinnlos - die Zellen wechseln das Regime.**
+  - **OFFENE UND WICHTIGE DISKREPANZ:** der heutige Code baut in der Simulation in 7 Tagen von
+    178 auf **1.153** Kampfschiffe; die echten Bots stehen nach Wochen bei **178**. Der Takt ist
+    nachweislich derselbe (`HEARTBEAT_INTERVAL_MS` = 2 min, im dist geprueft). Ursache vermutlich
+    laufende VERLUSTE (Elite-Einladungen automatisch mit 30 % der Flotte, eigene Expeditionen mit
+    20 %, Piratenbasen-Angriffe rund alle 40 min je Bot) oder ein nicht durchgehender Heartbeat.
+    **Diese Frage gehoert VOR jede Aenderung am Deckel** - ist es die Verlustseite, verpufft ein
+    hoeherer Deckel.
+  - **FUER DIE NUTZERIDEE "Elite-Bollwerk zu viert":** technisch geht das heute schon (Bots nehmen
+    automatisch mit 30 % ihrer Flotte an), aber 30 % von 178 sind 53 Schiffe je Bot. Die
+    **groesseren Hebel sind die Reserve und die Verlustfrage, nicht der Deckel.**
+  - Empfohlene Reihenfolge (nicht entschieden): 1. Verlustfrage klaeren, 2. Reserve in
+    `spendableResources()` deckeln, 3. erst danach der Stueckzahldeckel - und dann als FESTE Zahl.
+
 - **NEU 28.08.2026 (siebte Session, dritter Teil): DIE DREI OFFENEN FRAGEN ZUM REICHEN FUND SIND
   ENTSCHIEDEN - VOM NUTZER DELEGIERT, BEGRUENDET EINGETRAGEN, UMKEHRBAR. NICHTS GEBAUT.**
   Protokoll `balance/session2-simulation/reicherfund_13_entscheidungen.txt`. Verfahren wie bei
