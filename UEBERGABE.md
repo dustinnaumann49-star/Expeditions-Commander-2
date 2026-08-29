@@ -65,6 +65,48 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 28.08.2026 (siebte Session, dritter Teil): DIE DREI OFFENEN FRAGEN ZUM REICHEN FUND SIND
+  ENTSCHIEDEN - VOM NUTZER DELEGIERT, BEGRUENDET EINGETRAGEN, UMKEHRBAR. NICHTS GEBAUT.**
+  Protokoll `balance/session2-simulation/reicherfund_13_entscheidungen.txt`. Verfahren wie bei
+  f = 12, Befund G, K1b, K4 und v_p016 selbst.
+  - **C (zuerst, weil sie die Zahl bestimmt): DIE ESKORTEN-PRAEMIE WIRD AUSGESCHLOSSEN.** Ein
+    Minenfund ist keine Kampfbelohnung - und vor allem: **die Kopplung ist derselbe Bautyp, der
+    den Fund ueberhaupt erst zum Problem gemacht hat.** Der Fund driftete, weil eine Aenderung an
+    der MISSIONSDAUER eine Mechanik anderswo mitskalierte; die Praemien-Kopplung tut dasselbe fuer
+    jede kuenftige Aenderung an der ESKORTE. Preis: Ertragsanteil einer Eskorte -69 %
+    (Schutzwirkung unberuehrt). **Falls Spieler daraufhin Eskorten weglassen, ist die richtige
+    Antwort eine hoehere Praemie, nicht die Rueckkehr zur Kopplung.**
+  - **A: DER FAKTOR BLEIBT BEI 0,875.** NICHT gegen den Median kalibriert (das waere 0,709
+    gewesen). **Grund: der gemessene Unterschied klingt mit der Laufzeit ab** - +26,0 % ueber
+    7 Tage, +14,6 % ueber 14 Tage, **+1,7 % im Erwartungswert**. Ueber die Zeitraeume, in denen
+    hier gerechnet wird, bekommt ein Spieler unter beiden Formen gleich viel; was sich aendert,
+    ist die Verteilung, nicht die Summe. Eine Median-Kalibrierung waere dagegen eine echte
+    Kuerzung des Erwartungswerts um 19 % gewesen und haette **den Nenner verkleinert und damit
+    den Anteil von Raid und Elite-Bollwerk gehoben** - Entscheidung 3 und Abnahmekriterium 5
+    waeren neu zu kalibrieren. Eine Anhebung ist in dieser Richtung ungefaehrlich, eine Kuerzung
+    nicht.
+    - **WAS BLEIBT UND ZU BEACHTEN IST: jede WOCHENkennzahl liest in den ersten Wochen hoeher**
+      (Woche-1-Baseline vom 20.08.2026, K5, jeder Kurzlauf). Wer nach dem Einbau eine
+      Woche-1-Zahl mit einer von vorher vergleicht, vergleicht zwei Verteilungen bei gleichem
+      Erwartungswert. Nebenbefund fuer die Empfehlung: die Streuung des Wochenertrags faellt von
+      25 auf 17 % (7 Tage) und von 16 auf 9 % (14 Tage).
+  - **B: DER WEGFALL DER ZEITPUNKT-ABHAENGIGKEIT IST GEWOLLT.** Sie IST die Ursache der Drift -
+    weil der Fund den akkumulierten Ertrag verdoppelt, waechst er ueberproportional mit der
+    Missionsdauer; **bleibt die Kompoundierung, bleibt die Drift**, und die naechste Aenderung an
+    einer Missionsdauer skaliert ihn wieder mit. Das Gluecksspiel bleibt vollstaendig (3,84
+    Treffer im Mittel, Binomialstreuung). Zur gefallenen Haelfte der Nutzerentscheidung vom Juli
+    2026: sie belohnte nicht eine ENTSCHEIDUNG des Spielers, sondern den Zeitpunkt eines
+    Wuerfels, auf den er keinen Einfluss hat. **Auflage:** Code-Kommentar und Changelog muessen
+    den Verlust mit Datum und Grund festhalten.
+  - **KORREKTUR AN DER EIGENEN FRUEHEREN FORMULIERUNG, nicht stehengelassen:** im Protokoll des
+    ersten Teils stand, der Befund "widerspricht 12b in seinem Kern". Das ist fuer die
+    Einzelwoche richtig und fuer die Balance zu scharf; die Stelle ist eingeschraenkt worden.
+  - **DAS EINBAUPAKET STEHT DAMIT FEST:** Chance 0,16 - Bonus 0,875 x nominale Gesamtausbeute -
+    Bemessung am Mining ALLEIN - Zeitpunkt ohne Einfluss. Erwartungswert unveraendert,
+    Quellenstreuung 64,1 -> 12,9 %. **Der Einbau selbst ist NICHT entschieden**; Bauanleitung
+    fuer die fuenf Textstellen in `reicherfund_12_offene_punkte.txt` Abschnitt 4,
+    Client-Aenderungen gesondert freizugeben.
+
 - **NEU 28.08.2026 (siebte Session, zweiter Teil): DER K3b-VORBEHALT IST GEPRUEFT UND
   QUANTIFIZIERT - 14,7 PUNKTE UEBERSCHAETZUNG. DABEI EIN ZWEITER FUNDORT, DER BISHER NIRGENDS
   STAND, UND EIN DRITTER BEFUND, DER SCHWERER WIEGT ALS BEIDE. NICHTS AM SPIELCODE GEBAUT.**
@@ -2074,8 +2116,14 @@ Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier
 REICHEN FUNDES IST DAMIT NICHT NAEHER, SONDERN GENAUER BESCHRIEBEN - UND DREI FRAGEN LIEGEN BEIM
 NUTZER.** Protokoll `balance/session2-simulation/reicherfund_12_offene_punkte.txt`.
 
-**NICHTS TUN, BEVOR FRAGE A UND C BEANTWORTET SIND.** Sie bestimmen beide dieselbe Zahl und
-duerfen nicht getrennt entschieden werden:
+**~~NICHTS TUN, BEVOR FRAGE A UND C BEANTWORTET SIND~~ - ALLE DREI SIND AM 28.08.2026
+ENTSCHIEDEN** (vom Nutzer delegiert, `reicherfund_13_entscheidungen.txt`, umkehrbar):
+**A: 0,875 bleibt** (der Unterschied klingt ab - +26,0 % / +14,6 % / +1,7 %; Median-Kalibrierung
+waere eine Kuerzung um 19 % und haette Entscheidung 3 mitgerissen). **B: der Wegfall der
+Zeitpunkt-Abhaengigkeit ist gewollt** (sie ist die Ursache der Drift). **C: die Praemie wird
+ausgeschlossen** (dieselbe unentworfene Kopplung, die den Fund zum Problem gemacht hat).
+**Das Einbaupaket steht damit fest - der EINBAU ist es nicht.** Naechster fachlicher Schritt ist
+Punkt 4. Ursprungstext:
 - **(A) Die Zahl 0,875 ist eine Niveauaenderung.** Sie haelt den Erwartungswert (+1,7 %) und
   hebt den Median um 23,5 %, die gemessene Wocheneinnahme in einer tick-Zelle um 26,0 %. Das
   widerspricht 12b in seinem Kern ("eine Formaenderung, keine Niveauaenderung"). Wege: behalten
