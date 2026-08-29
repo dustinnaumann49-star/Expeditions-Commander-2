@@ -1,0 +1,148 @@
+{
+  "tage": 7,
+  "wdh": 1,
+  "builds": [
+    {
+      "name": "5",
+      "dist": "/tmp/br5"
+    },
+    {
+      "name": "25",
+      "dist": "/tmp/br25"
+    },
+    {
+      "name": "100",
+      "dist": "/tmp/br100"
+    },
+    {
+      "name": "500",
+      "dist": "/tmp/br500"
+    },
+    {
+      "name": "dyn",
+      "dist": "/tmp/brdyn"
+    }
+  ],
+  "ergebnisse": [
+    {
+      "zelle": "5",
+      "flottenmacht": 735881600,
+      "flottenwert": 841098000,
+      "verteidigungswert": 2369845000,
+      "guthaben": 12437044873.689445,
+      "schiffeGesamt": 1153,
+      "flotte": {
+        "leicht": 146,
+        "schwer": 142,
+        "kreuzer": 146,
+        "schlachtschiff": 141,
+        "bomber": 145,
+        "schlachtkreuzer": 145,
+        "zerstoerer": 143,
+        "reaper": 145,
+        "spionagesonde": 4
+      },
+      "minen": {
+        "metall": 22,
+        "kristall": 20,
+        "deut": 19
+      }
+    },
+    {
+      "zelle": "25",
+      "flottenmacht": 1174860000,
+      "flottenwert": 1342834000,
+      "verteidigungswert": 1954950000,
+      "guthaben": 12402357932.140991,
+      "schiffeGesamt": 1855,
+      "flotte": {
+        "leicht": 246,
+        "schwer": 224,
+        "kreuzer": 246,
+        "schlachtschiff": 221,
+        "bomber": 225,
+        "schlachtkreuzer": 225,
+        "zerstoerer": 223,
+        "reaper": 245,
+        "spionagesonde": 4
+      },
+      "minen": {
+        "metall": 21,
+        "kristall": 20,
+        "deut": 19
+      }
+    },
+    {
+      "zelle": "100",
+      "flottenmacht": 1137692700,
+      "flottenwert": 1300228000,
+      "verteidigungswert": 1982000000,
+      "guthaben": 12437714941.34431,
+      "schiffeGesamt": 1780,
+      "flotte": {
+        "leicht": 223,
+        "schwer": 222,
+        "kreuzer": 221,
+        "schlachtschiff": 221,
+        "bomber": 225,
+        "schlachtkreuzer": 225,
+        "zerstoerer": 223,
+        "reaper": 220,
+        "spionagesonde": 4
+      },
+      "minen": {
+        "metall": 21,
+        "kristall": 20,
+        "deut": 19
+      }
+    },
+    {
+      "zelle": "500",
+      "flottenmacht": 1854019100,
+      "flottenwert": 2111658000,
+      "verteidigungswert": 1954405000,
+      "guthaben": 12505012793.825666,
+      "schiffeGesamt": 3178,
+      "flotte": {
+        "leicht": 521,
+        "schwer": 522,
+        "kreuzer": 521,
+        "schlachtschiff": 521,
+        "bomber": 25,
+        "schlachtkreuzer": 25,
+        "zerstoerer": 523,
+        "reaper": 520,
+        "spionagesonde": 4
+      },
+      "minen": {
+        "metall": 21,
+        "kristall": 20,
+        "deut": 19
+      }
+    },
+    {
+      "zelle": "dyn",
+      "flottenmacht": 1642209000,
+      "flottenwert": 1862242000,
+      "verteidigungswert": 1930430000,
+      "guthaben": 12561778979.140997,
+      "schiffeGesamt": 4615,
+      "flotte": {
+        "leicht": 2679,
+        "schwer": 105,
+        "kreuzer": 776,
+        "schlachtschiff": 314,
+        "bomber": 27,
+        "schlachtkreuzer": 27,
+        "zerstoerer": 56,
+        "reaper": 631,
+        "spionagesonde": 4
+      },
+      "minen": {
+        "metall": 21,
+        "kristall": 20,
+        "deut": 19
+      }
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+BOT-BAURATE - IST DER STUECKZAHLDECKEL DER ENGPASS?
+Protokoll vom 29.08.2026 (siebte Session, vierter Teil)
+Anlass: Nutzerbeobachtung an KI-Nyx und KI-Vega im laufenden Spiel (Screenshots 02:24).
+
+Werkzeuge: make_messbuild_botrate.mjs (NEU), run_bot_baurate.mjs (NEU)
+Rohdaten:  bot_baurate.json
+
+!!! MESSBUILD-PROTOKOLL. KEINE Zeile server/src oder client/src veraendert.                 !!!
+
+================================================================================
+0. ERGEBNIS IN EINEM SATZ
+================================================================================
+DIE AUSGANGSVERMUTUNG WAR FALSCH - der Stueckzahldeckel ist NICHT der Hauptengpass. Er wirkt
+(bis zu x2,76 Kampfschiffe), aber die eigentliche Grenze steht woanders: **von 31,3 Mrd, die
+der Bot in sieben Tagen ausgibt, landen nur 3,2 bis 4,1 Mrd in Flotte und Verteidigung.** Und
+die von mir vorgeschlagene dynamische Kopplung an den Kontostand **stellt genau die
+Schiffs-Monokultur wieder her, die der Fix vom 13.08.2026 beseitigt hat.**
+
+================================================================================
+1. AUFBAU
+================================================================================
+EIN Bot, isolierte Datenbank, 2-Minuten-Takt, `runEconomyTick()` + `runEconomyBotTurn()`,
+7 Tage, keine Kaempfe und keine Missionen - gemessen wird ausschliesslich, was der Bot aus
+seinem Guthaben macht. Verfahren wie beim Engpass-Test in Entscheidung 13.1.
+
+**Der 2-Minuten-Takt ist nicht geschaetzt, sondern der echte:** `HEARTBEAT_INTERVAL_MS` in
+`index.ts` ist 2 * 60 * 1000, und `heartbeat.ts` ruft `runBotTurn()` je Takt genau einmal.
+
+STARTZUSTAND aus den beiden echten Bots nachgebildet (Screenshots): Minen 21/20/19, Solar 22,
+Robo 5, Nanite 7, Forschung wie beobachtet, 178 Kampfschiffe, Verteidigung inklusive der
+18.682 Raketenwerfer, Guthaben 43,76 Mrd Handelswert. Damit misst der Lauf die Lage, in der die
+Bots TATSAECHLICH stehen, nicht eine gruene Wiese.
+
+`runEconomyBotTurn()` enthaelt keine Zufallsentscheidung; die Bauwahl haengt nur an Bestand und
+Guthaben. Serien waeren Scheingenauigkeit - deshalb ein Lauf je Zelle. Das Werkzeug hat mit
+`--wdh=2` eine Wiederholungsprobe eingebaut, falls sich das je aendert.
+
+================================================================================
+2. DIE MESSUNG
+================================================================================
+  Deckel   Kampfschiffe   Flottenmacht   Flottenwert   Verteidigung   Restguthaben
+  5 (heute)        1.153        735,9 M      0,84 Mrd       2,37 Mrd      12,44 Mrd
+  25              1.855      1.174,9 M      1,34 Mrd       1,95 Mrd      12,40 Mrd
+  100             1.780      1.137,7 M      1,30 Mrd       1,98 Mrd      12,44 Mrd
+  500             3.178      1.854,0 M      2,11 Mrd       1,95 Mrd      12,51 Mrd
+  dynamisch       4.615      1.642,2 M      1,86 Mrd       1,93 Mrd      12,56 Mrd
+
+BEFUND 1 - DIE SPALTE, DIE SICH NICHT BEWEGT, TRAEGT DAS ERGEBNIS. Das Restguthaben liegt in
+ALLEN fuenf Zellen bei 12,4 bis 12,6 Mrd. Der Deckel aendert daran nichts. Das ist kein Zufall,
+sondern `spendableResources()`: die Funktion zieht die Kosten des naechsten Gebaeudes UND der
+naechsten Forschung vom Guthaben ab, bevor ueberhaupt ein Schiff erwogen wird. Bei Minenstufe 21
+und Forschung auf diesem Niveau ist diese Reserve zweistellig in Milliarden. **Der Bot kann
+diesen Teil seines Kontos strukturell nie in Flotte umsetzen - egal, wie hoch der Deckel steht.**
+
+BEFUND 2 - WOHIN DAS GELD TATSAECHLICH GEHT. In sieben Tagen gibt der Bot rund 31,3 Mrd aus
+(Startguthaben minus Rest, Mineneinnahmen noch nicht gegengerechnet). Davon landen **3,2 bis
+4,1 Mrd in Flotte und Verteidigung zusammen**. Die Minenstufen steigen dabei kaum (21/20/19,
+in einer Zelle 22). Der Rest geht in Forschung, Gebaeude und Module. **Militaerisch ist der Bot
+also nicht knapp bei Kasse, sondern nachrangig bedient.**
+
+BEFUND 3 - DIE LEITER IST NICHT MONOTON, und das ist eine Warnung. 25 liefert 1.855, aber 100
+nur 1.780 - weniger bei hoeherem Deckel. Ursache ist die "geringster Bestand zuerst"-Sortierung:
+grosse Bloecke verschieben die Reihenfolge sprunghaft, sodass einzelne Typen ganze Runden
+ueberspringen. Bei Deckel 500 sichtbar an Bomber und Schlachtkreuzer, die bei **25 Stueck**
+stehenbleiben, waehrend alle anderen Typen bei rund 520 liegen. **Eine Spanne ueber diese Leiter
+zu bilden waere sinnlos** - die Zellen wechseln das Regime.
+
+BEFUND 4 - MEIN EIGENER VORSCHLAG IST IN DIESER FORM SCHAEDLICH. Die dynamische Kopplung liefert
+zwar die meisten Schiffe (4.615), aber die schlechteste Zusammensetzung:
+
+  Typ               Deckel 5   dynamisch
+  leicht                 146       2.679
+  schwer                 142         105
+  bomber                 145          27
+  schlachtkreuzer        145          27
+
+Sie kauft vom billigsten Typ riesige Bloecke und stellt damit **genau die Monokultur wieder her,
+die der Fix vom 13.08.2026 beseitigt hat** ("KI-Nyx und KI-Vega besassen nach zwei Wochen
+ausschliesslich Leichte Jaeger"). Das ist an der Flottenmacht ablesbar: 4,00-fache Schiffszahl,
+aber nur 2,23-fache Macht - waehrend Deckel 500 mit 2,76-facher Schiffszahl auf 2,52-fache Macht
+kommt. **Mehr Schiffe, weniger Kampfkraft je Schiff.** Der Vorschlag ist damit erledigt, solange
+er nicht mit einer Typ-Quote kombiniert wird.
+
+================================================================================
+3. DIE DISKREPANZ ZUR REALITAET - OFFEN UND WICHTIG
+================================================================================
+Der heutige Code (Deckel 5) baut in der Simulation in sieben Tagen von 178 auf **1.153**
+Kampfschiffe. Die echten Bots stehen nach Wochen bei **178**. Der Takt ist nachweislich derselbe
+(2 Minuten, im dist geprueft), also ist die Differenz echt und hat eine der folgenden Ursachen:
+
+ a) **Die Bots verlieren ihre Flotte laufend.** Sie nehmen Elite-Einladungen automatisch mit
+    30 % ihrer Flotte an (`bot.ts` Z. 82), starten mit 5 % Chance eigene Expeditionen mit 20 %
+    von drei Typen, und greifen mit `BOT_COMBAT_ACTION_CHANCE = 0.05` Piratenbasen an - also
+    rund alle 40 Minuten ein echter Kampf pro Bot.
+ b) **Der Heartbeat laeuft nicht durchgehend** (Einschlafen bei Inaktivitaet ist in `index.ts`
+    ausdruecklich als Grund fuer den externen Takt genannt).
+ c) Die Bots wurden zwischenzeitlich zurueckgesetzt.
+
+**Diese Frage ist VOR jeder Aenderung am Deckel zu klaeren.** Ist (a) die Ursache, dann ist der
+Bot nicht bau-, sondern verlustbegrenzt, und ein hoeherer Deckel verpufft. Messbar waere das mit
+einem Lauf, der die Kampfaktionen mitlaufen laesst - hier bewusst NICHT gemacht, weil dieser Lauf
+die Baurate isolieren sollte.
+
+================================================================================
+4. WAS DARAUS FOLGT
+================================================================================
+Fuer die Nutzeridee "Elite-Bollwerk zu viert, zwei Spieler und zwei Bots":
+ - Technisch geht das heute schon; Bots nehmen Einladungen automatisch mit 30 % ihrer Flotte an.
+ - Bei 178 Schiffen sind das 53 Schiffe je Bot - zu wenig, um die Schlacht zu praegen.
+ - Der Deckel ist ein Hebel, aber der schwaechere. **Die groesseren Hebel sind die Reserve in
+   `spendableResources()` (Befund 1) und die Verlustfrage (Abschnitt 3).**
+
+REIHENFOLGE, EMPFOHLEN UND NICHT ENTSCHIEDEN:
+ 1. Verlustfrage klaeren (Abschnitt 3) - sonst misst jede Deckel-Aenderung gegen einen Zustand,
+    der im Spiel nicht eintritt.
+ 2. Die Reserve in `spendableResources()` pruefen: sie ist sinnvoll, damit der Bot Minen und
+    Forschung weiterbaut, aber sie ist unbegrenzt. Ein Deckel auf die Reserve (z.B. hoechstens
+    ein Anteil des Guthabens) waere der direktere Hebel als der Stueckzahldeckel.
+ 3. Erst danach der Stueckzahldeckel - und wenn, dann als FESTE Zahl (25 bis 500), nicht
+    dynamisch, solange keine Typ-Quote existiert.
+
+================================================================================
+5. GRENZEN
+================================================================================
+- Ein Lauf je Zelle (deterministisch begruendet, Abschnitt 1), ein Startzustand, 7 Tage.
+- Keine Kaempfe, keine Missionen, kein Mensch im Lauf - der gemessene Aufbau ist die
+  OBERGRENZE dessen, was der Bot bauen koennte, nicht das, was im Spiel ankommt.
+- Die 31,3 Mrd "ausgegeben" sind ohne Gegenrechnung der Mineneinnahmen gebildet; die tatsaechliche
+  Ausgabesumme liegt hoeher. Fuer den Vergleich der Zellen untereinander spielt das keine Rolle,
+  fuer eine absolute Aussage schon.
+- Nicht gemessen: wohin die rund 27 Mrd genau fliessen (Forschung gegen Gebaeude gegen Module).
+  Das waere der naechste Schritt zu Befund 2 und ist mit einer Buchungsinstrumentierung analog
+  zu `make_messbuild_k5.mjs` billig zu haben.
