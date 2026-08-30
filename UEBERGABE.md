@@ -87,17 +87,46 @@ anders wirken kann als in der Simulation.
     die "geringster Bestand zuerst"-Reihenfolge sprunghaft, einzelne Typen ueberspringen ganze
     Runden (bei Deckel 500 bleiben Bomber und Schlachtkreuzer bei 25, alle anderen bei ~520).
     **Eine Spanne ueber diese Leiter waere sinnlos - die Zellen wechseln das Regime.**
+  - **ZWEITER NACHTRAG - DER ERSTE NACHTRAG IST ZURUECKGEZOGEN. DIE VERLUSTFRAGE IST OFFEN.**
+    Die "13 % Kampfverlust" sind kein Verlust, sondern GEBUNDENE FLOTTE. Der echte Heartbeat ruft
+    `tick()` -> `processPirateAttacks()` -> `processMissions()` -> `processRaidTimer()` und ERST
+    DANN `runBotTurn()` (`heartbeat.ts` Z. 85-97); mein Lauf rief nur `runEconomyTick()`. Die
+    Angriffe starteten also (718 von 720 Ticks), wurden aber nie abgerechnet - die Flotte blieb
+    dauerhaft unterwegs. **`processRaidTimer()` fehlte ebenfalls**, Raids GEGEN den Bot (0,7-
+    Fallback mangels Namenseintrag) haben nie stattgefunden.
+    - **ZWEITER STILLER AUSFALL DERSELBEN MESSUNG, GLEICHER BAUTYP:** erst fehlte
+      `ensurePirateBases()` (Kanal sprang nie an), dann `processPirateAttacks()` (Kanal sprang an,
+      schloss nie ab). Beide Male sah das Ergebnis plausibel aus. **Ein Kanal, der laeuft, aber
+      nichts abschliesst, ist am Ergebnis allein nicht von einem funktionierenden zu
+      unterscheiden.**
+    - **Unberuehrt gueltig bleiben die Befunde aus den Laeufen OHNE Kampf** (Reserve in
+      `spendableResources()`, Saettigung nach einem Tag, Untauglichkeit der dynamischen Kopplung) -
+      dort ist `runEconomyTick()` der richtige und vollstaendige Aufruf.
+    - Werkzeug korrigiert; der Lauf mit echten Kaempfen ist um Groessenordnungen teurer und war
+      bei Sitzungsende nicht durch. **Erster Schritt der naechsten Sitzung.**
+  - **~~NACHTRAG, VERLUSTFRAGE GEMESSEN: KAEMPFE SIND ES NICHT~~ (zurueckgezogen, siehe oben):** Mit tatsaechlich laufenden
+    Kampfaktionen 1.001 statt 1.153 Kampfschiffe - **rund 13 %, nicht der Faktor 6.**
+    **Der eigentliche Befund: der Bot SAETTIGT nach einem Tag** (998 -> 1.001 von Tag 1 auf
+    Tag 7; ohne Kampf 1.106 -> 1.153), das Restguthaben bleibt bei 12,5 Mrd. Er baut ungefaehr
+    so viel, wie er verdient, und die Reserve waechst mit den Gebaeudestufen mit.
+  - **STILLER AUSFALL, DER FAST ALS ERGEBNIS DURCHGEGANGEN WAERE:** der erste Kampflauf meldete
+    "Kaempfe kosten kaum Flotte" - die Gegenprobe zeigte **0 Angriffe, 0 Nachrichten**.
+    `ensurePirateBases()` wird nur beim Serverstart in `index.ts` gerufen; ohne diesen Aufruf
+    findet `maybeAttackPirateBase()` keine Basis und tut still gar nichts. Nach dem Nachziehen:
+    718 von 720 Ticks mit laufendem Angriff. **Messregel 8, und nur gefunden, weil der Kanal
+    gegengeprueft statt geglaubt wurde.**
   - **OFFENE UND WICHTIGE DISKREPANZ:** der heutige Code baut in der Simulation in 7 Tagen von
     178 auf **1.153** Kampfschiffe; die echten Bots stehen nach Wochen bei **178**. Der Takt ist
     nachweislich derselbe (`HEARTBEAT_INTERVAL_MS` = 2 min, im dist geprueft). Ursache vermutlich
     laufende VERLUSTE (Elite-Einladungen automatisch mit 30 % der Flotte, eigene Expeditionen mit
     20 %, Piratenbasen-Angriffe rund alle 40 min je Bot) oder ein nicht durchgehender Heartbeat.
-    **Diese Frage gehoert VOR jede Aenderung am Deckel** - ist es die Verlustseite, verpufft ein
-    hoeherer Deckel.
+    **Nach dem Nachtrag oben bleibt nur der Heartbeat oder ein Reset** - beides eine
+    BETRIEBSFRAGE, in keinem Messlauf zu klaeren, und **vor jeder Aenderung am Bot-Verhalten zu
+    beantworten**: sonst wird eine Stellschraube justiert, die im Betrieb nicht zum Zug kommt.
   - **FUER DIE NUTZERIDEE "Elite-Bollwerk zu viert":** technisch geht das heute schon (Bots nehmen
     automatisch mit 30 % ihrer Flotte an), aber 30 % von 178 sind 53 Schiffe je Bot. Die
     **groesseren Hebel sind die Reserve und die Verlustfrage, nicht der Deckel.**
-  - Empfohlene Reihenfolge (nicht entschieden): 1. Verlustfrage klaeren, 2. Reserve in
+  - Empfohlene Reihenfolge (nicht entschieden): 1. Heartbeat-Frage klaeren, 2. Reserve in
     `spendableResources()` deckeln, 3. erst danach der Stueckzahldeckel - und dann als FESTE Zahl.
 
 - **NEU 28.08.2026 (siebte Session, dritter Teil): DIE DREI OFFENEN FRAGEN ZUM REICHEN FUND SIND
@@ -1646,6 +1675,16 @@ Plan als offener Punkt geführt (Abschnitt 7, Niveau-Punkt). Der beschlossene Se
 ohnehin auf die Aufbauphase zurück, in der die Bilanz noch stimmt.
 
 ## Fallen, die schon zugeschnappt sind
+
+**Ein Kanal, der LAEUFT, aber nichts ABSCHLIESST, ist am Ergebnis nicht von einem funktionierenden
+zu unterscheiden.** (29.08.2026, zweimal in derselben Messung.) Erst fehlte `ensurePirateBases()`
+- der Bot fand keine Basis und griff nie an, Ergebnis "Kaempfe kosten kaum Flotte". Nach dem Fix
+liefen 718 von 720 Ticks mit Angriff, aber `processPirateAttacks()` fehlte, das sie aufloest - die
+Flotte blieb dauerhaft unterwegs, Ergebnis "Kaempfe kosten 13 %". **Beide Zahlen sahen plausibel
+aus.** Merksatz: Wer einen Kanal misst, muss BEIDE Enden pruefen - dass er anspringt UND dass er
+abschliesst. Beim Nachbauen eines Server-Ablaufs die aufrufende Stelle im Original lesen
+(hier `heartbeat.ts`) und die Reihenfolge vollstaendig uebernehmen, statt sich die noetigen
+Schritte zu ueberlegen.
 
 **Ein FLAG, das beim Handeln gesetzt wird, und eine PROBE, die laufend abtastet, messen nur
 dann dasselbe, wenn die Probe direkt auf das Handeln folgt.** (28.08.2026.) `ressourcenAblehnung`
