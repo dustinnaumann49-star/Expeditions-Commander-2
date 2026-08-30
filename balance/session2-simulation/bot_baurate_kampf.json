@@ -1,0 +1,64 @@
+{
+  "tage": 7,
+  "wdh": 2,
+  "builds": [
+    {
+      "name": "5",
+      "dist": "/tmp/br5"
+    }
+  ],
+  "ergebnisse": [
+    {
+      "zelle": "5",
+      "flottenmacht": 637364900,
+      "flottenwert": 728383000,
+      "verteidigungswert": 2077750000,
+      "guthaben": 12519435852.177906,
+      "schiffeGesamt": 1001,
+      "unterwegs": 4,
+      "kampf": true,
+      "flotte": {
+        "leicht": 126,
+        "schwer": 128,
+        "kreuzer": 125,
+        "schlachtschiff": 125,
+        "bomber": 125,
+        "schlachtkreuzer": 124,
+        "zerstoerer": 124,
+        "reaper": 124,
+        "spionagesonde": 2
+      },
+      "minen": {
+        "metall": 22,
+        "kristall": 20,
+        "deut": 19
+      }
+    },
+    {
+      "zelle": "5",
+      "flottenmacht": 643547900,
+      "flottenwert": 735421500,
+      "verteidigungswert": 2113705000,
+      "guthaben": 12377090365.140995,
+      "schiffeGesamt": 1010,
+      "unterwegs": 4,
+      "kampf": true,
+      "flotte": {
+        "leicht": 129,
+        "schwer": 126,
+        "kreuzer": 127,
+        "schlachtschiff": 126,
+        "bomber": 125,
+        "schlachtkreuzer": 124,
+        "zerstoerer": 128,
+        "reaper": 125,
+        "spionagesonde": 2
+      },
+      "minen": {
+        "metall": 21,
+        "kristall": 20,
+        "deut": 19
+      }
+    }
+  ]
+}

@@ -36,6 +36,12 @@ const arg = (n, d) => { const t = process.argv.find((a) => a.startsWith(`--${n}=
 const TAGE = Number(arg('tage', '14'));
 const WDH = Number(arg('wdh', '1'));
 const AUSGABE = arg('out', null);
+// --kampf: statt nur runEconomyBotTurn() den VOLLEN runBotTurn() fahren - also zusaetzlich
+// Gruppen-Operationen (Elite-Einladungen mit 30 % der Flotte, eigene Expeditionen mit 20 %),
+// Halten bei Menschen und Piratenbasis-Angriffe (15 % von leicht/schwer/kreuzer, Chance 0,05
+// je Basis und Zug). Damit ist der Lauf NICHT mehr deterministisch (Math.random in bot.ts) -
+// deshalb ist --wdh dann Pflicht und die Streuung wird ausgewiesen.
+const KAMPF = process.argv.includes('--kampf');
 const BUILDS = (arg('builds', null) || '').split(',').filter(Boolean).map((s) => {
   const i = s.indexOf(':'); if (i < 0) throw new Error(`--builds Form <name>:<pfad>, bekam: ${s}`);
   return { name: s.slice(0, i), dist: path.resolve(s.slice(i + 1)) };
@@ -72,6 +78,23 @@ async function fahre(zelle, lauf) {
   const stateMod = await imp('game/state.js');
   const actions = await imp('game/actions.js');
   const botMod = await imp('game/economyBotTurn.js');
+  const botFull = KAMPF ? await imp('game/bot.js') : null;
+  // OHNE DAS BLEIBT DER KAMPFKANAL STILL. `ensurePirateBases()` wird im echten Server
+  // ausschliesslich beim Start in `index.ts` gerufen; ein Messlauf, der nur Module importiert,
+  // hat sonst KEINE einzige Basis - `maybeAttackPirateBase()` laeuft dann ueber
+  // ACTIVE_PIRATE_BASE_IDS, findet in `listActivePirateBaseSummaries()` nichts und tut still
+  // gar nichts. Genau so ist der erste Kampflauf dieser Session ausgefallen: 0 Angriffe,
+  // 0 Nachrichten, und ein Ergebnis, das wie "Kaempfe kosten kaum Flotte" aussah.
+  // Die vier Heartbeat-Schritte liegen in VIER Modulen - im dist nachgesehen, nicht geraten:
+  // tick() in actions.js, processPirateAttacks() in pirateBaseState.js, processMissions() in
+  // missions.js, processRaidTimer() in raids.js.
+  let pbState = null, missionsMod = null, raidsMod = null;
+  if (KAMPF) {
+    pbState = await imp('game/pirateBaseState.js');
+    missionsMod = await imp('game/missions.js');
+    raidsMod = await imp('game/raids.js');
+    pbState.ensurePirateBases();
+  }
   const combat = await imp('game/combat.js');
   const { SHIPS } = await imp('game/data/ships.js');
   const { DEFENSES } = await imp('game/data/defenses.js');
@@ -84,6 +107,10 @@ async function fahre(zelle, lauf) {
   // createUser() liefert das USER-OBJEKT (getUserById), nicht die id - im dist nachgesehen.
   const user = db.createUser(`botrate_${zelle.name}_${lauf}`, 'x', true);
   const uid = user.id;
+  // Ohne mindestens EINEN Menschen laufen drei der vier Kanaele in runBotTurn() ins Leere:
+  // maybeHandleGroupOps und maybeHoldAtHumans filtern auf humanUserIds, und ohne Mensch startet
+  // der Bot auch keine eigene Elite-Expedition. Der Dummy baut selbst nichts.
+  const mensch = KAMPF ? db.createUser(`botrate_mensch_${zelle.name}_${lauf}`, 'x', false) : null;
   const s = stateMod.loadPlayerState(uid);
   s.resources = { ...START_RES };
   s.buildings = { ...s.buildings, ...START_BUILDINGS };
@@ -104,8 +131,29 @@ async function fahre(zelle, lauf) {
     for (let i = 0; i < schritte; i++) {
       jetzt = START + i * SCHRITT;
       const bs = stateMod.loadPlayerState(uid);
-      await actions.runEconomyTick(bs);
-      botMod.runEconomyBotTurn(bs);
+      if (KAMPF) {
+        // VOLLSTAENDIGER HEARTBEAT-PFAD, Reihenfolge aus heartbeat.ts Z. 85-97.
+        // Der erste Anlauf rief hier nur runEconomyTick() - dadurch STARTETEN die
+        // Piratenbasis-Angriffe zwar (718 von 720 Ticks), wurden aber nie abgerechnet:
+        // processPirateAttacks() loest sie auf. Ergebnis war ein Verlust von scheinbar 13 %,
+        // der in Wahrheit nur gebundene, nie zurueckkehrende Flotte war. Zweiter stiller
+        // Ausfall derselben Messung - und derselbe Bautyp wie der fehlende
+        // ensurePirateBases()-Aufruf: ein Kanal, der laeuft, aber nichts abschliesst.
+        await actions.tick(bs);
+        await pbState.processPirateAttacks(bs);
+        await missionsMod.processMissions(bs);
+        await raidsMod.processRaidTimer(bs);
+      } else {
+        await actions.runEconomyTick(bs);
+      }
+      if (KAMPF) {
+        await botFull.runBotTurn(bs, [
+          { id: uid, username: `botrate_${zelle.name}_${lauf}`, isBot: true },
+          { id: mensch.id, username: mensch.username, isBot: false },
+        ]);
+      } else {
+        botMod.runEconomyBotTurn(bs);
+      }
       stateMod.savePlayerState(bs);
     }
   } finally { Date.now = echteNow; }
@@ -119,6 +167,9 @@ async function fahre(zelle, lauf) {
     verteidigungswert: wertVon(e.defense),
     guthaben: val(e.resources),
     schiffeGesamt: Object.entries(e.fleet || {}).filter(([id]) => id !== 'spionagesonde').reduce((a, [, n]) => a + n, 0),
+    // Unterwegs gebundene Flotte zaehlt mit: sie ist gebaut, steht nur gerade nicht daheim.
+    unterwegs: (e.pirateAttacks || []).length + (e.missions || []).length,
+    kampf: KAMPF,
     flotte: { ...e.fleet },
     minen: { metall: e.buildings.metallmine, kristall: e.buildings.kristallmine, deut: e.buildings.deuteriumsynthesizer },
   };
@@ -146,7 +197,7 @@ if (WDH > 1) {
 
 const START_MACHT_HINWEIS = 'Startbestand: 178 Kampfschiffe, Verteidigung wie beobachtet.';
 console.log('='.repeat(78));
-console.log(`BOT-BAURATE - ${TAGE} Tage, 2-Minuten-Takt, EIN Bot, keine Kaempfe. MESSBUILD-WERTE.`);
+console.log(`BOT-BAURATE - ${TAGE} Tage, 2-Minuten-Takt, EIN Bot, ${KAMPF ? 'MIT Kampfaktionen (voller runBotTurn)' : 'keine Kaempfe'}. MESSBUILD-WERTE.`);
 console.log(START_MACHT_HINWEIS);
 console.log('='.repeat(78));
 console.log('Zelle       Kampfschiffe   Flottenmacht   Flottenwert   Verteidigungswert   Restguthaben');

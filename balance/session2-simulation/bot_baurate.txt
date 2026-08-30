@@ -102,6 +102,80 @@ einem Lauf, der die Kampfaktionen mitlaufen laesst - hier bewusst NICHT gemacht,
 die Baurate isolieren sollte.
 
 ================================================================================
+3b. NACHTRAG SELBER SITZUNG - DIE VERLUSTFRAGE IST GEMESSEN
+================================================================================
+Abschnitt 3 nannte drei moegliche Ursachen. (a) ist jetzt gemessen und **scheidet aus**.
+
+ZUERST EIN STILLER AUSFALL, der fast als Ergebnis durchgegangen waere. Der erste Kampflauf
+meldete 1.056 Kampfschiffe gegen 1.106 ohne Kampf - also "Kaempfe kosten kaum Flotte". Die
+Gegenprobe zeigte: **0 Angriffe, 0 Nachrichten.** `ensurePirateBases()` wird im echten Server
+ausschliesslich beim Start in `index.ts` gerufen; ein Messlauf, der nur Module importiert, hat
+keine einzige Basis, und `maybeAttackPirateBase()` laeuft ueber ACTIVE_PIRATE_BASE_IDS, findet
+in `listActivePirateBaseSummaries()` nichts und tut still gar nichts. Nach dem Nachziehen des
+Aufrufs: **718 von 720 Ticks mit laufendem Angriff, alle vier Basen gleichzeitig.**
+Genau die Fehlerform aus Messregel 8 - und sie wurde nur entdeckt, weil der gemessene Kanal
+gegengeprueft statt geglaubt wurde.
+
+DAS ERGEBNIS MIT TATSAECHLICH LAUFENDEN KAEMPFEN:
+
+  Zustand                     nach 1 Tag   nach 7 Tagen
+  ohne Kampfaktionen               1.106        1.153
+  mit Kampfaktionen                  998        1.001
+
+BEFUND 5 - ZURUECKGEZOGEN, SIEHE ABSCHNITT 3c. (Stand vor der Korrektur:) KAEMPFE KOSTEN RUND 13 %, NICHT 85 %. 1.001 gegen 1.153 Kampfschiffe. Die
+Verlustseite erklaert den Abstand zur Realitaet (178) **nicht**.
+
+BEFUND 6 - DER EIGENTLICHE BEFUND: DER BOT SAETTIGT NACH EINEM TAG. Von Tag 1 auf Tag 7 waechst
+die Flotte mit Kampf um 0,3 % (998 -> 1.001), ohne Kampf um 4 % (1.106 -> 1.153). Das
+Restguthaben liegt dabei unveraendert bei 12,5 Mrd. **Der Bot erreicht ein Fliessgleichgewicht:
+er baut ungefaehr so viel, wie er verdient, und die Reserve aus Befund 1 waechst mit den
+Gebaeudestufen mit.** Ein hoeherer Stueckzahldeckel verschiebt das Gleichgewicht, hebt es aber
+nicht auf.
+
+WAS DAMIT FUER DIE DISKREPANZ BLEIBT: nicht (a), sondern (b) oder (c) - **der Heartbeat laeuft
+real nicht durchgehend, oder die Bots sind zwischenzeitlich zurueckgesetzt worden.** Beides ist
+eine BETRIEBSFRAGE und in keinem Messlauf zu klaeren. `index.ts` nennt das Einschlafen bei
+Inaktivitaet ausdruecklich als Grund fuer den externen Takt, und `db.ts` dokumentiert eine
+Performance-Notmassnahme, die KI-Accounts vollstaendig loescht. **Bevor am Bot-Verhalten etwas
+geaendert wird, gehoert geklaert, ob der Heartbeat ueberhaupt durchlaeuft** - andernfalls wird
+eine Stellschraube justiert, die im Betrieb gar nicht zum Zug kommt.
+
+================================================================================
+3c. ZWEITER NACHTRAG - BEFUND 5 IST ZURUECKGEZOGEN, UND ZWAR VOLLSTAENDIG
+================================================================================
+**DIE 13 % AUS BEFUND 5 SIND KEIN VERLUST. Sie sind gebundene Flotte.** Beim Nachsehen im
+Heartbeat gefunden (`heartbeat.ts` Z. 85-97): der echte Ablauf je Takt ist
+
+    tick()  ->  processPirateAttacks()  ->  processMissions()  ->  processRaidTimer()
+    ->  runBotTurn()
+
+Mein Kampflauf rief davon NUR `runEconomyTick()` und dann `runBotTurn()`. Folge: die
+Piratenbasis-Angriffe STARTETEN (718 von 720 Ticks), aber `processPirateAttacks()` - das sie
+aufloest - lief nie. Die abgeschickte Flotte blieb dauerhaft unterwegs, kehrte nie zurueck und
+verlor auch nie. Was wie ein Verlust von 13 % aussah, war die Summe der abgeschickten,
+nie abgerechneten Schiffe. **Auch `processRaidTimer()` fehlte** - Raids GEGEN den Bot (er faellt
+mangels Namenseintrag unter den 0,7-Fallback) haben in keinem meiner Laeufe je stattgefunden.
+
+**ZWEITER STILLER AUSFALL IN DERSELBEN MESSUNG, UND DERSELBE BAUTYP WIE DER ERSTE:** beim ersten
+fehlte `ensurePirateBases()`, sodass der Kanal nie ansprang; beim zweiten fehlte
+`processPirateAttacks()`, sodass er ansprang, aber nie abschloss. Beide Male sah das Ergebnis
+plausibel aus - erst "Kaempfe kosten kaum Flotte", dann "Kaempfe kosten 13 %". **Ein Kanal, der
+laeuft, aber nichts abschliesst, ist von einem funktionierenden Kanal am Ergebnis allein nicht zu
+unterscheiden.**
+
+WAS DAMIT STEHT UND WAS NICHT:
+ - **Weiterhin gueltig:** Befund 1 bis 4 und 6. Sie stammen aus den Laeufen OHNE Kampfaktionen,
+   in denen `runEconomyTick()` der richtige und vollstaendige Aufruf ist. Die Reserve in
+   `spendableResources()`, die Saettigung nach einem Tag und die Untauglichkeit der dynamischen
+   Kopplung sind davon unberuehrt.
+ - **Zurueckgezogen:** Befund 5 ("Kaempfe kosten rund 13 %"). Die Verlustseite ist damit NICHT
+   gemessen, sondern weiterhin offen.
+ - Das Werkzeug ist korrigiert (voller Heartbeat-Pfad hinter `--kampf`, die vier Schritte liegen
+   in vier verschiedenen Modulen - im dist nachgesehen). Der Lauf damit ist um Groessenordnungen
+   teurer, weil jetzt echte Kaempfe ueber den Worker-Pool gerechnet werden, und war bei
+   Sitzungsende noch nicht durch. **Er ist der erste Schritt der naechsten Sitzung.**
+
+================================================================================
 4. WAS DARAUS FOLGT
 ================================================================================
 Fuer die Nutzeridee "Elite-Bollwerk zu viert, zwei Spieler und zwei Bots":
@@ -111,8 +185,8 @@ Fuer die Nutzeridee "Elite-Bollwerk zu viert, zwei Spieler und zwei Bots":
    `spendableResources()` (Befund 1) und die Verlustfrage (Abschnitt 3).**
 
 REIHENFOLGE, EMPFOHLEN UND NICHT ENTSCHIEDEN:
- 1. Verlustfrage klaeren (Abschnitt 3) - sonst misst jede Deckel-Aenderung gegen einen Zustand,
-    der im Spiel nicht eintritt.
+ 1. **Betriebsfrage klaeren: laeuft der Heartbeat durchgehend?** (Abschnitt 3b). Die Verlustfrage
+    ist gemessen und scheidet aus - Kaempfe kosten 13 %, nicht den Faktor 6.
  2. Die Reserve in `spendableResources()` pruefen: sie ist sinnvoll, damit der Bot Minen und
     Forschung weiterbaut, aber sie ist unbegrenzt. Ein Deckel auf die Reserve (z.B. hoechstens
     ein Anteil des Guthabens) waere der direktere Hebel als der Stueckzahldeckel.
