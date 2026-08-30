@@ -194,6 +194,50 @@ REIHENFOLGE, EMPFOHLEN UND NICHT ENTSCHIEDEN:
     dynamisch, solange keine Typ-Quote existiert.
 
 ================================================================================
+4b. NACHTRAG 30.08.2026 - DIE RESERVE WAECHST SCHNELLER ALS DAS EINKOMMEN
+================================================================================
+Anlass: Nutzerfrage ("Minen kosten irgendwann so viel, dass sie sparen und die Flotte in der
+Zeit wieder sinkt, im schlimmsten Fall auf 0"). Nachgerechnet, nicht geschaetzt - die Sorge
+trifft zu, und sie beschreibt keinen Uebergang, sondern einen Dauerzustand.
+
+DIE BEIDEN FORMELN, aus dem Code:
+  Gebaeudekosten  baseCost * costGrowth^level      costGrowth 1,55 (Metall) / 1,6 (Kristall, Deut)
+  Produktion      base * level * 1,1^level         (`levelScaledValue()`, actions.ts Z. 316)
+
+Je Stufe wachsen die Kosten also um **x1,55**, die Produktion nur um **x1,13** (bei Stufe 33).
+**Die Schere oeffnet sich um Faktor 1,37 je Stufe - dauerhaft.**
+
+  Stufe   Kosten Metallmine   Sparzeit aus dieser Mine
+     21             30 Mio             6.400 h
+     33 (heute)    5,73 Mrd          249.000 h
+     36           21,3 Mrd           639.000 h
+     40            123 Mrd         2.267.000 h
+
+WARUM DAS DIE FLOTTE TRIFFT UND NICHT NUR DEN MINENAUSBAU: `spendableResources()` zieht die
+VOLLEN Kosten der naechsten Gebaeude- UND Forschungsstufe ab. Liegt das Guthaben darunter, ist
+`spendable` exakt NULL - der Bot baut dann kein einziges Schiff, nicht wenige. Und weil
+`maybeBuildBuilding()` die Mine sofort kauft, sobald sie bezahlbar ist, faellt das Guthaben
+danach wieder auf nahe null, waehrend die naechste Reserve 1,55-mal hoeher steht. **Der Anteil
+der Zeit, in dem der Bot sparend dasteht und nichts baut, geht gegen 100 %.**
+
+PRAEZISIERUNG ZUR NUTZERPROGNOSE: die Flotte faellt nicht von selbst - der NACHBAU stoppt.
+Nach unten gedrueckt wird sie durch die laufenden Verluste (Piratenbasen, Raids, Elite-Fluege).
+Bei stehendem Nachbau und weiterlaufenden Verlusten laeuft das tatsaechlich Richtung null.
+
+**PRUEFBARE VORHERSAGE, an R16 gekoppelt:** heute ist der Mechanismus unsichtbar, weil die
+Elite-Beute unter dem Mehrfachflug-Glitch das Mineneinkommen um Groessenordnungen uebersteigt
+(Guthaben 90 bzw. 77 Mrd, Minen Stufe 32-34, rund 4.200/4.700 Kampfschiffe). **Nach dem
+R16-Fix muss der Flottenaufbau der Bots binnen Tagen zum Stillstand kommen und die Stueckzahl
+danach sinken.** Tritt das nicht ein, ist an dieser Rechnung etwas falsch - dann gehoert sie
+nachgemessen, nicht die Beobachtung wegerklaert.
+
+LOESUNGSANSATZ, NICHT ENTSCHIEDEN UND NICHT GEBAUT: die Reserve auf einen ANTEIL des Guthabens
+begrenzen statt auf die vollen Kosten. Der Bot spart dann weiter fuer Minen, behaelt aber immer
+einen Rest fuer Schiffe. Kleine Aenderung an einer Stelle (`spendableResources()`), messbar mit
+`run_bot_baurate.mjs` ohne neues Werkzeug. **Gehoert NACH das Bauen** - vorher waere es eine
+elfte Baustelle, und die Zahlen davor waeren durch R16 ohnehin unvergleichbar.
+
+================================================================================
 5. GRENZEN
 ================================================================================
 - Ein Lauf je Zelle (deterministisch begruendet, Abschnitt 1), ein Startzustand, 7 Tage.
