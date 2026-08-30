@@ -65,6 +65,31 @@ anders wirken kann als in der Simulation.
 
 ## Stand
 
+- **NEU 30.08.2026 (Nutzerfrage, nachgerechnet): DIE BOT-RESERVE WAECHST SCHNELLER ALS DAS
+  BOT-EINKOMMEN - DER FLOTTENAUFBAU LAEUFT STRUKTURELL AUS.** Nachtrag in
+  `balance/session2-simulation/bot_baurate.txt` Abschnitt 4b. Nichts gebaut, nichts entschieden.
+  - **Gebaeudekosten wachsen mit x1,55 je Stufe** (`costGrowth`, 1,6 bei Kristall/Deuterium),
+    **die Produktion nur mit x1,13** (`levelScaledValue()`, `actions.ts` Z. 316). **Die Schere
+    oeffnet sich um Faktor 1,37 je Stufe - dauerhaft, kein Uebergang.** Sparzeit fuer die
+    naechste Metallmine: Stufe 21 rund 6.400 h, Stufe 33 rund 249.000 h, Stufe 40 rund 2,27 Mio h.
+  - **Warum das die FLOTTE trifft:** `spendableResources()` zieht die VOLLEN Kosten der naechsten
+    Gebaeude- und Forschungsstufe ab. Liegt das Guthaben darunter, ist `spendable` exakt NULL -
+    kein einziges Schiff, nicht wenige. Da die Mine sofort gekauft wird, sobald sie bezahlbar
+    ist, faellt das Guthaben danach wieder auf nahe null bei 1,55-mal hoeherer naechster Reserve.
+    **Der Zeitanteil ohne jeden Schiffbau geht gegen 100 %.**
+  - **Die Flotte faellt nicht von selbst - der NACHBAU stoppt.** Nach unten gedrueckt wird sie
+    durch die laufenden Verluste. Bei stehendem Nachbau und weiterlaufenden Verlusten laeuft das
+    Richtung null, wie vom Nutzer vermutet.
+  - **PRUEFBARE VORHERSAGE, AN R16 GEKOPPELT:** heute unsichtbar, weil die Elite-Beute unter dem
+    Mehrfachflug-Glitch das Mineneinkommen um Groessenordnungen uebersteigt (Stand 30.08.: 90 bzw.
+    77 Mrd Guthaben, Minen 32-34, rund 4.200/4.700 Kampfschiffe). **Nach dem R16-Fix muss der
+    Flottenaufbau binnen Tagen stillstehen und die Stueckzahl danach sinken.** Tritt das nicht
+    ein, ist die Rechnung falsch - dann nachmessen, nicht die Beobachtung wegerklaeren.
+  - **Loesungsansatz, nicht entschieden:** Reserve auf einen ANTEIL des Guthabens begrenzen statt
+    auf die vollen Kosten. Eine Stelle, messbar mit `run_bot_baurate.mjs` ohne neues Werkzeug.
+    **Gehoert NACH das Bauen** - vorher waere es eine elfte Baustelle, und alle Zahlen davor sind
+    durch R16 ohnehin unvergleichbar.
+
 - **NEU 29.08.2026 (siebte Session, vierter Teil): BOT-BAURATE GEMESSEN - DIE AUSGANGSVERMUTUNG
   WAR FALSCH, UND MEIN EIGENER VORSCHLAG IST IN DER NAIVEN FORM SCHAEDLICH. NICHTS GEBAUT.**
   Anlass: Nutzerbeobachtung an KI-Nyx und KI-Vega (26 Mrd Guthaben, aber nur 21-29 Schiffe je
