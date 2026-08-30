@@ -2186,6 +2186,25 @@ Kriterium dieser Art am Code nachsehen, **was ueberhaupt gestaffelt ist** - hier
 
 ## Erster Schritt beim naechsten Mal
 
+> **NUTZERENTSCHEIDUNG 29.08.2026: AB DIENSTAG WIRD GEBAUT, NICHT MEHR GEMESSEN.** Die Regel vom
+> 19.08.2026 ("Aenderungen erst, wenn der ganze Plan steht") laeuft damit aus. Grund: zehn bzw.
+> elf entschiedene, aber ungebaute Pakete, und die Abnahmekriterien K1-K6 sind gegen einen
+> Zustand definiert, den es noch nicht gibt - sie koennen nicht erfuellt werden, solange nichts
+> gebaut ist. **Einstiegskarte: `BAUSTART.md` im Wurzelverzeichnis** (Reihenfolge,
+> Abhaengigkeiten, wo jede Bauanleitung steht).
+>
+> **Harte Reihenfolge, nur drei Abhaengigkeiten:** Entscheidung 2 zuerst (Baseline und die
+> `PIRATEN_MULTIPLIER_ROLL`-Sperre haengen daran, die mit dem EINBAU faellt, nicht mit der
+> Messung); Entscheidung 3 danach; Entscheidung 16 ebenfalls nach Entscheidung 2
+> (`RAID_WAVE_ROLL`-Sperre). Alles andere ist unabhaengig.
+>
+> **NICHT baureif: Block B, Entscheidung 4.3-4.8.** 4.3 muss mit UMGEKEHRTEM Vorzeichen neu
+> aufgesetzt werden - wer dort baut, baut eine Zahl mit falschem Vorzeichen ein.
+>
+> **Die Messstraenge unten sind damit nachrangig, nicht ungueltig.** Der Bot-Kampflauf und
+> Punkt 4 bleiben stehen, kommen aber nach dem Bauen - dann gegen einen Zustand, den es gibt.
+
+
 **STAND 28.08.2026 (siebte Session): DIE DREI OFFENEN PUNKTE SIND ABGEARBEITET. DER EINBAU DES
 REICHEN FUNDES IST DAMIT NICHT NAEHER, SONDERN GENAUER BESCHRIEBEN - UND DREI FRAGEN LIEGEN BEIM
 NUTZER.** Protokoll `balance/session2-simulation/reicherfund_12_offene_punkte.txt`.
