@@ -11,9 +11,15 @@ ihren Zweck erfuellt (keine Baseline wurde waehrend laufender Kalibrierung entwe
 mit der Bau-Sitzung aus. **Ab dann gilt die umgekehrte Reihenfolge: bauen, dann am gebauten
 Zustand messen.**
 
-## Kritische Reihenfolge - nur diese drei Abhaengigkeiten sind hart
+## Kritische Reihenfolge - vier harte Abhaengigkeiten
 
-1. **Entscheidung 2 (Block A Schritt 2) ZUERST.** Alles andere haengt daran: die Baseline-
+0. **R16 VOR ALLEM ANDEREN.** Der Defekt "eine Flotte laesst sich in beliebig viele
+   GLEICHZEITIGE Gruppen-Operationen aufteilen" (Elite-Bollwerk unendlich oft parallel startbar).
+   **Warum zuerst:** solange er drin ist, enthalten alle Einnahmen den Mehrfachflug. Die erste
+   Gegenprobe von Entscheidung 2 wuerde dann gegen eine Baseline messen, die den Glitch
+   mitzaehlt - die Vorhersage 0,98 / 19,57 / 61,11 laege daneben, ohne dass erkennbar waere,
+   warum. Siehe Naechster Abschnitt.
+1. **Entscheidung 2 (Block A Schritt 2) danach.** Alles Weitere haengt daran: die Baseline-
    Vorhersage (0,98 / 19,57 / 61,11 Mrd), die Sperre von `PIRATEN_MULTIPLIER_ROLL` (faellt mit
    dem EINBAU, nicht mit der Messung) und der Bezugswert jeder spaeteren Gegenmessung.
 2. **Entscheidung 3 danach.** Sie ist gegen den heutigen Raid-Ertrag geschlossen; wird sie vor
@@ -22,10 +28,45 @@ Zustand messen.**
 
 Alles Uebrige ist unabhaengig und kann in beliebiger Reihenfolge.
 
+## R16 - der Defekt, der nicht in der Entscheidungsliste steht
+
+**Steht in der R-Tabelle des Umsetzungsplans, NICHT unter den Entscheidungen** - deshalb hier
+eigens aufgefuehrt, sonst wird er beim Abarbeiten der zehn Pakete uebersehen. Aufgenommen
+20.08.2026 nach Nutzermeldung ("Elite Bollwerk kann man unendlich mal starten gleichzeitig"),
+im Code bestaetigt.
+
+- **Befund:** `createGroupOperation()` prueft nur Sektor, Schiffstypen und Bestand,
+  `respondToGroupOperation()` erlaubt beliebig viele gleichzeitig angenommene Einladungen,
+  `performGroupOperationStart()` kennt keine Mindestteilnehmerzahl. Die Sperre, die Solo-Missionen
+  seit dem 29.07.2026 haben (`missions.ts` Z. 97), wurde bei Gruppen-Operationen nie nachgezogen.
+- **Reparatur, entschieden:** **eine aktive Operation je Spieler**, geprueft an BEIDEN
+  Eintrittspunkten - wer bereits in einer Operation mit Status `inviting` oder `departed` steckt,
+  kann weder eine zweite erstellen noch eine weitere Einladung annehmen. Gilt fuer P9 und P10
+  gemeinsam. **Braucht KEINE neue Balance-Zahl.**
+- **Ausdrueckliche Nutzerentscheidung: der Solo-Start beider Multiplayer-Sektoren bleibt
+  erlaubt** und wird NICHT mitrepariert. Es geht ausschliesslich um die Gleichzeitigkeit.
+- **Nicht Teil der Reparatur:** die Hoehe der flachen Belohnungen selbst (rund 17 Mrd Wert je
+  Expedition und Teilnehmer, unabhaengig von der eingesetzten Flotte) und die Kadenz aus
+  Entscheidung 4.8.
+- **Stellen:** `game/groupOps.ts`, `createGroupOperation()` ~Z. 73 und
+  `respondToGroupOperation()` ~Z. 174.
+- **Einbau war von Anfang an fuer den Server-Neustart vorgesehen** - bis dahin durfte der alte
+  Stand ausgespielt werden. Dieser Zeitpunkt ist jetzt.
+
+**Nebenwirkung, die beim Messen danach zu erwarten ist:** die beiden Bots ziehen ihre Einnahmen
+derzeit weitgehend aus mitgenommenen Elite-Fluegen unter genau diesem Glitch (Stand 30.08.2026:
+Guthaben 90 bzw. 77 Mrd, Minen Stufe 32-34, Flotte rund 4.200 bzw. 4.700 Kampfschiffe - am
+29.08. waren es noch 26 Mrd, Minen 19-21 und 178 Schiffe). **Nach der Reparatur faellt ihr
+Einkommen deutlich, und ihr Flotten-Gleichgewicht wandert mit nach unten** (gemessener
+Zusammenhang in `bot_baurate.txt`: der Bot baut proportional zu dem, was hereinkommt, und
+saettigt binnen eines Tages). Das ist erwartet und kein Defekt - aber es macht jede
+Bot-Kennzahl von vor der Reparatur unvergleichbar.
+
 ## Baureif - Anleitung vorhanden, Konstanten stehen
 
 | Paket | Bauanleitung steht in | Kernpunkt |
 |---|---|---|
+| **R16** (zuerst) | R-Tabelle Umsetzungsplan + Befundkasten 20.08.2026 | eine aktive Gruppen-Operation je Spieler, beide Eintrittspunkte in `groupOps.ts`. Solo-Start bleibt erlaubt |
 | **Entscheidung 2** | Messkasten Kopf Entscheidung 2, `loot_curve.txt` | neues `game/loot.ts`, verdrahtet in `missions.ts` / `groupOps.ts` / `pirateBaseCombat.ts`; `fleetSizeRewardMultiplier()` an beiden Stellen entfernen; Anker 2,662 / 2,29 Mrd; `winResources` x13,8 |
 | **Entscheidung 3** | Messkasten Entscheidung 3, `raid_yield.txt` | Variante 6, `RAID_ALLY_POWER_WEIGHT` = 1,0, Saettigung ueber Tagessumme, `S_MAX` = 1,5 |
 | **Entscheidung 7** | Messkasten Entscheidung 7, `station_v2.txt` | 7.2 Variante A (nur `stationBuildings.ts`), 7.3 Module x16,5, `requiredBuildingLevel` 20 -> 10. `data/buildings.ts` NICHT anfassen |
