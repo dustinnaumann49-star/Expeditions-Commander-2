@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Manager - Feldstatus Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #ecf0f1;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #27ae60;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #27ae60;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .field-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 500px;
+            position: relative;
+        }
+
+        .field-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: opacity 0.5s ease-in-out;
+            opacity: 1;
+        }
+
+        .field-image.fade-out {
+            opacity: 0;
+        }
+
+        .field-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 3px solid #f39c12;
+        }
+
+        .field-info-label {
+            font-size: 12px;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .field-info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f39c12;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .panel h2 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #27ae60;
+            text-transform: uppercase;
+        }
+
+        .stage-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        button:hover {
+            background: #229954;
+            transform: translateX(5px);
+        }
+
+        button.active {
+            background: #f39c12;
+            border-left: 3px solid white;
+        }
+
+        .stage-info {
+            background: rgba(39, 174, 96, 0.1);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #27ae60;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        .stage-info strong {
+            color: #27ae60;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .stage-description {
+            color: #bdc3c7;
+            line-height: 1.6;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .controls h2 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #3498db;
+            text-transform: uppercase;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #3498db;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #27ae60);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .auto-play-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .auto-play-controls button {
+            flex: 1;
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .field-display {
+                min-height: 400px;
+            }
+        }
+
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            transition: background 0.3s ease;
+        }
+
+        .timeline-item.active {
+            background: #f39c12;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚜 Farm Manager - Feldstatus Demo</h1>
+            <p>Beobachte wie dein Getreidefeld wächst</p>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Feld</div>
+                    <div class="stat-value">Brandenburg 1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Kultur</div>
+                    <div class="stat-value">Getreide</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Fläche</div>
+                    <div class="stat-value">25 ha</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="field-display">
+                <img id="fieldImage" class="field-image" src="feld_stage1_gepflueght.png" alt="Feldstatus">
+                <div class="field-info">
+                    <div class="field-info-label">Aktueller Status</div>
+                    <div class="field-info-value" id="currentStatus">Gepflügt</div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h2>Feldstadium</h2>
+                    <div class="stage-buttons">
+                        <button class="stage-btn active" data-stage="1">
+                            1️⃣ Gepflügt
+                        </button>
+                        <button class="stage-btn" data-stage="2">
+                            2️⃣ Gesäht
+                        </button>
+                        <button class="stage-btn" data-stage="3">
+                            3️⃣ Wachstum
+                        </button>
+                        <button class="stage-btn" data-stage="4">
+                            4️⃣ Reif
+                        </button>
+                        <button class="stage-btn" data-stage="5">
+                            5️⃣ Geerntet
+                        </button>
+                    </div>
+
+                    <div class="stage-info">
+                        <strong id="stageTitle">Gepflügt</strong>
+                        <div class="stage-description" id="stageDescription">
+                            Der Boden wurde umgebrochen und ist bereit für die Aussaat.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <h2>Automatisches Wachstum</h2>
+                    <div class="progress-section">
+                        <div class="progress-label">Fortschritt</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%;">
+                                <span id="progressText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline" id="timeline"></div>
+                    <div class="auto-play-controls">
+                        <button id="autoPlayBtn">▶ Auto</button>
+                        <button id="resetBtn">↻ Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Feldstatus-Daten
+        const stages = [
+            {
+                id: 1,
+                name: 'Gepflügt',
+                image: 'feld_stage1_gepflueght.png',
+                title: 'Gepflügt',
+                description: 'Der Boden wurde umgebrochen und ist bereit für die Aussaat.',
+                duration: 500 // ms für Demo
+            },
+            {
+                id: 2,
+                name: 'Gesäht',
+                image: 'feld_stage2_gesaet.png',
+                title: 'Gesäht',
+                description: 'Die Samen wurden ausgebracht. Das Getreide beginnt zu keimen.',
+                duration: 800
+            },
+            {
+                id: 3,
+                name: 'Wachstum',
+                image: 'feld_stage3_wachstum.png',
+                title: 'Wachstum (50%)',
+                description: 'Das Getreide wächst heran. Düngen nicht vergessen!',
+                duration: 1000
+            },
+            {
+                id: 4,
+                name: 'Reif',
+                image: 'feld_stage4_reif.png',
+                title: 'Reif',
+                description: 'Das Getreide ist vollwüchsig und erntereif. Zeit für die Ernte!',
+                duration: 800
+            },
+            {
+                id: 5,
+                name: 'Geerntet',
+                image: 'feld_stage5_geerntet.png',
+                title: 'Geerntet',
+                description: 'Die Ernte ist abgeschlossen. Das Feld ruht bis zur nächsten Saison.',
+                duration: 500
+            }
+        ];
+
+        let currentStage = 1;
+        let isAutoPlaying = false;
+        let autoPlayInterval = null;
+
+        const fieldImage = document.getElementById('fieldImage');
+        const currentStatusDiv = document.getElementById('currentStatus');
+        const stageTitleDiv = document.getElementById('stageTitle');
+        const stageDescriptionDiv = document.getElementById('stageDescription');
+        const stageButtons = document.querySelectorAll('.stage-btn');
+        const autoPlayBtn = document.getElementById('autoPlayBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const timelineDiv = document.getElementById('timeline');
+
+        // Timeline erstellen
+        function createTimeline() {
+            stages.forEach((stage, index) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                if (index === 0) item.classList.add('active');
+                timelineDiv.appendChild(item);
+            });
+        }
+
+        // Feldstatus ändern
+        function changeStage(stageId) {
+            const stage = stages.find(s => s.id === stageId);
+            if (!stage) return;
+
+            // Bild mit Fade-Effekt wechseln
+            fieldImage.classList.add('fade-out');
+            
+            setTimeout(() => {
+                fieldImage.src = stage.image;
+                fieldImage.classList.remove('fade-out');
+            }, 250);
+
+            // Info aktualisieren
+            currentStatusDiv.textContent = stage.name;
+            stageTitleDiv.textContent = stage.title;
+            stageDescriptionDiv.textContent = stage.description;
+            currentStage = stageId;
+
+            // Buttons aktualisieren
+            stageButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.stage) === stageId) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Timeline aktualisieren
+            document.querySelectorAll('.timeline-item').forEach((item, index) => {
+                item.classList.remove('active');
+                if (index < stageId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Progress aktualisieren
+            const progress = (stageId / stages.length) * 100;
+            progressFill.style.width = progress + '%';
+            progressText.textContent = Math.round(progress) + '%';
+        }
+
+        // Button-Events
+        stageButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                stopAutoPlay();
+                changeStage(parseInt(btn.dataset.stage));
+            });
+        });
+
+        // Auto-Play
+        function startAutoPlay() {
+            if (isAutoPlaying) return;
+            isAutoPlaying = true;
+            autoPlayBtn.textContent = '⏸ Stop';
+            
+            let nextStage = currentStage + 1;
+            
+            const playNext = () => {
+                if (nextStage <= stages.length) {
+                    changeStage(nextStage);
+                    nextStage++;
+                    
+                    const nextDuration = stages[nextStage - 1]?.duration || 1000;
+                    autoPlayInterval = setTimeout(playNext, nextDuration);
+                } else {
+                    stopAutoPlay();
+                }
+            };
+            
+            const currentDuration = stages[currentStage]?.duration || 1000;
+            autoPlayInterval = setTimeout(playNext, currentDuration);
+        }
+
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            autoPlayBtn.textContent = '▶ Auto';
+            if (autoPlayInterval) {
+                clearTimeout(autoPlayInterval);
+            }
+        }
+
+        autoPlayBtn.addEventListener('click', () => {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            stopAutoPlay();
+            changeStage(1);
+            progressFill.style.width = '20%';
+            progressText.textContent = '20%';
+        });
+
+        // Initialisierung
+        createTimeline();
+        changeStage(1);
+
+        // Info für Nutzer
+        console.log('🌾 Farm Manager Demo');
+        console.log('Klick auf die Buttons um zwischen Feldstadien zu wechseln');
+        console.log('Oder nutze Auto-Play um das vollständige Wachstum zu sehen');
+    </script>
+</body>
+</html>
