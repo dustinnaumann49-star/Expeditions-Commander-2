@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Manager - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #ecf0f1;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #27ae60;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #27ae60;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .map-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #27ae60;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .field-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .field-image:hover {
+            transform: scale(1.02);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .panel h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #27ae60;
+            text-transform: uppercase;
+        }
+
+        .field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #f39c12;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .field-item:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-left-color: #27ae60;
+        }
+
+        .field-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .field-status {
+            font-size: 12px;
+            color: #bdc3c7;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f39c12, #27ae60);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .crop-info {
+            background: rgba(39, 174, 96, 0.1);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #27ae60;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .crop-info strong {
+            color: #27ae60;
+        }
+
+        .stage-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f39c12;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                grid-column: 1;
+                grid-row: 3;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <header>
+                <h1>🚜 Farm Manager</h1>
+                <p>Verwalte deine Felder in Deutschland</p>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-label">Geld</div>
+                        <div class="stat-value">€ 25,000</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Getreide</div>
+                        <div class="stat-value">4,200 kg</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Felder</div>
+                        <div class="stat-value">12</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="map-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Gemini Getreide Feld" class="field-image" id="fieldImage">
+                <div style="text-align: center; color: #27ae60;">
+                    <p style="margin-bottom: 10px;">Klick auf ein Feld links um es auszuwählen</p>
+                    <p style="font-size: 12px; color: #bdc3c7;">Bild wird beim Upload angezeigt</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <h2>Meine Felder</h2>
+                <div class="field-list">
+                    <div class="field-item">
+                        <div class="field-name">Feld 1 - Brandenburg</div>
+                        <div class="field-status">Wachstum: 60%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="stage-indicator">Halbwüchsig</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">Feld 2 - Brandenburg</div>
+                        <div class="field-status">Bereit zur Ernte</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="stage-indicator">Reif</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-name">Feld 3 - Brandenburg</div>
+                        <div class="field-status">Gepflügt</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 5%;"></div>
+                        </div>
+                        <div class="stage-indicator">Vorbereitung</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Maschinen</h2>
+                <div class="actions">
+                    <button>🚜 Traktor</button>
+                    <button>🌾 Sämaschine</button>
+                    <button>💨 Düngmaschine</button>
+                    <button>✂️ Erntemaschine</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Info</h2>
+                <div class="crop-info">
+                    <strong>Getreide Zyklus:</strong><br>
+                    1. Pflügen<br>
+                    2. Säen<br>
+                    3. Düngen<br>
+                    4. Warten<br>
+                    5. Ernten
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Einfache Demo-Logik
+        document.querySelectorAll('.field-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.field-item').forEach(i => i.style.borderLeftColor = '#f39c12');
+                this.style.borderLeftColor = '#27ae60';
+                console.log('Feld ausgewählt:', this.textContent);
+            });
+        });
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                alert('Aktion: ' + this.textContent + '\n\nDas wird später im echten Spiel implementiert!');
+            });
+        });
+    </script>
+</body>
+</html>
