@@ -1,5 +1,0 @@
-Fall | n | Boss vernichtet% | retreated-Flag gesetzt% | davon: Boss tot UND retreated% | oVerlust% | oVerlust wenn "Niederlage"% | oRunden
-voll / grosse Flotte | 30 | 93 | 83 | 77 | 20.6 | 63.3 | 12
-voll / kleine Flotte | 30 | 100 | 77 | 77 | 19.5 | - | 40
-mittel / grosse Flotte | 30 | 17 | 100 | 17 | 54.9 | 61.3 | 36
-voll ohne Boost / grosse Flotte | 30 | 40 | 100 | 40 | 49.0 | 64.2 | 26
